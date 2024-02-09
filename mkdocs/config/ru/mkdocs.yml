@@ -4,7 +4,7 @@ site_dir: "../../generated/ru"
 
 # Project information
 site_name: Kora
-site_url: https://kora-projects.github.io/kora-docs/kora/
+site_url: https://kora-projects.github.io/kora-docs/kora-docs/
 site_description: Документация по Kora
 copyright: Tinkoff
 nav:
@@ -120,10 +120,10 @@ extra:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
   alternate:
     - name: Русский
-      link: /kora/ru/
+      link: /kora-docs/ru/
       lang: ru
     - name: English
-      link: /kora/en/
+      link: /kora-docs/en/
       lang: en
   social:
     - icon: fontawesome/brands/medium
