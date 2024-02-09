@@ -17,12 +17,3 @@ jobs:
         run: |
           mkdocs build --strict --verbose -f mkdocs/config/ru/mkdocs.yml
           mkdocs build --strict --verbose -f mkdocs/config/en/mkdocs.yml
-          mkdir public
-          mv mkdocs/generated/ru public/ru
-          mv mkdocs/generated/en public/en
-          mv mkdocs/index.html public
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: mkdocs
-          path: './public'
