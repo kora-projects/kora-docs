@@ -55,9 +55,9 @@ nav:
 
 
 # Repository
-repo_name: Tinkoff/Kora
+repo_name: Kora
 repo_url: https://github.com/kora-projects/kora
-edit_uri: tree/main/mkdocs/docs/ru/
+edit_uri: /kora-projects/kora-docs/tree/master/mkdocs/docs/ru
 
 
 # Configuration
@@ -105,6 +105,7 @@ theme:
     - header.autohide
     - toc.follow
     - content.code.copy
+    - content.action.edit
     - content.code.annotate   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#adding-annotations
     - content.tabs.link
 
