@@ -1,0 +1,28 @@
+name: Run tests
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    container:
+      image: squidfunk/mkdocs-material:9.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build mkdocs
+        run: |
+          mkdocs build --strict --verbose -f mkdocs/config/ru/mkdocs.yml
+          mkdocs build --strict --verbose -f mkdocs/config/en/mkdocs.yml
+          mkdir public
+          mv mkdocs/generated/ru public/ru
+          mv mkdocs/generated/en public/en
+          mv mkdocs/index.html public
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: mkdocs
+          path: './public'
