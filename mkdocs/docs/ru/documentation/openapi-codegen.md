@@ -1,0 +1,382 @@
+Модуль для создания декларативных HTTP-обработчиков [HTTP сервера](http-server.md) 
+либо создания декларативных [HTTP клиентов](http-client.md) из OpenAPI контрактов с использованием [OpenAPI Generator плагином](https://openapi-generator.tech/docs/plugins/).
+
+## Подключение
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Зависимость генератора `build.gradle`:
+    ```groovy
+    buildscript {
+        dependencies {
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+        }
+    }
+    ```
+
+    Зависимость плагина `build.gradle`:
+    ```groovy
+    plugins {
+        id "org.openapi.generator" version "7.1.0"
+    }
+    ```
+
+    ??? abstract "Maven"
+
+        Для maven необходимо добавить зависимость с генератором для плагина и так же сконфигурировать:
+        ```xml
+        <plugin>
+            <groupId>org.openapitools</groupId>
+            <artifactId>openapi-generator-maven-plugin</artifactId>
+            <version>7.1.0</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>generate</goal>
+                    </goals>
+                    <configuration>
+                        <inputSpec>${project.basedir}/src/main/resources/petstoreV2.yaml</inputSpec>
+                        <output>${project.basedir}/target/generated-sources/openapi/petstoreV2</output>
+                        <generatorName>kora</generatorName>
+                        <configOptions>
+                            <mode>java-client</mode>
+                            <sourceFolder>.</sourceFolder>
+                        </configOptions>
+                    </configuration>
+                </execution>
+            </executions>
+            <dependencies>
+                <dependency>
+                    <groupId>ru.tinkoff.kora</groupId>
+                    <artifactId>openapi-generator</artifactId>
+                    <version>1.0.4</version>
+                </dependency>
+            </dependencies>
+        </plugin>
+        ```
+
+        Подробнее можно смотреть [тут](https://github.com/OpenAPITools/openapi-generator/tree/v7.1.0/modules/openapi-generator-maven-plugin).
+
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Зависимость `build.gradle.kts`:
+    ```groovy
+    buildscript {
+        dependencies {
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+        }
+    }
+    ```
+
+    Зависимость плагина `build.gradle.kts`:
+    ```groovy
+    plugins {
+        id("org.openapi.generator") version("7.1.0")
+    }
+    ```
+
+Требует подключения [HTTP сервера](http-server.md) либо [HTTP клиента](http-client.md).
+
+## Конфигурация
+
+Конфигурировать требуется параметры [плагина OpenAPI Generator](https://openapi-generator.tech/docs/plugins/):
+
+- Настройка параметров Gradle плагина в [документации](https://github.com/OpenAPITools/openapi-generator/blob/v7.1.0/modules/openapi-generator-gradle-plugin/README.adoc).
+- Настройка `configOptions` параметра плагина в [документации](https://openapi-generator.tech/docs/generators/java/#config-options).
+- Настройка `openapiNormalizer` параметра плагина в [документации](https://openapi-generator.tech/docs/customization/#openapi-normalizer).
+
+## Клиент
+
+Минимальный пример настройки плагина для создания декларативного HTTP клиента:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Доступные Kora параметры плагина:
+
+    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
+    - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
+    - `primaryAuth` - указать какой механизм авторизации использовать как основной
+    - `securityConfigPrefix` - префикс конфигурации безопастности
+    - `mode` в каком режиме работать генератору, доступные значения:
+        * `java-client` - создание синхронного клиента
+        * `java-async-client` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) клиента
+        * `java-reactive-client` - создание [реактивного](https://projectreactor.io/docs/core/release/reference/) клиента, требуется подключить [Project Reactor](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) самостоятельно.
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
+        outputDir = "$buildDir/generated/openapi" //(2)!  
+        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
+        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-client", //(6)!
+            clientConfigPrefix: "httpClient.myclient" //(7)!
+        ]
+    }
+    ```
+
+    1. Путь до OpenAPI файла из которого будут созданы классы
+    2. Директория куда буду создаваться файлы
+    3. Пакет от классов делегатов, контроллеров, преобразователей и тп.
+    4. Пакет от классов моделей, DTO и тп.
+    5. Пакет от классов вызова
+    6. Режим работы плагина (создание Java клиента / Kotlin / Java сервера и тп)
+    7. Префикс путь к файлу конфигурации клиента
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Доступные Kora параметры плагина:
+
+    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
+    - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
+    - `primaryAuth` - указать какой механизм авторизации использовать как основной
+    - `securityConfigPrefix` - префикс конфигурации безопастности
+    - `mode` в каком режиме работать генератору, доступные значения:
+        * `kotlin-client` - создание синхронного клиента
+        * `kotlin-suspend-client` - создание suspend клиента
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
+        outputDir = "$buildDir/generated/openapi" //(2)!
+        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
+        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-client", //(6)!
+            "clientConfigPrefix" to "httpClient.myclient" //(7)!
+        )
+    }
+    ```
+
+    1. Путь до OpenAPI файла из которого будут созданы классы
+    2. Директория куда буду создаваться файлы
+    3. Пакет от классов делегатов, контроллеров, преобразователей и тп.
+    4. Пакет от классов моделей, DTO и тп.
+    5. Пакет от классов вызова
+    6. Режим работы плагина (создание Java клиента / Kotlin / Java сервера и тп)
+    7. Префикс путь к файлу конфигурации клиента
+
+После создания HTTP-клиент будет доступен для внедрения как зависимость по созданному интерфейсу.
+
+### Теги
+
+Есть возможность на созданные клиенты с `@HttpClient` аннотацией поставить параметры  `httpClientTag` и `telemetryTag`.
+Значение - Json объект, ключом которого выступает тег апи из контракта, а значением объект с полями `httpClientTag` и `telemetryTag`.
+
+Для этого необходимо установить параметр `configOptions.tags`:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-client",
+            clientConfigPrefix: "httpClient.myclient",
+            tags: """
+                  {
+                    "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                      "httpClientTag": "some.tag.Common.class",
+                      "telemetryTag": "some.tag.Common.class"
+                    },
+                    "instrument": { // применится для instrument
+                      "httpClientTag": "some.tag.Instrument.class",
+                      "telemetryTag": "some.tag.Instrument.class"
+                    }
+                  }
+                  """
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-client",
+            "clientConfigPrefix" to "httpClient.myclient",
+            "tags" to """{
+                            "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                              "httpClientTag": "some.tag.Common.class",
+                              "telemetryTag": "some.tag.Common.class"
+                            },
+                            "instrument": { // применится для instrument
+                              "httpClientTag": "some.tag.Instrument.class",
+                              "telemetryTag": "some.tag.Instrument.class"
+                            }
+                         }
+                         """
+        )
+    }
+    ```
+
+## Сервер
+
+Минимальный пример настройки плагина для создания обработчиков HTTP-сервера:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Доступные Kora параметры плагина:
+
+    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
+    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `mode` в каком режиме работать генератору, доступные значения:
+        * `java-server` - создание синхронного сервера
+        * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
+        * `java-reactive-server` - создание [реактивного](https://projectreactor.io/docs/core/release/reference/) сервера, требуется подключить [Project Reactor](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) самостоятельно.
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
+        outputDir = "$buildDir/generated/openapi" //(2)!  
+        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
+        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-server" //(6)!
+        ]
+    }
+    ```
+
+    1. Путь до OpenAPI файла из которого будут созданы классы
+    2. Директория куда буду создаваться файлы
+    3. Пакет от классов делегатов, контроллеров, преобразователей и тп.
+    4. Пакет от классов моделей, DTO и тп.
+    5. Пакет от классов вызова
+    6. Режим работы плагина (создание Java клиента / Kotlin / Java сервера и тп)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Доступные Kora параметры плагина:
+
+    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
+    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `mode` в каком режиме работать генератору, доступные значения:
+        * `kotlin-server` - создание синхронного сервера
+        * `kotlin-suspend-server` - создание suspend сервера
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
+        outputDir = "$buildDir/generated/openapi" //(2)!
+        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
+        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-server" //(6)!
+        )
+    }
+    ```
+
+    1. Путь до OpenAPI файла из которого будут созданы классы
+    2. Директория куда буду создаваться файлы
+    3. Пакет от классов делегатов, контроллеров, преобразователей и тп.
+    4. Пакет от классов моделей, DTO и тп.
+    5. Пакет от классов вызова
+    6. Режим работы плагина (создание Java клиента / Kotlin / Java сервера и тп)
+
+После создания обработчики будут автоматически зарегистрированы.
+
+### Валидация
+
+Для генерации моделей и контроллеров с аннотациями из модуля [валидации](validation.md) необходимо установить опцию `enableServerValidation`:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-server",
+            enableServerValidation: "true"  //(1)!
+        ]
+    }
+    ```
+
+    1. Включение валидации на стороне контроллера HTTP сервера
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-server",
+            "enableServerValidation" to "true" //(1)!
+        )
+    }
+    ```
+
+    1. Включение валидации на стороне контроллера HTTP сервера
+
+## Рекомендации
+
+???+ warning "Совет"
+
+    В случае если у вас что-то не создается по средствам плагина, либо поведение отличается от желаемого или других версий,
+    требуется тщательно проверить настройки [конфигурации плагина](#_2) и изучить их, 
+    так как они могут влиять на результаты того как создаются классы.
+
+    Начиная с `7.0.0` версии плагина, включенное по умолчанию `SIMPLIFY_ONEOF_ANYOF` правило у параметра `openapiNormalizer` 
+    может вести к некоторым не очевидным результатам генератора.

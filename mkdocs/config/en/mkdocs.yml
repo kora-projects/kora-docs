@@ -1,0 +1,183 @@
+docs_dir: "../../docs/en"
+site_dir: "../../generated/en"
+
+
+# Project information
+site_name: Kora
+site_url: https://kora-projects.github.io/kora-docs/kora/
+site_description: Kora framework documentation
+copyright: Tinkoff
+nav:
+  - Examples:
+      - Repository examples: examples/kora-examples.md
+      - Hello world example: examples/hello-world.md
+  - Documentation:
+      - General: documentation/general.md
+      - Dependency injection: documentation/container.md
+      - Configuration: documentation/config.md
+      - Logging:
+        - SLF4J: documentation/logging-slf4j.md
+      - Mapping:
+        - Json: documentation/json.md
+        - MapStruct: documentation/mapstruct.md
+      - Monitoring:
+        - Probes: documentation/probes.md
+        - Metrics: documentation/metrics.md
+        - Tracing: documentation/tracing.md
+      - HTTP:
+        - HTTP server: documentation/http-server.md
+        - HTTP client: documentation/http-client.md
+        - SOAP client: documentation/soap-client.md
+        - OpenAPI codegen: documentation/openapi-codegen.md
+        - OpenAPI management: documentation/openapi-management.md
+      - Database:
+        - Common: documentation/database-common.md
+        - JDBC: documentation/database-jdbc.md
+        - R2DBC: documentation/database-r2dbc.md
+        - Vertx: documentation/database-vertx.md
+        - Cassandra: documentation/database-cassandra.md
+        - Migration: documentation/database-migration.md
+      - Integration:
+        - Kafka: documentation/kafka.md
+        - gRPC server: documentation/grpc-server.md
+        - gRPC client: documentation/grpc-client.md
+      - AOP:
+        - Resilience: documentation/resilient.md
+        - Cache: documentation/cache.md
+        - Validation: documentation/validation.md
+        - Scheduling: documentation/scheduling.md
+        - Logging: documentation/logging-aspect.md
+      - Testing:
+          - JUnit5: documentation/junit5.md
+      - Extra:
+        - GraalVM Native: documentation/graalvm-native.md
+  - Changelog: changelog/changelog.md
+
+
+# Repository
+repo_name: Tinkoff/Kora
+repo_url: https://github.com/kora-projects/kora
+edit_uri: tree/main/mkdocs/docs/en/
+
+
+# Configuration
+theme:
+  name: material
+  custom_dir: ../../overrides/
+  favicon: assets/img/kora-32.png
+  logo: assets/img/kora-big.png
+  language: en
+  icon:
+    # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/
+    repo: fontawesome/brands/git
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: amber
+      accent: orange
+      toggle:
+        icon: material/lightbulb
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: amber
+      accent: orange
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to system preference
+  font:
+    text: JetBrains Mono
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - header.autohide
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#adding-annotations
+    - content.tabs.link
+
+
+extra_css:
+  - assets/css/extra.css         # https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#content-area-width
+
+
+# Structure - https://github.com/squidfunk/mkdocs-material/discussions/2346
+extra:
+  generator: false
+  annotate:
+    json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
+  alternate:
+    - name: Русский
+      link: /kora/ru/
+      lang: ru
+    - name: English
+      link: /kora/en/
+      lang: en
+  social:
+    - icon: fontawesome/brands/medium
+      link: https://medium.com/its-tinkoff
+      name: "Medium corporate blog"
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/@IT_i_td
+      name: "YouTube corporate blog"
+    - icon: simple/habr
+      link: https://habr.com/ru/companies/tinkoff/articles/
+      name: "Habrahabr corporate blog"
+    - icon: fontawesome/brands/github
+      link: https://github.com/kora-projects/kora
+      name: "GitHub project"
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/kora_users
+      name: "Telegram project chat"
+
+
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+      lang:
+        - en
+
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - md_in_html              # https://squidfunk.github.io/mkdocs-material/reference/annotations/#tab-1
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.betterem
+  - pymdownx.tabbed:        # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
+      alternate_style: true
+      separator: "-"
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      use_pygments: true
+      pygments_lang_class: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
+  - toc:
+      permalink: true
