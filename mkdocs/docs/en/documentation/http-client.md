@@ -40,57 +40,64 @@ The `HttpClient` interface implementation is `AsyncHttpClient` and is available 
 ### Configuration
 
 The configuration is responsible for the general settings of the HTTP client implementation.
-An example of the configuration described in the `HttpClientConfig` class:
+An example of the configuration described in `AsyncHttpClientConfig` and `HttpClientConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpClient {
-        connectTimeout = "5s" //(1)!
-        readTimeout = "2m" //(2)!
-        useEnvProxy = false //(3)!
+        async {
+            followRedirects = true //(1)!
+        }
+        connectTimeout = "5s" //(2)!
+        readTimeout = "2m" //(3)!
+        useEnvProxy = false //(4)!
         proxy {
-            host = "localhost"  //(4)!
-            port = 8090  //(5)!
-            user = "user"  //(6)!
-            password = "password"  //(7)!
-            nonProxyHosts = [ "host1", "host2" ]  //(8)!
+            host = "localhost"  //(5)!
+            port = 8090  //(6)!
+            user = "user"  //(7)!
+            password = "password"  //(8)!
+            nonProxyHosts = [ "host1", "host2" ]  //(9)!
         }
     }
     ```
 
-    1. Maximum time to establish a connection
-    2. Maximum time to read a response
-    3. Whether to use environment variables to configure the proxy
-    4. Proxy address
-    5. Proxy port
-    6. User for the proxy
-    7. Password for the proxy
-    8. Hosts that should be excluded from proxying
+    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
+    2. Maximum time to establish a connection
+    3. Maximum time to read a response
+    4. Whether to use environment variables to configure the proxy
+    5. Proxy address
+    6. Proxy port
+    7. User for the proxy
+    8. Password for the proxy
+    9. Hosts that should be excluded from proxying
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
-      connectTimeout: "5s" #(1)!
-      readTimeout: "2m" #(2)!
-      useEnvProxy: false #(3)!
+      async:
+        followRedirects: true #(1)!
+      connectTimeout: "5s" #(2)!
+      readTimeout: "2m" #(3)!
+      useEnvProxy: false #(4)!
       proxy:
-        host: "localhost"  #(4)!
-        port: 8090  #(5)!
-        user: "user"  #(6)!
-        password: "password"  #(7)!
-        nonProxyHosts: [ "host1", "host2" ]  #(8)!
+        host: "localhost"  #(5)!
+        port: 8090  #(6)!
+        user: "user"  #(7)!
+        password: "password"  #(8)!
+        nonProxyHosts: [ "host1", "host2" ]  #(9)!
     ```
 
-    1. Maximum time to establish a connection
-    2. Maximum time to read a response
-    3. Whether to use environment variables to configure the proxy
-    4. Proxy address
-    5. Proxy port
-    6. User for the proxy
-    7. Password for the proxy
-    8. Hosts that should be excluded from proxying
+    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
+    2. Maximum time to establish a connection
+    3. Maximum time to read a response
+    4. Whether to use environment variables to configure the proxy
+    5. Proxy address
+    6. Proxy port
+    7. User for the proxy
+    8. Password for the proxy
+    9. Hosts that should be excluded from proxying
 
 ## OkHttp
 
@@ -138,29 +145,31 @@ Example of configuration described in `OkHttpClientConfig` and `HttpClientConfig
     httpClient {
         ok {
             followRedirects = true //(1)!
+            httpVersion = "HTTP_1_1" //(2)!
         }
-        connectTimeout = "5s" //(2)!
-        readTimeout = "2m" //(3)!
-        useEnvProxy = false //(4)!
+        connectTimeout = "5s" //(3)!
+        readTimeout = "2m" //(4)!
+        useEnvProxy = false //(5)!
         proxy {
-            host = "localhost" //(5)!
-            port = 8090 //(6)!
-            user = "user" //(7)!
-            password = "password" //(8)!
-            nonProxyHosts = [ "host1", "host2" ] //(9)!
+            host = "localhost" //(6)!
+            port = 8090 //(7)!
+            user = "user" //(8)!
+            password = "password" //(9)!
+            nonProxyHosts = [ "host1", "host2" ] //(10)!
         }
     }
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    2. Maximum HTTP protocol version used (available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3`)
+    3. Maximum time to establish a connection
+    4. Maximum time to read a response
+    5. Whether to use environment variables to configure the proxy
+    6. Proxy address
+    7. Proxy port
+    8. User for the proxy
+    9. Password for the proxy
+    10. Hosts that should be excluded from proxying
 
 === ":simple-yaml: `YAML`"
 
@@ -168,26 +177,28 @@ Example of configuration described in `OkHttpClientConfig` and `HttpClientConfig
     httpClient:
       ok:
         followRedirects: true #(1)!
-      connectTimeout: "5s" #(2)!
-      readTimeout: "2m" #(3)!
-      useEnvProxy: false #(4)!
+        httpVersion: "HTTP_1_1" #(2)!
+      connectTimeout: "5s" #(3)!
+      readTimeout: "2m" #(4)!
+      useEnvProxy: false #(5)!
       proxy:
-        host: "localhost" #(5)!
-        port: 8090  #(6)!
-        user: "user"  #(7)!
-        password: "password" #(8)!
-        nonProxyHosts: [ "host1", "host2" ] #(9)!
+        host: "localhost" #(6)!
+        port: 8090  #(7)!
+        user: "user"  #(8)!
+        password: "password" #(9)!
+        nonProxyHosts: [ "host1", "host2" ] #(10)!
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    2. Maximum HTTP protocol version used (available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3`)
+    3. Maximum time to establish a connection
+    4. Maximum time to read a response
+    5. Whether to use environment variables to configure the proxy
+    6. Proxy address
+    7. Proxy port
+    8. User for the proxy
+    9. Password for the proxy
+    10. Hosts that should be excluded from proxying
 
 ## Native client
 
@@ -251,7 +262,7 @@ An example of the configuration described in the `JdkHttpClientConfig` and `Http
     ```
 
     1. Number of threads for HTTP client
-    2. Which version of HTTP protocol to use (`HTTP_2` / `HTTP_1_1` available)
+    2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
     3. Maximum time to establish a connection
     4. Whether to use environment variables to configure the proxy
     5. Proxy address
@@ -278,7 +289,7 @@ An example of the configuration described in the `JdkHttpClientConfig` and `Http
     ```
 
     1. Number of threads for HTTP client
-    2. Which version of HTTP protocol to use (`HTTP_2` / `HTTP_1_1` available)
+    2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
     3. Maximum time to establish a connection
     4. Whether to use environment variables to configure the proxy
     5. Proxy address

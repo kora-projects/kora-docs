@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.6")
         }
     }
     ```
@@ -49,7 +49,7 @@
                 <dependency>
                     <groupId>ru.tinkoff.kora</groupId>
                     <artifactId>openapi-generator</artifactId>
-                    <version>1.0.4</version>
+                    <version>1.0.6</version>
                 </dependency>
             </dependencies>
         </plugin>
@@ -64,7 +64,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.6")
         }
     }
     ```
@@ -92,10 +92,11 @@
 
 === ":fontawesome-brands-java: `Java`"
 
-    Доступные Kora параметры плагина:
+    Доступные Kora параметры плагина (`configOptions`):
 
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
+    - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
     - `primaryAuth` - указать какой механизм авторизации использовать как основной
     - `securityConfigPrefix` - префикс конфигурации безопастности
     - `mode` в каком режиме работать генератору, доступные значения:
@@ -132,10 +133,11 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Доступные Kora параметры плагина:
+    Доступные Kora параметры плагина (`configOptions`):
 
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
+    - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
     - `primaryAuth` - указать какой механизм авторизации использовать как основной
     - `securityConfigPrefix` - префикс конфигурации безопастности
     - `mode` в каком режиме работать генератору, доступные значения:
@@ -171,6 +173,97 @@
 
 После создания HTTP-клиент будет доступен для внедрения как зависимость по созданному интерфейсу.
 
+### Перехватчики
+
+Есть возможность на созданные клиенты с `@HttpClient` аннотацией поставить [перехватчики](http-client.md#_29).
+
+Значение - Json объект, ключом которого выступает тег апи из контракта, а значением объект с полями `type` и `tag`, 
+можно указывать как оба поля одновременно, так и опционально одно из них на выбор где:
+
+- `type` - класс реализации конкретного перехватчика
+- `tag` - теги перехватчика (можно указать как массив строк)
+
+Для этого необходимо установить параметр `configOptions.interceptors`:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-client",
+            interceptors: """
+                    {
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-client",
+            "interceptors" to """{
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        )
+    }
+    ```
+
 ### Теги
 
 Есть возможность на созданные клиенты с `@HttpClient` аннотацией поставить параметры  `httpClientTag` и `telemetryTag`.
@@ -198,12 +291,12 @@
             tags: """
                   {
                     "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
-                      "httpClientTag": "some.tag.Common.class",
-                      "telemetryTag": "some.tag.Common.class"
+                      "httpClientTag": "some.tag.Common",
+                      "telemetryTag": "some.tag.Common"
                     },
                     "instrument": { // применится для instrument
-                      "httpClientTag": "some.tag.Instrument.class",
-                      "telemetryTag": "some.tag.Instrument.class"
+                      "httpClientTag": "some.tag.Instrument",
+                      "telemetryTag": "some.tag.Instrument"
                     }
                   }
                   """
@@ -230,12 +323,12 @@
             "clientConfigPrefix" to "httpClient.myclient",
             "tags" to """{
                             "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
-                              "httpClientTag": "some.tag.Common.class",
-                              "telemetryTag": "some.tag.Common.class"
+                              "httpClientTag": "some.tag.Common",
+                              "telemetryTag": "some.tag.Common"
                             },
                             "instrument": { // применится для instrument
-                              "httpClientTag": "some.tag.Instrument.class",
-                              "telemetryTag": "some.tag.Instrument.class"
+                              "httpClientTag": "some.tag.Instrument",
+                              "telemetryTag": "some.tag.Instrument"
                             }
                          }
                          """
@@ -249,10 +342,11 @@
 
 === ":fontawesome-brands-java: `Java`"
 
-    Доступные Kora параметры плагина:
+    Доступные Kora параметры плагина (`configOptions`):
 
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -285,10 +379,11 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Доступные Kora параметры плагина:
+    Доступные Kora параметры плагина (`configOptions`):
 
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера
@@ -369,6 +464,97 @@
     ```
 
     1. Включение валидации на стороне контроллера HTTP сервера
+
+### Перехватчики
+
+Есть возможность на созданные контроллеры с `@HttpController` аннотацией поставить [перехватчики](http-server.md#_20).
+
+Значение - Json объект, ключом которого выступает тег апи из контракта, а значением объект с полями `type` и `tag`,
+можно указывать как оба поля одновременно, так и опционально одно из них на выбор где:
+
+- `type` - класс реализации конкретного перехватчика
+- `tag` - теги перехватчика (можно указать как массив строк)
+
+Для этого необходимо установить параметр `configOptions.interceptors`:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-server",
+            interceptors: """
+                    {
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-server",
+            "interceptors" to """{
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        )
+    }
+    ```
 
 ## Рекомендации
 
