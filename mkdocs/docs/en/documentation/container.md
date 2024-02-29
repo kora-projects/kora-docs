@@ -3,7 +3,7 @@ injecting and then parallel initialization.
 
 The work of the container in Kora is divided into two parts: what is done at runtime and what is done at compile time.
 
-## At compile time
+## Compile Time
 
 At compile time, components are searched building the dependency container of the entire application.
 This allows validation of the dependency container at compile time, before the application actually starts.
@@ -459,32 +459,33 @@ This is a token type that extends `List` and can be given to constructors that e
 
 Sometimes there is a need to provide different instances of the same type to different components. For this purpose, they can be differentiated by tags.
 In order to do this, there is an `@Tag` annotation that takes a tag class as input.
+A mapping linkage is expected, where a component is registered with a particular tag and at the injection point it is declared with exactly the same tag.
 
 It is the class that is used, not the string literal, because it is easier to navigate through the code and easier to refactor.
 
-For example, this is how you can scatter different instances of a class across different components:
+This is how you can inject different instances of a class with a common interface to different injection points:
 
 === ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
 
-        @Tag(ServiceB.class)
-        default ServiceA serviceAForB() {
-            return new ServiceA();
+        @Tag(MyTag1.class)
+        default SomeService someService1() {
+            return new SomeService1();
         }
 
-        @Tag(ServiceC.class)
-        default ServiceA serviceAForC() {
-            return new ServiceA();
+        @Tag(MyTag2.class)
+        default SomeService someService2() {
+            return new SomeService2();
         }
 
-        default ServiceB serviceB(@Tag(ServiceB.class) ServiceA serviceA) {
-            return new ServiceB(serviceA);
+        default ServiceC serviceA(@Tag(MyTag1.class) SomeService service) {
+            return new ServiceA(service);
         }
 
-        default ServiceC serviceC(@Tag(ServiceC.class) ServiceA serviceA) {
-            return new ServiceC(serviceA);
+        default ServiceD serviceB(@Tag(MyTag2.class) SomeService service) {
+            return new ServiceB(service);
         }
     }
     ```
@@ -494,20 +495,68 @@ For example, this is how you can scatter different instances of a class across d
     ```kotlin
     interface SomeModule {
 
-        @Tag(ServiceB::class)
-        fun serviceAForB(): ServiceA = ServiceA()
+        @Tag(MyTag1::class)
+        fun someService1(): SomeService = SomeService1()
 
-        @Tag(ServiceC::class)
-        fun serviceAForC(): ServiceA = ServiceA()
+        @Tag(MyTag2::class)
+        fun someService1(): SomeService = SomeService2()
 
-        fun serviceB(@Tag(ServiceB::class) serviceA: ServiceA): ServiceB = ServiceB(serviceA)
+        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA = ServiceA(service)
 
-        fun serviceC(@Tag(ServiceC::class) serviceA: ServiceA?): ServiceC = ServiceC(serviceA)
+        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB = ServiceB(service)
     }
     ```
 
-Tags above the method tell you what tag to set for the component, and tags on the parameters tell you what tag to find in the container.
-Tags also work on the constructor in conjunction with `Component` or final classes.
+Tags above the method tell you which tag to register the component with, and tags at injection points tell you which tagged component to expect.
+Tags also work on constructor parameters, in conjunction with `@Component` or final classes.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(MyTag1.class)
+    class SomeService1 implements SomeService {
+
+    }
+
+    @Tag(MyTag2.class)
+    final class SomeService2 implements SomeService {
+
+    }
+
+    final class ServiceA {
+
+        private final SomeService service;
+
+        public ServiceA(@Tag(MyTag1.class) SomeService service) {
+            this.service = service;
+        }
+    }
+
+    final class ServiceB {
+
+        private final SomeService service;
+
+        public ServiceB(@Tag(MyTag2.class) SomeService service) {
+            this.service = service;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface SomeService
+
+    @Tag(MyTag1::class)
+    class SomeService1 : SomeService
+
+    @Tag(MyTag2::class)
+    class SomeService2 : SomeService
+
+    class ServiceA(private val service: @Tag(MyTag1::class) SomeService)
+
+    class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
+    ```
 
 #### Tagged list
 
@@ -587,7 +636,7 @@ To get a list of all components with and without a tag, you need to use a specia
     }
     ```
 
-## At runtime
+## Runtime
 
 The dependency container is initialized as parallel as possible within the dependency graph that has been constructed.
 

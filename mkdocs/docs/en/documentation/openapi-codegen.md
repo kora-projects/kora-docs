@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.6")
         }
     }
     ```
@@ -49,7 +49,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
                 <dependency>
                     <groupId>ru.tinkoff.kora</groupId>
                     <artifactId>openapi-generator</artifactId>
-                    <version>1.0.4</version>
+                    <version>1.0.6</version>
                 </dependency>
             </dependencies>
         </plugin>
@@ -64,7 +64,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.0.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.0.6")
         }
     }
     ```
@@ -96,6 +96,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
 
     - `clientConfigPrefix` - configuration prefix of created HTTP clients
     - `tags` - possibility to put additional tags on created HTTP-clients
+    - `interceptors` - ability to specify interceptors for HTTP clients
     - `primaryAuth` - specify which authorization mechanism to use as the primary one
     - `securityConfigPrefix` - security configuration prefix
     - `mode` in which mode the generator should operate, available values:
@@ -136,6 +137,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
 
     - `clientConfigPrefix` - configuration prefix of created HTTP clients
     - `tags` - possibility to put additional tags on created HTTP-clients
+    - `interceptors` - ability to specify interceptors for HTTP clients
     - `primaryAuth` - specify which authorization mechanism to use as the primary one
     - `securityConfigPrefix` - security configuration prefix
     - `mode` in which mode the generator should operate, available values:
@@ -170,6 +172,97 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     7. Prefix path to client configuration file
 
 Once created, the HTTP client will be available for deployment as a dependency on the created interface.
+
+### Interceptors
+
+It is possible to put [interceptors](http-client.md#interceptors) on created clients with `@HttpClient` annotation.
+
+The value is a Json object whose key is the api tag from the contract, and the value is an object with `type` and `tag` fields,
+it is possible to specify both fields at the same time, or optionally one of them:
+
+- `type` - the implementation class of a particular interceptor
+- `tag` - tags of the interceptor (can be specified as an array of strings).
+
+In order to do this, set the `configOptions.interceptors` parameter:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-client",
+            interceptors: """
+                    {
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-client",
+            "interceptors" to """{
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        )
+    }
+    ```
 
 ### Tags
 
@@ -253,6 +346,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
 
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
+    - `interceptors` - ability to specify interceptors for HTTP controllers
     - `mode` in which mode the generator should operate, available values:
         * `java-server` - create a synchronous server
         * `java-async-server` - create a [CompletionStage](https://www.baeldung.com/java-completablefuture) server
@@ -289,6 +383,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
 
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
+    - `interceptors` - ability to specify interceptors for HTTP controllers
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-server` - create synchronous server
         * `kotlin-suspend-server` - create suspend server
@@ -369,3 +464,105 @@ In order to generate models and controllers with annotations from the [validatio
     ```
 
     1. Enabling validation on the HTTP server controller side
+
+### Interceptors
+
+It is possible to put [interceptors](http-server.md#interceptors) on created controllers with `@HttpController` annotation.
+
+The value is a Json object whose key is the api tag from the contract, and the value is an object with `type` and `tag` fields,
+it is possible to specify both fields at the same time, or optionally one of them:
+
+- `type` - the implementation class of a particular interceptor
+- `tag` - tags of the interceptor (can be specified as an array of strings).
+
+In order to do this, set the `configOptions.interceptors` parameter:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = [
+            DISABLE_ALL: "true"
+        ]
+        configOptions = [
+            mode: "java-client",
+            interceptors: """
+                    {
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    openApiGenerate {
+        generatorName = "kora"
+        group = "openapi tools"
+        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        apiPackage = "ru.tinkoff.kora.example.openapi.api"
+        modelPackage = "ru.tinkoff.kora.example.openapi.model"
+        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        openapiNormalizer = mapOf(
+            "DISABLE_ALL" to "true"
+        )
+        configOptions = mapOf(
+            "mode" to "kotlin-client",
+            "interceptors" to """{
+                      "*": [
+                        {
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ],
+                      "pet": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor"
+                        }
+                      ],
+                      "shop": [
+                        {
+                          "type": "ru.tinkoff.example.MyInterceptor",
+                          "tag": "ru.tinkoff.example.MyTag"
+                        }
+                      ]
+                    }
+                    """
+        )
+    }
+    ```
+
+## Recommendations
+
+????+ warning "Advice"
+
+    In case you have something that is not created by the plugin, or the behavior is different from what you want or other versions,
+    you should carefully check the [plugin configuration](#configuration) settings and examine them, 
+    as they may affect the results of how classes are created.
+
+    Starting with `7.0.0` version of the plugin, the `SIMPLIFY_ONEOF_ANYOF` rule enabled by default at the `openapiNormalizer` parameter 
+    may lead to some not obvious generator results.
