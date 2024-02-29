@@ -5,6 +5,26 @@ hide:
   - navigation
 ---
 
+### 1.0.6
+
+Fixed:
+
+- Fixed support for HTTP server/client metrics in deprecated OpenTelemetry standards
+
+### 1.0.5
+
+Added:
+
+- Support improved for all [HTTP](../documentation/http-client.md) client configurations
+- Partition label support in `messaging.kafka.consumer.lag` metric for KafkaProducer
+- Support for HTTP server/client metrics and telemetry in new OpenTelemetry standards
+- Support for interceptors for HTTP client/server in [OpenAPI generator](../documentation/openapi-codegen.md) using the `interceptors` option
+- Support for `short` type for databases
+
+Fixed:
+
+- Fixed support for byte contracts when creating via [OpenAPI generator](../documentation/openapi-codegen.md)
+
 ### 1.0.4
 
 Added:

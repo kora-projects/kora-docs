@@ -460,33 +460,34 @@ public interface All<T> extends List<T> {}
 ### Теги
 
 Иногда есть потребность предоставить разные экземпляры одного и того же типа в разные компоненты. Для этого их можно разграничить по тегам. 
-Для этого есть аннотация `@Tag`, которая принимает на вход класс тега.
+Для этого есть аннотация `@Tag`, которая принимает на вход класс тега. 
+Ожидается связка, где компонент зарегистрирован с определенным тегом и в точке внедрения он объявлен с точно таким же тегом.
 
 Используется именно класс, а не строковый литерал, потому что это проще для навигации по коду и проще для рефакторинга.
 
-Например, вот так можно раскидать разные экземпляры класса по разным компонентам:
+Например, вот так можно внедрить разные экземпляры класса с общим интерфейсом по разным точкам внедрения:
 
 === ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
 
-        @Tag(ServiceB.class)
-        default ServiceA serviceAForB() {
-            return new ServiceA();
+        @Tag(MyTag1.class)
+        default SomeService someService1() {
+            return new SomeService1();
         }
 
-        @Tag(ServiceC.class)
-        default ServiceA serviceAForC() {
-            return new ServiceA();
+        @Tag(MyTag2.class)
+        default SomeService someService2() {
+            return new SomeService2();
         }
 
-        default ServiceB serviceB(@Tag(ServiceB.class) ServiceA serviceA) {
-            return new ServiceB(serviceA);
+        default ServiceC serviceA(@Tag(MyTag1.class) SomeService service) {
+            return new ServiceA(service);
         }
 
-        default ServiceC serviceC(@Tag(ServiceC.class) ServiceA serviceA) {
-            return new ServiceC(serviceA);
+        default ServiceD serviceB(@Tag(MyTag2.class) SomeService service) {
+            return new ServiceB(service);
         }
     }
     ```
@@ -496,20 +497,68 @@ public interface All<T> extends List<T> {}
     ```kotlin
     interface SomeModule {
 
-        @Tag(ServiceB::class)
-        fun serviceAForB(): ServiceA = ServiceA()
+        @Tag(MyTag1::class)
+        fun someService1(): SomeService = SomeService1()
 
-        @Tag(ServiceC::class)
-        fun serviceAForC(): ServiceA = ServiceA()
+        @Tag(MyTag2::class)
+        fun someService1(): SomeService = SomeService2()
 
-        fun serviceB(@Tag(ServiceB::class) serviceA: ServiceA): ServiceB = ServiceB(serviceA)
+        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA = ServiceA(service)
 
-        fun serviceC(@Tag(ServiceC::class) serviceA: ServiceA?): ServiceC = ServiceC(serviceA)
+        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB = ServiceB(service)
     }
     ```
 
-Теги над методом говорят какой нужно установить тег для компонента, а теги на параметрах говорят какой тег нужно найти в контейнере.
-Также теги работают на конструкторе в связке с `Component` или финальными классами. 
+Теги над методом говорят какой с каким тегом надо зарегистрировать компонент, а теги в точках внедрения говорят с каким тегом ожидается компонент.
+Также теги работают на параметрах конструктора, в связке с `@Component` или финальными классами. 
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(MyTag1.class)
+    class SomeService1 implements SomeService {
+
+    }
+
+    @Tag(MyTag2.class)
+    final class SomeService2 implements SomeService {
+
+    }
+
+    final class ServiceA {
+
+        private final SomeService service;
+
+        public ServiceA(@Tag(MyTag1.class) SomeService service) {
+            this.service = service;
+        }
+    }
+
+    final class ServiceB {
+
+        private final SomeService service;
+
+        public ServiceB(@Tag(MyTag2.class) SomeService service) {
+            this.service = service;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface SomeService
+
+    @Tag(MyTag1::class)
+    class SomeService1 : SomeService
+
+    @Tag(MyTag2::class)
+    class SomeService2 : SomeService
+
+    class ServiceA(private val service: @Tag(MyTag1::class) SomeService)
+
+    class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
+    ```
 
 #### Тег списка
 
