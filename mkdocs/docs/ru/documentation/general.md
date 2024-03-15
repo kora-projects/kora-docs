@@ -73,8 +73,8 @@ Kafka продюсеров, репозиториев баз данных и та
     Конфигурация в `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.21")
-        id("com.google.devtools.ksp") version ("1.9.21-1.0.15")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
         id("application")
     }
 
@@ -135,8 +135,8 @@ Kafka продюсеров, репозиториев баз данных и та
     Ниже будет представлена минимально необходимая конфигурация приложения `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.21")
-        id("com.google.devtools.ksp") version ("1.9.21-1.0.15")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
         id("application")
     }
 

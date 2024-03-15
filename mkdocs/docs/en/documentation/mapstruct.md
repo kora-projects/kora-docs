@@ -16,14 +16,20 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
     [MapStruct](https://mapstruct.org/) in Kotlin works with [kapt](https://kotlinlang.org/docs/kapt.html), so you are required to configure kapt plugin `build.gradle.kts`:
     ``groovy
     plugins {
-        kotlin("kapt") version ("1.9.21")
+        kotlin("kapt") version ("1.9.10")
     }
     ```
+
+    The latest working version for `kapt` + `ksp` is `1.9.10-1.0.13`, in later versions of KSP the compatibility between the two tools is broken at the Gradle Plugin level.
 
     You need to allow the output of [kapt](https://kotlinlang.org/docs/kapt.html) to be used as input for [KSP](https://kotlinlang.org/docs/ksp-overview.html) `build.gradle.kts`:
     ```groovy
     ksp {
         allowSourcesFromOtherPlugins = true
+    }
+    tasks.withType<KspTask> {
+        dependsOn(tasks.named("kaptKotlin").get())
+        tasks.named("kaptGenerateStubsKotlin").get()
     }
     ```
 

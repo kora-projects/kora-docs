@@ -65,8 +65,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.21")
-        id("com.google.devtools.ksp") version ("1.9.21-1.0.15")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
         id("application")
     }
 
