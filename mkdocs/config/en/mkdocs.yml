@@ -6,7 +6,7 @@ site_dir: "../../generated/en"
 site_name: Kora
 site_url: https://kora-projects.github.io/kora-docs/kora-docs/
 site_description: Kora framework documentation
-copyright: Тинькофф
+copyright: Tinkoff
 nav:
   - Examples:
       - Repository examples: examples/kora-examples.md
