@@ -148,7 +148,7 @@ below is an example for the configuration at path `path.to.config`:
     1. Specifies the topics to which Consumer will subscribe (or specify `topicsPattern`)
     2. Specifies the pattern of topics to which the Consumer will subscribe (or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
-    4. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
+    4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method

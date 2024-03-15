@@ -5,6 +5,22 @@ hide:
   - navigation
 ---
 
+### 1.0.7
+
+Added:
+
+- Support for `@Nested` tests 
+- Support for Cache AOP `CompletionStage<Optional<T>>`
+- Support for Graph `AutoClosable` release stage
+- Java Annotation Processor Logging improved
+
+Fixed:
+
+- Fixed OpenAPI Non Json `Content-Type` mapper generating
+- Fixed OpenAPI `java-async-server` & `java-reactive-server` mode option
+- Fixed Undertow `exchange already complete` error
+- Fixed Cache Redis AOP for `Mono` contracts
+
 ### 1.0.6
 
 Fixed:

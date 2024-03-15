@@ -73,8 +73,8 @@ Kafka producers, database repositories and so on, but gives a huge performance a
     Configuration in `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.21")
-        id("com.google.devtools.ksp") version ("1.9.21-1.0.15")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
         id("application")
     }
 
@@ -135,8 +135,8 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     The minimum required configuration of the application will be presented below `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.21")
-        id("com.google.devtools.ksp") version ("1.9.21-1.0.15")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
         id("application")
     }
 

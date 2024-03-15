@@ -90,7 +90,7 @@
 Для использования компонентов в рамках теста предлагается использовать аннотацию `@TestComponent` 
 которая позволяет внедрять компоненты в аргументы метода и/или поля тестового класса.
 
-Все компоненты перечисленные в тестовых полях и/или аргументах метода с аннотацией `@TestComponent` будут внедрены как зависимости в рамках теста
+Все компоненты перечисленные в тестовых полях и/или аргументах метода/конструктора с аннотацией `@TestComponent` будут внедрены как зависимости в рамках теста
 и весь контейнер зависимостей будет ограничен именно этими компонентами и их зависимостями в рамках теста.
 
 Пример теста, где компоненты внедряются в поля:
@@ -114,7 +114,44 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
+    class SomeTests {
+
+        @TestComponent 
+        lateinit var component1: Supplier<String>
+
+        @Test
+        fun example() {
+            assertEquals("1", component1.get())
+        }
+    }
+    ```
+
+Пример теста, где компоненты внедряются в конструктор:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class SomeTests {
+
+        private final Supplier<String> component1;
+
+        SomeTests(@TestComponent Supplier<String> component1) {
+            this.component1 = component1;
+        }
+
+        @Test
+        void example() {
+            assertEquals("1", component1.get());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
     class SomeTests(@TestComponent val component1: Supplier<String>) {
 
         @Test
@@ -142,7 +179,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -172,7 +209,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -290,7 +327,7 @@
     Пример теста с использованием `@MockK` компонента и внедрением заглушки в поле:
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests(@MockK @TestComponent val component1: Supplier<String>) {
 
         @BeforeEach
@@ -314,7 +351,7 @@
     Пример теста с использованием `@SpyK` компонента и внедрением шпиона в аргумент метода:
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -333,7 +370,7 @@
     Пример теста с использованием `@SpyK` компонента шпиона:
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @field:SpyK
@@ -354,11 +391,12 @@
 Для изменений/добавления конфига в рамках тестов предполагается чтобы тестовый класс реализовал интерфейс `KoraAppTestConfigModifier`, 
 где требуется реализовать метод предоставления модификации конфига `KoraConfigModification`.
 
+Запрещено использовать `KoraAppTestConfigModifier` и внедрение в конструктор так как в таком случае нельзя получить конфигуацию до внедрения.
+
 ### Переменные окружения
 
 В случае если в рамках теста надо использовать [конфигурацию по умолчанию](config.md#_3) которая использовалась бы во время работы приложения,
 и требуется лишь подставить переменные окружения то можно использовать механизм `SystemProperty` в `KoraConfigModification`:
-
 
 ===! ":material-code-json: `Hocon`"
 
@@ -494,6 +532,8 @@
 
 Для добавления/замены компонент в рамках контейнера приложения без аннотаций требуется реализовать интерфейс `KoraAppTestGraphModifier` и 
 реализовать метод предоставления модификатора контейнера.
+
+Запрещено использовать `KoraAppTestGraphModifier` и внедрение в конструктор так как в таком случае нельзя получить граф до внедрения.
 
 ### Добавление
 

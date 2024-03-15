@@ -90,7 +90,7 @@ Parameters of the `@KoraAppTest` annotation:
 In order to use components within a test, it is suggested to use the `@TestComponent` annotation
 which allows injecting component dependencies into arguments and/or fields of the test class.
 
-All components listed in the test fields and/or method arguments annotated `@TestComponent` will be injected as dependencies within the test.
+All components listed in the test fields and/or method/constructor arguments annotated `@TestComponent` will be injected as dependencies within the test.
 Entire dependency container will be limited to just those components and their dependencies within the test.
 
 An example of a test where components are injected in fields:
@@ -110,11 +110,47 @@ An example of a test where components are injected in fields:
         }
     }
     ```
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class SomeTests {
+
+        @TestComponent 
+        lateinit var component1: Supplier<String>
+
+        @Test
+        fun example() {
+            assertEquals("1", component1.get())
+        }
+    }
+    ```
+
+Example of a test where components are injected in a constructor:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class SomeTests {
+
+        private final Supplier<String> component1;
+
+        SomeTests(@TestComponent Supplier<String> component1) {
+            this.component1 = component1;
+        }
+
+        @Test
+        void example() {
+            assertEquals("1", component1.get());
+        }
+    }
+    ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applicationss::class)
+    @KoraAppTest(Application::class)
     class SomeTests(@TestComponent val component1: Supplier<String>) {
 
         @Test
@@ -124,7 +160,7 @@ An example of a test where components are injected in fields:
     }
     ```
 
-An example of a test where components are injected in method arguments:
+Example of a test where components are injected in method arguments:
 
 === ":fontawesome-brands-java: `Java`"
 
@@ -142,7 +178,7 @@ An example of a test where components are injected in method arguments:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applicationss::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -172,7 +208,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(Applicationss::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -290,7 +326,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     Example of a test using `@MockK` component and injecting a mock:
 
     ```kotlin
-    @KoraAppTest(Applicationss::class)
+    @KoraAppTest(Application::class)
     class SomeTests(@MockK @TestComponent val component1: Supplier<String>) {
 
         @BeforeEach
@@ -314,7 +350,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     Example of a test using `@SpyK` component and embedding the spy in a method argument:
 
     ```kotlin
-    @KoraAppTest(Applicationss::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @Test
@@ -333,7 +369,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     An example of a test using the `@SpyK` spy component:
 
     ```kotlin
-    @KoraAppTest(Applications::class)
+    @KoraAppTest(Application::class)
     class SomeTests {
 
         @field:SpyK
@@ -353,6 +389,8 @@ By default, the basic configuration will be used, as in the case of running a re
 
 For configuration changes/additions within tests, it is assumed that the test class implements the `KoraAppTestConfigModifier` interface,
 where it is required to implement the `KoraConfigModification` method of providing config modification.
+
+It is forbidden to use `KoraAppTestConfigModifier` and implementation in the constructor, because in this case it is impossible to get the configuration before implementation.
 
 #### Environment variables
 
@@ -493,6 +531,8 @@ in this case only this configuration will be used without any configuration file
 
 In order to add/replace/mock components within an unannotated application dependency container requires implementing the `KoraAppTestGraphModifier` interface and
 Implement a method to provide a dependency container modifier.
+
+It is forbidden to use `KoraAppTestGraphModifier` and embedding in the constructor because then you cannot get the graph before embedding.
 
 ### Adding
 

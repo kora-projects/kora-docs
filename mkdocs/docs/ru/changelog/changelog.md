@@ -5,6 +5,22 @@ hide:
   - navigation
 ---
 
+### 1.0.7
+
+Добавлено:
+
+- Поддержка `@Nested` тестов
+- Поддержка завершения Cache AOP `CompletionStage<Optional>`
+- Поддержка освобождения Graph `AutoClosable` на стадии `release`
+- Улучшено логирование процессора аннотаций Java
+
+Исправлено:
+
+- Исправлено генерирование OpenAPI не Json `Content-Type` мапперов
+- Исправлена опция OpenAPI для `java-async-server` & `java-reactive-server`
+- Исправлена ошибка Undertow `exchange already complete`
+- Исправлена ошибка кеша Redis AOP для контрактов `Mono`
+
 ### 1.0.6
 
 Исправлено:
