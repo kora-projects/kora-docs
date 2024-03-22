@@ -40,7 +40,7 @@ Parameters described in the `GrpcServerConfig` class:
 
     ```javascript
     grpcServer {
-        port = 9090 //(1)!
+        port = 8090 //(1)!
         telemetry {
             logging {
                 enabled = true //(2)!
@@ -66,7 +66,7 @@ Parameters described in the `GrpcServerConfig` class:
 
     ```yaml
     grpcServer:
-      port: 9090 #(1)!
+      port: 8090 #(1)!
       telemetry:
         logging:
           enabled: true #(2)!
