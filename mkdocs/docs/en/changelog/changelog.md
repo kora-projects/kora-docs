@@ -5,12 +5,26 @@ hide:
   - navigation
 ---
 
+### 1.0.8
+
+Added:
+
+- Added database metrics error tag
+- Added Cassandra driver metrics
+- Added [Retry](../documentation/resilient.md#retry) contract for `CompletableStage` and AOP optimized for `CompletableStage`
+
+Fixed:
+
+- Fixed OpenAPI Generation codegen support for Java 21
+- Fixed missing `Span.recordException` calls in telemetry
+- Fixed HTTP Client telemetry with single packet responses as `InputStream`
+
 ### 1.0.7
 
 Added:
 
 - Support for `@Nested` tests 
-- Support for Cache AOP `CompletionStage<Optional<T>>`
+- Support for Cache AOP `CompletionStage<Optional<T>>` signature
 - Support for Graph `AutoClosable` release stage
 - Java Annotation Processor Logging improved
 

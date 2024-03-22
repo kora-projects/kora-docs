@@ -41,7 +41,7 @@
     ```javascript
     grpcClient {
         UserService {
-            url = "grpc://localhost:9090" //(1)!
+            url = "grpc://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
             telemetry {
                 logging {
@@ -71,7 +71,7 @@
     ```yaml
     grpcClient:
       UserService:
-        url: "grpc://localhost:9090" //(1)!
+        url: "grpc://localhost:8090" //(1)!
         timeout: "10s" //(2)!
         telemetry:
           logging:
