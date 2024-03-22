@@ -30,7 +30,7 @@ hide:
 
 Исправлено:
 
-- Исправлено генерирование OpenAPI не Json `Content-Type` мапперов
+- Исправлено генерирование OpenAPI не Json `Content-Type` преобразователей
 - Исправлена опция OpenAPI для `java-async-server` & `java-reactive-server`
 - Исправлена ошибка Undertow `exchange already complete`
 - Исправлена ошибка кеша Redis AOP для контрактов `Mono`
