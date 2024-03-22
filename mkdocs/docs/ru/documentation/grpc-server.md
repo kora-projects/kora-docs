@@ -40,7 +40,7 @@
 
     ```javascript
     grpcServer {
-        port = 9090
+        port = 8090
         telemetry {
             logging {
                 enabled = true //(1)!
@@ -65,7 +65,7 @@
 
     ```yaml
     grpcServer:
-      port: 9090
+      port: 8090
       telemetry:
         logging:
           enabled: true #(1)!

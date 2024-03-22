@@ -5,18 +5,32 @@ hide:
   - navigation
 ---
 
+### 1.0.8
+
+Добавлено:
+
+- Добавлен тег ошибок метрики баз данных
+- Добавлены метрики драйвера Cassandra
+- Добавлен контракт для [повторителя](../documentation/resilient.md#_7) для `CompletableStage` и оптимизирован аспект для `CompletableStage`
+
+Исправлено:
+
+- Исправлена поддержка OpenAPI Generation кодогенерации для Java 21
+- Исправлены недостающие вызовы `Span.recordException` в телеметрии
+- Исправлена телеметрия HTTP-клиента с одно пакетными ответами в качестве `InputStream`
+
 ### 1.0.7
 
 Добавлено:
 
 - Поддержка `@Nested` тестов
-- Поддержка завершения Cache AOP `CompletionStage<Optional>`
+- Поддержка сигнатуры `CompletionStage<Optional<T>>` для кеша AOP
 - Поддержка освобождения Graph `AutoClosable` на стадии `release`
 - Улучшено логирование процессора аннотаций Java
 
 Исправлено:
 
-- Исправлено генерирование OpenAPI не Json `Content-Type` мапперов
+- Исправлено генерирование OpenAPI не Json `Content-Type` преобразователей
 - Исправлена опция OpenAPI для `java-async-server` & `java-reactive-server`
 - Исправлена ошибка Undertow `exchange already complete`
 - Исправлена ошибка кеша Redis AOP для контрактов `Mono`
