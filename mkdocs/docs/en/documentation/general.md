@@ -116,7 +116,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.0.6")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.0.8")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -148,7 +148,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.0.6"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.0.8"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
 
