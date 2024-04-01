@@ -5,6 +5,16 @@ hide:
   - navigation
 ---
 
+### 1.0.9
+
+Added:
+
+- Added [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) support
+
+Fixed:
+
+- Fixed missing `@Generated` annotations (was affecting JaCoCo reports)
+
 ### 1.0.8
 
 Added:

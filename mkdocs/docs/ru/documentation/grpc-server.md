@@ -7,7 +7,7 @@
     Зависимость `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.58.0"
+    implementation "io.grpc:grpc-protobuf:1.62.2"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -22,7 +22,7 @@
     Зависимость `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-server")
-    implementation("io.grpc:grpc-protobuf:1.58.0")
+    implementation("io.grpc:grpc-protobuf:1.62.2")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -32,58 +32,9 @@
     interface Application : GrpcServerModule
     ```
 
-## Конфигурация
+### Плагин
 
-Параметры, описанные в классе `GrpcServerConfig`:
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    grpcServer {
-        port = 8090
-        telemetry {
-            logging {
-                enabled = true //(1)!
-            }
-            metrics {
-                enabled = true //(2)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(3)!
-            }
-            telemetry {
-                enabled = true //(4)!
-            }
-        }
-    }
-    ```
-
-    1.  Включает логгирование модуля
-    2.  Включает метрики модуля
-    3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    grpcServer:
-      port: 8090
-      telemetry:
-        logging:
-          enabled: true #(1)!
-        metrics:
-          enabled: true #(2)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
-        telemetry:
-          enabled: true #(4)!
-    ```
-
-    1.  Включает логгирование модуля
-    2.  Включает метрики модуля
-    3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля
-
-## Плагин
-
-Код для gRPC-сервера можно создать с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
+Код для gRPC-сервера создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
 === ":fontawesome-brands-java: `Java`"
 
@@ -94,22 +45,19 @@
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.24.4" }
+        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.58.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
         }
-
         generateProtoTasks {
             all()*.plugins { grpc {} }
         }
     }
 
     sourceSets {
-        main {
-            java {
-                srcDirs "build/generated/source/proto/main/grpc"
-                srcDirs "build/generated/source/proto/main/java"
-            }
+        main.java {
+            srcDirs "build/generated/source/proto/main/grpc"
+            srcDirs "build/generated/source/proto/main/java"
         }
     }
     ```
@@ -125,15 +73,12 @@
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.24.4" }
+        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.58.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
         }
-
         generateProtoTasks {
-            ofSourceSet("main").forEach {
-                it.plugins { id("grpc") { } }
-            }
+            ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
         }
     }
 
@@ -144,6 +89,61 @@
         }
     }
     ```
+
+## Конфигурация
+
+Параметры описанные в классе `GrpcServerConfig`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    grpcServer {
+        port = 8090 //(1)!
+        reflectionEnabled = true //(2)!
+        telemetry {
+            logging {
+                enabled = true //(3)!
+            }
+            metrics {
+                enabled = true //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+            }
+            telemetry {
+                enabled = true //(6)!
+            }
+        }
+    }
+    ```
+
+    1.  Порт gRPC сервера
+    2.  Включает сервис [gRPC Server Reflection](#_8)
+    3.  Включает логгирование модуля
+    4.  Включает метрики модуля
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    grpcServer:
+      port: 8090 #(1)!
+      reflectionEnabled = true #(2)!
+      telemetry:
+        logging:
+          enabled: true #(3)!
+        metrics:
+          enabled: true #(4)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+        telemetry:
+          enabled: true #(6)!
+    ```
+
+    1.  Порт gRPC сервера
+    2.  Включает сервис [gRPC Server Reflection](#_8)
+    3.  Включает логгирование модуля
+    4.  Включает метрики модуля
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля
 
 ## Обработчики
 
@@ -216,3 +216,54 @@
         }
     }
     ```
+
+## Отладка
+
+Поддерживается [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
+который предоставляет информацию об общедоступных gRPC-сервисах на сервере 
+и помогает клиентам во время выполнения строить запросы и ответы RPC без предварительно скомпилированной информации о сервисе.
+Он используется инструментом командной строки gRPC (gRPC CLI), с помощью которого можно исследовать proto-файлы сервера и отправлять/получать тестовые RPC.
+Reflection поддерживается только для сервисов, основанных на proto.
+
+Подробнее о работе с gRPC Server Reflection можно ознакомится [тут](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
+
+### Подключение
+
+Требуется дополнительно подключить зависимость gRPC Server Reflection.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Зависимость `build.gradle`:
+    ```groovy
+    implementation "ru.tinkoff.kora:grpc-services:1.62.2"
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Зависимость `build.gradle.kts`:
+    ```groovy
+    implementation("ru.tinkoff.kora:grpc-services:1.62.2")
+    ```
+
+### Конфигурация
+
+Требуется также включить сервис gRPC Server Reflection в конфигурации:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    grpcServer {
+        reflectionEnabled = true //(1)!
+    }
+    ```
+
+    1.  Включает сервис gRPC Server Reflection
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    grpcServer:
+      reflectionEnabled: true #(1)!
+    ```
+
+    1.  Включает сервис gRPC Server Reflection
