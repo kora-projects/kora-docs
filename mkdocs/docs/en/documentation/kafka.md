@@ -152,7 +152,7 @@ below is an example for the configuration at path `path.to.config`:
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
-    8. Additional telemetry attributes
+    8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
     9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
     10. Enables module logging
     11. Enables module metrics
@@ -197,7 +197,7 @@ below is an example for the configuration at path `path.to.config`:
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
-    8. Additional telemetry attributes
+    8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
     9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
     10. Enables module logging
     11. Enables module metrics
@@ -258,7 +258,7 @@ Accepts `value` and `key` (optional) and `headers` (optional) from `ConsumerReco
     }
     ```
 
-Accepts `ConsumerRecord`/`ConsumerRecords`, once all `ConsumerRecords` have been processed, `commitSync()` is called:
+Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional), once all `ConsumerRecords` have been processed, `commitSync()` is called:
 
 === ":fontawesome-brands-java: `Java`"
 
