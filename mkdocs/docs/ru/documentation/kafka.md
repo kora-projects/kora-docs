@@ -433,7 +433,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-Принимает `ConsumerRecord`/`ConsumerRecords`, после обработки вызывается `commitSync()`:
+Принимает `ConsumerRecord`/`ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально) после обработки вызывается `commitSync()`:
 
 === ":fontawesome-brands-java: `Java`"
 

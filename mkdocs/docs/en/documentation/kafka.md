@@ -258,7 +258,7 @@ Accepts `value` and `key` (optional) and `headers` (optional) from `ConsumerReco
     }
     ```
 
-Accepts `ConsumerRecord`/`ConsumerRecords`, once all `ConsumerRecords` have been processed, `commitSync()` is called:
+Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional), once all `ConsumerRecords` have been processed, `commitSync()` is called:
 
 === ":fontawesome-brands-java: `Java`"
 
