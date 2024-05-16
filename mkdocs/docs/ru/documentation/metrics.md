@@ -32,22 +32,47 @@
 
 ## Конфигурация
 
-По умолчанию метод для получения метрик в формате `prometheus` доступен по пути `/metrics`, но путь можно настроить через конфигурацию:
+Конфигурация, описанная в классе `HttpServerConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-        privateApiHttpMetricsPath = "/metrics"
+        privateApiHttpMetricsPath = "/metrics" //(1)!
     }
     ```
+
+    1. Путь для получения метрик в формате `prometheus` (если подключен модуль [HTTP сервера](http-server.md)):
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      privateApiHttpMetricsPath: "/metrics"
+      privateApiHttpMetricsPath: "/metrics" #(1)!
     ```
+
+    1. Путь для получения метрик в формате `prometheus` (если подключен модуль [HTTP сервера](http-server.md)):
+
+Конфигурация, описанная в классе `MetricsConfig`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    metrics {
+        opentelemetrySpec = "V120" //(1)!
+    }
+    ```
+
+    1. Формат метрик по стандарту OpenTelemetry (доступные значения: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/))
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    metrics:
+      opentelemetrySpec: "V120" #(1)!
+    ```
+
+    1. Формат метрик по стандарту OpenTelemetry (доступные значения: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/))
 
 Параметры конфигурации сбора метрик описываются в модулях в которых присутствует сбор метрик, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md) и т.д.
 
@@ -95,3 +120,9 @@
 
 Так же стандартные метрики имеют некоторые конфигурации, такие как `ServiceLayerObjectives` для Distribution summary метрик.
 Имена полей конфигурации можно посмотреть в `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
+
+## Стандарты
+
+Изначальный формат метрик использовал стандарт OpenTelemetry `V120`, после Kora `1.1.0` появилась возможность предоставления метрик
+в стандарте OpenTelemetry `V123`, частичный список изменений можно посмотреть [в документации OpenTelemetry](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
+и [рекомендациях миграции OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)

@@ -7,7 +7,7 @@ An example of building a native image using [plugin](https://graalvm.github.io/n
     Plugin `build.gradle`:
     ```groovy
     plugins {
-        id "org.graalvm.buildtools.native" version "0.9.25"
+        id "org.graalvm.buildtools.native" version "0.10.1"
     }
     ```
 
@@ -38,7 +38,7 @@ An example of building a native image using [plugin](https://graalvm.github.io/n
     Plugin `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.graalvm.buildtools.native") version("0.9.25")
+        id("org.graalvm.buildtools.native") version("0.10.1")
     }
     ```
 
@@ -75,13 +75,18 @@ Tested modules that should work without additional configuration:
 - [Metrics](metrics.md)
 - [Tracing](tracing.md)
 - [HTTP server](http-server.md)
-- [HTTP client (Async)](http-client.md)
-- [JDBC database (Postgres)](database-jdbc.md)
-- [Cassandra database](database-cassandra.md)
+- [HTTP client](http-client.md)
+- [OpenAPI generation](openapi-codegen.md)
+- [OpenAPI mapping](openapi-management.md)
+- [JDBC (Postgres) database](database-jdbc.md)
+- [R2DBC (Postgres) database](database-r2dbc.md)
+- [Database Vertx (Postgres)](database-vertx.md)
+- Cassandra database](database-cassandra.md)
 - [Kafka](kafka.md)
-- [gRPC server](grpc-server.md)
-- [Resilient](resilient.md)
-- [Cache (Caffeine)](cache.md)
+- [gRPC Server](grpc-server.md)
+- [gRPC client](grpc-client.md)
+- [resilient](resilient.md)
+- [Cache](cache.md)
 - [Validation](validation.md)
 - [Scheduling](scheduling.md)
 - [Logging](logging-aspect.md)

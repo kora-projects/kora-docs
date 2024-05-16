@@ -7,7 +7,7 @@ Kora создает свои вспомогательные классы во в
     Плагин `build.gradle`:
     ```groovy
     plugins {
-        id "org.graalvm.buildtools.native" version "0.9.25"
+        id "org.graalvm.buildtools.native" version "0.10.1"
     }
     ```
 
@@ -38,7 +38,7 @@ Kora создает свои вспомогательные классы во в
     Плагин `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.graalvm.buildtools.native") version("0.9.25")
+        id("org.graalvm.buildtools.native") version("0.10.1")
     }
     ```
 
@@ -75,13 +75,18 @@ Kora создает свои вспомогательные классы во в
 - [Метрики](metrics.md)
 - [Трасcировка](tracing.md)
 - [HTTP сервер](http-server.md)
-- [HTTP клиент (Async)](http-client.md)
+- [HTTP клиент](http-client.md)
+- [OpenAPI генерация](openapi-codegen.md)
+- [OpenAPI отображение](openapi-management.md)
 - [База данных JDBC (Postgres)](database-jdbc.md)
+- [База данных R2DBC (Postgres)](database-r2dbc.md)
+- [База данных Vertx (Postgres)](database-vertx.md)
 - [База данных Cassandra](database-cassandra.md)
 - [Kafka](kafka.md)
 - [gRPC сервер](grpc-server.md)
+- [gRPC клиент](grpc-client.md)
 - [Отказоустойчивость](resilient.md)
-- [Кеш (Caffeine)](cache.md)
+- [Кеш](cache.md)
 - [Валидация](validation.md)
 - [Планировщик](scheduling.md)
 - [Логирование](logging-aspect.md)
