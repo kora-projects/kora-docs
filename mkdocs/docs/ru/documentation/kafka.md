@@ -315,11 +315,6 @@
         fun process1(key: String, @Json value: JsonEvent) {
             // some handler code
         }
-
-        @KafkaListener("path.to.config2")
-        fun process2(record: ConsumerRecord<String, @Json JsonEvent>) {
-            // some handler code
-        }
     }
     ```
 

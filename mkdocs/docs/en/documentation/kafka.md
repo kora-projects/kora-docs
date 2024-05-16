@@ -379,11 +379,6 @@ In case deserialization from `Json` is required, the `@Json` tag can be used:
         fun process1(key: String, @Json value: JsonEvent) {
             // some handler code
         }
-
-        @KafkaListener("path.to.config2")
-        fun process2(record: ConsumerRecord<String, @Json JsonEvent>) {
-            // some handler code
-        }
     }
     ```
 

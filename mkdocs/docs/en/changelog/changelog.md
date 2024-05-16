@@ -1,9 +1,30 @@
 ---
 search:
-  exclude: true
+    exclude: true
 hide:
-  - navigation
+    - navigation
 ---
+
+## 1.1.0
+
+Added:
+
+- Added OpenTelemetry metrics [1.23](../documentation/metrics.md#standard) new standard
+- Added GraalVM and GraalVM virtual threads support for most modules
+- Dependencies updated and synchronized across all modules
+- Component build message improved
+- Lifecycle logging standardized
+
+Fixed:
+
+- Fixed unnecessary application graph node refreshes
+- Fixed Missing `@Generated` annotations
+- Fixed writing exception to closed Undertow connection should not ignore telemetry
+- Fixed Resilient minor issues
+- Fixed `HttpBody.contentLength` should be long
+- Fixed AOP annotation processor crash without kora dependencies in compile unit
+- Fixed `@ResponseCodeMapper` behaviour when only code defined
+- Fixed Cassandra driver micrometer metrics
 
 ### 1.0.9
 
@@ -33,7 +54,7 @@ Fixed:
 
 Added:
 
-- Support for `@Nested` tests 
+- Support for `@Nested` tests
 - Support for Cache AOP `CompletionStage<Optional<T>>` signature
 - Support for Graph `AutoClosable` release stage
 - Java Annotation Processor Logging improved
