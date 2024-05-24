@@ -93,6 +93,8 @@ which allows injecting component dependencies into arguments and/or fields of th
 All components listed in the test fields and/or method/constructor arguments annotated `@TestComponent` will be injected as dependencies within the test.
 Entire dependency container will be limited to just those components and their dependencies within the test.
 
+It is important that components within the test must be used by at least one [@Root component](container.md#root-component) that is also specified within the test.
+
 An example of a test where components are injected in fields:
 
 === ":fontawesome-brands-java: `Java`"

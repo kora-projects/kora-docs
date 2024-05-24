@@ -349,7 +349,7 @@ you can simply override them as a method and provide your custom implementation.
 When a component is required to always be initialized with application startup, even if it is not a dependency of other components,
 it is expected to use the `@Root` annotation over a factory method or class annotated with `@Component`.
 
-An example of such a component might be a cache warming component.
+An example of such a component might be HTTP server, Kafka consumer, cache warming component.
 
 === ":fontawesome-brands-java: `Java`"
 
