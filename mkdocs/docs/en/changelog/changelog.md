@@ -5,6 +5,17 @@ hide:
     - navigation
 ---
 
+## 1.1.1
+
+Fixed:
+
+- Fixed Void results for HttpClient methods with code mappers
+- Fixed `@Cacheable` AOP for Reactive contract
+- Fixed HTTP Content-Length processing in implementation
+- Fixed OpenApi Kotlin Nullable enum
+- Fixed OpenAPI Kotlin empty class equals & hashCode 
+- Fixed GraalVM ReactorContextHook#init() missing in runtime
+
 ## 1.1.0
 
 Added:
