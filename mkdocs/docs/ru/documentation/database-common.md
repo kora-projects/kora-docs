@@ -869,7 +869,7 @@ Kora не обрабатывает содержимое запроса, резу
     public interface EntityRepository extends JdbcRepository {
 
         @Table("entities")
-        record Entity(@Id EntityId id,
+        record Entity(@Id @Embedded  EntityId id,
                       @Column("value1") int field1,
                       String value2,
                       @Nullable String value3) {
@@ -936,7 +936,7 @@ Kora не обрабатывает содержимое запроса, резу
 
         @Table("entities")
         data class Entity(
-            @field:Id val id: EntityId,
+            @field:Id @field:Embedded val id: EntityId,
             @field:Column("value1") val field1: Int,
             val value2: String,
             val value3: String?
