@@ -60,7 +60,7 @@
         }
         telemetry {
             logging {
-                enabled = true //(16)!
+                enabled = false //(16)!
             }
             metrics {
                 enabled = true //(17)!
@@ -88,10 +88,10 @@
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
     15.  Дополнительные атрибуты R2DBC соединения
-    16.  Включает логгирование модуля
-    17.  Включает метрики модуля
+    16.  Включает логгирование модуля (по умолчанию `false`)
+    17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля
+    19.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -138,10 +138,10 @@
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
     15.  Дополнительные атрибуты R2DBC соединения
-    16.  Включает логгирование модуля
-    17.  Включает метрики модуля
+    16.  Включает логгирование модуля (по умолчанию `false`)
+    17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля
+    19.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Использование
 

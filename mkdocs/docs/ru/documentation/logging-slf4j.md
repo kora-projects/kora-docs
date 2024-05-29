@@ -88,10 +88,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 <configuration debug="false">
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <charset>UTF-8</charset>
-            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
-        </encoder>
+        <encoder class="ru.tinkoff.kora.logging.logback.ConsoleTextRecordEncoder"/>
     </appender>
 
     <appender name="ASYNC" class="ru.tinkoff.kora.logging.logback.KoraAsyncAppender">

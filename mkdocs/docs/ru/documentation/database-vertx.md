@@ -55,7 +55,7 @@
         readinessProbe = false //(11)!
         telemetry {
             logging {
-                enabled = true //(12)!
+                enabled = false //(12)!
             }
             metrics {
                 enabled = true //(13)!
@@ -79,10 +79,10 @@
     9.  Кэшировать ли подготовленные запросы
     10.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     11.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
-    12.  Включает логгирование модуля
-    13.  Включает метрики модуля
+    12.  Включает логгирование модуля (по умолчанию `false`)
+    13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    15.  Включает трассировку модуля
+    15.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -120,10 +120,10 @@
     9.  Кэшировать ли подготовленные запросы
     10.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     11.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
-    12.  Включает логгирование модуля
-    13.  Включает метрики модуля
+    12.  Включает логгирование модуля (по умолчанию `false`)
+    13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    15.  Включает трассировку модуля
+    15.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Использование
 

@@ -55,7 +55,7 @@ Parameters described in the `VertxDatabaseConfig` class:
         readinessProbe = false //(11)!
         telemetry {
             logging {
-                enabled = true //(12)!
+                enabled = false //(12)!
             }
             metrics {
                 enabled = true //(13)!
@@ -80,9 +80,9 @@ Parameters described in the `VertxDatabaseConfig` class:
     10. Maximum time to wait for connection initialization at service startup (disabled by default)
     11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
     12. Whether to enable module logging
-    13. Enables module metrics
+    13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    15. Enables module tracing
+    15. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -121,9 +121,9 @@ Parameters described in the `VertxDatabaseConfig` class:
     10. Maximum time to wait for connection initialization at service startup (disabled by default)
     11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
     12. Whether to enable module logging
-    13. Enables module metrics
+    13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    15. Enables module tracing
+    15. Enables module tracing (default `true`)
 
 ## Usage
 

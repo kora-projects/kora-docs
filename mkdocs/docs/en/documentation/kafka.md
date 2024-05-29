@@ -114,34 +114,34 @@ below is an example for the configuration at path `path.to.config`:
 
     ```javascript
     path {
-        to {
-            config {
-                topics = [ "topic1", "topic2" ] //(1)!
-                topicsPattern = "topic*" //(2)!
-                partitions = [ "1", "2" ] //(3)!
-                offset = "latest" //(4)!
-                pollTimeout = "5s" //(5)!
-                backoffTimeout = "15s" //(6)!
-                partitionRefreshInterval = "1m" //(7)!
-                threads = 1 //(8)!
-                driverProperties { //(9)!
-                    "bootstrap.servers": "localhost:9093"
-                    "group.id": "my-group-id"
-                }
-                telemetry {
-                    logging {
-                        enabled = true //(10)!
-                    }
-                    metrics {
-                        enabled = true //(11)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
-                    }
-                    telemetry {
-                        enabled = true //(13)!
-                    }
-                }
+      to {
+        config {
+          topics = [ "topic1", "topic2" ] //(1)!
+          topicsPattern = "topic*" //(2)!
+          partitions = [ "1", "2" ] //(3)!
+          offset = "latest" //(4)!
+          pollTimeout = "5s" //(5)!
+          backoffTimeout = "15s" //(6)!
+          partitionRefreshInterval = "1m" //(7)!
+          threads = 1 //(8)!
+          driverProperties { //(9)!
+            "bootstrap.servers": "localhost:9093"
+            "group.id": "my-group-id"
+          }
+          telemetry {
+            logging {
+              enabled = false //(10)!
             }
+            metrics {
+              enabled = true //(11)!
+              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
+            }
+            telemetry {
+              enabled = true //(13)!
+            }
+          }
         }
+      }
     }
     ```
 
@@ -154,10 +154,10 @@ below is an example for the configuration at path `path.to.config`:
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
     9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
-    10. Enables module logging
-    11. Enables module metrics
+    10. Enables module logging (default `false`)
+    11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    13. Enables module tracing
+    13. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -199,10 +199,10 @@ below is an example for the configuration at path `path.to.config`:
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
     9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
-    10. Enables module logging
-    11. Enables module metrics
+    10. Enables module logging (default `false`)
+    11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    13. Enables module tracing
+    13. Enables module tracing (default `true`)
 
 Configuration example for connecting to topics without a group.
 In this example, Consumer will be connected to all partitions in the topiq and the offset is shifted back 10 minutes.
@@ -212,15 +212,15 @@ In case of connection without `group.id`, only 1 topic can be specified:
 
     ```javascript
     path {
-        to {
-            config {
-                pollTimeout: "3s"
-                topics: "first"
-                driverProperties {
-                    "bootstrap.servers": "localhost:9093"
-                }
-            }
+      to {
+        config {
+          pollTimeout: "3s"
+          topics: "first"
+          driverProperties {
+            "bootstrap.servers": "localhost:9093"
+          }
         }
+      }
     }
     ```
 
@@ -238,13 +238,21 @@ In case of connection without `group.id`, only 1 topic can be specified:
 
 ### Signatures
 
-Accepts `value` and `key` (optional) and `headers` (optional) from `ConsumerRecord`, after all events are processed, `commitSync()` is called:
+Available signatures for Kafka consumer out-of-the-box methods, where `K` refers to the key type and `V` to the message value type.
+
+Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) from `ConsumerRecord`,
+`Exception` (optional) in case of serialization/connection error and after all events are processed, `commitSync()` is called:
 
 === ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
-    void process(String key, String value, Headers headers) {
+    void process(K key, V value, Headers headers) {
+        // some handler code
+    }
+
+    @KafkaListener("path.to.other.config")
+    void process(@Nullable V value, @Nullable Exception exception) {
         // some handler code
     }
     ```
@@ -253,7 +261,12 @@ Accepts `value` and `key` (optional) and `headers` (optional) from `ConsumerReco
 
     ```kotlin
     @KafkaListener("path.to.config")
-    fun process(key: String, value: String, headers: Headers) {
+    fun process(key: K, value: V, headers: Headers) {
+        // some handler code
+    }
+
+    @KafkaListener("path.to.other.config")
+    fun process(value: V?, exception: Exception?) {
         // some handler code
     }
     ```
@@ -525,50 +538,39 @@ The annotation parameter indicates the path for the configuration of the topic.
 
 ### Configuration
 
-`KafkaPublisherConfig` is used to configure `@KafkaPublisher`, and
-`KafkaPublisherConfig.TopicConfig` is used for the `@KafkaPublisher.Topic` configuration:
+`KafkaPublisherConfig` is used to configure `@KafkaPublisher`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     path {
-        to {
-            config {
-                driverProperties { //(1)!
-                    "bootstrap.servers": "localhost:9093"
-                }
-                telemetry {
-                    logging {
-                        enabled = true //(2)!
-                    }
-                    metrics {
-                        enabled = true //(3)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
-                    }
-                    telemetry {
-                        enabled = true //(5)!
-                    }
-                }
+      to {
+        config {
+          driverProperties { //(1)!
+            "bootstrap.servers": "localhost:9093"
+          }
+          telemetry {
+            logging {
+              enabled = false //(2)!
             }
-
-            topic { //(6)!
-                config {
-                    topic = "my-topic" //(7)!
-                    partition = 1 //(8)!
-                }
+            metrics {
+              enabled = true //(3)!
+              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
             }
+            telemetry {
+              enabled = true //(5)!
+            }
+          }
         }
+      }
     }
     ```
 
     1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
-    2. Enables module logging
-    3. Enables module metrics
+    2. Enables module logging (default `false`)
+    3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing
-    6. Configuration of `@KafkaPublisher.Topic`.
-    7. Which topic the method will send data to
-    8. Which partition of the topic the method will send data (optional)
+    5. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -586,21 +588,49 @@ The annotation parameter indicates the path for the configuration of the topic.
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
             telemetry:
               enabled: true #(5)!
-        
-        topic: #(6)!
-          config:
-            topic: "my-topic" #(7)!
-            partition: 1 #(8)!
     ```
 
     1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
-    2. Enables module logging
-    3. Enables module metrics
+    2. Enables module logging (default `false`)
+    3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing
-    6. Configuration of `@KafkaPublisher.Topic`.
-    7. Which topic the method will send data to
-    8. Which partition of the topic the method will send data (optional)
+    5. Enables module tracing (default `true`)
+
+`KafkaPublisherConfig.TopicConfig` is used for the `@KafkaPublisher.Topic` configuration:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    path {
+      to {
+        topic { //(1)!
+          config {
+            topic = "my-topic" //(2)!
+            partition = 1 //(3)!
+          }
+        }
+      }
+    }
+    ```
+
+    1. Configuration of `@KafkaPublisher.Topic`.
+    2. Which topic the method will send data to
+    3. Which partition of the topic the method will send data (optional)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    path:
+      to:
+        topic: #(1)!
+          config:
+            topic: "my-topic" #(2)!
+            partition: 1 #(3)!
+    ```
+
+    1. Configuration of `@KafkaPublisher.Topic`.
+    2. Which topic the method will send data to
+    3. Which partition of the topic the method will send data (optional)
 
 ### Signatures
 

@@ -230,7 +230,7 @@ The complete configuration described in the `CassandraDatabaseConfig` class:
         }  
         telemetry {
             logging {
-                enabled = true 
+                enabled = false 
             }
             metrics {
                 enabled = true

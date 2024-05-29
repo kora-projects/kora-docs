@@ -1,5 +1,5 @@
 Модуль для создания декларативных HTTP-обработчиков [HTTP сервера](http-server.md) 
-либо создания декларативных [HTTP клиентов](http-client.md) из OpenAPI контрактов с использованием [OpenAPI Generator плагином](https://openapi-generator.tech/docs/plugins/).
+либо создания декларативных [HTTP клиентов](http-client.md) из OpenAPI контрактов с использованием [OpenAPI Generator плагином](https://openapi-generator.tech/docs/plugins#gradle).
 
 ## Подключение
 
@@ -17,46 +17,9 @@
     Зависимость плагина `build.gradle`:
     ```groovy
     plugins {
-        id "org.openapi.generator" version "7.1.0"
+        id "org.openapi.generator" version "7.4.0"
     }
     ```
-
-    ??? abstract "Maven"
-
-        Для maven необходимо добавить зависимость с генератором для плагина и так же сконфигурировать:
-        ```xml
-        <plugin>
-            <groupId>org.openapitools</groupId>
-            <artifactId>openapi-generator-maven-plugin</artifactId>
-            <version>7.1.0</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>generate</goal>
-                    </goals>
-                    <configuration>
-                        <inputSpec>${project.basedir}/src/main/resources/petstoreV2.yaml</inputSpec>
-                        <output>${project.basedir}/target/generated-sources/openapi/petstoreV2</output>
-                        <generatorName>kora</generatorName>
-                        <configOptions>
-                            <mode>java-client</mode>
-                            <sourceFolder>.</sourceFolder>
-                        </configOptions>
-                    </configuration>
-                </execution>
-            </executions>
-            <dependencies>
-                <dependency>
-                    <groupId>ru.tinkoff.kora</groupId>
-                    <artifactId>openapi-generator</artifactId>
-                    <version>1.1.1</version>
-                </dependency>
-            </dependencies>
-        </plugin>
-        ```
-
-        Подробнее можно смотреть [тут](https://github.com/OpenAPITools/openapi-generator/tree/v7.1.0/modules/openapi-generator-maven-plugin).
-
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -72,7 +35,7 @@
     Зависимость плагина `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.openapi.generator") version("7.1.0")
+        id("org.openapi.generator") version("7.4.0")
     }
     ```
 
@@ -80,9 +43,9 @@
 
 ## Конфигурация
 
-Конфигурировать требуется параметры [плагина OpenAPI Generator](https://openapi-generator.tech/docs/plugins/):
+Конфигурировать требуется параметры [плагина OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle):
 
-- Настройка параметров Gradle плагина в [документации](https://github.com/OpenAPITools/openapi-generator/blob/v7.1.0/modules/openapi-generator-gradle-plugin/README.adoc).
+- Настройка параметров Gradle плагина в [документации](https://github.com/OpenAPITools/openapi-generator/blob/v7.4.0/modules/openapi-generator-gradle-plugin/README.adoc).
 - Настройка `configOptions` параметра плагина в [документации](https://openapi-generator.tech/docs/generators/java/#config-options).
 - Настройка `openapiNormalizer` параметра плагина в [документации](https://openapi-generator.tech/docs/customization/#openapi-normalizer).
 

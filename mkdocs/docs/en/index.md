@@ -11,7 +11,7 @@ Kora aims to provide sufficiently high-level declarative tools and abstractions 
 which at compile time are translated into hardware-performant and human-readable code.
 
 `Performance` - Kora generates high-performant code at compile time,
-avoiding the use of Reflection API, avoiding dynamic proxies, implements fine-grained abstraction and free aspects.
+avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements fine-grained abstraction and free aspects.
 All this leads to high performance, low response time and handling a large number of requests per second.
 
 `Efficiency` - All facts above and the fact that the dependency container is created
@@ -28,6 +28,7 @@ This approach also allow to achieve compatibility with GraalVM out of the box an
 Kora provides all the tools needed for modern Java/Kotlin development:
 
 - Dependency injection and inversion at compile time via annotations
+- Declarative components generation at compile time via annotations
 - Aspect-oriented programming via annotations
 - Pre-configurable integration modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)

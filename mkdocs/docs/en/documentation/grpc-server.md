@@ -102,7 +102,7 @@ Parameters described in the `GrpcServerConfig` class:
         reflectionEnabled = true //(2)!
         telemetry {
             logging {
-                enabled = true //(3)!
+                enabled = false //(3)!
             }
             metrics {
                 enabled = true //(4)!
@@ -117,10 +117,10 @@ Parameters described in the `GrpcServerConfig` class:
 
     1. gRPC server port
     2. Enables [gRPC Server Reflection](#reflection) service
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,10 +140,10 @@ Parameters described in the `GrpcServerConfig` class:
 
     1. gRPC server port
     2. Enables [gRPC Server Reflection](#reflection) service
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 ## Handlers
 
@@ -235,14 +235,14 @@ An optional gRPC Server Reflection dependency is required.
 
     Зависимость `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:grpc-services:1.62.2"
+    implementation "io.grpc:grpc-services:1.62.2"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     Зависимость `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:grpc-services:1.62.2")
+    implementation("io.grpc:grpc-services:1.62.2")
     ```
 
 ### Configuration

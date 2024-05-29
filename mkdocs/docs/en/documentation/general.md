@@ -1,6 +1,7 @@
 Kora provides all the tools needed for modern Java/Kotlin development:
 
 - Dependency injection and inversion at compile time via annotations
+- Declarative components generation at compile time via annotations
 - Aspect-oriented programming via annotations
 - Pre-configurable integration modules
 - Easy and rapid testing with [JUnit5](junit5.md)
@@ -8,13 +9,13 @@ Kora provides all the tools needed for modern Java/Kotlin development:
 
 In order to achieve high-performance and efficient code, Kora stands on these principles:
 
-- Using annotation handlers
-- Not using Reflection API
+- Source code generation through compile-time annotation processors
+- Avoiding Reflection API in runtime
 - Avoiding dynamic proxies
-- Implementing fine-grained abstractions
-- Implementing complimentary aspects through class inheritance
+- Fine-grained abstractions
+- Free aspects through class inheritance
 - Using the most efficient implementations for modules
-- Implementing and providing the most efficient principles for development
+- Implementing and providing the most effective principles for language design and natural language constructs
 - No bytecode generation at compile time and runtime
 
 ## Annotation Handlers

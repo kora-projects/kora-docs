@@ -103,7 +103,7 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
             timeout = "10s"  //(2)!
             telemetry {
                 logging {
-                    enabled = true //(3)!
+                    enabled = false //(3)!
                 }
                 metrics {
                     enabled = true //(4)!
@@ -119,10 +119,10 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
 
     1. URL of the server where to make requests
     2. Maximum request time
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -143,10 +143,10 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
 
     1. URL of the server where to make requests
     2. Maximum request time
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 ## Service
 

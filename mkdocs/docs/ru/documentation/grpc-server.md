@@ -102,7 +102,7 @@
         reflectionEnabled = true //(2)!
         telemetry {
             logging {
-                enabled = true //(3)!
+                enabled = false //(3)!
             }
             metrics {
                 enabled = true //(4)!
@@ -117,10 +117,10 @@
 
     1.  Порт gRPC сервера
     2.  Включает сервис [gRPC Server Reflection](#_8)
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,10 +140,10 @@
 
     1.  Порт gRPC сервера
     2.  Включает сервис [gRPC Server Reflection](#_8)
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Обработчики
 
@@ -229,20 +229,20 @@ Reflection поддерживается только для сервисов, о
 
 ### Подключение
 
-Требуется дополнительно подключить зависимость gRPC Server Reflection.
+Требуется дополнительно подключить зависимость [gRPC Server Reflection](https://mvnrepository.com/artifact/io.grpc/grpc-services).
 
 === ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:grpc-services:1.62.2"
+    implementation "io.grpc:grpc-services:1.62.2"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     Зависимость `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:grpc-services:1.62.2")
+    implementation("io.grpc:grpc-services:1.62.2")
     ```
 
 ### Конфигурация

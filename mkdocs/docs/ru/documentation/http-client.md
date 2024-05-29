@@ -366,7 +366,7 @@
                 requestTimeout = "10s" //(2)!
                 telemetry {
                     logging {
-                        enabled = true //(3)!
+                        enabled = false //(3)!
                     }
                     metrics {
                         enabled = true //(4)!
@@ -383,10 +383,10 @@
 
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -408,10 +408,10 @@
 
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Конфигурация метода
 
@@ -429,7 +429,7 @@
                     requestTimeout = "10s" //(1)!
                     telemetry {
                         logging {
-                            enabled = true //(2)!
+                            enabled = false //(2)!
                         }
                         metrics {
                             enabled = true //(3)!
@@ -446,10 +446,10 @@
     ```
 
     1.  Максимальное время запроса метода
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
+    5.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -470,10 +470,10 @@
     ```
 
     1.  Максимальное время запроса метода
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
+    5.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Запрос
 
@@ -482,7 +482,7 @@
 
 #### Параметр пути
 
-`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{ковычка}` в пути 
+`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути 
 и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
 === ":fontawesome-brands-java: `Java`"
