@@ -94,5 +94,5 @@
     Мы рекомендуем использовать подход когда первичен [контракт и по нему создается код](openapi-codegen.md), 
     в таком подходе отображается этот самый файл контракт.
 
-    В случае же когда первичен код и по нему предполагается создавать файл контракт, рекомендуется использовать [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md)
+    В случае же когда первичен код и по нему предполагается создавать файл контракт, можно использовать [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md)
     вкупе с [набором Swagger аннотаций](https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Annotations) по которым будет создаваться файл контракт.

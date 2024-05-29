@@ -94,5 +94,5 @@ An example of the configuration described in the `OpenApiManagementConfig` class
     We recommend using [contract first approach](openapi-codegen.md) and generate code using this contract, 
     in this approach same contract file is displayed.
 
-    In the case where the code is first and the contract file is supposed to be created from it, we recommend using the [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md).
+    In the case where the code is first and the contract file is supposed to be created from it, you can use the [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md).
     together with [Swagger annotation set](https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Annotations), which will be used to create the contract file.
