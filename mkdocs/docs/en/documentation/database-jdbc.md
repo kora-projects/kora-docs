@@ -60,7 +60,7 @@ Parameters described in the `JdbcDatabaseConfig` class:
         }
         telemetry {
             logging {
-                enabled = true //(16)!
+                enabled = false //(16)!
             }
             metrics {
                 enabled = true //(17)!
@@ -89,9 +89,9 @@ Parameters described in the `JdbcDatabaseConfig` class:
     14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
     15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters)
     16. Whether to enable module logging
-    17. Enables module metrics
+    17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing
+    19. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,9 +140,9 @@ Parameters described in the `JdbcDatabaseConfig` class:
     14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
     15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters)
     16. Whether to enable module logging
-    17. Enables module metrics
+    17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing
+    19. Enables module tracing (default `true`)
 
 ## Usage
 

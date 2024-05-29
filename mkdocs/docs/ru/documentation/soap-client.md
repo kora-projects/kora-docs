@@ -58,7 +58,7 @@
             timeout = "10s" //(2)!
             telemetry {
                 logging {
-                    enabled = true //(3)!
+                    enabled = false //(3)!
                 }
                 metrics {
                     enabled = true //(4)!
@@ -74,10 +74,10 @@
 
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -98,10 +98,10 @@
 
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
-    3.  Включает логгирование модуля
-    4.  Включает метрики модуля
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Использование
 
@@ -169,7 +169,7 @@
         useJakarta = true
         markGenerated = true
         verbose = false
-        packageName = "ru.tinkoff.kora.soap.generated"
+        packageName = "ru.tinkoff.kora.generated.soap"
         generatedSourceDir.set(layout.buildDirectory.dir("generated/sources/wsdl2java/java"))
         includesWithOptions = [
             "**/simple-service.wsdl": ["-wsdlLocation", "https://kora.tinkoff.ru/simple/service?wsdl"],
@@ -187,7 +187,7 @@
         useJakarta = true
         markGenerated = true
         verbose = false
-        packageName = "ru.tinkoff.kora.soap.generated"
+        packageName = "ru.tinkoff.kora.generated.soap"
         generatedSourceDir.set(layout.buildDirectory.dir("generated/sources/wsdl2java/java"))
         includesWithOptions.putAll(
             mapOf(

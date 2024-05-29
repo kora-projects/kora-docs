@@ -54,7 +54,7 @@ An example of the configuration described in the `HttpServerConfig` class:
         shutdownWait = "100ms" //(9)!
         telemetry {
             logging {
-                enabled = true //(10)!
+                enabled = false //(10)!
                 stacktrace = true //(11)!
             }
             metrics {
@@ -77,11 +77,11 @@ An example of the configuration described in the `HttpServerConfig` class:
     7.  Number of server threads, default is the number of CPU cores or minimum `2`.
     8.  Number of blocking threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Enables module logging
+    10.  Enables module logging (default `false`)
     11.  Enables call stack logging in case of exception
-    12.  Enables module metrics
+    12.  Enables module metrics (default `true`)
     13.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing
+    14.  Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -116,11 +116,11 @@ An example of the configuration described in the `HttpServerConfig` class:
     7.  Number of server threads, default is the number of CPU cores or minimum `2`.
     8.  Number of blocking threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Enables module logging
+    10.  Enables module logging (default `false`)
     11.  Enables call stack logging in case of exception
-    12.  Enables module metrics
+    12.  Enables module metrics (default `true`)
     13.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing
+    14.  Enables module tracing (default `true`)
 
 ## SomeController declarative
 

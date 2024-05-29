@@ -230,7 +230,7 @@
         }  
         telemetry {
             logging {
-                enabled = true 
+                enabled = false 
             }
             metrics {
                 enabled = true

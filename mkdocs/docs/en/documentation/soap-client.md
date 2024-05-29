@@ -58,7 +58,7 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
             timeout = "10s" //(2)!
             telemetry {
                 logging {
-                    enabled = true //(3)!
+                    enabled = false //(3)!
                 }
                 metrics {
                     enabled = true //(4)!
@@ -74,10 +74,10 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
 
     1. URL of the service where requests will be sent
     2. Maximum request time
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -98,10 +98,10 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
 
     1. URL of the service where requests will be sent
     2. Maximum request time
-    3. Enables module logging
-    4. Enables module metrics
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing
+    6. Enables module tracing (default `true`)
 
 ## Usage
 
@@ -169,7 +169,7 @@ Suppose we have a WSDL where `SimpleService` is declared, then configuring the p
         useJakarta = true
         markGenerated = true
         verbose = false
-        packageName = "ru.tinkoff.kora.soap.generated"
+        packageName = "ru.tinkoff.kora.generated.soap"
         generatedSourceDir.set(layout.buildDirectory.dir("generated/sources/wsdl2java/java"))
         includesWithOptions = [
             "**/simple-service.wsdl": ["-wsdlLocation", "https://kora.tinkoff.ru/simple/service?wsdl"],
@@ -187,7 +187,7 @@ Suppose we have a WSDL where `SimpleService` is declared, then configuring the p
         useJakarta = true
         markGenerated = true
         verbose = false
-        packageName = "ru.tinkoff.kora.soap.generated"
+        packageName = "ru.tinkoff.kora.generated.soap"
         generatedSourceDir.set(layout.buildDirectory.dir("generated/sources/wsdl2java/java"))
         includesWithOptions.putAll(
             mapOf(
