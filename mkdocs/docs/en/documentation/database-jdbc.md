@@ -349,6 +349,59 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
+## Select by list
+
+Sometimes a list of values from the database needs to be fetched, all these parameters must be set separately at the driver level, as the length of the list is not known
+this is not the most obvious task as Kora tries to do all conversions at compile time and remove any string conversions especially in SQL at runtime,
+such functionality would require adding a separate parameter converter.
+
+What is certain at this point is that it is easy to add support for such parameters without manual connection factory for popular databases like Postgres/Oracle.
+Out of the box Kora does not provide conversion of such parameters, but it is easy to add it yourself, an example for `Postgres` is shown below:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    class ListOfStringJdbcParameterMapper implements JdbcParameterColumnMapper<List<String>> {
+
+        @Override
+        public void set(PreparedStatement stmt, int index, List<String> value) throws SQLException {
+            String[] typedArray = value.toArray(String[]::new);
+            Array sqlArray = stmt.getConnection().createArrayOf("VARCHAR", typedArray);
+            stmt.setArray(index, sqlArray);
+        }
+    }
+
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        List<Entity> findAllByIds(@Mapping(ListOfStringJdbcParameterMapper.class) List<String> ids);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ListOfStringJdbcParameterMapper : JdbcParameterColumnMapper<List<String>> {
+
+        @Throws(SQLException::class)
+        override fun set(stmt: PreparedStatement, index: Int, value: List<String>) {
+            val typedArray = value.toTypedArray()
+            val sqlArray = stmt.connection.createArrayOf("VARCHAR", typedArray)
+            stmt.setArray(index, sqlArray)
+        }
+    }
+
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        fun findAllByIds(@Mapping(ListOfStringJdbcParameterMapper::class) ids: List<String>): List<Entity>
+    }
+    ```
+
 ## Transactions
 
 In order to execute blocking queries, Kora has a `JdbcConnectionFactory` interface, which is provided in a method within the `JdbcRepository` contract.
