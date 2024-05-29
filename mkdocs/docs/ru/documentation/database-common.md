@@ -168,6 +168,11 @@ CREATE TABLE IF NOT EXISTS entities
     }
     ```
 
+#### Композитный
+
+В случае если требуется использовать композитный ключ,
+предполагается использовать аннотацию `@Embedded` для создания [вложенных полей](#_11).
+
 ### Именование
 
 По умолчанию имена полей сущностей переводятся в [snake_lower_case](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/) при извлечении
@@ -380,7 +385,7 @@ CREATE TABLE IF NOT EXISTS entities
 
         public record Entity(String id, String name) { }
 
-        @Query("SELECT * FROM entities WHERE id = :id;") //(2)!
+        @Query("SELECT * FROM entities WHERE id = :id") //(2)!
         @Nullable //(3)!
         Entity findById(String id);
     }
@@ -398,7 +403,7 @@ CREATE TABLE IF NOT EXISTS entities
 
         data class Entity(val id: String, val name: String)
 
-        @Query("SELECT * FROM entities WHERE id = :id;") //(2)!
+        @Query("SELECT * FROM entities WHERE id = :id") //(2)!
         fun findById(id: String): Entity?
     }
     ```
@@ -496,6 +501,56 @@ Kora не обрабатывает содержимое запроса, резу
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
         fun insert(entity: Entity): Long
+    }
+    ```
+
+### Ручное управление
+
+В случае если не хватает функционала по каким то причинам с запросами в `@Query` аннотации или требуется ручное управление соединением, 
+можно использовать встроенный метод фабрики соединений для создания метода с полностью ручным управлением.
+
+Можно также использовать внутри метода другие методы репозитория и они также будут выполняться в рамках одной транзакции если это требуется.
+Детальнее про транзакции стоит смотреть документацию по конкретной реализации репозитория.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        default int insert(Entity entity) {
+            return getJdbcConnectionFactory().inTx(connection -> {
+                String sql = "INSERT INTO entities(name) VALUES (?) RETURNING id";
+                try(PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                    preparedStatement.setString(1, entity.name());
+                    try(ResultSet resultSet = preparedStatement.executeQuery()) {
+                        return resultSet.getInt(1);
+                    }
+                }
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        data class Entity(val id: Long, val name: String)
+
+        fun insert(entity: Entity): Int {
+            return jdbcConnectionFactory.inTx<Int> { connection ->
+                val sql = "INSERT INTO entities(name) VALUES (?) RETURNING id"
+                connection.prepareStatement(sql).use { preparedStatement ->
+                    preparedStatement.setString(1, entity.name)
+                    preparedStatement.executeQuery().use { resultSet -> resultSet.getInt(1) }
+                }
+            }
+        }
     }
     ```
 
@@ -756,7 +811,7 @@ Kora не обрабатывает содержимое запроса, резу
         )
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
-        fun findById(id: String?): Entity?
+        fun findById(id: String): Entity?
 
         @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
         fun findAll(): List<Entity>
@@ -802,5 +857,140 @@ Kora не обрабатывает содержимое запроса, резу
         INSERT INTO entities(id, value1, value2, value3) 
         VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
         ON CONFLICT (id) DO UPDATE 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        ```
+
+Пример репозитория с [композитным идентификатором](#_6) и основными методами для оперирования сущностью.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Table("entities")
+        record Entity(@Id EntityId id,
+                      @Column("value1") int field1,
+                      String value2,
+                      @Nullable String value3) {
+            
+            public record EntityId(String code, String type) { }
+        }
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}") //(1)!
+        @Nullable
+        Entity findById(EntityId id);
+
+        @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
+        List<Entity> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}")  //(3)!
+        UpdateCount insert(@Batch List<Entity> entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")  //(4)!
+        UpdateCount update(@Batch List<Entity> entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}")  //(5)!
+        UpdateCount upsert(@Batch List<Entity> entity);
+
+        @Query("DELETE FROM entities WHERE %{id#where}")
+        UpdateCount deleteById(EntityId id);
+
+        @Query("DELETE FROM entities")
+        UpdateCount deleteAll();
+    }
+    ```
+
+    1.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 FROM entities WHERE code = :code AND type = :type
+        ```
+    2.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 FROM entities
+        ```
+    3.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ```
+    4.  Раскрывается в запрос:
+        ```sql
+        UPDATE entities
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        WHERE code = :entity.id.code AND type = :entity.id.type
+        ```
+    5.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: EntityId,
+            @field:Column("value1") val field1: Int,
+            val value2: String,
+            val value3: String?
+        ) {
+
+            data class EntityId(val code: String, val type: String)
+        }
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}") //(1)!
+        fun findById(id: EntityId): Entity?
+
+        @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
+        fun findAll(): List<Entity>
+
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
+        fun insert(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}") //(4)!
+        fun update(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}") //(5)!
+        fun upsert(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("DELETE FROM entities WHERE %{id#where}")
+        fun deleteById(id: EntityId): UpdateCount
+
+        @Query("DELETE FROM entities")
+        fun deleteAll(): UpdateCount
+    }
+    ```
+
+    1.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 FROM entities WHERE code = :code AND type = :type
+        ```
+    2.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 FROM entities
+        ```
+    3.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ```
+    4.  Раскрывается в запрос:
+        ```sql
+        UPDATE entities
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        WHERE code = :entity.id.code AND type = :entity.id.type
+        ```
+    5.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE 
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```

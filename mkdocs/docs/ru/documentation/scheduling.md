@@ -50,7 +50,7 @@
         threads = 20 //(1)!
         telemetry {
             logging {
-                enabled = true //(2)!
+                enabled = false //(2)!
             }
             metrics {
                 enabled = true //(3)!
@@ -64,10 +64,10 @@
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
+    5.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -85,10 +85,10 @@
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
+    5.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Фиксированный интервал
 
@@ -396,7 +396,7 @@
     scheduling {
         telemetry {
             logging {
-                enabled = true //(1)!
+                enabled = false //(1)!
             }
             metrics {
                 enabled = true //(2)!
@@ -409,10 +409,10 @@
     }
     ```
 
-    1.  Включает логгирование модуля
-    2.  Включает метрики модуля
+    1.  Включает логгирование модуля (по умолчанию `false`)
+    2.  Включает метрики модуля (по умолчанию `true`)
     3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля
+    4.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -430,10 +430,10 @@
           enabled: true #(4)!
     ```
 
-    1.  Включает логгирование модуля
-    2.  Включает метрики модуля
+    1.  Включает логгирование модуля (по умолчанию `false`)
+    2.  Включает метрики модуля (по умолчанию `true`)
     3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля
+    4.  Включает трассировку модуля (по умолчанию `true`)
 
 По умолчанию используются настройки из:
 

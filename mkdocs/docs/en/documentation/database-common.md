@@ -169,6 +169,10 @@ The identifier will be created at the stage of object creation in the custom app
     }
     ```
 
+#### Composite
+
+When a composite key is required, it is intended to use the `@Embedded` annotation to create [embedded fields](#embedded-fields).
+
 ### Naming
 
 By default, entity field names are translated to [snake_lower_case](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/) when retrieving a
@@ -381,7 +385,7 @@ The repository must be a descendant of one of the implementations, in the exampl
         public record Entity(String id, String name) { }
 
         //(2)!
-        @Query("SELECT * FROM entities WHERE id = :id;")
+        @Query("SELECT * FROM entities WHERE id = :id")
         @Nullable
         Entity findById(String id);
     }
@@ -399,7 +403,7 @@ The repository must be a descendant of one of the implementations, in the exampl
         data class Entity(val id: String, val name: String)
 
         //(2)!
-        @Query("SELECT * FROM entities WHERE id = :id;")
+        @Query("SELECT * FROM entities WHERE id = :id")
         fun findById(id: String): Entity?
     }
     ```
@@ -495,6 +499,56 @@ This approach works for `@Batch` queries as well.
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
         fun insert(entity: Entity): Long
+    }
+    ```
+
+### Manual query
+
+In case there is not enough functionality for some reason with queries in `@Query` annotation or manual control of the connection is required,
+you can use the built-in connection factory method to create a method with fully manual control.
+
+You can also use other repository methods within the method and they will also be executed within a single transaction if required.
+For more details about transactions, see the documentation for the specific repository implementation.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        default int insert(Entity entity) {
+            return getJdbcConnectionFactory().inTx(connection -> {
+                String sql = "INSERT INTO entities(name) VALUES (?) RETURNING id";
+                try(PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                    preparedStatement.setString(1, entity.name());
+                    try(ResultSet resultSet = preparedStatement.executeQuery()) {
+                        return resultSet.getInt(1);
+                    }
+                }
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        data class Entity(val id: Long, val name: String)
+
+        fun insert(entity: Entity): Int {
+            return jdbcConnectionFactory.inTx<Int> { connection ->
+                val sql = "INSERT INTO entities(name) VALUES (?) RETURNING id"
+                connection.prepareStatement(sql).use { preparedStatement ->
+                    preparedStatement.setString(1, entity.name)
+                    preparedStatement.executeQuery().use { resultSet -> resultSet.getInt(1) }
+                }
+            }
+        }
     }
     ```
 

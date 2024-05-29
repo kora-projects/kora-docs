@@ -114,34 +114,34 @@
 
     ```javascript
     path {
-        to {
-            config {
-                topics = [ "topic1", "topic2" ] //(1)!
-                topicsPattern = "topic*" //(2)!
-                partitions = [ "1", "2" ] //(3)!
-                offset = "latest" //(4)!
-                pollTimeout = "5s" //(5)!
-                backoffTimeout = "15s" //(6)!
-                partitionRefreshInterval = "1m" //(7)!
-                threads = 1 //(8)!
-                driverProperties { //(9)!
-                    "bootstrap.servers": "localhost:9093"
-                    "group.id": "my-group-id"
-                }
-                telemetry {
-                    logging {
-                        enabled = true //(10)!
-                    }
-                    metrics {
-                        enabled = true //(11)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
-                    }
-                    telemetry {
-                        enabled = true //(13)!
-                    }
-                }
+      to {
+        config {
+          topics = [ "topic1", "topic2" ] //(1)!
+          topicsPattern = "topic*" //(2)!
+          partitions = [ "1", "2" ] //(3)!
+          offset = "latest" //(4)!
+          pollTimeout = "5s" //(5)!
+          backoffTimeout = "15s" //(6)!
+          partitionRefreshInterval = "1m" //(7)!
+          threads = 1 //(8)!
+          driverProperties { //(9)!
+            "bootstrap.servers": "localhost:9093"
+            "group.id": "my-group-id"
+          }
+          telemetry {
+            logging {
+              enabled = false //(10)!
             }
+            metrics {
+              enabled = true //(11)!
+              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
+            }
+            telemetry {
+              enabled = true //(13)!
+            }
+          }
         }
+      }
     }
     ```
 
@@ -154,10 +154,10 @@
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
     9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs)
-    10.  Включает логгирование модуля
-    11.  Включает метрики модуля
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Включает метрики модуля (по умолчанию `true`)
     12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    13.  Включает трассировку модуля
+    13.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -199,10 +199,10 @@
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
     9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs)
-    10.  Включает логгирование модуля
-    11.  Включает метрики модуля
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Включает метрики модуля (по умолчанию `true`)
     12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    13.  Включает трассировку модуля
+    13.  Включает трассировку модуля (по умолчанию `true`)
 
 Пример конфигурации для подключения к топикам без группы.
 В этом примере Consumer будет подключен ко всем партициям в топике и офсет сдвинут на 10 минут назад.
@@ -212,15 +212,15 @@
 
     ```javascript
     path {
-        to {
-            config {
-                pollTimeout: "3s"
-                topics: "first"
-                driverProperties {
-                    "bootstrap.servers": "localhost:9093"
-                }
-            }
+      to {
+        config {
+          pollTimeout: "3s"
+          topics: "first"
+          driverProperties {
+            "bootstrap.servers": "localhost:9093"
+          }
         }
+      }
     }
     ```
 
@@ -407,14 +407,19 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Доступные сигнатуры для методов Kafka потребителя из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 
-Позволяет принимать `value` и `key` (опционально) и `headers` (опционально) от `ConsumerRecord`, 
-после обработки всех событий вызывается `commitSync()`:
+Позволяет принимать `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
+`Exception` (опционально) в случае ошибки сериализации/соединения и после обработки всех событий вызывается `commitSync()`:
 
 === ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
     void process(K key, V value, Headers headers) {
+        // some handler code
+    }
+
+    @KafkaListener("path.to.other.config")
+    void process(@Nullable V value, @Nullable Exception exception) {
         // some handler code
     }
     ```
@@ -424,6 +429,11 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```kotlin
     @KafkaListener("path.to.config")
     fun process(key: K, value: V, headers: Headers) {
+        // some handler code
+    }
+
+    @KafkaListener("path.to.other.config")
+    fun process(value: V?, exception: Exception?) {
         // some handler code
     }
     ```
@@ -529,50 +539,39 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 ### Конфигурация
 
-`KafkaPublisherConfig` используется для конфигурации `@KafkaPublisher`, а
-`KafkaPublisherConfig.TopicConfig` используется для конфигурации `@KafkaPublisher.Topic`:
+`KafkaPublisherConfig` используется для конфигурации `@KafkaPublisher`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     path {
-        to {
-            config {
-                driverProperties { //(1)!
-                    "bootstrap.servers": "localhost:9093"
-                }
-                telemetry {
-                    logging {
-                        enabled = true //(2)!
-                    }
-                    metrics {
-                        enabled = true //(3)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
-                    }
-                    telemetry {
-                        enabled = true //(5)!
-                    }
-                }
+      to {
+        config {
+          driverProperties { //(1)!
+            "bootstrap.servers": "localhost:9093"
+          }
+          telemetry {
+            logging {
+              enabled = false //(2)!
             }
-
-            topic { //(6)!
-                config {
-                    topic = "my-topic" //(7)!
-                    partition = 1 //(8)!
-                }
+            metrics {
+              enabled = true //(3)!
+              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
             }
+            telemetry {
+              enabled = true //(5)!
+            }
+          }
         }
+      }
     }
     ```
 
     1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs)
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
-    6.  Конфигурация топика `@KafkaPublisher.Topic`
-    7.  В какой топик метод будет отправлять данные
-    8.  В какой partition топика метод будет отправлять данные (опционально)
+    5.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -590,21 +589,49 @@ public interface BaseKafkaRecordsHandler<K, V> {
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
             telemetry:
               enabled: true #(5)!
-        
-        topic: #(6)!
-          config:
-            topic: "my-topic" #(7)!
-            partition: 1 #(8)!
     ```
 
     1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs)
-    2.  Включает логгирование модуля
-    3.  Включает метрики модуля
+    2.  Включает логгирование модуля (по умолчанию `false`)
+    3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля
-    6.  Конфигурация топика `@KafkaPublisher.Topic`
-    7.  В какой топик метод будет отправлять данные
-    8.  В какой partition топика метод будет отправлять данные (опционально)
+    5.  Включает трассировку модуля (по умолчанию `true`)
+
+`KafkaPublisherConfig.TopicConfig` используется для конфигурации `@KafkaPublisher.Topic`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    path {
+      to {
+        topic { //(1)!
+          config {
+            topic = "my-topic" //(2)!
+            partition = 1 //(3)!
+          }
+        }
+      }
+    }
+    ```
+
+    1.  Конфигурация топика `@KafkaPublisher.Topic`
+    2.  В какой топик метод будет отправлять данные
+    3.  В какой partition топика метод будет отправлять данные (опционально)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    path:
+      to:
+        topic: #(1)!
+          config:
+            topic: "my-topic" #(2)!
+            partition: 1 #(3)!
+    ```
+
+    1.  Конфигурация топика `@KafkaPublisher.Topic`
+    2.  В какой топик метод будет отправлять данные
+    3.  В какой partition топика метод будет отправлять данные (опционально)
 
 ### Сериализация
 

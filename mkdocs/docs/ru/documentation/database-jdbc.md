@@ -60,7 +60,7 @@
         }
         telemetry {
             logging {
-                enabled = true //(16)!
+                enabled = false //(16)!
             }
             metrics {
                 enabled = true //(17)!
@@ -88,10 +88,10 @@
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
     15.  Дополнительные атрибуты JDBC соединения `dataSourceProperties` (ниже пример `hostRecheckSeconds` параметры)
-    16.  Включает логгирование модуля
-    17.  Включает метрики модуля
+    16.  Включает логгирование модуля (по умолчанию `false`)
+    17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля
+    19.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -139,10 +139,10 @@
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
     14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
     15.  Дополнительные атрибуты JDBC соединения `dataSourceProperties` (ниже пример `hostRecheckSeconds` параметры)
-    16.  Включает логгирование модуля
-    17.  Включает метрики модуля
+    16.  Включает логгирование модуля (по умолчанию `false`)
+    17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля
+    19.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Использование
 
@@ -346,6 +346,59 @@
 
         @Query("SELECT * FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): List<Entity>
+    }
+    ```
+
+## Выборка по списку
+
+Иногда требуется выборка по списку значений из базы, на уровне драйвера все эти параметры должны быть отдельно проставлены, так как длина списка не известна
+это не самая очевидная задача так как Kora старается делать все преобразования во время компиляции и убирать любые преобразования строк особенно в SQL во время выполнения,
+для такой функциональности потребуется добавить самостоятельный преобразователь параметров.
+
+На данный момент точно известно, что можно легко добавить поддержку таких параметров без ручного управления в такие популярные базы данных как Postgres/Oracle.
+Из коробки Kora не предоставляет конвертацию таких параметров, но его легко добавить самостоятельно, ниже показан пример для `Postgres`:
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    class ListOfStringJdbcParameterMapper implements JdbcParameterColumnMapper<List<String>> {
+
+        @Override
+        public void set(PreparedStatement stmt, int index, List<String> value) throws SQLException {
+            String[] typedArray = value.toArray(String[]::new);
+            Array sqlArray = stmt.getConnection().createArrayOf("VARCHAR", typedArray);
+            stmt.setArray(index, sqlArray);
+        }
+    }
+
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        List<Entity> findAllByIds(@Mapping(ListOfStringJdbcParameterMapper.class) List<String> ids);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ListOfStringJdbcParameterMapper : JdbcParameterColumnMapper<List<String>> {
+
+        @Throws(SQLException::class)
+        override fun set(stmt: PreparedStatement, index: Int, value: List<String>) {
+            val typedArray = value.toTypedArray()
+            val sqlArray = stmt.connection.createArrayOf("VARCHAR", typedArray)
+            stmt.setArray(index, sqlArray)
+        }
+    }
+
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        fun findAllByIds(@Mapping(ListOfStringJdbcParameterMapper::class) ids: List<String>): List<Entity>
     }
     ```
 

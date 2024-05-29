@@ -10,11 +10,30 @@ HOCON Configuration example:
 ```javascript
 services {
     foo {
-      bar = "some value"
-      baz = 10
+      bar = "SomeValue" //(1)!
+      baz = 10 //(2)!
+      propRequired = ${REQUIRED_ENV_VALUE} //(3)!
+      propOptional = ${?OPTIONAL_ENV_VALUE} //(4)!
+      propDefault = 10
+      propDefault = ${?NON_DEFAULT_ENV_VALUE} //(5)!
+      propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
+      propArray = ["v1", "v2"] //(7)!
+      propMap { //(8)!
+          "k1" = "v1"
+          "k2" = "v2"
+      }
     }
 }
 ```
+
+1. String configuration value
+2. Numeric configuration value
+3. Mandatory configuration value that is substituted from the `REQUIRED_ENV_VALUE` environment variable.
+4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
+5. Configuration value with default value, the default value is specified in `propDefault = 10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
+6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
+7. Configuration value as an array, you can also specify the value as a comma-separated string
+8. Configuration value as a dictionary with key and value
 
 ### Dependency
 
@@ -70,10 +89,27 @@ Example YAML configuration:
 
 ```yaml
 services:
-  foo:
-    bar: "some value"
-    baz: 10
+    foo:
+        bar: "SomeValue" #(1)!
+        baz: 10 #(2)!
+        propRequired: ${REQUIRED_ENV_VALUE} #(3)!
+        propOptional: ${?OPTIONAL_ENV_VALUE} #(4)!
+        propDefault: ${?NON_DEFAULT_ENV_VALUE:10} #(5)!
+        propReference: ${services.foo.bar}Other${services.foo.baz} #(6)!
+        propArray: ["v1", "v2"] #(7)!
+        propMap: #(8)!
+            k1: "v1"
+            k2: "v2"
 ```
+
+1. String configuration value
+2. Numeric configuration value
+3. Mandatory configuration value that is substituted from the `REQUIRED_ENV_VALUE` environment variable.
+4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
+5. Configuration value with default value, the default value is specified as `10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
+6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
+7. Configuration value as an array, you can also specify the value as a comma-separated string
+8. Configuration value as a dictionary with key and value
 
 ### Dependency
 
@@ -161,7 +197,7 @@ This code sample will add an instance of the `FooServiceConfig` class to the dep
     ```javascript
     services {
       foo {
-        bar = "some value"
+        bar = "SomeValue"
         baz = 10
       }
     }
@@ -172,7 +208,7 @@ This code sample will add an instance of the `FooServiceConfig` class to the dep
     ```yaml
     services:
       foo:
-        bar: "some value"
+        bar: "SomeValue"
         baz: 10
     ```
 
@@ -261,7 +297,7 @@ The factory will expect a configuration of the following kind:
     ```javascript
     library {
       foo {
-        bar = "some value"
+        bar = "SomeValue"
         baz = 10
       }
     }
@@ -272,7 +308,7 @@ The factory will expect a configuration of the following kind:
     ```yaml
     library:
       foo:
-        bar: "some value"
+        bar: "SomeValue"
         baz: 10
     ```
 
@@ -469,3 +505,37 @@ environment variables and system variables, you simply inject the configuration 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when you update the configuration it will cause all graph components that use it to be updated,
     it is recommended to always create your own configuration interfaces.
+
+## Supported types
+
+Configuration Extractors provide an extensive list of supported types that covers most of what
+you might need to specify in custom configurations, or you can extend the behavior with your custom `ConfigValueExtractor<T>` component.
+
+??? abstract "List of supported types"
+
+    * boolean / Boolean
+    * short / Short
+    * int / Integer
+    * long / Long
+    * double / Double
+    * float / Float
+    * double[]
+    * String
+    * BigInteger
+    * BigDecimal
+    * Period
+    * Duration
+    * Properties
+    * Pattern
+    * UUID
+    * Properties
+    * LocalDate
+    * LocalTime
+    * LocalDateTime
+    * OffsetTime
+    * OffsetDateTime
+    * Enum (any custom ENUM type)
+    * `List<T>` (where `T` is any of the above listed types)
+    * `Set<T>` (where `T` is any of the above types)
+    * `Map<String, T>` (where `T` is any of the above types)
+    * `Either<A, B>` (where `A` and `B` are any of the above types)

@@ -9,11 +9,11 @@ hide:
 
 Исправлено:
 
-- Исправлен результат Void для методов HttpClient с мапперами по коду
+- Исправлен результат Void для методов `@HttpClient` с мапперами по коду
 - Исправлен `@Cacheable` аспект для реактивного контракта
 - Исправлена обработка HTTP Content-Length в реализациях
 - Исправлен Kotlin Nullable enum в OpenAPI
-- Исправлено отсутствие equals & hashCode в пустых класс Kotlin в OpenAPI
+- Исправлено отсутствие `equals & hashCode` в пустых классах Kotlin в OpenAPI
 - Исправлена ошибка GraalVM ReactorContextHook#init() во время выполнения
 
 ## 1.1.0

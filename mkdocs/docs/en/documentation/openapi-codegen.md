@@ -1,5 +1,5 @@
 Module for creating declarative HTTP handlers [HTTP server](http-server.md)
-or create declarative [HTTP clients](http-client.md) from OpenAPI contracts using [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins/).
+or create declarative [HTTP clients](http-client.md) from OpenAPI contracts using [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle).
 
 ## Dependency
 
@@ -17,46 +17,9 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     Plugin dependency `build.gradle`:
     ```groovy
     plugins {
-        id "org.openapi.generator" version "7.1.0"
+        id "org.openapi.generator" version "7.4.0"
     }
     ```
-
-    ??? abstract "Maven"
-
-        For maven, you need to add a dependency with a generator for the plugin and configure it the same way:
-        ```xml
-        <plugin>
-            <groupId>org.openapitools</groupId>
-            <artifactId>openapi-generator-maven-plugin</artifactId>
-            <version>7.1.0</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>generate</goal>
-                    </goals>
-                    <configuration>
-                        <inputSpec>${project.basedir}/src/main/resources/petstoreV2.yaml</inputSpec>
-                        <output>${project.basedir}/target/generated-sources/openapi/petstoreV2</output>
-                        <generatorName>kora</generatorName>
-                        <configOptions>
-                            <mode>java-client</mode>
-                            <sourceFolder>.</sourceFolder>
-                        </configOptions>
-                    </configuration>
-                </execution>
-            </executions>
-            <dependencies>
-                <dependency>
-                    <groupId>ru.tinkoff.kora</groupId>
-                    <artifactId>openapi-generator</artifactId>
-                    <version>1.1.1</version>
-                </dependency>
-            </dependencies>
-        </plugin>
-        ```
-
-        See more [here](https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin).
-
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -72,7 +35,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     Plugin dependency `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.openapi.generator") version("7.1.0")
+        id("org.openapi.generator") version("7.4.0")
     }
     ```
 
@@ -80,9 +43,9 @@ Requires connection of [HTTP server](http-server.md) or [HTTP client](http-clien
 
 ## Configuration
 
-Configuration is required for [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins/) parameters:
+Configuration is required for [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle) parameters:
 
-- Configuring Gradle plugin parameters in [documentation](https://github.com/OpenAPITools/openapi-generator/blob/v7.1.0/modules/openapi-generator-gradle-plugin/README.adoc).
+- Configuring Gradle plugin parameters in [documentation](https://github.com/OpenAPITools/openapi-generator/blob/v7.4.0/modules/openapi-generator-gradle-plugin/README.adoc).
 - Configuring `configOptions` plugin parameter in [documentation](https://openapi-generator.tech/docs/generators/java/#config-options).
 - Configuring `openapiNormalizer` plugin parameter in [documentation](https://openapi-generator.tech/docs/customization/#openapi-normalizer).
 

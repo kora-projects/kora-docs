@@ -58,7 +58,7 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
         threads = 20 //(1)!
         telemetry {
             logging {
-                enabled = true //(2)!
+                enabled = false //(2)!
             }
             metrics {
                 enabled = true //(3)!
@@ -72,10 +72,10 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
     ```
 
     1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Enables module logging
-    3. Enables module metrics
+    2. Enables module logging (default `false`)
+    3. Enables module metrics (default `true`)
     4. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing
+    5. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -93,10 +93,10 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
     ```
 
     1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Enables module logging
-    3. Enables module metrics
+    2. Enables module logging (default `false`)
+    3. Enables module metrics (default `true`)
     4. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing
+    5. Enables module tracing (default `true`)
 
 ### Fixed interval
 
@@ -404,7 +404,7 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
     scheduling {
         telemetry {
             logging {
-                enabled = true //(1)!
+                enabled = false //(1)!
             }
             metrics {
                 enabled = true //(2)!
@@ -417,10 +417,10 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
     }
     ```
 
-    1. Enables module logging
-    2. Enables module metrics
+    1. Enables module logging (default `false`)
+    2. Enables module metrics (default `true`)
     3. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    4. Enables module tracing
+    4. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -438,10 +438,10 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
           enabled: true #(4)!
     ```
 
-    1. Enables module logging
-    2. Enables module metrics
+    1. Enables module logging (default `false`)
+    2. Enables module metrics (default `true`)
     3. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    4. Enables module tracing
+    4. Enables module tracing (default `true`)
 
 Default settings are used from:
 
