@@ -312,7 +312,7 @@ The factory will expect a configuration of the following kind:
         baz: 10
     ```
 
-Then by connecting the `FooLibraryModule` module in the application, the `FooLibraryModule` config can be used as a dependency in other classes.
+Then by connecting the `FooLibraryModule` module in the application, the `FooServiceConfig` config can be used as a dependency in other classes.
 
 ### Required values
 

@@ -258,7 +258,7 @@
 
 Повторитель (`Retry`) - предоставляет возможность настраивать политику повторного вызова проаннотированных методов.
 Позволяет указать когда требуется повторить попытку выполнения метода, настроить параметры повторения, 
-в случае если методом было брошено исключение соответствующая заданным требованиям фильтра (*RetrierFailurePredicate*).
+в случае если методом было брошено исключение соответствующая заданным требованиям фильтра (`RetryPredicate`).
 
 ### Декларативный подход
 
@@ -555,7 +555,7 @@
 ## Резервный метод
 
 Резервный метод (`Fallback`) - предоставляет возможность указания метода который будет вызван в случае
-если исключение брошенное проаннотированным методом будет удовлетворено фильтрам (*FallbackFailurePredicate*).
+если исключение брошенное проаннотированным методом будет удовлетворено фильтрам (`FallbackPredicate`).
 
 Метод **должен совпадать** по сигнатуре возвращаемого результата.
 
@@ -601,7 +601,7 @@
     @Component
     public class SomeService {
 
-        @Fallback(value = "custom", method = "getFallback(arg3, arg1)")     // Передает аргументы проаннотированного метода в указанном порядке в Fallback метод
+        @Fallback(value = "custom", method = "getFallback(arg3, arg1)") //(1)!
         public String getValue(String arg1, Integer arg2, Long arg3) {
             return "value";
         }
@@ -611,6 +611,8 @@
         }
     }
     ```
+    
+    1. Передает аргументы проаннотированного метода в указанном порядке в Fallback метод
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -618,13 +620,14 @@
     @Component
     open class SomeService {
 
-        // Передает аргументы проаннотированного метода в указанном порядке в Fallback метод
-        @Fallback(value = "custom", method = "getFallback(arg3, arg1)")
+        @Fallback(value = "custom", method = "getFallback(arg3, arg1)") //(1)! 
         fun getValue(arg1: String, arg2: Int, arg3: Long): String = "value"
 
         fun getFallback(argLong: Long, argString: String): String = "fallback"
     }
     ```
+
+    1. Передает аргументы проаннотированного метода в указанном порядке в Fallback метод
 
 ### Конфигурация
 
@@ -847,7 +850,7 @@
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html)
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 

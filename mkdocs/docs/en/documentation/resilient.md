@@ -266,7 +266,7 @@ and take `CircuitBreaker` from it by the name of the configuration that would be
 ## Retry
 
 Retry - provides the ability to customize the policy of repeated invocation of annotated methods.
-It allows you to specify when you want to retry a method, customize retry parameters in case the method threw an exception that meets the specified filter requirements (*RetrierFailurePredicate*).
+It allows you to specify when you want to retry a method, customize retry parameters in case the method threw an exception that meets the specified filter requirements (*RetryPredicate*).
 
 ### Declarative usage
 
@@ -565,7 +565,7 @@ and take `Timeout` from it by the name of the configuration that would be specif
 ## Fallback
 
 Fallback - provides an opportunity to specify a method that will be called in the case of
-if the exception thrown by the annotated method is satisfied by filters (*FallbackFailurePredicate*).
+if the exception thrown by the annotated method is satisfied by filters (*FallbackPredicate*).
 
 ### Declarative usage
 
