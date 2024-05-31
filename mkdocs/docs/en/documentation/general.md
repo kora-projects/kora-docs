@@ -26,9 +26,9 @@ The main pillar on which the Kora framework is built is annotation handlers.
 
     An annotation is a construct associated with Java source code elements such as classes, methods, and variables.
     Annotations provide the program with information at compile time based on which the program can take further action.
-    The [Annotation Processor](https://docs.oracle.com/javase/8/docs/api/javax/annotation/processing/Processor.html) processes these annotations at compile time to provide functions such as code generation, error checking, etc.
+    The [Annotation Processor](https://docs.oracle.com/en/java/javase/17/docs/api/java.compiler/javax/annotation/processing/Processor.html) processes these annotations at compile time to provide functions such as code generation, error checking, etc.
 
-    Kora provides within a single dependency all the [annotation processors](https://docs.oracle.com/javase/8/docs/api/javax/annotation/processing/Processor.html) that will be required for all modules, 
+    Kora provides within a single dependency all the [annotation processors](https://docs.oracle.com/en/java/javase/17/docs/api/java.compiler/javax/annotation/processing/Processor.html) that will be required for all modules, 
     processors do not pull in any unnecessary dependencies that would leak at compile time or application runtime.
 
 === ":simple-kotlin: `Kotlin`"
