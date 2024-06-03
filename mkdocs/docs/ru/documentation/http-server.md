@@ -36,8 +36,7 @@
 
 ## Конфигурация
 
-Конфигурация отвечает за общие настройки реализации HTTP сервера.
-Пример конфигурации описанной в классе `HttpServerConfig`:
+Пример полной конфигурации, описанной в классе `HttpServerConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -98,7 +97,7 @@
       shutdownWait: "100ms" #(9)!
       telemetry:
         logging:
-          enabled: true #(10)!
+          enabled: false #(10)!
           stacktrace: true #(11)!
         metrics:
           enabled: true #(12)!

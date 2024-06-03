@@ -39,8 +39,8 @@ The `HttpClient` interface implementation is `AsyncHttpClient` and is available 
 
 ### Configuration
 
-The configuration is responsible for the general settings of the HTTP client implementation.
-An example of the configuration described in `AsyncHttpClientConfig` and `HttpClientConfig` class:
+Example of the complete configuration described in the `AsyncHttpClientConfig` 
+and `HttpClientConfig` classes (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -66,11 +66,11 @@ An example of the configuration described in `AsyncHttpClientConfig` and `HttpCl
     2. Maximum time to establish a connection
     3. Maximum time to read a response
     4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -93,11 +93,11 @@ An example of the configuration described in `AsyncHttpClientConfig` and `HttpCl
     2. Maximum time to establish a connection
     3. Maximum time to read a response
     4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
 
 ## OkHttp
 
@@ -136,8 +136,8 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
 ### Configuration
 
-Configuration is responsible for the general settings of the HTTP client implementation.
-Example of configuration described in `OkHttpClientConfig` and `HttpClientConfig` classes:
+Example of the complete configuration described in the `OkHttpClientConfig`
+and `HttpClientConfig` classes (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -165,11 +165,11 @@ Example of configuration described in `OkHttpClientConfig` and `HttpClientConfig
     3. Maximum time to establish a connection
     4. Maximum time to read a response
     5. Whether to use environment variables to configure the proxy
-    6. Proxy address
-    7. Proxy port
-    8. User for the proxy
-    9. Password for the proxy
-    10. Hosts that should be excluded from proxying
+    6. Proxy address (optional)
+    7. Proxy port (optional)
+    8. User for the proxy (optional)
+    9. Password for the proxy (optional)
+    10. Hosts that should be excluded from proxying (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -194,11 +194,11 @@ Example of configuration described in `OkHttpClientConfig` and `HttpClientConfig
     3. Maximum time to establish a connection
     4. Maximum time to read a response
     5. Whether to use environment variables to configure the proxy
-    6. Proxy address
-    7. Proxy port
-    8. User for the proxy
-    9. Password for the proxy
-    10. Hosts that should be excluded from proxying
+    6. Proxy address (optional)
+    7. Proxy port (optional)
+    8. User for the proxy (optional)
+    9. Password for the proxy (optional)
+    10. Hosts that should be excluded from proxying (optional)
 
 ## Native client
 
@@ -238,8 +238,8 @@ The `HttpClient` interface implementation is `JdkHttpClient` and is available fo
 
 ### Configuration
 
-The configuration is responsible for the general settings of the HTTP client implementation.
-An example of the configuration described in the `JdkHttpClientConfig` and `HttpClientConfig` class:
+Example of the complete configuration described in the `JdkHttpClientConfig`
+and `HttpClientConfig` classes (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -265,11 +265,11 @@ An example of the configuration described in the `JdkHttpClientConfig` and `Http
     2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
     3. Maximum time to establish a connection
     4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -292,11 +292,11 @@ An example of the configuration described in the `JdkHttpClientConfig` and `Http
     2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
     3. Maximum time to establish a connection
     4. Whether to use environment variables to configure the proxy
-    5. Proxy address
-    6. Proxy port
-    7. User for the proxy
-    8. Password for the proxy
-    9. Hosts that should be excluded from proxying
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
 
 ## Client declarative
 
@@ -402,7 +402,7 @@ Example configuration in the case of the `path.to.config` path described in the 
           requestTimeout: "10s" //(2)!
           telemetry:
             logging:
-              enabled: true #(3)!
+              enabled: false #(3)!
             metrics:
               enabled: true #(4)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -465,7 +465,7 @@ and method `hello` the final path will be `path.to.config.getHello`
             requestTimeout: "10s" #(1)!
             telemetry:
               logging:
-                enabled: true #(2)!
+                enabled: false #(2)!
               metrics:
                 enabled: true #(3)!
                 slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!

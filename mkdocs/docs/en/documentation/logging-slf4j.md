@@ -48,6 +48,64 @@ Logging levels described in the `LoggingConfig` class:
 
 Logback configuration parameters are described in the modules that include logback, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
+### Module
+
+Enabling/disabling logging of certain modules is specified in the configuration of the modules themselves.
+
+Logging of **all modules is disabled** by default, for convenience below is a separate configuration to enable logging of most modules.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    db.telemetry.logging.enabled = true //(1)!
+    cassandra.telemetry.logging.enabled = true //(2)!
+    grpcServer.telemetry.logging.enabled = true //(3)!
+    httpServer.telemetry.logging.enabled = true //(4)!
+    scheduling.telemetry.logging.enabled = true //(5)!
+    grpcClient.SomeGrpcServiceName.telemetry.logging.enabled = true //(6)!
+    soapClient.SomeSoapServiceName.telemetry.logging.enabled = true //(7)!
+    SomePathToConfigHttpClient.telemetry.logging.enabled = true //(8)!
+    SomePathToConfigKafkaConsumer.telemetry.logging.enabled = true //(9)!
+    SomePathToConfigKafkaProducer.telemetry.logging.enabled = true //(10)!
+    ```
+
+    1. Database [JDBC](database-jdbc.md) / [R2DBC](database-jdbc.md) / [Vertx](database-vertx.md)
+    2. Database [Cassandra](database-cassandra.md)
+    3. [gRPC server](grpc-server.md)
+    4. [HTTP server](http-server.md)
+    5. [Scheduler](scheduling.md)
+    6. [gRPC client](grpc-client.md) (Specified for a specific service)
+    7. [SOAP client](soap-client.md) (Specified for a specific service)
+    8. [HTTP client](http-client.md) (Specified for a specific client)
+    9. Kafka [consumer](kafka.md#consumer) (Specified for a specific consumer)
+    10. Kafka [producer](kafka.md#producer) (Specified for a specific producer)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    db.telemetry.logging.enabled: true #(1)!
+    cassandra.telemetry.logging.enabled: true #(2)!
+    grpcServer.telemetry.logging.enabled: true #(3)!
+    httpServer.telemetry.logging.enabled: true #(4)!
+    scheduling.telemetry.logging.enabled: true #(5)!
+    grpcClient.SomeGrpcServiceName.telemetry.logging.enabled: true #(6)!
+    soapClient.SomeSoapServiceName.telemetry.logging.enabled: true #(7)!
+    SomePathToConfigHttpClient.telemetry.logging.enabled: true #(8)!
+    SomePathToConfigKafkaConsumer.telemetry.logging.enabled: true #(9)!
+    SomePathToConfigKafkaProducer.telemetry.logging.enabled: true #(10)!
+    ```
+
+    1. Database [JDBC](database-jdbc.md) / [R2DBC](database-jdbc.md) / [Vertx](database-vertx.md)
+    2. Database [Cassandra](database-cassandra.md)
+    3. [gRPC server](grpc-server.md)
+    4. [HTTP server](http-server.md)
+    5. [Scheduler](scheduling.md)
+    6. [gRPC client](grpc-client.md) (Specified for a specific service)
+    7. [SOAP client](soap-client.md) (Specified for a specific service)
+    8. [HTTP client](http-client.md) (Specified for a specific client)
+    9. Kafka [consumer](kafka.md#consumer) (Specified for a specific consumer)
+    10. Kafka [producer](kafka.md#producer) (Specified for a specific producer)
+
 ## Logback
 
 The module provides a logging implementation based on [Logback](https://www.baeldung.com/logback), adds support for structured logs and the ability to configure logging levels via [config file](config.md).

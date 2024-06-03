@@ -92,14 +92,14 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
 
 ## Configuration
 
-Parameters described in the `GrpcServerConfig` class:
+Example of a complete configuration described in the `GrpcServerConfig` class (example values or default values are indicated):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcServer {
         port = 8090 //(1)!
-        reflectionEnabled = true //(2)!
+        reflectionEnabled = false //(2)!
         telemetry {
             logging {
                 enabled = false //(3)!
@@ -127,10 +127,10 @@ Parameters described in the `GrpcServerConfig` class:
     ```yaml
     grpcServer:
       port: 8090 #(1)!
-      reflectionEnabled: true #(2)!
+      reflectionEnabled: false #(2)!
       telemetry:
         logging:
-          enabled: true #(3)!
+          enabled: false #(3)!
         metrics:
           enabled: true #(4)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -253,7 +253,7 @@ You must also enable the gRPC Server Reflection service in the configuration:
 
     ```javascript
     grpcServer {
-        reflectionEnabled = true //(1)!
+        reflectionEnabled = false //(1)!
     }
     ```
 
@@ -263,7 +263,7 @@ You must also enable the gRPC Server Reflection service in the configuration:
 
     ```yaml
     grpcServer:
-      reflectionEnabled: true #(1)!
+      reflectionEnabled: false #(1)!
     ```
 
     1.  Enables gRPC Server Reflection service

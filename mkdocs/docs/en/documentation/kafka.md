@@ -107,8 +107,9 @@ The value in the annotation indicates from which part of the configuration file 
 
 ### Configuration
 
-The configuration describes the settings of a particular `@KafkaListener` and is described in the `KafkaListenerConfig` class,
-below is an example for the configuration at path `path.to.config`:
+Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `path.to.config` is given below.
+
+Example of the complete configuration described in the `KafkaListenerConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -145,15 +146,15 @@ below is an example for the configuration at path `path.to.config`:
     }
     ```
 
-    1. Specifies the topics to which Consumer will subscribe (or specify `topicsPattern`)
-    2. Specifies the pattern of topics to which the Consumer will subscribe (or `topics` is specified).
+    1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
+    2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
     4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
+    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
     10. Enables module logging (default `false`)
     11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -182,7 +183,7 @@ below is an example for the configuration at path `path.to.config`:
             group.id: "my-group-id"
           telemetry:
             logging:
-              enabled: true #(10)!
+              enabled: false #(10)!
             metrics:
               enabled: true #(11)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
@@ -190,15 +191,15 @@ below is an example for the configuration at path `path.to.config`:
               enabled: true #(13)!
     ```
 
-    1. Specifies the topics to which Consumer will subscribe (or specify `topicsPattern`)
-    2. Specifies the pattern of topics to which the Consumer will subscribe (or `topics` is specified).
+    1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
+    2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
     4. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
+    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
     10. Enables module logging (default `false`)
     11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -538,7 +539,9 @@ The annotation parameter indicates the path for the configuration of the topic.
 
 ### Configuration
 
-`KafkaPublisherConfig` is used to configure `@KafkaPublisher`:
+Configuration describes the settings of a particular `@KafkaPublisher` and an example is given below for the configuration on the `path.to.config` path.
+
+Example of the complete configuration described in the `KafkaPublisherConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -566,7 +569,7 @@ The annotation parameter indicates the path for the configuration of the topic.
     }
     ```
 
-    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
+    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs) (**required**)
     2. Enables module logging (default `false`)
     3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -590,47 +593,47 @@ The annotation parameter indicates the path for the configuration of the topic.
               enabled: true #(5)!
     ```
 
-    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
+    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs) (**required**)
     2. Enables module logging (default `false`)
     3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     5. Enables module tracing (default `true`)
 
-`KafkaPublisherConfig.TopicConfig` is used for the `@KafkaPublisher.Topic` configuration:
+Topic configuration describes the settings of a particular `@KafkaPublisher.Topic` and an example for the configuration at path `path.to.topic.config` is given below.
+
+Example of the complete configuration described in the `KafkaPublisherConfig.TopicConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     path {
       to {
-        topic { //(1)!
+        topic {
           config {
-            topic = "my-topic" //(2)!
-            partition = 1 //(3)!
+            topic = "my-topic" //(1)!
+            partition = 1 //(2)!
           }
         }
       }
     }
     ```
 
-    1. Configuration of `@KafkaPublisher.Topic`.
-    2. Which topic the method will send data to
-    3. Which partition of the topic the method will send data (optional)
+    1. Topic where method will send data (**required**)
+    2. Partition of the topic where method will send data (optional)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     path:
       to:
-        topic: #(1)!
+        topic:
           config:
-            topic: "my-topic" #(2)!
-            partition: 1 #(3)!
+            topic: "my-topic" #(1)!
+            partition: 1 #(2)!
     ```
 
-    1. Configuration of `@KafkaPublisher.Topic`.
-    2. Which topic the method will send data to
-    3. Which partition of the topic the method will send data (optional)
+    1. Topic where method will send data (**required**)
+    2. Partition of the topic where method will send data (optional)
 
 ### Signatures
 

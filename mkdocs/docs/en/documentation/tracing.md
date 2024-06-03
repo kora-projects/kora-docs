@@ -74,7 +74,7 @@ Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttp
       exporter {
         endpoint = "http://localhost:4317" // (1)!
         exportTimeout = "2s" // (2)!
-        scheduleDelay = "200ms" // (3)!
+        scheduleDelay = "2s" // (3)!
         maxExportBatchSize = 512 // (4)!
         maxQueueSize = 1024 // (5)!
       }
@@ -85,8 +85,8 @@ Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttp
     }
     ```
 
-    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector
-    2.  The maximum time to wait for the collector to process telemetry
+    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**required**)
+    2.  Maximum time to wait for the collector to process telemetry
     3.  Time between exporting telemetry to the collector
     4.  Maximum number of telemetry within one export
     5.  Maximum queue size of unsent telemetry
@@ -99,16 +99,16 @@ Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttp
       exporter:
         endpoint: http://localhost:4317 # (1)!
         exportTimeout: 2s # (2)!
-        maxExportBatchSize: 512 # (3)!
-        maxQueueSize: 1024 # (4)!
-        scheduleDelay: 200ms # (5)!
+        scheduleDelay: 2s # (3)!
+        maxExportBatchSize: 512 # (4)!
+        maxQueueSize: 1024 # (6)!
       attributes: # (6)!
         service.name: example-service
         service.namespace: kora
     ```
 
-    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector
-    2.  The maximum time to wait for the collector to process telemetry
+    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**required**)
+    2.  Maximum time to wait for the collector to process telemetry
     3.  Time between exporting telemetry to the collector
     4.  Maximum number of telemetry within one export
     5.  Maximum queue size of unsent telemetry

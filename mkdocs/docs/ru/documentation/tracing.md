@@ -65,7 +65,7 @@
 
 Обязательным полем является только `endpoint`, аттрибуты из поля `attributes` будут отправляться с каждым спаном.
 
-Параметры, описанные в классах `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttpExporterConfig` и `OpentelemetryResourceConfig`:
+Пример полной конфигурации, описанной в классе `OpentelemetryGrpcExporterConfig` или `OpentelemetryHttpExporterConfig`, а также `OpentelemetryResourceConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -74,7 +74,7 @@
       exporter {
         endpoint = "http://localhost:4317" // (1)!
         exportTimeout = "2s" // (2)!
-        scheduleDelay = "200ms" // (3)!
+        scheduleDelay = "2s" // (3)!
         maxExportBatchSize = 512 // (4)!
         maxQueueSize = 1024 // (5)!
       }
@@ -85,7 +85,7 @@
     }
     ```
 
-    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса
+    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса (**обязательный**)
     2.  Максимальное время ожидания обработки телеметрии коллектором 
     3.  Время между экспортом телеметрии в коллектор
     4.  Максимальная кол-во телеметрии в рамках одного экспорта
@@ -99,15 +99,15 @@
       exporter:
         endpoint: http://localhost:4317 # (1)!
         exportTimeout: 2s # (2)!
-        maxExportBatchSize: 512 # (3)!
-        maxQueueSize: 1024 # (4)!
-        scheduleDelay: 200ms # (5)!
+        scheduleDelay: 2s # (3)!
+        maxExportBatchSize: 512 # (4)!
+        maxQueueSize: 1024 # (5)!
       attributes: # (6)!
         service.name: example-service
         service.namespace: kora
     ```
 
-    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса
+    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса (**обязательный**)
     2.  Максимальное время ожидания обработки телеметрии коллектором 
     3.  Время между экспортом телеметрии в коллектор
     4.  Максимальная кол-во телеметрии в рамках одного экспорта

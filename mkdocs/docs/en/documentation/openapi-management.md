@@ -29,7 +29,7 @@ as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](http
     interface Application : OpenApiManagementModule
     ```
 
-Requires [HTTP server](http-server.md) connection.
+Requires [HTTP server](http-server.md) module.
 
 ## Configuration
 

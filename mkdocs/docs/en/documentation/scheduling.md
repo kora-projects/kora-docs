@@ -49,7 +49,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 ### Configuration
 
-Parameters described in the `ScheduledExecutorServiceConfig` config class:
+Example of the complete configuration described in the `ScheduledExecutorServiceConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -84,7 +84,7 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
       threads: 20 #(1)!
       telemetry:
         logging:
-          enabled: true #(2)!
+          enabled: false #(2)!
         metrics:
           enabled: true #(3)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
@@ -430,7 +430,7 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
     scheduling:
       telemetry:
         logging:
-          enabled: true #(1)!
+          enabled: false #(1)!
         metrics:
           enabled: true #(2)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!

@@ -36,8 +36,7 @@ The server supports [Stateful Termination](https://maxilect.ru/blog/pochemu-vazh
 
 ## Configuration
 
-Configuration is responsible for the general settings of the HTTP server implementation.
-An example of the configuration described in the `HttpServerConfig` class:
+Example of the complete configuration described in the `HttpServerConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -98,7 +97,7 @@ An example of the configuration described in the `HttpServerConfig` class:
       shutdownWait: "100ms" #(9)!
       telemetry:
         logging:
-          enabled: true #(10)!
+          enabled: false #(10)!
           stacktrace: true #(11)!
         metrics:
           enabled: true #(12)!

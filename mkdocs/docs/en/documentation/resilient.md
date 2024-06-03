@@ -41,24 +41,23 @@ using declarative style annotations.
 
 ## CircuitBreaker
 
-CircuitBreaker is a proxy that controls the flow to requests to a particular method,
-can be in several states depending on the behavior (OPEN, CLOSED, HALF_OPEN).
+CircuitBreaker is a proxy that controls the flow to requests of a particular method
+and can temporarily stop execution of this method if the method throws many exceptions that meet the specified filter requirements (`CircuitBreakerPredicate`).
 
 The purpose of applying CircuitBreaker is to give the system time to correct the error that caused the failure before allowing the application to attempt the operation again.
 The CircuitBreaker pattern provides stability while the system recovers from the failure and reduces the impact on performance.
 
-- **CLOSED**: An application request is redirected to an operation. The proxy keeps a count of the number of recent failures within a set number of operations (`slidingWindowSize`) coming through the proxy, and if the operation call did not complete successfully, the proxy increments this number.
-  If the number of requests exceeds the specified minimum ceiling required for counts (`minimumRequiredCalls`) and the number of recent failures exceeds the specified threshold (`failureRateThreshold`) for the specified period of time, the proxy is placed in the **OPEN** state.
-- **OPEN**: While in this status, the request from the application immediately terminates with an error and an exception is returned to the application.
-  At this point, the proxy starts a wait time timer (`waitDurationInOpenState`), and when the time of this timer expires, the proxy is placed in the **HALF-OPEN** state.
-- **HALF-OPEN**: A limited number of requests (`permittedCallsInHalfOpenState`) from the application are allowed to pass through and invoke the operation. If these requests are successful, it is assumed that the error that previously caused the
-  failure has been resolved, and the circuit breaker enters the **CLOSED** state (the failure counter is reset). If any request terminates with a fault, the circuit breaker assumes that the
-  fault is still present, so it returns to the **OPEN** state and restarts the wait time timer (`waitDurationInOpenState`) to give the system additional time to recover from the failure.
+- `CLOSED`: An application request is redirected to an operation. The proxy keeps a count of the number of recent failures within a set number of operations (`slidingWindowSize`) coming through the proxy, and if the operation call did not complete successfully, the proxy increments this number.
+  If the number of requests exceeds the specified minimum ceiling required for counts (`minimumRequiredCalls`) and the number of recent failures exceeds the specified threshold (`failureRateThreshold`) for the specified period of time, the proxy is placed in the `OPEN` state.
+- `OPEN`: While in this status, the request from the application immediately terminates with an error and an exception is returned to the application.
+  At this point, the proxy starts a wait time timer (`waitDurationInOpenState`), and when the time of this timer expires, the proxy is placed in the `HALF-OPEN` state.
+- `HALF-OPEN`: A limited number of requests (`permittedCallsInHalfOpenState`) from the application are allowed to pass through and invoke the operation. If these requests are successful, it is assumed that the error that previously caused the
+  failure has been resolved, and the circuit breaker enters the `CLOSED` state (the failure counter is reset). If any request terminates with a fault, the circuit breaker assumes that the
+  fault is still present, so it returns to the `OPEN` state and restarts the wait time timer (`waitDurationInOpenState`) to give the system additional time to recover from the failure.
 
-The Half-Open state helps prevent requests to the service from growing rapidly. Because once a service is started, it may be able to handle a limited number of requests for some time before full
-recovery.
+The `Half-Open` state helps prevent requests to the service from growing rapidly. Because once a service is started, it may be able to handle a limited number of requests for some time before full recovery.
 
-Initially it has the CLOSED state.
+Initially it has the `CLOSED` state.
 
 ### Declarative usage
 
@@ -93,7 +92,7 @@ and then the named settings of a particular CircuitBreaker are applied to overri
 
 You can change the default settings for all CircuitBreakers at the same time by changing the `default` configuration.
 
-Parameters described in the `CircuitBreakerConfig` class:
+Example of a complete configuration described in the `CircuitBreakerConfig` class (example values or default values are indicated):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -111,11 +110,11 @@ Parameters described in the `CircuitBreakerConfig` class:
     }
     ```
 
-    1.  Limit the number of requests within which *failureRateThreshold* is calculated to determine the state
-    2.  Minimum number of queries required to start state calculation
-    3.  Percentage of unsuccessful requests required to transition to **OPEN** states (has values from *1 to 100*).
-    4.  Waiting time in **OPEN** status, after which the transition to **HALF-OPEN** status is realized.
-    5.  Required number of requests in **HALF-OPEN** status that must be successful for transition to **CLOSED** status
+    1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)
+    2.  Minimum number of queries required to start state calculation (**required**)
+    3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
+    4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
+    5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
 
 
 === ":simple-yaml: `YAML`"
@@ -131,11 +130,11 @@ Parameters described in the `CircuitBreakerConfig` class:
           permittedCallsInHalfOpenState: 10 #(5)!
     ```
 
-    1.  Limit the number of requests within which *failureRateThreshold* is calculated to determine the state
-    2.  Minimum number of queries required to start state calculation
-    3.  Percentage of unsuccessful requests required to transition to **OPEN** states (has values from *1 to 100*).
-    4.  Waiting time in **OPEN** status, after which the transition to **HALF-OPEN** status is realized.
-    5.  Required number of requests in **HALF-OPEN** status that must be successful for transition to **CLOSED** status
+    1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)
+    2.  Minimum number of queries required to start state calculation (**required**)
+    3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
+    4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
+    5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
 
 An example of overriding named settings for a particular CircuitBreaker:
 
@@ -164,6 +163,8 @@ An example of overriding named settings for a particular CircuitBreaker:
 
 In order to register which errors should be recorded as CircuitBreaker errors, you can override the default filter,
 you need to implement `CircuitBreakerPredicate` and register your component in the context and specify in the CircuitBreaker configuration its name returned in the `name()` method.
+
+CircuitBreaker register all errors by default.
 
 === ":fontawesome-brands-java: `Java`"
 
@@ -203,11 +204,13 @@ Configuration:
     resilient {
         circuitbreaker {
             custom {
-                failurePredicateName = "MyPredicate"
+                failurePredicateName = "MyPredicate" //(1)!
             }
         }
     }
     ```
+
+    1. Name of the predicate from the `name()` method
 
 === ":simple-yaml: `YAML`"
 
@@ -215,8 +218,11 @@ Configuration:
     resilient:
       circuitbreaker:
         custom:
-          failurePredicateName: "MyPredicate"
+          failurePredicateName: "MyPredicate" #(1)!
     ```
+
+    1. Name of the predicate from the `name()` method
+
 
 ### Imperative usage
 
@@ -301,7 +307,7 @@ and then the named settings of a particular `Retry` are applied to override the 
 
 It is possible to change the default settings for all `Retry` at the same time by changing the `default` configuration.
 
-Parameters described in the `RetryConfig` class:
+Example of the complete configuration described in the `RetryConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -312,16 +318,14 @@ Parameters described in the `RetryConfig` class:
                 delay = "100ms" //(1)!
                 attempts = 2 //(2)!
                 delayStep = "100ms" //(3)!
-                failurePredicateName = "MyPredicate" //(4)!
             }
         }
     }
     ```
 
-    1. Initial delay time for the operation at Retry
-    2. Number of Retry attempts for the operation
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts
-    4. name of the predicate that will register errors matching the Retry requirements.
+    1. Initial delay time for the operation at Retry (**required**)
+    2. Number of Retry attempts for the operation (**required**)
+    3. Delay step which is accumulated in consequence of subsequent Retry attempts (**required**)
 
 === ":simple-yaml: `YAML`"
 
@@ -332,13 +336,11 @@ Parameters described in the `RetryConfig` class:
           delay: "100ms" #(1)!
           attempts: 2 #(2)!
           delayStep: "100ms" #(3)!
-          failurePredicateName: "MyPredicate" #(4)!
     ```
 
-    1. Initial delay time for the operation at Retry
-    2. Number of Retry attempts for the operation
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts
-    4. name of the predicate that will register errors matching the Retry requirements.
+    1. Initial delay time for the operation at Retry (**required**)
+    2. Number of Retry attempts for the operation (**required**)
+    3. Delay step which is accumulated in consequence of subsequent Retry attempts (**required**)
 
 ### Exception filtering
 
@@ -383,11 +385,13 @@ Configuration:
     resilient {
         retry {
             custom {
-                failurePredicateName = "MyPredicate"
+                failurePredicateName = "MyPredicate" //(1)!
             }
         }
     }
     ```
+    
+    1. Name of the predicate from the `name()` method
 
 === ":simple-yaml: `YAML`"
 
@@ -395,8 +399,10 @@ Configuration:
     resilient:
       retry:
         custom:
-          failurePredicateName: "MyPredicate"
+          failurePredicateName: "MyPredicate" #(1)!
     ```
+
+    1. Name of the predicate from the `name()` method
 
 ### Imperative usage
 
@@ -490,7 +496,7 @@ and then the named settings of a particular Timeout are applied to override the 
 
 It is possible to change the default settings for all Timeouts at the same time by changing the `default` configuration.
 
-Parameters described in the `TimeoutConfig` class:
+Example of the complete configuration described in the `TimeoutConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -504,7 +510,7 @@ Parameters described in the `TimeoutConfig` class:
     }
     ```
 
-    1.  The time limit of the operation after which a TimeoutExhaustedException will be thrown.
+    1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
 
 === ":simple-yaml: `YAML`"
 
@@ -515,7 +521,7 @@ Parameters described in the `TimeoutConfig` class:
           delay: "1s" #(1)!
     ```
 
-    1.  The time limit of the operation after which a TimeoutExhaustedException will be thrown.
+    1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
 
 ### Imperative usage
 
@@ -641,7 +647,7 @@ and then the named settings of a particular Fallback are applied to override the
 
 It is possible to change the default settings for all Fallbacks at the same time by changing the `default` configuration.
 
-Parameters described in the `FallbackConfig` class:
+Example of the complete configuration described in the `FallbackConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -649,11 +655,13 @@ Parameters described in the `FallbackConfig` class:
     resilient {
         fallback {
             custom {
-                failurePredicateName = "MyPredicate"
+                failurePredicateName = "MyPredicate" //(1)!
             }
         }
     }
     ```
+
+    1. Name of the predicate from the `name()` method
 
 === ":simple-yaml: `YAML`"
 
@@ -661,8 +669,10 @@ Parameters described in the `FallbackConfig` class:
     resilient:
       fallback:
         custom:
-          failurePredicateName: "MyPredicate"
+          failurePredicateName: "MyPredicate" #(1)!
     ```
+
+    1. Name of the predicate from the `name()` method
 
 ### Exception filtering
 
@@ -794,7 +804,7 @@ In the example above:
 3. Applies `@CircuitBreaker` which will operate according to the configuration and [state](#circuitbreaker) depending on the successful result of the method or if the method threw a chain exception (including `@Timeout` & `@Retry`).
 4. Applies `@Fallback` which will call *getFallback* method with argument *arg1* in case the method threw an exception along the chain (including `@Timeout` & `@Retry` & `@CircuitBreaker`)
 
-Example configuration:
+Example configuration for all aspects:
 
 ===! ":material-code-json: `Hocon`"
 

@@ -35,7 +35,7 @@ Also **required to provide** the database driver implementation as a dependency.
 
 ## Configuration
 
-Parameters described in the `JdbcDatabaseConfig` class:
+Example of the complete configuration described in the `JdbcDatabaseConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -73,22 +73,22 @@ Parameters described in the `JdbcDatabaseConfig` class:
     }
     ```
 
-    1. JDBC database connection URL **(mandatory)**
-    2. Username to connect **(required)**
-    3. Password of the user to connect **(required)**
+    1. JDBC database connection URL (**required**)
+    2. Username to connect (**required**)
+    3. Password of the user to connect (**required**)
     4. Database schema for the connection
-    5. Name of the database connection set in Hikari **(required)**
+    5. Name of the database connection set in Hikari (**required**)
     6. Maximum size of the database connection set in Hikari
     7. Minimum size of the set of ready connections to the database in Hikari in standby mode
     8. Maximum time to establish a connection in Hikari
     9. Maximum time for connection verification in Hikari
     10. Maximum time for connection downtime in Hikari
     11. Maximum lifetime of a connection in Hikari
-    12. Maximum time a connection can be idle in Hikari before it is considered a leak (disabled by default)
-    13. Maximum time to wait for connection initialization at service startup (disabled by default)
+    12. Maximum time a connection can be idle in Hikari before it is considered a leak (optional)
+    13. Maximum time to wait for connection initialization at service startup (optional)
     14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
-    15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters)
-    16. Whether to enable module logging
+    15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters) (optional)
+    16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     19. Enables module tracing (default `true`)
@@ -115,7 +115,7 @@ Parameters described in the `JdbcDatabaseConfig` class:
         hostRecheckSeconds: "1"  
       telemetry:
         logging:
-          enabled: true #(16)!
+          enabled: false #(16)!
         metrics:
           enabled: true #(17)!
           slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
@@ -124,22 +124,22 @@ Parameters described in the `JdbcDatabaseConfig` class:
     }
     ```
 
-    1. JDBC database connection URL **(mandatory)**
-    2. Username to connect **(required)**
-    3. Password of the user to connect **(required)**
+    1. JDBC database connection URL (**required**)
+    2. Username to connect (**required**)
+    3. Password of the user to connect (**required**)
     4. Database schema for the connection
-    5. Name of the database connection set in Hikari **(required)**
+    5. Name of the database connection set in Hikari (**required**)
     6. Maximum size of the database connection set in Hikari
     7. Minimum size of the set of ready connections to the database in Hikari in standby mode
     8. Maximum time to establish a connection in Hikari
     9. Maximum time for connection verification in Hikari
     10. Maximum time for connection downtime in Hikari
     11. Maximum lifetime of a connection in Hikari
-    12. Maximum time a connection can be idle in Hikari before it is considered a leak (disabled by default)
-    13. Maximum time to wait for connection initialization at service startup (disabled by default)
+    12. Maximum time a connection can be idle in Hikari before it is considered a leak (optional)
+    13. Maximum time to wait for connection initialization at service startup (optional)
     14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
-    15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters)
-    16. Whether to enable module logging
+    15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters) (optional)
+    16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     19. Enables module tracing (default `true`)

@@ -41,7 +41,7 @@
 
 ### Конфигурация
 
-Параметры, описанные в классе `ScheduledExecutorServiceConfig`:
+Пример полной конфигурации, описанной в классе `ScheduledExecutorServiceConfig` (указаны значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -76,7 +76,7 @@
       threads: 20 #(1)!
       telemetry:
         logging:
-          enabled: true #(2)!
+          enabled: false #(2)!
         metrics:
           enabled: true #(3)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
@@ -422,7 +422,7 @@
     scheduling:
       telemetry:
         logging:
-          enabled: true #(1)!
+          enabled: false #(1)!
         metrics:
           enabled: true #(2)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!

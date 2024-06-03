@@ -47,7 +47,9 @@ All configurations for SOAP clients are created with the prefix `soapClient`,
 and the bulk of the client configuration is under the client name from the WSDL annotation `@WebService`,
 which corresponds often to the `<wsdl:binding type="tns:SimpleService">` tag in the WSDL configuration.
 
-For a SOAP service named `SimpleService`, the configuration will have a path of `soapClient.SimpleService`:
+SOAP service named `SimpleService` will have a configuration with the path `soapClient.SimpleService`.
+
+Example of the complete configuration described in the `SoapServiceConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -55,7 +57,7 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
     soapClient {
         SimpleService {
             url = "https://localhost:8090" //(1)!
-            timeout = "10s" //(2)!
+            timeout = "60s" //(2)!
             telemetry {
                 logging {
                     enabled = false //(3)!
@@ -72,7 +74,7 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
     }
     ```
 
-    1. URL of the service where requests will be sent
+    1. URL of the service where requests will be sent (**required**)
     2. Maximum request time
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)
@@ -85,10 +87,10 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
     soapClient:
       SimpleService:
         url: "https://localhost:8090" #(1)!
-        timeout: "10s" #(2)!
+        timeout: "60s" #(2)!
         telemetry:
         logging:
-            enabled: true #(3)!
+            enabled: false #(3)!
           metrics:
             enabled: true #(4)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -96,7 +98,7 @@ For a SOAP service named `SimpleService`, the configuration will have a path of 
             enabled: true #(6)!
     ```
 
-    1. URL of the service where requests will be sent
+    1. URL of the service where requests will be sent (**required**)
     2. Maximum request time
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)

@@ -39,7 +39,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     }
     ```
 
-Requires connection of [HTTP server](http-server.md) or [HTTP client](http-client.md).
+Requires [HTTP server](http-server.md) or [HTTP client](http-client.md) module.
 
 ## Configuration
 

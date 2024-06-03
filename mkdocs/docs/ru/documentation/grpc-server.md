@@ -92,14 +92,14 @@
 
 ## Конфигурация
 
-Параметры описанные в классе `GrpcServerConfig`:
+Пример полной конфигурации, описанной в классе `GrpcServerConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcServer {
         port = 8090 //(1)!
-        reflectionEnabled = true //(2)!
+        reflectionEnabled = false //(2)!
         telemetry {
             logging {
                 enabled = false //(3)!
@@ -127,10 +127,10 @@
     ```yaml
     grpcServer:
       port: 8090 #(1)!
-      reflectionEnabled = true #(2)!
+      reflectionEnabled = false #(2)!
       telemetry:
         logging:
-          enabled: true #(3)!
+          enabled: false #(3)!
         metrics:
           enabled: true #(4)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -253,7 +253,7 @@ Reflection поддерживается только для сервисов, о
 
     ```javascript
     grpcServer {
-        reflectionEnabled = true //(1)!
+        reflectionEnabled = false //(1)!
     }
     ```
 
@@ -263,7 +263,7 @@ Reflection поддерживается только для сервисов, о
 
     ```yaml
     grpcServer:
-      reflectionEnabled: true #(1)!
+      reflectionEnabled: false #(1)!
     ```
 
     1.  Включает сервис gRPC Server Reflection

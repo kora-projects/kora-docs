@@ -36,7 +36,7 @@ In some cases, such as with a [PostgreSQL](https://postgrespro.ru/docs/postgresq
 
 ## Configuration
 
-Parameters described in the `VertxDatabaseConfig` class:
+Example of the complete configuration described in the `VertxDatabaseConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -68,18 +68,18 @@ Parameters described in the `VertxDatabaseConfig` class:
     }
     ```
 
-    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database connection set name **(mandatory)**
+    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database connection set name (**required**)
     5. Maximum size of the database connection set
     6. Maximum time to establish a connection
-    7. Maximum time to get a connection from a connection set (disabled by default)
+    7. Maximum time to get a connection from a connection set (optional)
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
-    10. Maximum time to wait for connection initialization at service startup (disabled by default)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    12. Whether to enable module logging
+    10. Maximum time to wait for connection initialization at service startup (optional)
+    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     15. Enables module tracing (default `true`)
@@ -101,7 +101,7 @@ Parameters described in the `VertxDatabaseConfig` class:
       readinessProbe: false #(11)!
       telemetry:
         logging:
-          enabled: true #(12)!
+          enabled: false #(12)!
         metrics:
           enabled: true #(13)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
@@ -109,18 +109,18 @@ Parameters described in the `VertxDatabaseConfig` class:
           enabled: true #(15)!
     ```
 
-    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database connection set name **(mandatory)**
+    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database connection set name (**required**)
     5. Maximum size of the database connection set
     6. Maximum time to establish a connection
-    7. Maximum time to get a connection from a connection set (disabled by default)
+    7. Maximum time to get a connection from a connection set (optional)
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
-    10. Maximum time to wait for connection initialization at service startup (disabled by default)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    12. Whether to enable module logging
+    10. Maximum time to wait for connection initialization at service startup (optional)
+    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     15. Enables module tracing (default `true`)

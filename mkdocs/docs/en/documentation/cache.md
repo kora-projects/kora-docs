@@ -37,7 +37,7 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
 
 ### Configuration
 
-Example configuration for `mycache.config` cache, parameters described in the `CaffeineCacheConfig` class:
+Example of complete configuration for `mycache.config` cache, parameters are described in the `CaffeineCacheConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -52,10 +52,10 @@ Example configuration for `mycache.config` cache, parameters described in the `C
     }
     ```
 
-    1.  The time after which the value for the key will be deleted is reported after the value is added.
-    2.  Time after which the value for the key will be deleted, counted after a read operation.
-    3. Initial cache size (helps to avoid cache expansion in case of active swelling)
-    4.  Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache)
+    1. Time after which the value for the key will be deleted is reported after the value is added (optional)
+    2. Time after which the value for the key will be deleted, counted after a read operation (optional)
+    3. Initial cache size (helps to avoid cache expansion in case of active swelling) (optional)
+    4. Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache) (default is `100000`)
 
 === ":simple-yaml: ``YAML``"
 
@@ -68,10 +68,10 @@ Example configuration for `mycache.config` cache, parameters described in the `C
         maximumSize: 10 #(4)!
     ```
 
-    1.  The time after which the value for the key will be expired is reported after the value is added.
-    2.  The time after which the value for the key will be deleted is counted after a read operation.
-    3. Initial cache size (helps to avoid cache expansion in case of active swelling)
-    4.  Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache)
+    1. Time after which the value for the key will be expired is reported after the value is added (optional)
+    2. Time after which the value for the key will be deleted is counted after a read operation (optional)
+    3. Initial cache size (helps to avoid cache expansion in case of active swelling) (optional)
+    4. Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache) (default is `100000`)
 
 ## Redis
 
@@ -112,7 +112,7 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 It is required to separately configure the Lettuce driver to connect to Redis.
 A single connection is used for all caches.
 
-Example configuration for *lettuce* driver, parameters described in `LettuceConfig` class:
+Example of a complete configuration for *lettuce* driver, parameters are described in the `LettuceConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -128,10 +128,10 @@ Example configuration for *lettuce* driver, parameters described in `LettuceConf
     }
     ```
 
-    1. URI to connect to Redis
-    2. Username to connect
-    3. Password of the user to connect to
-    4. Base number for the connection
+    1. URI to connect to Redis (**required**)
+    2. Username for connection (optional)
+    3. Password for connection (optional)
+    4. Database number for connection (optional)
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
@@ -149,17 +149,17 @@ Example configuration for *lettuce* driver, parameters described in `LettuceConf
       commandTimeout: "15s" #(7)!
     ```
 
-    1. URI to connect to Redis
-    2. Username to connect
-    3. Password of the user to connect to
-    4. Base number for the connection
+    1. URI to connect to Redis (**required**)
+    2. Username for connection (optional)
+    3. Password for connection (optional)
+    4. Database number for connection (optional)
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
 
 Redis cache configurations configure the behavior of a particular cache.
 
-Example configuration for `mycache.config` cache, parameters described in the `RedisCacheConfig` class:
+Example of a complete configuration for `mycache.config` cache, parameters are described in the `RedisCacheConfig` class (example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -173,9 +173,9 @@ Example configuration for `mycache.config` cache, parameters described in the `R
     }
     ```
 
-    1.  When writing, sets the [expiration](https://redis.io/commands/psetex/) time
-    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/)
-    3.  Prefix a key in a particular cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes
+    1.  When writing, sets the [expiration](https://redis.io/commands/psetex/) time (optional)
+    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
+    3.  Prefix a key in a particular cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
 === ":simple-yaml: ``YAML`"
 
@@ -187,9 +187,9 @@ Example configuration for `mycache.config` cache, parameters described in the `R
         keyPrefix: "mykey" //(3)!
     ```
 
-    1.  Sets the [expiration](https://redis.io/commands/psetex/) time when writing.
-    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/)
-    3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes
+    1.  Sets the [expiration](https://redis.io/commands/psetex/) time when writing (optional)
+    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
+    3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
 ## Usage
 
