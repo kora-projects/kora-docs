@@ -339,6 +339,40 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
+### Generated identifier
+
+If you want to get the primary keys of an entity created by the database as the result,
+it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
+This approach works for `@Batch` queries as well.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        Mono<Long> insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(entity: Entity): Mono<Long>
+    }
+    ```
+
 ## Transactions
 
 In order to perform manual queries in Kora, there is an interface `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,

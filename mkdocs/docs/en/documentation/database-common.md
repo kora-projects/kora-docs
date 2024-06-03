@@ -468,40 +468,6 @@ If you want to get the number of updated rows as a result, you should use a spec
     }
     ```
 
-### Generated identifier
-
-If you want to get the primary keys of an entity created by the database as the result,
-it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
-This approach works for `@Batch` queries as well.
-
-=== ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Repository
-    public interface EntityRepository extends JdbcRepository {
-
-        public record Entity(Long id, String name) {}
-
-        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
-        @Id
-        long insert(Entity entity);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Repository
-    interface EntityRepository : JdbcRepository {
-
-        public record Entity(Long id, String name) {}
-
-        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
-        @Id
-        fun insert(entity: Entity): Long
-    }
-    ```
-
 ### Manual query
 
 In case there is not enough functionality for some reason with queries in `@Query` annotation or manual control of the connection is required,

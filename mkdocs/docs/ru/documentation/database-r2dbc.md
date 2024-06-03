@@ -339,6 +339,40 @@
     }
     ```
 
+## Созданный идентификатор
+
+Если необходимо получить в качестве результата созданные базой данных первичные ключи сущности,
+предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
+Такой подход работает и для `@Batch` запросов.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        Mono<Long> insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(entity: Entity): Mono<Long>
+    }
+    ```
+
 ## Транзакции
 
 Для выполнения ручных запросов в Kora есть интерфейс `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,

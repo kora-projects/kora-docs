@@ -402,6 +402,40 @@
     }
     ```
 
+## Созданный идентификатор
+
+Если необходимо получить в качестве результата созданные базой данных первичные ключи сущности,
+предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
+Такой подход работает и для `@Batch` запросов.
+
+=== ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        long insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(entity: Entity): Long
+    }
+    ```
+
 ## Транзакции
 
 Для выполнения блокирующих запросов в Kora есть интерфейс `JdbcConnectionFactory`, 
