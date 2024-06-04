@@ -1,4 +1,7 @@
-Kora provides all the tools needed for modern Java/Kotlin development:
+Kora is a cloud-oriented server-side framework and offers
+many different modules for quickly building applications such as HTTP server, Kafka consumers, database abstraction in the form of repositories and much more.
+
+Kora provides all the tools needed for modern Java/Kotlin server-side development:
 
 - Dependency injection and inversion at compile time via annotations
 - Declarative components generation at compile time via annotations
@@ -161,3 +164,12 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     ```
 
     You can also check out [Hello World example](../examples/hello-world.md) for a more detailed description.
+
+## Terminology
+
+This section describes the basic terms found throughout the documentation and within the Kora framework:
+
+- Factory - is factory a method that, creates instances of a component/classes/dependencies.
+- Module - [module](container.md#external-factory) is a pluggable dependency, often external, that provides some factory methods and new functionality to the application.
+- Component - [component](container.md#components) is a singleton class that implements some logic and is a dependency in a dependency container.
+- Aspect - is aspect logic that will extend the standard behavior of a method by via annotation before and/or after its execution.
