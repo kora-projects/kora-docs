@@ -2,7 +2,7 @@ Module provides a repository implementation for the [Cassandra](https://cassandr
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -440,7 +440,7 @@ Example of a simple configuration described in `CassandraConfig` class (example 
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -483,7 +483,7 @@ It is possible to override common settings with private settings from a profile,
 
 In order to apply the settings from the `someProfile` profile, just do the following:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -518,7 +518,7 @@ It is possible to override the mapping of different parts of [entity](database-c
 
 If you need to convert the result manually, it is suggested to use `CassandraResultSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements CassandraResultSetMapper<UUID> {
@@ -560,7 +560,7 @@ If you need to convert the result manually, it is suggested to use `CassandraRes
 
 If you need to convert the string manually, it is suggested to use `CassandraRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements CassandraRowMapper<UUID> {
@@ -603,7 +603,7 @@ If you need to convert the string manually, it is suggested to use `CassandraRow
 
 If you need to convert the column value manually, it is suggested to use the `CassandraRowColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements CassandraRowColumnMapper<UUID> {
@@ -653,7 +653,7 @@ If you need to convert the column value manually, it is suggested to use the `Ca
 
 If you want to convert the value of a query parameter manually, it is suggested to use `CassandraParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements CassandraParameterColumnMapper<UUID> {
@@ -698,7 +698,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
 
 Due to the nature of the helper class for extracting data from `AsyncResultSet` for asynchronous queries (Mono or Suspend), only `CassandraReactiveResultSetMapper` can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class AsyncResultMapper implements CassandraReactiveResultSetMapper<UUID, Flux<UUID>> {
@@ -741,7 +741,7 @@ Due to the nature of the helper class for extracting data from `AsyncResultSet` 
 There is support for [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html)
 types using the `@UDT` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Table("entities")
@@ -767,7 +767,7 @@ types using the `@UDT` annotation:
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

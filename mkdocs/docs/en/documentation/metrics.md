@@ -4,7 +4,7 @@ Requires [HTTP server](http-server.md) module added to provide metrics in [prome
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -90,7 +90,7 @@ In order to make changes to the `PrometheusMeterRegistry` configuration, you nee
 
 For example, we want to add a common tag for all metrics:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module

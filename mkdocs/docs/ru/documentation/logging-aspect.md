@@ -1,10 +1,10 @@
-Модуль для декларативного логирования аргументов и результата методов с помощью аннотаций.
+Модуль для декларативного логирования аргументов и результата методов с помощью аннотаций аспектов.
 
 ## Подключение
 
 Скорее всего уже транзитивно подключен из других зависимостей либо из [Logback](logging-slf4j.md#logback), в противном случае требуется подключить:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -38,7 +38,7 @@
 
 ### Аргументов
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     @Log.in
@@ -77,7 +77,7 @@
 
 ### Результата
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     @Log.out
@@ -116,7 +116,7 @@
 
 ### Аргументов и результата
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     @Log
@@ -157,7 +157,7 @@
 
 ### Выборочное логирование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     @Log.out
@@ -201,7 +201,7 @@
 В случае если представление параметра как строкой не является желаемым поведением,
 его можно реализовать интерфейс `StructuredArgument` и параметр научится логировать себя сам:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     public record Entity(String name, String code) implements StructuredArgument {
@@ -265,7 +265,7 @@
 В случае если представление параметра как строкой не является желаемым поведением, 
 его можно переназначить через указание `StructuredArgumentMapper` напротив желаемого аргумента:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java 
     public record Entity(String name, String code) { }
@@ -324,7 +324,9 @@
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Класс не должен быть `final`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`.
 
@@ -334,6 +336,8 @@
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Класс должен быть `open`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
 

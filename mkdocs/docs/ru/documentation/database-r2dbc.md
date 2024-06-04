@@ -3,7 +3,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -141,7 +141,7 @@
 
 ## Использование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -163,7 +163,7 @@
 
 Если требуется преобразовать результат в ручную, предлагается использовать `R2dbcResultFluxMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements R2dbcResultFluxMapper<UUID, Flux<UUID>> {
@@ -205,7 +205,7 @@
 
 Если требуется преобразовать строку в ручную, предлагается использовать `R2dbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements R2dbcRowMapper<UUID> {
@@ -248,7 +248,7 @@
 
 Если требуется преобразовать значение колонки в ручную, предлагается использовать `R2dbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements R2dbcResultColumnMapper<UUID> {
@@ -298,7 +298,7 @@
 
 Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `R2dbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements R2dbcParameterColumnMapper<UUID> {
@@ -345,7 +345,7 @@
 предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
 Такой подход работает и для `@Batch` запросов.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -381,7 +381,7 @@
 
 Для того чтобы выполнять запросы транзакционно, можно использовать контракт `inTx`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -431,7 +431,7 @@
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -474,7 +474,7 @@
 
 Доступные сигнатуры для методов репозитория из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

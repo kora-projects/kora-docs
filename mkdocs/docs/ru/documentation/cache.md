@@ -7,7 +7,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -79,7 +79,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -199,7 +199,7 @@
 
 Для регистрации `@Cache` и указания конфига требуется проаннотировать аннотацией `@Cache` где аргумент `value` означает полный путь к конфига.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -233,7 +233,7 @@
 
 Ключ для кэша составляет из аргументов метода, порядок аргументов имеет значение, в данном случае он будет составляться из значения `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -266,7 +266,7 @@
 
 Ключ для кэша составляет из аргументов метода, порядок аргументов имеет значение, в данном случае он будет составляться из значения `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -299,7 +299,7 @@
 
 Ключ для кэша составляет из аргументов метода, порядок аргументов имеет значение, в данном случае он будет составляться из значения `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -331,7 +331,7 @@
 
 Метод проаннотированный `@CacheInvalidate` будет вызван и затем будут удалены все из кэша определенного в *value*.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -361,7 +361,7 @@
 
 В случае если у вас есть несколько кешей то требуется подключить оба модуля и указать соответствующее количество аннотаций над методом.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -391,7 +391,7 @@
 
 А сам проаннотированный класс так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -425,7 +425,7 @@
 
 В случае если ключ кэша представляет собой 1 аргумент, то требуется зарегистрировать `Cache` с сигнатурой соответствующей типам ключа и значения.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -447,7 +447,7 @@
 Такой преобразователь можно также предоставить в ручную с помощью аннотации `@Mapping`,
 пример преобразования сложного объекта в простой ключ кеша:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -492,7 +492,7 @@
 
 Пример для `Cache` где композитный ключ состоит из 2 элементов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
     
     Предполагается создавать собственный `record` класс который бы описывал композитный ключ.
 
@@ -525,7 +525,7 @@
 либо же порядок аргументов не соответствует порядку аргументов конструктора композитного ключа,
 следует использовать атрибут аннотации `parameters` и определить какие именно аргументы метода использовать и в каком порядке.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -555,7 +555,7 @@
 
 Библиотека предоставляет компонент для построения сущности, которая объединяет операции GET и PUT, без использования аспектов - `LoadableCache`
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -592,7 +592,9 @@
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Класс не должен быть `final`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения.
 
@@ -602,6 +604,8 @@
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Класс должен быть `open`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения.
 

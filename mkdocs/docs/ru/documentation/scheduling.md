@@ -11,7 +11,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -95,7 +95,7 @@
 Планирование с запуском через фиксированный равные промежуток времени.
 Реальное время интервала зависит от времени выполнения задачи, может запускать новые задачи даже если последняя задача еще выполняется.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -125,7 +125,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -182,7 +182,7 @@
 Не имеет значения, сколько времени занимает текущее исполнение, следующее выполнение запускается ровно после завершения предыдущей задачи 
 и заданного промежутка ожидания между задачами.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -212,7 +212,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -267,7 +267,7 @@
 
 Запускает одиножды задачу через определенный фиксированный интервал времени.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -297,7 +297,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -355,7 +355,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -461,7 +461,7 @@
 
 Запускает одиножды задачу через определенный фиксированный интервал времени.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -495,7 +495,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -546,7 +546,7 @@
 
 Предполагает создание собственного `триггера` на основе библиотеки Quartz и регистрация его в контейнере приложения с определенным тегом и последующее его использование через аннотацию.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp

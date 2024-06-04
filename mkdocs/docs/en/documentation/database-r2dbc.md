@@ -3,7 +3,7 @@ the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -141,7 +141,7 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -163,7 +163,7 @@ It is possible to override the conversion of different parts of [entity](databas
 
 If you need to convert the result manually, it is suggested to use `R2dbcResultFluxMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements R2dbcResultFluxMapper<UUID, Flux<UUID>> {
@@ -205,7 +205,7 @@ If you need to convert the result manually, it is suggested to use `R2dbcResultF
 
 If you need to convert the string manually, it is suggested to use `R2dbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements R2dbcRowMapper<UUID> {
@@ -248,7 +248,7 @@ If you need to convert the string manually, it is suggested to use `R2dbcRowMapp
 
 If you need to convert the column value manually, it is suggested to use the `R2dbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements R2dbcResultColumnMapper<UUID> {
@@ -298,7 +298,7 @@ If you need to convert the column value manually, it is suggested to use the `R2
 
 If you want to convert the value of a query parameter manually, it is suggested to use `R2dbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements R2dbcParameterColumnMapper<UUID> {
@@ -345,7 +345,7 @@ If you want to get the primary keys of an entity created by the database as the 
 it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
 This approach works for `@Batch` queries as well.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -381,7 +381,7 @@ All repository methods called within a transaction lambda will be executed in th
 
 In order to perform queries transactionally, the `inTx` contract can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -431,7 +431,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
 If you need some more complex logic for the query and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -472,7 +472,7 @@ If you need some more complex logic for the query and `@Query` is not enough, yo
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

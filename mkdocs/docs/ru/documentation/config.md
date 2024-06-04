@@ -38,7 +38,7 @@ services {
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -114,7 +114,7 @@ services:
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -167,7 +167,7 @@ services:
 
 Для создания пользовательских конфигураций следует использовать аннотацию `@ConfigSource`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -193,7 +193,7 @@ services:
 
 Этот пример кода добавит в контейнер экземпляр класса `FooServiceConfig`, который при создании будет ожидать конфигурацию следующего вида:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     services {
@@ -215,7 +215,7 @@ services:
 
 После этого класс `FooServiceConfig` уже можно использовать как зависимость в других классах:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -243,7 +243,7 @@ services:
 
 Рассмотрим пример когда есть такой класс конфигурации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigValueExtractor
@@ -269,7 +269,7 @@ services:
 
 Для того чтобы библиотека предоставляла конфигурацию, требуется реализовать фабрику в модуле:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface FooLibraryModule {
@@ -293,7 +293,7 @@ services:
 
 Фабрика будет ожидать конфигурацию следующего вида:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     library {
@@ -323,7 +323,7 @@ services:
 
 Если есть необходимость указать значение из файла конфигурации как необязательное, то можно воспользоваться таким форматом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Предлагается использовать аннотацию `@Nullable` над сигнатурой метода:
 
@@ -358,7 +358,7 @@ services:
 
 Если есть необходимость использовать в классе значения по умолчанию, то можно воспользоваться таким форматом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -400,7 +400,7 @@ services:
 В случае если требуется внедрить конфигурацию **только** [переменных окружения](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit), 
 то для этого можно использовать аннотацию `@Environment` как тег для класса конфигурации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -426,7 +426,7 @@ services:
 В случае если требуется внедрить конфигурацию **только** [системных переменных](https://www.baeldung.com/java-system-get-property-vs-system-getenv),
 то для этого можно использовать аннотацию `@SystemProperties` как тег для класса конфигурации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -452,7 +452,7 @@ services:
 В случае если требуется внедрить полную конфигурацию приложения которая состоит **только** из файла конфигурации, 
 то для этого можно использовать аннотацию `@ApplicationConfig` как тег для класса конфигурации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -478,7 +478,7 @@ services:
 В случае если требуется внедрить полную конфигурацию приложения которая состоит из файла конфигурации,
 переменных окружения и системных переменных, то для этого требуется просто внедрить класс конфигурации без тега:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component

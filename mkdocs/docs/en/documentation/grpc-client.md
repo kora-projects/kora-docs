@@ -2,7 +2,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 The code for the gRPC client is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy
@@ -154,7 +154,7 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
 
 Created gRPC services can be injected as dependency:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -191,7 +191,7 @@ The following interceptors are used at client startup by default:
 
 In order to add your custom interceptor, you need to register the interceptor as a component with the service tag:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(SimpleServiceGrpc.class)

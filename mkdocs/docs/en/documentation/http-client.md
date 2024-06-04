@@ -7,7 +7,7 @@ HTTP client implementation based on the [Async HTTP Client](https://github.com/A
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -106,7 +106,7 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -206,7 +206,7 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -305,7 +305,7 @@ It is suggested to use special annotations to create a declarative client:
 * `@HttpClient` - indicates that the interface is a declarative HTTP client
 * `@HttpRoute` - specifies [HTTP request type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods) and request path
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -332,7 +332,7 @@ It is suggested to use special annotations to create a declarative client:
 The default configuration of a particular implementation of `@HttpClient` uses the following path `httpClient.{lower case class name}` for configuration lookup,
 or specified in the `configPath` parameter in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient(configPath = "path.to.config") //(1)!
@@ -489,7 +489,7 @@ It is suggested to use special annotations to specify request parameters.
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{quote}` in the path
 and the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -515,7 +515,7 @@ and the name of the parameter is specified in `value` or is equal to the name of
 
 `@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -543,7 +543,7 @@ and the name of the parameter is specified in `value` or is equal to the name of
 It is possible to send query parameters in key and value format, for this purpose it is assumed to use `Map` type,
 where the key is the parameter name and must be of type `String`, and the parameter value can be of any type and will be processed through `String.valueOf()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -569,7 +569,7 @@ where the key is the parameter name and must be of type `String`, and the parame
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), parameter name is specified in `value` or defaults to the method argument name.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -596,7 +596,7 @@ where the key is the parameter name and must be of type `String`, and the parame
 It is possible to send request parameters in key and value format, for this purpose it is supposed to use `HttpHeaders` type or `Map` type,
 where the key is the parameter name and must be of type `String`, and the parameter value can be of any type and will be processed through `String.valueOf()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -628,7 +628,7 @@ the default supported types are `byte[]`, `ByteBuffer` or `String`.
 In order to indicate that the body is Json and needs to automatically create such a writer and embed it,
 is required to use the `@Json` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -664,7 +664,7 @@ is required to use the `@Json` annotation:
 
 You can use `FormUrlEncoded` as the body argument type and it will be processed as [form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -688,7 +688,7 @@ You can use `FormUrlEncoded` as the body argument type and it will be processed 
 
 An example of a method call with this form would look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var response = httpClient.formEncoded(new FormUrlEncoded(
@@ -712,7 +712,7 @@ An example of a method call with this form would look like this:
 
 You can use `FormMultipart` as the body argument type and it will be treated as [binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -736,7 +736,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
 
 An example of a method call with this form would look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var response = httpClient.formMultipart(new FormMultipart(List.of(
@@ -768,7 +768,7 @@ An example of a method call with this form would look like this:
 If the body needs to be written in a way different from the standard mechanisms,
 it is possible to use a special `HttpClientRequestMapper` interface to implement your custom logic:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -812,7 +812,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -836,7 +836,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 
 #### Required parameters
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     By default, all arguments declared in a method are **required** (*NotNull*).
 
@@ -846,7 +846,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 
 #### Optional parameters
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     If a method argument is optional, that is, it may not exist then,
     `@Nullable` annotation can be used:
@@ -887,7 +887,7 @@ By default, you can use the standard response body return value types such as `v
 
 If the body is to be read as Json, the `@Json` annotation must be used over the method.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -928,7 +928,7 @@ it is intended to use `HttpResponseEntity`, which is a wrapper over the response
 
 Below is an example similar to the Json example along with the `HttpResponseEntity` wrapper:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -960,7 +960,7 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
 
 If you need to read the response in a different way, you can use the special `HttpClientResponseMapper` interface:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1024,7 +1024,7 @@ correspondence between the HTTP status code and the `HttpClientResponseMapper` r
 
 You can also use `ResponseCodeMapper.DEFAULT` as an indication of the default behavior for all unlisted status codes.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1071,7 +1071,7 @@ and for all other status codes the `ResponseErrorMapper` will be used.
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value.
 
@@ -1093,7 +1093,7 @@ Available signatures for repository methods out of the box:
 You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` class.
 Interceptors can be applied to specific methods or to the entire `@HttpClient` class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1145,6 +1145,197 @@ Interceptors can be applied to specific methods or to the entire `@HttpClient` c
     }
     ```
 
+### Authorization
+
+Kora provides out-of-the-box interceptors that can be used for [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/) authorization.
+
+#### Basic
+
+You need to configure an interceptor and configuration for [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/) authorization:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("openapiAuth.basicAuth")
+    interface BasicAuthConfig {
+
+        String username();
+
+        String password();
+    }
+
+    default BasicAuthHttpClientInterceptor basicAuther(BasicAuthConfig config) {
+        return new BasicAuthHttpClientInterceptor(config.username(), config.password());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("openapiAuth.basicAuth")
+    interface BasicAuthConfig {
+
+        fun username(): String
+
+        fun password(): String
+    }
+
+    fun basicAuther(config: BasicAuthConfig): BasicAuthHttpClientInterceptor {
+        return BasicAuthHttpClientInterceptor(config.username(), config.password())
+    }
+    ```
+
+You can also provide your own `HttpClientTokenProvider` implementation in the constructor if rules for getting secrets are different.
+
+Then add interceptor for the entire HTTP client or specific methods.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(BasicAuthHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(BasicAuthHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### ApiKey
+
+You need to configure an interceptor and configuration for [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/) authorization:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("openapiAuth.apiKeyAuth")
+    interface ApiKeyAuthConfig {
+
+        String apiKey();
+    }
+
+    default ApiKeyHttpClientInterceptor apiKeyAuther(ApiKeyAuthConfig config) {
+        return new ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("openapiAuth.apiKeyAuth")
+    interface ApiKeyAuthConfig {
+
+        fun apiKey(): String
+    }
+
+    fun apiKeyAuther(config: ApiKeyAuthConfig): ApiKeyHttpClientInterceptor {
+        return ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey())
+    }
+    ```
+
+Then add interceptor for the entire HTTP client or specific methods.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(ApiKeyHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(ApiKeyHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### Bearer
+
+You need to configure an interceptor for [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/) authorization:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    final class BearerAuth {}
+
+    default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
+        return new BearerAuthHttpClientInterceptor(tokenProvider);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class BearerAuth
+
+    fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
+        return BearerAuthHttpClientInterceptor(tokenProvider)
+    }
+    ```
+
+You will need to implement the `Bearer` token provisioning yourself using your custom `HttpClientTokenProvider` implementation,
+or use a constructor that accepts a static `Bearer Token`.
+
+```java
+public interface HttpClientTokenProvider {
+    
+    CompletionStage<String> getToken(HttpClientRequest request);
+}
+```
+
+Then add interceptor for the entire HTTP client or specific methods.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(BearerAuthHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(BearerAuthHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### OAuth
+
+Authorization by [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) is similar to [Bearer](#bearer),
+you need to implement `HttpClientTokenProvider` yourself and put it in dependency container.
+
 ## Client imperative
 
 The base client represents the `HttpClient` interface and is available for deployment:
@@ -1163,7 +1354,7 @@ public interface HttpClient {
 
 You can use `HttpClientRequestBuilder` to build requests manually:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     HttpClientRequest request = HttpClientRequestBuilder.of("POST", "http://localhost:8090/pets/{petId}")

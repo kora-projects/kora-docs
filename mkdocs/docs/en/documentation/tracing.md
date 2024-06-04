@@ -5,7 +5,7 @@ and export trace by gRPC in OTLP format.
 
 Module allows trace collection using [gRPC protocol](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) by means of `GrpcSender`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -35,7 +35,7 @@ Module allows trace collection using [gRPC protocol](https://github.com/open-tel
 
 Module allows to collect trace using [HTTP protocol](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) by means of `HttpSender`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy

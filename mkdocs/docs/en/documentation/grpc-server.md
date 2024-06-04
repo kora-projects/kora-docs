@@ -2,7 +2,7 @@ Module for gRPC server handlers support based on [grpc.io](https://grpc.io/docs/
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ Module for gRPC server handlers support based on [grpc.io](https://grpc.io/docs/
 
 The code for the gRPC server is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy
@@ -149,7 +149,7 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
 
 Created gRPC service handlers are required to be tagged with the `@Component` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -180,9 +180,9 @@ To override the default interceptor list, you can override the `serverBuilder` m
 
 ### Custom
 
-Adding your own interceptor requires creating an inheritor of `ServerInterceptor` with the `@Component` annotation:
+Adding your custom interceptor requires creating an inheritor of `ServerInterceptor` with the `@Component` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -231,7 +231,7 @@ You can learn more about working with gRPC Server Reflection [here](https://gith
 
 An optional gRPC Server Reflection dependency is required.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy

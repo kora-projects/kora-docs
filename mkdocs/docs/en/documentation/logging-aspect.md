@@ -1,18 +1,10 @@
 Module for declarative logging of method arguments and result using annotations.
 
-=== ":fontawesome-brands-java: `Java`"
-
-    When applying aspects, class must not be `final`
-
-=== ":simple-kotlin: `Kotlin`"
-
-    When applying aspects, class must be `open`
-
 ## Dependency
 
 Most likely already transitively connected from other dependencies or from [Logback](logging-slf4j.md#logback), otherwise it needs to be added:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -163,7 +155,9 @@ public String methodWithOnlyLogReturnAndArgs(String strParam,int numParam) {
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Class must be non `final` in order for aspects to work.
 
     The `T` refers to the type of the return value, either `Void`.
 
@@ -172,6 +166,8 @@ Available signatures for repository methods out of the box:
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Class must be `open` in order for aspects to work.
 
     By `T` we mean the type of the return value, either `Void`.
 

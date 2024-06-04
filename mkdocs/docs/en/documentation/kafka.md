@@ -2,7 +2,7 @@ Module for creating declarative [Apache Kafka](https://kafka.apache.org/) `Consu
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ Descriptions of working with [Kafka Consumer](https://docs.confluent.io/platform
 
 Creating a `Consumer` requires using the `@KafkaListener` annotation over a method:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -67,7 +67,7 @@ The `@KafkaListener` annotation parameter points to the `Consumer` configuration
 In case you need different behavior for different topics, it is possible to create several such containers,
 each with its own individual configuration. It looks like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -244,7 +244,7 @@ Available signatures for Kafka consumer out-of-the-box methods, where `K` refers
 Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) from `ConsumerRecord`,
 `Exception` (optional) in case of serialization/connection error and after all events are processed, `commitSync()` is called:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -274,7 +274,7 @@ Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) fro
 
 Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional), once all `ConsumerRecords` have been processed, `commitSync()` is called:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -296,7 +296,7 @@ Accepts `ConsumerRecord`/`ConsumerRecords` and `Consumer`.
 As in the previous case, `commit` must be called manually.
 Called for each `ConsumerRecord` obtained by calling `poll()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -322,7 +322,7 @@ Tags are supported to better customize the `Deserializer`.
 Tags can be set on parameter-key, parameter-value, as well as on parameters of type `ConsumerRecord` and `ConsumerRecords`.
 These tags will be set on container dependencies.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -359,7 +359,7 @@ These tags will be set on container dependencies.
 
 In case deserialization from `Json` is required, the `@Json` tag can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -418,7 +418,7 @@ From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>`.
 If you use a signature with unpacked `key`/`value`/`headers`, you can add `Exception`, `Throwable`, `RecordKeyDeserializationException`, `RecordKeyDeserializationException` with the last argument
 or `RecordValueDeserializationException`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -488,7 +488,7 @@ Descriptions of working with [Kafka Producer](https://docs.confluent.io/platform
 Assume to use the `@KafkaPublisher` annotation on the interface to create `Kafka Producer`,
 in order to send messages to any topic it is supposed to create a method with the signature `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -513,7 +513,7 @@ The annotation parameter indicates the path to the configuration.
 In case it is required to use typed contracts for specific topics, the `@KafkaPublisher.Topic` annotation is supposed to be used
 to create such contracts:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -639,7 +639,7 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
 
 Allows `value` and `key` (optional) and `headers` (optional) to be sent from `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -663,7 +663,7 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 
 Can be received as the result of a `RecordMetadata` operation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -687,7 +687,7 @@ Can be received as the result of a `RecordMetadata` operation:
 
 Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -714,7 +714,7 @@ Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<
 
 It is possible to send `ProducerRecord` with or without `Callback` and combine the response with the examples above:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -739,7 +739,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 In order to specify which `Serializer` to take from a container, there is an option to use tags.
 Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -767,7 +767,7 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 
 If you want to serialize as Json, you should use `@Json` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -816,7 +816,7 @@ It is possible to send a message to Kafka in [within a transaction](https://www.
 
 It is required to first create a regular `KafkaProducer` and then use it to create a transactional Producer:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -849,7 +849,7 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 
 It is expected to use `inTx` methods to send such messages, all messages within Lambda will be applied if it is successful and canceled if it fails.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     transactionalPublisher.inTx(producer -> {
@@ -869,7 +869,7 @@ It is expected to use `inTx` methods to send such messages, all messages within 
 
 It is also possible to manually perform all manipulations with `KafkaProducer`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // commit will be called on try-with-resources close

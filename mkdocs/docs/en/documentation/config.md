@@ -37,7 +37,7 @@ services {
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -113,7 +113,7 @@ services:
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -166,7 +166,7 @@ Such a user interface can later be injected as a dependency along with other com
 
 In order to simplify the creation of custom configurations, the `@ConfigSource` annotation should be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -192,7 +192,7 @@ In order to simplify the creation of custom configurations, the `@ConfigSource` 
 
 This code sample will add an instance of the `FooServiceConfig` class to the dependency container, which when created will expect the following kind of configuration:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     services {
@@ -214,7 +214,7 @@ This code sample will add an instance of the `FooServiceConfig` class to the dep
 
 After that, the `FooServiceConfig` class can already be used as a dependency in other classes:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -242,7 +242,7 @@ which will create rules for processing a configuration file into an instance of 
 
 Let's consider an example when there is such a configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigValueExtractor
@@ -268,7 +268,7 @@ Let's consider an example when there is such a configuration class:
 
 In order for the library to provide configuration, you need to implement the factory in a module:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface FooLibraryModule {
@@ -292,7 +292,7 @@ In order for the library to provide configuration, you need to implement the fac
 
 The factory will expect a configuration of the following kind:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     library {
@@ -322,7 +322,7 @@ By default, all values declared in the config are considered **required** (*NotN
 
 If you need to specify a value from the configuration file as optional, you can use this format:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     It is suggested to use the `@Nullable` annotation over the method signature:
 
@@ -357,7 +357,7 @@ If you need to specify a value from the configuration file as optional, you can 
 
 If there is a need to use default values in a class, you can use this format:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -399,7 +399,7 @@ configuration file mapping. The resulting configuration mapping consists of seve
 In case you want to embed the configuration **only** [environment variables](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit),
 you can use the `@Environment` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -425,7 +425,7 @@ you can use the `@Environment` annotation as a tag for the configuration class:
 In case you want to inject a configuration of **only** [system variables](https://www.baeldung.com/java-system-get-property-vs-system-getenv),
 then you can use the `@SystemProperties` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -451,7 +451,7 @@ then you can use the `@SystemProperties` annotation as a tag for the configurati
 In case you want to inject a complete application configuration that consists **only** of a configuration file,
 you can use the `@ApplicationConfig` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -477,7 +477,7 @@ you can use the `@ApplicationConfig` annotation as a tag for the configuration c
 If you want to inject a complete application configuration that consists of a configuration file,
 environment variables and system variables, you simply inject the configuration class without the tag:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -504,7 +504,7 @@ environment variables and system variables, you simply inject the configuration 
 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when you update the configuration it will cause all graph components that use it to be updated,
-    it is recommended to always create your own configuration interfaces.
+    it is recommended to always create custom user configuration interfaces.
 
 ## Supported types
 

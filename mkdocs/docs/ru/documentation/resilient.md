@@ -1,9 +1,9 @@
 Модуль для создания отказоустойчивого приложения с использованием таких подходов как [прерыватель](#_2), 
-[резервный метод](#_16), [повторитель](#_7) и [ограничитель выполнения по времени](#_12) с помощью аннотаций в декларативном стиле.
+[резервный метод](#_16), [повторитель](#_7) и [ограничитель выполнения по времени](#_12) с помощью аннотаций аспектов в декларативном стиле.
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -54,7 +54,7 @@
 
 ### Декларативный подход
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -157,7 +157,7 @@
 
 По умолчанию прерыватель учитывает все ошибки.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -220,7 +220,7 @@
 Можно использовать прерыватель в императивном коде, для этого понадобиться внедрить как зависимость `CircuitBreakerManager`
 и взять из него прерыватель по имени конфигурации которая указывалась бы в аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -268,7 +268,7 @@
 
 ### Декларативный подход
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -340,7 +340,7 @@
 
 По умолчанию повторитель учитывает все ошибки.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -402,7 +402,7 @@
 Можно использовать повторитель в императивном коде, для этого понадобиться внедрить как зависимость `RetryManager`
 и взять из него повторитель по имени конфигурации которая указывалась бы в аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -448,7 +448,7 @@
 
 ### Декларативный подход
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -520,7 +520,7 @@
 Можно использовать ограничитель времени в императивном коде, для этого понадобиться внедрить как зависимость `TimeoutManager`
 и взять из него ограничитель по имени конфигурации которая указывалась бы в аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -571,7 +571,7 @@
 
 Пример резервного метода без аргументов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -603,7 +603,7 @@
 
 Пример резервного метода с аргументами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -676,7 +676,7 @@
 требуется реализовать `FallbackPredicate` и зарегистрировать свой компонент в контексте 
 и указать в конфигурации резервного метода его имя возвращаемое в методе `name()`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -711,7 +711,7 @@
 Можно использовать резервный метод в императивном коде, для этого понадобиться внедрить как зависимость `FallbackManager`
 и взять из него резервный метод по имени конфигурации которая указывалась бы в аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -758,7 +758,7 @@
 Порядок применения аннотаций зависит от порядка объявления аннотаций.
 Вы можете поменять порядок по своему желанию и комбинировать его с другими аннотациями, которые точно также применяются в порядке объявления.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -856,7 +856,9 @@
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Класс не должен быть `final`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`.
 
@@ -867,6 +869,8 @@
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Класс должен быть `open`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
 

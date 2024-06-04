@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -127,7 +127,7 @@
 
 ## Использование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -149,7 +149,7 @@
 
 Если требуется преобразовать результат в ручную, предлагается использовать `VertxRowSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements VertxRowSetMapper<List<UUID>> {
@@ -191,7 +191,7 @@
 
 Если требуется преобразовать строку в ручную, предлагается использовать `VertxRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements VertxRowMapper<UUID> {
@@ -234,7 +234,7 @@
 
 Если требуется преобразовать значение колонки в ручную, предлагается использовать `VertxResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements VertxResultColumnMapper<UUID> {
@@ -284,7 +284,7 @@
 
 Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `VertxParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements VertxParameterColumnMapper<UUID> {
@@ -328,7 +328,7 @@
 
 Для того чтобы выполнять запросы транзакционно, можно использовать контракт `inTx`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -378,7 +378,7 @@
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -419,7 +419,7 @@
 
 Доступные сигнатуры для методов репозитория из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

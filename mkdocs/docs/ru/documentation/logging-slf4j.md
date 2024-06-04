@@ -5,7 +5,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 Логеры требуется предоставлять посредствам фабрики [SLF4J](https://www.slf4j.org/manual.html#hello_world).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     Logger logger = LoggerFactory.getLogger(SomeService.class)
@@ -112,7 +112,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -168,7 +168,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 Потребуется подключить общую реализацию логирования:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -214,7 +214,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 Передать структурированные данные в лог можно через маркер:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());
@@ -236,7 +236,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 Передать структурированные данные в лог можно через параметры:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());
@@ -258,7 +258,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 Структурные данные можно прикреплять ко всем записям в рамках контекста с помощью класса `ru.tinkoff.kora.logging.common.MDC`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     MDC.put("key", gen -> gen.writeString("value"));

@@ -3,7 +3,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -146,7 +146,7 @@
 
 ## Использование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -168,7 +168,7 @@
 
 Если требуется преобразовать результат в ручную, предлагается использовать `JdbcResultSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements JdbcResultSetMapper<UUID> {
@@ -212,7 +212,7 @@
 
 Если требуется преобразовать строку в ручную, предлагается использовать `JdbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements JdbcRowMapper<UUID> {
@@ -256,7 +256,7 @@
 
 Если требуется преобразовать значение колонки в ручную, предлагается использовать `JdbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements JdbcResultColumnMapper<UUID> {
@@ -307,7 +307,7 @@
 
 Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `JdbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements JdbcParameterColumnMapper<UUID> {
@@ -358,7 +358,7 @@
 На данный момент точно известно, что можно легко добавить поддержку таких параметров без ручного управления в такие популярные базы данных как Postgres/Oracle.
 Из коробки Kora не предоставляет конвертацию таких параметров, но его легко добавить самостоятельно, ниже показан пример для `Postgres`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -408,7 +408,7 @@
 предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
 Такой подход работает и для `@Batch` запросов.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -444,7 +444,7 @@
 
 Для того чтобы выполнять запросы транзакционно, можно использовать контракт `inTx`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -501,7 +501,7 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `java.sql.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -541,7 +541,7 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 Доступные сигнатуры для методов репозитория из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

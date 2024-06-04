@@ -1,17 +1,8 @@
-A module for creating a fault-tolerant application using approaches such as *CircuitBreaker, Fallback, Timeout, Retry*
-using declarative style annotations.
-
-=== ":fontawesome-brands-java: `Java`"
-
-    When applying aspects, class must not be `final`
-
-=== ":simple-kotlin: `Kotlin`"
-
-    When applying aspects, class must be `open`
+Module for creating a fault-tolerant application using approaches such as *CircuitBreaker, Fallback, Timeout, Retry* using aspect annotations.
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -61,7 +52,7 @@ Initially it has the `CLOSED` state.
 
 ### Declarative usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -166,7 +157,7 @@ you need to implement `CircuitBreakerPredicate` and register your component in t
 
 CircuitBreaker register all errors by default.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -229,7 +220,7 @@ Configuration:
 You can use a breaker in imperative code, for this you need to implement `CircuitBreakerManager` as a dependency and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation.
 and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -276,7 +267,7 @@ It allows you to specify when you want to retry a method, customize retry parame
 
 ### Declarative usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -347,7 +338,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
 In order to register which errors should be recorded as errors on the Retry side, you can override the default filter,
 it is required to implement `RetryPredicate` and register its component in the context and specify in the Retry configuration its name returned in the `name()` method.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -409,7 +400,7 @@ Configuration:
 It is possible to use a repeater in imperative code, for this you need to implement `RetryManager` as a dependency and take `Retry` from it by the name of the configuration that would be specified in the annotation.
 and take `Retry` from it by the name of the configuration that would be specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -455,7 +446,7 @@ Timeout - provides the ability to set the maximum time of operation of the annot
 
 ### Declarative usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -528,7 +519,7 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
 You can use a time limiter in imperative code, for this you need to implement `TimeoutManager` as a dependency and take `Timeout` from it by the name of the configuration that would be specified in the annotation.
 and take `Timeout` from it by the name of the configuration that would be specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -577,7 +568,7 @@ if the exception thrown by the annotated method is satisfied by filters (*Fallba
 
 An example of a backup method with no arguments:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -609,7 +600,7 @@ An example of a backup method with no arguments:
 
 Example for *Fallback* with arguments:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -679,7 +670,7 @@ Example of the complete configuration described in the `FallbackConfig` class (d
 In order to register which errors should be recorded as Fallback errors, you can override the default filter,
 you need to implement `FallbackPredicate` and register your component in the context and specify in the Fallback configuration its name returned in the `name()` method.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -714,7 +705,7 @@ you need to implement `FallbackPredicate` and register your component in the con
 You can use the fallback method in imperative code, for this you need to implement as a dependency `FallbackManager`
 and take `Fallback` from it by the name of the configuration that would be specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -761,7 +752,7 @@ It is possible to combine all of the above annotations simultaneously over a sin
 The order in which the annotations are applied depends on the order in which the annotations are declared.
 You can change the order as you wish and combine it with other annotations that are also applied in the order of declaration.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -857,7 +848,9 @@ Example configuration for all aspects:
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Class must be non `final` in order for aspects to work.
 
     The `T` refers to the type of the return value, either `Void`.
 
@@ -867,6 +860,8 @@ Available signatures for repository methods out of the box:
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Class must be `open` in order for aspects to work.
 
     By `T` we mean the type of the return value, either `Void`.
 

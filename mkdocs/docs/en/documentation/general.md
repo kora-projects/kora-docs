@@ -22,7 +22,7 @@ In order to achieve high-performance and efficient code, Kora stands on these pr
 
 The main pillar on which the Kora framework is built is annotation handlers.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     An annotation is a construct associated with Java source code elements such as classes, methods, and variables.
     Annotations provide the program with information at compile time based on which the program can take further action.
@@ -48,7 +48,7 @@ Kafka producers, database repositories and so on, but gives a huge performance a
 
 ## Compatibility
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Requires a minimum version of [JDK 17](https://openjdk.org/projects/jdk/17/).
 
@@ -95,7 +95,7 @@ Gradle version `7+` is required.
 In order to avoid having to specify versions for each dependency, it is suggested to use [BOM](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import)
 dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version once for all Kora dependencies at once.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Kora supports incremental builds of multiple rounds at the annotation processing stage,
     a more detailed description of working with Gradle and Java can be found in their [official documentation](https://docs.gradle.org/current/userguide/java_plugin.html).

@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@
 
 Код для gRPC-сервера создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
@@ -149,7 +149,7 @@
 
 Созданные gRPC сервисы требуется пометить аннотацией `@Component`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -182,7 +182,7 @@
 
 Для добавления собственного перехватчика требуется создать наследника `ServerInterceptor` с аннотацией `@Component`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -231,7 +231,7 @@ Reflection поддерживается только для сервисов, о
 
 Требуется дополнительно подключить зависимость [gRPC Server Reflection](https://mvnrepository.com/artifact/io.grpc/grpc-services).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy

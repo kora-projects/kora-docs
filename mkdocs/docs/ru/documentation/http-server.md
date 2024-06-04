@@ -6,7 +6,7 @@
 Пока что доступна реализация основанная на [Undertow](https://undertow.io/). 
 Сервер поддерживает [штатное завершение](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -126,7 +126,7 @@
 Для создания контроллера следует использовать `@HttpController` аннотацию, а для его регистрации как зависимость `@Component`.
 Аннотация `@HttpRoute` отвечает за указания пути и метода HTTP для конкретного метода обработчика.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component //(1)!
@@ -180,7 +180,7 @@
 `@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути
 и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -214,7 +214,7 @@
 
 `@Query` — значение параметра запроса, имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -250,7 +250,7 @@
 
 `@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -292,7 +292,7 @@
 Для указания, что тело является Json и ему требуется автоматически создать такой читатель и внедрить его,
 требуется использовать аннотацию `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -334,7 +334,7 @@
 
 Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -366,7 +366,7 @@
 
 Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -398,7 +398,7 @@
 
 `@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -432,7 +432,7 @@
 
 В случае если требуется обрабатывать запрос отличным способом, то можно использовать специальный интерфейс `HttpServerRequestMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -484,7 +484,7 @@
 
 #### Обязательные параметры
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     По умолчанию все аргументы объявленные в методе являются **обязательными** (*NotNull*).
 
@@ -494,7 +494,7 @@
 
 #### Необязательные параметры
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     В случае если аргумент метода является необязательным, то есть может отсутствовать то,
     можно использовать аннотацию `@Nullable`:
@@ -535,7 +535,7 @@
 такие как `byte[]`, `ByteBuffer`, `String` которые будут обработаны со статус кодом `200` и соответствующим заголовком типа ответа
 либо `HttpServerResponse` где надо будет самостоятельно заполнить всю информацию об HTTP ответе.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -583,7 +583,7 @@
 
 В случае если предполагается отвечать в формате Json, то требуется использовать аннотацию `@Json` над методом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -630,7 +630,7 @@
 
 Ниже показан пример аналогичный примеру Json вместе с оберткой `HttpResponseEntity`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -668,7 +668,7 @@
 
 Если требуется отвечать ошибкой, то можно использовать `HttpServerResponseException` для того чтобы бросать исключение.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -706,7 +706,7 @@
 
 В случае если требуется чтение ответа отличным способом, то можно использовать специальный интерфейс `HttpServerResponseMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -758,7 +758,7 @@
 
 Доступные сигнатуры для методов декларативного HTTP обработчика из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`.
 
@@ -782,7 +782,7 @@
 - На весь класс контроллер целиком
 - На все классы контроллеры одновременно (требуется использовать `@Tag(HttpServerModule.class)` над классом перехватчиком)
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -859,7 +859,7 @@
 
 Ниже показан пример по обработке всех описанных декларативных параметров запроса из примеров выше:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {

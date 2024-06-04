@@ -2,7 +2,7 @@ Module provides a repository implementation based on the [Vertx](https://vertx.i
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -127,7 +127,7 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -149,7 +149,7 @@ It is possible to override the conversion of different parts of [entity](databas
 
 If you need to convert the result manually, it is suggested to use `VertxRowSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements VertxRowSetMapper<List<UUID>> {
@@ -191,7 +191,7 @@ If you need to convert the result manually, it is suggested to use `VertxRowSetM
 
 If you need to convert the string manually, it is suggested to use `VertxRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements VertxRowMapper<UUID> {
@@ -234,7 +234,7 @@ If you need to convert the string manually, it is suggested to use `VertxRowMapp
 
 If you need to convert the column value manually, it is suggested to use the `VertxResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements VertxResultColumnMapper<UUID> {
@@ -284,7 +284,7 @@ If you need to convert the column value manually, it is suggested to use the `Ve
 
 If you want to convert the value of a query parameter manually, it is suggested to use `VertxParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements VertxParameterColumnMapper<UUID> {
@@ -328,7 +328,7 @@ All repository methods called within a transaction lambda will be executed in th
 
 In order to perform queries transactionally, the `inTx` contract can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -378,7 +378,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
 If some more complex logic is needed for the query, and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -419,7 +419,7 @@ If some more complex logic is needed for the query, and `@Query` is not enough, 
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

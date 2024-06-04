@@ -2,7 +2,7 @@ A module for creating and registering SOAP services by classes annotated `javax.
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -109,7 +109,7 @@ Example of the complete configuration described in the `SoapServiceConfig` class
 
 Once all components have been created the created SOAP service is available for deployment, an example for a `SimpleService` service is shown below:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -139,7 +139,7 @@ based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy
@@ -161,7 +161,7 @@ based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/
 
 Suppose we have a WSDL where `SimpleService` is declared, then configuring the plugin for `jakarta` annotation will look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin setup `build.gradle`:
     ```groovy

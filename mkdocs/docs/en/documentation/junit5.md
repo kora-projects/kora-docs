@@ -6,7 +6,7 @@ it can be limited or its parts can be replaced by stubs if the test requires.
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -38,7 +38,7 @@ it can be limited or its parts can be replaced by stubs if the test requires.
 
 Examples will be shown relative to such an application:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -97,7 +97,7 @@ It is important that components within the test must be used by at least one [@R
 
 An example of a test where components are injected in fields:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -130,7 +130,7 @@ An example of a test where components are injected in fields:
 
 Example of a test where components are injected in a constructor:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -164,7 +164,7 @@ Example of a test where components are injected in a constructor:
 
 Example of a test where components are injected in method arguments:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -194,7 +194,7 @@ Example of a test where components are injected in method arguments:
 
 In order to inject a dependency/mock that has an `@Tag`, you must specify the appropriate `@Tag` annotation next to the argument for injection:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -222,7 +222,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
 #### Mock
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     It is proposed to use annotations provided by the [Mockito](https://site.mockito.org/) library together with the `@TestComponent` annotation to create component mock in Java as part of a test.
 
@@ -428,7 +428,7 @@ and you only need to substitute environment variables, you can use the `SystemPr
 
 In order to use such a config and pass only environment variables, you need to return such `KoraConfigModification`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -464,7 +464,7 @@ In order to use such a config and pass only environment variables, you need to r
 
 An example of providing a configuration as a file:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -494,7 +494,7 @@ An example of providing a configuration as a file:
 An example of adding a configuration as a string would look like this,
 in this case only this configuration will be used without any configuration files:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -540,7 +540,7 @@ It is forbidden to use `KoraAppTestGraphModifier` and embedding in the construct
 
 An example of adding a component to a graph:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -579,7 +579,7 @@ An example of adding a component to a graph:
 
 In case it is required to add components using a real component from the graph, this is also available through another method signature:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -630,7 +630,7 @@ In case it is required to add components using a real component from the graph, 
 
 An example of replacing a component in a dependency container:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -669,7 +669,7 @@ An example of replacing a component in a dependency container:
 
 In case it is required to add components using a real component from the graph, this is also available through another method signature:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -720,7 +720,7 @@ In case it is required to add components using a real component from the graph, 
 
 In case you want to initialize the dependency container once within the entire test class, you should annotate the test class with `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)

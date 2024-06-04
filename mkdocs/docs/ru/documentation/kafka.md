@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@
 
 Для создания `Consumer` требуется использовать аннотацию `@KafkaListener` над методом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -67,7 +67,7 @@
 В случае, если нужно разное поведение для разных топиков, существует возможность создавать несколько подобных контейнеров, 
 каждый со своим индивидуальным конфигом. Выглядит это так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -245,7 +245,7 @@
 Теги можно установить на параметре-ключе, параметре-значении, а так же на параметрах типа `ConsumerRecord` и `ConsumerRecords`.
 Эти теги будут установлены на зависимостях контейнера.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -282,7 +282,7 @@
 
 В случае если требуется десериализация из `Json`, то можно использовать тег `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -341,7 +341,7 @@
 Если вы используете сигнатуру с распакованными `key`/`value`/`headers`, то можно добавить последним аргументом `Exception`, `Throwable`, `RecordKeyDeserializationException`
 или `RecordValueDeserializationException`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -411,7 +411,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Позволяет принимать `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
 `Exception` (опционально) в случае ошибки сериализации/соединения и после обработки всех событий вызывается `commitSync()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -441,7 +441,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Принимает `ConsumerRecord`/`ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально) после обработки вызывается `commitSync()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -464,7 +464,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 В данном случае `commit` нужно **вызывать вручную**.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -489,7 +489,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Предполагается использовать аннотацию `@KafkaPublisher` на интерфейсе для создания `Kafka Producer`,
 для того чтобы отправлять сообщения в любой топик предполагается создание метода с сигнатурой `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -514,7 +514,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 В случае если требуется использовать типизированные контракты на определенные топики то предполагается использование аннотации `@KafkaPublisher.Topic`
 для создания таких контрактов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -641,7 +641,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Для уточнения какой `Serializer` взять из контейнера есть возможность использовать теги.
 Теги необходимо устанавливать на параметры `ProducerRecord` или `key`/`value` методов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -669,7 +669,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 В случае если хочется сериализовать как Json то следует использовать `@Json` аннотацию:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -718,7 +718,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Требуется сначала создать обычного `KafkaProducer` а затем его использовать для создания транзакционного Producer'а:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -752,7 +752,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Предполагается использовать методы `inTx` для отправки таких сообщений, все сообщения в рамках Lambda будут применены в случае успешного ее выполнения и отменены в случае ошибки.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     transactionalPublisher.inTx(producer -> {
@@ -772,7 +772,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Также возможно в ручную произвести все манипуляции с `KafkaProducer`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // commit will be called on try-with-resources close
@@ -842,7 +842,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Позволяет отправлять `value` и `key` (опционально) и `headers` (опционально) от `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -902,7 +902,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Возможна отправка `ProducerRecord` и `Callback` (опционально) и комбинировать сигнатуры ответа:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")

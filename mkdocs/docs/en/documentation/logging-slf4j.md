@@ -5,7 +5,7 @@ it is expected that an implementation based on [Logback](#logback) will be used.
 
 Loggers are required to be provided through the [SLF4J](https://www.slf4j.org/manual.html#hello_world) factory.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     Logger logger = LoggerFactory.getLogger(SomeService.class)
@@ -112,7 +112,7 @@ The module provides a logging implementation based on [Logback](https://www.bael
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -164,14 +164,14 @@ It is assumed that [Logback](https://logback.qos.ch/manual/configuration.html) w
 
 ## Other implementation
 
-Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine, you can plug in your own any compatible implementation.
+Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine, you can plug in any custom compatible implementation.
 The base module adds support for structured logs and the ability to configure logging levels via [config file](config.md).
 
 ### Dependency
 
 A generic logging implementation will need to be connected:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -199,7 +199,7 @@ A generic logging implementation will need to be connected:
 
 ### Usage
 
-When using your own implementation, you would need to provide an implementation of `LoggingLevelApplier` that implements the
+When using your custom implementation, you would need to provide an implementation of `LoggingLevelApplier` that implements the
 setting the logging level and resetting it.
 
 It will also be necessary for the implementation to independently support `StructuredArgument`, `StructuredArgumentWriter` and `MDC` if they are to be used.
@@ -217,7 +217,7 @@ The marker and parameter methods also take `Long`, `Integer`, `String`, `Boolean
 
 You can pass structured data to the log via a marker:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());
@@ -239,7 +239,7 @@ You can pass structured data to the log via a marker:
 
 You can transfer structured data to the log via parameters:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());

@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -440,7 +440,7 @@
 
 ## Использование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -483,7 +483,7 @@
 
 Применить настройки из профиля `someProfile`, достаточно сделать следующее:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -518,7 +518,7 @@
 
 Если требуется преобразовать результат в ручную, предлагается использовать `CassandraResultSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements CassandraResultSetMapper<UUID> {
@@ -560,7 +560,7 @@
 
 Если требуется преобразовать строку в ручную, предлагается использовать `CassandraRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements CassandraRowMapper<UUID> {
@@ -603,7 +603,7 @@
 
 Если требуется преобразовать значение колонки в ручную, предлагается использовать `CassandraRowColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements CassandraRowColumnMapper<UUID> {
@@ -653,7 +653,7 @@
 
 Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `CassandraParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements CassandraParameterColumnMapper<UUID> {
@@ -698,7 +698,7 @@
 
 Из-за особенностей вспомогательного класса для извлечения данных из `AsyncResultSet` для асинхронных запросов (Mono или Suspend), можно использовать только `CassandraReactiveResultSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class AsyncResultMapper implements CassandraReactiveResultSetMapper<UUID, Flux<UUID>> {
@@ -741,7 +741,7 @@
 Есть поддержка [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html) 
 типов с помощью `@UDT` аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Table("entities")
@@ -767,7 +767,7 @@
 
 Доступные сигнатуры для методов репозитория из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

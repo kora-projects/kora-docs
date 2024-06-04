@@ -13,7 +13,7 @@ constructor. This can be either a default constructor or a constructor with para
 If Kora finds a constructor with parameters, the entity object will be created based on it.
 In the case of an empty constructor, the fields will be filled [via setters](https://docs.oracle.com/cd/E19316-01/819-3669/bnais/index.html).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(String id, String name) {}
@@ -31,7 +31,7 @@ You can specify which table the entity belongs to, this will be needed if you us
 
 If no table is specified, macros will use the class name in [snake_lower_case](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Table("entities")
@@ -53,7 +53,7 @@ there is no need to allocate a special primary key within an entity to work with
 Identifying what exactly is a primary key can be useful when using [macros](#macros),
 the `@Id` annotation can be used for this purpose.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(@Id String id, String name) {}
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS entities
 The identifier will be created at the stage of insertion into the database,
 and it is supposed to be received in the application code with the help of `RETURNING` construction at insertion:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(Long id, String name) {}
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS entities
 
 The identifier will be created at the stage of object creation in the custom application code:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(UUID id, 
@@ -180,7 +180,7 @@ result.
 
 If you want to customize the mapping of specific fields from the database to an entity, you can use the `@Column` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(@Column("ID") String id, 
@@ -207,7 +207,7 @@ Either use the available strategies from Kora:
 - `PascalCaseNameConverter` - the strategy uses [PascalCase](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
 - `CamelCaseNameConverter` - the strategy uses [camelCase](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @NamingStrategy(NoopNameConverter.class)
@@ -225,7 +225,7 @@ Either use the available strategies from Kora:
 
 ### Required fields
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     By default, all fields declared in an entity are considered **required** (*NotNull*).
 
@@ -245,7 +245,7 @@ Either use the available strategies from Kora:
 
 ### Optional fields
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     In case a field in an entity is optional, that is, it may not exist then,
     you can use the `@Nullable` annotation to match the field in Json and DTO.
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS entities
 
 Then the entity will look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public record Entity(@Id @Embedded UserID id,
@@ -311,7 +311,7 @@ Then the entity will look like this:
 
 Then the repository for such an entity would look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -376,7 +376,7 @@ Queries in repositories are described using the `@Query` annotation.
 
 The repository must be a descendant of one of the implementations, in the examples below the [JDBC](#jdbc) implementation will be considered
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository //(1)!
@@ -419,7 +419,7 @@ Unlike executing SQL queries sequentially, batch processing allows you to send a
 reducing the number of network connections required and allowing some queries to be executed in parallel on the database side,
 which can increase the speed of execution.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -446,7 +446,7 @@ which can increase the speed of execution.
 Kora does not process the contents of the query, the result of the method is always derived from the rows returned by the database.
 If you want to get the number of updated rows as a result, you should use a special type `UpdateCount`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -476,7 +476,7 @@ you can use the built-in connection factory method to create a method with fully
 You can also use other repository methods within the method and they will also be executed within a single transaction if required.
 For more details about transactions, see the documentation for the specific repository implementation.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -533,7 +533,7 @@ The syntax of the macros looks as follows: `%{return#selects}`.
 3. Then the `#` character is used to separate the macros target and the macros command
 4. The macros command is then specified, which tells which SQL construction to expand the entity into
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -598,7 +598,7 @@ Special enumeration symbols are available:
 1. `=` - only the entity fields name specified after the symbol will participate in the command expansion
 2. `-=` - all entity fields except those specified after the symbol will participate in command expansion
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -649,7 +649,7 @@ to refer immediately to the entity identifier annotated with [annotation](#ident
 
 This can be especially useful when the identifier is a [compound key](#embedded-fields), to list all columns at once.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -697,7 +697,7 @@ This can be especially useful when the identifier is a [compound key](#embedded-
 
 An example of a complete repository with all the basic methods for operating an entity.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository

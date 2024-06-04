@@ -2,7 +2,7 @@ Module for database migration using the [Flyway](https://documentation.red-gate.
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy

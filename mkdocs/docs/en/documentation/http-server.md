@@ -6,7 +6,7 @@ using both declarative-style annotations and imperative-style annotations.
 An implementation based on [Undertow](https://undertow.io/) is available for now.
 The server supports [Stateful Termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -126,7 +126,7 @@ Example of the complete configuration described in the `HttpServerConfig` class 
 The `@HttpController` annotation should be used to create a controller, and the `@Component` annotation should be used to register it as a dependency.
 The `@HttpRoute` annotation is responsible for specifying the HTTP path and method for a particular handler method.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component //(1)!
@@ -180,7 +180,7 @@ It is suggested to use special annotations to specify the request parameters.
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{path}` in the path
 and the name of the parameter is specified in `value` or defaults to the name of the method argument.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -214,7 +214,7 @@ and the name of the parameter is specified in `value` or defaults to the name of
 
 `@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -250,7 +250,7 @@ and the name of the parameter is specified in `value` or defaults to the name of
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), the parameter name is specified in `value` or defaults to the method argument name.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -292,7 +292,7 @@ default supported types are `byte[]`, `ByteBuffer`, `String`.
 In order to indicate that the body is Json and needs to automatically create such a reader and embed it,
 is required to use the `@Json` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -334,7 +334,7 @@ Need to connect [Json](json.md) module.
 
 You can use `FormUrlEncoded` as the body argument type and it will be processed as [form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -366,7 +366,7 @@ You can use `FormUrlEncoded` as the body argument type and it will be processed 
 
 You can use `FormMultipart` as the body argument type and it will be treated as a [binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -398,7 +398,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -432,7 +432,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
 
 In case you need to handle the request in a different way, you can use a special `HttpServerRequestMapper` interface:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -484,7 +484,7 @@ In case you need to handle the request in a different way, you can use a special
 
 #### Required parameters
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     By default, all arguments declared in a method are **required** (*NotNull*).
 
@@ -494,7 +494,7 @@ In case you need to handle the request in a different way, you can use a special
 
 #### Optional parameters
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     In case a method argument is optional, that is, it may not exist then,
     `@Nullable` annotation can be used:
@@ -535,7 +535,7 @@ By default, you can use standard return value types,
 such as `byte[]`, `ByteBuffer`, `String` which will be processed with status code `200` and corresponding response type header
 or `HttpServerResponse` where you will have to fill in all information about HTTP response yourself.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -583,7 +583,7 @@ or `HttpServerResponse` where you will have to fill in all information about HTT
 
 If you intend to respond in Json format, you are required to use the `@Json` annotation over the method:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -630,7 +630,7 @@ then the `HttpResponseEntity` is supposed to be used, it is a wrapper over the r
 
 Below is an example similar to the Json example along with the `HttpResponseEntity` wrapper:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -668,7 +668,7 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
 
 If you need to respond with an error, you can use `HttpServerResponseException` to throw an exception.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -706,7 +706,7 @@ If you need to respond with an error, you can use `HttpServerResponseException` 
 
 In case you need to read the response in a different way, you can use the special `HttpServerResponseMapper` interface:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -758,7 +758,7 @@ In case you need to read the response in a different way, you can use the specia
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value.
 
@@ -784,7 +784,7 @@ Interceptors can be overlaid:
 - On the whole controller class
 - On all controller classes simultaneously (requires using `@Tag(HttpServerModule.class)` over the interceptor class).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -861,7 +861,7 @@ and then register it in the `HttpServerRequestHandler` handler.
 
 The following example shows how to handle all the described declarative request parameters from the examples above:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {

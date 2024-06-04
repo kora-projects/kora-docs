@@ -3,7 +3,7 @@ and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection s
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -146,7 +146,7 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -168,7 +168,7 @@ It is possible to override the conversion of different parts of [entity](databas
 
 If you need to convert the result manually, it is suggested to use `JdbcResultSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements JdbcResultSetMapper<UUID> {
@@ -212,7 +212,7 @@ If you need to convert the result manually, it is suggested to use `JdbcResultSe
 
 If you need to convert the string manually, it is suggested to use `JdbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements JdbcRowMapper<UUID> {
@@ -256,7 +256,7 @@ If you need to convert the string manually, it is suggested to use `JdbcRowMappe
 
 If you need to convert the column value manually, it is suggested to use the `JdbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements JdbcResultColumnMapper<UUID> {
@@ -307,7 +307,7 @@ If you need to convert the column value manually, it is suggested to use the `Jd
 
 If you want to convert the value of a query parameter manually, it is suggested to use `JdbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements JdbcParameterColumnMapper<UUID> {
@@ -358,7 +358,7 @@ such functionality would require adding a separate parameter converter.
 What is certain at this point is that it is easy to add support for such parameters without manual connection factory for popular databases like Postgres/Oracle.
 Out of the box Kora does not provide conversion of such parameters, but it is easy to add it yourself, an example for `Postgres` is shown below:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -408,7 +408,7 @@ If you want to get the primary keys of an entity created by the database as the 
 it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
 This approach works for `@Batch` queries as well.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -443,7 +443,7 @@ All repository methods called within a transaction lambda will be executed in th
 
 In order to execute queries transactionally, the `inTx` contract can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -500,7 +500,7 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 If you need some more complex logic for a query and `@Query` is not enough, you can use `java.sql.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -540,7 +540,7 @@ If you need some more complex logic for a query and `@Query` is not enough, you 
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

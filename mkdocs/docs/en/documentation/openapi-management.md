@@ -3,7 +3,7 @@ as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](http
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy

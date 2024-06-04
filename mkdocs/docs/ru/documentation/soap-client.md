@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -109,7 +109,7 @@
 
 После создания всех компонент созданный SOAP сервис становится доступен для внедрения, ниже показан пример для `SimpleService` сервиса:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -139,7 +139,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
@@ -161,7 +161,7 @@
 
 Предположим что у нас есть WSDL, где объявлен сервис `SimpleService` то настройка плагина для `jakarta` аннотацией будет выглядить так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Настройка плагина `build.gradle`:
     ```groovy
