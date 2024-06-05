@@ -370,11 +370,16 @@ CREATE TABLE IF NOT EXISTS entities
 
 ## Repository
 
-The main tool for working with databases using Kora is a specialized repository class annotated `@Repository`.
-Repositories allow you to create by creating code at compile-time implementations of the contracts described by the repositories that will be available in the container.
-Queries in repositories are described using the `@Query` annotation.
+Main tool for working with databases in Kora is to use [repository pattern](https://java-design-patterns.com/patterns/repository/#explanation) when designing the database access abstraction.
+Repository interface must be annotated with `@Repository`.
+Queries for repository methods are described using the `@Query` annotation.
+Repository implementation is created at compile time, all `@Query` methods will execute described query and assemble the query arguments and process the result optimally.
 
-The repository must be a descendant of one of the implementations, in the examples below the [JDBC](#jdbc) implementation will be considered
+SQL queries are supposed to be written by the developer because it increases the developer's understanding of the query plan,
+gives more insight and context to the developer about what he is doing and how his query will work.
+You can use [macros](#macros) to improve the user experience to avoid writing all model fields/columns.
+
+Repository must extend of one of the implementations, in the examples below the [JDBC](database-jdbc.md) implementation will be considered:
 
 ===! ":fontawesome-brands-java: `Java`"
 
