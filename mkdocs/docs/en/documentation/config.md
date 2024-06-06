@@ -18,7 +18,8 @@ services {
       propDefault = ${?NON_DEFAULT_ENV_VALUE} //(5)!
       propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
       propArray = ["v1", "v2"] //(7)!
-      propMap { //(8)!
+      propArrayAsString = "v1, v2" //(8)!
+      propMap { //(9)!
           "k1" = "v1"
           "k2" = "v2"
       }
@@ -32,8 +33,64 @@ services {
 4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
 5. Configuration value with default value, the default value is specified in `propDefault = 10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
 6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
-7. Configuration value as an array, you can also specify the value as a comma-separated string
-8. Configuration value as a dictionary with key and value
+7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
+8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
+9.  Configuration value as a dictionary key and value
+
+Configuration representation in code:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Dependency
 
@@ -97,7 +154,8 @@ services:
         propDefault: ${?NON_DEFAULT_ENV_VALUE:10} #(5)!
         propReference: ${services.foo.bar}Other${services.foo.baz} #(6)!
         propArray: ["v1", "v2"] #(7)!
-        propMap: #(8)!
+        propArrayAsString: "v1, v2" #(8)!
+        propMap: #(9)!
             k1: "v1"
             k2: "v2"
 ```
@@ -108,8 +166,64 @@ services:
 4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
 5. Configuration value with default value, the default value is specified as `10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
 6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
-7. Configuration value as an array, you can also specify the value as a comma-separated string
-8. Configuration value as a dictionary with key and value
+7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
+8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
+9.  Configuration value as a dictionary key and value
+
+Configuration representation in code:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Dependency
 

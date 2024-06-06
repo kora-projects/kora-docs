@@ -6,8 +6,6 @@
 Поддержка [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) реализована с помощью [Typesafe Config](https://github.com/lightbend/config).
 HOCON — это формат конфиг-файлов, основанный на JSON. Формат менее строгий нежели JSON и обладает слегка другим синтаксисом.
 
-Пример HOCON конфигурации:
-
 ```javascript
 services {
     foo {
@@ -19,7 +17,8 @@ services {
       propDefault = ${?NON_DEFAULT_ENV_VALUE} //(5)!
       propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
       propArray = ["v1", "v2"] //(7)!
-      propMap { //(8)!
+      propArrayAsString = "v1, v2" //(8)!
+      propMap { //(9)!
           "k1" = "v1"
           "k2" = "v2"
       }
@@ -33,8 +32,64 @@ services {
 4.  Необязательное значение конфигурации которое подставляется из переменной окружения `OPTIONAL_ENV_VALUE`, если таковой переменной не найдено то значение конфигурации будет опущено
 5.  Значение конфигурации со значением по умолчанию, значение по умолчанию указывается в `propDefault = 10` и если будет найдена переменная окружения `NON_DEFAULT_ENV_VALUE` то ее значение заменит значение по умолчанию
 6.  Значение конфигурации собранное из подстановок других частей конфигурации и значением `Other` между
-7.  Значение конфигурации в виде массива, можно также указывать значение как строка разделенная запятыми
-8.  Значение конфигурации в виде словаря ключ и значение
+7.  Значение конфигурации списка строк, значение задается как массив строк либо также можно задать как строку, где значения разделены запятыми
+8.  Значение конфигурации списка строк, значение задается как строка, где значения разделены запятыми либо также можно задать как массив строк
+9.  Значение конфигурации в виде словаря ключ и значение
+
+Отображение конфигурации в коде:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Подключение
 
@@ -86,8 +141,6 @@ services {
 
 Поддержка [YAML](https://yaml.org/) реализована с помощью [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
 
-Пример YAML конфигурации:
-
 ```yaml
 services:
   foo:
@@ -98,7 +151,8 @@ services:
     propDefault: ${?NON_DEFAULT_ENV_VALUE:10} #(5)!
     propReference: ${services.foo.bar}Other${services.foo.baz} #(6)!
     propArray: ["v1", "v2"] #(7)!
-    propMap: #(8)!
+    propArrayAsString: "v1, v2" #(8)!
+    propMap: #(9)!
       k1: "v1"
       k2: "v2"
 ```
@@ -109,8 +163,64 @@ services:
 4.  Необязательное значение конфигурации которое подставляется из переменной окружения `OPTIONAL_ENV_VALUE`, если таковой переменной не найдено то значение конфигурации будет опущено
 5.  Значение конфигурации со значением по умолчанию, значение по умолчанию равно `10` и если будет найдена переменная окружения `NON_DEFAULT_ENV_VALUE` то ее значение заменит значение по умолчанию
 6.  Значение конфигурации собранное из подстановок других частей конфигурации и значением `Other` между
-7.  Значение конфигурации в виде массива, можно также указывать значение как строка разделенная запятыми
-8.  Значение конфигурации в виде словаря ключ и значение
+7.  Значение конфигурации списка строк, значение задается как массив строк либо также можно задать как строку, где значения разделены запятыми
+8.  Значение конфигурации списка строк, значение задается как строка, где значения разделены запятыми либо также можно задать как массив строк
+9.  Значение конфигурации в виде словаря ключ и значение
+
+Отображение конфигурации в коде:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Подключение
 
@@ -356,7 +466,7 @@ services:
 
 ### Значения по умолчанию
 
-Если есть необходимость использовать в классе значения по умолчанию, то можно воспользоваться таким форматом:
+Если есть необходимость использовать задать в отображении значение по умолчанию, то можно воспользоваться `default` модификатором:
 
 ===! ":fontawesome-brands-java: `Java`"
 
