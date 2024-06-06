@@ -5,8 +5,6 @@ Module is responsible for mapping the values of configuration files to classes i
 Support for [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) is implemented with [Typesafe Config](https://github.com/lightbend/config).
 HOCON is a JSON-based config file format. The format is less strict than JSON and has a slightly different syntax.
 
-HOCON Configuration example:
-
 ```javascript
 services {
     foo {
@@ -141,8 +139,6 @@ Prioritize reading the `application.conf` configuration file:
 ## YAML
 
 Support for [YAML](https://yaml.org/) is implemented using [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
-
-Example YAML configuration:
 
 ```yaml
 services:
