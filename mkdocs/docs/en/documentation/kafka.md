@@ -2,7 +2,7 @@ Module for creating declarative [Apache Kafka](https://kafka.apache.org/) `Consu
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ Descriptions of working with [Kafka Consumer](https://docs.confluent.io/platform
 
 Creating a `Consumer` requires using the `@KafkaListener` annotation over a method:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -67,7 +67,7 @@ The `@KafkaListener` annotation parameter points to the `Consumer` configuration
 In case you need different behavior for different topics, it is possible to create several such containers,
 each with its own individual configuration. It looks like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -107,8 +107,9 @@ The value in the annotation indicates from which part of the configuration file 
 
 ### Configuration
 
-The configuration describes the settings of a particular `@KafkaListener` and is described in the `KafkaListenerConfig` class,
-below is an example for the configuration at path `path.to.config`:
+Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `path.to.config` is given below.
+
+Example of the complete configuration described in the `KafkaListenerConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -145,15 +146,15 @@ below is an example for the configuration at path `path.to.config`:
     }
     ```
 
-    1. Specifies the topics to which Consumer will subscribe (or specify `topicsPattern`)
-    2. Specifies the pattern of topics to which the Consumer will subscribe (or `topics` is specified).
+    1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
+    2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
     4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
+    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
     10. Enables module logging (default `false`)
     11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -182,7 +183,7 @@ below is an example for the configuration at path `path.to.config`:
             group.id: "my-group-id"
           telemetry:
             logging:
-              enabled: true #(10)!
+              enabled: false #(10)!
             metrics:
               enabled: true #(11)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
@@ -190,15 +191,15 @@ below is an example for the configuration at path `path.to.config`:
               enabled: true #(13)!
     ```
 
-    1. Specifies the topics to which Consumer will subscribe (or specify `topicsPattern`)
-    2. Specifies the pattern of topics to which the Consumer will subscribe (or `topics` is specified).
+    1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
+    2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
     4. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs)
+    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
     10. Enables module logging (default `false`)
     11. Enables module metrics (default `true`)
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -243,7 +244,7 @@ Available signatures for Kafka consumer out-of-the-box methods, where `K` refers
 Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) from `ConsumerRecord`,
 `Exception` (optional) in case of serialization/connection error and after all events are processed, `commitSync()` is called:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -273,7 +274,7 @@ Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) fro
 
 Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional), once all `ConsumerRecords` have been processed, `commitSync()` is called:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -295,7 +296,7 @@ Accepts `ConsumerRecord`/`ConsumerRecords` and `Consumer`.
 As in the previous case, `commit` must be called manually.
 Called for each `ConsumerRecord` obtained by calling `poll()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -321,7 +322,7 @@ Tags are supported to better customize the `Deserializer`.
 Tags can be set on parameter-key, parameter-value, as well as on parameters of type `ConsumerRecord` and `ConsumerRecords`.
 These tags will be set on container dependencies.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -358,7 +359,7 @@ These tags will be set on container dependencies.
 
 In case deserialization from `Json` is required, the `@Json` tag can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -417,7 +418,7 @@ From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>`.
 If you use a signature with unpacked `key`/`value`/`headers`, you can add `Exception`, `Throwable`, `RecordKeyDeserializationException`, `RecordKeyDeserializationException` with the last argument
 or `RecordValueDeserializationException`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -487,7 +488,7 @@ Descriptions of working with [Kafka Producer](https://docs.confluent.io/platform
 Assume to use the `@KafkaPublisher` annotation on the interface to create `Kafka Producer`,
 in order to send messages to any topic it is supposed to create a method with the signature `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -512,7 +513,7 @@ The annotation parameter indicates the path to the configuration.
 In case it is required to use typed contracts for specific topics, the `@KafkaPublisher.Topic` annotation is supposed to be used
 to create such contracts:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -538,7 +539,9 @@ The annotation parameter indicates the path for the configuration of the topic.
 
 ### Configuration
 
-`KafkaPublisherConfig` is used to configure `@KafkaPublisher`:
+Configuration describes the settings of a particular `@KafkaPublisher` and an example is given below for the configuration on the `path.to.config` path.
+
+Example of the complete configuration described in the `KafkaPublisherConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -566,7 +569,7 @@ The annotation parameter indicates the path for the configuration of the topic.
     }
     ```
 
-    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
+    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs) (**required**)
     2. Enables module logging (default `false`)
     3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -590,53 +593,53 @@ The annotation parameter indicates the path for the configuration of the topic.
               enabled: true #(5)!
     ```
 
-    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs)
+    1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs) (**required**)
     2. Enables module logging (default `false`)
     3. Enables module metrics (default `true`)
     4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     5. Enables module tracing (default `true`)
 
-`KafkaPublisherConfig.TopicConfig` is used for the `@KafkaPublisher.Topic` configuration:
+Topic configuration describes the settings of a particular `@KafkaPublisher.Topic` and an example for the configuration at path `path.to.topic.config` is given below.
+
+Example of the complete configuration described in the `KafkaPublisherConfig.TopicConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     path {
       to {
-        topic { //(1)!
+        topic {
           config {
-            topic = "my-topic" //(2)!
-            partition = 1 //(3)!
+            topic = "my-topic" //(1)!
+            partition = 1 //(2)!
           }
         }
       }
     }
     ```
 
-    1. Configuration of `@KafkaPublisher.Topic`.
-    2. Which topic the method will send data to
-    3. Which partition of the topic the method will send data (optional)
+    1. Topic where method will send data (**required**)
+    2. Partition of the topic where method will send data (optional)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     path:
       to:
-        topic: #(1)!
+        topic:
           config:
-            topic: "my-topic" #(2)!
-            partition: 1 #(3)!
+            topic: "my-topic" #(1)!
+            partition: 1 #(2)!
     ```
 
-    1. Configuration of `@KafkaPublisher.Topic`.
-    2. Which topic the method will send data to
-    3. Which partition of the topic the method will send data (optional)
+    1. Topic where method will send data (**required**)
+    2. Partition of the topic where method will send data (optional)
 
 ### Signatures
 
 Allows `value` and `key` (optional) and `headers` (optional) to be sent from `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -660,7 +663,7 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 
 Can be received as the result of a `RecordMetadata` operation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -684,7 +687,7 @@ Can be received as the result of a `RecordMetadata` operation:
 
 Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -711,7 +714,7 @@ Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<
 
 It is possible to send `ProducerRecord` with or without `Callback` and combine the response with the examples above:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -736,7 +739,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 In order to specify which `Serializer` to take from a container, there is an option to use tags.
 Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -764,7 +767,7 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 
 If you want to serialize as Json, you should use `@Json` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -813,7 +816,7 @@ It is possible to send a message to Kafka in [within a transaction](https://www.
 
 It is required to first create a regular `KafkaProducer` and then use it to create a transactional Producer:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -846,7 +849,7 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 
 It is expected to use `inTx` methods to send such messages, all messages within Lambda will be applied if it is successful and canceled if it fails.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     transactionalPublisher.inTx(producer -> {
@@ -866,7 +869,7 @@ It is expected to use `inTx` methods to send such messages, all messages within 
 
 It is also possible to manually perform all manipulations with `KafkaProducer`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // commit will be called on try-with-resources close

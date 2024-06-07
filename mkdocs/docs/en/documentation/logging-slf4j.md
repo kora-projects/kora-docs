@@ -5,7 +5,7 @@ it is expected that an implementation based on [Logback](#logback) will be used.
 
 Loggers are required to be provided through the [SLF4J](https://www.slf4j.org/manual.html#hello_world) factory.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     Logger logger = LoggerFactory.getLogger(SomeService.class)
@@ -48,13 +48,71 @@ Logging levels described in the `LoggingConfig` class:
 
 Logback configuration parameters are described in the modules that include logback, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
+### Module
+
+Enabling/disabling logging of certain modules is specified in the configuration of the modules themselves.
+
+Logging of **all modules is disabled** by default, for convenience below is a separate configuration to enable logging of most modules.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    db.telemetry.logging.enabled = true //(1)!
+    cassandra.telemetry.logging.enabled = true //(2)!
+    grpcServer.telemetry.logging.enabled = true //(3)!
+    httpServer.telemetry.logging.enabled = true //(4)!
+    scheduling.telemetry.logging.enabled = true //(5)!
+    grpcClient.SomeGrpcServiceName.telemetry.logging.enabled = true //(6)!
+    soapClient.SomeSoapServiceName.telemetry.logging.enabled = true //(7)!
+    SomePathToConfigHttpClient.telemetry.logging.enabled = true //(8)!
+    SomePathToConfigKafkaConsumer.telemetry.logging.enabled = true //(9)!
+    SomePathToConfigKafkaProducer.telemetry.logging.enabled = true //(10)!
+    ```
+
+    1. Database [JDBC](database-jdbc.md) / [R2DBC](database-jdbc.md) / [Vertx](database-vertx.md)
+    2. Database [Cassandra](database-cassandra.md)
+    3. [gRPC server](grpc-server.md)
+    4. [HTTP server](http-server.md)
+    5. [Scheduler](scheduling.md)
+    6. [gRPC client](grpc-client.md) (Specified for a specific service)
+    7. [SOAP client](soap-client.md) (Specified for a specific service)
+    8. [HTTP client](http-client.md) (Specified for a specific client)
+    9. Kafka [consumer](kafka.md#consumer) (Specified for a specific consumer)
+    10. Kafka [producer](kafka.md#producer) (Specified for a specific producer)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    db.telemetry.logging.enabled: true #(1)!
+    cassandra.telemetry.logging.enabled: true #(2)!
+    grpcServer.telemetry.logging.enabled: true #(3)!
+    httpServer.telemetry.logging.enabled: true #(4)!
+    scheduling.telemetry.logging.enabled: true #(5)!
+    grpcClient.SomeGrpcServiceName.telemetry.logging.enabled: true #(6)!
+    soapClient.SomeSoapServiceName.telemetry.logging.enabled: true #(7)!
+    SomePathToConfigHttpClient.telemetry.logging.enabled: true #(8)!
+    SomePathToConfigKafkaConsumer.telemetry.logging.enabled: true #(9)!
+    SomePathToConfigKafkaProducer.telemetry.logging.enabled: true #(10)!
+    ```
+
+    1. Database [JDBC](database-jdbc.md) / [R2DBC](database-jdbc.md) / [Vertx](database-vertx.md)
+    2. Database [Cassandra](database-cassandra.md)
+    3. [gRPC server](grpc-server.md)
+    4. [HTTP server](http-server.md)
+    5. [Scheduler](scheduling.md)
+    6. [gRPC client](grpc-client.md) (Specified for a specific service)
+    7. [SOAP client](soap-client.md) (Specified for a specific service)
+    8. [HTTP client](http-client.md) (Specified for a specific client)
+    9. Kafka [consumer](kafka.md#consumer) (Specified for a specific consumer)
+    10. Kafka [producer](kafka.md#producer) (Specified for a specific producer)
+
 ## Logback
 
 The module provides a logging implementation based on [Logback](https://www.baeldung.com/logback), adds support for structured logs and the ability to configure logging levels via [config file](config.md).
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -106,14 +164,14 @@ It is assumed that [Logback](https://logback.qos.ch/manual/configuration.html) w
 
 ## Other implementation
 
-Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine, you can plug in your own any compatible implementation.
+Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine, you can plug in any custom compatible implementation.
 The base module adds support for structured logs and the ability to configure logging levels via [config file](config.md).
 
 ### Dependency
 
 A generic logging implementation will need to be connected:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -141,7 +199,7 @@ A generic logging implementation will need to be connected:
 
 ### Usage
 
-When using your own implementation, you would need to provide an implementation of `LoggingLevelApplier` that implements the
+When using your custom implementation, you would need to provide an implementation of `LoggingLevelApplier` that implements the
 setting the logging level and resetting it.
 
 It will also be necessary for the implementation to independently support `StructuredArgument`, `StructuredArgumentWriter` and `MDC` if they are to be used.
@@ -159,7 +217,7 @@ The marker and parameter methods also take `Long`, `Integer`, `String`, `Boolean
 
 You can pass structured data to the log via a marker:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());
@@ -181,7 +239,7 @@ You can pass structured data to the log via a marker:
 
 You can transfer structured data to the log via parameters:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var logger = LoggerFactory.getLogger(getClass());

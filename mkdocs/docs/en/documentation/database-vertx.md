@@ -2,7 +2,7 @@ Module provides a repository implementation based on the [Vertx](https://vertx.i
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ In some cases, such as with a [PostgreSQL](https://postgrespro.ru/docs/postgresq
 
 ## Configuration
 
-Parameters described in the `VertxDatabaseConfig` class:
+Example of the complete configuration described in the `VertxDatabaseConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -68,18 +68,18 @@ Parameters described in the `VertxDatabaseConfig` class:
     }
     ```
 
-    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database connection set name **(mandatory)**
+    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database connection set name (**required**)
     5. Maximum size of the database connection set
     6. Maximum time to establish a connection
-    7. Maximum time to get a connection from a connection set (disabled by default)
+    7. Maximum time to get a connection from a connection set (optional)
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
-    10. Maximum time to wait for connection initialization at service startup (disabled by default)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    12. Whether to enable module logging
+    10. Maximum time to wait for connection initialization at service startup (optional)
+    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     15. Enables module tracing (default `true`)
@@ -101,7 +101,7 @@ Parameters described in the `VertxDatabaseConfig` class:
       readinessProbe: false #(11)!
       telemetry:
         logging:
-          enabled: true #(12)!
+          enabled: false #(12)!
         metrics:
           enabled: true #(13)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
@@ -109,25 +109,25 @@ Parameters described in the `VertxDatabaseConfig` class:
           enabled: true #(15)!
     ```
 
-    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database connection set name **(mandatory)**
+    1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database connection set name (**required**)
     5. Maximum size of the database connection set
     6. Maximum time to establish a connection
-    7. Maximum time to get a connection from a connection set (disabled by default)
+    7. Maximum time to get a connection from a connection set (optional)
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
-    10. Maximum time to wait for connection initialization at service startup (disabled by default)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    12. Whether to enable module logging
+    10. Maximum time to wait for connection initialization at service startup (optional)
+    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     15. Enables module tracing (default `true`)
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -149,7 +149,7 @@ It is possible to override the conversion of different parts of [entity](databas
 
 If you need to convert the result manually, it is suggested to use `VertxRowSetMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements VertxRowSetMapper<List<UUID>> {
@@ -191,7 +191,7 @@ If you need to convert the result manually, it is suggested to use `VertxRowSetM
 
 If you need to convert the string manually, it is suggested to use `VertxRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements VertxRowMapper<UUID> {
@@ -234,7 +234,7 @@ If you need to convert the string manually, it is suggested to use `VertxRowMapp
 
 If you need to convert the column value manually, it is suggested to use the `VertxResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements VertxResultColumnMapper<UUID> {
@@ -284,7 +284,7 @@ If you need to convert the column value manually, it is suggested to use the `Ve
 
 If you want to convert the value of a query parameter manually, it is suggested to use `VertxParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements VertxParameterColumnMapper<UUID> {
@@ -328,7 +328,7 @@ All repository methods called within a transaction lambda will be executed in th
 
 In order to perform queries transactionally, the `inTx` contract can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -378,7 +378,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
 If some more complex logic is needed for the query, and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -419,7 +419,7 @@ If some more complex logic is needed for the query, and `@Query` is not enough, 
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

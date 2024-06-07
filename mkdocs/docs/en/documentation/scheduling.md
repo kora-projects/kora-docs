@@ -1,6 +1,6 @@
 A module for creating declarative-style planners using annotations.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     When applying aspects, class must not be `final`
 
@@ -19,7 +19,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -49,7 +49,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 ### Configuration
 
-Parameters described in the `ScheduledExecutorServiceConfig` config class:
+Example of the complete configuration described in the `ScheduledExecutorServiceConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -84,7 +84,7 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
       threads: 20 #(1)!
       telemetry:
         logging:
-          enabled: true #(2)!
+          enabled: false #(2)!
         metrics:
           enabled: true #(3)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
@@ -103,7 +103,7 @@ Parameters described in the `ScheduledExecutorServiceConfig` config class:
 Scheduling with startup at fixed equal intervals.
 Actual interval time depends on task completion time, can start new tasks even if the last task is still running.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -133,7 +133,7 @@ Actual interval time depends on task completion time, can start new tasks even i
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -190,7 +190,7 @@ Waits a fixed amount of time from the end of the previous task execution before 
 It does not matter how long the current execution takes, the next execution is started exactly after the previous task is finished
 and the specified waiting interval between tasks.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -220,7 +220,7 @@ and the specified waiting interval between tasks.
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -275,7 +275,7 @@ SomeService of configuration via a config file:
 
 Runs a single task at a certain fixed time interval.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -305,7 +305,7 @@ Runs a single task at a certain fixed time interval.
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -363,7 +363,7 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -430,7 +430,7 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
     scheduling:
       telemetry:
         logging:
-          enabled: true #(1)!
+          enabled: false #(1)!
         metrics:
           enabled: true #(2)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
@@ -469,7 +469,7 @@ Usage [Cron](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorial
 
 Starts a single task at a certain fixed time interval.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -503,7 +503,7 @@ Starts a single task at a certain fixed time interval.
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -554,7 +554,7 @@ Configuration example:
 
 This involves creating your custom `trigger` based on the Quartz library and registering it in the application dependency container with a specific tag and then using it via annotation.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp

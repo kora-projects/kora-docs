@@ -14,7 +14,7 @@ The core of the dependency container is the interface labeled with the `@KoraApp
 This annotation should be used to label the interface within which the factory methods for creating components and [modules](#_7) dependencies are attached.
 There can be only one such interface within an application.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -40,7 +40,7 @@ Components that do not meet these requirements are not included in the dependenc
 
 The `@Component` annotation marks the class as accessible via the container. The class has the following requirements:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     * The class must not be abstract
     * A class should have only one public constructor
@@ -77,7 +77,7 @@ arguments to other components as dependencies.
 The dependency container below describes two factories, where the `otherService` factory requires a component created by the `someService` factory.
 This is the most basic way in which components can be registered in a container:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -116,7 +116,7 @@ Module must be within the same source code directory as the class labeled `@Kora
 
 All factory methods within module become available to the dependency container:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -148,7 +148,7 @@ from initializing a lot of unnecessary dependencies and thus degrading the appli
 
 All required external modules from dependencies must be connected explicitly in the interface marked with the `@KoraApp` annotation through inheritance:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -173,7 +173,7 @@ An inheritor interface will be created for the interface, where all interfaces l
 
 For example, you have a user module that contains controllers and other components and it has its custom module:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraSubmodule
@@ -197,7 +197,7 @@ For example, you have a user module that contains controllers and other componen
 
 And there's an application build module:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -218,7 +218,7 @@ This will plug module created based on `SomeModule` into the final application c
 If the dependency container could not find a generic factory for a particular type, the Kora container at compile time can try looking for
 methods with [Generic](https://docs.oracle.com/javase/tutorial/java/generics/types.html) parameters, and use that method to create an instance of the desired class.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -260,7 +260,7 @@ it is required to use the `@DefaultComponent` annotation.
 If any component that does not use this annotation is found in the dependency container at compile time,
 it will be given preference during injection.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -289,7 +289,7 @@ it will be given preference during injection.
 If none of the methods above were able to provide a component,
 then Kora can try to create a component on its own if it meets the requirements similar to [auto factory](#_3):
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     * The class must not be abstract
     * A class should have only one public constructor
@@ -351,7 +351,7 @@ it is expected to use the `@Root` annotation over a factory method or class anno
 
 An example of such a component might be HTTP server, Kafka consumer, cache warming component.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -377,7 +377,7 @@ An example of such a component might be HTTP server, Kafka consumer, cache warmi
 
 ### Optional dependencies
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     If you want to introduce an optional dependency that may not exist, then
     it is supposed to mark such a component with any `@Nullable` annotation,
@@ -412,7 +412,7 @@ An example of such a component might be HTTP server, Kafka consumer, cache warmi
 
 There can be many instances of the same type in a container, and if you want to collect them all in one place, you should use the special type `All`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -465,7 +465,7 @@ It is the class that is used, not the string literal, because it is easier to na
 
 This is how you can inject different instances of a class with a common interface to different injection points:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -510,7 +510,7 @@ This is how you can inject different instances of a class with a common interfac
 Tags above the method tell you which tag to register the component with, and tags at injection points tell you which tagged component to expect.
 Tags also work on constructor parameters, in conjunction with `@Component` or final classes.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(MyTag1.class)
@@ -562,7 +562,7 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
 
 You can also use a tag to get a list of all components by a specific tag:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -602,7 +602,7 @@ You can also use a tag to get a list of all components by a specific tag:
 
 To get a list of all components with and without a tag, you need to use a special tag type `@Tag.Any`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -657,7 +657,7 @@ In case the interface labeled `@KoraApp` is called `Application`, the same packa
 class `ApplicationGraph` will be created in the same package to represent the dependency container implementation, and then the entry point
 within the same package will look like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -710,7 +710,7 @@ In a dependency container, all components are initialized asynchronously and in 
 
 Consider the following example:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -774,7 +774,7 @@ For this case there is a mechanism of component interception. You need to put an
 
 For example, this mechanism can be used to warm up the cache based on `JdbcDatabase`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component

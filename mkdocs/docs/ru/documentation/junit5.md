@@ -6,7 +6,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -38,7 +38,7 @@
 
 Примеры будут показаны относительно такого приложения:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -97,7 +97,7 @@
 
 Пример теста, где компоненты внедряются в поля:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -131,7 +131,7 @@
 
 Пример теста, где компоненты внедряются в конструктор:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -165,7 +165,7 @@
 
 Пример теста, где компоненты внедряются в аргументы метода:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -195,7 +195,7 @@
 
 Для внедрения зависимости которая имеет `@Tag`, требуется указать соответствующую аннотацию `@Tag` рядом с внедряемым аргументом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -223,7 +223,7 @@
 
 #### Заглушки
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Для создание заглушек компонент в Java в рамках теста предлагается использовать аннотации предоставляемые библиотекой [Mockito](https://site.mockito.org/) в совокупности с аннотацией `@TestComponent`.
 
@@ -429,7 +429,7 @@
 
 Тогда, чтобы использовать такой конфиг и передать в него лишь переменные окружения требуется вернуть такой `KoraConfigModification`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -465,7 +465,7 @@
 
 Пример добавления конфигурации в виде файла:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -495,7 +495,7 @@
 Пример добавления конфигурации в виде строки будет выглядеть так, 
 в таком случае будет использоваться только эта конфигурация без каких либо файлов конфигурации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(Application.class)
@@ -541,7 +541,7 @@
 
 Пример добавления компонента в граф:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -580,7 +580,7 @@
 
 В случае если требуется добавлять компоненты с использованием компонент из контейнера зависимостей, то это также доступно через другую сигнатуру метода:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -631,7 +631,7 @@
 
 Пример замены компонента в контейнере, этот механизм также можно использовать для создания собственных заглушек:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -670,7 +670,7 @@
 
 В случае если требуется добавлять компоненты с использованием компонент из контейнера зависимостей, то это также доступно через другую сигнатуру метода:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraAppTest(value = Application.class)
@@ -721,7 +721,7 @@
 
 В случае если требуется инициализировать контейнер один раз в рамках всего тестового класса, следует проаннотировать тестовый класс с помощью `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)

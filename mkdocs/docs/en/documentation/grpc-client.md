@@ -2,7 +2,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 The code for the gRPC client is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy
@@ -92,13 +92,15 @@ The code for the gRPC client is created with [protobuf gradle plugin](https://gi
 
 ## Configuration
 
-The parameters described in the `GrpcClientConfig` class and below shows an example configuration for a service named `UserService`:
+gRPC service named `SimpleService`, will have configuration with path of `grpcClient.SimpleService`.
+
+Example of the complete configuration described in the `GrpcClientConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcClient {
-        UserService {
+        SimpleService {
             url = "grpc://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
             telemetry {
@@ -117,8 +119,8 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
     }
     ```
 
-    1. URL of the server where to make requests
-    2. Maximum request time
+    1. URL of the server where to make requests (**required**)
+    2. Maximum request time (optional)
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -128,12 +130,12 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
 
     ```yaml
     grpcClient:
-      UserService:
+      SimpleService:
         url: "grpc://localhost:8090" //(1)!
         timeout: "10s" //(2)!
         telemetry:
           logging:
-            enabled: true #(1)!
+            enabled: false #(1)!
           metrics:
             enabled: true #(2)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
@@ -141,8 +143,8 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
             enabled: true #(4)!
     ```
 
-    1. URL of the server where to make requests
-    2. Maximum request time
+    1. URL of the server where to make requests (**required**)
+    2. Maximum request time (optional)
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -152,13 +154,13 @@ The parameters described in the `GrpcClientConfig` class and below shows an exam
 
 Created gRPC services can be injected as dependency:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends HoconConfigModule, GrpcClientModule {
 
-        default SomeService(UserServiceGrpc.UserServiceBlockingStub grpcService) {
+        default SomeService(SimpleServiceGrpc.SimpleServiceBlockingStub grpcService) {
             return new SomeService(grpcService);
         }
     }
@@ -169,30 +171,30 @@ Created gRPC services can be injected as dependency:
     ```kotlin
     @KoraApp
     interface Application : HoconConfigModule, GrpcClientModule {
-        fun SomeService(grpcService: UserServiceGrpc.UserServiceBlockingStub?) {
+        fun SomeService(grpcService: SimpleServiceGrpc.SimpleServiceBlockingStub?) {
             return SomeService(grpcService)
         }
     }
     ```
 
-## Перехватчики
+## Interceptors
 
-[Перехватчики](https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html) позволяют перехватывать запросы перед тем, как они будут переданы сервисам.
+[Interceptors](https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html) allow you to intercept requests before they are passed to services.
 
-### Стандартные
+### Default
 
-При запуске клиента по-умолчанию используются следующие перехватчики:
+The following interceptors are used at client startup by default:
 
-- `GrpcClientConfigInterceptor`
+- `GrpcClientConfigInterceptor`.
 
-### Собственные
+### Custom
 
-Для добавления собственного перехватчика требуется зарегистрировать перехватчика как компонент с тегом сервиса.
+In order to add your custom interceptor, you need to register the interceptor as a component with the service tag:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag(UserServiceGrpc.class)
+    @Tag(SimpleServiceGrpc.class)
     @Component
     public final class MyClientInterceptor implements ClientInterceptor {
         @Override
@@ -206,7 +208,7 @@ Created gRPC services can be injected as dependency:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(UserServiceGrpc::class)
+    @Tag(SimpleServiceGrpc::class)
     @Component
     class MyClientInterceptor : ClientInterceptor {
         fun <ReqT, RespT> interceptCall(
@@ -219,4 +221,4 @@ Created gRPC services can be injected as dependency:
     }
     ```
 
-Либо можно модифицировать сервис по средствам [GraphInterceptor](container.md#_26).
+Alternatively you can modify the gRPC service with [GraphInterceptor](container.md#component-inspection).

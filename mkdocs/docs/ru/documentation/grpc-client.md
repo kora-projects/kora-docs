@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@
 
 Код для gRPC-клиента создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
@@ -92,13 +92,15 @@
 
 ## Конфигурация
 
-Параметры, описанные в классе `GrpcClientConfig` и ниже показан пример конфигурации для сервиса с именем `UserService`:
+Сервис gRPC с именем `SimpleService` будет иметь конфигурацию с путем `grpcClient.SimpleService`.
+
+Пример полной конфигурации, описанной в классе `GrpcClientConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcClient {
-        UserService {
+        SimpleService {
             url = "grpc://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
             telemetry {
@@ -117,8 +119,8 @@
     }
     ```
 
-    1.  URL сервера куда делать запросы
-    2.  Максимальное время запроса
+    1.  URL сервера куда делать запросы (**обязательный**)
+    2.  Максимальное время запроса (по умолчанию отсутвует)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -128,12 +130,12 @@
 
     ```yaml
     grpcClient:
-      UserService:
+      SimpleService:
         url: "grpc://localhost:8090" //(1)!
         timeout: "10s" //(2)!
         telemetry:
           logging:
-            enabled: true #(1)!
+            enabled: false #(1)!
           metrics:
             enabled: true #(2)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
@@ -141,8 +143,8 @@
             enabled: true #(4)!
     ```
 
-    1.  URL сервера куда делать запросы
-    2.  Максимальное время запроса
+    1.  URL сервера куда делать запросы (**обязательный**)
+    2.  Максимальное время запроса (по умолчанию отсутвует)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -152,13 +154,13 @@
 
 Созданные gRPC сервисы можно внедрять как зависимости:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends HoconConfigModule, GrpcClientModule {
 
-        default SomeService(UserServiceGrpc.UserServiceBlockingStub grpcService) {
+        default SomeService(SimpleServiceGrpc.SimpleServiceBlockingStub grpcService) {
             return new SomeService(grpcService);
         }
     }
@@ -169,7 +171,7 @@
     ```kotlin
     @KoraApp
     interface Application : HoconConfigModule, GrpcClientModule {
-        fun SomeService(grpcService: UserServiceGrpc.UserServiceBlockingStub?) {
+        fun SomeService(grpcService: SimpleServiceGrpc.SimpleServiceBlockingStub?) {
             return SomeService(grpcService)
         }
     }
@@ -189,10 +191,10 @@
 
 Для добавления собственного перехватчика требуется зарегистрировать перехватчика как компонент с тегом сервиса.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag(UserServiceGrpc.class)
+    @Tag(SimpleServiceGrpc.class)
     @Component
     public final class MyClientInterceptor implements ClientInterceptor {
         @Override
@@ -206,7 +208,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(UserServiceGrpc::class)
+    @Tag(SimpleServiceGrpc::class)
     @Component
     class MyClientInterceptor : ClientInterceptor {
         fun <ReqT, RespT> interceptCall(

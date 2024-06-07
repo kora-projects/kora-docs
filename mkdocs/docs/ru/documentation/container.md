@@ -14,7 +14,7 @@
 Этой аннотацией необходимо помечать интерфейс, внутри которого лежат фабричные методы для создания компонентов и подключены [модули](#_7) зависимостей.
 Такой интерфейс может быть только один в рамках приложения.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -40,7 +40,7 @@
 
 Аннотация `@Component` помечает класс, как доступный через контейнер. При этом к классу предъявляются следующие требования:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     * Класс не должен быть абстрактным
     * У класса должен быть только один публичный конструктор
@@ -77,7 +77,7 @@
 Контейнер ниже описывает две фабрики, где фабрика `otherService` требует компонент, создаваемый фабрикой `someService`.
 Это самый базовый способ, как в контейнере могут регистрироваться компоненты:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -116,7 +116,7 @@
 
 Все фабричные методы внутри модуля становятся доступны контейнеру зависимостей:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -148,7 +148,7 @@ Kora не делает автоматический поиск модулей и
 
 Все необходимые внешние модули из зависимостей должны быть подключены явно в интерфейс помеченный аннотацией `@KoraApp` через наследование:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -173,7 +173,7 @@ Kora не делает автоматический поиск модулей и
 
 Например, у вас есть модуль для работы с пользователями, который содержит контроллеры и другие компоненты и в нём есть свой модуль:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraSubmodule
@@ -197,7 +197,7 @@ Kora не делает автоматический поиск модулей и
 
 И есть модуль сборки приложения:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -218,7 +218,7 @@ Kora не делает автоматический поиск модулей и
 Если в контейнере не удалось найти фабрику для конкретного типа, то Kora контейнер во время компиляции может попробовать поискать
 методы с [Дженерик](https://habr.com/ru/companies/sberbank/articles/416413/) параметрами, и при помощи этого метода создать экземпляр нужного класса.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -260,7 +260,7 @@ Kora не делает автоматический поиск модулей и
 В случае если будет контейнером зависимостей на этапе компиляции будет найден любой компонент который не использует эту аннотацию, 
 то предпочтение будет отдано ему при внедрении.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -289,7 +289,7 @@ Kora не делает автоматический поиск модулей и
 Если же ни один из способов выше не смог предоставить компонент, 
 то Kora может попробовать самостоятельно создать компонент если он удовлетворяет требованиям аналогичным [авто фабрики](#_3):
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     * Класс не должен быть абстрактным
     * У класса должен быть только один публичный конструктор
@@ -351,7 +351,7 @@ Kora не делает автоматический поиск модулей и
 
 Примером такого компонента может быть HTTP сервер, Kafka потребитель, компонент прогрева кешей.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -377,7 +377,7 @@ Kora не делает автоматический поиск модулей и
 
 ### Необязательные зависимости
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Если хочется внедрить необязательную зависимость, которая может отсутствовать то 
     предполагается пометить такой компонент любой `@Nullable` аннотацией,
@@ -413,7 +413,7 @@ Kora не делает автоматический поиск модулей и
 В контейнере может быть много экземпляров одного и того же типа, и если их все нужно собрать в одном месте, 
 то следует использовать специальный тип `All`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -467,7 +467,7 @@ public interface All<T> extends List<T> {}
 
 Например, вот так можно внедрить разные экземпляры класса с общим интерфейсом по разным точкам внедрения:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -512,7 +512,7 @@ public interface All<T> extends List<T> {}
 Теги над методом говорят какой с каким тегом надо зарегистрировать компонент, а теги в точках внедрения говорят с каким тегом ожидается компонент.
 Также теги работают на параметрах конструктора, в связке с `@Component` или финальными классами. 
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(MyTag1.class)
@@ -564,7 +564,7 @@ public interface All<T> extends List<T> {}
 
 Можно использовать тег также для получения списка всех компонент по определенному тегу:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -604,7 +604,7 @@ public interface All<T> extends List<T> {}
 
 Для получение списка вообще всех компонент с тегом и без, требуется использовать специальный тип тега `@Tag.Any`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -659,7 +659,7 @@ public interface All<T> extends List<T> {}
 будет создан класс `ApplicationGraph` который будет представлять реализацию контейнера зависимостей и тогда точка входа
 в рамках того же пакета будет выглядеть так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -712,7 +712,7 @@ public interface Lifecycle {
 
 Рассмотрим следующий пример:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface SomeModule {
@@ -776,7 +776,7 @@ public interface ValueOf<T> {
 
 Например, этот механизм может использоваться для прогрева кэша на базе `JdbcDatabase`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component

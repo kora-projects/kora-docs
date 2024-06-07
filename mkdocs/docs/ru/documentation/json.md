@@ -3,7 +3,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -35,7 +35,7 @@
 
 Можно воспользоваться `@JsonWriter` для создания только писателя:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @JsonWriter
@@ -53,7 +53,7 @@
 
 Можно воспользоваться `@JsonReader` для создания только читателя:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @JsonReader
@@ -72,7 +72,7 @@
 Можно воспользоваться `@Json` для создания сразу читателя и писателя.
 В большинстве случаев предпочтительнее использовать именно аннотацию `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -88,7 +88,7 @@
 
 ## Обязательные поля
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     По умолчанию все поля объявленные в объекте считаются **обязательными** (*NotNull*).
 
@@ -108,7 +108,7 @@
 
 ## Необязательное поля
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     В случае если поле в Json является необязательным, то есть может отсутствовать то,
     можно использовать аннотацию `@Nullable` для соответствия поля в Json и DTO:
@@ -138,7 +138,7 @@
 В случае если поле в Json называется иначе от того что требуется использовать в классе, 
 можно использовать аннотацию `@JsonField` для соответствия поля в Json и DTO.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -161,7 +161,7 @@
 В случае если поле в DTO не хочется читать/писать,
 можно использовать аннотацию `@JsonSkip` и проигнорировать такое поле.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -197,7 +197,7 @@
 
 Пример использования аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -221,7 +221,7 @@
 В случае если хочется использовать определенный конструктор для сериализации, 
 то это можно сделать с указанием над конструктором аннотации `@JsonReader` либо аннотации которая имеет меньший приоритет `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -255,7 +255,7 @@
 1. `@JsonDiscriminatorField` - указывает поле дискриминатора в DTO, которым помечается sealed класс/интерфейс
 2. `@JsonDiscriminatorValue` - значение для вышеуказанного поля, помечает класс-наследник sealed класса/интерфейса
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -349,7 +349,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 
 Пример регистрации собственно `JsonWriter`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -386,7 +386,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 В случае если хочется использовать `Jackson` для записи/чтения, то можно самому зарегистрировать [фабрику](container.md)
 предоставляющую `ObjectMapper` и соответствующие `Mappers` которые требуются в других Kora модулях будут предоставлены зависимостью ниже:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy

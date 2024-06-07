@@ -2,7 +2,7 @@ Kora создает свои вспомогательные классы во в
 
 Пример сборки нативного образа с помощью [плагина](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html) для `gradle`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy

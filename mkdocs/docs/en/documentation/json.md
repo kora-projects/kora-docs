@@ -2,7 +2,7 @@ Module allows you to create productive and reflection-free JSON readers and writ
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -34,7 +34,7 @@ Module allows you to create productive and reflection-free JSON readers and writ
 
 You can use `@JsonWriter` to create a writer only:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @JsonWriter
@@ -52,7 +52,7 @@ You can use `@JsonWriter` to create a writer only:
 
 You can use `@JsonReader` to create a reader only:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @JsonReader
@@ -71,7 +71,7 @@ You can use `@JsonReader` to create a reader only:
 You can use `@Json` to create a reader and a writer at once.
 In most cases, it is the `@Json` annotation that is preferred:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -87,7 +87,7 @@ In most cases, it is the `@Json` annotation that is preferred:
 
 ## Required fields
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     By default, all fields declared in an object are considered **required** (*NotNull*).
 
@@ -107,7 +107,7 @@ In most cases, it is the `@Json` annotation that is preferred:
 
 ## Optional fields
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     In case a field in Json is optional, that is, it may not exist then,
     you can use the `@Nullable` annotation to match the field in Json and DTO:
@@ -137,7 +137,7 @@ In most cases, it is the `@Json` annotation that is preferred:
 In case a field in Json is named differently from what you want to use in a class,
 you can use the `@JsonField` annotation to match the field in Json and the DTO.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -160,7 +160,7 @@ you can use the `@JsonField` annotation to match the field in Json and the DTO.
 In case you don't want to read/write a field in DTO,
 you can use the `@JsonSkip` annotation and ignore such a field.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -196,7 +196,7 @@ Various use cases are available:
 
 Example of annotation usage:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -220,7 +220,7 @@ Example of annotation usage:
 If you want to use a specific constructor for serialization,
 it can be done by specifying the `@JsonReader` annotation above the constructor or the lower-priority `@Json` annotation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -254,7 +254,7 @@ Two annotations are added to support isolated classes:
 1. `@JsonDiscriminatorField` - specifies the discriminator field in the DTO with which the sealed class/interface is tagged
 2. `@JsonDiscriminatorValue` - the value for the above field, marks the inheritor class of the sealed class/interface
 3. 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
@@ -348,7 +348,7 @@ In case you need to write/read your custom type, it is suggested to register you
 
 Example of registering a `JsonWriter`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -385,7 +385,7 @@ Example of registering a `JsonWriter`:
 In case one wants to use `Jackson` for writing/reading, one can register [factory](container.md) that
 provide `ObjectMapper` and the corresponding `Mappers` that are required in other Kora modules will be provided by the dependency below:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy

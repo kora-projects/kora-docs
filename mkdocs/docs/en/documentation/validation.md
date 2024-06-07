@@ -1,16 +1,8 @@
-A module for validating objects and methods using annotations.
-
-=== ":fontawesome-brands-java: `Java`"
-
-    When applying aspects, class must not be `final`
-
-=== ":simple-kotlin: `Kotlin`"
-
-    When applying aspects, class must be `open`
+Module for validating classes/records and methods using annotations.
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -56,7 +48,7 @@ It is suggested to use the `@Valid` annotation to mark a class that needs a vali
 
 An example of a labeled class for validation looks like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -72,7 +64,7 @@ An example of a labeled class for validation looks like this:
 
 A validator of that class will then be available in the dependency container:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -105,7 +97,7 @@ It is expected to use a special provided validation [annotation](#annotation-val
 
 An example of an object marked up for validation looks like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -131,7 +123,7 @@ All fields are required (`NotNull`) by default, so `NotNull` checks will be crea
 
 #### Optional fields
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     In order to specify a field as not required, you need to mark it with any `@Nullable` annotation,
     **will not** create a *null* check for such a field:
@@ -158,7 +150,7 @@ In order to validate fields of complex objects for which validators are created 
 or fields that are not supported by standard validation tools,
 the `@Valid` annotation is supposed to be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -203,7 +195,7 @@ It is expected to use a special provided set of [annotations](#annotation-valida
 
 It is required to use the `@Validate` annotation over the method to validate method arguments:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -235,7 +227,7 @@ All arguments are required (`NotNull`) by default, so `NotNull` checks will be c
 
 #### Optional arguments
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     In order to specify an argument as not required requires marking it with any `@Nullable` annotation,
     **will not** create a *null* check for such an argument:
@@ -274,7 +266,7 @@ In order to validate fields of complex objects for which validators are created 
 or fields that are not supported by standard validation tools,
 `@Valid` annotation is supposed to be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -313,7 +305,7 @@ where when the `Validator<Foo>` validator is called, the validator for `Validato
 
 In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validate-annotations):
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -364,7 +356,7 @@ There are two types of validation:
 
 Example of FailFast validation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -394,7 +386,7 @@ Creating your custom annotation requires:
 
 1) Create an inheritor of `Validator`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class MyValidStringValidator implements Validator<String> {
@@ -431,7 +423,7 @@ Creating your custom annotation requires:
 
 2) Create `ValidatorFactory` implementation:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface MyValidValidatorFactory extends ValidatorFactory<String> { }
@@ -445,7 +437,7 @@ Creating your custom annotation requires:
 
 3) Register the inheritor of `ValidatorFactory` as a component:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -476,7 +468,7 @@ Creating your custom annotation requires:
 
 4) Create a validation annotation and annotate it `@ValidatedBy` with the previously created `ValidatorFactory` inheritor:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Retention(value = RetentionPolicy.CLASS)
@@ -496,7 +488,7 @@ Creating your custom annotation requires:
 
 5) Annotate field/argument/result:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -514,7 +506,9 @@ Creating your custom annotation requires:
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Class must be non `final` in order for aspects to work.
 
     The `T` refers to the type of the return value.
 
@@ -524,6 +518,8 @@ Available signatures for repository methods out of the box:
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Class must be `open` in order for aspects to work.
 
     By `T` we mean the type of the return value.
 

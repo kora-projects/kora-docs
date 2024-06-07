@@ -5,6 +5,16 @@ hide:
   - navigation
 ---
 
+### 1.1.2
+
+Исправлено:
+
+- Исправлено `@Retry` для сигнатуры CompletableFuture
+- Исправлена обработка ошибок Cache AOP
+- Исправлена работа свойства [primaryAuth](../documentation/openapi-codegen.md#_3) генератора OpenAPI
+- Исправлена телеметрия HttpClient, передающая Content-Length базовому клиенту
+- Исправлена поддержка `Wrapped` в расширении JUnit5 тестировании
+- 
 ### 1.1.1
 
 Исправлено:

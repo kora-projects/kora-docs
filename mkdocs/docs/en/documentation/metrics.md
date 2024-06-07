@@ -4,7 +4,7 @@ Requires [HTTP server](http-server.md) module added to provide metrics in [prome
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -32,7 +32,7 @@ Requires [HTTP server](http-server.md) module added to provide metrics in [prome
 
 ## Configuration
 
-Configuration described in the `HttpServerConfig` class:
+Example of HTTP server path configuration for retrieving metrics described in the `HttpServerConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -53,7 +53,7 @@ Configuration described in the `HttpServerConfig` class:
 
     1. Path to get metrics in `prometheus` format (if [HTTP server](http-server.md) module is added):
 
-Configuration described in the `MetricsConfig` class:
+Example of the complete configuration described in the `MetricsConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -90,7 +90,7 @@ In order to make changes to the `PrometheusMeterRegistry` configuration, you nee
 
 For example, we want to add a common tag for all metrics:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module

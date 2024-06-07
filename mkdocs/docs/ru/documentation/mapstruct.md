@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -45,7 +45,7 @@
 Создание самих преобразователей ложится на библиотеку [MapStruct](https://mapstruct.org/),
 Kora в данном случае лишь предоставляет созданные библиотекой классы как зависимости в контейнер зависимостей.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp

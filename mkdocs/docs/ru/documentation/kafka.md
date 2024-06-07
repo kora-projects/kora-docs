@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@
 
 Для создания `Consumer` требуется использовать аннотацию `@KafkaListener` над методом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -67,7 +67,7 @@
 В случае, если нужно разное поведение для разных топиков, существует возможность создавать несколько подобных контейнеров, 
 каждый со своим индивидуальным конфигом. Выглядит это так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -107,8 +107,9 @@
 
 ### Конфигурация
 
-Конфигурация описывает настройки конкретного `@KafkaListener` и описана в классе `KafkaListenerConfig`, 
-ниже пример для конфигурации по пути `path.to.config`:
+Конфигурация описывает настройки конкретного `@KafkaListener` и ниже указан пример для конфигурации по пути `path.to.config`.
+
+Пример полной конфигурации, описанной в классе `KafkaListenerConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -145,15 +146,15 @@
     }
     ```
 
-    1.  Указываются топики на которые будет подписан Consumer (либо указывается `topicsPattern`)
-    2.  Указываются паттерн топиков на которые будет подписан Consumer (либо указывается `topics`)
+    1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
+    2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
     3.  Указываются партиции топиков на которые требуется подписаться
     4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение `earliest` - перейти на самый ранний доступный offset, `latest` - перейти на последний доступный offset, строка в формате `Duration`, например `5m` - сдвиг на определённое время назад
     5.  Максиимальное время ожидания сообщений из топика в рамках одного вызова
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs)
+    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
     10.  Включает логгирование модуля (по умолчанию `false`)
     11.  Включает метрики модуля (по умолчанию `true`)
     12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -182,7 +183,7 @@
             group.id: "my-group-id"
           telemetry:
             logging:
-              enabled: true #(10)!
+              enabled: false #(10)!
             metrics:
               enabled: true #(11)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
@@ -190,15 +191,15 @@
               enabled: true #(13)!
     ```
 
-    1.  Указываются топики на которые будет подписан Consumer (либо указывается `topicsPattern`)
-    2.  Указываются паттерн топиков на которые будет подписан Consumer (либо указывается `topics`)
+    1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
+    2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
     3.  Указываются партиции топиков на которые требуется подписаться
     4.  Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение `earliest` - перейти на самый ранний доступный offset, `latest` - перейти на последний доступный offset, строка в формате `Duration`, например `5m` - сдвиг на определённое время назад
     5.  Максиимальное время ожидания сообщений из топика в рамках одного вызова
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs)
+    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
     10.  Включает логгирование модуля (по умолчанию `false`)
     11.  Включает метрики модуля (по умолчанию `true`)
     12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -244,7 +245,7 @@
 Теги можно установить на параметре-ключе, параметре-значении, а так же на параметрах типа `ConsumerRecord` и `ConsumerRecords`.
 Эти теги будут установлены на зависимостях контейнера.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -281,7 +282,7 @@
 
 В случае если требуется десериализация из `Json`, то можно использовать тег `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -340,7 +341,7 @@
 Если вы используете сигнатуру с распакованными `key`/`value`/`headers`, то можно добавить последним аргументом `Exception`, `Throwable`, `RecordKeyDeserializationException`
 или `RecordValueDeserializationException`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -410,7 +411,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Позволяет принимать `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
 `Exception` (опционально) в случае ошибки сериализации/соединения и после обработки всех событий вызывается `commitSync()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -440,7 +441,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Принимает `ConsumerRecord`/`ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально) после обработки вызывается `commitSync()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -463,7 +464,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 В данном случае `commit` нужно **вызывать вручную**.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("path.to.config")
@@ -488,7 +489,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Предполагается использовать аннотацию `@KafkaPublisher` на интерфейсе для создания `Kafka Producer`,
 для того чтобы отправлять сообщения в любой топик предполагается создание метода с сигнатурой `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -513,7 +514,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 В случае если требуется использовать типизированные контракты на определенные топики то предполагается использование аннотации `@KafkaPublisher.Topic`
 для создания таких контрактов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -539,7 +540,9 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 ### Конфигурация
 
-`KafkaPublisherConfig` используется для конфигурации `@KafkaPublisher`:
+Конфигурация описывает настройки конкретного `@KafkaPublisher` и ниже указан пример для конфигурации по пути `path.to.config`.
+
+Пример полной конфигурации, описанной в классе `KafkaPublisherConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -567,7 +570,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-    1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs)
+    1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs) (**обязательный**)
     2.  Включает логгирование модуля (по умолчанию `false`)
     3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -591,20 +594,22 @@ public interface BaseKafkaRecordsHandler<K, V> {
               enabled: true #(5)!
     ```
 
-    1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs)
+    1.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#producerconfigs) (**обязательный**)
     2.  Включает логгирование модуля (по умолчанию `false`)
     3.  Включает метрики модуля (по умолчанию `true`)
     4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     5.  Включает трассировку модуля (по умолчанию `true`)
 
-`KafkaPublisherConfig.TopicConfig` используется для конфигурации `@KafkaPublisher.Topic`:
+Конфигурация топика описывает настройки конкретного `@KafkaPublisher.Topic` и ниже указан пример для конфигурации по пути `path.to.topic.config`.
+
+Пример полной конфигурации, описанной в классе `KafkaPublisherConfig.TopicConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     path {
       to {
-        topic { //(1)!
+        topic {
           config {
             topic = "my-topic" //(2)!
             partition = 1 //(3)!
@@ -614,31 +619,29 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-    1.  Конфигурация топика `@KafkaPublisher.Topic`
-    2.  В какой топик метод будет отправлять данные
-    3.  В какой partition топика метод будет отправлять данные (опционально)
+    1.  В какой топик метод будет отправлять данные (**обязательный**)
+    2.  В какой partition топика метод будет отправлять данные (по умолчанию отсутвует)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     path:
       to:
-        topic: #(1)!
+        topic:
           config:
-            topic: "my-topic" #(2)!
-            partition: 1 #(3)!
+            topic: "my-topic" #(1)!
+            partition: 1 #(1)!
     ```
 
-    1.  Конфигурация топика `@KafkaPublisher.Topic`
-    2.  В какой топик метод будет отправлять данные
-    3.  В какой partition топика метод будет отправлять данные (опционально)
+    1.  В какой топик метод будет отправлять данные (**обязательный**)
+    2.  В какой partition топика метод будет отправлять данные (по умолчанию отсутвует)
 
 ### Сериализация
 
 Для уточнения какой `Serializer` взять из контейнера есть возможность использовать теги.
 Теги необходимо устанавливать на параметры `ProducerRecord` или `key`/`value` методов:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -666,7 +669,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 В случае если хочется сериализовать как Json то следует использовать `@Json` аннотацию:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -715,7 +718,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Требуется сначала создать обычного `KafkaProducer` а затем его использовать для создания транзакционного Producer'а:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -749,7 +752,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Предполагается использовать методы `inTx` для отправки таких сообщений, все сообщения в рамках Lambda будут применены в случае успешного ее выполнения и отменены в случае ошибки.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     transactionalPublisher.inTx(producer -> {
@@ -769,7 +772,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Также возможно в ручную произвести все манипуляции с `KafkaProducer`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // commit will be called on try-with-resources close
@@ -839,7 +842,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Позволяет отправлять `value` и `key` (опционально) и `headers` (опционально) от `ProducerRecord`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")
@@ -899,7 +902,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Возможна отправка `ProducerRecord` и `Callback` (опционально) и комбинировать сигнатуры ответа:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaPublisher("path.to.config")

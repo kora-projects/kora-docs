@@ -5,8 +5,6 @@ Module is responsible for mapping the values of configuration files to classes i
 Support for [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) is implemented with [Typesafe Config](https://github.com/lightbend/config).
 HOCON is a JSON-based config file format. The format is less strict than JSON and has a slightly different syntax.
 
-HOCON Configuration example:
-
 ```javascript
 services {
     foo {
@@ -18,7 +16,8 @@ services {
       propDefault = ${?NON_DEFAULT_ENV_VALUE} //(5)!
       propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
       propArray = ["v1", "v2"] //(7)!
-      propMap { //(8)!
+      propArrayAsString = "v1, v2" //(8)!
+      propMap { //(9)!
           "k1" = "v1"
           "k2" = "v2"
       }
@@ -32,12 +31,68 @@ services {
 4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
 5. Configuration value with default value, the default value is specified in `propDefault = 10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
 6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
-7. Configuration value as an array, you can also specify the value as a comma-separated string
-8. Configuration value as a dictionary with key and value
+7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
+8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
+9.  Configuration value as a dictionary key and value
+
+Configuration representation in code:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -85,8 +140,6 @@ Prioritize reading the `application.conf` configuration file:
 
 Support for [YAML](https://yaml.org/) is implemented using [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
 
-Example YAML configuration:
-
 ```yaml
 services:
     foo:
@@ -97,7 +150,8 @@ services:
         propDefault: ${?NON_DEFAULT_ENV_VALUE:10} #(5)!
         propReference: ${services.foo.bar}Other${services.foo.baz} #(6)!
         propArray: ["v1", "v2"] #(7)!
-        propMap: #(8)!
+        propArrayAsString: "v1, v2" #(8)!
+        propMap: #(9)!
             k1: "v1"
             k2: "v2"
 ```
@@ -108,12 +162,68 @@ services:
 4. Optional configuration value which is substituted from the `OPTIONAL_ENV_VALUE` environment variable, if no such variable is found, the configuration value will be omitted. 5.
 5. Configuration value with default value, the default value is specified as `10` and if `NON_DEFAULT_ENV_VALUE` environment variable is found, its value will replace the default value.
 6. Configuration value assembled from substitutions of other parts of the configuration and the `Other` value between the
-7. Configuration value as an array, you can also specify the value as a comma-separated string
-8. Configuration value as a dictionary with key and value
+7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
+8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
+9.  Configuration value as a dictionary key and value
+
+Configuration representation in code:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("services.foo")
+    public interface FooConfig {
+
+        String bar();
+
+        Integer baz();
+
+        String propRequired();
+
+        @Nullable
+        String propOptional();
+
+        Integer propDefault();
+
+        String propReference();
+
+        List<String> propArray();
+
+        List<String> propArrayAsString();
+
+        Map<String, String> propMap();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("services.foo")
+    interface FooConfig {
+
+        fun bar(): String
+
+        fun baz(): Int
+
+        fun propRequired(): String
+
+        fun propOptional(): String?
+
+        fun propDefault(): Int
+
+        fun propReference(): String
+
+        fun propArray(): List<String>
+
+        fun propArrayAsString(): List<String>
+
+        fun propMap(): Map<String, String>
+    }
+    ```
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -166,7 +276,7 @@ Such a user interface can later be injected as a dependency along with other com
 
 In order to simplify the creation of custom configurations, the `@ConfigSource` annotation should be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -192,7 +302,7 @@ In order to simplify the creation of custom configurations, the `@ConfigSource` 
 
 This code sample will add an instance of the `FooServiceConfig` class to the dependency container, which when created will expect the following kind of configuration:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     services {
@@ -214,7 +324,7 @@ This code sample will add an instance of the `FooServiceConfig` class to the dep
 
 After that, the `FooServiceConfig` class can already be used as a dependency in other classes:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -242,7 +352,7 @@ which will create rules for processing a configuration file into an instance of 
 
 Let's consider an example when there is such a configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigValueExtractor
@@ -268,7 +378,7 @@ Let's consider an example when there is such a configuration class:
 
 In order for the library to provide configuration, you need to implement the factory in a module:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface FooLibraryModule {
@@ -292,7 +402,7 @@ In order for the library to provide configuration, you need to implement the fac
 
 The factory will expect a configuration of the following kind:
 
-=== ":material-code-json: `Hocon`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     library {
@@ -312,7 +422,7 @@ The factory will expect a configuration of the following kind:
         baz: 10
     ```
 
-Then by connecting the `FooLibraryModule` module in the application, the `FooLibraryModule` config can be used as a dependency in other classes.
+Then by connecting the `FooLibraryModule` module in the application, the `FooServiceConfig` config can be used as a dependency in other classes.
 
 ### Required values
 
@@ -322,7 +432,7 @@ By default, all values declared in the config are considered **required** (*NotN
 
 If you need to specify a value from the configuration file as optional, you can use this format:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     It is suggested to use the `@Nullable` annotation over the method signature:
 
@@ -357,7 +467,7 @@ If you need to specify a value from the configuration file as optional, you can 
 
 If there is a need to use default values in a class, you can use this format:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @ConfigSource("services.foo")
@@ -399,7 +509,7 @@ configuration file mapping. The resulting configuration mapping consists of seve
 In case you want to embed the configuration **only** [environment variables](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit),
 you can use the `@Environment` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -425,7 +535,7 @@ you can use the `@Environment` annotation as a tag for the configuration class:
 In case you want to inject a configuration of **only** [system variables](https://www.baeldung.com/java-system-get-property-vs-system-getenv),
 then you can use the `@SystemProperties` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -451,7 +561,7 @@ then you can use the `@SystemProperties` annotation as a tag for the configurati
 In case you want to inject a complete application configuration that consists **only** of a configuration file,
 you can use the `@ApplicationConfig` annotation as a tag for the configuration class:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -477,7 +587,7 @@ you can use the `@ApplicationConfig` annotation as a tag for the configuration c
 If you want to inject a complete application configuration that consists of a configuration file,
 environment variables and system variables, you simply inject the configuration class without the tag:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -504,7 +614,7 @@ environment variables and system variables, you simply inject the configuration 
 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when you update the configuration it will cause all graph components that use it to be updated,
-    it is recommended to always create your own configuration interfaces.
+    it is recommended to always create custom user configuration interfaces.
 
 ## Supported types
 
