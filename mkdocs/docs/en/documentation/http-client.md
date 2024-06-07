@@ -1156,32 +1156,40 @@ You need to configure an interceptor and configuration for [Basic](https://swagg
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @ConfigSource("openapiAuth.basicAuth")
-    interface BasicAuthConfig {
+    @Module
+    public interface BasicAuthModule {
+    
+        @ConfigSource("openapiAuth.basicAuth")
+        public interface BasicAuthConfig {
 
-        String username();
+            String username();
 
-        String password();
-    }
+            String password();
+        }
 
-    default BasicAuthHttpClientInterceptor basicAuther(BasicAuthConfig config) {
-        return new BasicAuthHttpClientInterceptor(config.username(), config.password());
+        default BasicAuthHttpClientInterceptor basicAuther(BasicAuthConfig config) {
+            return new BasicAuthHttpClientInterceptor(config.username(), config.password());
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @ConfigSource("openapiAuth.basicAuth")
-    interface BasicAuthConfig {
+    @Module
+    interface BasicAuthModule {
+        
+        @ConfigSource("openapiAuth.basicAuth")
+        interface BasicAuthConfig {
 
-        fun username(): String
+            fun username(): String
 
-        fun password(): String
-    }
+            fun password(): String
+        }
 
-    fun basicAuther(config: BasicAuthConfig): BasicAuthHttpClientInterceptor {
-        return BasicAuthHttpClientInterceptor(config.username(), config.password())
+        fun basicAuther(config: BasicAuthConfig): BasicAuthHttpClientInterceptor {
+            return BasicAuthHttpClientInterceptor(config.username(), config.password())
+        }
     }
     ```
 
@@ -1220,28 +1228,36 @@ You need to configure an interceptor and configuration for [ApiKey](https://swag
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @ConfigSource("openapiAuth.apiKeyAuth")
-    interface ApiKeyAuthConfig {
+    @Module
+    public interface ApiKeyAuthModule {
+    
+        @ConfigSource("openapiAuth.apiKeyAuth")
+        interface ApiKeyAuthConfig {
 
-        String apiKey();
-    }
+            String apiKey();
+        }
 
-    default ApiKeyHttpClientInterceptor apiKeyAuther(ApiKeyAuthConfig config) {
-        return new ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey());
+        default ApiKeyHttpClientInterceptor apiKeyAuther(ApiKeyAuthConfig config) {
+            return new ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey());
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @ConfigSource("openapiAuth.apiKeyAuth")
-    interface ApiKeyAuthConfig {
+    @Module
+    interface ApiKeyAuthModule {
+    
+        @ConfigSource("openapiAuth.apiKeyAuth")
+        interface ApiKeyAuthConfig {
 
-        fun apiKey(): String
-    }
+            fun apiKey(): String
+        }
 
-    fun apiKeyAuther(config: ApiKeyAuthConfig): ApiKeyHttpClientInterceptor {
-        return ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey())
+        fun apiKeyAuther(config: ApiKeyAuthConfig): ApiKeyHttpClientInterceptor {
+            return ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey())
+        }
     }
     ```
 
@@ -1278,20 +1294,24 @@ You need to configure an interceptor for [Bearer](https://swagger.io/docs/specif
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    final class BearerAuth {}
-
-    default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
-        return new BearerAuthHttpClientInterceptor(tokenProvider);
+    @Module
+    public interface BearerAuthModule {
+        
+        default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
+            return new BearerAuthHttpClientInterceptor(tokenProvider);
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    class BearerAuth
-
-    fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
-        return BearerAuthHttpClientInterceptor(tokenProvider)
+    @Module
+    interface BasicAuthModule {
+            
+        fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
+            return BearerAuthHttpClientInterceptor(tokenProvider)
+        }
     }
     ```
 
