@@ -3,7 +3,7 @@ the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -35,7 +35,7 @@ Also **required to provide** the database driver implementation as a dependency.
 
 ## Configuration
 
-Parameters described in the `R2dbcDatabaseConfig` class:
+Example of the complete configuration described in the `R2dbcDatabaseConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -53,45 +53,43 @@ Parameters described in the `R2dbcDatabaseConfig` class:
         idleTimeout = "1m" //(10)!
         maxLifetime = "0s" //(11)!
         statementTimeout = "0s" //(12)!
-        initializationFailTimeout = "0s" //(13)!
-        readinessProbe = false //(14)!
-        options { //(15)!
+        readinessProbe = false //(13)!
+        options { //(14)!
             "backgroundEvictionInterval": "PT120S"
         }
         telemetry {
             logging {
-                enabled = false //(16)!
+                enabled = false //(15)!
             }
             metrics {
-                enabled = true //(17)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
             }
             telemetry {
-                enabled = true //(19)!
+                enabled = true //(18)!
             }
         }
     }
     ```
 
-    1. R2DBC database connection URL **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database Connection Set Name **(mandatory)**
+    1. R2DBC database connection URL (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database Connection Set Name (**required**)
     5. Maximum size of the database connection set
     6. Minimum idle size of the ready database connection set
     7. Maximum number of attempts to obtain a connection
     8. Maximum time to establish a connection
     9. Maximum time to establish a connection
     10. Maximum time for connection downtime
-    11. Maximum connection lifetime (disabled by default)
-    12. Maximum time to execute a query to the database (disabled by default)
-    13. Maximum time to wait for connection initialization at service startup (disabled by default)
-    14. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    15. Additional attributes of R2DBC connection
-    16. Whether to enable module logging
-    17. Enables module metrics (default `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing (default `true`)
+    11. Maximum connection lifetime (optional)
+    12. Maximum time to execute a query to the database (optional)
+    13. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    14. Additional attributes of R2DBC connection (optional)
+    15. Enables module logging (default `false`)
+    16. Enables module metrics (default `true`)
+    17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -109,43 +107,41 @@ Parameters described in the `R2dbcDatabaseConfig` class:
       idleTimeout: "1m" #(10)!
       maxLifetime: "0s" #(11)!
       statementTimeout: "0ms" #(12)!
-      initializationFailTimeout: "0s" #(13)!
-      readinessProbe: false #(14)!
-      options: #(15)!
+      readinessProbe: false #(13)!
+      options: #(14)!
         backgroundEvictionInterval: "PT120S"
       telemetry:
         logging:
-          enabled: true #(16)!
+          enabled: false #(15)!
         metrics:
-          enabled: true #(17)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
         telemetry:
-          enabled: true #(19)!
+          enabled: true #(18)!
     ```
 
-    1. R2DBC database connection URL **(mandatory)**
-    2. User name for connection **(mandatory)**
-    3. Password of the user to connect **(mandatory)**
-    4. Database Connection Set Name **(mandatory)**
+    1. R2DBC database connection URL (**required**)
+    2. User name for connection (**required**)
+    3. Password of the user to connect (**required**)
+    4. Database Connection Set Name (**required**)
     5. Maximum size of the database connection set
     6. Minimum idle size of the ready database connection set
     7. Maximum number of attempts to obtain a connection
     8. Maximum time to establish a connection
     9. Maximum time to establish a connection
     10. Maximum time for connection downtime
-    11. Maximum connection lifetime (disabled by default)
-    12. Maximum time to execute a query to the database (disabled by default)
-    13. Maximum time to wait for connection initialization at service startup (disabled by default)
-    14. Whether to enable [probes.md#_2](probes.md#_2) for database connection (disabled by default)
-    15. Additional attributes of R2DBC connection
-    16. Whether to enable module logging
-    17. Enables module metrics (default `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing (default `true`)
+    11. Maximum connection lifetime (optional)
+    12. Maximum time to execute a query to the database (optional)
+    13. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    14. Additional attributes of R2DBC connection (optional)
+    15. Enables module logging (default `false`)
+    16. Enables module metrics (default `true`)
+    17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18. Enables module tracing (default `true`)
 
 ## Usage
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -167,7 +163,7 @@ It is possible to override the conversion of different parts of [entity](databas
 
 If you need to convert the result manually, it is suggested to use `R2dbcResultFluxMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements R2dbcResultFluxMapper<UUID, Flux<UUID>> {
@@ -209,7 +205,7 @@ If you need to convert the result manually, it is suggested to use `R2dbcResultF
 
 If you need to convert the string manually, it is suggested to use `R2dbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements R2dbcRowMapper<UUID> {
@@ -252,7 +248,7 @@ If you need to convert the string manually, it is suggested to use `R2dbcRowMapp
 
 If you need to convert the column value manually, it is suggested to use the `R2dbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements R2dbcResultColumnMapper<UUID> {
@@ -302,7 +298,7 @@ If you need to convert the column value manually, it is suggested to use the `R2
 
 If you want to convert the value of a query parameter manually, it is suggested to use `R2dbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements R2dbcParameterColumnMapper<UUID> {
@@ -343,6 +339,40 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
+### Generated identifier
+
+If you want to get the primary keys of an entity created by the database as the result,
+it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
+This approach works for `@Batch` queries as well.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        Mono<Long> insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(entity: Entity): Mono<Long>
+    }
+    ```
+
 ## Transactions
 
 In order to perform manual queries in Kora, there is an interface `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,
@@ -351,7 +381,7 @@ All repository methods called within a transaction lambda will be executed in th
 
 In order to perform queries transactionally, the `inTx` contract can be used:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -401,7 +431,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
 If you need some more complex logic for the query and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -442,7 +472,7 @@ If you need some more complex logic for the query and `@Query` is not enough, yo
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
 

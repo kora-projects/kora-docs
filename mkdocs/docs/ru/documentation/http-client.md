@@ -7,7 +7,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -37,8 +37,7 @@
 
 ### Конфигурация
 
-Конфигурация отвечает за общие настройки реализации HTTP клиента.
-Пример конфигурации описанной в классах `AsyncHttpClientConfig` и `HttpClientConfig`:
+Пример полной конфигурации, описанной в классе `AsyncHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -64,11 +63,11 @@
     2.  Максимальное время на установление соединения
     3.  Максимальное время на чтение ответа
     4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси
-    6.  Порт прокси
-    7.  Пользователь для прокси
-    8.  Пароль для прокси
-    9.  Хосты которые следует исключить из проксирования
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 === ":simple-yaml: `YAML`"
 
@@ -91,11 +90,11 @@
     2.  Максимальное время на установление соединения
     3.  Максимальное время на чтение ответа
     4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси
-    6.  Порт прокси
-    7.  Пользователь для прокси
-    8.  Пароль для прокси
-    9.  Хосты которые следует исключить из проксирования
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 ## OkHttp
 
@@ -104,7 +103,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -134,8 +133,7 @@
 
 ### Конфигурация
 
-Конфигурация отвечает за общие настройки реализации HTTP клиента.
-Пример конфигурации описанной в классах `OkHttpClientConfig` и `HttpClientConfig`:
+Пример полной конфигурации, описанной в классе `OkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -163,11 +161,11 @@
     3.  Максимальное время на установление соединения
     4.  Максимальное время на чтение ответа
     5.  Использовать ли переменные окружения для настройки прокси
-    6.  Адрес прокси
-    7.  Порт прокси
-    8.  Пользователь для прокси
-    9.  Пароль для прокси
-    10.  Хосты которые следует исключить из проксирования
+    6.  Адрес прокси (по умолчанию отсутвует)
+    7.  Порт прокси (по умолчанию отсутвует)
+    8.  Пользователь для прокси (по умолчанию отсутвует)
+    9.  Пароль для прокси (по умолчанию отсутвует)
+    10.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 === ":simple-yaml: `YAML`"
 
@@ -192,11 +190,11 @@
     3.  Максимальное время на установление соединения
     4.  Максимальное время на чтение ответа
     5.  Использовать ли переменные окружения для настройки прокси
-    6.  Адрес прокси
-    7.  Порт прокси
-    8.  Пользователь для прокси
-    9.  Пароль для прокси
-    10.  Хосты которые следует исключить из проксирования
+    6.  Адрес прокси (по умолчанию отсутвует)
+    7.  Порт прокси (по умолчанию отсутвует)
+    8.  Пользователь для прокси (по умолчанию отсутвует)
+    9.  Пароль для прокси (по умолчанию отсутвует)
+    10.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 ## Нативный клиент
 
@@ -204,7 +202,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -234,15 +232,14 @@
 
 ### Конфигурация
 
-Конфигурация отвечает за общие настройки реализации HTTP клиента.
-Пример конфигурации описанной в классе `JdkHttpClientConfig` и `HttpClientConfig`:
+Пример полной конфигурации, описанной в классе `JdkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpClient {
         jdk {
-            threads = 10 //(1)!
+            threads = 2 //(1)!
             httpVersion = "HTTP_1_1" //(2)!
         }
         connectTimeout = "5s" //(3)!
@@ -257,22 +254,22 @@
     }
     ```
 
-    1.  Количество потоков для HTTP клиента
+    1.  Количество потоков для HTTP клиента, по умолчанию равен кол-во ядер процессора умноженных на 2
     2.  Какую версию HTTP протокола использовать (доступные значения: `HTTP_1_1` / `HTTP_2`)
     3.  Максимальное время на установление соединения
     4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси
-    6.  Порт прокси
-    7.  Пользователь для прокси
-    8.  Пароль для прокси
-    9.  Хосты которые следует исключить из проксирования
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
       jdk:
-        threads: 10 #(1)!
+        threads: 2 #(1)!
         httpVersion: "HTTP_1_1" #(2)!
       connectTimeout: "2s" #(3)!
       useEnvProxy: false #(4)!
@@ -284,15 +281,15 @@
         nonProxyHosts: [ "host1", "host2" ] #(9)!
     ```
 
-    1.  Количество потоков для HTTP клиента
+    1.  Количество потоков для HTTP клиента, по умолчанию равен кол-во ядер процессора умноженных на 2
     2.  Какую версию HTTP протокола использовать (доступные значения: `HTTP_1_1` / `HTTP_2`)
     3.  Максимальное время на установление соединения
     4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси
-    6.  Порт прокси
-    7.  Пользователь для прокси
-    8.  Пароль для прокси
-    9.  Хосты которые следует исключить из проксирования
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
 ## Клиент декларативный
 
@@ -301,7 +298,7 @@
 * `@HttpClient` — указывает что интерфейс является декларативным HTTP клиентом
 * `@HttpRoute` — указывает [тип HTTP запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Methods) и путь запроса
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -328,7 +325,7 @@
 Конфигурация конкретной реализации `@HttpClient` по умолчанию для поиска конфигурации использует следующий путь `httpClient.{имя класса в нижнем регистре}`,
 либо указывается в параметре `configPath` в аннотации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient(configPath = "path.to.config") //(1)!
@@ -398,7 +395,7 @@
           requestTimeout: "10s" //(2)!
           telemetry:
             logging:
-              enabled: true #(3)!
+              enabled: false #(3)!
             metrics:
               enabled: true #(4)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -461,7 +458,7 @@
             requestTimeout: "10s" #(1)!
             telemetry:
               logging:
-                enabled: true #(2)!
+                enabled: false #(2)!
               metrics:
                 enabled: true #(3)!
                 slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
@@ -485,7 +482,7 @@
 `@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути 
 и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -511,7 +508,7 @@
 
 `@Query` — значение параметра запроса, имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -538,7 +535,7 @@
 Можно отправлять параметры запроса в формате ключ и значение, для этого предполагается использовать тип `Map`,
 где ключом является имя параметра и обязано иметь тип `String`, а значение параметра может быть любым типом и будет обработано через `String.valueOf()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -564,7 +561,7 @@
 
 `@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -591,7 +588,7 @@
 Можно отправлять параметры запроса в формате ключ и значение, для этого предполагается использовать `HttpHeaders` тип либо тип `Map`,
 где ключом является имя параметра и обязано иметь тип `String`, а значение параметра может быть любым типом и будет обработано через `String.valueOf()`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -623,7 +620,7 @@
 Для указания, что тело является Json и ему требуется автоматически создать такого писателя и внедрить его,
 требуется использовать аннотацию `@Json`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -659,7 +656,7 @@
 
 Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -683,7 +680,7 @@
 
 Пример вызова метода с такой формой будет выглядеть так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var response = httpClient.formEncoded(new FormUrlEncoded(
@@ -707,7 +704,7 @@
 
 Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -731,7 +728,7 @@
 
 Пример вызова метода с такой формой будет выглядеть так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var response = httpClient.formMultipart(new FormMultipart(List.of(
@@ -763,7 +760,7 @@
 Если тело требуется записывать отличным от стандартных механизмов способом,
 то можно использовать специальный интерфейс `HttpClientRequestMapper` для реализации собственной логики:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -807,7 +804,7 @@
 
 `@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -831,7 +828,7 @@
 
 #### Обязательные параметры
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     По умолчанию все аргументы объявленные в методе являются **обязательными** (*NotNull*).
 
@@ -841,7 +838,7 @@
 
 #### Необязательные параметры
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Если аргумент метода является необязательным, то есть может отсутствовать то,
     можно использовать аннотацию `@Nullable`:
@@ -882,7 +879,7 @@
 
 Если предполагается читать тело как Json, то требуется использовать аннотацию `@Json` над методом.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -923,7 +920,7 @@
 
 Ниже показан пример аналогичный примеру Json вместе с оберткой `HttpResponseEntity`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -955,7 +952,7 @@
 
 Если требуется чтение ответа отличным способом, то можно использовать специальный интерфейс `HttpClientResponseMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1019,7 +1016,7 @@
 
 Также можно использовать `ResponseCodeMapper.DEFAULT` как указание поведения по умолчанию для всех не перечисленных статус кодов.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1066,12 +1063,12 @@
 
 Доступные сигнатуры для методов декларативного HTTP клиента из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`.
 
     - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html)
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
@@ -1084,9 +1081,9 @@
 ## Перехватчики
 
 Можно создавать перехватчики для изменения поведения либо создания дополнительного поведения используя класс `HttpClientInterceptor`.
-Перехватчики можно накладывать на конкретные методы либо весь `@HttpClient` класс целиком:
+Перехватчики можно подключить на определенные методы либо весь `@HttpClient` класс целиком:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient
@@ -1138,6 +1135,197 @@
     }
     ```
 
+### Авторизация
+
+Kora предоставляет готовые перехватчики которые можно использовать для авторизации по средствам [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
+
+#### Basic
+
+Требуется сконфигурировать перехватчик и конфигурацию для авторизации [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("openapiAuth.basicAuth")
+    interface BasicAuthConfig {
+
+        String username();
+
+        String password();
+    }
+
+    default BasicAuthHttpClientInterceptor basicAuther(BasicAuthConfig config) {
+        return new BasicAuthHttpClientInterceptor(config.username(), config.password());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("openapiAuth.basicAuth")
+    interface BasicAuthConfig {
+
+        fun username(): String
+
+        fun password(): String
+    }
+
+    fun basicAuther(config: BasicAuthConfig): BasicAuthHttpClientInterceptor {
+        return BasicAuthHttpClientInterceptor(config.username(), config.password())
+    }
+    ```
+
+Также в конструктор можно предоставить собственную реализацию `HttpClientTokenProvider` если правила получения секретов другие.
+
+Затем подключить перехватчик для всего HTTP клиента либо определенных методов.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(BasicAuthHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(BasicAuthHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### ApiKey
+
+Требуется сконфигурировать перехватчик и конфигурацию для авторизации [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigSource("openapiAuth.apiKeyAuth")
+    interface ApiKeyAuthConfig {
+
+        String apiKey();
+    }
+
+    default ApiKeyHttpClientInterceptor apiKeyAuther(ApiKeyAuthConfig config) {
+        return new ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigSource("openapiAuth.apiKeyAuth")
+    interface ApiKeyAuthConfig {
+
+        fun apiKey(): String
+    }
+
+    fun apiKeyAuther(config: ApiKeyAuthConfig): ApiKeyHttpClientInterceptor {
+        return ApiKeyHttpClientInterceptor(ApiKeyLocation.HEADER, "X-API-KEY", config.apiKey())
+    }
+    ```
+
+Затем подключить перехватчик для всего HTTP клиента либо определенных методов.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(ApiKeyHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(ApiKeyHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### Bearer
+
+Требуется сконфигурировать перехватчик для авторизации [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    final class BearerAuth {}
+
+    default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
+        return new BearerAuthHttpClientInterceptor(tokenProvider);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class BearerAuth
+
+    fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
+        return BearerAuthHttpClientInterceptor(tokenProvider)
+    }
+    ```
+
+Потребуется самостоятельно реализовать предоставление `Bearer` токена с помощью собственной реализации `HttpClientTokenProvider`,
+либо использовать конструктор который принимает статический `Bearer Token`.
+
+```java
+public interface HttpClientTokenProvider {
+    
+    CompletionStage<String> getToken(HttpClientRequest request);
+}
+```
+
+Затем подключить перехватчик для всего HTTP клиента либо определенных методов.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @InterceptWith(BearerAuthHttpClientInterceptor.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @InterceptWith(BearerAuthHttpClientInterceptor::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+#### OAuth
+
+Авторизация по средствам [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогично [Bearer](#bearer), 
+требуется самостоятельно реализовать `HttpClientTokenProvider` и подложить его в контейнер зависимостей.
+
 ## Клиент императивный
 
 Базовый клиент представляет собой интерфейс `HttpClient` и доступен для внедрения:
@@ -1156,7 +1344,7 @@ public interface HttpClient {
 
 Для построения запросов вручную можно использовать `HttpClientRequestBuilder`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     HttpClientRequest request = HttpClientRequestBuilder.of("POST", "http://localhost:8090/pets/{petId}")

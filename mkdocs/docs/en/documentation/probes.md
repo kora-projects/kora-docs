@@ -1,12 +1,12 @@
-Functionality that gives the application two methods for obtaining samples on a private port to provide information about service viability and readiness.
+Functionality that gives the application two methods for obtaining probes on a private port about service readiness/liveness.
 
-Requires a [HTTP server](http-server.md) connection.
+Requires a [HTTP server](http-server.md) module.
 
 ## Liveness
 
 This sample is responsible for indicating whether the application is currently alive. Kora tries to start giving this sample as early as possible, so that orchestrators know for sure that there are no problems at startup and don't try to restart the application.
 
-By default, it is available under the `/system/liveness` path, but it can be customized through configuration:
+Example of the HTTP server path configuration for probe ping described in the `HttpServerConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -38,7 +38,7 @@ The sample shall return `LivenessProbeFailure` on error, and `null` on success.
 
 This sample is responsible for indicating whether the application is currently ready to run.
 
-By default, it is available at the `/system/readiness` path, but it can be customized through configuration.
+Example of the HTTP server path configuration for probe ping described in the `HttpServerConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 

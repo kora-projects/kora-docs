@@ -116,6 +116,9 @@ extra_css:
 
 # Structure - https://github.com/squidfunk/mkdocs-material/discussions/2346
 extra:
+  analytics:
+    provider: counter
+    property: counter
   generator: false
   annotate:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors

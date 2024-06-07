@@ -2,7 +2,7 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -45,7 +45,7 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
 The creation of the transducers themselves falls to the [MapStruct](https://mapstruct.org/) library,
 Kora in this case just provides the classes created by the library as dependencies in the dependency container.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp

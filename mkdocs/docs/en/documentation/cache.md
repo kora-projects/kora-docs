@@ -1,4 +1,4 @@
-A module for creating caches based on [Caffeine](https://github.com/ben-manes/caffeine) or [Redis](https://redis.io/docs/about/)
+Module for creating caches based on [Caffeine](https://github.com/ben-manes/caffeine) or [Redis](https://redis.io/docs/about/)
 using both declarative-style annotations and using their imperative style.
 
 ## Caffeine
@@ -7,7 +7,7 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency ``build.gradle``:
     ```groovy
@@ -37,7 +37,7 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
 
 ### Configuration
 
-Example configuration for `mycache.config` cache, parameters described in the `CaffeineCacheConfig` class:
+Example of complete configuration for `mycache.config` cache, parameters are described in the `CaffeineCacheConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -52,10 +52,10 @@ Example configuration for `mycache.config` cache, parameters described in the `C
     }
     ```
 
-    1.  The time after which the value for the key will be deleted is reported after the value is added.
-    2.  Time after which the value for the key will be deleted, counted after a read operation.
-    3. Initial cache size (helps to avoid cache expansion in case of active swelling)
-    4.  Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache)
+    1. Time after which the value for the key will be deleted is reported after the value is added (optional)
+    2. Time after which the value for the key will be deleted, counted after a read operation (optional)
+    3. Initial cache size (helps to avoid cache expansion in case of active swelling) (optional)
+    4. Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache) (default is `100000`)
 
 === ":simple-yaml: ``YAML``"
 
@@ -68,10 +68,10 @@ Example configuration for `mycache.config` cache, parameters described in the `C
         maximumSize: 10 #(4)!
     ```
 
-    1.  The time after which the value for the key will be expired is reported after the value is added.
-    2.  The time after which the value for the key will be deleted is counted after a read operation.
-    3. Initial cache size (helps to avoid cache expansion in case of active swelling)
-    4.  Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache)
+    1. Time after which the value for the key will be expired is reported after the value is added (optional)
+    2. Time after which the value for the key will be deleted is counted after a read operation (optional)
+    3. Initial cache size (helps to avoid cache expansion in case of active swelling) (optional)
+    4. Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache) (default is `100000`)
 
 ## Redis
 
@@ -79,7 +79,7 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 
 ### Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -112,7 +112,7 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 It is required to separately configure the Lettuce driver to connect to Redis.
 A single connection is used for all caches.
 
-Example configuration for *lettuce* driver, parameters described in `LettuceConfig` class:
+Example of a complete configuration for *lettuce* driver, parameters are described in the `LettuceConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -128,10 +128,10 @@ Example configuration for *lettuce* driver, parameters described in `LettuceConf
     }
     ```
 
-    1. URI to connect to Redis
-    2. Username to connect
-    3. Password of the user to connect to
-    4. Base number for the connection
+    1. URI to connect to Redis (**required**)
+    2. Username for connection (optional)
+    3. Password for connection (optional)
+    4. Database number for connection (optional)
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
@@ -149,17 +149,17 @@ Example configuration for *lettuce* driver, parameters described in `LettuceConf
       commandTimeout: "15s" #(7)!
     ```
 
-    1. URI to connect to Redis
-    2. Username to connect
-    3. Password of the user to connect to
-    4. Base number for the connection
+    1. URI to connect to Redis (**required**)
+    2. Username for connection (optional)
+    3. Password for connection (optional)
+    4. Database number for connection (optional)
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
 
 Redis cache configurations configure the behavior of a particular cache.
 
-Example configuration for `mycache.config` cache, parameters described in the `RedisCacheConfig` class:
+Example of a complete configuration for `mycache.config` cache, parameters are described in the `RedisCacheConfig` class (example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -173,9 +173,9 @@ Example configuration for `mycache.config` cache, parameters described in the `R
     }
     ```
 
-    1.  When writing, sets the [expiration](https://redis.io/commands/psetex/) time
-    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/)
-    3.  Prefix a key in a particular cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes
+    1.  When writing, sets the [expiration](https://redis.io/commands/psetex/) time (optional)
+    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
+    3.  Prefix a key in a particular cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
 === ":simple-yaml: ``YAML`"
 
@@ -187,9 +187,9 @@ Example configuration for `mycache.config` cache, parameters described in the `R
         keyPrefix: "mykey" //(3)!
     ```
 
-    1.  Sets the [expiration](https://redis.io/commands/psetex/) time when writing.
-    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/)
-    3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes
+    1.  Sets the [expiration](https://redis.io/commands/psetex/) time when writing (optional)
+    2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
+    3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
 ## Usage
 
@@ -199,7 +199,7 @@ For such `@Cache` an implementation will be created and added to the graph, it c
 
 To register `@Cache` and specify the config, it is required to annotate with the `@Cache` annotation where the `value` argument means the full path to the config.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -233,7 +233,7 @@ To cache and retrieve a value from the cache for the *get()* method, annotate it
 
 The key for the cache is compiled from the method arguments, the order of the arguments matters, in this case it will be compiled from the value `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -266,7 +266,7 @@ The method annotated with `@CachePut` will be called and its value put into the 
 
 The key for the cache is compiled from the method arguments, the order of the arguments matters, in this case it will be compiled from the value `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -299,7 +299,7 @@ The method annotated with `@CacheInvalidate` will be called and then the keyed v
 
 The key for the cache is compiled from the method arguments, the order of the arguments matters, in this case it will be compiled from the value `arg1`.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -331,7 +331,7 @@ To remove all values from the cache via the *evictAll()* method, annotate it wit
 
 The method annotated with `@CacheInvalidate` will be called and then all of the cache values defined in *value* will be removed.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -361,7 +361,7 @@ The method annotated with `@CacheInvalidate` will be called and then all of the 
 
 In case you have multiple caches, you need to connect both modules and specify the appropriate number of annotations over the method.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -391,7 +391,7 @@ In case you have multiple caches, you need to connect both modules and specify t
 
 And the annotated class itself is like this:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -425,7 +425,7 @@ The order of aspect calls corresponds to the order of annotations above the meth
 
 In case the cache key represents 1 argument, it is required to register `Cache` with a signature corresponding to the key and value types.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -447,7 +447,7 @@ with the `CacheKeyMapper` interface, in case there are 2 arguments for the key t
 Such a converter can also be provided manually using the `@Mapping` annotation,
 example of converting a complex object into a simple cache key:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -492,7 +492,7 @@ class to describe such a key.
 
 Example for `Cache` where the composite key consists of 2 elements:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     It is supposed to create its own `record` class that would describe the composite key.
 
@@ -525,7 +525,7 @@ If the method accepts arguments that you want to exclude from the composite key,
 or the order of the arguments does not match the order of the arguments of the composite key constructor,
 you should use the `parameters` annotation attribute and define which method arguments to use and in what order.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -555,7 +555,7 @@ you should use the `parameters` annotation attribute and define which method arg
 
 The library provides a component for building an entity that combines GET and PUT operations without using aspects - `LoadableCache`
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Cache("mycache.config")
@@ -592,7 +592,9 @@ The library provides a component for building an entity that combines GET and PU
 
 Available signatures for repository methods out of the box:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Class must be non `final` in order for aspects to work.
 
     The `T` refers to the type of the return value.
 
@@ -602,6 +604,8 @@ Available signatures for repository methods out of the box:
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Class must be `open` in order for aspects to work.
 
     By `T` we mean the type of the return value.
 

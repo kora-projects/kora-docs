@@ -5,6 +5,16 @@ hide:
     - navigation
 ---
 
+### 1.1.2
+
+Fixed:
+
+- Fixed `@Retry` for CompletableFuture signature
+- Fixed Cache AOP error handling 
+- Fixed OpenAPI generator [primaryAuth](../documentation/openapi-codegen.md#client) property
+- Fixed HttpClient telemetry passing Content-Length to underlying client 
+- Fixed `Wrapped` support in JUnit5 testing
+
 ### 1.1.1
 
 Fixed:

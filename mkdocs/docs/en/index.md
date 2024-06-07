@@ -6,9 +6,12 @@ hide:
 - toc
 ---
 
-Kora is a framework for writing Java / Kotlin applications with a focus on Performance, Efficiency, Transparency.
+Kora is a framework for writing Java / Kotlin server-side applications with a focus on Performance, Efficiency, Transparency.
 Kora aims to provide sufficiently high-level declarative tools and abstractions for developers,
 which at compile time are translated into hardware-performant and human-readable code.
+Framework has its own dependency container with inversion of control that works at compile time.
+Kora is a cloud-oriented framework and offers
+many different modules for quickly building applications such as HTTP server, Kafka consumers, database abstraction in the form of repositories and much more.
 
 `Performance` - Kora generates high-performant code at compile time,
 avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements fine-grained abstraction and free aspects.
@@ -25,11 +28,11 @@ and a developer's understanding of the underlying mechanisms of the framework if
 Kora implies exactly one most effective solution per problem, which brings clarity and understanding to the development team.
 This approach also allow to achieve compatibility with GraalVM out of the box and validate the dependency container at compile time.
 
-Kora provides all the tools needed for modern Java/Kotlin development:
+Kora provides all the tools needed for modern Java/Kotlin server-side development:
 
 - Dependency injection and inversion at compile time via annotations
 - Declarative components generation at compile time via annotations
 - Aspect-oriented programming via annotations
 - Pre-configurable integration modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)
-- Simple, clear and detailed documentation backed by [service examples](examples/kora-examples.md)
+- Simple, clear and detailed documentation backed by [working service examples](examples/kora-examples.md)

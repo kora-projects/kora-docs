@@ -1,8 +1,8 @@
-Модуль для валидации объектов и методов с помощью аннотаций.
+Модуль для валидации моделей и методов с помощью аннотаций аспектов.
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -47,7 +47,7 @@
 
 Предлагается использовать аннотацию `@Valid` для маркировки класса которому требуется создать валидатор посредствам Kora.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -63,7 +63,7 @@
 
 Затем в контейнере зависимостей будет доступен валидатор такого класса:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -96,7 +96,7 @@
 
 Пример размеченного для валидации объекта выглядит так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -122,7 +122,7 @@
 
 #### Необязательные поля
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Чтобы указать поле как не обязательное, требуется пометить его любой `@Nullable` аннотацией,
     для такого поля **не будет** создана проверка на *null*:
@@ -149,7 +149,7 @@
 либо полей которые не поддерживаются стандартными средствами валидации,
 предполагается использовать `@Valid` аннотацию:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -194,7 +194,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 Чтобы провалидировать аргументы методы, требуется использовать аннотацию `@Validate` над методом:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -226,7 +226,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 #### Необязательные аргументы
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Чтобы указать аргумент как не обязательное, требуется пометить его любой `@Nullable` аннотацией,
     для такого аргумента **не будет** создана проверка на *null*:
@@ -265,7 +265,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 либо полей которые не поддерживаются стандартными средствами валидации,
 предполагается использовать `@Valid` аннотацию:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -304,7 +304,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 Чтобы провалидировать результат метода, требуется использовать аннотацию `@Validate` над методом и разметить его соответствующими [аннотациями](#аннотации-валидации):
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -355,7 +355,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 Пример FailFast валидации:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -385,7 +385,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 1) Создать наследника `Validator`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class MyValidStringValidator implements Validator<String> {
@@ -422,7 +422,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 2) Создать наследника `ValidatorFactory`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface MyValidValidatorFactory extends ValidatorFactory<String> { }
@@ -436,7 +436,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 3) Зарегистрировать наследника `ValidatorFactory` как компонент:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -467,7 +467,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 4) Создать аннотацию валидации и проаннотировать ее `@ValidatedBy` с ранее созданным наследником `ValidatorFactory`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Retention(value = RetentionPolicy.CLASS)
@@ -487,7 +487,7 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 5) Проаннотировать поле/аргумент/результат:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Valid
@@ -505,17 +505,21 @@ List<Violation> violations = fooValidator.validate(value,context);
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
+
+    Класс не должен быть `final`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения.
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html)
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/)
 
 === ":simple-kotlin: `Kotlin`"
+
+    Класс должен быть `open`, чтобы аспекты работали.
 
     Под `T` подразумевается тип возвращаемого значения.
 

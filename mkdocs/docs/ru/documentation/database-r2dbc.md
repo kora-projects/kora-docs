@@ -3,7 +3,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -35,7 +35,7 @@
 
 ## Конфигурация
 
-Параметры, описанные в классе `R2dbcDatabaseConfig`:
+Пример полной конфигурации, описанной в классе `R2dbcDatabaseConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -50,48 +50,46 @@
         acquireRetry = 3 //(7)!
         connectionTimeout = "10s" //(8)!
         connectionCreateTimeout = "30s" //(9)!
-        idleTimeout = "1m" //(10)!
+        idleTimeout = "10m" //(10)!
         maxLifetime = "0s" //(11)!
         statementTimeout = "0s" //(12)!
-        initializationFailTimeout = "0s" //(13)!
-        readinessProbe = false //(14)!
-        options { //(15)!
+        readinessProbe = false //(13)!
+        options { //(14)!
             "backgroundEvictionInterval": "PT120S"
         }
         telemetry {
             logging {
-                enabled = false //(16)!
+                enabled = false //(15)!
             }
             metrics {
-                enabled = true //(17)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
             }
             telemetry {
-                enabled = true //(19)!
+                enabled = true //(18)!
             }
         }
     }
     ```
 
-    1.  R2DBC URL подключения к базе данных **(обязательный)**
-    2.  Имя пользователя для подключения **(обязательный)**
-    3.  Пароль пользователя для подключения **(обязательный)**
-    4.  Имя набора соединений к базе данных **(обязательный)**
+    1.  R2DBC URL подключения к базе данных (**обязательный**)
+    2.  Имя пользователя для подключения (**обязательный**)
+    3.  Пароль пользователя для подключения (**обязательный**)
+    4.  Имя набора соединений к базе данных (**обязательный**)
     5.  Максимальный размер набора соединений к базе данных
     6.  Минимальный размер набора готовых соединений к базе данных в режиме ожидания
     7.  Максимальное количество попыток получения соединения
     8.  Максимальное время на установку соединения
     9.  Максимальное время на создание соединения
     10.  Максимальное время на простой соединения
-    11.  Максимальное время жизни соединения (отключено по умолчанию)
-    12.  Максимальное время на выполнение запроса в базу данных (отключено по умолчанию)
-    13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
-    14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
-    15.  Дополнительные атрибуты R2DBC соединения
-    16.  Включает логгирование модуля (по умолчанию `false`)
-    17.  Включает метрики модуля (по умолчанию `true`)
-    18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля (по умолчанию `true`)
+    11.  Максимальное время жизни соединения (по умолчанию отсутвует)
+    12.  Максимальное время на выполнение запроса в базу данных (по умолчанию отсутвует)
+    13.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    14.  Дополнительные атрибуты R2DBC соединения (по умолчанию отсутвует)
+    15.  Включает логгирование модуля (по умолчанию `false`)
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -106,46 +104,44 @@
       acquireRetry: 3 #(7)!
       connectionTimeout: "10s" #(8)!
       connectionCreateTimeout: "30s" #(9)!
-      idleTimeout: "1m" #(10)!
+      idleTimeout: "10m" #(10)!
       maxLifetime: "0s" #(11)!
       statementTimeout: "0ms" #(12)!
-      initializationFailTimeout: "0s" #(13)!
-      readinessProbe: false #(14)!
-      options: #(15)!
+      readinessProbe: false #(13)!
+      options: #(14)!
         backgroundEvictionInterval: "PT120S"
       telemetry:
         logging:
-          enabled: true #(16)!
+          enabled: false #(15)!
         metrics:
-          enabled: true #(17)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
         telemetry:
-          enabled: true #(19)!
+          enabled: true #(18)!
     ```
 
-    1.  R2DBC URL подключения к базе данных **(обязательный)**
-    2.  Имя пользователя для подключения **(обязательный)**
-    3.  Пароль пользователя для подключения **(обязательный)**
-    4.  Имя набора соединений к базе данных **(обязательный)**
+    1.  R2DBC URL подключения к базе данных (**обязательный**)
+    2.  Имя пользователя для подключения (**обязательный**)
+    3.  Пароль пользователя для подключения (**обязательный**)
+    4.  Имя набора соединений к базе данных (**обязательный**)
     5.  Максимальный размер набора соединений к базе данных
     6.  Минимальный размер набора готовых соединений к базе данных в режиме ожидания
     7.  Максимальное количество попыток получения соединения
     8.  Максимальное время на установку соединения
     9.  Максимальное время на создание соединения
     10.  Максимальное время на простой соединения
-    11.  Максимальное время жизни соединения (отключено по умолчанию)
-    12.  Максимальное время на выполнение запроса в базу данных (отключено по умолчанию)
-    13.  Максимальное время ожидания инициализации соединения при старте сервиса (отключено по умолчанию)
-    14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных (отключено по умолчанию)
-    15.  Дополнительные атрибуты R2DBC соединения
-    16.  Включает логгирование модуля (по умолчанию `false`)
-    17.  Включает метрики модуля (по умолчанию `true`)
-    18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля (по умолчанию `true`)
+    11.  Максимальное время жизни соединения (по умолчанию отсутвует)
+    12.  Максимальное время на выполнение запроса в базу данных (по умолчанию отсутвует)
+    13.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    14.  Дополнительные атрибуты R2DBC соединения (по умолчанию отсутвует)
+    15.  Включает логгирование модуля (по умолчанию `false`)
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Использование
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
@@ -167,7 +163,7 @@
 
 Если требуется преобразовать результат в ручную, предлагается использовать `R2dbcResultFluxMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class ResultMapper implements R2dbcResultFluxMapper<UUID, Flux<UUID>> {
@@ -209,7 +205,7 @@
 
 Если требуется преобразовать строку в ручную, предлагается использовать `R2dbcRowMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     final class RowMapper implements R2dbcRowMapper<UUID> {
@@ -252,7 +248,7 @@
 
 Если требуется преобразовать значение колонки в ручную, предлагается использовать `R2dbcResultColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ColumnMapper implements R2dbcResultColumnMapper<UUID> {
@@ -302,7 +298,7 @@
 
 Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `R2dbcParameterColumnMapper`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public final class ParameterMapper implements R2dbcParameterColumnMapper<UUID> {
@@ -343,6 +339,40 @@
     }
     ```
 
+## Созданный идентификатор
+
+Если необходимо получить в качестве результата созданные базой данных первичные ключи сущности,
+предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
+Такой подход работает и для `@Batch` запросов.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        Mono<Long> insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : R2dbcRepository {
+
+        public record Entity(Long id, String name) {}
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(entity: Entity): Mono<Long>
+    }
+    ```
+
 ## Транзакции
 
 Для выполнения ручных запросов в Kora есть интерфейс `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,
@@ -351,7 +381,7 @@
 
 Для того чтобы выполнять запросы транзакционно, можно использовать контракт `inTx`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -401,7 +431,7 @@
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `io.r2dbc.spi.Connection`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -444,7 +474,7 @@
 
 Доступные сигнатуры для методов репозитория из коробки:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

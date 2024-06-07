@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -47,7 +47,9 @@
 а основная часть конфигурации клиента находится под именем клиента из WSDL аннотации `@WebService`, 
 который соответствует зачастую тегу `<wsdl:binding type="tns:SimpleService">` в конфигурации WSDL.
 
-Для SOAP сервиса с именем `SimpleService` конфигурация будет иметь путь `soapClient.SimpleService`:
+Сервис SOAP с именем `SimpleService` будет иметь конфигурацию с путем `soapClient.SimpleService`.
+
+Пример полной конфигурации, описанной в классе `SoapServiceConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -55,7 +57,7 @@
     soapClient {
         SimpleService {
             url = "https://localhost:8090" //(1)!
-            timeout = "10s" //(2)!
+            timeout = "60s" //(2)!
             telemetry {
                 logging {
                     enabled = false //(3)!
@@ -72,7 +74,7 @@
     }
     ```
 
-    1.  URL сервиса куда будут отправляться запросы
+    1.  URL сервиса куда будут отправляться запросы (**обязательный**)
     2.  Максимальное время запроса
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
@@ -85,10 +87,10 @@
     soapClient:
       SimpleService:
         url: "https://localhost:8090" #(1)!
-        timeout: "10s" #(2)!
+        timeout: "60s" #(2)!
         telemetry:
         logging:
-            enabled: true #(3)!
+            enabled: false #(3)!
           metrics:
             enabled: true #(4)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -96,7 +98,7 @@
             enabled: true #(6)!
     ```
 
-    1.  URL сервиса куда будут отправляться запросы
+    1.  URL сервиса куда будут отправляться запросы (**обязательный**)
     2.  Максимальное время запроса
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
@@ -107,7 +109,7 @@
 
 После создания всех компонент созданный SOAP сервис становится доступен для внедрения, ниже показан пример для `SimpleService` сервиса:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -137,7 +139,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
@@ -159,7 +161,7 @@
 
 Предположим что у нас есть WSDL, где объявлен сервис `SimpleService` то настройка плагина для `jakarta` аннотацией будет выглядить так:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Настройка плагина `build.gradle`:
     ```groovy

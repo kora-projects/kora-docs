@@ -2,7 +2,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -36,7 +36,7 @@
 
 Код для gRPC-сервера создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
@@ -92,14 +92,14 @@
 
 ## Конфигурация
 
-Параметры описанные в классе `GrpcServerConfig`:
+Пример полной конфигурации, описанной в классе `GrpcServerConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcServer {
         port = 8090 //(1)!
-        reflectionEnabled = true //(2)!
+        reflectionEnabled = false //(2)!
         telemetry {
             logging {
                 enabled = false //(3)!
@@ -127,10 +127,10 @@
     ```yaml
     grpcServer:
       port: 8090 #(1)!
-      reflectionEnabled = true #(2)!
+      reflectionEnabled = false #(2)!
       telemetry:
         logging:
-          enabled: true #(3)!
+          enabled: false #(3)!
         metrics:
           enabled: true #(4)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
@@ -149,7 +149,7 @@
 
 Созданные gRPC сервисы требуется пометить аннотацией `@Component`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -182,7 +182,7 @@
 
 Для добавления собственного перехватчика требуется создать наследника `ServerInterceptor` с аннотацией `@Component`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -231,7 +231,7 @@ Reflection поддерживается только для сервисов, о
 
 Требуется дополнительно подключить зависимость [gRPC Server Reflection](https://mvnrepository.com/artifact/io.grpc/grpc-services).
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -253,7 +253,7 @@ Reflection поддерживается только для сервисов, о
 
     ```javascript
     grpcServer {
-        reflectionEnabled = true //(1)!
+        reflectionEnabled = false //(1)!
     }
     ```
 
@@ -263,7 +263,7 @@ Reflection поддерживается только для сервисов, о
 
     ```yaml
     grpcServer:
-      reflectionEnabled: true #(1)!
+      reflectionEnabled: false #(1)!
     ```
 
     1.  Включает сервис gRPC Server Reflection

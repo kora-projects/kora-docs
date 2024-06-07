@@ -3,7 +3,7 @@
 
 ## Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость генератора `build.gradle`:
     ```groovy
@@ -53,15 +53,15 @@
 
 Минимальный пример настройки плагина для создания декларативного HTTP клиента:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Доступные Kora параметры плагина (`configOptions`):
 
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `primaryAuth` - указать какой механизм авторизации использовать как основной
-    - `securityConfigPrefix` - префикс конфигурации безопастности
+    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
+    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-client` - создание синхронного клиента
         * `java-async-client` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) клиента
@@ -101,8 +101,8 @@
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `primaryAuth` - указать какой механизм авторизации использовать как основной
-    - `securityConfigPrefix` - префикс конфигурации безопастности
+    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
+    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-client` - создание синхронного клиента
         * `kotlin-suspend-client` - создание suspend клиента
@@ -148,7 +148,7 @@
 
 Для этого необходимо установить параметр `configOptions.interceptors`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -234,7 +234,7 @@
 
 Для этого необходимо установить параметр `configOptions.tags`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -303,7 +303,7 @@
 
 Минимальный пример настройки плагина для создания обработчиков HTTP-сервера:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Доступные Kora параметры плагина (`configOptions`):
 
@@ -382,7 +382,7 @@
 
 Для генерации моделей и контроллеров с аннотациями из модуля [валидации](validation.md) необходимо установить опцию `enableServerValidation`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -440,7 +440,7 @@
 
 Для этого необходимо установить параметр `configOptions.interceptors`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {

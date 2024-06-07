@@ -2,7 +2,7 @@ Kora creates its helper classes at compile time, so there should be no problem b
 
 An example of building a native image using [plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html) for `gradle`:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy

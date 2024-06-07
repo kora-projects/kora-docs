@@ -11,7 +11,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -41,7 +41,7 @@
 
 ### Конфигурация
 
-Параметры, описанные в классе `ScheduledExecutorServiceConfig`:
+Пример полной конфигурации, описанной в классе `ScheduledExecutorServiceConfig` (указаны значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -76,7 +76,7 @@
       threads: 20 #(1)!
       telemetry:
         logging:
-          enabled: true #(2)!
+          enabled: false #(2)!
         metrics:
           enabled: true #(3)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
@@ -95,7 +95,7 @@
 Планирование с запуском через фиксированный равные промежуток времени.
 Реальное время интервала зависит от времени выполнения задачи, может запускать новые задачи даже если последняя задача еще выполняется.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -125,7 +125,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -182,7 +182,7 @@
 Не имеет значения, сколько времени занимает текущее исполнение, следующее выполнение запускается ровно после завершения предыдущей задачи 
 и заданного промежутка ожидания между задачами.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -212,7 +212,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -267,7 +267,7 @@
 
 Запускает одиножды задачу через определенный фиксированный интервал времени.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -297,7 +297,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -355,7 +355,7 @@
 
 ### Подключение
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Зависимость `build.gradle`:
     ```groovy
@@ -422,7 +422,7 @@
     scheduling:
       telemetry:
         logging:
-          enabled: true #(1)!
+          enabled: false #(1)!
         metrics:
           enabled: true #(2)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
@@ -461,7 +461,7 @@
 
 Запускает одиножды задачу через определенный фиксированный интервал времени.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -495,7 +495,7 @@
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -546,7 +546,7 @@
 
 Предполагает создание собственного `триггера` на основе библиотеки Quartz и регистрация его в контейнере приложения с определенным тегом и последующее его использование через аннотацию.
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp

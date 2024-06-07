@@ -3,7 +3,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
 
 ## Dependency
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Dependency `build.gradle`:
     ```groovy
@@ -39,7 +39,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     }
     ```
 
-Requires connection of [HTTP server](http-server.md) or [HTTP client](http-client.md).
+Requires [HTTP server](http-server.md) or [HTTP client](http-client.md) module.
 
 ## Configuration
 
@@ -53,15 +53,15 @@ Configuration is required for [OpenAPI Generator plugin](https://openapi-generat
 
 A minimal example of configuring a plugin to create a declarative HTTP client:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Kora's available plugin options:
 
     - `clientConfigPrefix` - configuration prefix of created HTTP clients
     - `tags` - possibility to put additional tags on created HTTP-clients
     - `interceptors` - ability to specify interceptors for HTTP clients
-    - `primaryAuth` - specify which authorization mechanism to use as the primary one
-    - `securityConfigPrefix` - security configuration prefix
+    - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
+    - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
     - `mode` in which mode the generator should operate, available values:
         * `java-client` - create synchronous client
         * `java-async-client` - create [CompletionStage](https://www.baeldung.com/java-completablefuture) client
@@ -101,8 +101,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `clientConfigPrefix` - configuration prefix of created HTTP clients
     - `tags` - possibility to put additional tags on created HTTP-clients
     - `interceptors` - ability to specify interceptors for HTTP clients
-    - `primaryAuth` - specify which authorization mechanism to use as the primary one
-    - `securityConfigPrefix` - security configuration prefix
+    - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
+    - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-client` - create synchronous client
         * `kotlin-suspend-client` - create suspend client
@@ -148,7 +148,7 @@ it is possible to specify both fields at the same time, or optionally one of the
 
 In order to do this, set the `configOptions.interceptors` parameter:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -234,7 +234,7 @@ The value is a Json object, the key of which is the api tag from the contract, a
 
 For this purpose it is necessary to set the `configOptions.tags` parameter:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -303,7 +303,7 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
 
 A minimal example of configuring a plugin to create HTTP server handlers:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     Available Kora plugin parameters:
 
@@ -382,7 +382,7 @@ Once created, the handlers will be automatically registered.
 
 In order to generate models and controllers with annotations from the [validation](validation.md) module, the `enableServerValidation` option must be set:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
@@ -440,7 +440,7 @@ it is possible to specify both fields at the same time, or optionally one of the
 
 In order to do this, set the `configOptions.interceptors` parameter:
 
-=== ":fontawesome-brands-java: `Java`"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     openApiGenerate {
