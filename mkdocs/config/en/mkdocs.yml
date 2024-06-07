@@ -6,7 +6,6 @@ site_dir: "../../generated/en"
 site_name: Kora
 site_url: https://kora-projects.github.io/kora-docs/kora-docs/
 site_description: Kora framework documentation
-copyright: Tinkoff
 nav:
   - Examples:
       - Repository examples: examples/kora-examples.md
@@ -130,14 +129,11 @@ extra:
       link: /kora-docs/en/
       lang: en
   social:
-    - icon: fontawesome/brands/medium
-      link: https://medium.com/its-tinkoff
-      name: "Medium corporate blog"
     - icon: fontawesome/brands/youtube
-      link: https://www.youtube.com/@IT_i_td
+      link: https://www.youtube.com/@kod_zheltyi
       name: "YouTube corporate blog"
     - icon: simple/habr
-      link: https://habr.com/ru/companies/tinkoff/articles/
+      link: https://habr.com/ru/companies/tbank/articles/
       name: "Habrahabr corporate blog"
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora
