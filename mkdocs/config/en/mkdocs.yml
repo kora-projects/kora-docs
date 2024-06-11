@@ -4,8 +4,8 @@ site_dir: "../../generated/en"
 
 # Project information
 site_name: Kora
-site_url: https://kora-projects.github.io/kora-docs/kora-docs/
-site_description: Kora framework documentation
+site_url: https://kora-projects.github.io/kora-docs/en/
+site_description: Kora Framework
 nav:
   - Examples:
       - Repository examples: examples/kora-examples.md
@@ -181,3 +181,4 @@ markdown_extensions:
           - overrides/.icons
   - toc:
       permalink: true
+  - meta
