@@ -1,8 +1,8 @@
 ---
 search:
-    exclude: true
+  exclude: true
 hide:
-    - navigation
+  - navigation
 ---
 
 ### 1.1.2

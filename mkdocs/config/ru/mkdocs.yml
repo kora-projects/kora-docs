@@ -4,8 +4,8 @@ site_dir: "../../generated/ru"
 
 # Project information
 site_name: Kora
-site_url: https://kora-projects.github.io/kora-docs/kora-docs/
-site_description: Документация по Kora
+site_url: https://kora-projects.github.io/kora-docs/ru/
+site_description: Фреймворк Kora
 nav:
   - Примеры:
       - Репозиторий примеров: examples/kora-examples.md
@@ -182,3 +182,4 @@ markdown_extensions:
           - overrides/.icons
   - toc:
       permalink: true
+  - meta
