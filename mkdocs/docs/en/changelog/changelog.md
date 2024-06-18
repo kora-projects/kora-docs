@@ -5,6 +5,17 @@ hide:
   - navigation
 ---
 
+### 1.1.3
+
+Fixed:
+
+- Fixed by replacing undertow byte buffer with our own to prevent thread leak
+- Fixed OpenAPI `URI` type
+- Fixed JDBC async signature
+- Fixed OpenAPI Server Cookie auth
+- Updated dependencies with fix versions
+- Undertow Xnio Executor tagged
+
 ### 1.1.2
 
 Fixed:

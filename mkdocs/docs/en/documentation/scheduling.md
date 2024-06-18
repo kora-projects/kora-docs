@@ -475,7 +475,7 @@ Starts a single task at a certain fixed time interval.
     @Component
     public class SomeService {
 
-        @ScheduleWithCron("0 0 * * * *") //(1)!
+        @ScheduleWithCron("0 0 * * * * ?") //(1)!
         void schedule() {
             // do something
         }
@@ -490,7 +490,7 @@ Starts a single task at a certain fixed time interval.
     @Component
     class SomeService {
 
-        @ScheduleWithCron("0 0 * * * *") //(1)!
+        @ScheduleWithCron("0 0 * * * * ?") //(1)!
         fun schedule() {
             // do something
         }
@@ -535,7 +535,7 @@ Configuration example:
 
     ```javascript
     job {
-        cron = "0 0 * * * *" //(1)!
+        cron = "0 0 * * * * ?" //(1)!
     }
     ```
 
@@ -545,7 +545,7 @@ Configuration example:
 
     ```yaml
     job:
-      cron: "0 0 * * * *" #(1)!
+      cron: "0 0 * * * * ?" #(1)!
     ```
 
     1. Cron expression saying to run a task every hour and every day
