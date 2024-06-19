@@ -11,7 +11,7 @@ Fixed:
 
 - Fixed by replacing undertow byte buffer with our own to prevent thread leak
 - Fixed OpenAPI `URI` type
-- Fixed JDBC async signature
+- Fixed JDBC async signature (user `Executor` required)
 - Fixed OpenAPI Server Cookie auth
 - Updated dependencies with fix versions
 - Undertow Xnio Executor tagged
