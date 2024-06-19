@@ -176,7 +176,6 @@ Next we need to create an entry point, let's create an `Application` class with 
 `KoraApplication.run` starts parallel initialization of all components in the container and blocks the main thread until the `SIGTERM` signal is received,
 after which the application starts graceful shutdown.
 Now, if we run this application, we will have access to the routers in the links above.
-We can see in the logs that only port `8085` is up. This is because we don't have any request handlers yet.
 
 ## Controller
 
