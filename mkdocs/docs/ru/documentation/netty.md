@@ -21,8 +21,8 @@
     ```
 
     1. Предпочитаемый [траснпорт](https://netty.io/wiki/native-transports.html) если доступен на пути как зависимость, по умолчанию выбирается в порядке доступности: 
-        1. `Epoll` 
-        2. `KQueue`
+        1. `Epoll` (надо подключить [зависимость](https://mvnrepository.com/artifact/io.netty/netty-transport-native-epoll))
+        2. `KQueue` (надо подключить [зависимость](https://mvnrepository.com/artifact/io.netty/netty-transport-native-kqueue))
         3. `Nio`
     2. Количество потоков [цикла событий Netty](https://netty.io/4.1/api/io/netty/channel/EventLoop.html), по умолчанию равен кол-во ядер процессора умноженных на 2
 
@@ -35,7 +35,7 @@
     ```
 
     1. Предпочитаемый [траснпорт](https://netty.io/wiki/native-transports.html) если доступен на пути как зависимость, по умолчанию выбирается в порядке доступности: 
-        1. `Epoll` 
-        2. `KQueue`
+        1. `Epoll` (надо подключить [зависимость](https://mvnrepository.com/artifact/io.netty/netty-transport-native-epoll))
+        2. `KQueue` (надо подключить [зависимость](https://mvnrepository.com/artifact/io.netty/netty-transport-native-kqueue))
         3. `Nio`
     2. Количество потоков [цикла событий Netty](https://netty.io/4.1/api/io/netty/channel/EventLoop.html), по умолчанию равен кол-во ядер процессора умноженных на 2

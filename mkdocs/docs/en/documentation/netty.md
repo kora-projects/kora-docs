@@ -21,8 +21,8 @@ An example of the configuration described in the `NettyTransportConfig` class:
     ```
 
     1. Preferred [trasnport](https://netty.io/wiki/native-transports.html) if available on the path as a dependency, is selected by default in order of availability: 
-        1. `Epoll` 
-        2. `KQueue`
+        1. `Epoll` (require [dependency](https://mvnrepository.com/artifact/io.netty/netty-transport-native-epoll))
+        2. `KQueue` (require [dependency](https://mvnrepository.com/artifact/io.netty/netty-transport-native-kqueue))
         3. `Nio`
     2. Number of threads [Netty event loop](https://netty.io/4.1/api/io/netty/channel/EventLoop.html), defaults to the number of CPU cores multiplied by 2.
 
@@ -35,7 +35,7 @@ An example of the configuration described in the `NettyTransportConfig` class:
     ```
 
     1. Preferred [trasnport](https://netty.io/wiki/native-transports.html) if available on the path as a dependency, is selected by default in order of availability: 
-        1. `Epoll`
-        2. `KQueue`
+        1. `Epoll` (require [dependency](https://mvnrepository.com/artifact/io.netty/netty-transport-native-epoll))
+        2. `KQueue` (require [dependency](https://mvnrepository.com/artifact/io.netty/netty-transport-native-kqueue))
         3. `Nio`
     2. Number of threads [Netty event loop](https://netty.io/4.1/api/io/netty/channel/EventLoop.html), defaults to the number of CPU cores multiplied by 2.
