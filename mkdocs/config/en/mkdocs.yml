@@ -37,6 +37,7 @@ nav:
         - Cassandra: documentation/database-cassandra.md
         - Migration: documentation/database-migration.md
       - Integration:
+        - Netty: documentation/netty.md
         - Kafka: documentation/kafka.md
         - gRPC server: documentation/grpc-server.md
         - gRPC client: documentation/grpc-client.md

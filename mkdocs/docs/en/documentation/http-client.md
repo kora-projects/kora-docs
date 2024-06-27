@@ -99,6 +99,8 @@ and `HttpClientConfig` classes (default or example values are specified):
     8. Password for the proxy (optional)
     9. Hosts that should be excluded from proxying (optional)
 
+You can also configure [Netty transport](netty.md).
+
 ## OkHttp
 
 HTTP client implementation based on [OkHttp](https://github.com/square/okhttp) library.

@@ -257,6 +257,22 @@ CREATE TABLE IF NOT EXISTS entities
 
     1.  Подойдет любая аннотация `@Nullable`, такие как `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / и т.д.
 
+    Также можно указывать необязательными параметры конструктора в случае если переопределен канонический конструктор у Record:
+
+    ```java
+    public record Entity(String id,
+                         String name) {
+
+        public Entity(String id, 
+                      @Nullable String name) { //(1)!
+            this.id = id;
+            this.name = name;
+        }
+    }
+    ```
+
+    1.  Подойдет любая аннотация `@Nullable`, такие как `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / и т.д.
+
 === ":simple-kotlin: `Kotlin`"
 
     Предполагается использовать [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) синтаксис и помечать такой параметр как Nullable:
