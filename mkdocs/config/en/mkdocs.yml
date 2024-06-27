@@ -50,6 +50,7 @@ nav:
           - JUnit5: documentation/junit5.md
       - Extra:
         - GraalVM Native: documentation/graalvm-native.md
+        - Netty: documentation/netty.md
   - Changelog: changelog/changelog.md
 
 

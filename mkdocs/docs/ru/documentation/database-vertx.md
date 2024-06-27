@@ -125,6 +125,8 @@
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     15.  Включает трассировку модуля (по умолчанию `true`)
 
+Можно также настроить [Netty транспорт](netty.md).
+
 ## Использование
 
 ===! ":fontawesome-brands-java: `Java`"

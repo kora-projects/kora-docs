@@ -150,6 +150,8 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     6. Enables module tracing (default `true`)
 
+You can also configure [Netty transport](netty.md).
+
 ## Service
 
 Created gRPC services can be injected as dependency:
