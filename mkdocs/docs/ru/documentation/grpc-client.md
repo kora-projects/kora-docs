@@ -223,4 +223,4 @@
     }
     ```
 
-Либо можно модифицировать сервис по средствам [GraphInterceptor](container.md#_26).
+Либо можно модифицировать сервис посредствам [GraphInterceptor](container.md#_26).
