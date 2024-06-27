@@ -3,7 +3,7 @@
 
 ## gRPC
 
-Модуль позволяет собирать трассировку с помощью [gRPC протокола](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) по средствам `GrpcSender`.
+Модуль позволяет собирать трассировку с помощью [gRPC протокола](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) посредствам `GrpcSender`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -33,7 +33,7 @@
 
 ## HTTP
 
-Модуль позволяет собирать трассировку с помощью [HTTP протокола](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) по средствам `HttpSender`.
+Модуль позволяет собирать трассировку с помощью [HTTP протокола](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) посредствам `HttpSender`.
 
 ===! ":fontawesome-brands-java: `Java`"
 

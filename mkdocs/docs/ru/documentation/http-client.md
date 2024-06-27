@@ -1139,7 +1139,7 @@
 
 ### Авторизация
 
-Kora предоставляет готовые перехватчики которые можно использовать для авторизации по средствам [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
+Kora предоставляет готовые перехватчики которые можно использовать для авторизации посредствам [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
 
 #### Basic
 
@@ -1345,7 +1345,7 @@ public interface HttpClientTokenProvider {
 
 #### OAuth
 
-Авторизация по средствам [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогично [Bearer](#bearer), 
+Авторизация посредствам [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогично [Bearer](#bearer), 
 требуется самостоятельно реализовать `HttpClientTokenProvider` и подложить его в контейнер зависимостей.
 
 ## Клиент императивный
