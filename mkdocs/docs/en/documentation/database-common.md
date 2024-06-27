@@ -257,6 +257,22 @@ Either use the available strategies from Kora:
 
     1.  Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
 
+    It is also possible to specify optional constructor parameters in case the canonical constructor of Record is overridden:
+
+    ```java
+    public record Entity(String id,
+                         String name) {
+
+        public Entity(String id, 
+                      @Nullable String name) { //(1)!
+            this.id = id;
+            this.name = name;
+        }
+    }
+    ```
+
+    1.  Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+
 === ":simple-kotlin: `Kotlin`"
 
     It is expected to use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such a parameter as Nullable:

@@ -5,6 +5,26 @@ hide:
   - navigation
 ---
 
+### 1.1.4
+
+Added:
+
+- Added Database Record constructor parameters `@Nullable` support
+- Added [Netty Transport](../documentation/netty.md) selection
+- Added ability to [disable/enable](../documentation/config.md#config-watcher) Config Watcher
+- Optimized generated OpenAPI HTTP server authorization
+
+Fixed:
+
+- Fixed ByteBufferPool factory available for private UndertowModule
+- Fixed require `@NonNull` for CompletionStage signatures in Databases
+- Fixed potential error handling for private API
+- Fixed OpenAPI authorization interceptors potential name collision
+- Fixed Async HTTP Client Netty transport dependencies
+- Fixed Database tracing handling
+- Fixed templated components should work with @Component
+- Fixed Gradle compile warnings
+
 ### 1.1.3
 
 Fixed:

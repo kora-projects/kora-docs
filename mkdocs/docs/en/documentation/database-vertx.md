@@ -125,6 +125,8 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     15. Enables module tracing (default `true`)
 
+You can also configure [Netty transport](netty.md).
+
 ## Usage
 
 ===! ":fontawesome-brands-java: `Java`"

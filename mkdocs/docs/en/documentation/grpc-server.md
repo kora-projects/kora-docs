@@ -145,6 +145,8 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     6. Enables module tracing (default `true`)
 
+You can also configure [Netty transport](netty.md).
+
 ## Handlers
 
 Created gRPC service handlers are required to be tagged with the `@Component` annotation:

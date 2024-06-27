@@ -616,6 +616,16 @@ environment variables and system variables, you simply inject the configuration 
     because when you update the configuration it will cause all graph components that use it to be updated,
     it is recommended to always create custom user configuration interfaces.
 
+## Config Watcher
+
+By default, Kora has a configuration file watcher that updates the contents of the configuration file,
+which causes the dependency graph for the affected components to be updated if the configuration file is changed.
+
+You can disable the watcher by using:
+
+1. Environment variable `KORA_CONFIG_WATCHER_ENABLED`.
+2. System property `kora.config.watcher.enabled`.
+
 ## Supported types
 
 Configuration Extractors provide an extensive list of supported types that covers most of what
