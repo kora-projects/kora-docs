@@ -37,7 +37,6 @@ nav:
         - Cassandra: documentation/database-cassandra.md
         - Миграции: documentation/database-migration.md
       - Интеграции:
-        - Netty: documentation/netty.md
         - Kafka: documentation/kafka.md
         - gRPC сервер: documentation/grpc-server.md
         - gRPC клиент: documentation/grpc-client.md
@@ -51,6 +50,7 @@ nav:
           - JUnit5: documentation/junit5.md
       - Дополнительное:
         - GraalVM Native: documentation/graalvm-native.md
+        - Netty: documentation/netty.md
   - Журнал изменений: changelog/changelog.md
 
 
