@@ -547,6 +547,7 @@ Available signatures for repository methods out of the box:
     - `T myMethod()`
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (provide `Executor`)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (provide `Executor` and add [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"

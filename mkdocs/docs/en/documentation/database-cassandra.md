@@ -769,24 +769,19 @@ Available signatures for repository methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    The `T` refers to the type of the return value, either `Void` or `UpdateCount`.
+    The `T` refers to the type of the return value, either `List<T>` or `Void`.
 
     - `T myMethod()`
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
-    - `List<T> myMethod()`
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Mono<List<T>>> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
-    By `T` we mean the type of the return value, either `Unit` or `UpdateCount`.
+    By `T` we mean the type of the return value, either `T?`, either `List<T>`, or `Unit`.
 
     - `myMethod(): T`
-    - `myMethod(): T?`
-    - `myMethod(): List<T>`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): T?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): List<T>?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
     - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
