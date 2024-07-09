@@ -5,6 +5,17 @@ hide:
   - navigation
 ---
 
+### 1.1.5
+
+Added:
+
+- Improved HTTP Client header required error message in OpenAPI Generator
+
+Fixed:
+
+- Fixed `CompletionFuture` signature for Cassandra repositories
+- Fixed column nullability detection with any `@Nullable` annotation for Database Entities
+
 ### 1.1.4
 
 Added:
