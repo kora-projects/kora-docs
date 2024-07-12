@@ -5,6 +5,12 @@ hide:
   - navigation
 ---
 
+### 1.1.6
+
+Исправлено:
+
+- Исправлены ошибки Netty и gRPC [зависимостей](https://github.com/grpc/grpc-java/issues/11284)
+
 ### 1.1.5
 
 Добавлено:
