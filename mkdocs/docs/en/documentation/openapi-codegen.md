@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.6")
         }
     }
     ```
@@ -27,7 +27,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.6")
         }
     }
     ```

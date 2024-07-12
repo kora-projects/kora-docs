@@ -5,6 +5,12 @@ hide:
   - navigation
 ---
 
+### 1.1.6
+
+Fixed:
+
+- Fixed Netty & gRPC [dependency bugs](https://github.com/grpc/grpc-java/issues/11284)
+
 ### 1.1.5
 
 Added:
