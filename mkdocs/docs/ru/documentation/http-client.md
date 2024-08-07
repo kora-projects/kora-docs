@@ -198,6 +198,34 @@
     9.  Пароль для прокси (по умолчанию отсутвует)
     10.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
 
+#### Конфигуратор
+
+Пример настройки построителя OkHttp клиента, `OkHttpConfigurer` должен быть доступен как компонент:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeConfigurer implements OkHttpConfigurer {
+
+        @Override
+        public OkHttpClient.Builder configure(OkHttpClient.Builder builder) {
+            return builder;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConfigurer : OkHttpConfigurer {
+        fun configure(builder: Builder): Builder {
+            return builder
+        }
+    }
+    ```
+
 ## Нативный клиент
 
 Реализация HTTP клиента на основании нативного клиента поставляемого в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
