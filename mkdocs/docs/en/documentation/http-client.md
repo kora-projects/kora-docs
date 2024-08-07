@@ -202,6 +202,34 @@ and `HttpClientConfig` classes (default or example values are specified):
     9. Password for the proxy (optional)
     10. Hosts that should be excluded from proxying (optional)
 
+#### Configurer
+
+Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be available as component:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeConfigurer implements OkHttpConfigurer {
+
+        @Override
+        public OkHttpClient.Builder configure(OkHttpClient.Builder builder) {
+            return builder;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConfigurer : OkHttpConfigurer {
+        fun configure(builder: Builder): Builder {
+            return builder
+        }
+    }
+    ```
+
 ## Native client
 
 Implementation of an HTTP client based on the native client provided in the [JDK](https://openjdk.org/groups/net/httpclient/intro.html).

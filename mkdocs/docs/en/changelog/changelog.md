@@ -5,6 +5,23 @@ hide:
   - navigation
 ---
 
+### 1.1.7
+
+Added:
+
+* Added `@Tag` propagation for `@Repository`
+* Added configuration of [OkHttp](../documentation/http-client.md#okhttp)
+
+Fixed:
+
+* Fixed JsonReader/JsonWriter for fields with symbol `$`
+* Fixed requirement for `ReactorContextKt` in `CoroutineContextInjectInterceptor`
+* Fixed NPE in GrpcServer metrics
+* Fixed method argument `@Pattern` validation in Kotlin
+* Fixed `Content-Type` propagation for [Response Entity](../documentation/http-server.md#response-entity)
+* Fixed Kotlin alias collision for classes with same name
+* Removed Prometheus JMX dependency
+
 ### 1.1.6
 
 Fixed:

@@ -5,6 +5,23 @@ hide:
   - navigation
 ---
 
+### 1.1.7
+
+Добавлено:
+
+* Добавлено распространение `@Tag` для `@Repository`
+* Добавлена до настройка [OkHttp](../documentation/http-client.md#okhttp)
+
+Исправлено:
+
+* Исправлены JsonReader/JsonWriter для полей с символом `$`
+* Исправлено требование `ReactorContextKt` для `CoroutineContextInjectInterceptor`
+* Исправлен NPE в метриках GrpcServer
+* Исправлена валидация аргументов метода через `@Pattern` в Kotlin
+* Исправлена установка `Content-Type` для [Response Entity](../documentation/http-server.md#_16)
+* Исправлена коллизия псевдонимов в Kotlin для классов с одинаковыми именами
+* Удалена зависимость Prometheus JMX
+
 ### 1.1.6
 
 Исправлено:
