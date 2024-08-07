@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.6")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.7")
         }
     }
     ```
@@ -27,7 +27,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.6")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.7")
         }
     }
     ```
