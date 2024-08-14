@@ -51,6 +51,8 @@ nav:
       - Extra:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
+      - Experimental:
+          - S3 client: documentation/s3-client.md
   - Changelog: changelog/changelog.md
 
 

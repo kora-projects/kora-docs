@@ -1,5 +1,5 @@
-Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients using annotations
-using both declarative-style annotations and imperative-style annotations.
+Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
+using declarative-style annotations or using client in imperative-style.
 
 ## AsyncHttpClient
 
