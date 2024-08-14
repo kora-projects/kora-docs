@@ -10,6 +10,13 @@
 
 Реализация S3-клиента основанная на библиотеке [AWS](https://github.com/aws/aws-sdk-java-v2).
 
+Для работы и внедрения доступны компоненты:
+
+- Императивные [Kora S3 клиенты](#_23)
+- `S3Client` синхронный AWS S3 клиент
+- `S3AsyncClient` асинхронный AWS S3 клиент
+- `S3AsyncClient` с тегом `@Tag(MultipartUpload.class)` асинхронный AWS S3 клиент для пакетной загрузки
+
 ### Подключение
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -164,6 +171,12 @@
 
 Реализация S3-клиента основанная на библиотеке [Minio](https://github.com/minio/minio-java).
 Учитывайте что реализация использует [OkHttp](https://github.com/square/okhttp) написанный на Kotlin и использует соответствующие зависимости.
+
+Для работы и внедрения доступны компоненты:
+
+- Императивные [Kora S3 клиенты](#_23)
+- `MinioClient` синхронный Minio S3 клиент
+- `MinioAsyncClient` асинхронный Minio S3 клиент
 
 ### Подключение
 

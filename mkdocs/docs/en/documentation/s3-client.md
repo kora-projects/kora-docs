@@ -10,6 +10,13 @@ using declarative-style annotations, or using imperative-style clients to work w
 
 S3 client implementation based on the [AWS library](https://github.com/aws/aws-sdk-java-v2).
 
+Components available for injection:
+
+- Imperative [Kora S3 clients](#client-imperative)
+- `S3Client` synchronous AWS S3 client
+- `S3AsyncClient` asynchronous AWS S3 client
+- `S3AsyncClient` with tag `@Tag(MultipartUpload.class)` asynchronous AWS S3 client for batch uploading
+
 ### Dependency
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -164,6 +171,12 @@ When using AWS module, it is possible to return special response formats specifi
 
 S3 client implementation based on [Minio](https://github.com/minio/minio-java) library.
 Note that the implementation uses [OkHttp](https://github.com/square/okhttp) written in Kotlin and uses appropriate dependencies.
+
+Available components for injection:
+
+- Imperative [Kora S3 clients](#client-imperative)
+- `MinioClient` synchronous Minio S3 client
+- `MinioAsyncClient` asynchronous Minio S3 client
 
 ### Dependency
 
