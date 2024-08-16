@@ -758,11 +758,14 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Раскрывается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities WHERE id = :id
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
         ```
     2.  Раскрывается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities
+        SELECT id, value1, value2, value3 
+        FROM entities
         ```
     3.  Раскрывается в запрос:
         ```sql
@@ -822,11 +825,14 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Раскрывается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities WHERE id = :id
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
         ```
     2.  Раскрывается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities
+        SELECT id, value1, value2, value3 
+        FROM entities
         ```
     3.  Раскрывается в запрос:
         ```sql
@@ -847,7 +853,10 @@ Kora не обрабатывает содержимое запроса, резу
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
 
-Пример репозитория с [композитным идентификатором](#_6) и основными методами для оперирования сущностью.
+##### Пример композитного
+
+Пример репозитория с [композитным идентификатором](#_6) и основными методами для оперирования сущностью,
+он почти что полностью идентичен предыдущему за исключением `WHERE` условий при поиске и удалении.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -890,11 +899,14 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Раскрывается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 FROM entities WHERE code = :code AND type = :type
+        SELECT code, type, value1, value2, value3 
+        FROM entities 
+        WHERE code = :code AND type = :type
         ```
     2.  Раскрывается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 FROM entities
+        SELECT code, type, value1, value2, value3 
+        FROM entities
         ```
     3.  Раскрывается в запрос:
         ```sql
@@ -957,11 +969,14 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Раскрывается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 FROM entities WHERE code = :code AND type = :type
+        SELECT code, type, value1, value2, value3 
+        FROM entities 
+        WHERE code = :code AND type = :type
         ```
     2.  Раскрывается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 FROM entities
+        SELECT code, type, value1, value2, value3 
+        FROM entities
         ```
     3.  Раскрывается в запрос:
         ```sql
@@ -981,3 +996,116 @@ Kora не обрабатывает содержимое запроса, резу
         ON CONFLICT (code, type) DO UPDATE 
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
+
+##### Пример наследования
+
+Также можно создать абстрактный общий репозиторий и потом использовать его в наследовании:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface JdbcCrudRepository<K, V> extends JdbcRepository {
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
+        Optional<V> findById(K id);
+
+        @Query("SELECT %{return#selects} FROM %{return#table}")
+        List<V> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}")
+        UpdateCount insert(V entity);
+
+        @Query("INSERT INTO %{entity#inserts}")
+        UpdateCount insertBatch(@Batch List<V> entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        UpdateCount update(V entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        UpdateCount updateBatch(@Batch List<V> entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsert(V entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsertBatch(@Batch List<V> entity);
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        UpdateCount delete(V entity);
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        UpdateCount deleteBatch(@Batch List<V> entity);
+    }
+
+    @Repository
+    public interface EntityRepository extends JdbcCrudRepository<String, Entity> {
+
+        @Table("entities")
+        record Entity(@Id String id,
+                      @Column("value1") int field1,
+                      String value2,
+                      @Nullable String value3) {
+        }
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        UpdateCount deleteById(String id);
+
+        @Query("DELETE FROM entities")
+        UpdateCount deleteAll();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface JdbcCrudRepository<K, V> : JdbcRepository {
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
+        fun findById(id: K): V?
+
+        @Query("SELECT %{return#selects} FROM %{return#table}")
+        fun findAll(): List<V>
+
+        @Query("INSERT INTO %{entity#inserts}")
+        fun insert(entity: V): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts}")
+        fun insertBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        fun update(entity: V): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        fun updateBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        fun upsert(entity: V): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        fun upsertBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        fun delete(entity: V): UpdateCount
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        fun deleteBatch(@Batch entity: List<V>): UpdateCount
+    }
+
+    @Repository
+    interface EntityRepository : JdbcCrudRepository<String, Entity> {
+
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: String,
+            @field:Column("value1") val field1: Int,
+            val value2: String,
+            @field:Nullable val value3: String
+        )
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        fun deleteById(id: String?): UpdateCount
+
+        @Query("DELETE FROM entities")
+        fun deleteAll(): UpdateCount
+    }
+    ```

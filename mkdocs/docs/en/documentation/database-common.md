@@ -756,11 +756,14 @@ An example of a complete repository with all the basic methods for operating an 
 
     1.  Expands into a query:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities WHERE id = :id
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
         ```
     2.  Expands into a query:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities
+        SELECT id, value1, value2, value3 
+        FROM entities
         ```
     3.  Expands into a query:
         ```sql
@@ -820,11 +823,14 @@ An example of a complete repository with all the basic methods for operating an 
 
     1.  Expands into a query:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities WHERE id = :id
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
         ```
     2.  Expands into a query:
         ```sql
-        SELECT id, value1, value2, value3 FROM entities
+        SELECT id, value1, value2, value3 
+        FROM entities
         ```
     3.  Expands into a query:
         ```sql
@@ -844,3 +850,260 @@ An example of a complete repository with all the basic methods for operating an 
         ON CONFLICT (id) DO UPDATE 
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
+
+##### Composite example
+
+Example repository with [composite identifier](#composite) and basic methods to operate on an entity,
+it is almost identical to the previous one except for the `WHERE` conditions for search and delete.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Table("entities")
+        record Entity(@Id @Embedded  EntityId id,
+                      @Column("value1") int field1,
+                      String value2,
+                      @Nullable String value3) {
+            
+            public record EntityId(String code, String type) { }
+        }
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}") //(1)!
+        @Nullable
+        Entity findById(EntityId id);
+
+        @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
+        List<Entity> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}")  //(3)!
+        UpdateCount insert(@Batch List<Entity> entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")  //(4)!
+        UpdateCount update(@Batch List<Entity> entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}")  //(5)!
+        UpdateCount upsert(@Batch List<Entity> entity);
+
+        @Query("DELETE FROM entities WHERE %{id#where}")
+        UpdateCount deleteById(EntityId id);
+
+        @Query("DELETE FROM entities")
+        UpdateCount deleteAll();
+    }
+    ```
+
+    1.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 
+        FROM entities 
+        WHERE code = :code AND type = :type
+        ```
+    2.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 
+        FROM entities
+        ```
+    3.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ```
+    4.  Раскрывается в запрос:
+        ```sql
+        UPDATE entities
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        WHERE code = :entity.id.code AND type = :entity.id.type
+        ```
+    5.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Table("entities")
+        data class Entity(
+            @field:Id @field:Embedded val id: EntityId,
+            @field:Column("value1") val field1: Int,
+            val value2: String,
+            val value3: String?
+        ) {
+
+            data class EntityId(val code: String, val type: String)
+        }
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}") //(1)!
+        fun findById(id: EntityId): Entity?
+
+        @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
+        fun findAll(): List<Entity>
+
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
+        fun insert(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}") //(4)!
+        fun update(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}") //(5)!
+        fun upsert(@Batch entity: List<Entity>): UpdateCount
+
+        @Query("DELETE FROM entities WHERE %{id#where}")
+        fun deleteById(id: EntityId): UpdateCount
+
+        @Query("DELETE FROM entities")
+        fun deleteAll(): UpdateCount
+    }
+    ```
+
+    1.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 
+        FROM entities 
+        WHERE code = :code AND type = :type
+        ```
+    2.  Раскрывается в запрос:
+        ```sql
+        SELECT code, type, value1, value2, value3 
+        FROM entities
+        ```
+    3.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ```
+    4.  Раскрывается в запрос:
+        ```sql
+        UPDATE entities
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        WHERE code = :entity.id.code AND type = :entity.id.type
+        ```
+    5.  Раскрывается в запрос:
+        ```sql
+        INSERT INTO entities(code, type, value1, value2, value3) 
+        VALUES(:entity.code, :entity.type, :entity.value1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        ```
+
+##### Inheritance example
+
+You can also create an abstract CRUD repository and then use it in inheritance:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface JdbcCrudRepository<K, V> extends JdbcRepository {
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
+        Optional<V> findById(K id);
+
+        @Query("SELECT %{return#selects} FROM %{return#table}")
+        List<V> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}")
+        UpdateCount insert(V entity);
+
+        @Query("INSERT INTO %{entity#inserts}")
+        UpdateCount insertBatch(@Batch List<V> entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        UpdateCount update(V entity);
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        UpdateCount updateBatch(@Batch List<V> entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsert(V entity);
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsertBatch(@Batch List<V> entity);
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        UpdateCount delete(V entity);
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        UpdateCount deleteBatch(@Batch List<V> entity);
+    }
+
+    @Repository
+    public interface EntityRepository extends JdbcCrudRepository<String, Entity> {
+
+        @Table("entities")
+        record Entity(@Id String id,
+                      @Column("value1") int field1,
+                      String value2,
+                      @Nullable String value3) {
+        }
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        UpdateCount deleteById(String id);
+
+        @Query("DELETE FROM entities")
+        UpdateCount deleteAll();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface JdbcCrudRepository<K, V> : JdbcRepository {
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
+        fun findById(id: K): V?
+
+        @Query("SELECT %{return#selects} FROM %{return#table}")
+        fun findAll(): List<V>
+
+        @Query("INSERT INTO %{entity#inserts}")
+        fun insert(entity: V): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts}")
+        fun insertBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        fun update(entity: V): UpdateCount
+
+        @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
+        fun updateBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        fun upsert(entity: V): UpdateCount
+
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        fun upsertBatch(@Batch entity: List<V>): UpdateCount
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        fun delete(entity: V): UpdateCount
+
+        @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
+        fun deleteBatch(@Batch entity: List<V>): UpdateCount
+    }
+
+    @Repository
+    interface EntityRepository : JdbcCrudRepository<String, Entity> {
+
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: String,
+            @field:Column("value1") val field1: Int,
+            val value2: String,
+            @field:Nullable val value3: String
+        )
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        fun deleteById(id: String?): UpdateCount
+
+        @Query("DELETE FROM entities")
+        fun deleteAll(): UpdateCount
+    }
+    ```
