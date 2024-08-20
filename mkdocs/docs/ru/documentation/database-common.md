@@ -718,7 +718,7 @@ Kora не обрабатывает содержимое запроса, резу
 
 #### Пример репозитория
 
-Пример полного репозитория со всеми основными методами для оперирования сущностью.
+Пример полного репозитория со всеми основными методами для оперирования сущностью для [Postgres SQL](https://postgrespro.ru/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -856,7 +856,7 @@ Kora не обрабатывает содержимое запроса, резу
 ##### Пример композитного
 
 Пример репозитория с [композитным идентификатором](#_6) и основными методами для оперирования сущностью,
-он почти что полностью идентичен предыдущему за исключением `WHERE` условий при поиске и удалении.
+он почти что полностью идентичен предыдущему за исключением `WHERE` условий при поиске и удалении для [Postgres SQL](https://postgrespro.ru/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -999,7 +999,7 @@ Kora не обрабатывает содержимое запроса, резу
 
 ##### Пример наследования
 
-Также можно создать абстрактный общий репозиторий и потом использовать его в наследовании:
+Также можно создать абстрактный общий репозиторий и потом использовать его в наследовании для [Postgres SQL](https://postgrespro.ru/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1016,25 +1016,25 @@ Kora не обрабатывает содержимое запроса, резу
         UpdateCount insert(V entity);
 
         @Query("INSERT INTO %{entity#inserts}")
-        UpdateCount insertBatch(@Batch List<V> entity);
+        UpdateCount insert(@Batch List<V> entity);
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         UpdateCount update(V entity);
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
-        UpdateCount updateBatch(@Batch List<V> entity);
+        UpdateCount update(@Batch List<V> entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
         UpdateCount upsert(V entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
-        UpdateCount upsertBatch(@Batch List<V> entity);
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsert(@Batch List<V> entity);
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
         UpdateCount delete(V entity);
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
-        UpdateCount deleteBatch(@Batch List<V> entity);
+        UpdateCount delete(@Batch List<V> entity);
     }
 
     @Repository
@@ -1070,25 +1070,25 @@ Kora не обрабатывает содержимое запроса, резу
         fun insert(entity: V): UpdateCount
 
         @Query("INSERT INTO %{entity#inserts}")
-        fun insertBatch(@Batch entity: List<V>): UpdateCount
+        fun insert(@Batch entity: List<V>): UpdateCount
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         fun update(entity: V): UpdateCount
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
-        fun updateBatch(@Batch entity: List<V>): UpdateCount
+        fun update(@Batch entity: List<V>): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
         fun upsert(entity: V): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
-        fun upsertBatch(@Batch entity: List<V>): UpdateCount
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        fun upsert(@Batch entity: List<V>): UpdateCount
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
         fun delete(entity: V): UpdateCount
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
-        fun deleteBatch(@Batch entity: List<V>): UpdateCount
+        fun delete(@Batch entity: List<V>): UpdateCount
     }
 
     @Repository

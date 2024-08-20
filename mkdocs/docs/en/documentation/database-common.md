@@ -716,7 +716,7 @@ This can be especially useful when the identifier is a [compound key](#embedded-
 
 #### Repository example
 
-An example of a complete repository with all the basic methods for operating an entity.
+Example of a complete repository with all the basic methods for operating an entity for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -854,7 +854,7 @@ An example of a complete repository with all the basic methods for operating an 
 ##### Composite example
 
 Example repository with [composite identifier](#composite) and basic methods to operate on an entity,
-it is almost identical to the previous one except for the `WHERE` conditions for search and delete.
+it is almost identical to the previous one except for the `WHERE` conditions for search and delete for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -997,7 +997,7 @@ it is almost identical to the previous one except for the `WHERE` conditions for
 
 ##### Inheritance example
 
-You can also create an abstract CRUD repository and then use it in inheritance:
+You can also create an abstract CRUD repository and then use it in inheritance for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1014,25 +1014,25 @@ You can also create an abstract CRUD repository and then use it in inheritance:
         UpdateCount insert(V entity);
 
         @Query("INSERT INTO %{entity#inserts}")
-        UpdateCount insertBatch(@Batch List<V> entity);
+        UpdateCount insert(@Batch List<V> entity);
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         UpdateCount update(V entity);
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
-        UpdateCount updateBatch(@Batch List<V> entity);
+        UpdateCount update(@Batch List<V> entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
         UpdateCount upsert(V entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
-        UpdateCount upsertBatch(@Batch List<V> entity);
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        UpdateCount upsert(@Batch List<V> entity);
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
         UpdateCount delete(V entity);
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
-        UpdateCount deleteBatch(@Batch List<V> entity);
+        UpdateCount delete(@Batch List<V> entity);
     }
 
     @Repository
@@ -1068,25 +1068,25 @@ You can also create an abstract CRUD repository and then use it in inheritance:
         fun insert(entity: V): UpdateCount
 
         @Query("INSERT INTO %{entity#inserts}")
-        fun insertBatch(@Batch entity: List<V>): UpdateCount
+        fun insert(@Batch entity: List<V>): UpdateCount
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         fun update(entity: V): UpdateCount
 
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
-        fun updateBatch(@Batch entity: List<V>): UpdateCount
+        fun update(@Batch entity: List<V>): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
         fun upsert(entity: V): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (a, b) DO UPDATE SET %{entity#updates}")
-        fun upsertBatch(@Batch entity: List<V>): UpdateCount
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        fun upsert(@Batch entity: List<V>): UpdateCount
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
         fun delete(entity: V): UpdateCount
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
-        fun deleteBatch(@Batch entity: List<V>): UpdateCount
+        fun delete(@Batch entity: List<V>): UpdateCount
     }
 
     @Repository
