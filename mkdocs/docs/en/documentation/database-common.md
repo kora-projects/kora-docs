@@ -1101,7 +1101,7 @@ You can also create an abstract CRUD repository and then use it in inheritance f
         )
 
         @Query("DELETE FROM entities WHERE id = :id")
-        fun deleteById(id: String?): UpdateCount
+        fun deleteById(id: String): UpdateCount
 
         @Query("DELETE FROM entities")
         fun deleteAll(): UpdateCount

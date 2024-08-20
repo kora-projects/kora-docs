@@ -1103,7 +1103,7 @@ Kora не обрабатывает содержимое запроса, резу
         )
 
         @Query("DELETE FROM entities WHERE id = :id")
-        fun deleteById(id: String?): UpdateCount
+        fun deleteById(id: String): UpdateCount
 
         @Query("DELETE FROM entities")
         fun deleteAll(): UpdateCount
