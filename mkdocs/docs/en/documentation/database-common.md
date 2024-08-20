@@ -1002,7 +1002,7 @@ You can also create an abstract CRUD repository and then use it in inheritance f
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public interface JdbcCrudRepository<K, V> extends JdbcRepository {
+    public interface PostgresJdbcCrudRepository<K, V> extends JdbcRepository {
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
         Optional<V> findById(K id);
@@ -1036,7 +1036,7 @@ You can also create an abstract CRUD repository and then use it in inheritance f
     }
 
     @Repository
-    public interface EntityRepository extends JdbcCrudRepository<String, Entity> {
+    public interface EntityRepository extends PostgresJdbcCrudRepository<String, Entity> {
 
         @Table("entities")
         record Entity(@Id String id,
@@ -1056,7 +1056,7 @@ You can also create an abstract CRUD repository and then use it in inheritance f
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    interface JdbcCrudRepository<K, V> : JdbcRepository {
+    interface PostgresJdbcCrudRepository<K, V> : JdbcRepository {
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
         fun findById(id: K): V?
@@ -1090,7 +1090,7 @@ You can also create an abstract CRUD repository and then use it in inheritance f
     }
 
     @Repository
-    interface EntityRepository : JdbcCrudRepository<String, Entity> {
+    interface EntityRepository : PostgresJdbcCrudRepository<String, Entity> {
 
         @Table("entities")
         data class Entity(

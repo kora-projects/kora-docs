@@ -1004,7 +1004,7 @@ Kora не обрабатывает содержимое запроса, резу
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public interface JdbcCrudRepository<K, V> extends JdbcRepository {
+    public interface PostgresJdbcCrudRepository<K, V> extends JdbcRepository {
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
         Optional<V> findById(K id);
@@ -1038,7 +1038,7 @@ Kora не обрабатывает содержимое запроса, резу
     }
 
     @Repository
-    public interface EntityRepository extends JdbcCrudRepository<String, Entity> {
+    public interface EntityRepository extends PostgresJdbcCrudRepository<String, Entity> {
 
         @Table("entities")
         record Entity(@Id String id,
@@ -1058,7 +1058,7 @@ Kora не обрабатывает содержимое запроса, резу
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    interface JdbcCrudRepository<K, V> : JdbcRepository {
+    interface PostgresJdbcCrudRepository<K, V> : JdbcRepository {
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
         fun findById(id: K): V?
@@ -1092,7 +1092,7 @@ Kora не обрабатывает содержимое запроса, резу
     }
 
     @Repository
-    interface EntityRepository : JdbcCrudRepository<String, Entity> {
+    interface EntityRepository : PostgresJdbcCrudRepository<String, Entity> {
 
         @Table("entities")
         data class Entity(
