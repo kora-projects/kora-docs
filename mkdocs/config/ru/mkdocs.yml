@@ -47,12 +47,14 @@ nav:
         - Планировщик: documentation/scheduling.md
         - Логирование: documentation/logging-aspect.md
       - Тестирование:
-          - JUnit5: documentation/junit5.md
+        - JUnit5: documentation/junit5.md
       - Дополнительное:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
       - Экспериментальное:
-          - S3 клиент: documentation/s3-client.md
+        - S3 клиент: documentation/s3-client.md
+        - Camunda Engine: documentation/camunda-engine.md
+        - Camunda REST: documentation/camunda-rest.md
   - Журнал изменений: changelog/changelog.md
 
 

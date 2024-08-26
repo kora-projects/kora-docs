@@ -47,12 +47,14 @@ nav:
         - Scheduling: documentation/scheduling.md
         - Logging: documentation/logging-aspect.md
       - Testing:
-          - JUnit5: documentation/junit5.md
+        - JUnit5: documentation/junit5.md
       - Extra:
         - GraalVM Native: documentation/graalvm-native.md
         - Netty: documentation/netty.md
       - Experimental:
-          - S3 client: documentation/s3-client.md
+        - S3 client: documentation/s3-client.md
+        - Camunda Engine: documentation/camunda-engine.md
+        - Camunda REST: documentation/camunda-rest.md
   - Changelog: changelog/changelog.md
 
 
