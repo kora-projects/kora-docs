@@ -83,7 +83,7 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
                 enabled = true //(15)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
             }
-            telemetry {
+            tracing {
                 enabled = true //(17)!
             }
         }
@@ -237,7 +237,7 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
                 enabled = true //(8)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
             }
-            telemetry {
+            tracing {
                 enabled = true //(10)!
             }
         }

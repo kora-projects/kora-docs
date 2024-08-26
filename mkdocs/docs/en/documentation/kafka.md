@@ -137,7 +137,7 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
               enabled = true //(11)!
               slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
             }
-            telemetry {
+            tracing {
               enabled = true //(13)!
             }
           }
@@ -560,7 +560,7 @@ Example of the complete configuration described in the `KafkaPublisherConfig` cl
               enabled = true //(3)!
               slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
             }
-            telemetry {
+            tracing {
               enabled = true //(5)!
             }
           }
