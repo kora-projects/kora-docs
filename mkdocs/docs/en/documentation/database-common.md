@@ -1004,9 +1004,6 @@ You can also create an abstract CRUD repository and then use it in inheritance f
     ```java
     public interface PostgresJdbcCrudRepository<K, V> extends JdbcRepository {
 
-        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
-        Optional<V> findById(K id);
-
         @Query("SELECT %{return#selects} FROM %{return#table}")
         List<V> findAll();
 
@@ -1057,9 +1054,6 @@ You can also create an abstract CRUD repository and then use it in inheritance f
 
     ```kotlin
     interface PostgresJdbcCrudRepository<K, V> : JdbcRepository {
-
-        @Query("SELECT %{return#selects} FROM %{return#table} WHERE %{id#where}")
-        fun findById(id: K): V?
 
         @Query("SELECT %{return#selects} FROM %{return#table}")
         fun findAll(): List<V>
