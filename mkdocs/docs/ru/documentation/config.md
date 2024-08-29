@@ -646,6 +646,7 @@ services:
     * BigDecimal
     * Period
     * Duration
+    * Size
     * Properties
     * Pattern
     * UUID

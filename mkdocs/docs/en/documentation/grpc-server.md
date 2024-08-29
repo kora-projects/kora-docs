@@ -99,51 +99,55 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     ```javascript
     grpcServer {
         port = 8090 //(1)!
-        reflectionEnabled = false //(2)!
+        maxMessageSize = "4MiB" //(2)!
+        reflectionEnabled = false //(3)!
         telemetry {
             logging {
-                enabled = false //(3)!
+                enabled = false //(4)!
             }
             metrics {
-                enabled = true //(4)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                enabled = true //(5)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
             }
-            telemetry {
-                enabled = true //(6)!
+            tracing {
+                enabled = true //(7)!
             }
         }
     }
     ```
 
     1. gRPC server port
-    2. Enables [gRPC Server Reflection](#reflection) service
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
+    3. Enables [gRPC Server Reflection](#reflection) service
+    4. Enables module logging (default `false`)
+    5. Enables module metrics (default `true`)
+    6. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    7. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     grpcServer:
       port: 8090 #(1)!
-      reflectionEnabled: false #(2)!
+      maxMessageSize = "4MiB" #(2)!
+      reflectionEnabled = false #(3)!
       telemetry:
         logging:
-          enabled: false #(3)!
+          enabled: false #(4)!
         metrics:
-          enabled: true #(4)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+          enabled: true #(5)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
         telemetry:
-          enabled: true #(6)!
+          enabled: true #(7)!
     ```
 
     1. gRPC server port
-    2. Enables [gRPC Server Reflection](#reflection) service
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
+    3. Enables [gRPC Server Reflection](#reflection) service
+    4. Enables module logging (default `false`)
+    5. Enables module metrics (default `true`)
+    6. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    7. Enables module tracing (default `true`)
 
 You can also configure [Netty transport](netty.md).
 

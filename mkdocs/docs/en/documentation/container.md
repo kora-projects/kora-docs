@@ -101,7 +101,9 @@ This is the most basic way in which components can be registered in a container:
 
         fun someService(): SomeService = SomeService()
 
-        fun otherService(someService: SomeService): OtherService = OtherService(someService)
+        fun otherService(someService: SomeService): OtherService {
+            return OtherService(someService)
+        }
     }
     ```
 
@@ -222,7 +224,7 @@ methods with [Generic](https://docs.oracle.com/javase/tutorial/java/generics/typ
 
     ```java
     @Module
-    public interface ValidatorsModule {
+    public interface SomeModule {
 
         default <T> GenericValidator<T> genericValidator(SomeValidationEntity<T> entity) {
             return new GenericValidator<>(entity);
@@ -234,9 +236,11 @@ methods with [Generic](https://docs.oracle.com/javase/tutorial/java/generics/typ
 
     ```kotlin
     @Module
-    interface ValidatorsModule {
+    interface SomeModule {
 
-        fun <T> genericValidator(entity: SomeValidationEntity<T>): GenericValidator<T> = GenericValidator(entity)
+        fun <T> genericValidator(entity: SomeValidationEntity<T>): GenericValidator<T> {
+            return GenericValidator(entity)
+        }
     }
     ```
 
@@ -330,7 +334,9 @@ then Kora can try to create a component on its own if it meets the requirements 
     @KoraApp
     interface Application {
 
-        fun someOtherService(someService: SomeService): SomeOtherService = SomeOtherService(someService)
+        fun someOtherService(someService: SomeService): SomeOtherService {
+            return SomeOtherService(someService)
+        }
 
         fun otherService(): OtherService = OtherService()
     }
@@ -440,7 +446,9 @@ There can be many instances of the same type in a container, and if you want to 
 
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(handlers: All<Handler>): SomeProcessor {
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -501,9 +509,13 @@ This is how you can inject different instances of a class with a common interfac
         @Tag(MyTag2::class)
         fun someService1(): SomeService = SomeService2()
 
-        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA = ServiceA(service)
+        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA {
+            return ServiceA(service)
+        }
 
-        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB = ServiceB(service)
+        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB {
+            return ServiceB(service)
+        }
     }
     ```
 
@@ -594,7 +606,9 @@ You can also use a tag to get a list of all components by a specific tag:
         @Tag(MyTag::class)
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(@Tag(MyTag::class) handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(@Tag(MyTag::class) handlers: All<Handler>): SomeProcessor {
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -632,7 +646,9 @@ To get a list of all components with and without a tag, you need to use a specia
 
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(@Tag(Tag.Any::class) handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(@Tag(Tag.Any::class) handlers: All<Handler>): SomeProcessor {
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -737,7 +753,9 @@ Consider the following example:
 
         fun serviceB(): ServiceB = ServiceB()
 
-        fun serviceC(serviceA: ServiceA, serviceB: ValueOf<ServiceB>): ServiceC = ServiceC(serviceA, serviceB)
+        fun serviceC(serviceA: ServiceA, serviceB: ValueOf<ServiceB>): ServiceC {
+            return ServiceC(serviceA, serviceB)
+        }
     }
     ```
 
