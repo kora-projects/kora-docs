@@ -645,6 +645,7 @@ you might need to specify in custom configurations, or you can extend the behavi
     * BigDecimal
     * Period
     * Duration
+    * Size
     * Properties
     * Pattern
     * UUID
