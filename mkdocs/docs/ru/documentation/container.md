@@ -101,7 +101,9 @@
 
         fun someService(): SomeService = SomeService()
 
-        fun otherService(someService: SomeService): OtherService = OtherService(someService)
+        fun otherService(someService: SomeService): OtherService {
+            return OtherService(someService)
+        }
     }
     ```
 
@@ -222,7 +224,7 @@ Kora не делает автоматический поиск модулей и
 
     ```java
     @Module
-    public interface ValidatorsModule {
+    public interface SomeModule {
 
         default <T> GenericValidator<T> genericValidator(SomeValidationEntity<T> entity) {
             return new GenericValidator<>(entity);
@@ -234,9 +236,11 @@ Kora не делает автоматический поиск модулей и
 
     ```kotlin
     @Module
-    interface ValidatorsModule {
+    interface SomeModule {
 
-        fun <T> genericValidator(entity: SomeValidationEntity<T>): GenericValidator<T> = GenericValidator(entity)
+        fun <T> genericValidator(entity: SomeValidationEntity<T>): GenericValidator<T> {
+            return GenericValidator(entity)
+        }
     }
     ```
 
@@ -330,7 +334,9 @@ Kora не делает автоматический поиск модулей и
     @KoraApp
     interface Application {
 
-        fun someOtherService(someService: SomeService): SomeOtherService = SomeOtherService(someService)
+        fun someOtherService(someService: SomeService): SomeOtherService {
+            return SomeOtherService(someService)
+        }
 
         fun otherService(): OtherService = OtherService()
     }
@@ -441,7 +447,9 @@ Kora не делает автоматический поиск модулей и
 
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(handlers: All<Handler>): SomeProcessor {
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -503,9 +511,13 @@ public interface All<T> extends List<T> {}
         @Tag(MyTag2::class)
         fun someService1(): SomeService = SomeService2()
 
-        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA = ServiceA(service)
+        fun serviceA(@Tag(MyTag1::class) service: SomeService): ServiceA {
+            return ServiceA(service)
+        }
 
-        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB = ServiceB(service)
+        fun serviceB(@Tag(MyTag2::class) service: SomeService): ServiceB {
+            return ServiceB(service)
+        }
     }
     ```
 
@@ -596,7 +608,9 @@ public interface All<T> extends List<T> {}
         @Tag(MyTag::class)
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(@Tag(MyTag::class) handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(@Tag(MyTag::class) handlers: All<Handler>): SomeProcessor {
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -634,7 +648,9 @@ public interface All<T> extends List<T> {}
 
         fun handlerB(): HandlerB = HandlerB()
 
-        fun someProcessor(@Tag(Tag.Any::class) handlers: All<Handler>): SomeProcessor = SomeProcessor(handlers)
+        fun someProcessor(@Tag(Tag.Any::class) handlers: All<Handler>): SomeProcessor { 
+            return SomeProcessor(handlers)
+        }
     }
     ```
 
@@ -739,7 +755,9 @@ public interface Lifecycle {
 
         fun serviceB(): ServiceB = ServiceB()
 
-        fun serviceC(serviceA: ServiceA, serviceB: ValueOf<ServiceB>): ServiceC = ServiceC(serviceA, serviceB)
+        fun serviceC(serviceA: ServiceA, serviceB: ValueOf<ServiceB>): ServiceC {
+            return ServiceC(serviceA, serviceB)
+        }
     }
     ```
 

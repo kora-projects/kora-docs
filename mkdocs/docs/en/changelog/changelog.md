@@ -5,6 +5,25 @@ hide:
   - navigation
 ---
 
+### 1.1.8
+
+Added:
+
+* Added [S3 Client](../documentation/s3-client.md) **experimental** module 
+* Added [Liquibase module](../documentation/database-migration.md#liquibase)
+* Added configuration option to specify migration files to the [Flyway](../documentation/database-migration.md#flyway) module
+* Added [Size type](../documentation/config.md#supported-types)
+* Added [gRPC server message size](../documentation/grpc-server.md#configuration) config option added
+* Added more Javadoc
+
+Fixed:
+
+* Fixed HttpClientTelemetry log body that wasn't read till the end
+* Fixed gRPC interceptor execution order
+* Fixed Kafka Consumer record commit only after batch processed
+* Fixed KafkaAssignConsumerContainer offset duration
+* Fixed Openapi codegen mixing referenced oneOf fields in root type
+
 ### 1.1.7
 
 Added:

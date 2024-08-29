@@ -5,6 +5,25 @@ hide:
   - navigation
 ---
 
+### 1.1.8
+
+Добавлено:
+
+* Добавлен модуль [S3 Client](../documentation/s3-client.md) **экспериментальный**
+* Добавлен модуль [Liquibase](../documentation/database-migration.md#liquibase)
+* Добавлена опция конфигурации для указания файлов миграции в модуль [Flyway](../documentation/database-migration.md#flyway)
+* Добавлен [Тип размера](../documentation/config.md#_16)
+* Добавлена опция конфигурации [Размера сообщения сервера gRPC](../documentation/grpc-server.md#_3)
+* Добавлен дополнительный Javadoc
+
+Исправлено:
+
+* Исправлено логгирование тела в HttpClientTelemetry, которое не читалось до конца
+* Исправлен порядок выполнения перехватчика gRPC
+* Исправлена фиксация записи Kafka Consumer только после пакетной обработки
+* Исправлена длительность смещения KafkaAssignConsumerContainer
+* Исправлено смешивание кодегена Openapi, ссылающегося на поля oneOf в корневом типе
+
 ### 1.1.7
 
 Добавлено:

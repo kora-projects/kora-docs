@@ -1,5 +1,5 @@
-Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients using annotations
-using both declarative-style annotations and imperative-style annotations.
+Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
+using declarative-style annotations or using client in imperative-style.
 
 ## AsyncHttpClient
 
@@ -406,7 +406,7 @@ Example configuration in the case of the `path.to.config` path described in the 
                         enabled = true //(4)!
                         slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
                     }
-                    telemetry {
+                    tracing {
                         enabled = true //(6)!
                     }
                 }
@@ -469,7 +469,7 @@ and method `hello` the final path will be `path.to.config.getHello`
                             enabled = true //(3)!
                             slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
                         }
-                        telemetry {
+                        tracing {
                             enabled = true //(5)!
                         }
                     }

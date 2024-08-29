@@ -64,7 +64,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
                 enabled = true //(3)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
             }
-            telemetry {
+            tracing {
                 enabled = true //(5)!
             }
         }
@@ -410,7 +410,7 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
                 enabled = true //(2)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(3)!
             }
-            telemetry {
+            tracing {
                 enabled = true //(4)!
             }
         }
