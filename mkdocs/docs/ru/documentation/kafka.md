@@ -387,6 +387,79 @@
 
 Обратите внимание, что все аргументы становятся необязательными, то есть мы ожидаем что у нас либо будут ключ и значение, либо исключение.
 
+### Пользовательский тег
+
+По умолчанию для потребителя создается автоматический тег по которому происходит внедрение, его можно посмотреть в созданном модуле на этапе компиляции.
+
+Если по каким-то причинам вам требуется переопределить тег потребителя, можно задать его как аргумент аннотации `@KafkaListener`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService.class)
+        public void process(String value) {
+          
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService::class)
+        fun process(value: String) {
+
+        }
+    }
+    ```
+
+### События ребалансировки
+
+Можно слушать и реагировать на события ребалансировки с помощью свой реализации интерфейса `ConsumerAwareRebalanceListener`,
+его следует предоставить как компонент по тегу потребителя:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(SomeListenerProcessTag.class)
+    @Component
+    public final class SomeListener implements ConsumerAwareRebalanceListener {
+
+        @Override
+        public void onPartitionsRevoked(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            
+        }
+
+        @Override
+        public void onPartitionsAssigned(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(SomeListenerProcessTag::class)
+    @Component
+    class SomeListener : ConsumerAwareRebalanceListener {
+
+        override fun onPartitionsRevoked(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+        
+        override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+    }
+    ```
+
 ### Ручное управление
 
 Kora предоставляет небольшую обёртку над `KafkaConsumer`, позволяющую легко запустить обработку входящих событий.

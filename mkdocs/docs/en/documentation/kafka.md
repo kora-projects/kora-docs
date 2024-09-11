@@ -464,6 +464,79 @@ or `RecordValueDeserializationException`.
 
 Note that all arguments become optional, meaning we expect to either have a key and value or an exception.
 
+### Custom tag
+
+Automatic tag is created for the consumer by default, it can be viewed in the generated module at compile time.
+
+If for some reason you need to override the consumer tag, you can set it as an argument to the `@KafkaListener` annotation:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService.class)
+        public void process(String value) {
+          
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService::class)
+        fun process(value: String) {
+
+        }
+    }
+    ```
+
+### Rebalance events
+
+You can listen and react to rebalance events with your implementation of the `ConsumerAwareRebalanceListener` interface,
+it should be provided as a component by the consumer tag:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(SomeListenerProcessTag.class)
+    @Component
+    public final class SomeListener implements ConsumerAwareRebalanceListener {
+
+        @Override
+        public void onPartitionsRevoked(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            
+        }
+
+        @Override
+        public void onPartitionsAssigned(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(SomeListenerProcessTag::class)
+    @Component
+    class SomeListener : ConsumerAwareRebalanceListener {
+
+        override fun onPartitionsRevoked(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+        
+        override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+    }
+    ```
+
 ### Manual override
 
 Kora provides a small wrapper over `KafkaConsumer` that allows you to easily trigger the handling of incoming events.
