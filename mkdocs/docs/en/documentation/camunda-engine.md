@@ -1,4 +1,4 @@
-Module for connecting a BPMN process interpreter based on [Camunda 7](https://docs.camunda.org/manual/7.21/)
+Module for connecting a BPMN process workflow engine based on [Camunda 7](https://docs.camunda.org/manual/7.21/)
 
 ## Dependency
 
