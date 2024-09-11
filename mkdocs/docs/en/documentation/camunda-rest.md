@@ -1,4 +1,9 @@
-Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) for [Camunda 7 Engine module](camunda-engine.md)
+??? warning “Experimental module”
+
+    **Experimental** module is fully working and tested, but does not guarantee a fully stabilized API and may undergo some minor changes before being fully ready.
+    undergo some minor changes before being fully operational.
+
+Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) for [Camunda 7 Engine module](camunda-bpmn.md)
 
 ## Dependency
 
@@ -28,7 +33,7 @@ Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/ove
     interface Application : CamundaRestUndertowModule
     ```
 
-Requires [Camunda Engine module](camunda-engine.md) to be added.
+Requires [Camunda Engine module](camunda-bpmn.md) to be added.
 
 ## Configuration
 

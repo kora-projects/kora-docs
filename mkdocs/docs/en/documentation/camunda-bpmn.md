@@ -1,3 +1,8 @@
+??? warning “Experimental module”
+
+    **Experimental** module is fully working and tested, but does not guarantee a fully stabilized API and may undergo some minor changes before being fully ready.
+    undergo some minor changes before being fully operational.
+
 Module for connecting a BPMN process workflow engine based on [Camunda 7](https://docs.camunda.org/manual/7.21/)
 
 ## Dependency

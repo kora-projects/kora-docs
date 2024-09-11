@@ -52,7 +52,7 @@ nav:
         - Netty: documentation/netty.md
       - Экспериментальное:
         - S3 клиент: documentation/s3-client.md
-        - Camunda Engine: documentation/camunda-engine.md
+        - Camunda BPMN: documentation/camunda-bpmn.md
         - Camunda REST: documentation/camunda-rest.md
   - Журнал изменений: changelog/changelog.md
 
