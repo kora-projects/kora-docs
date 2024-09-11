@@ -149,7 +149,10 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
     2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
-    4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
+    4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use.Valid values are:
+        1. `earliest` - earliest available offset
+        2. `latest` - latest available offset
+        3. String in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
@@ -194,7 +197,10 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
     2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
     3. Specifies the partitions of topics to be subscribed to
-    4. Specifies which position in the topics the Consumer should use. Valid values are `earliest` - go to the earliest available offset, `latest` - go to the latest available offset, string in `Duration` format, e.g. `5m` - shift back a certain time.
+    4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use.Valid values are:
+        1. `earliest` - earliest available offset
+        2. `latest` - latest available offset
+        3. String in `Duration` format, e.g. `5m` - shift back a certain time.
     5. Maximal waiting time for messages from a topic within one call
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
@@ -205,9 +211,15 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     13. Enables module tracing (default `true`)
 
-Configuration example for connecting to topics without a group.
-In this example, Consumer will be connected to all partitions in the topiq and the offset is shifted back 10 minutes.
-In case of connection without `group.id`, only 1 topic can be specified:
+### Consume strategy
+
+`subscribe` strategy involves the use of [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/),
+to group the executors so that they do not duplicate the reading of records from their queue across multiple application instances.
+
+In the case where you want each application instance to read messages from a topic at the same time as the others, the `assign` strategy is supposed to be used,
+to do this you simply **don't specify** `group.id` in the consumer configuration, but in this strategy you can only specify 1 topic at a time.
+
+Example of `assign` strategy configuration:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -215,7 +227,6 @@ In case of connection without `group.id`, only 1 topic can be specified:
     path {
       to {
         config {
-          pollTimeout: "3s"
           topics: "first"
           driverProperties {
             "bootstrap.servers": "localhost:9093"
@@ -231,8 +242,7 @@ In case of connection without `group.id`, only 1 topic can be specified:
     path:
       to:
         config:
-          pollTimeout: "3s"
-          topics: "first,second,third"
+          topics: "first"
           driverProperties:
             "bootstrap.servers": "localhost:9093"
     ```

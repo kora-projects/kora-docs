@@ -122,6 +122,6 @@
     посредствам увелечения количества реплик рабочего приложения. Так как это будет вести за собой вызов миграции на каждую запущенную реплику.
     Также имейте в виду что каждый перезапуск приложения также будет вызывать миграции.
 
-    В таких случаях рекомендуем использовать для локальной разработки [Flyway Gradle plugin](https://documentation.red-gate.com/fd/gradle-task-184127407.html),
+    В таких случаях рекомендуем например использовать для локальной разработки [Flyway Gradle plugin](https://documentation.red-gate.com/fd/gradle-task-184127407.html),
     для тестов использовать запуск Flyway из кода после запуска базы данных, для боевого окружения Kubernetes использовать [K8S Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
     либо миграцию из CI через [Flyway Gradle plugin](https://documentation.red-gate.com/fd/gradle-task-184127407.html).
