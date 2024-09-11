@@ -52,8 +52,8 @@ nav:
         - Netty: documentation/netty.md
       - Experimental:
         - S3 client: documentation/s3-client.md
-        - Camunda BPMN: documentation/camunda-bpmn.md
-        - Camunda REST: documentation/camunda-rest.md
+        - Camunda BPMN: documentation/camunda7-bpmn.md
+        - Camunda REST: documentation/camunda7-rest.md
   - Changelog: changelog/changelog.md
 
 

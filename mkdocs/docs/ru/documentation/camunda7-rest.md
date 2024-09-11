@@ -3,7 +3,7 @@
     **Эксперементальный** модуль является полностью рабочим и протестированным, но не гарантирует полностью стабилизированный API и может
     притерпеть какие либо незначительные изменения перед полной готовностью.
 
-Модуль для подключения [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) для [Camunda 7 Engine модуля](camunda-bpmn.md)
+Модуль для подключения [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) для [Camunda 7 Engine модуля](camunda7-bpmn.md)
 
 ## Подключение
 
@@ -33,7 +33,7 @@
     interface Application : CamundaRestUndertowModule
     ```
 
-Требует подключения [Camunda Engine модуля](camunda-bpmn.md).
+Требует подключения [Camunda Engine модуля](camunda7-bpmn.md).
 
 ## Конфигурация
 
