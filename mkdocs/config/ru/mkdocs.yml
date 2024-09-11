@@ -14,13 +14,12 @@ nav:
       - Основное: documentation/general.md
       - Контейнер: documentation/container.md
       - Конфигурация: documentation/config.md
-      - Логирование:
-        - SLF4J: documentation/logging-slf4j.md
       - Конвертация:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
       - Мониторинг:
         - Пробы: documentation/probes.md
+        - Логирование: documentation/logging-slf4j.md
         - Метрики: documentation/metrics.md
         - Трассировка: documentation/tracing.md
       - HTTP:

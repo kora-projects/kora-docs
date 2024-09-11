@@ -14,13 +14,12 @@ nav:
       - General: documentation/general.md
       - Dependency injection: documentation/container.md
       - Configuration: documentation/config.md
-      - Logging:
-        - SLF4J: documentation/logging-slf4j.md
       - Mapping:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
       - Monitoring:
         - Probes: documentation/probes.md
+        - Logging: documentation/logging-slf4j.md
         - Metrics: documentation/metrics.md
         - Tracing: documentation/tracing.md
       - HTTP:
