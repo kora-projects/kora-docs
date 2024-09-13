@@ -5,6 +5,27 @@ hide:
   - navigation
 ---
 
+### 1.1.9
+
+Added:
+
+* Added [Camunda BPMN](../documentation/camunda7-bpmn.md) and [Camunda REST](../documentation/camunda7-rest.md) **experimental** module
+* Added [multiple OpenAPI files](../documentation/openapi-management.md) support
+* Added [ConsumerAwareRebalanceListener](../documentation/kafka.md#rebalance-events) support
+* Added OpenAPI Client generated extra methods without optional parameters
+* Added Kafka Listener [custom tag](../documentation/kafka.md#custom-tag) support
+* Added more [Logging AOP](../documentation/logging-aspect.md#signatures) signatures support
+
+Fixed:
+
+* Fixed `GraphInterceptor` for components with AOP
+* Fixed Cassandra metrics config
+* Fixed Logging AOP exception handling
+* Fixed JSON potential name collision and KSP missing external writer constructor
+* Fixed Kafka Listener empty records telemetry recorded
+* Fixed HTTP Server `Content-Type` missing on exception with body
+* Fixed OpenAPI non-string default values in schemas
+
 ### 1.1.8
 
 Added:
