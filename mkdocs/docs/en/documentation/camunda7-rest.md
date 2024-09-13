@@ -80,19 +80,19 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     ```yaml
     camunda:
       rest:
-        enabled = false #(1)!
-        path = "/engine-rest" #(2)!
-        port = 8081 #(3)!
-        shutdownWait = "100ms" #(4)!
+        enabled: false #(1)!
+        path: "/engine-rest" #(2)!
+        port: 8081 #(3)!
+        shutdownWait: "100ms" #(4)!
         telemetry:
           logging:
-            enabled = false #(5)!
-            stacktrace = true #(6)!
+            enabled: false #(5)!
+            stacktrace: true #(6)!
           metrics:
-            enabled = true #(7)!
-            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
+            enabled: true #(7)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
           tracing:
-            enabled = true #(9)!
+            enabled: true #(9)!
     ```
 
     1.  Enable/disable REST API

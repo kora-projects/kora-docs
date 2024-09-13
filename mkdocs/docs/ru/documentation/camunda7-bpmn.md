@@ -55,31 +55,32 @@
                 name = "KoraEngineAutoDeployment" //(6)!
                 deployChangedOnly = true //(7)!
                 resources = "classpath:bpm" //(8)!
+                delay = "1m" //(9)!
             }
             parallelInitialization {
-                enabled = true //(9)!
-                validateIncompleteStatements = true //(10)!
+                enabled = true //(10)!
+                validateIncompleteStatements = true //(11)!
             }
-            licensePath = "camunda-licence.txt" //(11)!
+            licensePath = "camunda-licence.txt" //(12)!
             admin {
-                id = "admin" //(12)!
-                password = "admin" //(13)!
-                firstname = "Ivan" //(14)!
-                lastname = "Ivanov" //(15)!
-                email = "admin@mail.ru" //(16)!
+                id = "admin" //(13)!
+                password = "admin" //(14)!
+                firstname = "Ivan" //(15)!
+                lastname = "Ivanov" //(16)!
+                email = "admin@mail.ru" //(17)!
             }
             telemetry {
                 logging {
-                    enabled = false //(17)!
-                    stacktrace = true //(18)!
+                    enabled = false //(18)!
+                    stacktrace = true //(19)!
                 }
                 metrics {
-                    enabled = true //(19)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(20)!
+                    enabled = true //(20)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(21)!
                 }
-                engineTelemetryEnabled = false //(21)!
+                engineTelemetryEnabled = false //(22)!
                 tracing {
-                    enabled = true //(22)!
+                    enabled = true //(23)!
                 }
             }
         }
@@ -94,9 +95,9 @@
     6.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов
     7.  Флаг который говорит что следует загружать только измененные ресурсы
     8.  Пути для поиска BPMN/FORM/DMN ресурсов которые будут загружены в движок после запуска
-    9.  Включить ли параллельную загрузку которая слегка улучшает скорость запуска движка
-    10.  Проверять ли не полные запросы настройки движка
-    11.  Путь для файла лицензии [Camunda 7](https://docs.camunda.org/manual/7.21/user-guide/license-use/)
+    9.  Задержда перед тем как начать загрузку новых ресурсов в движок
+    10.  Включить ли параллельную загрузку которая слегка улучшает скорость запуска движка
+    11.  Проверять ли не полные запросы настройки движка
     12.  Индетификатор администратора Camunda (необязательный)
     13.  Пароль администратора Camunda (необязательный)
     14.  Имя администратора Camunda (необязательный)
@@ -115,35 +116,35 @@
     camunda:
       engine:
         jobExecutor:
-          corePoolSize = 5 #(1)!
-          maxPoolSize = 25 #(2)!
-          queueSize = 25 #(3)!
-          maxJobsPerAcquisition = 2 #(4)!
+          corePoolSize: 5 #(1)!
+          maxPoolSize: 25 #(2)!
+          queueSize: 25 #(3)!
+          maxJobsPerAcquisition: 2 #(4)!
         deployment:
-          tenantId = "Camunda" #(5)!
-          name = "KoraEngineAutoDeployment" #(6)!
-          deployChangedOnly = true #(7)!
-          resources = "classpath:bpm" #(8)!
+          tenantId: "Camunda" #(5)!
+          name: "KoraEngineAutoDeployment" #(6)!
+          deployChangedOnly: true #(7)!
+          resources: "classpath:bpm" #(8)!
+          delay: "1m" #(9)!
         parallelInitialization:
-          enabled = true #(9)!
-          validateIncompleteStatements = true #(10)!
-        licensePath = "camunda-licence.txt" #(11)!
+          enabled: true #(10)!
+          validateIncompleteStatements: true #(11)!
         admin:
-          id = "admin" #(12)!
-          password = "admin" #(13)!
-          firstname = "Ivan" #(14)!
-          lastname = "Ivanov" #(15)!
-          email = "admin@mail.ru" #(16)!
+          id: "admin" #(12)!
+          password: "admin" #(13)!
+          firstname: "Ivan" #(14)!
+          lastname: "Ivanov" #(15)!
+          email: "admin@mail.ru" #(16)!
         telemetry:
           logging:
-            enabled = false #(17)!
-            stacktrace = true #(18)!
+            enabled: false #(17)!
+            stacktrace: true #(18)!
           metrics:
-            enabled = true #(19)!
-            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
-          engineTelemetryEnabled = false #(21)!
+            enabled: true #(19)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
+          engineTelemetryEnabled: false #(21)!
           tracing:
-            enabled = true #(22)!
+            enabled: true #(22)!
     ```
 
     1.  Минимальное количество живых потоков в [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
@@ -154,9 +155,9 @@
     6.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов
     7.  Флаг который говорит что следует загружать только измененные ресурсы
     8.  Пути для поиска BPMN/FORM/DMN ресурсов которые будут загружены в движок после запуска
-    9.  Включить ли параллельную загрузку которая слегка улучшает скорость запуска движка
-    10.  Проверять ли не полные запросы настройки движка
-    11.  Путь для файла лицензии [Camunda 7](https://docs.camunda.org/manual/7.21/user-guide/license-use/)
+    9.  Задержда перед тем как начать загрузку новых ресурсов в движок
+    10.  Включить ли параллельную загрузку которая слегка улучшает скорость запуска движка
+    11.  Проверять ли не полные запросы настройки движка
     12.  Индетификатор администратора Camunda (необязательный)
     13.  Пароль администратора Camunda (необязательный)
     14.  Имя администратора Camunda (необязательный)

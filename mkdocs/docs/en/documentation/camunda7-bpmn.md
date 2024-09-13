@@ -55,12 +55,12 @@ Example of the complete configuration described in the `CamundaEngineConfig` cla
                 name = "KoraEngineAutoDeployment" //(6)!
                 deployChangedOnly = true //(7)!
                 resources = "classpath:bpm" //(8)!
+                delay = "1m" //(9)!
             }
             parallelInitialization {
-                enabled = true //(9)!
-                validateIncompleteStatements = true //(10)!
+                enabled = true //(10)!
+                validateIncompleteStatements = true //(11)!
             }
-            licensePath = "camunda-licence.txt" //(11)!
             admin {
                 id = "admin" //(12)!
                 password = "admin" //(13)!
@@ -94,9 +94,9 @@ Example of the complete configuration described in the `CamundaEngineConfig` cla
     6. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
     7. Flag that says that only modified resources should be loaded
     8. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
-    9. Whether to enable parallel loading, which slightly improves the engine startup speed
-    10. Whether to check for incomplete engine configuration requests
-    11. Path for the license file [Camunda 7](https://docs.camunda.org/manual/7.21/user-guide/license-use/)
+    9. Delay before deploying new resources to engine
+    10. Whether to enable parallel loading, which slightly improves the engine startup speed
+    11. Whether to check for incomplete engine configuration requests
     12. Camunda administrator identifier (optional)
     13. Camunda Administrator Password (optional)
     14. Camunda Administrator Name (optional)
@@ -115,35 +115,35 @@ Example of the complete configuration described in the `CamundaEngineConfig` cla
     camunda:
       engine:
         jobExecutor:
-          corePoolSize = 5 #(1)!
-          maxPoolSize = 25 #(2)!
-          queueSize = 25 #(3)!
-          maxJobsPerAcquisition = 2 #(4)!
+          corePoolSize: 5 #(1)!
+          maxPoolSize: 25 #(2)!
+          queueSize: 25 #(3)!
+          maxJobsPerAcquisition: 2 #(4)!
         deployment:
-          tenantId = "Camunda" #(5)!
-          name = "KoraEngineAutoDeployment" #(6)!
-          deployChangedOnly = true #(7)!
-          resources = "classpath:bpm" #(8)!
+          tenantId: "Camunda" #(5)!
+          name: "KoraEngineAutoDeployment" #(6)!
+          deployChangedOnly: true #(7)!
+          resources: "classpath:bpm" #(8)!
+          delay: "1m" #(9)!
         parallelInitialization:
-          enabled = true #(9)!
-          validateIncompleteStatements = true #(10)!
-        licensePath = "camunda-licence.txt" #(11)!
+          enabled: true #(10)!
+          validateIncompleteStatements: true #(11)!
         admin:
-          id = "admin" #(12)!
-          password = "admin" #(13)!
-          firstname = "Ivan" #(14)!
-          lastname = "Ivanov" #(15)!
-          email = "admin@mail.ru" #(16)!
+          id: "admin" #(12)!
+          password: "admin" #(13)!
+          firstname: "Ivan" #(14)!
+          lastname: "Ivanov" #(15)!
+          email: "admin@mail.ru" #(16)!
         telemetry:
           logging:
-            enabled = false #(17)!
-            stacktrace = true #(18)!
+            enabled: false #(17)!
+            stacktrace: true #(18)!
           metrics:
-            enabled = true #(19)!
-            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
-          engineTelemetryEnabled = false #(21)!
+            enabled: true #(19)!
+            slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
+          engineTelemetryEnabled: false #(21)!
           tracing:
-            enabled = true #(22)!
+            enabled: true #(22)!
     ```
 
     1. Minimum number of live threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
@@ -154,9 +154,9 @@ Example of the complete configuration described in the `CamundaEngineConfig` cla
     6. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
     7. Flag that says that only modified resources should be loaded
     8. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
-    9. Whether to enable parallel loading, which slightly improves the engine startup speed
-    10. Whether to check for incomplete engine configuration requests
-    11. Path for the license file [Camunda 7](https://docs.camunda.org/manual/7.21/user-guide/license-use/)
+    9. Delay before deploying new resources to engine
+    10. Whether to enable parallel loading, which slightly improves the engine startup speed
+    11. Whether to check for incomplete engine configuration requests
     12. Camunda administrator identifier (optional)
     13. Camunda Administrator Password (optional)
     14. Camunda Administrator Name (optional)
