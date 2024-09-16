@@ -451,6 +451,9 @@ which can increase the speed of execution.
     }
     ```
 
+    **Batch query** can't return arbitrary values, such a method can return `void`, or `UpdateCount`, 
+    or database-generated identifiers for [JDBC](database-jdbc.md#generated-identifier) or [R2DBC](database-r2dbc.md#generated-identifier) drivers.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
@@ -461,6 +464,9 @@ which can increase the speed of execution.
         fun insert(@Batch entity: List<Entity>)
     }
     ```
+
+    **Batch query** can't return arbitrary values, such a method can return `Unit`, or `UpdateCount`, 
+    or database-generated identifiers for [JDBC](database-jdbc.md#generated-identifier) or [R2DBC](database-r2dbc.md#generated-identifier) drivers.
 
 ### Affected rows
 
