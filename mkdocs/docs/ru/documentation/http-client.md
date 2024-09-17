@@ -1397,7 +1397,7 @@ public interface HttpClient {
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequestBuilder.of("POST", "http://localhost:8090/pets/{petId}")
+    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
             .templateParam("petId", "1")
             .queryParam("page", 1)
             .header("token", "12345")
@@ -1408,7 +1408,7 @@ public interface HttpClient {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequestBuilderImpl("POST", "http://localhost:8090/pets/{petId}")
+    val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
         .templateParam("petId", "1")
         .queryParam("page", 1)
         .header("token", "12345")

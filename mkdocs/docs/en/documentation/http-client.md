@@ -1407,7 +1407,7 @@ You can use `HttpClientRequestBuilder` to build requests manually:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequestBuilder.of("POST", "http://localhost:8090/pets/{petId}")
+    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
             .templateParam("petId", "1")
             .queryParam("page", 1)
             .header("token", "12345")
@@ -1418,7 +1418,7 @@ You can use `HttpClientRequestBuilder` to build requests manually:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequestBuilderImpl("POST", "http://localhost:8090/pets/{petId}")
+    val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
         .templateParam("petId", "1")
         .queryParam("page", 1)
         .header("token", "12345")
