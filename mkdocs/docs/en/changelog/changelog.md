@@ -23,6 +23,9 @@ Fixed:
 * Fixed Logging AOP exception handling
 * Fixed JSON potential name collision and KSP missing external writer constructor
 * Fixed Kafka Listener empty records telemetry recorded
+* Fixed handling of event commit when processing in `@KafkaListener`
+* Fixed error message if `@Batch` requests are not used correctly
+* Fixed absence of `@Nullable` annotation when forming `@KoraSubmodule`
 * Fixed HTTP Server `Content-Type` missing on exception with body
 * Fixed OpenAPI non-string default values in schemas
 
