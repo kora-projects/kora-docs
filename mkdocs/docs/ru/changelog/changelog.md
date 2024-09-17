@@ -31,7 +31,7 @@ hide:
 * Добавлен модуль [S3 Client](../documentation/s3-client.md) **экспериментальный**
 * Добавлен модуль [Liquibase](../documentation/database-migration.md#liquibase)
 * Добавлена опция конфигурации для указания файлов миграции в модуль [Flyway](../documentation/database-migration.md#flyway)
-* Добавлен [Тип размера](../documentation/config.md#_16)
+* Добавлен [Тип размера](../documentation/config.md#_19)
 * Добавлена опция конфигурации [Размера сообщения сервера gRPC](../documentation/grpc-server.md#_3)
 * Добавлен дополнительный Javadoc
 

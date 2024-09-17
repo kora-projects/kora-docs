@@ -660,3 +660,16 @@ you might need to specify in custom configurations, or you can extend the behavi
     * `Set<T>` (where `T` is any of the above types)
     * `Map<String, T>` (where `T` is any of the above types)
     * `Either<A, B>` (where `A` and `B` are any of the above types)
+
+### Size
+
+`Size` is a special type that allows you to specify the size of bytes in a human-friendly system of calculations according to both the [IEEE 1541-2002](https://en.wikipedia.org/wiki/IEEE_1541-2002) (binary) standard and the [SI](https://en.wikipedia.org/wiki/Binary_prefix) (decimal) standard.
+
+Example values:
+
+- `1Mb` - 1 megabytes (`1.000.000` bytes)
+- `1Mib` - 1 megabit (`1.048.576` bytes)
+- `1024b` - 1024 bytes
+- `1024` - 1024 bytes
+
+If just a number without a suffix is specified, it is considered that bytes are specified.
