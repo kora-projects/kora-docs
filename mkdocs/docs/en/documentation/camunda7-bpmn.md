@@ -11,75 +11,77 @@ Module for connecting a BPMN process workflow engine based on [Camunda 7](https:
 
     Dependency `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:camunda-engine"
+    implementation "ru.tinkoff.kora.experimental:camunda-engine-bpmn"
     ```
 
     Module:
     ```java
     @KoraApp
-    public interface Application extends CamundaEngineModule { }
+    public interface Application extends CamundaEngineBpmnModule { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     Dependency `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:camunda-engine")
+    implementation("ru.tinkoff.kora.experimental:camunda-engine-bpmn")
     ```
 
     Module:
     ```kotlin
     @KoraApp
-    interface Application : CamundaEngineModule
+    interface Application : CamundaEngineBpmnModule
     ```
 
 Requires [JDBC module](database-jdbc.md) connection.
 
 ## Configuration
 
-Example of the complete configuration described in the `CamundaEngineConfig` class (example values or default values are specified):
+Example of the complete configuration described in the `CamundaEngineBpmnConfig` class (example values or default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     camunda {
         engine {
-            jobExecutor {
-                corePoolSize = 5 //(1)!
-                maxPoolSize = 25 //(2)!
-                queueSize = 25 //(3)!
-                maxJobsPerAcquisition = 2 //(4)!
-            }
-            deployment {
-                tenantId = "Camunda" //(5)!
-                name = "KoraEngineAutoDeployment" //(6)!
-                deployChangedOnly = true //(7)!
-                resources = "classpath:bpm" //(8)!
-                delay = "1m" //(9)!
-            }
-            parallelInitialization {
-                enabled = true //(10)!
-                validateIncompleteStatements = true //(11)!
-            }
-            admin {
-                id = "admin" //(12)!
-                password = "admin" //(13)!
-                firstname = "Ivan" //(14)!
-                lastname = "Ivanov" //(15)!
-                email = "admin@mail.ru" //(16)!
-            }
-            telemetry {
-                logging {
-                    enabled = false //(17)!
-                    stacktrace = true //(18)!
+            bpmn {
+                jobExecutor {
+                    corePoolSize = 5 //(1)!
+                    maxPoolSize = 25 //(2)!
+                    queueSize = 25 //(3)!
+                    maxJobsPerAcquisition = 2 //(4)!
                 }
-                metrics {
-                    enabled = true //(19)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(20)!
+                deployment {
+                    tenantId = "Camunda" //(5)!
+                    name = "KoraEngineAutoDeployment" //(6)!
+                    deployChangedOnly = true //(7)!
+                    resources = "classpath:bpm" //(8)!
+                    delay = "1m" //(9)!
                 }
-                engineTelemetryEnabled = false //(21)!
-                tracing {
-                    enabled = true //(22)!
+                parallelInitialization {
+                    enabled = true //(10)!
+                    validateIncompleteStatements = true //(11)!
+                }
+                admin {
+                    id = "admin" //(12)!
+                    password = "admin" //(13)!
+                    firstname = "Ivan" //(14)!
+                    lastname = "Ivanov" //(15)!
+                    email = "admin@mail.ru" //(16)!
+                }
+                telemetry {
+                    logging {
+                        enabled = false //(17)!
+                        stacktrace = true //(18)!
+                    }
+                    metrics {
+                        enabled = true //(19)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(20)!
+                    }
+                    engineTelemetryEnabled = false //(21)!
+                    tracing {
+                        enabled = true //(22)!
+                    }
                 }
             }
         }
@@ -114,36 +116,37 @@ Example of the complete configuration described in the `CamundaEngineConfig` cla
     ```yaml
     camunda:
       engine:
-        jobExecutor:
-          corePoolSize: 5 #(1)!
-          maxPoolSize: 25 #(2)!
-          queueSize: 25 #(3)!
-          maxJobsPerAcquisition: 2 #(4)!
-        deployment:
-          tenantId: "Camunda" #(5)!
-          name: "KoraEngineAutoDeployment" #(6)!
-          deployChangedOnly: true #(7)!
-          resources: "classpath:bpm" #(8)!
-          delay: "1m" #(9)!
-        parallelInitialization:
-          enabled: true #(10)!
-          validateIncompleteStatements: true #(11)!
-        admin:
-          id: "admin" #(12)!
-          password: "admin" #(13)!
-          firstname: "Ivan" #(14)!
-          lastname: "Ivanov" #(15)!
-          email: "admin@mail.ru" #(16)!
-        telemetry:
-          logging:
-            enabled: false #(17)!
-            stacktrace: true #(18)!
-          metrics:
-            enabled: true #(19)!
-            slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
-          engineTelemetryEnabled: false #(21)!
-          tracing:
-            enabled: true #(22)!
+        bpmn:
+          jobExecutor:
+            corePoolSize: 5 #(1)!
+            maxPoolSize: 25 #(2)!
+            queueSize: 25 #(3)!
+            maxJobsPerAcquisition: 2 #(4)!
+          deployment:
+            tenantId: "Camunda" #(5)!
+            name: "KoraEngineAutoDeployment" #(6)!
+            deployChangedOnly: true #(7)!
+            resources: "classpath:bpm" #(8)!
+            delay: "1m" #(9)!
+          parallelInitialization:
+            enabled: true #(10)!
+            validateIncompleteStatements: true #(11)!
+          admin:
+            id: "admin" #(12)!
+            password: "admin" #(13)!
+            firstname: "Ivan" #(14)!
+            lastname: "Ivanov" #(15)!
+            email: "admin@mail.ru" #(16)!
+          telemetry:
+            logging:
+              enabled: false #(17)!
+              stacktrace: true #(18)!
+            metrics:
+              enabled: true #(19)!
+              slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
+            engineTelemetryEnabled: false #(21)!
+            tracing:
+              enabled: true #(22)!
     ```
 
     1. Minimum number of live threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
