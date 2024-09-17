@@ -228,7 +228,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
     It is required to add the [Mockito](https://site.mockito.org/) library as a `build.gradle` dependency:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.7.0"
+    testImplementation "org.mockito:mockito-core:5.13.0"
     ```
 
     [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) and [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html) annotations and all parameters of these annotations are supported.
@@ -310,14 +310,17 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
     The [MockK](https://mockk.io/) library is required to be attached as a ``build.gradle.kts`` dependency:
     ```groovy
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("io.mockk:mockk:1.13.11")
     ```
 
     [@MockK](https://mockk.io/#annotations) and [@SpyK](https://mockk.io/#annotations) annotations and all parameters of these annotations are supported.
 
     It is also possible to use [Mockito](https://site.mockito.org/) if desired. 
     For a more detailed description of how Kora and [Mockito](https://site.mockito.org/) work, you should read the Java tab of this paragraph.
-    To improve the interaction between Mockito and Kotlin you can use the [Mockito Kotlin](https://github.com/mockito/mockito-kotlin) library.
+    In order to improve the interaction between Mockito and Kotlin you can use the [Mockito Kotlin](https://github.com/mockito/mockito-kotlin) library.
+    ```groovy
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    ```
 
     [@MockK](https://mockk.io/#annotations) annotation allows you to make a class mock
     annotated component and control the behavior of its methods using `MockK`. 

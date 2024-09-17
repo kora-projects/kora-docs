@@ -229,7 +229,7 @@
 
     Требуется подключить библиотеку [Mockito](https://site.mockito.org/) как зависимость `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.7.0"
+    testImplementation "org.mockito:mockito-core:5.13.0"
     ```
 
     Поддерживаются аннотациии [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) и [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html), а также все параметры этих аннотаций.
@@ -311,7 +311,7 @@
 
     Требуется подключить библиотеку [MockK](https://mockk.io/) как зависимость `build.gradle.kts`:
     ```groovy
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("io.mockk:mockk:1.13.11")
     ```
 
     Поддерживаются аннотациии [@MockK](https://mockk.io/#annotations) и [@SpyK](https://mockk.io/#annotations), а также все параметры этих аннотаций.
@@ -319,6 +319,9 @@
     Также есть возможность при желании использовать [Mockito](https://site.mockito.org/). 
     Для более подробного описания работы Kora и [Mockito](https://site.mockito.org/) следует ознакопиться с Java вкладкой этого абзаца.
     Чтобы улучшить взаимодействие Mockito и Kotlin можно использовать библиотеку [Mockito Kotlin](https://github.com/mockito/mockito-kotlin).
+    ```groovy
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    ```
 
     Аннотация [@MockK](https://mockk.io/#annotations) позволяет сделать класс заглушку 
     проаннотированного компонента и контролировать поведение его методов с помощью `MockK`. 

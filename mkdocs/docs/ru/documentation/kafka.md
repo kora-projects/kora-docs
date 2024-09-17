@@ -149,7 +149,10 @@
     1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
     2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
     3.  Указываются партиции топиков на которые требуется подписаться
-    4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение `earliest` - перейти на самый ранний доступный offset, `latest` - перейти на последний доступный offset, строка в формате `Duration`, например `5m` - сдвиг на определённое время назад
+    4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение:
+        1. `earliest` - самый ранний доступный offset
+        2. `latest` - последний доступный offset
+        3. Строка в формате `Duration` (например `5m`) - сдвиг на определённое время назад
     5.  Максиимальное время ожидания сообщений из топика в рамках одного вызова
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
@@ -194,7 +197,10 @@
     1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
     2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
     3.  Указываются партиции топиков на которые требуется подписаться
-    4.  Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение `earliest` - перейти на самый ранний доступный offset, `latest` - перейти на последний доступный offset, строка в формате `Duration`, например `5m` - сдвиг на определённое время назад
+    4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение:
+        1. `earliest` - самый ранний доступный offset
+        2. `latest` - последний доступный offset
+        3. Строка в формате `Duration` (например `5m`) - сдвиг на определённое время назад
     5.  Максиимальное время ожидания сообщений из топика в рамках одного вызова
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
@@ -205,9 +211,15 @@
     12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     13.  Включает трассировку модуля (по умолчанию `true`)
 
-Пример конфигурации для подключения к топикам без группы.
-В этом примере Consumer будет подключен ко всем партициям в топике и офсет сдвинут на 10 минут назад.
-В случае подключения без `group.id` можно указывать только 1 топик:
+### Стратегия подключения
+
+`subscribe` стратегия подразумевает использование [group.id](https://medium.com/@kirill.sereda/kafka-%D0%B4%D0%BB%D1%8F-%D1%81%D0%B0%D0%BC%D1%8B%D1%85-%D0%BC%D0%B0%D0%BB%D0%B5%D0%BD%D1%8C%D0%BA%D0%B8%D1%85-f42864cb1bfb),
+чтобы объединить исполнителей в группы и они не дублировали вычитывание записей из своего очереди в рамках нескольких экземпляров приложений.
+
+В случае же если надо чтобы каждый экземпляр приложения читал сообщения из топика одновременно с другими, предполагается использовать `assign` стратегию,
+для этого надо просто **не указывать** `group.id` в конфигурации потребителя, но в такой стратегии можно указать одновременно лишь 1 топик.
+
+Пример конфигурации `assign` стратегии:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -215,7 +227,6 @@
     path {
       to {
         config {
-          pollTimeout: "3s"
           topics: "first"
           driverProperties {
             "bootstrap.servers": "localhost:9093"
@@ -231,8 +242,7 @@
     path:
       to:
         config:
-          pollTimeout: "3s"
-          topics: "first,second,third"
+          topics: "first"
           driverProperties:
             "bootstrap.servers": "localhost:9093"
     ```
@@ -376,6 +386,79 @@
     ```
 
 Обратите внимание, что все аргументы становятся необязательными, то есть мы ожидаем что у нас либо будут ключ и значение, либо исключение.
+
+### Пользовательский тег
+
+По умолчанию для потребителя создается автоматический тег по которому происходит внедрение, его можно посмотреть в созданном модуле на этапе компиляции.
+
+Если по каким-то причинам вам требуется переопределить тег потребителя, можно задать его как аргумент аннотации `@KafkaListener`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService.class)
+        public void process(String value) {
+          
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ConsumerService {
+
+        @KafkaListener(value = "path.to.config", tag = ConsumerService::class)
+        fun process(value: String) {
+
+        }
+    }
+    ```
+
+### События ребалансировки
+
+Можно слушать и реагировать на события ребалансировки с помощью свой реализации интерфейса `ConsumerAwareRebalanceListener`,
+его следует предоставить как компонент по тегу потребителя:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(SomeListenerProcessTag.class)
+    @Component
+    public final class SomeListener implements ConsumerAwareRebalanceListener {
+
+        @Override
+        public void onPartitionsRevoked(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            
+        }
+
+        @Override
+        public void onPartitionsAssigned(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(SomeListenerProcessTag::class)
+    @Component
+    class SomeListener : ConsumerAwareRebalanceListener {
+
+        override fun onPartitionsRevoked(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+        
+        override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            
+        }
+    }
+    ```
 
 ### Ручное управление
 

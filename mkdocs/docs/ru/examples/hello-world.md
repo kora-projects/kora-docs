@@ -47,10 +47,9 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.8")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.9")
 
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
-        annotationProcessor "org.slf4j:slf4j-simple:2.0.7"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
         implementation "ru.tinkoff.kora:json-module"
@@ -86,10 +85,9 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
     val koraVersion: String by project
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.8"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.9"))
 
         ksp("ru.tinkoff.kora:symbol-processors")
-        ksp("org.slf4j:slf4j-simple:2.0.7")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
         implementation("ru.tinkoff.kora:json-module")
