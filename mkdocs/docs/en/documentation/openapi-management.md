@@ -40,7 +40,7 @@ An example of the configuration described in the `OpenApiManagementConfig` class
     ```javascript
     openapi {
         management {
-            file = "my-openapi.yaml" //(1)!
+            file = [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] //(1)!
             enabled = false  //(2)!
             endpoint = "/openapi" //(3)!
             swaggerui {
@@ -55,11 +55,13 @@ An example of the configuration described in the `OpenApiManagementConfig` class
     }
     ```
 
-    1. Relative path to the OpenAPI file in the `resources` directory
+    1. Relative path to OpenAPI files in the `resources` directory, either a single file or multiple files can be specified
     2. The on/off switch of the controller that gives the OpenAPI
-    3. The path where the OpenAPI will be accessed
+    3. Path where OpenAPI will be available
+        1. If a single OpenAPI file is specified, then represent entire path where file is available
+        2. If multiple OpenAPI files are specified, is a path prefix to the file name `/openapi/{fileName}`, taking the specified path and appending the file name to it without the directories and its extension, example of the file `someDirectory/my-openapi-1.yaml` the file path will be `/openapi/my-openapi-1`.
     4. On/Off of the controller that gives SwaggerUI
-    5. The path where the SwaggerUI will be accessed
+    5. Path where the SwaggerUI will be accessed
     6. On/Off of the controller that gives Rapidoc
     7. Path where Rapidoc will be available
 
@@ -68,7 +70,7 @@ An example of the configuration described in the `OpenApiManagementConfig` class
     ```yaml
     openapi:
       management:
-        file: "my-openapi.yaml" #(1)!
+            file = [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] //(1)!
         enabled: false  #(2)!
         endpoint: "/openapi" #(3)!
         swaggerui:
@@ -79,11 +81,13 @@ An example of the configuration described in the `OpenApiManagementConfig` class
           endpoint: "/rapidoc" #(7)!
     ```
 
-    1. Relative path to the OpenAPI file in the `resources` directory
+    1. Relative path to OpenAPI files in the `resources` directory, either a single file or multiple files can be specified
     2. The on/off switch of the controller that gives the OpenAPI
-    3. The path where the OpenAPI will be accessed
+    3. Path where OpenAPI will be available
+        1. If a single OpenAPI file is specified, then represent entire path where file is available
+        2. If multiple OpenAPI files are specified, is a path prefix to the file name `/openapi/{fileName}`, taking the specified path and appending the file name to it without the directories and its extension, example of the file `someDirectory/my-openapi-1.yaml` the file path will be `/openapi/my-openapi-1`.
     4. On/Off of the controller that gives SwaggerUI
-    5. The path where the SwaggerUI will be accessed
+    5. Path where the SwaggerUI will be accessed
     6. On/Off of the controller that gives Rapidoc
     7. Path where Rapidoc will be available
 

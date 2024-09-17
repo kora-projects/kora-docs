@@ -81,8 +81,9 @@ CREATE TABLE IF NOT EXISTS entities
 );
 ```
 
-The identifier will be created at the stage of insertion into the database,
-and it is supposed to be received in the application code with the help of `RETURNING` construction at insertion:
+Identifier will be created at the stage of insertion into the database,
+and getting it in the application code is supposed to be done using [return identifier value for JDBC or R2DBC](database-jdbc.md#generated-identifier) construct during insertion
+or use [special constructs](https://www.postgresql.org/docs/current/dml-returning.html) of your database:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -451,6 +452,9 @@ which can increase the speed of execution.
     }
     ```
 
+    **Batch query** can't return arbitrary values, such a method can return `void`, or `UpdateCount`, 
+    or database-generated identifiers for [JDBC](database-jdbc.md#generated-identifier) or [R2DBC](database-r2dbc.md#generated-identifier) drivers.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
@@ -461,6 +465,9 @@ which can increase the speed of execution.
         fun insert(@Batch entity: List<Entity>)
     }
     ```
+
+    **Batch query** can't return arbitrary values, such a method can return `Unit`, or `UpdateCount`, 
+    or database-generated identifiers for [JDBC](database-jdbc.md#generated-identifier) or [R2DBC](database-r2dbc.md#generated-identifier) drivers.
 
 ### Affected rows
 
