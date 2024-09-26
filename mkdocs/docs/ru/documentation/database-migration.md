@@ -8,7 +8,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-flyway"
     ```
@@ -21,7 +21,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-flyway")
     ```
@@ -65,7 +65,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-liquibase"
     ```
@@ -78,7 +78,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-liquibase")
     ```

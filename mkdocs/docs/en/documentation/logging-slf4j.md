@@ -114,7 +114,7 @@ The module provides a logging implementation based on [Logback](https://www.bael
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:logging-logback"
     ```
@@ -127,7 +127,7 @@ The module provides a logging implementation based on [Logback](https://www.bael
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:logging-logback")
     ```
@@ -173,7 +173,7 @@ A generic logging implementation will need to be connected:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:logging-common"
     ```
@@ -186,7 +186,7 @@ A generic logging implementation will need to be connected:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:logging-common")
     ```

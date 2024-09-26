@@ -5,9 +5,8 @@ and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection s
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:database-jdbc"
     ```
 
@@ -19,9 +18,8 @@ and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection s
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:database-jdbc")
     ```
 

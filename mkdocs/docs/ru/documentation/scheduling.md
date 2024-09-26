@@ -13,9 +13,8 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:scheduling-jdk"
     ```
 
@@ -27,9 +26,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:scheduling-jdk")
     ```
 
@@ -344,9 +342,9 @@
 
     1.  Начальный интервал задержки перед задачей
 
-### Плановое завершение
+### Штатное завершение
 
-Если вы хотите предварительно завершить обработку при плановом завершении сервиса не дожидаясь ее окончания, 
+Если вы хотите предварительно завершить обработку при [штатном завершении](container.md#_24) сервиса не дожидаясь ее окончания, 
 требуется проверять [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) статус и прекращать работу самостоятельно.
 
 ## Quartz
@@ -357,9 +355,8 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:scheduling-quartz"
     ```
 
@@ -371,9 +368,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:scheduling-quartz")
     ```
 

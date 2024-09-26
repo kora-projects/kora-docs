@@ -4,7 +4,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-client"
     implementation "io.grpc:grpc-protobuf:1.62.2"
@@ -19,7 +19,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-client")
     implementation("io.grpc:grpc-protobuf:1.62.2")

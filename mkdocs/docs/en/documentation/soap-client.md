@@ -4,9 +4,8 @@ A module for creating and registering SOAP services by classes annotated `javax.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:soap-client"
     ```
 
@@ -18,9 +17,8 @@ A module for creating and registering SOAP services by classes annotated `javax.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:soap-client")
     ```
 

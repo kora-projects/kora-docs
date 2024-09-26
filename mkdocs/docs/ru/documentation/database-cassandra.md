@@ -4,9 +4,8 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:database-cassandra"
     ```
 
@@ -18,9 +17,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:database-cassandra")
     ```
 
@@ -228,7 +226,7 @@
                 }
                 netty {                         // Настройки Netty event loop, используемой в драйвере
                     ioGroup.size = 0            // Количество тредов
-                    ioGroup.shutdown {          // Настройки graceful shutdown
+                    ioGroup.shutdown {          // Настройки штатного завершения
                         quietPeriod = 2 
                         timeout = 15 
                         unit = "SECONDS"
@@ -343,7 +341,7 @@
                   size: 2
                 daemon: false
                 ioGroup:
-                  shutdown:                 # Настройки graceful shutdown
+                  shutdown:                 # Настройки штатного завершения
                     quietPeriod: 2
                     timeout: 15
                     unit: SECONDS

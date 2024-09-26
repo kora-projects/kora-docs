@@ -11,7 +11,6 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
 
     Dependency ``build.gradle``:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:cache-caffeine"
     ```
 
@@ -25,7 +24,6 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
 
     Dependency ``build.gradle.kts``:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:cache-caffeine")
     ```
 
@@ -81,9 +79,8 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:cache-redis"
     ```
 
@@ -97,7 +94,6 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 
     Dependency ``build.gradle.kts``:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:cache-redis")
     ```
 
@@ -607,9 +603,7 @@ Available signatures for repository methods out of the box:
 
     Class must be `open` in order for aspects to work.
 
-    By `T` we mean the type of the return value.
+    By `T` we mean the type of the return value, either `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `myMethod(): T?`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): T?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)

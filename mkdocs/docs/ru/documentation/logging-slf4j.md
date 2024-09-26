@@ -114,7 +114,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:logging-logback"
     ```
@@ -127,7 +127,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:logging-logback")
     ```
@@ -170,7 +170,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:logging-common"
     ```
@@ -183,7 +183,7 @@ Kora использует [slf4j-api](https://www.slf4j.org/) как движо�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:logging-common")
     ```

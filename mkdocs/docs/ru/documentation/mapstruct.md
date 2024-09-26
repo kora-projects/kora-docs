@@ -4,9 +4,8 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     annotationProcessor "org.mapstruct:mapstruct-processor:1.5.5.Final"
     implementation "org.mapstruct:mapstruct:1.5.5.Final"
     ```
@@ -33,11 +32,12 @@
     }
     ```
 
-    Зависимость `build.gradle.kts`:
+    Успешная сборка приложения может быть только со второго раза, это особенности KSP.
+
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
-    ksp("ru.tinkoff.kora:symbol-processors")
     ```
 
 ## Использование

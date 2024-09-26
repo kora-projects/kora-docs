@@ -3,14 +3,12 @@ using both declarative-style annotations and imperative-style annotations.
 
 ## Dependency
 
-An implementation based on [Undertow](https://undertow.io/) is available for now.
-The server supports [Stateful Termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/).
+Implementation based on [Undertow](https://undertow.io/).
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:http-server-undertow"
     ```
 
@@ -22,9 +20,8 @@ The server supports [Stateful Termination](https://maxilect.ru/blog/pochemu-vazh
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:http-server-undertow")
     ```
 
@@ -771,9 +768,7 @@ Available signatures for repository methods out of the box:
     By `T` we mean the type of the return value.
 
     - `myMethod(): T`
-    - `myMethod(): T?`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): T?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
 ## Interceptors
 

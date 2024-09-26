@@ -4,7 +4,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-server"
     implementation "io.grpc:grpc-protobuf:1.62.2"
@@ -19,7 +19,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-server")
     implementation("io.grpc:grpc-protobuf:1.62.2")
@@ -239,14 +239,14 @@ Reflection поддерживается только для сервисов, о
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "io.grpc:grpc-services:1.62.2"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("io.grpc:grpc-services:1.62.2")
     ```

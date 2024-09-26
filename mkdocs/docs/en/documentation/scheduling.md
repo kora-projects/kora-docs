@@ -21,9 +21,8 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:scheduling-jdk"
     ```
 
@@ -35,9 +34,8 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:scheduling-jdk")
     ```
 
@@ -365,9 +363,8 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:scheduling-quartz"
     ```
 
@@ -379,9 +376,8 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:scheduling-quartz")
     ```
 

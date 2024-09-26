@@ -23,7 +23,7 @@ In order to achieve high-performance and efficient code, Kora stands on these pr
 
 ## Annotation Handlers
 
-The main pillar on which the Kora framework is built is annotation handlers.
+The main pillar on which the Kora framework is built is annotation processors.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -70,7 +70,7 @@ Kafka producers, database repositories and so on, but gives a huge performance a
 
     Requires a minimum version of [JDK 17](https://openjdk.org/projects/jdk/17/).
 
-    Recommended version of [Kotlin `1.9+`](https://github.com/JetBrains/kotlin/releases), compatibility with `1.8+` is not guaranteed.
+    Recommended version of [Kotlin `1.9+`](https://github.com/JetBrains/kotlin/releases), compatibility with `1.8+` or `2+` is not guaranteed.
 
     Recommended version of [KSP `1.9+`](https://github.com/google/ksp/releases) corresponds to the Kotlin version.
 
@@ -91,8 +91,8 @@ Kafka producers, database repositories and so on, but gives a huge performance a
 
 ## Build System
 
-Since annotation handlers are the main pillar, it is assumed that you will use the [Gradle](https://gradle.org/guides/) build system,
-because it supports annotation handlers, incremental builds and is the most advanced build system in the JVM ecosystem.
+Since annotation processors are the main pillar, it is assumed that you will use the [Gradle](https://gradle.org/guides/) build system,
+because it supports annotation processors, incremental builds and is the most advanced build system in the JVM ecosystem.
 Gradle version `7+` is required.
 
 In order to avoid having to specify versions for each dependency, it is suggested to use [BOM](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import)
@@ -164,6 +164,46 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     ```
 
     You can also check out [Hello World example](../examples/hello-world.md) for a more detailed description.
+
+## Dependencies
+
+Annotation processors are the main pillar on which Kora is built, they are a mandatory dependency,
+and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) should not be forgotten:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `build.gradle`:
+
+    ```groovy
+    configurations {
+        koraBom
+        implementation.extendsFrom(koraBom)
+        annotationProcessor.extendsFrom(koraBom)
+    }
+
+    dependencies {
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.9")
+        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    `build.gradle.kts`:
+
+    ```groovy
+    val koraBom: Configuration by configurations.creating
+    configurations {
+        ksp.get().extendsFrom(koraBom)
+        api.get().extendsFrom(koraBom)
+        implementation.get().extendsFrom(koraBom)
+    }
+
+    dependencies {
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.9"))
+        ksp("ru.tinkoff.kora:symbol-processors")
+    }
+    ```
 
 ## Terminology
 

@@ -21,9 +21,8 @@ Components available for injection:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora.experimental:s3-client-aws"
     ```
 
@@ -35,9 +34,8 @@ Components available for injection:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora.experimental:s3-client-aws")
     ```
 
@@ -170,9 +168,8 @@ Available components for injection:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora.experimental:s3-client-minio"
     ```
 
@@ -184,9 +181,8 @@ Available components for injection:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora.experimental:s3-client-minio")
     ```
 
@@ -858,12 +854,10 @@ Available signatures for repository methods out of the box:
 
 === ":simple-kotlin: `Kotlin`"
 
-    By `T` we mean the type of the return value.
+    By `T` we mean the type of the return value, either `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `myMethod(): T?`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): T?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
 ## Client imperative
 

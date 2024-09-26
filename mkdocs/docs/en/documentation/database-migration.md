@@ -8,7 +8,7 @@ Module for database migration using the [Flyway](https://documentation.red-gate.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-flyway"
     ```
@@ -21,7 +21,7 @@ Module for database migration using the [Flyway](https://documentation.red-gate.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-flyway")
     ```
@@ -65,7 +65,7 @@ Module for database migration using the [Liquibase](https://www.liquibase.com/su
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-liquibase"
     ```
@@ -78,7 +78,7 @@ Module for database migration using the [Liquibase](https://www.liquibase.com/su
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-liquibase")
     ```

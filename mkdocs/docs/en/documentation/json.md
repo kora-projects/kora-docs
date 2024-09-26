@@ -4,9 +4,8 @@ Module allows you to create productive and reflection-free JSON readers and writ
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:json-module"
     ```
 
@@ -18,9 +17,8 @@ Module allows you to create productive and reflection-free JSON readers and writ
     
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:json-module")
     ```
 
@@ -387,7 +385,7 @@ provide `ObjectMapper` and the corresponding `Mappers` that are required in othe
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     annotationProcessor "ru.tinkoff.kora:json-annotation-processor"
     implementation "ru.tinkoff.kora:jackson-module"
@@ -401,7 +399,7 @@ provide `ObjectMapper` and the corresponding `Mappers` that are required in othe
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     ksp("ru.tinkoff.kora:json-annotation-processor")
     implementation("ru.tinkoff.kora:jackson-module")

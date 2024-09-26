@@ -1,4 +1,4 @@
-The dependency container is the core of the Kora framework and is responsible for building the dependency graph, validating them,
+The dependency container is the core of the Kora framework and is responsible for building the dependency container, validating them,
 injecting and then parallel initialization.
 
 The work of the container in Kora is divided into two parts: what is done at runtime and what is done at compile time.
@@ -11,7 +11,7 @@ This allows validation of the dependency container at compile time, before the a
 ### Container
 
 The core of the dependency container is the interface labeled with the `@KoraApp` annotation.
-This annotation should be used to label the interface within which the factory methods for creating components and [modules](#_7) dependencies are attached.
+This annotation should be used to label the interface within which the factory methods for creating components and [modules](#module-factory) dependencies are attached.
 There can be only one such interface within an application.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -32,8 +32,8 @@ There can be only one such interface within an application.
 
 A component is a dependency in a dependency container.
 All components in Kora are Singletons. A Singleton is a class that has an instance created only once.
+Components are injected only if they are [root component](#root-component), or if they are required in other components as dependencies.
 
-Components are only injected if they are a [root component](#_13), or if they are required in other components as dependencies.
 Components that do not meet these requirements are not included in the dependency container.
 
 #### Auto factory
@@ -140,7 +140,7 @@ All factory methods within module become available to the dependency container:
     }
     ```
 
-#### External factory
+#### External module factory
 
 Components for a dependency container can also be looked up in external modules from third-party dependencies.
 A module refers to the interface that contains the factory methods.
@@ -168,52 +168,69 @@ All required external modules from dependencies must be connected explicitly in 
 
 The `@KoraSubmodule` annotation marks the interface for which to build a module for the current compilation module,
 it will contain all components marked with the `@Module` and `@Component` annotations.
-This annotation is useful if you are breaking your project into modules in terms of your `Gradle/etc.` build tool, where
+Annotation is useful if you are breaking your project into [multi-modules application](https://docs.gradle.org/current/userguide/multi_project_builds.html)
+in terms of your `Gradle/etc.` build tool, where
 each is responsible for some piece of functionality, and the `@KoraApp` application itself is built in a separate module from the logic.
 
 An inheritor interface will be created for the interface, where all interfaces labeled `@Module` will be inherited and default-methods for classes labeled as `@Component` will be created.
 
-For example, you have a user module that contains controllers and other components and it has its custom module:
+For example, you have application-module that contains submodule with module:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KoraSubmodule
-    public interface SomeModule {
+    @Module
+    public interface SomeSmallModule {
 
         default SomeService someService() {
             return new SomeService();
-        } 
+        }
+    }
+
+    @KoraSubmodule
+    public interface SomeSubModule {
+
+        default OtherService otherService(SomeService someService) {
+            return new OtherService(someService);
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraSubmodule
+    @Module
     interface SomeModule {
 
         fun someService(): SomeService = SomeService()
     }
+
+    @KoraSubmodule
+    interface SomeSubModule {
+
+        fun otherService(someService: SomeService): OtherService {
+            return OtherService(someService)
+        }
+    }
     ```
 
-And there's an application build module:
+And there's core application build module with application entrypoint:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
-    public interface Application extends SomeModule {}
+    public interface Application extends SomeSubModule {}
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
-    interface Application : SomeModule
+    interface Application : SomeSubModule
     ```
 
-This will plug module created based on `SomeModule` into the final application container.
+This will plug both `SomeSubModule` and `SomeModule` modules.
 
 #### Generic factory
 
@@ -291,7 +308,7 @@ it will be given preference during injection.
 #### Auto creation
 
 If none of the methods above were able to provide a component,
-then Kora can try to create a component on its own if it meets the requirements similar to [auto factory](#_3):
+then Kora can try to create a component on its own if it meets the requirements similar to [auto factory](#auto-factory):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -570,7 +587,7 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
     class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
     ```
 
-#### Tagged list
+#### Tag all
 
 You can also use a tag to get a list of all components by a specific tag:
 
@@ -654,14 +671,14 @@ To get a list of all components with and without a tag, you need to use a specia
 
 ## Runtime
 
-The dependency container is initialized as parallel as possible within the dependency graph that has been constructed.
+The dependency container is initialized as parallel as possible within the dependency container that has been constructed.
 
 During the execution phase of the application, the following things are done:
 
 * Initializes all components in the dependency container
-* Tracks changes in the dependency container
-* Atomically updates the dependency graph when changes are made.
-* Performs a [Graceful Shutdown](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) when a SIGTERM signal is received.
+* Track changes in the dependency container
+* Atomically updates the dependency container when changes are made.
+* Performs a [Graceful Shutdown](#graceful-shutdown) when a SIGTERM signal is received.
 
 All components use eager initialization, which means they are initialized immediately upon application startup.
 
@@ -708,8 +725,8 @@ which closes only if all components are successfully initialized and rolls back 
 
 ### Component lifecycle
 
-By default, all components have no life cycle, they are simply created through the constructor and GC'd when they are no longer needed.
-If you need to do some actions when the component is initialized or after it is released, you must have the component implement the `Lifecycle` interface:
+By default, all components are singletons through the constructor.
+If you need to do some actions when the component is initialized, or before it is released, you must implement `Lifecycle` interface:
 
 ```java
 public interface Lifecycle {
@@ -722,7 +739,51 @@ public interface Lifecycle {
 
 In a dependency container, all components are initialized asynchronously and in parallel as much as possible.
 
-### Indirect dependencies
+If you need to provide a component in a factory method with a lifecycle, you can use the `LifecycleWrapper` class:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface SomeModule {
+
+        default Wrapped<SomeService> someService() {
+            return new LifecycleWrapper<>(new SomeService(),
+                    (component) -> {
+                        // initialize logic
+                    },
+                    (component) -> {
+                        // release logic
+                    });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface SomeModule {
+
+        fun someService(): Wrapped<SomeService> {
+            return LifecycleWrapper(SomeService(),
+                { component ->
+                    // initialize logic
+                },
+                { component ->
+                    // initialize logic
+                }
+            )
+        }
+    }
+    ```
+
+### Graceful shutdown
+
+All integrations that Kora provides such as [HTTP server](http-server.md), [Kafka-consumer](kafka.md),
+etc., support [graceful shutdown](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) out of the box using
+[component lifecycle](#component-lifecycle).
+
+### Indirect dependency
 
 Consider the following example:
 

@@ -48,7 +48,6 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
     dependencies {
         koraBom platform("ru.tinkoff.kora:kora-parent:1.1.9")
-
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -83,10 +82,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
         implementation.get().extendsFrom(koraBom)
     }
 
-    val koraVersion: String by project
     dependencies {
         koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.9"))
-
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -171,7 +168,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     ```
 
 `KoraApplication.run` запускает параллельную инициализацию всех компонентов в контейнере и блокирует основной поток до получения сигнала `SIGTERM`, 
-после этого приложение начинает плановое завершение (`graceful shutdown`).
+после этого приложение начинает штатное завершение.
 Теперь, если мы запустим это приложение, то нам будут доступны маршруты по ссылкам выше.
 
 ## Контроллер
