@@ -9,7 +9,7 @@ Module for connecting a BPMN process workflow engine based on [Camunda 7](https:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:camunda-engine-bpmn"
     ```
@@ -22,7 +22,7 @@ Module for connecting a BPMN process workflow engine based on [Camunda 7](https:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:camunda-engine-bpmn")
     ```

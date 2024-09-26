@@ -8,7 +8,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     testImplementation "ru.tinkoff.kora:test-junit5"
     ```
@@ -22,7 +22,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     testImplementation("ru.tinkoff.kora:test-junit5")
     ```

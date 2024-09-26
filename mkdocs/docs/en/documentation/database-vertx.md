@@ -4,9 +4,8 @@ Module provides a repository implementation based on the [Vertx](https://vertx.i
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:database-vertx"
     ```
 
@@ -18,9 +17,8 @@ Module provides a repository implementation based on the [Vertx](https://vertx.i
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:database-vertx")
     ```
 

@@ -4,9 +4,8 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     annotationProcessor "org.mapstruct:mapstruct-processor:1.5.5.Final"
     implementation "org.mapstruct:mapstruct:1.5.5.Final"
     ```
@@ -33,9 +32,10 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
     }
     ```
 
-    Dependency `build.gradle.kts`: 
+    Successful building of the application may be only on second try, this is a KSP behavior.
+
+    [Dependency](general.md#dependencies) `build.gradle.kts`: 
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     ```

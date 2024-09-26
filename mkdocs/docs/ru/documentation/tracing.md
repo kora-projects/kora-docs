@@ -7,7 +7,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc"
     ```
@@ -20,7 +20,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc")
     ```
@@ -37,7 +37,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-http"
     ```
@@ -50,7 +50,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
     ```

@@ -5,7 +5,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     buildscript {
         dependencies {
@@ -23,7 +23,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     buildscript {
         dependencies {

@@ -9,7 +9,7 @@ Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/ove
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:camunda-rest-undertow"
     ```
@@ -22,7 +22,7 @@ Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/ove
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:camunda-rest-undertow")
     ```

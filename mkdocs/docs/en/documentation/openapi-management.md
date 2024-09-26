@@ -5,7 +5,7 @@ as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](http
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:openapi-management"
     ```
@@ -18,7 +18,7 @@ as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](http
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:openapi-management")
     ```

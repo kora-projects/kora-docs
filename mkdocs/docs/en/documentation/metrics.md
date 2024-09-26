@@ -6,7 +6,7 @@ Requires [HTTP server](http-server.md) module added to provide metrics in [prome
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:micrometer-module"
     ```
@@ -19,7 +19,7 @@ Requires [HTTP server](http-server.md) module added to provide metrics in [prome
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:micrometer-module")
     ```

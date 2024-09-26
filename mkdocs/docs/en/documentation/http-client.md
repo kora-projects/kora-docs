@@ -9,9 +9,8 @@ HTTP client implementation based on the [Async HTTP Client](https://github.com/A
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:http-client-async"
     ```
 
@@ -23,9 +22,8 @@ HTTP client implementation based on the [Async HTTP Client](https://github.com/A
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:http-client-async")
     ```
 
@@ -110,9 +108,8 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:http-client-ok"
     ```
 
@@ -124,9 +121,8 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:http-client-ok")
     ```
 
@@ -238,9 +234,8 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:http-client-jdk"
     ```
 
@@ -252,9 +247,8 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:http-client-jdk")
     ```
 
@@ -1111,12 +1105,10 @@ Available signatures for repository methods out of the box:
 
 === ":simple-kotlin: `Kotlin`"
 
-    By `T` we mean the type of the return value.
+    By `T` we mean the type of the return value, either `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `myMethod(): T?`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `suspend myMethod(): T?` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
 ## Interceptors
 

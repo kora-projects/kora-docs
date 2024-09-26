@@ -5,7 +5,7 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:openapi-management"
     ```
@@ -18,7 +18,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:openapi-management")
     ```

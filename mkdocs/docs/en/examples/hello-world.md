@@ -46,10 +46,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
         annotationProcessor.extendsFrom(koraBom)
     }
 
-    var koraVersion = "1.1.9"
     dependencies {
         koraBom platform("ru.tinkoff.kora:kora-parent:1.1.9")
-
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -84,10 +82,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
         implementation.get().extendsFrom(koraBom)
     }
 
-    val koraVersion: String by project
     dependencies {
         koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.9"))
-
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -172,7 +168,7 @@ Next we need to create an entry point, let's create an `Application` class with 
     ```
 
 `KoraApplication.run` starts parallel initialization of all components in the container and blocks the main thread until the `SIGTERM` signal is received,
-after which the application starts graceful shutdown.
+after which the application initiates graceful shutdown.
 Now, if we run this application, we will have access to the routers in the links above.
 
 ## Controller

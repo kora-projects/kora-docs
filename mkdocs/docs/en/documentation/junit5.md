@@ -8,7 +8,7 @@ it can be limited or its parts can be replaced by stubs if the test requires.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     testImplementation "ru.tinkoff.kora:test-junit5"
     ```
@@ -22,7 +22,7 @@ it can be limited or its parts can be replaced by stubs if the test requires.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     testImplementation("ru.tinkoff.kora:test-junit5")
     ```

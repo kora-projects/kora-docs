@@ -5,9 +5,8 @@
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:json-module"
     ```
 
@@ -19,9 +18,8 @@
     
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:json-module")
     ```
 
@@ -388,7 +386,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Зависимость](general.md#_4) `build.gradle`:
     ```groovy
     annotationProcessor "ru.tinkoff.kora:json-annotation-processor"
     implementation "ru.tinkoff.kora:jackson-module"
@@ -402,7 +400,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Зависимость](general.md#_4) `build.gradle.kts`:
     ```groovy
     ksp("ru.tinkoff.kora:json-annotation-processor")
     implementation("ru.tinkoff.kora:jackson-module")

@@ -5,9 +5,8 @@ the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Dependency `build.gradle`:
+    [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    annotationProcessor "ru.tinkoff.kora:annotation-processors"
     implementation "ru.tinkoff.kora:database-r2dbc"
     ```
 
@@ -19,9 +18,8 @@ the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r
 
 === ":simple-kotlin: `Kotlin`"
 
-    Dependency `build.gradle.kts`:
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("ru.tinkoff.kora:symbol-processors")
     implementation("ru.tinkoff.kora:database-r2dbc")
     ```
 

@@ -14,13 +14,18 @@ Kora is a cloud-oriented framework and offers
 many different modules for quickly building applications such as HTTP server, Kafka consumers, database abstraction in the form of repositories and much more.
 
 `Performance` - Kora generates high-performant code at compile time,
-avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements fine-grained abstraction and free aspects.
+avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements thin fine-grained abstraction, free aspects,
+only the most efficient modules implementations, all leading to high application performance,
 All this leads to high performance, low response time and handling a large number of requests per second.
 
 `Efficiency` - All facts above and the fact that the dependency container is created
 at compile time and initialized as parallel as possible, leads to low startup time.
 This also allows effectively use horizontal scaling practices
 and maximize resource utilization not only within the application, but also within the entire cluster.
+Kora implies exactly one most efficient solution per problem,
+approaches that help and guide the developer to write clear and efficient code.
+It brings clarity and understanding to the development team
+and allows to be offloaded context from the developer's head into understandable code that can be read by team.
 
 `Transparency` - Kora generates human-readable source code at compile time 
 with fine-grained abstractions and free aspects, which leads to high readability of code

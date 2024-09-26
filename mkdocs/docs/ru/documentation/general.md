@@ -70,7 +70,7 @@ Kafka продюсеров, репозиториев баз данных и та
 
     Требуется версия не ниже [JDK 17](https://openjdk.org/projects/jdk/17/).
 
-    Рекомендуемая версия [Kotlin `1.9+`](https://github.com/JetBrains/kotlin/releases), совместимость с версией `1.8+` не гарантируется.
+    Рекомендуемая версия [Kotlin `1.9+`](https://github.com/JetBrains/kotlin/releases), совместимость с версией `1.8+` и `2+` не гарантируется.
 
     Рекомендуемая версия [KSP `1.9+`](https://github.com/google/ksp/releases) соответсвующая версии Kotlin.
 
@@ -164,6 +164,46 @@ Kafka продюсеров, репозиториев баз данных и та
     ```
 
     Также можно ознакомиться с [ознакомительным примером](../examples/hello-world.md) с более подробным описанием.
+
+## Зависимости
+
+Так как основным столпом на котором строится Kora являются обработчики аннотаций, то они являются обязательной зависимость, 
+также не стоит забывать и о [BOM зависимости](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `build.gradle`:
+
+    ```groovy
+    configurations {
+        koraBom
+        implementation.extendsFrom(koraBom)
+        annotationProcessor.extendsFrom(koraBom)
+    }
+
+    dependencies {
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.9")
+        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    `build.gradle.kts`:
+
+    ```groovy
+    val koraBom: Configuration by configurations.creating
+    configurations {
+        ksp.get().extendsFrom(koraBom)
+        api.get().extendsFrom(koraBom)
+        implementation.get().extendsFrom(koraBom)
+    }
+
+    dependencies {
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.9"))
+        ksp("ru.tinkoff.kora:symbol-processors")
+    }
+    ```
 
 ## Терминология
 
