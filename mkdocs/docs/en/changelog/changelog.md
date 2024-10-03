@@ -5,7 +5,27 @@ hide:
   - navigation
 ---
 
-## 1.1.9
+## 1.1.10
+
+Added:
+
+* Added Expose TypeSpec.Builder for aspects for end user
+* Added support for `additionalModelTypeAnnotations` option in OpenAPI generator
+* Added `@Deprecated` annotation for OpenAPI generated HTTP Client methods
+* Added Date-Time `typeMapping` default values support in OpenAPI generator
+* Added Cassandra improved metrics configs
+
+Fixed:
+
+* Fixed Undertow Byte Buffer leak
+* Fixed OpenAPI CodegenModel required when non validated
+* Fixed trace logging on HTTP client breaking `async-http-client`
+* Fixed Cassandra nullable resultSet mapping
+* Fixed nullability checks should check type use annotations
+* Fixed HTTP Server primitive type response
+* Fixed JdbcNativeTypes `LocalDate` for Kotlin
+
+### 1.1.9
 
 Added:
 
