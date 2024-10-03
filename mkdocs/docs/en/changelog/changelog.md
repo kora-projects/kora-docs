@@ -17,13 +17,13 @@ Added:
 
 Fixed:
 
-* Fixed Undertow Byte Buffer leak
+* Fixed Undertow ByteBuffer leak
 * Fixed OpenAPI CodegenModel required when non validated
 * Fixed trace logging on HTTP client breaking `async-http-client`
-* Fixed Cassandra nullable resultSet mapping
-* Fixed nullability checks should check type use annotations
-* Fixed HTTP Server primitive type response
-* Fixed JdbcNativeTypes `LocalDate` for Kotlin
+* Fixed Cassandra nullable resultSet mapping in Kotlin
+* Fixed nullability checks should check type use annotations in Java
+* Fixed HTTP Server primitive type response in Java
+* Fixed `LocalDate` type in JDBC repository in Kotlin
 
 ### 1.1.9
 
