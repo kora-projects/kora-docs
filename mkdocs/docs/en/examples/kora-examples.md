@@ -8,9 +8,17 @@ which shows the basics of setting up a project and creating a primitive example 
 
 A large number of service examples using various Kora modules can be found in this [repository](https://github.com/kora-projects/kora-examples).
 
-Lots of examples of working with [HTTP server](../documentation/http-server.md), [HTTP client](../documentation/http-client.md),
-[database](../documentation/database-common.md), [Kafka](../documentation/kafka.md), [OpenAPI codegen](../documentation/openapi-codegen.md), and various other Kora modules.
+Lots of examples of working with
+[CRUD service](https://github.com/kora-projects/kora-examples/tree/master/kora-java-crud),
+[HTTP server](https://github.com/kora-projects/kora-examples/tree/master/kora-java-http-server),
+[HTTP client](https://github.com/kora-projects/kora-examples/tree/master/kora-java-http-client),
+[JDBC database](https://github.com/kora-projects/kora-examples/tree/master/kora-java-database-jdbc),
+[Kafka](https://github.com/kora-projects/kora-examples/tree/master/kora-java-kafka),
+[OpenAPI code generation](https://github.com/kora-projects/kora-examples/tree/master/kora-java-openapi-generator-http-client) 
+and various other Kora modules.
 
 Each example service is accompanied by tests that can be used to verify the service's working properly and 
-to see how to write primitive tests for certain functionality, both using [JUnit 5 extension](../documentation/junit5.md) 
-and in black-box format via [TestContainers](https://java.testcontainers.org/#about-testcontainers-for-java).
+to see how to write primitive tests for certain functionality, both using 
+[JUnit 5 extension](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetServiceTests.java) 
+and in black-box format via 
+[TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetControllerTests.java).
