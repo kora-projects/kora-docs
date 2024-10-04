@@ -115,8 +115,10 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
 
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
@@ -147,6 +149,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }
@@ -177,8 +180,10 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     ```groovy
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
@@ -195,6 +200,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }

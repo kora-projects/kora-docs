@@ -115,8 +115,10 @@ Kafka продюсеров, репозиториев баз данных и та
 
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
@@ -147,6 +149,7 @@ Kafka продюсеров, репозиториев баз данных и та
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }
@@ -177,8 +180,10 @@ Kafka продюсеров, репозиториев баз данных и та
     ```groovy
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
@@ -195,6 +200,7 @@ Kafka продюсеров, репозиториев баз данных и та
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }

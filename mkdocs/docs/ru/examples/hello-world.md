@@ -42,8 +42,10 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
@@ -78,6 +80,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }
