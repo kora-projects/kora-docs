@@ -161,23 +161,24 @@ Example of a simple configuration described in `CassandraConfig` class (example 
                 metrics {                           // session-level metrics, with all metrics turned off by default
                     node.enabled = []               // List of enabled metrics. Included: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                     session.enabled = [] 
+                    publishPercentileHistogram = false  // whether to publish persentils in metrics within min/max along with SLOs
                     node.cqlMessages {              // Additional customizations for metrics if needed:
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                     session.cqlRequests {
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                     session.throttlingDelay {
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                 }
                 socket {
@@ -313,25 +314,26 @@ Example of a simple configuration described in `CassandraConfig` class (example 
                   maxEvents: 20     # Maximum number of events in a bundle
                   window: "1s"      # A window for sending the event.
               metrics: 
+                publishPercentileHistogram: false  # whether to publish persentils in metrics within min/max along with SLOs
                 node:
                   enabled: []           # List of enabled metrics. Included: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                   cqlMessages:          # Additional customizations for metrics if needed:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                 session:                # session-level metrics, with all metrics turned off by default
                   enabled: []           # List of enabled metrics. Included: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                   cqlRequests:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                   throttlingDelay:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
               netty:                        # Netty event loop settings used in the driver
                 adminGroup:                 # Event loop group used only for admin tasks not related to IO
                   shutdown:

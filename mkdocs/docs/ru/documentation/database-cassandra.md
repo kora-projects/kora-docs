@@ -161,23 +161,24 @@
                 metrics {                           // session-level метрики, по умолчанию выключены все
                     node.enabled = []               // Список включенных метрик. Включаемые: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                     session.enabled = [] 
-                    node.cqlMessages {              // Дополнительные настройки для метрик, если нужны:
+                    publishPercentileHistogram = false  // публиковать ли персентили в метриках в рамках мин/макс вместе с SLO
+                    node.cqlMessages {                  // Дополнительные настройки для метрик, если нужны:
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                     session.cqlRequests {
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                     session.throttlingDelay {
                         lowestLatency = "1ms"
-                        highestLatency = "1s"
-                        significantDigits = 3
-                        refreshInterval= 5
+                        highestLatency = "90s"
+                        significantDigits = 1
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                     }
                 }
                 socket {
@@ -313,25 +314,26 @@
                   maxEvents: 20     # Максимальное количество событий в пачке
                   window: "1s"      # Окно для отправки события.
               metrics: 
+                publishPercentileHistogram: false  # публиковать ли персентили в метриках в рамках мин/макс вместе с SLO
                 node:
                   enabled: []           # Список включенных метрик. Включаемые: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                   cqlMessages:          # Дополнительные настройки для метрик, если нужны:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                 session:                # session-level метрики, по умолчанию выключены все
                   enabled: []           # Список включенных метрик. Включаемые: bytes-sent, connected-nodes, cql-requests, cql-client-timeouts, cql-prepared-cache-size, throttling.delay, throttling.errors, continuous-cql-requests
                   cqlRequests:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
                   throttlingDelay:
-                    highestLatency: "1s"
                     lowestLatency: "1ms"
-                    refreshInterval: 5
-                    significantDigits: 3
+                    highestLatency: "90s"
+                    significantDigits: 1
+                    slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
               netty:                        # Настройки Netty event loop, используемой в драйвере
                 adminGroup:                 # Event loop группа, используемая только для админских задач, не связанных с IO
                   shutdown:
