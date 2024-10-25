@@ -263,7 +263,7 @@
     @Repository
     public interface EntityRepository extends R2dbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         Flux<Entity> findAll();
     }
     ```
@@ -287,7 +287,7 @@
     @Repository
     interface EntityRepository : R2dbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         fun findAll(): Flux<Entity>
     }
     ```
@@ -312,7 +312,7 @@
     @Repository
     public interface EntityRepository extends R2dbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         Flux<Entity> findById(@Mapping(ParameterMapper.class) UUID id);
     }
     ```
@@ -332,10 +332,32 @@
     @Repository
     interface EntityRepository : R2dbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): Flux<Entity>
     }
     ```
+
+### Поддерживаемые типы
+
+??? abstract "Список поддерживаемых типов для аргументов/возвращаемых значений из коробки"
+
+    * void
+    * boolean / Boolean
+    * short / Short
+    * int / Integer
+    * long / Long
+    * double / Double
+    * float / Float
+    * byte[]
+    * String
+    * BigInteger
+    * BigDecimal
+    * UUID
+    * LocalDate
+    * LocalTime
+    * LocalDateTime
+    * OffsetTime
+    * OffsetDateTime
 
 ## Созданный идентификатор
 

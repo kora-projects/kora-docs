@@ -251,7 +251,7 @@ If you need to convert the column value manually, it is suggested to use the `Ve
     @Repository
     public interface EntityRepository extends VertxRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         Flux<Entity> findAll();
     }
     ```
@@ -275,7 +275,7 @@ If you need to convert the column value manually, it is suggested to use the `Ve
     @Repository
     interface EntityRepository : VertxRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         fun findAll(): Flux<Entity>
     }
     ```
@@ -298,7 +298,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     public interface EntityRepository extends VertxRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         Flux<Entity> findById(@Mapping(ParameterMapper.class) UUID id);
     }
     ```
@@ -315,10 +315,29 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     interface EntityRepository : VertxRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): Flux<Entity>
     }
     ```
+
+### Supported types
+
+??? abstract "List of supported types for arguments/return values out of the box"
+
+    * void
+    * boolean / Boolean
+    * short / Short
+    * int / Integer
+    * long / Long
+    * double / Double
+    * float / Float
+    * Buffer
+    * String
+    * BigInteger
+    * BigDecimal
+    * UUID
+    * LocalTime
+    * LocalDateTime
 
 ## Transactions
 

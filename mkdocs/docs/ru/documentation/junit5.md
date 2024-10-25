@@ -17,6 +17,11 @@
     ```groovy
     test {
         useJUnitPlatform()
+        testLogging {
+            showStandardStreams(true)
+            events("passed", "skipped", "failed")
+            exceptionFormat("full")
+        }
     }
     ```
 
@@ -31,6 +36,11 @@
     ```groovy
     tasks.test {
         useJUnitPlatform() 
+        testLogging {
+            showStandardStreams = true
+            events("passed", "skipped", "failed")
+            exceptionFormat = TestExceptionFormat.FULL
+        }
     }
     ```
 

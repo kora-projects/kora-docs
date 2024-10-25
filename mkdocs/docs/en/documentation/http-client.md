@@ -395,13 +395,17 @@ Example configuration in the case of the `path.to.config` path described in the 
                 telemetry {
                     logging {
                         enabled = false //(3)!
+                        mask = "***" //(4)!
+                        maskQueries = [ ] //(5)!
+                        maskHeaders = [ "authorization" ] //(6)!
+                        pathTemplate = true //(7)!
                     }
                     metrics {
-                        enabled = true //(4)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                        enabled = true //(8)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
                     }
                     tracing {
-                        enabled = true //(6)!
+                        enabled = true //(10)!
                     }
                 }
             }
@@ -412,9 +416,13 @@ Example configuration in the case of the `path.to.config` path described in the 
     1. URL of the service where requests will be sent
     2. Maximum request time
     3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    4.  Mask that is used to hide specified headers and request/response parameters
+    5.  List of request parameters to be hidden
+    6.  List of request/response headers that should be hidden
+    7.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    8. Enables module metrics (default `true`)
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    10. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -427,19 +435,27 @@ Example configuration in the case of the `path.to.config` path described in the 
           telemetry:
             logging:
               enabled: false #(3)!
+              mask: "***" #(4)!
+              maskQueries: [ ] #(5)!
+              maskHeaders: [ "authorization" ] #(6)!
+              pathTemplate: true #(7)!
             metrics:
-              enabled: true #(4)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+              enabled: true #(8)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
             telemetry:
-              enabled: true #(6)!
+              enabled: true #(10)!
     ```
 
     1. URL of the service where requests will be sent
     2. Maximum request time
     3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    4.  Mask that is used to hide specified headers and request/response parameters
+    5.  List of request parameters to be hidden
+    6.  List of request/response headers that should be hidden
+    7.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    8. Enables module metrics (default `true`)
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    10. Enables module tracing (default `true`)
 
 ### Method Configuration
 
@@ -458,13 +474,17 @@ and method `hello` the final path will be `path.to.config.getHello`
                     telemetry {
                         logging {
                             enabled = false //(2)!
+                            mask = "***" //(3)!
+                            maskQueries = [ ] //(4)!
+                            maskHeaders = [ "authorization" ] //(5)!
+                            pathTemplate = true //(6)!
                         }
                         metrics {
-                            enabled = true //(3)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                            enabled = true //(7)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
                         }
                         tracing {
-                            enabled = true //(5)!
+                            enabled = true //(9)!
                         }
                     }
                 }
@@ -475,9 +495,13 @@ and method `hello` the final path will be `path.to.config.getHello`
 
     1.  Maximum method query time
     2.  Enables module logging (default `false`)
-    3.  Includes module metrics
-    4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5.  Enables module tracing (default `true`)
+    3.  Mask that is used to hide specified headers and request/response parameters
+    4.  List of request parameters to be hidden
+    5.  List of request/response headers that should be hidden
+    6.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    7.  Includes module metrics
+    8.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9.  Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -490,18 +514,26 @@ and method `hello` the final path will be `path.to.config.getHello`
             telemetry:
               logging:
                 enabled: false #(2)!
+                  mask: "***" #(3)!
+                  maskQueries: [ ] #(4)!
+                  maskHeaders: [ "authorization" ] #(5)!
+                  pathTemplate: true #(6)!
               metrics:
-                enabled: true #(3)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+                enabled: true #(7)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
               telemetry:
-                enabled: true #(5)!
+                enabled: true #(9)!
     ```
 
     1.  Maximum method query time
     2.  Enables module logging (default `false`)
-    3.  Includes module metrics
-    4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5.  Enables module tracing (default `true`)
+    3.  Mask that is used to hide specified headers and request/response parameters
+    4.  List of request parameters to be hidden
+    5.  List of request/response headers that should be hidden
+    6.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    7.  Includes module metrics
+    8.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9.  Enables module tracing (default `true`)
 
 ### Request
 

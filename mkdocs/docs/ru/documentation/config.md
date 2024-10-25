@@ -135,6 +135,24 @@ services {
 - Использовать файл `application.conf` если имеется (файл из `resources` директории)
 - Используется пустой файл конфигурации если все указанное выше отсутствует
 
+===! ":fontawesome-brands-java: `java`"
+
+    Пример указания конфига при запуске в терминале через `java`:
+    ```shell
+    java -Dconfig.file=path/to/configFile application
+    ```
+
+=== ":simple-kotlin: `gradle`"
+
+    Пример указания конфига в `build.gradle`:
+    ```groovy
+    run {
+        jvmArgs += [
+            "-Dconfig.file=path/to/configFile",
+        ]
+    }
+    ```
+
 ## YAML
 
 Поддержка [YAML](https://yaml.org/) реализована с помощью [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
@@ -263,6 +281,24 @@ services:
 - Использовать файл из `config.file` если указан (файл из файловой системы)
 - Использовать файл `application.yaml` если имеется (файл из `resources` директории)
 - Используется пустой файл конфигурации если все указанное выше отсутствует
+
+===! ":fontawesome-brands-java: `java`"
+
+    Пример указания конфига при запуске в терминале через `java`:
+    ```shell
+    java -Dconfig.file=path/to/configFile application
+    ```
+
+=== ":simple-kotlin: `gradle`"
+
+    Пример указания конфига в `build.gradle`:
+    ```groovy
+    run {
+        jvmArgs += [
+            "-Dconfig.file=path/to/configFile",
+        ]
+    }
+    ```
 
 ## Пользовательские конфигурации
 

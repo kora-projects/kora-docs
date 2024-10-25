@@ -263,7 +263,7 @@ If you need to convert the column value manually, it is suggested to use the `R2
     @Repository
     public interface EntityRepository extends R2dbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         Flux<Entity> findAll();
     }
     ```
@@ -287,7 +287,7 @@ If you need to convert the column value manually, it is suggested to use the `R2
     @Repository
     interface EntityRepository : R2dbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         fun findAll(): Flux<Entity>
     }
     ```
@@ -312,7 +312,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     public interface EntityRepository extends R2dbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         Flux<Entity> findById(@Mapping(ParameterMapper.class) UUID id);
     }
     ```
@@ -332,12 +332,34 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     interface EntityRepository : R2dbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): Flux<Entity>
     }
     ```
 
-### Generated identifier
+### Supported types
+
+??? abstract "List of supported types for arguments/return values out of the box"
+
+    * void
+    * boolean / Boolean
+    * short / Short
+    * int / Integer
+    * long / Long
+    * double / Double
+    * float / Float
+    * byte[]
+    * String
+    * BigInteger
+    * BigDecimal
+    * UUID
+    * LocalDate
+    * LocalTime
+    * LocalDateTime
+    * OffsetTime
+    * OffsetDateTime
+
+## Generated identifier
 
 If you want to get the primary keys of an entity created by the database as the result,
 it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.

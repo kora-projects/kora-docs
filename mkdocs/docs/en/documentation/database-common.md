@@ -1,8 +1,8 @@
 Basic principles and mechanisms of database modules in Kora.
 
-We adhere to the concept that the best way to write queries for SQL databases is to use the SQL language.
+We think that the best way to communicate with a SQL database is to communicate in its native SQL language.
 Other tools often have limitations on using specific functions of a particular database,
-or a complex program language for building queries that requires a separate understanding.
+or a complex programming language for building queries that requires a sometimes deep understanding and knowledge.
 
 ## Entity
 
@@ -93,7 +93,7 @@ or use [special constructs](https://www.postgresql.org/docs/current/dml-returnin
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         @Nullable
         Entity findById(long id);
 
@@ -110,7 +110,7 @@ or use [special constructs](https://www.postgresql.org/docs/current/dml-returnin
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(id: Long): Entity?
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name) RETURNING id")
@@ -144,7 +144,7 @@ The identifier will be created at the stage of object creation in the custom app
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         @Nullable
         Entity findById(UUID id);
 
@@ -162,7 +162,7 @@ The identifier will be created at the stage of object creation in the custom app
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(id: UUID): Entity?
 
         @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
@@ -335,7 +335,7 @@ Then the repository for such an entity would look like this:
     public interface EntityRepository extends JdbcRepository {
 
         @Query("""
-                SELECT * FROM entities
+                SELECT name, surname, info FROM entities
                 WHERE name = :id.name AND surname = :id.surname;
                 """)
         @Nullable
@@ -357,7 +357,7 @@ Then the repository for such an entity would look like this:
 
         @Query(
             """
-            SELECT * FROM entities
+            SELECT name, surname, info FROM entities
             WHERE name = :id.name AND surname = :id.surname;
             """
         )
@@ -365,7 +365,7 @@ Then the repository for such an entity would look like this:
 
         @Query(
             """
-            INSERT INTO entities(name, surname, name)
+            INSERT INTO entities(name, surname, info)
             VALUES (:entity.id.name, :entity.id.surname, :entity.info)
             """
         )
@@ -407,7 +407,7 @@ Repository must extend of one of the implementations, in the examples below the 
         public record Entity(String id, String name) { }
 
         //(2)!
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         @Nullable
         Entity findById(String id);
     }
@@ -425,7 +425,7 @@ Repository must extend of one of the implementations, in the examples below the 
         data class Entity(val id: String, val name: String)
 
         //(2)!
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(id: String): Entity?
     }
     ```

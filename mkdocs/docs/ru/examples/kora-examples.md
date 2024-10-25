@@ -23,3 +23,11 @@ search:
 [JUnit 5 расширения](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetServiceTests.java), 
 так и в формате черного ящика с использованием 
 [TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetControllerTests.java).
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-crud-template)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-crud-template)

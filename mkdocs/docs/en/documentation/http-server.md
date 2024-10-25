@@ -52,13 +52,17 @@ Example of the complete configuration described in the `HttpServerConfig` class 
             logging {
                 enabled = false //(10)!
                 stacktrace = true //(11)!
+                mask = "***" //(12)!
+                maskQueries = [ ] //(13)!
+                maskHeaders = [ "authorization" ] //(14)!
+                pathTemplate = true //(15)!
             }
             metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
             }
             tracing {
-                enabled = true //(14)!
+                enabled = true //(18)!
             }
         }
     }
@@ -75,9 +79,13 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
     10.  Enables module logging (default `false`)
     11.  Enables call stack logging in case of exception
-    12.  Enables module metrics (default `true`)
-    13.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing (default `true`)
+    12.  Mask that is used to hide specified headers and request/response parameters
+    13.  List of request parameters to be hidden
+    14.  List of request/response headers that should be hidden
+    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    16.  Enables module metrics (default `true`)
+    17.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18.  Enables module tracing (default is `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -96,11 +104,15 @@ Example of the complete configuration described in the `HttpServerConfig` class 
         logging:
           enabled: false #(10)!
           stacktrace: true #(11)!
+          mask: "***" #(12)!
+          maskQueries: [ ] #(13)!
+          maskHeaders: [ "authorization" ] #(14)!
+          pathTemplate: true #(15)!
         metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
         telemetry:
-          enabled: true #(14)!
+          enabled: true #(18)!
     ```
 
     1.  Public server port
@@ -114,9 +126,13 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
     10.  Enables module logging (default `false`)
     11.  Enables call stack logging in case of exception
-    12.  Enables module metrics (default `true`)
-    13.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing (default `true`)
+    12.  Mask that is used to hide specified headers and request/response parameters
+    13.  List of request parameters to be hidden
+    14.  List of request/response headers that should be hidden
+    15.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    16.  Enables module metrics (default `true`)
+    17.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18.  Enables module tracing (default is `true`)
 
 ## SomeController declarative
 

@@ -6,6 +6,7 @@ site_dir: "../../generated/ru"
 site_name: Kora
 site_url: https://kora-projects.github.io/kora-docs/ru/
 site_description: Фреймворк Kora
+copyright: Т-Банк
 nav:
   - Примеры:
       - Репозиторий примеров: examples/kora-examples.md
