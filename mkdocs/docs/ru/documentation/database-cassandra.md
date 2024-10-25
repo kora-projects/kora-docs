@@ -620,7 +620,7 @@
     @Repository
     public interface EntityRepository extends CassandraRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         List<Entity> findAll();
     }
     ```
@@ -644,7 +644,7 @@
     @Repository
     interface EntityRepository : CassandraRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         fun findAll(): List<Entity>
     }
     ```
@@ -669,7 +669,7 @@
     @Repository
     public interface EntityRepository extends CassandraRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         List<Entity> findById(@Mapping(ParameterMapper.class) UUID id);
     }
     ```
@@ -689,7 +689,7 @@
     @Repository
     interface EntityRepository : CassandraRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): List<Entity>
     }
     ```

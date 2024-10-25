@@ -42,12 +42,14 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
     configurations {
         koraBom
-        implementation.extendsFrom(koraBom)
         annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        api.extendsFrom(koraBom)
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.10")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -78,12 +80,13 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
+        compileOnly.get().extendsFrom(koraBom)
         api.get().extendsFrom(koraBom)
         implementation.get().extendsFrom(koraBom)
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.10"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -324,3 +327,11 @@ Now an optimal Json writer will be generated for our object, and we will see Jso
 ```json
 {"greeting":"Hello World"}
 ```
+
+=== “:fontawesome-brands-java: `Java`”
+
+    You can create a new Java service by using [template on GitHub](https://github.com/kora-projects/kora-java-crud-template)
+
+=== “:simple-kotlin: `Kotlin`”
+
+    You can create a new Kotlin service using [template on GitHub](https://github.com/kora-projects/kora-kotlin-crud-template).

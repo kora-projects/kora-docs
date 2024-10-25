@@ -4,6 +4,7 @@
 ## AsyncHttpClient
 
 Реализация HTTP клиента основанная на библиотеке [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client).
+Лучше всего подходит для Java сервисов, которые используют только асинхронные вызовы в клиенте.
 
 ### Подключение
 
@@ -100,6 +101,7 @@
 
 Реализация HTTP клиента основанная на библиотеке [OkHttp](https://github.com/square/okhttp).
 Учитывайте что реализация написана на Kotlin и использует соответствующие зависимости.
+Лучше всего подходит для Kotlin сервисов, либо Java сервисов где используются синхронные операции с высокой нагрузкой, либо требуется поддержка HTTP 2+, либо поддержка GZip сжатия.
 
 ### Подключение
 
@@ -225,6 +227,7 @@
 ## Нативный клиент
 
 Реализация HTTP клиента на основании нативного клиента поставляемого в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
+Лучше всего подходит для Java сервисов где используются простые синхронные операции без высокой нагрузки.
 
 ### Подключение
 
@@ -388,13 +391,17 @@
                 telemetry {
                     logging {
                         enabled = false //(3)!
+                        mask = "***" //(4)!
+                        maskQueries = [ ] //(5)!
+                        maskHeaders = [ "authorization" ] //(6)!
+                        pathTemplate = true //(7)!
                     }
                     metrics {
-                        enabled = true //(4)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                        enabled = true //(8)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
                     }
                     tracing {
-                        enabled = true //(6)!
+                        enabled = true //(10)!
                     }
                 }
             }
@@ -405,9 +412,13 @@
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
     3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    4.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    5.  Список параметров запроса которые следует скрывать
+    6.  Список заголовков запроса/ответа которые следует скрывать
+    7.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    8.  Включает метрики модуля (по умолчанию `true`)
+    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    10.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -420,19 +431,27 @@
           telemetry:
             logging:
               enabled: false #(3)!
+              mask: "***" #(4)!
+              maskQueries: [ ] #(5)!
+              maskHeaders: [ "authorization" ] #(6)!
+              pathTemplate: true #(7)!
             metrics:
-              enabled: true #(4)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+              enabled: true #(8)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
             telemetry:
-              enabled: true #(6)!
+              enabled: true #(10)!
     ```
 
     1.  URL сервиса куда будут отправляться запросы
     2.  Максимальное время запроса
     3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    4.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    5.  Список параметров запроса которые следует скрывать
+    6.  Список заголовков запроса/ответа которые следует скрывать
+    7.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    8.  Включает метрики модуля (по умолчанию `true`)
+    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    10.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Конфигурация метода
 
@@ -451,13 +470,17 @@
                     telemetry {
                         logging {
                             enabled = false //(2)!
+                            mask = "***" //(3)!
+                            maskQueries = [ ] //(4)!
+                            maskHeaders = [ "authorization" ] //(5)!
+                            pathTemplate = true //(6)!
                         }
                         metrics {
-                            enabled = true //(3)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                            enabled = true //(7)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
                         }
                         tracing {
-                            enabled = true //(5)!
+                            enabled = true //(9)!
                         }
                     }
                 }
@@ -468,9 +491,13 @@
 
     1.  Максимальное время запроса метода
     2.  Включает логгирование модуля (по умолчанию `false`)
-    3.  Включает метрики модуля (по умолчанию `true`)
-    4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля (по умолчанию `true`)
+    3.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    4.  Список параметров запроса которые следует скрывать
+    5.  Список заголовков запроса/ответа которые следует скрывать
+    6.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    7.  Включает метрики модуля (по умолчанию `true`)
+    8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    9.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -483,18 +510,26 @@
             telemetry:
               logging:
                 enabled: false #(2)!
+                  mask: "***" #(3)!
+                  maskQueries: [ ] #(4)!
+                  maskHeaders: [ "authorization" ] #(5)!
+                  pathTemplate: true #(6)!
               metrics:
-                enabled: true #(3)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+                enabled: true #(7)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
               telemetry:
-                enabled: true #(5)!
+                enabled: true #(9)!
     ```
 
     1.  Максимальное время запроса метода
     2.  Включает логгирование модуля (по умолчанию `false`)
-    3.  Включает метрики модуля (по умолчанию `true`)
-    4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля (по умолчанию `true`)
+    3.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    4.  Список параметров запроса которые следует скрывать
+    5.  Список заголовков запроса/ответа которые следует скрывать
+    6.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    7.  Включает метрики модуля (по умолчанию `true`)
+    8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    9.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Запрос
 

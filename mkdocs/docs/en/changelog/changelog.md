@@ -5,7 +5,27 @@ hide:
   - navigation
 ---
 
-## 1.1.10
+## 1.1.11
+
+Added:
+
+* Added [HTTP Client/Server logging masking](../documentation/http-server.md#configuration)
+* Added HTTP Client & Server metrics enriched
+* Added OpenAPI additional contract annotations for HTTP client/server
+* Added annotation processor for [JDBC result set mappers](../documentation/database-jdbc.md#entity)
+* Added [Resilient Retry & Timeout](../documentation/resilient.md#retry) virtual thread support
+
+Fixed:
+
+* Fixed gRPC server/client metrics memory leak
+* Fixed IntersectType Java generics component factory support
+* Fixed QuartzJob exception and incorrect logging
+* Fixed Enum config value string mapping
+* Fixed JsonReader Set & Map types as Linked implementations
+* Fixed Retry support zero attempts
+* Fixed HttpClientRequestMapper String as plain text content-type
+
+### 1.1.10
 
 Added:
 
