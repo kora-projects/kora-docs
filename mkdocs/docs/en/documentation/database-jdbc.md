@@ -206,6 +206,26 @@ If you need to convert the result manually, it is suggested to use `JdbcResultSe
     }
     ```
 
+#### Entity
+
+Optimal entity mapping intend to use with `@EntityJdbc` annotation for result converter generation.
+
+All embedded entities also should use this annotation:
+
+===! “:fontawesome-brands-java: `Java`”
+
+    ```java
+    @EntityJdbc
+    Public record Entity(String id, String name) {}
+    ```
+
+=== “:simple-kotlin: `Kotlin`”
+
+    ```kotlin
+    @EntityJdbc
+    Data class Entity(val id: String, val name: String)
+    ```
+
 ### Row
 
 If you need to convert the string manually, it is suggested to use `JdbcRowMapper`:
@@ -265,13 +285,14 @@ If you need to convert the column value manually, it is suggested to use the `Jd
         }
     }
 
+    @EntityJdbc
     @Table("entities")
     public record Entity(@Mapping(ColumnMapper.class) @Id UUID id, String name) { }
 
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         List<Entity> findAll();
     }
     ```
@@ -287,6 +308,7 @@ If you need to convert the column value manually, it is suggested to use the `Jd
         }
     }
 
+    @EntityJdbc
     @Table("entities")
     data class Entity(
         @Id @Mapping(ColumnMapper::class) val id: UUID,
@@ -296,7 +318,7 @@ If you need to convert the column value manually, it is suggested to use the `Jd
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, name FROM entities")
         fun findAll(): List<Entity>
     }
     ```
@@ -321,7 +343,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         List<Entity> findById(@Mapping(ParameterMapper.class) UUID id);
     }
     ```
@@ -342,10 +364,31 @@ If you want to convert the value of a query parameter manually, it is suggested 
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(@Mapping(ParameterMapper::class) id: UUID): List<Entity>
     }
     ```
+
+### Supported types
+
+??? abstract "List of supported types for arguments/return values out of the box"
+
+    * void
+    * boolean / Boolean
+    * short / Short
+    * int / Integer
+    * long / Long
+    * double / Double
+    * float / Float
+    * byte[]
+    * String
+    * BigDecimal
+    * UUID
+    * LocalDate
+    * LocalTime
+    * LocalDateTime
+    * OffsetTime
+    * OffsetDateTime
 
 ## Select by list
 
@@ -373,7 +416,7 @@ Out of the box Kora does not provide conversion of such parameters, but it is ea
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        @Query("SELECT id, name FROM entities WHERE id = ANY(:ids)")
         List<Entity> findAllByIds(@Mapping(ListOfStringJdbcParameterMapper.class) List<String> ids);
     }
     ```
@@ -395,7 +438,7 @@ Out of the box Kora does not provide conversion of such parameters, but it is ea
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = ANY(:ids)")
+        @Query("SELECT id, name FROM entities WHERE id = ANY(:ids)")
         fun findAllByIds(@Mapping(ListOfStringJdbcParameterMapper::class) ids: List<String>): List<Entity>
     }
     ```
@@ -412,6 +455,7 @@ This approach works for `@Batch` queries as well.
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
+        @EntityJdbc
         public record Entity(Long id, String name) {}
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
@@ -426,6 +470,7 @@ This approach works for `@Batch` queries as well.
     @Repository
     interface EntityRepository : JdbcRepository {
 
+        @EntityJdbc
         public record Entity(Long id, String name) {}
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")

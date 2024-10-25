@@ -52,13 +52,17 @@
             logging {
                 enabled = false //(10)!
                 stacktrace = true //(11)!
+                mask = "***" //(12)!
+                maskQueries = [ ] //(13)!
+                maskHeaders = [ "authorization" ] //(14)!
+                pathTemplate = true //(15)!
             }
             metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
             }
             tracing {
-                enabled = true //(14)!
+                enabled = true //(18)!
             }
         }
     }
@@ -75,9 +79,13 @@
     9.  Время ожидания для выключения сервера в случае [штатного завершения](container.md#_24)
     10.  Включает логгирование модуля (по умолчанию `false`)
     11.  Включает логгирование стэка вызовов в случае исключения
-    12.  Включает метрики модуля (по умолчанию `true`)
-    13.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    14.  Включает трассировку модуля (по умолчанию `true`)
+    12.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    13.  Список параметров запроса которые следует скрывать
+    14.  Список заголовков запроса/ответа которые следует скрывать
+    15.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -96,11 +104,15 @@
         logging:
           enabled: false #(10)!
           stacktrace: true #(11)!
+          mask: "***" #(12)!
+          maskQueries: [ ] #(13)!
+          maskHeaders: [ "authorization" ] #(14)!
+          pathTemplate: true #(15)!
         metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
         telemetry:
-          enabled: true #(14)!
+          enabled: true #(18)!
     ```
 
     1.  Порт публичного сервера
@@ -114,9 +126,13 @@
     9.  Время ожидания для выключения сервера в случае [штатного завершения](container.md#_24)
     10.  Включает логгирование модуля (по умолчанию `false`)
     11.  Включает логгирование стэка вызовов в случае исключения
-    12.  Включает метрики модуля (по умолчанию `true`)
-    13.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    14.  Включает трассировку модуля (по умолчанию `true`)
+    12.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    13.  Список параметров запроса которые следует скрывать
+    14.  Список заголовков запроса/ответа которые следует скрывать
+    15.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Контроллер декларативный
 

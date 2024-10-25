@@ -314,7 +314,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
 
     1. Initial delay time for the operation at Retry (**required**)
     2. Number of Retry attempts for the operation (**required**)
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts (**required**)
+    3. Delay step which is accumulated in consequence of subsequent Retry attempts
 
 === ":simple-yaml: `YAML`"
 
@@ -329,7 +329,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
 
     1. Initial delay time for the operation at Retry (**required**)
     2. Number of Retry attempts for the operation (**required**)
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts (**required**)
+    3. Delay step which is accumulated in consequence of subsequent Retry attempts
 
 ### Exception filtering
 

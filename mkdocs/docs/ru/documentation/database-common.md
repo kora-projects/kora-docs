@@ -1,8 +1,8 @@
 Основные принципы и механизмы работы модулей баз данных в Kora.
 
-Мы придерживаемся концепции, что самый лучший способ написания запросов к SQL базам данных это использование именно SQL языка.
+Мы придерживаемся концепции, что самый лучший способ общения с базой данных SQL, это общение на ее родном языке SQL.
 Другие инструменты зачастую имеют ограничения на использования специфичных функций определенной базы данных, 
-либо сложный программный язык построения запросов который требует отдельного понимания.
+либо сложный программный язык построения запросов который требует отдельного изучения и понимания.
 
 ## Сущность
 
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS entities
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         @Nullable
         Entity findById(long id);
 
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS entities
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(id: Long): Entity?
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name) RETURNING id")
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS entities
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         @Nullable
         Entity findById(UUID id);
 
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS entities
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT id, name FROM entities WHERE id = :id")
         fun findById(id: UUID): Entity?
 
         @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS entities
     public interface EntityRepository extends JdbcRepository {
 
         @Query("""
-                SELECT * FROM entities
+                SELECT name, surname, info FROM entities
                 WHERE name = :id.name AND surname = :id.surname;
                 """)
         @Nullable
@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS entities
 
         @Query(
             """
-            SELECT * FROM entities
+            SELECT name, surname, info FROM entities
             WHERE name = :id.name AND surname = :id.surname;
             """
         )
@@ -406,7 +406,7 @@ CREATE TABLE IF NOT EXISTS entities
 
         public record Entity(String id, String name) { }
 
-        @Query("SELECT * FROM entities WHERE id = :id") //(2)!
+        @Query("SELECT id, name FROM entities WHERE id = :id") //(2)!
         @Nullable //(3)!
         Entity findById(String id);
     }
@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS entities
 
         data class Entity(val id: String, val name: String)
 
-        @Query("SELECT * FROM entities WHERE id = :id") //(2)!
+        @Query("SELECT id, name FROM entities WHERE id = :id") //(2)!
         fun findById(id: String): Entity?
     }
     ```
