@@ -49,7 +49,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.10")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -86,7 +86,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.10"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -327,3 +327,11 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 ```json
 {"greeting":"Hello World"}
 ```
+
+=== ":fontawesome-brands-java: `Java`"
+
+    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-crud-template)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-crud-template)

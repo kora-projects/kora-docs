@@ -17,6 +17,11 @@ it can be limited or its parts can be replaced by stubs if the test requires.
     ```groovy
     test {
         useJUnitPlatform()
+        testLogging {
+            showStandardStreams(true)
+            events("passed", "skipped", "failed")
+            exceptionFormat("full")
+        }
     }
     ```
 
@@ -31,6 +36,11 @@ it can be limited or its parts can be replaced by stubs if the test requires.
     ```groovy
     tasks.test {
         useJUnitPlatform() 
+        testLogging {
+            showStandardStreams = true
+            events("passed", "skipped", "failed")
+            exceptionFormat = TestExceptionFormat.FULL
+        }
     }
     ```
 

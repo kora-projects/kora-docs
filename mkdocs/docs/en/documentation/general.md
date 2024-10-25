@@ -122,7 +122,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.10")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -155,7 +155,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.10"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
 
@@ -187,7 +187,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.10")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,10 +206,112 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.10"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
+
+## Run
+
+Running and working with the application through the build system is supposed to be done using the [application plugin](https://docs.gradle.org/current/userguide/application_plugin.html)
+which is provided by Gradle.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Requires the plugin to be specified in `build.gradle`:
+    ```groovy
+    plugins {
+        id "application"
+    }
+    ```
+
+    You can specify both system variables and environment variables when running the application locally in `build.gradle`:
+    ```groovy
+    run {
+        jvmArgs += [
+            "-Xmx256m",
+        ]
+
+        environment([
+            "SOME_ENV": "someValue",
+        ])
+    }
+    ```
+
+    You can run it with command:
+    ```shell
+    ./gradlew run
+    ```
+
+    You can configure the artifact build this way in `build.gradle`:
+    ```groovy
+    applicationName = "application"
+    mainClassName = "ru.tinkoff.kora.java.Application"
+
+    application {
+        applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
+    }
+
+    distTar {
+        archiveFileName = "application.tar"
+    }
+    ```
+
+    You can build an artifact with the command:
+    ```shell
+    ./gradlew distTar
+    ```
+
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/build.gradle)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Requires the plugin to be specified in `build.gradle.kts`:
+    ```groovy
+    plugins {
+        id("application")
+        kotlin("jvm") version ("1.9.10")
+        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+    }
+    ```
+
+    You can specify both system variables and environment variables when running the application locally in `build.gradle.kts`:
+    ```groovy
+    tasks.withType<JavaExec> {
+        jvmArgs(
+            "-Xmx256m",
+        )
+
+        environment(
+            "SOME_ENV" to "someValue",
+        )
+    }
+    ```
+
+    You can run it with command:
+    ```shell
+    ./gradlew run
+    ```
+
+    You can configure the artifact build this way in `build.gradle.kts`:
+    ```groovy
+    application {
+        applicationName = "application"
+        mainClass.set("ru.tinkoff.kora.kotlin.ApplicationKt")
+        applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
+    }
+
+    tasks.distTar {
+        archiveFileName.set("application.tar")
+    }
+    ```
+
+    You can build an artifact with the command:
+    ```shell
+    ./gradlew distTar
+    ```
+
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-examples/blob/master/kora-kotlin-crud/build.gradle.kts)
 
 ## Terminology
 

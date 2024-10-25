@@ -22,3 +22,11 @@ to see how to write primitive tests for certain functionality, both using
 [JUnit 5 extension](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetServiceTests.java) 
 and in black-box format via 
 [TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetControllerTests.java).
+
+=== “:fontawesome-brands-java: `Java`”
+
+    You can create a new Java service by using [template on GitHub](https://github.com/kora-projects/kora-java-crud-template)
+
+=== “:simple-kotlin: `Kotlin`”
+
+    You can create a new Kotlin service using [template on GitHub](https://github.com/kora-projects/kora-kotlin-crud-template).
