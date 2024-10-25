@@ -25,7 +25,7 @@ Fixed:
 * Fixed Retry support zero attempts
 * Fixed HttpClientRequestMapper String as plain text content-type
 
-## 1.1.10
+### 1.1.10
 
 Added:
 
