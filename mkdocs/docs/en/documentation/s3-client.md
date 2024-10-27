@@ -316,7 +316,7 @@ Configuration of a particular implementation of `@S3.Client`:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config") //(1)!
+    @S3.Client("s3client.someClient") //(1)!
     public interface SomeClient {
 
         @S3.Get 
@@ -329,7 +329,7 @@ Configuration of a particular implementation of `@S3.Client`:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config") //(1)!
+    @S3.Client("s3client.someClient") //(1)!
     interface SomeClient {
 
         @S3.Get 
@@ -339,16 +339,14 @@ Configuration of a particular implementation of `@S3.Client`:
 
     1. Path to the configuration of this particular client
 
-Configuration in the case of the `path.to.config` path described in the `S3ClientConfig` class:
+Configuration in the case of the `s3client.someClient` path described in the `S3ClientConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                bucket = "someBucket" //(1)!
-            }
+    s3client {
+        someClient {
+            bucket = "someBucket" //(1)!
         }
     }
     ```
@@ -358,10 +356,9 @@ Configuration in the case of the `path.to.config` path described in the `S3Clien
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          bucket: "someBucket" #(1)!
+    s3client:
+      someClient:
+        bucket: "someBucket" #(1)!
     ```
 
     1.  Bucket ([bucket](https://aws.amazon.com/ru/s3/faqs/)) where files will be stored
@@ -374,7 +371,7 @@ It is suggested to use the `@S3.Get` annotation to specify the operation.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get //(1)!
@@ -392,7 +389,7 @@ It is suggested to use the `@S3.Get` annotation to specify the operation.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get //(1)!
@@ -416,7 +413,7 @@ this method is much faster because it does not return file data.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get
@@ -429,7 +426,7 @@ this method is much faster because it does not return file data.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get
@@ -447,7 +444,7 @@ all method arguments must be part of the compound key.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get("prefix-{key1}-{key2}-suffix") //(1)!
@@ -461,7 +458,7 @@ all method arguments must be part of the compound key.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get("prefix-{key1}-{key2}-suffix") //(1)!
@@ -480,7 +477,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get //(1)!
@@ -494,7 +491,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get //(1)!
@@ -516,7 +513,7 @@ you can also specify a file selection limit, the maximum number of files for the
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List
@@ -537,7 +534,7 @@ you can also specify a file selection limit, the maximum number of files for the
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List
@@ -564,7 +561,7 @@ this method is much faster because it does not return file data.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List
@@ -577,7 +574,7 @@ this method is much faster because it does not return file data.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List
@@ -595,7 +592,7 @@ all method arguments must be part of a compound key.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List("prefix-{key1}-{key2}-") //(1)!
@@ -608,7 +605,7 @@ all method arguments must be part of a compound key.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List("prefix-{key1}-{key2}-") //(1)!
@@ -625,7 +622,7 @@ You can specify a delimiter for [key prefix](https://docs.aws.amazon.com/AmazonS
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List(value = "prefix/foo/bar", delimiter = "/") //(1)!
@@ -638,7 +635,7 @@ You can specify a delimiter for [key prefix](https://docs.aws.amazon.com/AmazonS
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List(value = "prefix/foo/bar", delimiter = "/") //(1)!
@@ -658,7 +655,7 @@ It is required to specify the key and body of the file to be added:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Put
@@ -677,7 +674,7 @@ It is required to specify the key and body of the file to be added:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Put
@@ -708,7 +705,7 @@ all method arguments must be part of a compound key.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Put("prefix-{key1}-{key2}-suffix") //(1)!
@@ -722,7 +719,7 @@ all method arguments must be part of a compound key.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Put("prefix-{key1}-{key2}-suffix") //(1)!
@@ -741,7 +738,7 @@ It is suggested to use the `@S3.Delete` annotation for the operation.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete //(1)!
@@ -759,7 +756,7 @@ It is suggested to use the `@S3.Delete` annotation for the operation.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete //(1)!
@@ -782,7 +779,7 @@ all method arguments must be part of the composite key.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete("prefix-{key1}-{key2}-suffix") //(1)!
@@ -796,7 +793,7 @@ all method arguments must be part of the composite key.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete("prefix-{key1}-{key2}-suffix") //(1)!
@@ -815,7 +812,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete //(1)!
@@ -829,7 +826,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete //(1)!

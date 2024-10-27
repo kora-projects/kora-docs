@@ -14,7 +14,7 @@ search:
 Проверим конфигурацию в `gradle/wrapper/gradle-wrapper.properties`:
 
 ```properties
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 ```
 
 ## Настройка Gradle
@@ -110,7 +110,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
 ## Конфигурация приложения
 
-Для запуска приложения нам нужно сформировать контейнер. Для этого создадим интерфейс `Application` с таким кодом:
+Для запуска приложения нам нужно сформировать точку входа в приложение и контейнер зависимостей. 
+Для этого создадим интерфейс `Application` с таким кодом:
 
 === ":fontawesome-brands-java: `Java`"
 
@@ -134,8 +135,9 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     interface Application : HoconConfigModule, UndertowHttpServerModule
     ```
 
-Если мы запустим компиляцию, то будет создан класс `ApplicationGraph`, в котором описано как собирать все компоненты нашего будущего контейнера.
-Что нам предоставляет `UndertowHttpServerModule`:
+Если мы запустим компиляцию, то будет создан класс `ApplicationGraph`, в котором описано как собирать все компоненты нашего будущего контейнера зависимостей.
+
+Что нам предоставляет модуль `UndertowHttpServerModule`:
 
 * Сервер для публичного апи на порту 8080
 * Сервер для системного апи на порту 8085
@@ -170,8 +172,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
     }
     ```
 
-`KoraApplication.run` запускает параллельную инициализацию всех компонентов в контейнере и блокирует основной поток до получения сигнала `SIGTERM`, 
-после этого приложение начинает штатное завершение.
+`KoraApplication.run` запускает параллельную инициализацию всех компонентов в контейнере зависимостей 
+и блокирует основной поток до получения сигнала `SIGTERM`, после этого приложение начинает штатное завершение.
 Теперь, если мы запустим это приложение, то нам будут доступны маршруты по ссылкам выше.
 
 ## Контроллер

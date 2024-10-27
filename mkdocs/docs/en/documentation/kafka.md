@@ -40,7 +40,7 @@ Creating a `Consumer` requires using the `@KafkaListener` annotation over a meth
     @Component
     final class ConsumerService {
         
-        @KafkaListener("path.to.config")
+        @KafkaListener("kafka.someConsumer")
         void process(String key, String value) { 
             // my code
         }
@@ -53,7 +53,7 @@ Creating a `Consumer` requires using the `@KafkaListener` annotation over a meth
     @Component
     class ConsumerService {
 
-        @KafkaListener("path.to.config")
+        @KafkaListener("kafka.someConsumer")
         fun process(key: String, value: String) {
             // my code
         }
@@ -71,12 +71,12 @@ each with its own individual configuration. It looks like this:
     @Component
     final class ConsumerService {
         
-        @KafkaListener("path.to.first.config")
+        @KafkaListener("kafka.someConsumer1")
         void processFirst(String key, String value) { 
             // some handler code
         }
         
-        @KafkaListener("path.to.second.config")
+        @KafkaListener("kafka.someConsumer2")
         void processSecond(String key, String value) {
             // some handler code
         }
@@ -89,12 +89,12 @@ each with its own individual configuration. It looks like this:
     @Component
     class ConsumerService {
 
-        @KafkaListener("path.to.first.config")
+        @KafkaListener("kafka.someConsumer1")
         fun processFirst(key: String, value: String) {
             // some handler code
         }
 
-        @KafkaListener("path.to.second.config")
+        @KafkaListener("kafka.someConsumer2")
         fun processSecond(key: String, value: String) {
             // some handler code
         }
@@ -105,42 +105,40 @@ The value in the annotation indicates from which part of the configuration file 
 
 ### Configuration
 
-Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `path.to.config` is given below.
+Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `kafka.someConsumer` is given below.
 
 Example of the complete configuration described in the `KafkaListenerConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-      to {
-        config {
-          topics = [ "topic1", "topic2" ] //(1)!
-          topicsPattern = "topic*" //(2)!
-          partitions = [ "1", "2" ] //(3)!
-          offset = "latest" //(4)!
-          pollTimeout = "5s" //(5)!
-          backoffTimeout = "15s" //(6)!
-          partitionRefreshInterval = "1m" //(7)!
-          threads = 1 //(8)!
-          driverProperties { //(9)!
-            "bootstrap.servers": "localhost:9093"
-            "group.id": "my-group-id"
-          }
-          telemetry {
-            logging {
-              enabled = false //(10)!
+    kafka {
+        someConsumer {
+            topics = ["topic1", "topic2"] //(1)!
+            topicsPattern = "topic*" //(2)!
+            partitions = ["1", "2"] //(3)!
+            offset = "latest" //(4)!
+            pollTimeout = "5s" //(5)!
+            backoffTimeout = "15s" //(6)!
+            partitionRefreshInterval = "1m" //(7)!
+            threads = 1 //(8)!
+            driverProperties { //(9)!
+                "bootstrap.servers": "localhost:9093"
+                "group.id": "my-group-id"
             }
-            metrics {
-              enabled = true //(11)!
-              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(12)!
+            telemetry {
+                logging {
+                    enabled = false //(10)!
+                }
+                metrics {
+                    enabled = true //(11)!
+                    slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(12)!
+                }
+                tracing {
+                    enabled = true //(13)!
+                }
             }
-            tracing {
-              enabled = true //(13)!
-            }
-          }
         }
-      }
     }
     ```
 
@@ -164,32 +162,31 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          topics: #(1)!
-            - "topic1"
-            - "topic2"
-          topicsPattern: "topic*" #(2)!
-          partitions: #(3)!
-            - "1"
-            - "2"
-          offset: "latest" #(4)!
-          pollTimeout: "5s" #(5)!
-          backoffTimeout: "15s" #(6)!
-          partitionRefreshInterval: "1m" #(7)!
-          threads: 1 #(8)!
-          driverProperties: #(9)!
-            bootstrap.servers: "localhost:9093"
-            group.id: "my-group-id"
+    kafka:
+      someConsumer:
+        topics: #(1)!
+          - "topic1"
+          - "topic2"
+        topicsPattern: "topic*" #(2)!
+        partitions: #(3)!
+          - "1"
+          - "2"
+        offset: "latest" #(4)!
+        pollTimeout: "5s" #(5)!
+        backoffTimeout: "15s" #(6)!
+        partitionRefreshInterval: "1m" #(7)!
+        threads: 1 #(8)!
+        driverProperties: #(9)!
+          bootstrap.servers: "localhost:9093"
+          group.id: "my-group-id"
+        telemetry:
+          logging:
+            enabled: false #(10)!
+          metrics:
+            enabled: true #(11)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
           telemetry:
-            logging:
-              enabled: false #(10)!
-            metrics:
-              enabled: true #(11)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
-            telemetry:
-              enabled: true #(13)!
+            enabled: true #(13)!
     ```
 
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
@@ -222,27 +219,24 @@ Example of `assign` strategy configuration:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-      to {
-        config {
-          topics: "first"
-          driverProperties {
-            "bootstrap.servers": "localhost:9093"
-          }
+    kafka {
+        someConsumer {
+            topics: "first"
+            driverProperties {
+              "bootstrap.servers": "localhost:9093"
+            }
         }
-      }
     }
     ```
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          topics: "first"
-          driverProperties:
-            "bootstrap.servers": "localhost:9093"
+    kafka:
+      someConsumer:
+        topics: "first"
+        driverProperties:
+          "bootstrap.servers": "localhost:9093"
     ```
 
 ### Signatures
@@ -255,13 +249,13 @@ Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) fro
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaListener("path.to.config")
-    void process(K key, V value, Headers headers) {
+    @KafkaListener("kafka.someConsumer1")
+    void process1(K key, V value, Headers headers) {
         // some handler code
     }
 
-    @KafkaListener("path.to.other.config")
-    void process(@Nullable V value, @Nullable Exception exception) {
+    @KafkaListener("kafka.someConsumer2")
+    void process2(@Nullable V value, @Nullable Exception exception) {
         // some handler code
     }
     ```
@@ -269,13 +263,13 @@ Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) fro
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaListener("path.to.config")
-    fun process(key: K, value: V, headers: Headers) {
+    @KafkaListener("kafka.someConsumer1")
+    fun process1(key: K, value: V, headers: Headers) {
         // some handler code
     }
 
-    @KafkaListener("path.to.other.config")
-    fun process(value: V?, exception: Exception?) {
+    @KafkaListener("kafka.someConsumer2")
+    fun process2(value: V?, exception: Exception?) {
         // some handler code
     }
     ```
@@ -285,7 +279,7 @@ Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryCon
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaListener("path.to.config")
+    @KafkaListener("kafka.someConsumer")
     void process(ConsumerRecord<String, String> record) {
         // some handler code
     }
@@ -294,7 +288,7 @@ Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryCon
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaListener("path.to.config")
+    @KafkaListener("kafka.someConsumer")
     fun process(record: ConsumerRecord<String, String>) {
         // some handler code
     }
@@ -307,7 +301,7 @@ Called for each `ConsumerRecord` obtained by calling `poll()`:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaListener("path.to.config")
+    @KafkaListener("kafka.someConsumer")
     void process(ConsumerRecord<String, String> record, Consumer<String, String> consumer) {
         // some handler code
     }
@@ -316,7 +310,7 @@ Called for each `ConsumerRecord` obtained by calling `poll()`:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaListener("path.to.config")
+    @KafkaListener("kafka.someConsumer")
     fun process(record: ConsumerRecord<String, String>, consumer: Consumer<String, String>) {
         // some handler code
     }
@@ -336,12 +330,12 @@ These tags will be set on container dependencies.
     @Component
     final class ConsumerService {
 
-        @KafkaListener("path.to.config1")
+        @KafkaListener("kafka.someConsumer1")
         void process1(@Tag(Sometag1.class) String key, @Tag(Sometag2.class) String value) {
             // some handler code
         }
 
-        @KafkaListener("path.to.config2")
+        @KafkaListener("kafka.someConsumer2")
         void process2(ConsumerRecord<@Tag(Sometag1.class) String, @Tag(Sometag2.class) String> record) {
             // some handler code
         }
@@ -353,12 +347,12 @@ These tags will be set on container dependencies.
     ```kotlin
     @Component
     class ConsumerService {
-        @KafkaListener("path.to.config1")
+        @KafkaListener("kafka.someConsumer1")
         fun process1(@Tag(Sometag1::class) key: String, @Tag(Sometag2::class) value: String) {
             // some handler code
         }
 
-        @KafkaListener("path.to.config2")
+        @KafkaListener("kafka.someConsumer2")
         fun process2(record: ConsumerRecord<@Tag(Sometag1::class) String, @Tag(Sometag2::class) String>) {
             // some handler code
         }
@@ -376,12 +370,12 @@ In case deserialization from `Json` is required, the `@Json` tag can be used:
         @Json
         public record JsonEvent(String name, Integer code) {}
 
-        @KafkaListener("path.to.config1")
+        @KafkaListener("kafka.someConsumer1")
         void process1(String key, @Json JsonEvent value) {
             // some handler code
         }
 
-        @KafkaListener("path.to.config2")
+        @KafkaListener("kafka.someConsumer2")
         void process2(ConsumerRecord<String, @Json JsonEvent> record) {
             // some handler code
         }
@@ -397,7 +391,7 @@ In case deserialization from `Json` is required, the `@Json` tag can be used:
         @Json
         data class JsonEvent(val name: String, val code: Int)
 
-        @KafkaListener("path.to.config1")
+        @KafkaListener("kafka.someConsumer1")
         fun process1(key: String, @Json value: JsonEvent) {
             // some handler code
         }
@@ -432,7 +426,7 @@ or `RecordValueDeserializationException`.
     @Component
     final class ConsumerService {
 
-        @KafkaListener("path.to.config")
+        @KafkaListener("kafka.someConsumer")
         public void process(@Nullable String key, @Nullable String value, @Nullable Exception exception) {
             if (exception != null) {
                 // handle exception
@@ -449,7 +443,7 @@ or `RecordValueDeserializationException`.
     @Component
     class ConsumerService {
 
-        @KafkaListener("path.to.config")
+        @KafkaListener("kafka.someConsumer")
         fun process(key: String?, value: String?, exception: Exception?) {
             if (exception != null) {
                 // handle exception
@@ -474,7 +468,7 @@ If for some reason you need to override the consumer tag, you can set it as an a
     @Component
     final class ConsumerService {
 
-        @KafkaListener(value = "path.to.config", tag = ConsumerService.class)
+        @KafkaListener(value = "kafka.someConsumer", tag = ConsumerService.class)
         public void process(String value) {
           
         }
@@ -487,7 +481,7 @@ If for some reason you need to override the consumer tag, you can set it as an a
     @Component
     class ConsumerService {
 
-        @KafkaListener(value = "path.to.config", tag = ConsumerService::class)
+        @KafkaListener(value = "kafka.someConsumer", tag = ConsumerService::class)
         fun process(value: String) {
 
         }
@@ -572,7 +566,7 @@ in order to send messages to any topic it is supposed to create a method with th
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
           void send(ProducerRecord<String, String> record);
     }
@@ -581,7 +575,7 @@ in order to send messages to any topic it is supposed to create a method with th
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
         fun send(record: ProducerRecord<String, String>)
     }
@@ -597,10 +591,10 @@ to create such contracts:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         void send(String value);
     }
     ```
@@ -608,10 +602,10 @@ to create such contracts:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String)
     } 
     ```
@@ -620,33 +614,31 @@ The annotation parameter indicates the path for the configuration of the topic.
 
 ### Configuration
 
-Configuration describes the settings of a particular `@KafkaPublisher` and an example is given below for the configuration on the `path.to.config` path.
+Configuration describes the settings of a particular `@KafkaPublisher` and an example is given below for the configuration on the `kafka.someConsumer` path.
 
 Example of the complete configuration described in the `KafkaPublisherConfig` class (default or example values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-      to {
-        config {
-          driverProperties { //(1)!
-            "bootstrap.servers": "localhost:9093"
-          }
-          telemetry {
-            logging {
-              enabled = false //(2)!
+    kafka {
+        someProducer {
+            driverProperties { //(1)!
+              "bootstrap.servers": "localhost:9093"
             }
-            metrics {
-              enabled = true //(3)!
-              slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+            telemetry {
+              logging {
+                enabled = false //(2)!
+              }
+              metrics {
+                enabled = true //(3)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+              }
+              tracing {
+                enabled = true //(5)!
+              }
             }
-            tracing {
-              enabled = true //(5)!
-            }
-          }
         }
-      }
     }
     ```
 
@@ -659,19 +651,18 @@ Example of the complete configuration described in the `KafkaPublisherConfig` cl
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          driverProperties: #(1)!
-            bootstrap.servers: "localhost:9093"
+    kafka:
+      someProducer:
+        driverProperties: #(1)!
+          bootstrap.servers: "localhost:9093"
+        telemetry:
+          logging:
+            enabled: true #(2)!
+          metrics:
+            enabled: true #(3)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
           telemetry:
-            logging:
-              enabled: true #(2)!
-            metrics:
-              enabled: true #(3)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
-            telemetry:
-              enabled: true #(5)!
+            enabled: true #(5)!
     ```
 
     1. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#producerconfigs) (**required**)
@@ -687,13 +678,11 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-      to {
-        topic {
-          config {
-            topic = "my-topic" //(1)!
-            partition = 1 //(2)!
-          }
+    kafka {
+      someProducer {
+        someTopic {
+          topic = "my-topic" //(1)!
+          partition = 1 //(2)!
         }
       }
     }
@@ -705,12 +694,11 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        topic:
-          config:
-            topic: "my-topic" #(1)!
-            partition: 1 #(2)!
+    kafka:
+      someProducer:
+        someTopic:
+          topic: "my-topic" #(1)!
+          partition: 1 #(2)!
     ```
 
     1. Topic where method will send data (**required**)
@@ -723,10 +711,10 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         void send(String key, String value, Headers headers);
     }
     ```
@@ -734,10 +722,10 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(key: String, value: String, headers: Headers)
     } 
     ```
@@ -747,10 +735,10 @@ Can be received as the result of a `RecordMetadata` operation:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         RecordMetadata send(String value);
     }
     ```
@@ -758,10 +746,10 @@ Can be received as the result of a `RecordMetadata` operation:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String): RecordMetadata
     } 
     ```
@@ -771,13 +759,13 @@ Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         Future<RecordMetadata> send(String value);
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         CompletionStage<RecordMetadata> sendStage(V value);
     }
     ```
@@ -785,10 +773,10 @@ Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String): Future<RecordMetadata>
     } 
     ```
@@ -798,7 +786,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
           void send(ProducerRecord<String, String> record, Callback callback);
@@ -808,7 +796,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         fun send(record: ProducerRecord<String, String>, callback: Callback)
@@ -823,12 +811,12 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyKafkaProducer {
 
         void send(ProducerRecord<@Tag(MyTag1.class) String, @Tag(MyTag2.class) String> record);
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         void send(@Tag(MyTag1.class) String key, @Tag(MyTag2.class) String value);
     }
     ```
@@ -836,12 +824,12 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyKafkaProducer {
 
         fun send(record: ProducerRecord<@Tag(MyTag1::class) String, @Tag(MyTag2::class) String>)
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(@Tag(MyTag1::class) key: String, @Tag(MyTag2::class) value: String)
     }
     ```
@@ -851,7 +839,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyKafkaProducer {
 
         @Json
@@ -859,7 +847,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 
         void send(ProducerRecord<String, @Json JsonEvent> record);
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         void send(String key, @Json JsonEvent value);
     }
     ```
@@ -867,7 +855,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyKafkaProducer {
 
         @Json
@@ -875,7 +863,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 
         fun send(record: ProducerRecord<String, @Json JsonEvent>)
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(key: String, @Json value: JsonEvent)
     }
     ```
@@ -900,14 +888,14 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         void send(String key, String value);
     }
 
-    @KafkaPublisher("path.to.transactional.config")
+    @KafkaPublisher("kafka.someTransactionalProducer")
     public interface MyTransactionalPublisher extends TransactionalPublisher<MyPublisher> {
 
     }
@@ -916,15 +904,15 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KafkaPublisher("path.to.config")
+    @@KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
-        @KafkaPublisher.Topic("path.to.topic.config")
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(key: String, value: String)
     }
 
 
-    @KafkaPublisher("path.to.transactional.config")
+    @KafkaPublisher("kafka.someTransactionalProducer")
     interface MyTransactionalPublisher : TransactionalPublisher<MyPublisher> 
     ```
 
@@ -981,15 +969,11 @@ It is also possible to manually perform all manipulations with `KafkaProducer`:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            transactional {
-                config {
-                    idPrefix = "kafka-app-" //(1)!
-                    maxPoolSize = 10 //(2)!
-                    maxWaitTime = "10s" //(3)!
-                }
-            }
+    kafka {
+        someTransactionalProducer {
+            idPrefix = "kafka-app-" //(1)!
+            maxPoolSize = 10 //(2)!
+            maxWaitTime = "10s" //(3)!
         }
     }
     ```
@@ -1001,13 +985,11 @@ It is also possible to manually perform all manipulations with `KafkaProducer`:
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        transactional:
-          config:
-            idPrefix: "kafka-app-" #(1)!
-            maxPoolSize: 10 #(2)!
-            maxWaitTime: "10s" #(3)!
+    kafka:
+      someTransactionalProducer:
+        idPrefix: "kafka-app-" #(1)!
+        maxPoolSize: 10 #(2)!
+        maxWaitTime: "10s" #(3)!
     ```
 
     1. Transaction identifier prefix
