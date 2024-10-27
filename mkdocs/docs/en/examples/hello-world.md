@@ -14,7 +14,7 @@ We will need gradlew with a customized version of Gradle above `7.*`.
 Let's check the configuration in `gradle/wrapper/gradle-wrapper.properties`:
 
 ```properties
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 ```
 
 ## Configuring Gradle
@@ -110,7 +110,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.6-bin.zip
 
 ## Application Configuration
 
-To run the application, we need to form a container. To do this, let's create the `Application` interface with this code:
+In order to run application, we need to create entrypoint and dependency container. Let's create the `Application` interface with this code:
 
 === ":fontawesome-brands-java: `Java`"
 
@@ -134,8 +134,10 @@ To run the application, we need to form a container. To do this, let's create th
     interface Application : HoconConfigModule, UndertowHttpServerModule
     ```
 
-If we run the compilation, the `ApplicationGraph` class will be created, which describes how to build all the components of our future container.
-What `UndertowHttpServerModule` provides us with:
+If we run the compilation, the `ApplicationGraph` class will be created, 
+which describes how to build all the components of our future dependency container.
+
+What `UndertowHttpServerModule` module provides us with:
 
 * A server for public api on port 8080
 * A server for system api on port 8085
@@ -170,7 +172,7 @@ Next we need to create an entry point, let's create an `Application` class with 
     }
     ```
 
-`KoraApplication.run` starts parallel initialization of all components in the container and blocks the main thread until the `SIGTERM` signal is received,
+`KoraApplication.run` starts parallel initialization of all components in the dependency container and blocks the main thread until the `SIGTERM` signal is received,
 after which the application initiates graceful shutdown.
 Now, if we run this application, we will have access to the routers in the links above.
 
@@ -228,7 +230,7 @@ Now let's write a controller that will handle the `GET /hello/world` request on 
 Let's get into the details:
 
 * `@HttpController` - says that this class is a controller
-* `@Component` - says that we want to add this class to our container
+* `@Component` - says that we want to add this class to our dependency container
 * `@HttpRoute` - describes which path we want to process.
 * `HttpServerResponse` - this is the raw response, where you can set anything and give any bytes you want.
 
@@ -248,7 +250,7 @@ Use command below to start application:
 
 ## Json Controller
 
-In normal life we still return in `Json` format more often, for this we will add a `JsonModule` module:
+In normal life we want to return `Json` format more often, for this we will add a `JsonModule` module:
 
 === ":fontawesome-brands-java: `Java`"
 

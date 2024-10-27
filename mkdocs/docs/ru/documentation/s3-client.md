@@ -316,7 +316,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config") //(1)!
+    @S3.Client("s3client.someClient") //(1)!
     public interface SomeClient {
 
         @S3.Get 
@@ -329,7 +329,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config") //(1)!
+    @S3.Client("s3client.someClient") //(1)!
     interface SomeClient {
 
         @S3.Get 
@@ -339,16 +339,14 @@
 
     1. Путь до конфигурации конкретно этого клиента
 
-Пример конфигурации в случае пути `path.to.config` описанной в классе `S3ClientConfig`:
+Пример конфигурации в случае пути `s3client.someClient` описанной в классе `S3ClientConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                bucket = "someBucket" //(1)!
-            }
+    s3client {
+        someClient {
+            bucket = "someBucket" //(1)!
         }
     }
     ```
@@ -358,10 +356,9 @@
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          bucket: "someBucket" #(1)!
+    s3client:
+      someClient:
+        bucket: "someBucket" #(1)!
     ```
 
     1.  Корзина ([bucket](https://aws.amazon.com/ru/s3/faqs/)) где будут хранится файлы
@@ -374,7 +371,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get //(1)!
@@ -392,7 +389,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get //(1)!
@@ -416,7 +413,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get
@@ -429,7 +426,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get
@@ -447,7 +444,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get("prefix-{key1}-{key2}-suffix") //(1)!
@@ -461,7 +458,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get("prefix-{key1}-{key2}-suffix") //(1)!
@@ -480,7 +477,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Get //(1)!
@@ -494,7 +491,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Get //(1)!
@@ -516,7 +513,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List
@@ -537,7 +534,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List
@@ -564,7 +561,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List
@@ -577,7 +574,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List
@@ -595,7 +592,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List("prefix-{key1}-{key2}-") //(1)!
@@ -608,7 +605,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List("prefix-{key1}-{key2}-") //(1)!
@@ -625,7 +622,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.List(value = "prefix/foo/bar", delimiter = "/") //(1)!
@@ -638,7 +635,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.List(value = "prefix/foo/bar", delimiter = "/") //(1)!
@@ -658,7 +655,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Put
@@ -677,7 +674,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Put
@@ -708,7 +705,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Put("prefix-{key1}-{key2}-suffix") //(1)!
@@ -722,7 +719,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Put("prefix-{key1}-{key2}-suffix") //(1)!
@@ -741,7 +738,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete //(1)!
@@ -759,7 +756,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete //(1)!
@@ -782,7 +779,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete("prefix-{key1}-{key2}-suffix") //(1)!
@@ -796,7 +793,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete("prefix-{key1}-{key2}-suffix") //(1)!
@@ -815,7 +812,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     public interface SomeClient {
 
         @S3.Delete //(1)!
@@ -829,7 +826,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @S3.Client("path.to.config")
+    @S3.Client("s3client.someClient")
     interface SomeClient {
 
         @S3.Delete //(1)!

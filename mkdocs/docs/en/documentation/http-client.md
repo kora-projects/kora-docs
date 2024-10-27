@@ -359,7 +359,7 @@ or specified in the `configPath` parameter in the annotation:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @HttpClient(configPath = "path.to.config") //(1)!
+    @HttpClient(configPath = "httpClient.someClient") //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -372,7 +372,7 @@ or specified in the `configPath` parameter in the annotation:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @HttpClient(configPath = "path.to.config") //(1)!
+    @HttpClient(configPath = "httpClient.someClient") //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -382,31 +382,29 @@ or specified in the `configPath` parameter in the annotation:
 
     1. The path to the configuration of this particular client
 
-Example configuration in the case of the `path.to.config` path described in the `DeclarativeHttpClientConfig` class:
+Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                url = "https://localhost:8090" //(1)!
-                requestTimeout = "10s" //(2)!
-                telemetry {
-                    logging {
-                        enabled = false //(3)!
-                        mask = "***" //(4)!
-                        maskQueries = [ ] //(5)!
-                        maskHeaders = [ "authorization" ] //(6)!
-                        pathTemplate = true //(7)!
-                    }
-                    metrics {
-                        enabled = true //(8)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                    }
-                    tracing {
-                        enabled = true //(10)!
-                    }
+    httpClient {
+        someClient {
+            url = "https://localhost:8090" //(1)!
+            requestTimeout = "10s" //(2)!
+            telemetry {
+                logging {
+                    enabled = false //(3)!
+                    mask = "***" //(4)!
+                    maskQueries = [ ] //(5)!
+                    maskHeaders = [ "authorization" ] //(6)!
+                    pathTemplate = true //(7)!
+                }
+                metrics {
+                    enabled = true //(8)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                }
+                tracing {
+                    enabled = true //(10)!
                 }
             }
         }
@@ -427,23 +425,22 @@ Example configuration in the case of the `path.to.config` path described in the 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          url: "https://localhost:8090" //(1)!
-          requestTimeout: "10s" //(2)!
+    httpClient:
+      someClient:
+        url: "https://localhost:8090" #(1)!
+        requestTimeout: "10s" #(2)!
+        telemetry:
+          logging:
+            enabled: false #(3)!
+            mask: "***" #(4)!
+            maskQueries: [ ] #(5)!
+            maskHeaders: [ "authorization" ] #(6)!
+            pathTemplate: true #(7)!
+          metrics:
+            enabled: true #(8)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
           telemetry:
-            logging:
-              enabled: false #(3)!
-              mask: "***" #(4)!
-              maskQueries: [ ] #(5)!
-              maskHeaders: [ "authorization" ] #(6)!
-              pathTemplate: true #(7)!
-            metrics:
-              enabled: true #(8)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-            telemetry:
-              enabled: true #(10)!
+            enabled: true #(10)!
     ```
 
     1. URL of the service where requests will be sent
@@ -460,32 +457,30 @@ Example configuration in the case of the `path.to.config` path described in the 
 ### Method Configuration
 
 Using the above HTTP client example, it is possible to configure separately some of the parameters for a particular method, the configuration path
-is determined by the path to the client and the method name, in the example above the configuration is `path.to.config`
-and method `hello` the final path will be `path.to.config.getHello`
+is determined by the path to the client and the method name, in the example above the configuration is `httpClient.someClient`
+and method `hello` the final path will be `httpClient.someClient.getHello`
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                hello {
-                    requestTimeout = "10s" //(1)!
-                    telemetry {
-                        logging {
-                            enabled = false //(2)!
-                            mask = "***" //(3)!
-                            maskQueries = [ ] //(4)!
-                            maskHeaders = [ "authorization" ] //(5)!
-                            pathTemplate = true //(6)!
-                        }
-                        metrics {
-                            enabled = true //(7)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                        }
-                        tracing {
-                            enabled = true //(9)!
-                        }
+    httpClient {
+        someClient {
+            hello {
+                requestTimeout = "10s" //(1)!
+                telemetry {
+                    logging {
+                        enabled = false //(2)!
+                        mask = "***" //(3)!
+                        maskQueries = [ ] //(4)!
+                        maskHeaders = [ "authorization" ] //(5)!
+                        pathTemplate = true //(6)!
+                    }
+                    metrics {
+                        enabled = true //(7)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
+                    }
+                    tracing {
+                        enabled = true //(9)!
                     }
                 }
             }
@@ -506,23 +501,22 @@ and method `hello` the final path will be `path.to.config.getHello`
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          hello:  
-            requestTimeout: "10s" #(1)!
+    httpClient:
+      someClient:
+        hello:  
+          requestTimeout: "10s" #(1)!
+          telemetry:
+            logging:
+              enabled: false #(2)!
+                mask: "***" #(3)!
+                maskQueries: [ ] #(4)!
+                maskHeaders: [ "authorization" ] #(5)!
+                pathTemplate: true #(6)!
+            metrics:
+              enabled: true #(7)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
             telemetry:
-              logging:
-                enabled: false #(2)!
-                  mask: "***" #(3)!
-                  maskQueries: [ ] #(4)!
-                  maskHeaders: [ "authorization" ] #(5)!
-                  pathTemplate: true #(6)!
-              metrics:
-                enabled: true #(7)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-              telemetry:
-                enabled: true #(9)!
+              enabled: true #(9)!
     ```
 
     1.  Maximum method query time

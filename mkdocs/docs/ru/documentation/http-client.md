@@ -355,7 +355,7 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @HttpClient(configPath = "path.to.config") //(1)!
+    @HttpClient(configPath = "httpClient.someClient") //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -368,7 +368,7 @@
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @HttpClient(configPath = "path.to.config") //(1)!
+    @HttpClient(configPath = "httpClient.someClient") //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -378,31 +378,29 @@
 
     1. Путь до конфигурации конкретно этого клиента
 
-Пример конфигурации в случае пути `path.to.config` описанной в классе `DeclarativeHttpClientConfig`:
+Пример конфигурации в случае пути `httpClient.someClient` описанной в классе `DeclarativeHttpClientConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                url = "https://localhost:8090" //(1)!
-                requestTimeout = "10s" //(2)!
-                telemetry {
-                    logging {
-                        enabled = false //(3)!
-                        mask = "***" //(4)!
-                        maskQueries = [ ] //(5)!
-                        maskHeaders = [ "authorization" ] //(6)!
-                        pathTemplate = true //(7)!
-                    }
-                    metrics {
-                        enabled = true //(8)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                    }
-                    tracing {
-                        enabled = true //(10)!
-                    }
+    httpClient {
+        someClient {
+            url = "https://localhost:8090" //(1)!
+            requestTimeout = "10s" //(2)!
+            telemetry {
+                logging {
+                    enabled = false //(3)!
+                    mask = "***" //(4)!
+                    maskQueries = [ ] //(5)!
+                    maskHeaders = [ "authorization" ] //(6)!
+                    pathTemplate = true //(7)!
+                }
+                metrics {
+                    enabled = true //(8)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                }
+                tracing {
+                    enabled = true //(10)!
                 }
             }
         }
@@ -423,23 +421,22 @@
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          url: "https://localhost:8090" #(1)!
-          requestTimeout: "10s" #(2)!
+    httpClient:
+      someClient:
+        url: "https://localhost:8090" #(1)!
+        requestTimeout: "10s" #(2)!
+        telemetry:
+          logging:
+            enabled: false #(3)!
+            mask: "***" #(4)!
+            maskQueries: [ ] #(5)!
+            maskHeaders: [ "authorization" ] #(6)!
+            pathTemplate: true #(7)!
+          metrics:
+            enabled: true #(8)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
           telemetry:
-            logging:
-              enabled: false #(3)!
-              mask: "***" #(4)!
-              maskQueries: [ ] #(5)!
-              maskHeaders: [ "authorization" ] #(6)!
-              pathTemplate: true #(7)!
-            metrics:
-              enabled: true #(8)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-            telemetry:
-              enabled: true #(10)!
+            enabled: true #(10)!
     ```
 
     1.  URL сервиса куда будут отправляться запросы
@@ -456,32 +453,30 @@
 ### Конфигурация метода
 
 На примере выше рассмотренного HTTP клиента, можно настроить отдельно часть параметров для определенного метода, путь к конфигурации 
-определяется путем к клиенту и именем метода, в примере выше конфигурация `path.to.config` 
-и метода `hello` финальный путь будет `path.to.config.getHello`
+определяется путем к клиенту и именем метода, в примере выше конфигурация `httpClient.someClient` 
+и метода `hello` финальный путь будет `httpClient.someClient.getHello`
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    path {
-        to {
-            config {
-                hello {
-                    requestTimeout = "10s" //(1)!
-                    telemetry {
-                        logging {
-                            enabled = false //(2)!
-                            mask = "***" //(3)!
-                            maskQueries = [ ] //(4)!
-                            maskHeaders = [ "authorization" ] //(5)!
-                            pathTemplate = true //(6)!
-                        }
-                        metrics {
-                            enabled = true //(7)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                        }
-                        tracing {
-                            enabled = true //(9)!
-                        }
+    httpClient {
+        someClient {
+            hello {
+                requestTimeout = "10s" //(1)!
+                telemetry {
+                    logging {
+                        enabled = false //(2)!
+                        mask = "***" //(3)!
+                        maskQueries = [ ] //(4)!
+                        maskHeaders = [ "authorization" ] //(5)!
+                        pathTemplate = true //(6)!
+                    }
+                    metrics {
+                        enabled = true //(7)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
+                    }
+                    tracing {
+                        enabled = true //(9)!
                     }
                 }
             }
@@ -502,23 +497,22 @@
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    path:
-      to:
-        config:
-          hello:  
-            requestTimeout: "10s" #(1)!
+    httpClient:
+      someClient:
+        hello:  
+          requestTimeout: "10s" #(1)!
+          telemetry:
+            logging:
+              enabled: false #(2)!
+                mask: "***" #(3)!
+                maskQueries: [ ] #(4)!
+                maskHeaders: [ "authorization" ] #(5)!
+                pathTemplate: true #(6)!
+            metrics:
+              enabled: true #(7)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
             telemetry:
-              logging:
-                enabled: false #(2)!
-                  mask: "***" #(3)!
-                  maskQueries: [ ] #(4)!
-                  maskHeaders: [ "authorization" ] #(5)!
-                  pathTemplate: true #(6)!
-              metrics:
-                enabled: true #(7)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-              telemetry:
-                enabled: true #(9)!
+              enabled: true #(9)!
     ```
 
     1.  Максимальное время запроса метода

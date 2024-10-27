@@ -2,7 +2,8 @@ Basic principles and mechanisms of database modules in Kora.
 
 We think that the best way to communicate with a SQL database is to communicate in its native SQL language.
 Other tools often have limitations on using specific functions of a particular database,
-or a complex programming language for building queries that requires a sometimes deep understanding and knowledge.
+or a complex program language for building queries that requires additional and considerable time to learn and master,
+carries a lot of non-obviousness and potential errors on the part of the developer, and also sometimes has low performance.
 
 ## Entity
 

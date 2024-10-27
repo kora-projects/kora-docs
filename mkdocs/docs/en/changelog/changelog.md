@@ -318,4 +318,4 @@ Fixed:
 
 # 1.0.0
 
-First fully stable version.
+First fully stabilized version with stable API.
