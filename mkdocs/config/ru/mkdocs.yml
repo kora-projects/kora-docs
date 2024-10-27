@@ -68,7 +68,7 @@ edit_uri: /kora-projects/kora-docs/tree/master/mkdocs/docs/ru
 theme:
   name: material
   custom_dir: ../../overrides/
-  favicon: assets/img/kora-32.png
+  favicon: assets/img/kora.ico
   logo: assets/img/kora-big.png
   language: ru
   icon:
