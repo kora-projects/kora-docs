@@ -13,7 +13,8 @@ Framework has its own dependency container with inversion of control that works 
 Kora is a cloud-oriented server framework and offers many modules for quickly building applications such as 
 [HTTP server](documentation/http-server.md), 
 [Kafka](documentation/kafka.md) consumers, 
-database abstraction in the form of [repositories](documentation/database-common.md) and much more.
+database abstraction in the form of [repositories](documentation/database-common.md), telemetry for all modules, resilient module
+and much more.
 
 `Performance` - Kora generates high-performant code at compile time,
 avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements thin fine-grained abstraction, free aspects,

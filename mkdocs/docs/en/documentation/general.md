@@ -1,5 +1,7 @@
 Kora is a cloud-oriented server-side framework and offers
-many different modules for quickly building applications such as HTTP server, Kafka consumers, database abstraction in the form of repositories and much more.
+many different modules for quickly building applications such as HTTP server, Kafka consumers, 
+database abstraction in the form of repositories, telemetry for all modules, resilient module 
+and much more.
 
 Kora provides all the tools needed for modern Java/Kotlin server-side development:
 
