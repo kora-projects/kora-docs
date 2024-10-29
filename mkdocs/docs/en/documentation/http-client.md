@@ -57,6 +57,22 @@ and `HttpClientConfig` classes (default or example values are specified):
             password = "password"  //(8)!
             nonProxyHosts = [ "host1", "host2" ]  //(9)!
         }
+        telemetry {
+            logging {
+                enabled = false //(10)!
+                mask = "***" //(11)!
+                maskQueries = [ ] //(12)!
+                maskHeaders = [ "authorization" ] //(13)!
+                pathTemplate = true //(14)!
+            }
+            metrics {
+                enabled = true //(15)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+            }
+            tracing {
+                enabled = true //(17)!
+            }
+        }
     }
     ```
 
@@ -69,6 +85,14 @@ and `HttpClientConfig` classes (default or example values are specified):
     7. User for the proxy (optional)
     8. Password for the proxy (optional)
     9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -85,6 +109,18 @@ and `HttpClientConfig` classes (default or example values are specified):
         user: "user"  #(7)!
         password: "password"  #(8)!
         nonProxyHosts: [ "host1", "host2" ]  #(9)!
+      telemetry:
+        logging:
+          enabled: false #(10)!
+          mask: "***" #(11)!
+          maskQueries: [ ] #(12)!
+          maskHeaders: [ "authorization" ] #(13)!
+          pathTemplate: true #(14)!
+        metrics:
+          enabled: true #(15)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+        telemetry:
+          enabled: true #(17)!
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
@@ -96,6 +132,14 @@ and `HttpClientConfig` classes (default or example values are specified):
     7. User for the proxy (optional)
     8. Password for the proxy (optional)
     9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
 
 You can also configure [Netty transport](netty.md).
 
@@ -155,6 +199,22 @@ and `HttpClientConfig` classes (default or example values are specified):
             password = "password" //(9)!
             nonProxyHosts = [ "host1", "host2" ] //(10)!
         }
+        telemetry {
+            logging {
+                enabled = false //(11)!
+                mask = "***" //(12)!
+                maskQueries = [ ] //(13)!
+                maskHeaders = [ "authorization" ] //(14)!
+                pathTemplate = true //(15)!
+            }
+            metrics {
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+            }
+            tracing {
+                enabled = true //(18)!
+            }
+        }
     }
     ```
 
@@ -168,6 +228,14 @@ and `HttpClientConfig` classes (default or example values are specified):
     8. User for the proxy (optional)
     9. Password for the proxy (optional)
     10. Hosts that should be excluded from proxying (optional)
+    11. Enables module logging (default `false`)
+    12.  Mask that is used to hide specified headers and request/response parameters
+    13.  List of request parameters to be hidden
+    14.  List of request/response headers that should be hidden
+    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    16. Enables module metrics (default `true`)
+    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -185,6 +253,18 @@ and `HttpClientConfig` classes (default or example values are specified):
         user: "user"  #(8)!
         password: "password" #(9)!
         nonProxyHosts: [ "host1", "host2" ] #(10)!
+      telemetry:
+        logging:
+          enabled: false #(11)!
+          mask: "***" #(12)!
+          maskQueries: [ ] #(13)!
+          maskHeaders: [ "authorization" ] #(14)!
+          pathTemplate: true #(15)!
+        metrics:
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+        telemetry:
+          enabled: true #(18)!
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
@@ -197,6 +277,14 @@ and `HttpClientConfig` classes (default or example values are specified):
     8. User for the proxy (optional)
     9. Password for the proxy (optional)
     10. Hosts that should be excluded from proxying (optional)
+    11. Enables module logging (default `false`)
+    12.  Mask that is used to hide specified headers and request/response parameters
+    13.  List of request parameters to be hidden
+    14.  List of request/response headers that should be hidden
+    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    16. Enables module metrics (default `true`)
+    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    18. Enables module tracing (default `true`)
 
 #### Configurer
 
@@ -270,7 +358,7 @@ and `HttpClientConfig` classes (default or example values are specified):
     ```javascript
     httpClient {
         jdk {
-            threads = 10 //(1)!
+            threads = 2 //(1)!
             httpVersion = "HTTP_1_1" //(2)!
         }
         connectTimeout = "5s" //(3)!
@@ -281,6 +369,22 @@ and `HttpClientConfig` classes (default or example values are specified):
             user = "user" //(7)!
             password = "password" //(8)!
             nonProxyHosts = [ "host1", "host2" ] //(9)!
+        }
+        telemetry {
+            logging {
+                enabled = false //(10)!
+                mask = "***" //(11)!
+                maskQueries = [ ] //(12)!
+                maskHeaders = [ "authorization" ] //(13)!
+                pathTemplate = true //(14)!
+            }
+            metrics {
+                enabled = true //(15)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+            }
+            tracing {
+                enabled = true //(17)!
+            }
         }
     }
     ```
@@ -294,13 +398,21 @@ and `HttpClientConfig` classes (default or example values are specified):
     7. User for the proxy (optional)
     8. Password for the proxy (optional)
     9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
       jdk:
-        threads: 10 #(1)!
+        threads: 2 #(1)!
         httpVersion: "HTTP_1_1" #(2)!
       connectTimeout: "2s" #(3)!
       useEnvProxy: false #(4)!
@@ -310,6 +422,18 @@ and `HttpClientConfig` classes (default or example values are specified):
         user: "user" #(7)!
         password: "password" #(8)!
         nonProxyHosts: [ "host1", "host2" ] #(9)!
+      telemetry:
+        logging:
+          enabled: false #(10)!
+          mask: "***" #(11)!
+          maskQueries: [ ] #(12)!
+          maskHeaders: [ "authorization" ] #(13)!
+          pathTemplate: true #(14)!
+        metrics:
+          enabled: true #(15)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+        telemetry:
+          enabled: true #(17)!
     ```
 
     1. Number of threads for HTTP client
@@ -321,6 +445,14 @@ and `HttpClientConfig` classes (default or example values are specified):
     7. User for the proxy (optional)
     8. Password for the proxy (optional)
     9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
 
 ## Client declarative
 

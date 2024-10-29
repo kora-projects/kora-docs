@@ -238,7 +238,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
     It is required to add the [Mockito](https://site.mockito.org/) library as a `build.gradle` dependency:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.13.0"
+    testImplementation "org.mockito:mockito-core:5.17.0"
     ```
 
     [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) and [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html) annotations and all parameters of these annotations are supported.

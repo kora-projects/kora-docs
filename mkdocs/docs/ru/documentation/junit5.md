@@ -239,7 +239,7 @@
 
     Требуется подключить библиотеку [Mockito](https://site.mockito.org/) как зависимость `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.13.0"
+    testImplementation "org.mockito:mockito-core:5.17.0"
     ```
 
     Поддерживаются аннотациии [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) и [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html), а также все параметры этих аннотаций.
