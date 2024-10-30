@@ -1,148 +1,6 @@
 Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
 using declarative-style annotations or using client in imperative-style.
 
-## AsyncHttpClient
-
-HTTP client implementation based on the [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client) library.
-
-### Dependency
-
-===! ":fontawesome-brands-java: `Java`"
-
-    [Dependency](general.md#dependencies) `build.gradle`:
-    ```groovy
-    implementation "ru.tinkoff.kora:http-client-async"
-    ```
-
-    Module:
-    ```java
-    @KoraApp
-    public interface Application extends AsyncHttpClientModule { }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    [Dependency](general.md#dependencies) `build.gradle.kts`:
-    ```groovy
-    implementation("ru.tinkoff.kora:http-client-async")
-    ```
-
-    Module:
-    ```kotlin
-    @KoraApp
-    interface Application : AsyncHttpClientModule
-    ```
-
-The `HttpClient` interface implementation is `AsyncHttpClient` and is available for manual implementation.
-
-### Configuration
-
-Example of the complete configuration described in the `AsyncHttpClientConfig` 
-and `HttpClientConfig` classes (default or example values are specified):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    httpClient {
-        async {
-            followRedirects = true //(1)!
-        }
-        connectTimeout = "5s" //(2)!
-        readTimeout = "2m" //(3)!
-        useEnvProxy = false //(4)!
-        proxy {
-            host = "localhost"  //(5)!
-            port = 8090  //(6)!
-            user = "user"  //(7)!
-            password = "password"  //(8)!
-            nonProxyHosts = [ "host1", "host2" ]  //(9)!
-        }
-        telemetry {
-            logging {
-                enabled = false //(10)!
-                mask = "***" //(11)!
-                maskQueries = [ ] //(12)!
-                maskHeaders = [ "authorization" ] //(13)!
-                pathTemplate = true //(14)!
-            }
-            metrics {
-                enabled = true //(15)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
-            }
-            tracing {
-                enabled = true //(17)!
-            }
-        }
-    }
-    ```
-
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    httpClient:
-      async:
-        followRedirects: true #(1)!
-      connectTimeout: "5s" #(2)!
-      readTimeout: "2m" #(3)!
-      useEnvProxy: false #(4)!
-      proxy:
-        host: "localhost"  #(5)!
-        port: 8090  #(6)!
-        user: "user"  #(7)!
-        password: "password"  #(8)!
-        nonProxyHosts: [ "host1", "host2" ]  #(9)!
-      telemetry:
-        logging:
-          enabled: false #(10)!
-          mask: "***" #(11)!
-          maskQueries: [ ] #(12)!
-          maskHeaders: [ "authorization" ] #(13)!
-          pathTemplate: true #(14)!
-        metrics:
-          enabled: true #(15)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-        telemetry:
-          enabled: true #(17)!
-    ```
-
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
-
-You can also configure [Netty transport](netty.md).
-
 ## OkHttp
 
 HTTP client implementation based on [OkHttp](https://github.com/square/okhttp) library.
@@ -313,6 +171,148 @@ Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be av
         }
     }
     ```
+
+## AsyncHttpClient
+
+HTTP client implementation based on the [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client) library.
+
+### Dependency
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Dependency](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "ru.tinkoff.kora:http-client-async"
+    ```
+
+    Module:
+    ```java
+    @KoraApp
+    public interface Application extends AsyncHttpClientModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    ```groovy
+    implementation("ru.tinkoff.kora:http-client-async")
+    ```
+
+    Module:
+    ```kotlin
+    @KoraApp
+    interface Application : AsyncHttpClientModule
+    ```
+
+The `HttpClient` interface implementation is `AsyncHttpClient` and is available for manual implementation.
+
+### Configuration
+
+Example of the complete configuration described in the `AsyncHttpClientConfig` 
+and `HttpClientConfig` classes (default or example values are specified):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpClient {
+        async {
+            followRedirects = true //(1)!
+        }
+        connectTimeout = "5s" //(2)!
+        readTimeout = "2m" //(3)!
+        useEnvProxy = false //(4)!
+        proxy {
+            host = "localhost"  //(5)!
+            port = 8090  //(6)!
+            user = "user"  //(7)!
+            password = "password"  //(8)!
+            nonProxyHosts = [ "host1", "host2" ]  //(9)!
+        }
+        telemetry {
+            logging {
+                enabled = false //(10)!
+                mask = "***" //(11)!
+                maskQueries = [ ] //(12)!
+                maskHeaders = [ "authorization" ] //(13)!
+                pathTemplate = true //(14)!
+            }
+            metrics {
+                enabled = true //(15)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+            }
+            tracing {
+                enabled = true //(17)!
+            }
+        }
+    }
+    ```
+
+    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
+    2. Maximum time to establish a connection
+    3. Maximum time to read a response
+    4. Whether to use environment variables to configure the proxy
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpClient:
+      async:
+        followRedirects: true #(1)!
+      connectTimeout: "5s" #(2)!
+      readTimeout: "2m" #(3)!
+      useEnvProxy: false #(4)!
+      proxy:
+        host: "localhost"  #(5)!
+        port: 8090  #(6)!
+        user: "user"  #(7)!
+        password: "password"  #(8)!
+        nonProxyHosts: [ "host1", "host2" ]  #(9)!
+      telemetry:
+        logging:
+          enabled: false #(10)!
+          mask: "***" #(11)!
+          maskQueries: [ ] #(12)!
+          maskHeaders: [ "authorization" ] #(13)!
+          pathTemplate: true #(14)!
+        metrics:
+          enabled: true #(15)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+        telemetry:
+          enabled: true #(17)!
+    ```
+
+    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
+    2. Maximum time to establish a connection
+    3. Maximum time to read a response
+    4. Whether to use environment variables to configure the proxy
+    5. Proxy address (optional)
+    6. Proxy port (optional)
+    7. User for the proxy (optional)
+    8. Password for the proxy (optional)
+    9. Hosts that should be excluded from proxying (optional)
+    10. Enables module logging (default `false`)
+    11.  Mask that is used to hide specified headers and request/response parameters
+    12.  List of request parameters to be hidden
+    13.  List of request/response headers that should be hidden
+    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    15. Enables module metrics (default `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    17. Enables module tracing (default `true`)
+
+You can also configure [Netty transport](netty.md).
 
 ## Native client
 
