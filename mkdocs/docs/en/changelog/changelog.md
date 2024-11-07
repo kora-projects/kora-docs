@@ -5,7 +5,24 @@ hide:
   - navigation
 ---
 
-## 1.1.11
+## 1.1.12
+
+Added:
+
+* Added OpenAPI option to generate HTTP client authorization as [method argument](../documentation/openapi-codegen.md#client)
+* Added `@KoraAppTest#modules` [parameter](../documentation/junit5.md#test)
+* Added `@KoraApp` generate `@SubModule` if enabled to extend real graph in [other environments](../documentation/junit5.md#test-graph)
+* Added `SOAP` telemetry tracing and logging
+
+Fixed:
+
+* Fixed HTTP Client introduced in `1.1.11` new telemetry config backward compatibility with older versions (actual for libraries with versions before `1.1.11`)
+* Fixed Metrics missing tags for multiple modules
+* Fixed Jdbc Kotlin `ResultSet.next()` check for optional params
+* Fixed HTTP client operation logging enabled 
+* Fixed tracing missing `ERROR` status code for multiple modules
+
+### 1.1.11
 
 Added:
 

@@ -1,107 +1,12 @@
 Модуль предоставляет тонкий слой абстракции для создания HTTP-клиентов
 с помощью аннотаций в декларативном стиле, либо использование клиентов в императивном стиле.
 
-## AsyncHttpClient
-
-Реализация HTTP клиента основанная на библиотеке [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client).
-Лучше всего подходит для Java сервисов, которые используют только асинхронные вызовы в клиенте.
-
-### Подключение
-
-===! ":fontawesome-brands-java: `Java`"
-
-    [Зависимость](general.md#_4) `build.gradle`:
-    ```groovy
-    implementation "ru.tinkoff.kora:http-client-async"
-    ```
-
-    Модуль:
-    ```java
-    @KoraApp
-    public interface Application extends AsyncHttpClientModule { }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    [Зависимость](general.md#_4) `build.gradle.kts`:
-    ```groovy
-    implementation("ru.tinkoff.kora:http-client-async")
-    ```
-
-    Модуль:
-    ```kotlin
-    @KoraApp
-    interface Application : AsyncHttpClientModule
-    ```
-
-### Конфигурация
-
-Пример полной конфигурации, описанной в классе `AsyncHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    httpClient {
-        async {
-            followRedirects = true //(1)!
-        }
-        connectTimeout = "5s" //(2)!
-        readTimeout = "2m" //(3)!
-        useEnvProxy = false //(4)!
-        proxy {
-            host = "localhost"  //(5)!
-            port = 8090  //(6)!
-            user = "user"  //(7)!
-            password = "password"  //(8)!
-            nonProxyHosts = [ "host1", "host2" ]  //(9)!
-        }
-    }
-    ```
-
-    1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections)
-    2.  Максимальное время на установление соединения
-    3.  Максимальное время на чтение ответа
-    4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси (по умолчанию отсутвует)
-    6.  Порт прокси (по умолчанию отсутвует)
-    7.  Пользователь для прокси (по умолчанию отсутвует)
-    8.  Пароль для прокси (по умолчанию отсутвует)
-    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    httpClient:
-      async:
-        followRedirects: true #(1)!
-      connectTimeout: "5s" #(2)!
-      readTimeout: "2m" #(3)!
-      useEnvProxy: false #(4)!
-      proxy:
-        host: "localhost"  #(5)!
-        port: 8090  #(6)!
-        user: "user"  #(7)!
-        password: "password"  #(8)!
-        nonProxyHosts: [ "host1", "host2" ]  #(9)!
-    ```
-
-    1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections)
-    2.  Максимальное время на установление соединения
-    3.  Максимальное время на чтение ответа
-    4.  Использовать ли переменные окружения для настройки прокси
-    5.  Адрес прокси (по умолчанию отсутвует)
-    6.  Порт прокси (по умолчанию отсутвует)
-    7.  Пользователь для прокси (по умолчанию отсутвует)
-    8.  Пароль для прокси (по умолчанию отсутвует)
-    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
-
-Можно также настроить [Netty транспорт](netty.md).
-
 ## OkHttp
 
 Реализация HTTP клиента основанная на библиотеке [OkHttp](https://github.com/square/okhttp).
 Учитывайте что реализация написана на Kotlin и использует соответствующие зависимости.
-Лучше всего подходит для Kotlin сервисов, либо Java сервисов где используются синхронные операции с высокой нагрузкой, либо требуется поддержка HTTP 2+, либо поддержка GZip сжатия.
+Лучше всего подходит для Kotlin сервисов, либо Java сервисов где нужна высокая производительность, 
+либо требуется поддержка HTTP 3, либо поддержка GZip сжатия, либо другие специфичные HTTP опции.
 
 ### Подключение
 
@@ -153,6 +58,22 @@
             password = "password" //(9)!
             nonProxyHosts = [ "host1", "host2" ] //(10)!
         }
+        telemetry {
+            logging {
+                enabled = false //(11)!
+                mask = "***" //(12)!
+                maskQueries = [ ] //(13)!
+                maskHeaders = [ "authorization" ] //(14)!
+                pathTemplate = true //(15)!
+            }
+            metrics {
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+            }
+            tracing {
+                enabled = true //(18)!
+            }
+        }
     }
     ```
 
@@ -166,6 +87,14 @@
     8.  Пользователь для прокси (по умолчанию отсутвует)
     9.  Пароль для прокси (по умолчанию отсутвует)
     10.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    11.  Включает логгирование модуля (по умолчанию `false`)
+    12.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    13.  Список параметров запроса которые следует скрывать
+    14.  Список заголовков запроса/ответа которые следует скрывать
+    15.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -183,6 +112,18 @@
         user: "user"  #(8)!
         password: "password" #(9)!
         nonProxyHosts: [ "host1", "host2" ] #(10)!
+      telemetry:
+        logging:
+          enabled: false #(11)!
+          mask: "***" #(12)!
+          maskQueries: [ ] #(13)!
+          maskHeaders: [ "authorization" ] #(14)!
+          pathTemplate: true #(15)!
+        metrics:
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+        telemetry:
+          enabled: true #(18)!
     ```
 
     1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections)
@@ -195,6 +136,14 @@
     8.  Пользователь для прокси (по умолчанию отсутвует)
     9.  Пароль для прокси (по умолчанию отсутвует)
     10.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    11.  Включает логгирование модуля (по умолчанию `false`)
+    12.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    13.  Список параметров запроса которые следует скрывать
+    14.  Список заголовков запроса/ответа которые следует скрывать
+    15.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    16.  Включает метрики модуля (по умолчанию `true`)
+    17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    18.  Включает трассировку модуля (по умолчанию `true`)
 
 #### Конфигуратор
 
@@ -224,10 +173,150 @@
     }
     ```
 
-## Нативный клиент
+## AsyncHttpClient
 
-Реализация HTTP клиента на основании нативного клиента поставляемого в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
-Лучше всего подходит для Java сервисов где используются простые синхронные операции без высокой нагрузки.
+Реализация HTTP клиента основанная на библиотеке [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client).
+Подходит для Java сервисов, где преобладают асинхронные вызовы.
+
+### Подключение
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Зависимость](general.md#_4) `build.gradle`:
+    ```groovy
+    implementation "ru.tinkoff.kora:http-client-async"
+    ```
+
+    Модуль:
+    ```java
+    @KoraApp
+    public interface Application extends AsyncHttpClientModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Зависимость](general.md#_4) `build.gradle.kts`:
+    ```groovy
+    implementation("ru.tinkoff.kora:http-client-async")
+    ```
+
+    Модуль:
+    ```kotlin
+    @KoraApp
+    interface Application : AsyncHttpClientModule
+    ```
+
+### Конфигурация
+
+Пример полной конфигурации, описанной в классе `AsyncHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpClient {
+        async {
+            followRedirects = true //(1)!
+        }
+        connectTimeout = "5s" //(2)!
+        readTimeout = "2m" //(3)!
+        useEnvProxy = false //(4)!
+        proxy {
+            host = "localhost"  //(5)!
+            port = 8090  //(6)!
+            user = "user"  //(7)!
+            password = "password"  //(8)!
+            nonProxyHosts = [ "host1", "host2" ]  //(9)!
+        }
+        telemetry {
+            logging {
+                enabled = false //(10)!
+                mask = "***" //(11)!
+                maskQueries = [ ] //(12)!
+                maskHeaders = [ "authorization" ] //(13)!
+                pathTemplate = true //(14)!
+            }
+            metrics {
+                enabled = true //(15)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+            }
+            tracing {
+                enabled = true //(17)!
+            }
+        }
+    }
+    ```
+
+    1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections)
+    2.  Максимальное время на установление соединения
+    3.  Максимальное время на чтение ответа
+    4.  Использовать ли переменные окружения для настройки прокси
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    12.  Список параметров запроса которые следует скрывать
+    13.  Список заголовков запроса/ответа которые следует скрывать
+    14.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    15.  Включает метрики модуля (по умолчанию `true`)
+    16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    17.  Включает трассировку модуля (по умолчанию `true`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpClient:
+      async:
+        followRedirects: true #(1)!
+      connectTimeout: "5s" #(2)!
+      readTimeout: "2m" #(3)!
+      useEnvProxy: false #(4)!
+      proxy:
+        host: "localhost"  #(5)!
+        port: 8090  #(6)!
+        user: "user"  #(7)!
+        password: "password"  #(8)!
+        nonProxyHosts: [ "host1", "host2" ]  #(9)!
+      telemetry:
+        logging:
+          enabled: false #(10)!
+          mask: "***" #(11)!
+          maskQueries: [ ] #(12)!
+          maskHeaders: [ "authorization" ] #(13)!
+          pathTemplate: true #(14)!
+        metrics:
+          enabled: true #(15)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+        telemetry:
+          enabled: true #(17)!
+    ```
+
+    1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections)
+    2.  Максимальное время на установление соединения
+    3.  Максимальное время на чтение ответа
+    4.  Использовать ли переменные окружения для настройки прокси
+    5.  Адрес прокси (по умолчанию отсутвует)
+    6.  Порт прокси (по умолчанию отсутвует)
+    7.  Пользователь для прокси (по умолчанию отсутвует)
+    8.  Пароль для прокси (по умолчанию отсутвует)
+    9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    12.  Список параметров запроса которые следует скрывать
+    13.  Список заголовков запроса/ответа которые следует скрывать
+    14.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    15.  Включает метрики модуля (по умолчанию `true`)
+    16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    17.  Включает трассировку модуля (по умолчанию `true`)
+
+Можно также настроить [Netty транспорт](netty.md).
+
+## Java клиент
+
+Реализация HTTP клиента на основании встроенного Java клиента поставляемого в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
+Лучше всего подходит для Java сервисов где не требуется производительность, так как работает прилично медленнее.
 
 ### Подключение
 
@@ -278,6 +367,22 @@
             password = "password" //(8)!
             nonProxyHosts = [ "host1", "host2" ] //(9)!
         }
+        telemetry {
+            logging {
+                enabled = false //(10)!
+                mask = "***" //(11)!
+                maskQueries = [ ] //(12)!
+                maskHeaders = [ "authorization" ] //(13)!
+                pathTemplate = true //(14)!
+            }
+            metrics {
+                enabled = true //(15)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+            }
+            tracing {
+                enabled = true //(17)!
+            }
+        }
     }
     ```
 
@@ -290,6 +395,14 @@
     7.  Пользователь для прокси (по умолчанию отсутвует)
     8.  Пароль для прокси (по умолчанию отсутвует)
     9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    12.  Список параметров запроса которые следует скрывать
+    13.  Список заголовков запроса/ответа которые следует скрывать
+    14.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    15.  Включает метрики модуля (по умолчанию `true`)
+    16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    17.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -306,6 +419,18 @@
         user: "user" #(7)!
         password: "password" #(8)!
         nonProxyHosts: [ "host1", "host2" ] #(9)!
+      telemetry:
+        logging:
+          enabled: false #(10)!
+          mask: "***" #(11)!
+          maskQueries: [ ] #(12)!
+          maskHeaders: [ "authorization" ] #(13)!
+          pathTemplate: true #(14)!
+        metrics:
+          enabled: true #(15)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+        telemetry:
+          enabled: true #(17)!
     ```
 
     1.  Количество потоков для HTTP клиента, по умолчанию равен кол-во ядер процессора умноженных на 2
@@ -317,6 +442,14 @@
     7.  Пользователь для прокси (по умолчанию отсутвует)
     8.  Пароль для прокси (по умолчанию отсутвует)
     9.  Хосты которые следует исключить из проксирования (по умолчанию отсутвует)
+    10.  Включает логгирование модуля (по умолчанию `false`)
+    11.  Маска которая используется для скрытия указанных заголовков и параметров запроса/ответа
+    12.  Список параметров запроса которые следует скрывать
+    13.  Список заголовков запроса/ответа которые следует скрывать
+    14.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
+    15.  Включает метрики модуля (по умолчанию `true`)
+    16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    17.  Включает трассировку модуля (по умолчанию `true`)
 
 ## Клиент декларативный
 
@@ -671,7 +804,7 @@
 ##### Json 
 
 Для указания, что тело является Json и ему требуется автоматически создать такого писателя и внедрить его,
-требуется использовать аннотацию `@Json`:
+требуется использовать специальную тег аннотацию `@Json`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1059,7 +1192,7 @@
 
 #### Ошибка ответа
 
-По умолчанию преобразование будет применяться только для `2хх` HTTP статусов кодов,
+По умолчанию когда не указан ни какой тег преобразователя ни сам преобразователь, то преобразование будет применяться только для `2хх` HTTP статусов кодов,
 для всех остальных будет выбрасываться исключение `HttpClientResponseException`, которое содержит [HTTP статус код](https://developer.mozilla.org/ru/docs/Web/HTTP/Status), тело ответа и заголовки ответа.
 
 #### Преобразование по коду

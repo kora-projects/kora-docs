@@ -19,6 +19,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 
 ## Configuring Gradle
 
+Basic concepts and description of the framework can be read on the [main page](../documentation/general.md).
+
 === ":fontawesome-brands-java: `Java`"
 
     `build.gradle`:

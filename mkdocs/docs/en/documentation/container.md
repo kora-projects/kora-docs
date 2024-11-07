@@ -169,7 +169,7 @@ All required external modules from dependencies must be connected explicitly in 
 The `@KoraSubmodule` annotation marks the interface for which to build a module for the current compilation module,
 it will contain all components marked with the `@Module` and `@Component` annotations.
 Annotation is useful if you are breaking your project into [multi-modules application](https://docs.gradle.org/current/userguide/multi_project_builds.html)
-in terms of your `Gradle/etc.` build tool, where
+in terms of `Gradle` build tool, where
 each is responsible for some piece of functionality, and the `@KoraApp` application itself is built in a separate module from the logic.
 
 An inheritor interface will be created for the interface, where all interfaces labeled `@Module` will be inherited and default-methods for classes labeled as `@Component` will be created.

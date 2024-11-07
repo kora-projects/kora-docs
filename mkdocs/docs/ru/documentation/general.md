@@ -61,7 +61,6 @@ Kafka продюсеров, репозиториев баз данных и та
     ```groovy
     plugins {
         id "java"
-        id "application"
     }   
 
     sourceCompatibility = JavaVersion.VERSION_17
@@ -81,7 +80,6 @@ Kafka продюсеров, репозиториев баз данных и та
     plugins {
         kotlin("jvm") version ("1.9.10")
         id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
-        id("application")
     }
 
     kotlin {
@@ -143,9 +141,15 @@ Kafka продюсеров, репозиториев баз данных и та
     Ниже будет представлена минимально необходимая конфигурация приложения `build.gradle.kts`:
     ```groovy
     plugins {
+        id("application")
         kotlin("jvm") version ("1.9.10")
         id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
-        id("application")
+    }
+
+    kotlin {
+        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
 
     val koraBom: Configuration by configurations.creating
@@ -159,12 +163,6 @@ Kafka продюсеров, репозиториев баз данных и та
     dependencies {
         koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
-    }
-
-    kotlin {
-        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
-        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
-        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
     ```
 
@@ -247,10 +245,9 @@ Kafka продюсеров, репозиториев баз данных и та
 
     Настроить сборку артефакта можно таким способом в `build.gradle`:
     ```groovy
-    applicationName = "application"
-    mainClassName = "ru.tinkoff.kora.java.Application"
-
     application {
+        applicationName = "application"
+        mainClassName = "ru.tinkoff.kora.java.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
 
@@ -264,7 +261,7 @@ Kafka продюсеров, репозиториев баз данных и та
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/build.gradle)
+    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-java-crud-template/blob/master/build.gradle)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -313,7 +310,7 @@ Kafka продюсеров, репозиториев баз данных и та
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-examples/blob/master/kora-kotlin-crud/build.gradle.kts)
+    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-kotlin-crud-template/blob/master/build.gradle.kts)
 
 ## Терминология
 
