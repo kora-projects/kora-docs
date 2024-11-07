@@ -61,7 +61,6 @@ Kafka producers, database repositories and so on, but gives a huge performance a
     ```groovy
     plugins {
         id "java"
-        id "application"
     }   
 
     sourceCompatibility = JavaVersion.VERSION_17
@@ -81,7 +80,6 @@ Kafka producers, database repositories and so on, but gives a huge performance a
     plugins {
         kotlin("jvm") version ("1.9.10")
         id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
-        id("application")
     }
 
     kotlin {
@@ -148,6 +146,12 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
         id("application")
     }
 
+    kotlin {
+        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
+    }
+
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
@@ -159,12 +163,6 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     dependencies {
         koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
         ksp("ru.tinkoff.kora:symbol-processors")
-    }
-
-    kotlin {
-        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
-        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
-        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
     ```
 
@@ -264,7 +262,7 @@ which is provided by Gradle.
     ./gradlew distTar
     ```
 
-    Example of configured application can be seen [here](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/build.gradle)
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-java-crud-template/blob/master/build.gradle)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -313,7 +311,7 @@ which is provided by Gradle.
     ./gradlew distTar
     ```
 
-    Example of configured application can be seen [here](https://github.com/kora-projects/kora-examples/blob/master/kora-kotlin-crud/build.gradle.kts)
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-kotlin-crud-template/blob/master/build.gradle.kts)
 
 ## Terminology
 

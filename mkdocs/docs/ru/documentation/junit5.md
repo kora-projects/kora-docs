@@ -4,6 +4,15 @@
 это подразумевает что именно контейнер зависимостей основного приложения и участвует в рамках теста, 
 он может быть ограничен либо его части заменены заглушками если этого требуется тест.
 
+Модуль позволяет проводить:
+
+- `Компонентное тестирование` - тестирование одного компонента
+- `Межкомпонентное тестирование` - тестирование нескольких компонент и взаимодействие друг с другом
+- `Интеграционное тестирование` - тестирование компонент и взаимодействие с внешними системами
+
+Рекомендуется дополнительно проводить тестирование запакованного в финальный образ артефакта сервиса,
+по средствам черной коробки с помощью [библиотеки TestContainers](https://java.testcontainers.org/).
+
 ## Подключение
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -55,13 +64,13 @@
     public interface Application {
 
         @Root
-        Supplier<String> supplier() {
+        default Supplier<String> supplier() {
             return () -> "1";
         }
 
         @Root
         @Tag(Supplier.class)
-        Supplier<String> supplierTagged() {
+        default Supplier<String> supplierTagged() {
             return () -> "tag1";
         }
     }
@@ -92,8 +101,31 @@
 Параметры аннотации `@KoraAppTest`:
 
 - `value` - обязательный параметр который указывает на класс аннотированный `@KoraApp`, представляющий собой граф всех зависимостей которые будут доступны в рамках теста.
-- `components` - список `@Root` компонентов которые надо инициализировать в рамках теста, 
-  указываются компоненты которые не объявлены в рамках теста с помощью специальной аннотации `@TestComponent`.
+- `components` - список `@Root` компонентов, которые надо инициализировать в рамках теста, 
+  указываются компоненты не объявленные в рамках теста с помощью специальной аннотации `@TestComponent`.
+- `modules` - список модулей с компонентами подключенных в приложении,
+  которые дополнительно надо включить в контейнер зависимостей в рамках теста.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(value = Application.class, 
+                 components = { SomeComponent.class }, 
+                 modules = { SomeModule.class })
+    class SomeTests {
+
+    }
+    ```
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(value = Application::class, 
+                 components = [SomeComponent::class], 
+                 modules = [SomeModule::class])
+    class SomeTests {
+
+    }
+    ```
 
 ### Компонент
 
@@ -239,7 +271,7 @@
 
     Требуется подключить библиотеку [Mockito](https://site.mockito.org/) как зависимость `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.13.0"
+    testImplementation "org.mockito:mockito-core:5.17.0"
     ```
 
     Поддерживаются аннотациии [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) и [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html), а также все параметры этих аннотаций.
@@ -395,6 +427,164 @@
         @Test
         fun example() {
             assertEquals("?", component1.get())
+        }
+    }
+    ```
+
+### Расширенный контейнер
+
+Иногда может потребоваться использовать расширенный контейнер зависимостей в рамках тестов.
+К примеру, тестовый контейнер приложение, расширяющий основное приложение и добавляющий
+некоторые компоненты из общих модулей, которые не используются в данном приложении.
+
+Например, когда у вас есть разные приложения чтения и записи с общими компонентами,
+которые могут потребоваться в рамках тестирования одного и другого.
+Либо, вам нужны некоторые функции сохранения/удаления/обновления только для тестирования в
+качестве быстрой тестовой утилиты.
+
+???+ warning "Рекомендация"
+
+    **Настоятельно Рекомендуем Тестировать** приложения как [черный ящик](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java)
+    и полагаться на этот подход в качестве основного источника правды и работоспособности приложения.
+
+    Приложение может работать по разному в зависимости от флагов JVM, 
+    базового образа и нативных библиотек, отличий частичной конфигурации от полной, 
+    отличий конвертации на точках входа в приложение, использования реестров схем и так далее.
+    Только готовый образ может гарантировать максимально приблеженную среду для тестирования.
+
+Представим что приложение выглядит так:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application {
+
+        @Root
+        default String someComponent() {
+            return "1";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application {
+
+        @Root
+        fun someComponent(): String {
+            return "1"
+        }
+    }
+    ```
+
+В тестах можно создать граф расширяющий основное приложение и использовать уже его в рамках тестах.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Для этого в первую очередь понадобится включить опцию 
+    для создания сабмодуля основного приложения в `build.gradle`:
+
+    ```groovy
+    compileJava {
+        options.compilerArgs += [
+            "-Akora.app.submodule.enabled=true"
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Для этого в первую очередь понадобится включить опцию 
+    для создания сабмодуля основного приложения в `build.gradle.kts`:
+
+    ```groovy
+    ksp {
+        arg("kora.app.submodule.enabled", "true")
+    }
+    ```
+
+Затем требуется создать расширенный тестовый граф приложения:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface TestApplication extends Application {
+
+        @Root
+        default Integer someOtherComponent() {
+            return 1;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface TestApplication : Application {
+
+        @Root
+        fun someOtherComponent(): Integer {
+            return 1
+        }
+    }
+    ```
+
+Требуется исключить сканирование созданных Kora классов со стороны JUnit (иногда у JUnit может возникать ошибка при поиске тестов):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Классы начинаются с символа `$`, надо исключить в `build.gradle`:
+
+    ```java
+    test {
+        exclude("**/\$*")
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Классы начинаются с символа `$`, надо исключить в `build.gradle.kts`:
+
+    ```kotlin
+    tasks.test {
+        exclude("**/\$*")
+    }
+    ```
+
+Теперь можно использовать расширенный граф приложения в тестах:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(TestApplication.class)
+    class SomeTests {
+
+        @TestComponent
+        private String component1;
+        @TestComponent
+        private Integer component2;
+
+        @Test
+        void testSame() {
+            assertEquals(component1, String.valueOf(component2));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(TestApplication::class)
+    class SomeTests(val component1: String, val component2: Integer) {
+
+        @Test
+        fun testSame() {
+            assertEquals(component1, component2.toString());
         }
     }
     ```

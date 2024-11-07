@@ -19,6 +19,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 
 ## Настройка Gradle
 
+Основные концепции и описание фреймворка можно прочесть на [основной странице](../documentation/general.md).
+
 === ":fontawesome-brands-java: `Java`"
 
     `build.gradle`:
