@@ -808,7 +808,7 @@ the default supported types are `byte[]`, `ByteBuffer` or `String`.
 ##### Json
 
 In order to indicate that the body is Json and needs to automatically create such a writer and embed it,
-is required to use the `@Json` annotation:
+is required to use the special `@Json` tag annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1196,7 +1196,7 @@ If you need to read the response in a different way, you can use the special `Ht
 
 #### Response Error
 
-By default, the conversion will only be applied for `2xx` HTTP status codes,
+By default, when no converter tag or converter itself is specified, the conversion will be applied for `2xx` HTTP status codes,
 for all others a `HttpClientResponseException` exception will be thrown, which contains [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status), response body and response headers.
 
 #### Conversion by Code

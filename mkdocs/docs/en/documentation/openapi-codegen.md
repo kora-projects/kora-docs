@@ -62,6 +62,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `interceptors` - ability to specify interceptors for HTTP clients
     - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
     - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
+    - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
+    - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `mode` in which mode the generator should operate, available values:
         * `java-client` - create synchronous client
         * `java-async-client` - create [CompletionStage](https://www.baeldung.com/java-completablefuture) client
@@ -103,6 +105,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `interceptors` - ability to specify interceptors for HTTP clients
     - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
     - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
+    - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
+    - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-client` - create synchronous client
         * `kotlin-suspend-client` - create suspend client
@@ -310,6 +314,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
     - `interceptors` - ability to specify interceptors for HTTP controllers
+    - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `mode` in which mode the generator should operate, available values:
         * `java-server` - create a synchronous server
         * `java-async-server` - create a [CompletionStage](https://www.baeldung.com/java-completablefuture) server
@@ -347,6 +352,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
     - `interceptors` - ability to specify interceptors for HTTP controllers
+    - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-server` - create synchronous server
         * `kotlin-suspend-server` - create suspend server

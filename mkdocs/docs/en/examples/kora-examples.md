@@ -19,9 +19,9 @@ and various other Kora modules.
 
 Each example service is accompanied by tests that can be used to verify the service's working properly and 
 to see how to write primitive tests for certain functionality, both using 
-[JUnit 5 extension](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetServiceTests.java) 
+[JUnit 5 extension](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/ComponentTests.java) 
 and in black-box format via 
-[TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetControllerTests.java).
+[TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java).
 
 === “:fontawesome-brands-java: `Java`”
 

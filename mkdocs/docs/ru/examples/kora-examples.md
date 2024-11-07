@@ -20,9 +20,9 @@ search:
 
 К каждому сервису примеру прилагаются тесты посредствам которых можно проверить работоспособность сервиса и
 посмотреть как писать примитивные тесты к определенному функционалу, как с использованием 
-[JUnit 5 расширения](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetServiceTests.java), 
+[JUnit 5 расширения](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/ComponentTests.java), 
 так и в формате черного ящика с использованием 
-[TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/PetControllerTests.java).
+[TestContainers](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java).
 
 === ":fontawesome-brands-java: `Java`"
 

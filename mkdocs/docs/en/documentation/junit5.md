@@ -4,6 +4,15 @@ The concept of the JUnit 5 Kora extension is to test the source code that will e
 This implies that dependency container of the main application is involved in the test,
 it can be limited or its parts can be replaced by stubs if the test requires.
 
+Module allows you to conduct:
+
+- `Component tests` - testing of a single component
+- `Inter-component tests` - testing of several components and their interaction with each other
+- `Integration tests` - testing of components and interaction with external systems.
+
+It is recommended to additionally test the service artifact packaged in the final image,
+as black box using [TestContainers library](https://java.testcontainers.org/).
+
 ## Dependency
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -55,13 +64,13 @@ Examples will be shown relative to such an application:
     public interface Application {
 
         @Root
-        Supplier<String> supplier() {
+        default Supplier<String> supplier() {
             return () -> "1";
         }
 
         @Root
         @Tag(Supplier.class)
-        Supplier<String> supplierTagged() {
+        default Supplier<String> supplierTagged() {
             return () -> "tag1";
         }
     }
@@ -94,6 +103,29 @@ Parameters of the `@KoraAppTest` annotation:
 - `value` - required parameter that points to the class annotated by `@KoraApp`, representing a graph of all dependencies that will be available within the test.
 - `components` - list of components to be initialized within the test,
   components that are not declared within the test are specified using special annotation `@TestComponent`.
+- `modules` - list of modules with components connected in the application,
+  which should be additionally included in the dependency container within the test.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(value = Application.class, 
+                 components = { SomeComponent.class }, 
+                 modules = { SomeModule.class })
+    class SomeTests {
+
+    }
+    ```
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(value = Application::class, 
+                 components = [SomeComponent::class], 
+                 modules = [SomeModule::class])
+    class SomeTests {
+
+    }
+    ```
 
 ### Component
 
@@ -398,7 +430,159 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     }
     ```
 
-## Configuration setting
+### Test graph
+
+Sometimes you may need to use an extended dependency container as part of your tests.
+For example, a test container is an application that extends the main application and adds
+some components from common modules that are not used in this application.
+
+For example, when you have different Read API and Write API applications with common components,
+which may be required as part of testing one and the other.
+Or, you may need some save/delete/update functions just for testing as a quick test utility.
+
+????+ warning “Recommendation”
+
+    We **Highly Recommend Testing** applications as a [black box](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java)
+    and rely on this approach as the primary source of truth as to the operability of the application.
+
+Let's imagine that the application looks like this:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application {
+
+        @Root
+        default String someComponent() {
+            return "1";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application {
+
+        @Root
+        fun someComponent(): String {
+            return "1"
+        }
+    }
+    ```
+
+In tests, you can create a graph extending the main application and use it within tests.
+
+===! “:fontawesome-brands-java: `Java`”
+
+    In order to do this, first of all you need to enable the option 
+    to create a sub-module of the main application in `build.gradle`:
+
+    ```groovy
+    compileJava {
+        options.compilerArgs += [
+            "-Akora.app.submodule.enabled=true"
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    In order to do this, first of all you need to enable the option 
+    to create a sub-module of the main application in `build.gradle.kts`:
+
+    ```groovy
+    ksp {
+        arg("kora.app.submodule.enabled", "true")
+    }
+    ```
+
+Then it is required to create an extended test graph of the application:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface TestApplication extends Application {
+
+        @Root
+        default Integer someOtherComponent() {
+            return 1;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface TestApplication : Application {
+
+        @Root
+        fun someOtherComponent(): Integer {
+            return 1
+        }
+    }
+    ```
+
+It is required to exclude scanning of Kora created classes by JUnit (sometimes an error occurs during test search):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Classes start with `$` symbol, exclude them in `build.gradle`:
+
+    ```java
+    test {
+        exclude("**/\$*")
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Classes start with `$` symbol, exclude them in `build.gradle.kts`:
+
+    ```kotlin
+    tasks.test {
+        exclude("**/\$*")
+    }
+    ```
+
+You can now use the extended application graph in your tests:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(TestApplication.class)
+    class SomeTests {
+
+        @TestComponent
+        private String component1;
+        @TestComponent
+        private Integer component2;
+
+        @Test
+        void testSame() {
+            assertEquals(component1, String.valueOf(component2));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(TestApplication::class)
+    class SomeTests(val component1: String, val component2: Integer) {
+
+        @Test
+        fun testSame() {
+            assertEquals(component1, component2.toString());
+        }
+    }
+    ```
+
+## Test configuration
 
 By default, the basic configuration will be used, as in the case of running a real application.
 

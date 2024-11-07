@@ -62,6 +62,8 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
     - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
     - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
+    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-client` - создание синхронного клиента
         * `java-async-client` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) клиента
@@ -103,6 +105,8 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
     - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
     - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
+    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-client` - создание синхронного клиента
         * `kotlin-suspend-client` - создание suspend клиента
@@ -310,6 +314,7 @@
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -347,6 +352,7 @@
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера
