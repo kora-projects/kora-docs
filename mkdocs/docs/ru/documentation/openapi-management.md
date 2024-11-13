@@ -70,7 +70,7 @@
     ```yaml
     openapi:
       management:
-        file: [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] //(1)!
+        file: [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] #(1)!
         enabled: false  #(2)!
         endpoint: "/openapi" #(3)!
         swaggerui:

@@ -54,52 +54,62 @@ Example of the complete configuration described in the `ScheduledExecutorService
     ```javascript
     scheduling {
         threads = 20 //(1)!
+        shutdownWait = "30s" //(2)!
         telemetry {
             logging {
-                enabled = false //(2)!
+                enabled = false //(3)!
             }
             metrics {
-                enabled = true //(3)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                enabled = true //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
             }
             tracing {
-                enabled = true //(5)!
+                enabled = true //(6)!
             }
         }
     }
     ```
 
     1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Enables module logging (default `false`)
-    3. Enables module metrics (default `true`)
-    4. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing (default `true`)
+    2. Time to wait for jobs to complete before shutting down the scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
+    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    6. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     scheduling:
       threads: 20 #(1)!
+      shutdownWait: "30s" #(2)!
       telemetry:
         logging:
-          enabled: false #(2)!
+          enabled: false #(3)!
         metrics:
-          enabled: true #(3)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+          enabled: true #(4)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
         telemetry:
-          enabled: true #(5)!
+          enabled: true #(6)!
     ```
 
     1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Enables module logging (default `false`)
-    3. Enables module metrics (default `true`)
-    4. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    5. Enables module tracing (default `true`)
+    2. Time to wait for jobs to complete before shutting down the scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
+    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    6. Enables module tracing (default `true`)
 
-### Fixed interval
+### Fixed rate
 
-Scheduling with startup at fixed equal intervals.
-Actual interval time depends on task completion time, can start new tasks even if the last task is still running.
+Scheduling with startup at fixed intervals.
+
+For example, if the period is set to 10 seconds and each task execution takes 5 seconds to complete,
+then the task will run every 10 seconds.
+
+But if a task execution takes longer to complete than the defined period,
+the next execution will start only after the current one finishes.
+The task executions will not happen concurrently.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -184,7 +194,8 @@ SomeService of configuration via a config file:
 
 ### Fixed delay
 
-Waits a fixed amount of time from the end of the previous task execution before starting the next execution.
+Awaits fixed delay from the end of the previous task execution before starting the next execution.
+
 It does not matter how long the current execution takes, the next execution is started exactly after the previous task is finished
 and the specified waiting interval between tasks.
 
@@ -394,50 +405,56 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    quartz {
-        "org.quartz.threadPool.threadCount": "10"
+    quartz { //(1)!
+        "org.quartz.threadPool.threadCount" = "10"
     }
     scheduling {
+        waitForJobComplete = true //(2)!
         telemetry {
             logging {
-                enabled = false //(1)!
+                enabled = false //(3)!
             }
             metrics {
-                enabled = true //(2)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(3)!
+                enabled = true //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
             }
             tracing {
-                enabled = true //(4)!
+                enabled = true //(6)!
             }
         }
     }
     ```
 
-    1. Enables module logging (default `false`)
-    2. Enables module metrics (default `true`)
-    3. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    4. Enables module tracing (default `true`)
+    1. Quartz scheduler configuration parameters
+    2. Whether to wait for jobs to complete before shutting down scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
+    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    6. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    quartz:
+    quartz: #(1)!
       org.quartz.threadPool.threadCount: "10"
     scheduling:
+      waitForJobComplete: true #(2)!
       telemetry:
         logging:
-          enabled: false #(1)!
+          enabled: false #(3)!
         metrics:
-          enabled: true #(2)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
-        telemetry:
           enabled: true #(4)!
+          slo: [ 3, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+        telemetry:
+          enabled: true #(6)!
     ```
 
-    1. Enables module logging (default `false`)
-    2. Enables module metrics (default `true`)
-    3. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    4. Enables module tracing (default `true`)
+    1. Quartz scheduler configuration parameters
+    2. Whether to wait for jobs to complete before shutting down scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
+    3. Enables module logging (default `false`)
+    4. Enables module metrics (default `true`)
+    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    6. Enables module tracing (default `true`)
 
 Default settings are used from:
 

@@ -5,7 +5,25 @@ hide:
   - navigation
 ---
 
-## 1.1.12
+## 1.1.13
+
+Добавлено:
+
+* Добавлен специальный тип [JsonNullable](../documentation/json.md#jsonnullable)
+* Добавлен параметр конфигурации [KafkaConsumer](../documentation/kafka.md#_3), позволяющий использовать пустые записи
+* Добавлена поддержка параметра OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#_6)
+* Добавлен Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#_2)
+* Улучшена телеметрия [Camunda Rest](../documentation/camunda7-rest.md#_2)
+* Улучшено плановое завершение работы для HTTP-сервера, KafkaListener, gRPC-сервера, планировщиков
+
+Исправлено:
+
+* Исправлена ошибка параметра `additionalContractAnnotations` OpenAPI кодогенерации без включенной валидации
+* Исправлена работа RebalanceListener для потребителя при конфигурации через топики
+* Исправлена обработка исключений `HttpServerResponse` в блокирующих потоках
+* Исправлены возможность добавлять не абстрактные методы в Kotlin Kafka продюсере
+
+### 1.1.12
 
 Добавлено:
 

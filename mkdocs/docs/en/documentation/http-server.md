@@ -47,7 +47,7 @@ Example of the complete configuration described in the `HttpServerConfig` class 
         ignoreTrailingSlash = false //(6)!
         ioThreads = 2 //(7)!
         blockingThreads = 2 //(8)!
-        shutdownWait = "100ms" //(9)!
+        shutdownWait = "30s" //(9)!
         telemetry {
             logging {
                 enabled = false //(10)!
@@ -99,7 +99,7 @@ Example of the complete configuration described in the `HttpServerConfig` class 
       ignoreTrailingSlash: false #(6)!
       ioThreads: 2 #(7)!
       blockingThreads: 2 #(8)!
-      shutdownWait: "100ms" #(9)!
+      shutdownWait: "30s" #(9)!
       telemetry:
         logging:
           enabled: false #(10)!

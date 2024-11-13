@@ -116,26 +116,27 @@
         someConsumer {
             topics = ["topic1", "topic2"] //(1)!
             topicsPattern = "topic*" //(2)!
-            partitions = ["1", "2"] //(3)!
+            allowEmptyRecords = false //(3)!
             offset = "latest" //(4)!
             pollTimeout = "5s" //(5)!
             backoffTimeout = "15s" //(6)!
             partitionRefreshInterval = "1m" //(7)!
             threads = 1 //(8)!
-            driverProperties { //(9)!
+            shutdownWait = "30s" //(9)!
+            driverProperties { //(10)!
                 "bootstrap.servers": "localhost:9093"
                 "group.id": "my-group-id"
             }
             telemetry {
                 logging {
-                    enabled = false //(10)!
+                    enabled = false //(11)!
                 }
                 metrics {
-                    enabled = true //(11)!
+                    enabled = true //(12)!
                     slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(12)!
                 }
                 tracing {
-                    enabled = true //(13)!
+                    enabled = true //(14)!
                 }
             }
         }
@@ -144,7 +145,7 @@
 
     1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
     2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
-    3.  Указываются партиции топиков на которые требуется подписаться
+    3.  Обрабатывать ли пустые записи в случае если сигнатура принимает `ConsumerRecords`
     4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение:
         1. `earliest` - самый ранний доступный offset
         2. `latest` - последний доступный offset
@@ -153,11 +154,12 @@
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
-    10.  Включает логгирование модуля (по умолчанию `false`)
-    11.  Включает метрики модуля (по умолчанию `true`)
-    12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    13.  Включает трассировку модуля (по умолчанию `true`)
+    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#_24)
+    10.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
+    11. Включает логгирование модуля (по умолчанию `false`)
+    12. Включает метрики модуля (по умолчанию `true`)
+    13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    14. Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -168,30 +170,29 @@
           - "topic1"
           - "topic2"
         topicsPattern: "topic*" #(2)!
-        partitions: #(3)!
-          - "1"
-          - "2"
+        allowEmptyRecords: false #(3)!
         offset: "latest" #(4)!
         pollTimeout: "5s" #(5)!
         backoffTimeout: "15s" #(6)!
         partitionRefreshInterval: "1m" #(7)!
         threads: 1 #(8)!
-        driverProperties: #(9)!
+        shutdownWait: "30s" #(9)!
+        driverProperties: #(10)!
           bootstrap.servers: "localhost:9093"
           group.id: "my-group-id"
         telemetry:
           logging:
-            enabled: false #(10)!
+            enabled: false #(11)!
           metrics:
-            enabled: true #(11)!
+            enabled: true #(12)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
           telemetry:
-            enabled: true #(13)!
+            enabled: true #(14)!
     ```
 
     1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
     2.  Указываются паттерн топиков на которые будет подписан Consumer (**обязательный** либо указывается `topics`)
-    3.  Указываются партиции топиков на которые требуется подписаться
+    3.  Обрабатывать ли пустые записи в случае если сигнатура принимает `ConsumerRecords`
     4.  Работает только если не указан `group.id`. Определяет стратегнию какую позицию в топике должен использовать Consumer. Допустимые значение:
         1. `earliest` - самый ранний доступный offset
         2. `latest` - последний доступный offset
@@ -200,11 +201,12 @@
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
-    10.  Включает логгирование модуля (по умолчанию `false`)
-    11.  Включает метрики модуля (по умолчанию `true`)
-    12.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    13.  Включает трассировку модуля (по умолчанию `true`)
+    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#_24)
+    10.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
+    11. Включает логгирование модуля (по умолчанию `false`)
+    12. Включает метрики модуля (по умолчанию `true`)
+    13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    14. Включает трассировку модуля (по умолчанию `true`)
 
 ### Стратегия подключения
 
