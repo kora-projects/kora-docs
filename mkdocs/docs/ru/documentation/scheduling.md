@@ -46,52 +46,62 @@
     ```javascript
     scheduling {
         threads = 20 //(1)!
+        shutdownWait = "30s" //(2)!
         telemetry {
             logging {
-                enabled = false //(2)!
+                enabled = false //(3)!
             }
             metrics {
-                enabled = true //(3)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                enabled = true //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
             }
             tracing {
-                enabled = true //(5)!
+                enabled = true //(6)!
             }
         }
     }
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Включает логгирование модуля (по умолчанию `false`)
-    3.  Включает метрики модуля (по умолчанию `true`)
-    4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля (по умолчанию `true`)
+    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     scheduling:
       threads: 20 #(1)!
+      shutdownWait: "30s" #(2)!
       telemetry:
         logging:
-          enabled: false #(2)!
+          enabled: false #(3)!
         metrics:
-          enabled: true #(3)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+          enabled: true #(4)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
         telemetry:
-          enabled: true #(5)!
+          enabled: true #(6)!
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Включает логгирование модуля (по умолчанию `false`)
-    3.  Включает метрики модуля (по умолчанию `true`)
-    4.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    5.  Включает трассировку модуля (по умолчанию `true`)
+    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 ### Фиксированный интервал
 
-Планирование с запуском через фиксированный равные промежуток времени.
-Реальное время интервала зависит от времени выполнения задачи, может запускать новые задачи даже если последняя задача еще выполняется.
+Планирование с запуском через фиксированные промежутки времени.
+
+Например, если период установлен в 10 секунд, а каждое выполнение задачи занимает 5 секунд,
+то задача будет выполняться каждые 10 секунд.
+
+Но если выполнение задачи занимает больше времени, чем заданный период,
+следующее выполнение начнется только после завершения текущего.
+Выполнения нескольких задач не будут происходить одновременно.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -177,7 +187,9 @@
 ### Фиксированная задержка
 
 Ожидает фиксированный промежуток времени от конца предыдущего исполнения задачи перед началом следующего выполнения. 
-Не имеет значения, сколько времени занимает текущее исполнение, следующее выполнение запускается ровно после завершения предыдущей задачи 
+
+Не имеет значения, сколько времени занимает текущее исполнение, 
+следующее выполнение запускается ровно после завершения предыдущей задачи 
 и заданного промежутка ожидания между задачами.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -386,50 +398,56 @@
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    quartz {
-        "org.quartz.threadPool.threadCount": "10"
+    quartz { //(1)!
+        "org.quartz.threadPool.threadCount" = "10"
     }
     scheduling {
+        waitForJobComplete = true //(2)!
         telemetry {
             logging {
-                enabled = false //(1)!
+                enabled = false //(3)!
             }
             metrics {
-                enabled = true //(2)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(3)!
+                enabled = true //(4)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
             }
             tracing {
-                enabled = true //(4)!
+                enabled = true //(6)!
             }
         }
     }
     ```
 
-    1.  Включает логгирование модуля (по умолчанию `false`)
-    2.  Включает метрики модуля (по умолчанию `true`)
-    3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля (по умолчанию `true`)
+    1.  Параметры настройки Quartz планировщика
+    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    quartz:
+    quartz: #(1)!
       org.quartz.threadPool.threadCount: "10"
     scheduling:
+      waitForJobComplete: true #(2)!
       telemetry:
         logging:
-          enabled: false #(1)!
+          enabled: false #(3)!
         metrics:
-          enabled: true #(2)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
-        telemetry:
           enabled: true #(4)!
+          slo: [ 3, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+        telemetry:
+          enabled: true #(6)!
     ```
 
-    1.  Включает логгирование модуля (по умолчанию `false`)
-    2.  Включает метрики модуля (по умолчанию `true`)
-    3.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    4.  Включает трассировку модуля (по умолчанию `true`)
+    1.  Параметры настройки Quartz планировщика
+    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    3.  Включает логгирование модуля (по умолчанию `false`)
+    4.  Включает метрики модуля (по умолчанию `true`)
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    6.  Включает трассировку модуля (по умолчанию `true`)
 
 По умолчанию используются настройки из:
 

@@ -51,7 +51,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.13")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -88,7 +88,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.13"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")

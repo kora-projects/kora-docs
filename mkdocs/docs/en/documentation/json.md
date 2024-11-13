@@ -242,6 +242,25 @@ it can be done by specifying the `@JsonReader` annotation above the constructor 
     }
     ```
 
+## JsonNullable wrapper
+
+In case you want to distinguish a missing field from a specified `null` value during deserialization,
+it is supposed to use a special type `JsonNullable`, which allows interpreting all states of the field.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(String field1, JsonNullable<Integer> field2) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(val field1: String, val field2: JsonNullable<Int>)
+    ```
+
 ## Sealed classes and interfaces
 
 In case you need to write different Json objects depending on the value in a particular field, you are supposed to use an

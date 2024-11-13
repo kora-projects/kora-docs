@@ -116,26 +116,27 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
         someConsumer {
             topics = ["topic1", "topic2"] //(1)!
             topicsPattern = "topic*" //(2)!
-            partitions = ["1", "2"] //(3)!
+            allowEmptyRecords = false //(3)!
             offset = "latest" //(4)!
             pollTimeout = "5s" //(5)!
             backoffTimeout = "15s" //(6)!
             partitionRefreshInterval = "1m" //(7)!
             threads = 1 //(8)!
-            driverProperties { //(9)!
+            shutdownWait = "30s" //(9)!
+            driverProperties { //(10)!
                 "bootstrap.servers": "localhost:9093"
                 "group.id": "my-group-id"
             }
             telemetry {
                 logging {
-                    enabled = false //(10)!
+                    enabled = false //(11)!
                 }
                 metrics {
-                    enabled = true //(11)!
+                    enabled = true //(12)!
                     slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(12)!
                 }
                 tracing {
-                    enabled = true //(13)!
+                    enabled = true //(14)!
                 }
             }
         }
@@ -144,7 +145,7 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
 
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
     2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
-    3. Specifies the partitions of topics to be subscribed to
+    3. Whether to process empty records in case the signature accepts `ConsumerRecords`
     4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use.Valid values are:
         1. `earliest` - earliest available offset
         2. `latest` - latest available offset
@@ -153,11 +154,12 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
-    10. Enables module logging (default `false`)
-    11. Enables module metrics (default `true`)
-    12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    13. Enables module tracing (default `true`)
+    9. Waiting time for processing before switching off the consumer in case of [gracefull shutdown](container.md#graceful-shutdown)
+    10. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
+    11. Enables module logging (default `false`)
+    12. Enables module metrics (default `true`)
+    13. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    14. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -168,30 +170,29 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
           - "topic1"
           - "topic2"
         topicsPattern: "topic*" #(2)!
-        partitions: #(3)!
-          - "1"
-          - "2"
+        allowEmptyRecords: false #(3)!
         offset: "latest" #(4)!
         pollTimeout: "5s" #(5)!
         backoffTimeout: "15s" #(6)!
         partitionRefreshInterval: "1m" #(7)!
         threads: 1 #(8)!
-        driverProperties: #(9)!
+        shutdownWait: "30s" #(9)!
+        driverProperties: #(10)!
           bootstrap.servers: "localhost:9093"
           group.id: "my-group-id"
         telemetry:
           logging:
-            enabled: false #(10)!
+            enabled: false #(11)!
           metrics:
-            enabled: true #(11)!
+            enabled: true #(12)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
           telemetry:
-            enabled: true #(13)!
+            enabled: true #(14)!
     ```
 
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
     2. Specifies the pattern of topics to which the Consumer will subscribe (**required** or `topics` is specified).
-    3. Specifies the partitions of topics to be subscribed to
+    3. Whether to process empty records in case the signature accepts `ConsumerRecords`
     4. Works only if `group.id` is not specified. Specifies which position in the topics the Consumer should use.Valid values are:
         1. `earliest` - earliest available offset
         2. `latest` - latest available offset
@@ -200,11 +201,12 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     6. Maximum waiting time between unexpected exceptions during processing
     7. Time interval within which it is required to update partitions in case of `assign` method
     8. Number of threads on which the consumer will be started for parallel processing (if it is equal to 0 then no consumer will be started at all)
-    9. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
-    10. Enables module logging (default `false`)
-    11. Enables module metrics (default `true`)
-    12. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    13. Enables module tracing (default `true`)
+    9. Waiting time for processing before switching off the consumer in case of [gracefull shutdown](container.md#graceful-shutdown)
+    10. *Properties* from the official kafka client, documentation on them can be found at [link](https://kafka.apache.org/documentation/#consumerconfigs) (**required**)
+    11. Enables module logging (default `false`)
+    12. Enables module metrics (default `true`)
+    13. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    14. Enables module tracing (default `true`)
 
 ### Consume strategy
 

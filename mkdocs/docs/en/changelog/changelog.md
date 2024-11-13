@@ -5,7 +5,25 @@ hide:
   - navigation
 ---
 
-## 1.1.12
+## 1.1.13
+
+Added:
+
+* Added [JsonNullable](../documentation/json.md#jsonnullable-wrapper) special type
+* Added config parameter [KafkaConsumer](../documentation/kafka.md#configuration) that allows empty records after `poll()`
+* Added OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) option support
+* Added Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#configuration)
+* Improved Camunda Rest Telemetry 
+* Improved Graceful shutdown for HTTP Server, KafkaListener, gRPC Server, Schedulers
+
+Fixed:
+
+* Fixed OpenAPI Codegen `additionalContractAnnotations` without validation enabled
+* Fixed KafkaConsumer RebalanceListener for topics config
+* Fixed `HttpServerResponse` exceptions processing in blocking threads
+* Fixed allow defaults methods in Kotlin KafkaProducer
+
+### 1.1.12
 
 Added:
 

@@ -101,16 +101,17 @@
         port = 8090 //(1)!
         maxMessageSize = "4MiB" //(2)!
         reflectionEnabled = false //(3)!
+        shutdownWait = "30s" //(4)!
         telemetry {
             logging {
-                enabled = false //(4)!
+                enabled = false //(5)!
             }
             metrics {
-                enabled = true //(5)!
+                enabled = true //(6)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
             }
             tracing {
-                enabled = true //(7)!
+                enabled = true //(8)!
             }
         }
     }
@@ -119,35 +120,38 @@
     1.  Порт gRPC сервера
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
     3.  Включает сервис [gRPC Server Reflection](#_8)
-    4.  Включает логгирование модуля (по умолчанию `false`)
-    5.  Включает метрики модуля (по умолчанию `true`)
-    6.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    7.  Включает трассировку модуля (по умолчанию `true`)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
+    5.  Включает логгирование модуля (по умолчанию `false`)
+    6.  Включает метрики модуля (по умолчанию `true`)
+    7.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    8.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     grpcServer:
       port: 8090 #(1)!
-      maxMessageSize = "4MiB" #(2)!
-      reflectionEnabled = false #(3)!
+      maxMessageSize: "4MiB" #(2)!
+      reflectionEnabled: false #(3)!
+      shutdownWait: "30s" #(4)!
       telemetry:
         logging:
-          enabled: false #(4)!
+          enabled: false #(5)!
         metrics:
-          enabled: true #(5)!
+          enabled: true #(6)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
         telemetry:
-          enabled: true #(7)!
+          enabled: true #(8)!
     ```
 
     1.  Порт gRPC сервера
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
     3.  Включает сервис [gRPC Server Reflection](#_8)
-    4.  Включает логгирование модуля (по умолчанию `false`)
-    5.  Включает метрики модуля (по умолчанию `true`)
-    6.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    7.  Включает трассировку модуля (по умолчанию `true`)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
+    5.  Включает логгирование модуля (по умолчанию `false`)
+    6.  Включает метрики модуля (по умолчанию `true`)
+    7.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    8.  Включает трассировку модуля (по умолчанию `true`)
 
 Можно также настроить [Netty транспорт](netty.md).
 

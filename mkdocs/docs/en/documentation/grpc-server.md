@@ -101,16 +101,17 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
         port = 8090 //(1)!
         maxMessageSize = "4MiB" //(2)!
         reflectionEnabled = false //(3)!
+        shutdownWait = "30s" //(4)!
         telemetry {
             logging {
-                enabled = false //(4)!
+                enabled = false //(5)!
             }
             metrics {
-                enabled = true //(5)!
+                enabled = true //(6)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
             }
             tracing {
-                enabled = true //(7)!
+                enabled = true //(8)!
             }
         }
     }
@@ -119,10 +120,11 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     1. gRPC server port
     2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
     3. Enables [gRPC Server Reflection](#reflection) service
-    4. Enables module logging (default `false`)
-    5. Enables module metrics (default `true`)
-    6. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    7. Enables module tracing (default `true`)
+    4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
+    5. Enables module logging (default `false`)
+    6. Enables module metrics (default `true`)
+    7. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    8. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -131,23 +133,25 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
       port: 8090 #(1)!
       maxMessageSize = "4MiB" #(2)!
       reflectionEnabled = false #(3)!
+      shutdownWait: "30s" #(4)!
       telemetry:
         logging:
-          enabled: false #(4)!
+          enabled: false #(5)!
         metrics:
-          enabled: true #(5)!
+          enabled: true #(6)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
         telemetry:
-          enabled: true #(7)!
+          enabled: true #(8)!
     ```
 
     1. gRPC server port
     2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
     3. Enables [gRPC Server Reflection](#reflection) service
-    4. Enables module logging (default `false`)
-    5. Enables module metrics (default `true`)
-    6. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    7. Enables module tracing (default `true`)
+    4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
+    5. Enables module logging (default `false`)
+    6. Enables module metrics (default `true`)
+    7. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    8. Enables module tracing (default `true`)
 
 You can also configure [Netty transport](netty.md).
 

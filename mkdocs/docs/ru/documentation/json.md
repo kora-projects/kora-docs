@@ -243,6 +243,25 @@
     }
     ```
 
+## JsonNullable обертка
+
+В случае если во время десериализации, хочется отличать отсутствующее поле от указанного `null` значения,
+предполагается использовать специальный тип `JsonNullable`, который позволяет отражать все состояния поля после десериализации.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(String field1, JsonNullable<Integer> field2) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(val field1: String, val field2: JsonNullable<Int>)
+    ```
+
 ## Изолированные классы и интерфейсы
 
 В случае если требуется писать различные Json объекты в зависимости от значения в конкретном поле, предполагается использовать
