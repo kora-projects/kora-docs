@@ -122,7 +122,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.13")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -161,7 +161,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.13"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -187,7 +187,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.11")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.13")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,7 +206,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.11"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.13"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
