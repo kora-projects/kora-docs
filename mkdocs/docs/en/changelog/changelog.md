@@ -5,7 +5,17 @@ hide:
   - navigation
 ---
 
-## 1.1.13
+## 1.1.14
+
+Added:
+
+* Added force shutdownNow when graceful shutdown fails for gRPC-server, KafkaListener, Scheduler
+
+Fixed:
+
+* Fixed Quartz config extractor missing
+
+### 1.1.13
 
 Added:
 
