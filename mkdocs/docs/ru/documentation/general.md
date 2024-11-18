@@ -122,7 +122,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.14")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.15")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -161,7 +161,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.14"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.15"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -187,7 +187,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.14")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.15")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,7 +206,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.14"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.15"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```

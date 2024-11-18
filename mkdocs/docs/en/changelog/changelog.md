@@ -5,7 +5,15 @@ hide:
   - navigation
 ---
 
-## 1.1.14
+## 1.1.15
+
+Fixed:
+
+* Fixed HTTP Client tracing missing
+* Fixed `QuartzModule` config method potential collision with jdk scheduling
+* Fixed Jdk Scheduling job awaits graceful shutdown
+
+### 1.1.14
 
 Added:
 
