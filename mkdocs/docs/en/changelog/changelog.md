@@ -9,7 +9,7 @@ hide:
 
 Added:
 
-* Added new options to HTTP-server config
+* Added new [HTTP-server config](../documentation/http-server.md#configuration) options
 
 Fixed:
 
