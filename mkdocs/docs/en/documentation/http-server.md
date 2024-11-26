@@ -48,21 +48,25 @@ Example of the complete configuration described in the `HttpServerConfig` class 
         ioThreads = 2 //(7)!
         blockingThreads = 2 //(8)!
         shutdownWait = "30s" //(9)!
+        threadKeepAliveTimeout = "60s" //(10)!
+        socketReadTimeout = "0s" //(11)!
+        socketWriteTimeout = "0s" //(12)!
+        socketKeepAliveEnabled = false //(13)!
         telemetry {
             logging {
-                enabled = false //(10)!
-                stacktrace = true //(11)!
-                mask = "***" //(12)!
-                maskQueries = [ ] //(13)!
-                maskHeaders = [ "authorization" ] //(14)!
-                pathTemplate = true //(15)!
+                enabled = false //(14)!
+                stacktrace = true //(15)!
+                mask = "***" //(16)!
+                maskQueries = [ ] //(17)!
+                maskHeaders = [ "authorization" ] //(18)!
+                pathTemplate = true //(19)!
             }
             metrics {
-                enabled = true //(16)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                enabled = true //(20)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(21)!
             }
             tracing {
-                enabled = true //(18)!
+                enabled = true //(22)!
             }
         }
     }
@@ -77,15 +81,19 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     7.  Number of server threads, default is the number of CPU cores or minimum `2`.
     8.  Number of blocking threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Enables module logging (default `false`)
-    11.  Enables call stack logging in case of exception
-    12.  Mask that is used to hide specified headers and request/response parameters
-    13.  List of request parameters to be hidden
-    14.  List of request/response headers that should be hidden
-    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    16.  Enables module metrics (default `true`)
-    17.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18.  Enables module tracing (default is `true`)
+    10.  Maximum lifetime of the request handler thread
+    11.  Maximum waiting time for reading data from the socket/connection
+    12.  Maximum waiting time for writing data to the socket/connection
+    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
+    14.  Enables module logging (default `false`)
+    15.  Enables call stack logging in case of exception
+    16.  Mask that is used to hide specified headers and request/response parameters
+    17.  List of request parameters to be hidden
+    18.  List of request/response headers that should be hidden
+    19.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    20.  Enables module metrics (default `true`)
+    21.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    22.  Enables module tracing (default is `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -100,19 +108,23 @@ Example of the complete configuration described in the `HttpServerConfig` class 
       ioThreads: 2 #(7)!
       blockingThreads: 2 #(8)!
       shutdownWait: "30s" #(9)!
+      threadKeepAliveTimeout: "60s" #(10)!
+      socketReadTimeout: "0s" #(11)!
+      socketWriteTimeout: "0s" #(12)!
+      socketKeepAliveEnabled: false #(13)!
       telemetry:
         logging:
-          enabled: false #(10)!
-          stacktrace: true #(11)!
-          mask: "***" #(12)!
-          maskQueries: [ ] #(13)!
-          maskHeaders: [ "authorization" ] #(14)!
-          pathTemplate: true #(15)!
+          enabled: false #(14)!
+          stacktrace: true #(15)!
+          mask: "***" #(16)!
+          maskQueries: [ ] #(17)!
+          maskHeaders: [ "authorization" ] #(18)!
+          pathTemplate: true #(19)!
         metrics:
-          enabled: true #(16)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+          enabled: true #(20)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(21)!
         telemetry:
-          enabled: true #(18)!
+          enabled: true #(22)!
     ```
 
     1.  Public server port
@@ -124,15 +136,19 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     7.  Number of server threads, default is the number of CPU cores or minimum `2`.
     8.  Number of blocking threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
     9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Enables module logging (default `false`)
-    11.  Enables call stack logging in case of exception
-    12.  Mask that is used to hide specified headers and request/response parameters
-    13.  List of request parameters to be hidden
-    14.  List of request/response headers that should be hidden
-    15.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    16.  Enables module metrics (default `true`)
-    17.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18.  Enables module tracing (default is `true`)
+    10.  Maximum lifetime of the request handler thread
+    11.  Maximum waiting time for reading data from the socket/connection
+    12.  Maximum waiting time for writing data to the socket/connection
+    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
+    14.  Enables module logging (default `false`)
+    15.  Enables call stack logging in case of exception
+    16.  Mask that is used to hide specified headers and request/response parameters
+    17.  List of request parameters to be hidden
+    18.  List of request/response headers that should be hidden
+    19.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    20.  Enables module metrics (default `true`)
+    21.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    22.  Enables module tracing (default is `true`)
 
 ## SomeController declarative
 
