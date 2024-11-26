@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.1.15
+## 1.1.16
+
+Added:
+
+* Added new [HTTP-server config](../documentation/http-server.md#configuration) options
+
+Fixed:
+
+* Fixed JDBC `byte[]` type mapping
+* Fixed `JdkScheduler` job await proper release 
+* Fixed Quartz job registration potential NPE
+* Fixed scheduling jobs refresh trigger whole scheduler refresh behavior 
+* Improved Quartz job shutdown
+* Updated dependencies minor version 
+
+### 1.1.15
 
 Fixed:
 
