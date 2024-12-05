@@ -529,6 +529,41 @@
     }
     ```
 
+### Авторизация
+
+Kora предоставляет интерфейс для извлечения авторизационной информации в рамках перехватчика, 
+созданного для сервера из OpenAPI, можно вытаскивать любые типы авторизации [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AuthModule {
+     
+        @Tag(ApiSecurity.BearerAuth.class)
+        default HttpServerPrincipalExtractor<Principal> bearerHttpServerPrincipalExtractor() {
+            return (request, value) -> CompletableFuture.completedFuture(new MyPrincipal(request.headers().getFirst("Authorization")));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface AuthModule {
+
+        @Tag(ApiSecurity.BearerAuth::class)
+        fun bearerHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor<Principal> { request, value ->
+                CompletableFuture.completedFuture<Principal>(
+                    MyPrincipal(request.headers().getFirst("Authorization"))
+                )
+            }
+        }
+    }
+    ```
+
 ## Рекомендации
 
 ???+ warning "Совет"
