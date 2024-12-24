@@ -587,6 +587,46 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
     class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
     ```
 
+#### Tag custom
+
+You can also create your own tag annotations and work with them, such an example is [@Json annotation](json.md)
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(MyTag.class)
+    @interface MyTag { }
+
+    public interface SomeModule {
+
+        @MyTag
+        default SomeService someService() {
+            return new SomeService();
+        }
+
+        default OtherService otherService(@MyTag SomeService service) {
+            return new OtherService(service);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(MyTag::class)
+    annotation class MyTag
+
+    interface SomeModule {
+        
+        @MyTag
+        fun someService(): SomeService = SomeService()
+
+        fun otherService(@MyTag service: SomeService): OtherService {
+            return OtherService(service)
+        }
+    }
+    ```
+
 #### Tag all
 
 You can also use a tag to get a list of all components by a specific tag:

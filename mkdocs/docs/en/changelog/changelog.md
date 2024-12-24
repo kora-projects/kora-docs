@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.1.16
+## 1.1.17
+
+Added:
+
+* Added KafkaConsumer batch processing metric and other telemetry improvements
+* Added Config boolean as native type
+
+Fixed:
+
+* Fixed gRPC client telemetry handling on request cancellation
+* Fixed template generic components interface matching for graph processor
+* Fixed HttpServer private release sleep removed
+* Fixed ResourceConfigOrigin#description for improved config error
+
+### 1.1.16
 
 Added:
 

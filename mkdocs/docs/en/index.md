@@ -6,15 +6,15 @@ hide:
 - toc
 ---
 
-Kora is a framework for writing Java / Kotlin server-side applications with a focus on Performance, Efficiency, Transparency.
+Kora is a Java framework for writing Java or Kotlin server-side applications with a focus on Performance, Efficiency, Transparency.
 Kora aims to provide sufficiently high-level declarative tools and thin, familiar high-level abstractions for developers,
 which at compile time are translated into hardware-performant and human-readable code.
-Framework has its own dependency container with inversion of control that works at compile time.
+Both programming languages are first-level citizen languages for framework.
+
+Framework is written in Java and has its own dependency container with inversion of control that works at compile time.
 Kora is a cloud-oriented server framework and offers many modules for quickly building applications such as 
-[HTTP server](documentation/http-server.md), 
-[Kafka](documentation/kafka.md) consumers, 
-database abstraction in the form of [repositories](documentation/database-common.md), telemetry for all modules, resilient module
-and much more.
+[HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers, 
+database abstraction in the form of [repositories](documentation/database-common.md), telemetry for all modules, resilient module and much more.
 
 `Performance` - Kora generates high-performant code at compile time,
 avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements thin fine-grained abstraction, free aspects,
@@ -40,7 +40,7 @@ in the project without the need for developers to memorize for years “the guts
 Also, the source code creation approach allows for dependency container checking at compile time 
 and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
 
-Kora provides all the tools needed for modern Java/Kotlin server-side development:
+Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
 - Dependency injection and inversion at compile time via annotations
 - Declarative components generation at compile time via annotations

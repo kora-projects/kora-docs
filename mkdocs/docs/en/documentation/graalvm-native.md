@@ -1,13 +1,17 @@
-Kora creates its helper classes at compile time, so there should be no problem building a native image.
+Kora creates its helper classes at compile time,
+does not use the Reflection API at runtime,
+does not use dynamic proxies,
+does not generate bytecode at compile time or runtime,
+so there are no problems building native image from Kora perspective.
 
-An example of building a native image using [plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html) for `gradle`:
+Example of building a native image using [plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html) for `gradle`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Plugin `build.gradle`:
     ```groovy
     plugins {
-        id "org.graalvm.buildtools.native" version "0.10.1"
+        id "org.graalvm.buildtools.native" version "0.10.4"
     }
     ```
 
@@ -38,7 +42,7 @@ An example of building a native image using [plugin](https://graalvm.github.io/n
     Plugin `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.graalvm.buildtools.native") version("0.10.1")
+        id("org.graalvm.buildtools.native") version("0.10.4")
     }
     ```
 
@@ -64,7 +68,7 @@ An example of building a native image using [plugin](https://graalvm.github.io/n
     }
     ```
 
-Some libraries require additional configuration, some configurations are made in the framework.
+Some libraries require additional configuration, some configurations are made in Kora.
 
 Tested modules that should work without additional configuration:
 
@@ -81,7 +85,7 @@ Tested modules that should work without additional configuration:
 - [JDBC (Postgres) database](database-jdbc.md)
 - [R2DBC (Postgres) database](database-r2dbc.md)
 - [Database Vertx (Postgres)](database-vertx.md)
-- Cassandra database](database-cassandra.md)
+- [Cassandra database](database-cassandra.md)
 - [Kafka](kafka.md)
 - [gRPC Server](grpc-server.md)
 - [gRPC client](grpc-client.md)
@@ -90,3 +94,5 @@ Tested modules that should work without additional configuration:
 - [Validation](validation.md)
 - [Scheduling](scheduling.md)
 - [Logging](logging-aspect.md)
+
+See examples of working native services at [repository with examples](https://github.com/kora-projects/kora-examples).

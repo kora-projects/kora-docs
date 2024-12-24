@@ -544,7 +544,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
     ```
 
     1. URL of the service where requests will be sent
-    2. Maximum request time
+    2. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
     3. Enables module logging (default `false`)
     4.  Mask that is used to hide specified headers and request/response parameters
     5.  List of request parameters to be hidden
@@ -576,7 +576,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
     ```
 
     1. URL of the service where requests will be sent
-    2. Maximum request time
+    2. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
     3. Enables module logging (default `false`)
     4.  Mask that is used to hide specified headers and request/response parameters
     5.  List of request parameters to be hidden
@@ -590,7 +590,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
 
 Using the above HTTP client example, it is possible to configure separately some of the parameters for a particular method, the configuration path
 is determined by the path to the client and the method name, in the example above the configuration is `httpClient.someClient`
-and method `hello` the final path will be `httpClient.someClient.getHello`
+and method `hello` the final path will be `httpClient.someClient.hello`
 
 ===! ":material-code-json: `Hocon`"
 
@@ -620,15 +620,15 @@ and method `hello` the final path will be `httpClient.someClient.getHello`
     }
     ```
 
-    1.  Maximum method query time
-    2.  Enables module logging (default `false`)
-    3.  Mask that is used to hide specified headers and request/response parameters
-    4.  List of request parameters to be hidden
-    5.  List of request/response headers that should be hidden
-    6.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    7.  Includes module metrics
-    8.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9.  Enables module tracing (default `true`)
+    1. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
+    2. Enables module logging (default `false`)
+    3. Mask that is used to hide specified headers and request/response parameters
+    4. List of request parameters to be hidden
+    5. List of request/response headers that should be hidden
+    6. Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    7. Includes module metrics
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -651,15 +651,15 @@ and method `hello` the final path will be `httpClient.someClient.getHello`
               enabled: true #(9)!
     ```
 
-    1.  Maximum method query time
-    2.  Enables module logging (default `false`)
-    3.  Mask that is used to hide specified headers and request/response parameters
-    4.  List of request parameters to be hidden
-    5.  List of request/response headers that should be hidden
-    6.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    7.  Includes module metrics
-    8.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9.  Enables module tracing (default `true`)
+    1. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
+    2. Enables module logging (default `false`)
+    3. Mask that is used to hide specified headers and request/response parameters
+    4. List of request parameters to be hidden
+    5. List of request/response headers that should be hidden
+    6. Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    7. Includes module metrics
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9. Enables module tracing (default `true`)
 
 ### Request
 
