@@ -592,6 +592,46 @@ public interface All<T> extends List<T> {}
     class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
     ```
 
+#### Тег собственный
+
+Можно также вводить собственный аннотации теги и работать уже с ними, таким примером может служить [аннотация @Json](json.md)
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(MyTag.class)
+    @interface MyTag { }
+
+    public interface SomeModule {
+
+        @MyTag
+        default SomeService someService() {
+            return new SomeService();
+        }
+
+        default OtherService otherService(@MyTag SomeService service) {
+            return new OtherService(service);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(MyTag::class)
+    annotation class MyTag
+
+    interface SomeModule {
+        
+        @MyTag
+        fun someService(): SomeService = SomeService()
+
+        fun otherService(@MyTag service: SomeService): OtherService {
+            return OtherService(service)
+        }
+    }
+    ```
+
 #### Тег список
 
 Можно использовать тег также для получения списка всех компонент по определенному тегу:

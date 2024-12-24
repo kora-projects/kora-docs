@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.16")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.17")
         }
     }
     ```
@@ -27,7 +27,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.16")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.17")
         }
     }
     ```
@@ -526,6 +526,41 @@ In order to do this, set the `configOptions.interceptors` parameter:
                     }
                     """
         )
+    }
+    ```
+
+### Authorization
+
+Kora provides an interface to extract authorization information within the interceptor,
+created for the server from OpenAPI, you can pull any type of authorization [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
+
+===! “:fontawesome-brands-java: ``Java``”
+
+    ```java
+    @Module
+    public interface AuthModule {
+     
+        @Tag(ApiSecurity.BearerAuth.class)
+        default HttpServerPrincipalExtractor<Principal> bearerHttpServerPrincipalExtractor() {
+            return (request, value) -> CompletableFuture.completedFuture(new MyPrincipal(request.headers().getFirst(“Authorization”)));
+        }
+    }
+    ```
+
+=== “:simple-kotlin: ``Kotlin``”
+
+    ```kotlin
+    @Module
+    interface AuthModule {
+
+        @Tag(ApiSecurity.BearerAuth::class)
+        fun bearerHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor<Principal> { request, value ->
+                CompletableFuture.completedFuture<Principal>(
+                    MyPrincipal(request.headers().getFirst(“Authorization”)))
+                )
+            }
+        }
     }
     ```
 

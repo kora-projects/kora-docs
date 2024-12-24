@@ -1,6 +1,6 @@
 Functionality that gives the application two methods for obtaining probes on a private port about service readiness/liveness.
 
-Requires a [HTTP server](http-server.md) module.
+Provided by adding a [private HTTP server](http-server.md) module.
 
 ## Liveness
 

@@ -1,6 +1,6 @@
 Module for collecting application metrics using [Micrometer](https://micrometer.io/docs/concepts#_purpose).
 
-Requires [HTTP server](http-server.md) module added to provide metrics in [prometheus](https://prometheus.io/docs/concepts/data_model/) format.
+Requires [private HTTP server](http-server.md) module added to provide metrics in [prometheus](https://prometheus.io/docs/concepts/data_model/) format.
 
 ## Dependency
 
