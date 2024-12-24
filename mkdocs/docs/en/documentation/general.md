@@ -1,9 +1,9 @@
-Kora is a cloud-oriented server-side framework and offers
-many different modules for quickly building applications such as HTTP server, Kafka consumers, 
-database abstraction in the form of repositories, telemetry for all modules, resilient module 
-and much more.
+Kora is a cloud-oriented server-side Java framework and offers
+many different modules for quickly building applications such as HTTP server and client, Kafka consumers, 
+database abstraction in the form of repositories, S3 client, gRPC server and client,
+Camunda integration, telemetry for all modules, resilient module and much more.
 
-Kora provides all the tools needed for modern Java/Kotlin server-side development:
+Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
 - Dependency injection and inversion at compile time via annotations
 - Declarative components generation at compile time via annotations
@@ -122,7 +122,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -161,7 +161,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -187,7 +187,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,7 +206,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```

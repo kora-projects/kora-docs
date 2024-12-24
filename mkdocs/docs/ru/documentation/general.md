@@ -1,9 +1,9 @@
-Kora является облачно ориентированным серверным фреймворком и предлагает
-множество различных модулей для быстрого создания приложений такие как HTTP сервер, Kafka потребители, 
-абстракция над базой данных в виде репозиториев, телеметрию всех модулей, отказоустойчивость
-и многое другое.
+Kora является облачно ориентированным серверным фреймворком написанным на Java и предлагает
+множество различных модулей для быстрого создания приложений такие как HTTP сервер и клиент, Kafka потребители, 
+абстракция над базой данных в виде репозиториев, S3-клиент, gRPC сервер и клиент, интеграции с Camunda,
+телеметрию всех модулей, модули отказоустойчивости и многое другое.
 
-Kora предоставляет все необходимые для современной Java / Kotlin серверной разработки инструменты:
+Kora предоставляет все необходимые для современной Java или Kotlin серверной разработки инструменты:
 
 - Внедрение и инверсию зависимостей на этапе компиляции посредствам аннотаций
 - Создание декларативно описанных с помощью аннотаций компонент во время компиляции
@@ -122,7 +122,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -161,7 +161,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -170,7 +170,7 @@ Kafka продюсеров, репозиториев баз данных и та
 
 ## Зависимости
 
-Так как основным столпом на котором строится Kora являются обработчики аннотаций, то они являются обязательной зависимость,
+Так как основным столпом на котором строится Kora являются обработчики аннотаций, то они являются обязательной зависимостью,
 также не стоит забывать и о [BOM зависимости](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import):
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -187,7 +187,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,7 +206,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```

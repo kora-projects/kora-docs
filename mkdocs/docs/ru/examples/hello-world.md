@@ -51,7 +51,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -88,7 +88,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
