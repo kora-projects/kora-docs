@@ -212,14 +212,14 @@ Optimal entity mapping intend to use with `@EntityJdbc` annotation for result co
 
 All embedded entities also should use this annotation:
 
-===! “:fontawesome-brands-java: `Java`”
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @EntityJdbc
     Public record Entity(String id, String name) {}
     ```
 
-=== “:simple-kotlin: `Kotlin`”
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @EntityJdbc
@@ -372,6 +372,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
 ### Supported types
 
 ??? abstract "List of supported types for arguments/return values out of the box"
+
+    These types are chosen because they are supported by most popular databases.
 
     * void
     * boolean / Boolean

@@ -5,7 +5,7 @@ search:
 
 This example shows how to create a simple service in Kora, with an HTTP server, metrics, logging and samples, that can respond to a `GET /hello/world` request.
 
-## Create a project
+## Create project
 
 Create a new Gradle project (via IDEA or `gradle init`).
 
@@ -17,7 +17,7 @@ Let's check the configuration in `gradle/wrapper/gradle-wrapper.properties`:
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 ```
 
-## Configuring Gradle
+## Gradle configuration
 
 Basic concepts and description of the framework can be read on the [main page](../documentation/general.md).
 
@@ -51,7 +51,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.16")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.17")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -88,7 +88,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.16"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.17"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -110,7 +110,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
     ```
 
-## Application Configuration
+## Application configuration
 
 In order to run application, we need to create entrypoint and dependency container. Let's create the `Application` interface with this code:
 
@@ -332,10 +332,10 @@ Now an optimal Json writer will be generated for our object, and we will see Jso
 {"greeting":"Hello World"}
 ```
 
-=== “:fontawesome-brands-java: `Java`”
+=== ":fontawesome-brands-java: `Java`"
 
     You can create a new Java service by using [template on GitHub](https://github.com/kora-projects/kora-java-crud-template)
 
-=== “:simple-kotlin: `Kotlin`”
+=== ":simple-kotlin: `Kotlin`"
 
     You can create a new Kotlin service using [template on GitHub](https://github.com/kora-projects/kora-kotlin-crud-template).

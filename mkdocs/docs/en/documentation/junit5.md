@@ -480,7 +480,7 @@ Let's imagine that the application looks like this:
 
 In tests, you can create a graph extending the main application and use it within tests.
 
-===! “:fontawesome-brands-java: `Java`”
+===! ":fontawesome-brands-java: `Java`"
 
     In order to do this, first of all you need to enable the option 
     to create a sub-module of the main application in `build.gradle`:

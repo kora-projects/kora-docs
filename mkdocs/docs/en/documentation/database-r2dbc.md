@@ -341,6 +341,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
 
 ??? abstract "List of supported types for arguments/return values out of the box"
 
+    These types are chosen because they are supported by most popular databases.
+
     * void
     * boolean / Boolean
     * short / Short
