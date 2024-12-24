@@ -590,7 +590,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
 
 Using the above HTTP client example, it is possible to configure separately some of the parameters for a particular method, the configuration path
 is determined by the path to the client and the method name, in the example above the configuration is `httpClient.someClient`
-and method `hello` the final path will be `httpClient.someClient.getHello`
+and method `hello` the final path will be `httpClient.someClient.hello`
 
 ===! ":material-code-json: `Hocon`"
 
