@@ -5,7 +5,23 @@ hide:
   - navigation
 ---
 
-## 1.1.17
+## 1.1.18
+
+Added:
+
+* Added [Camunda Zeebe Worker](../documentation/camunda8-worker.md) **experimental** module
+* Added Kotlin `suspend` database transaction extension methods
+* Improved `OpenAPI` generated discriminator model contracts
+
+Fixed:
+
+* Fixed `Kafka` unused parameter in HandlerWrapper 
+* Fixed `Kafka` transactional publisher sendOffsetsToTransaction method 
+* Fixed `Quartz` scheduler default configuration for correct clustered behavior 
+* Fixed `Wrapped` components  in `JUnit` for Mock/Spy/Replace operations
+* Fixed minor dependency security updates 
+
+### 1.1.17
 
 Added:
 

@@ -1,7 +1,7 @@
 ??? warning “Experimental module”
 
-    **Experimental** module is fully working and tested, but does not guarantee a fully stabilized API and may undergo some minor changes before being fully ready.
-    undergo some minor changes before being fully operational.
+    **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
+    for this reason, API may potentially undergo minor changes before fully stable.
 
 Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) for [Camunda 7 BPMN module](camunda7-bpmn.md)
 

@@ -55,6 +55,7 @@ nav:
         - S3 client: documentation/s3-client.md
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
+        - Camunda Zeebe: documentation/camunda8-worker.md
   - Changelog: changelog/changelog.md
 
 

@@ -7,7 +7,7 @@
 {% elif page and page.title and not page.is_homepage %}
 {% set title = title ~ " - " ~ page.title | striptags %}
 {% endif %}
-{% set description = page.content | striptags | truncate | replace("¶ ", ": ") %}
+{% set description = page.content | replace("</li>", ", ") | striptags | truncate | replace("¶ ", ": ") | replace("Добавлено: ", "") | replace("Исправлено: ", "") %}
 {% if page and page.meta and page.meta.description %}
 {% set description = page.meta.description %}
 {% endif %}
