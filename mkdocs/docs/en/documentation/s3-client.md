@@ -1,7 +1,7 @@
 ??? warning “Experimental module”
 
-    **Experimental** module is fully working and tested, but does not guarantee a fully stabilized API and may undergo some minor changes before being fully ready.
-    undergo some minor changes before being fully operational.
+    **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
+    for this reason, API may potentially undergo minor changes before fully stable.
 
 Module provides a thin layer of abstraction for creating S3-clients
 using declarative-style annotations, or using imperative-style clients to work with [S3 storage](https://aws.amazon.com/s3/faqs/).
