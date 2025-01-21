@@ -567,16 +567,16 @@ Available signatures for repository methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    The `T` refers to the type of the return value or  `Void`.
+    The `T` refers to the type of the return value or `Void`.
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (provide `Executor`)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (provide `Executor` and add [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (add [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
     By `T` we mean the type of the return value, either `T?` or `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): Deferred<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (provide `Executor` and add [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `suspend myMethod(): Deferred<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (add [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
