@@ -454,7 +454,7 @@ Example of a simple configuration described in `CassandraConfig` class (example 
     interface EntityRepository : CassandraRepository
     ```
 
-### Профиль
+### Profile
 
 It is possible to override common settings with private settings from a profile, suppose there is such a profile configuration `someProfile`:
 
@@ -540,6 +540,8 @@ If you need to convert the result manually, it is suggested to use `CassandraRes
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
+
     ```kotlin
     class ResultMapper : CassandraResultSetMapper<UUID> {
         override fun apply(rows: ResultSet): UUID {
@@ -581,6 +583,8 @@ If you need to convert the string manually, it is suggested to use `CassandraRow
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class RowMapper : CassandraRowMapper<UUID> {
@@ -626,6 +630,8 @@ If you need to convert the column value manually, it is suggested to use the `Ca
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ColumnMapper : CassandraRowColumnMapper<UUID> {
@@ -675,6 +681,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ParameterMapper : CassandraParameterColumnMapper<UUID?> {
