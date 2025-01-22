@@ -548,6 +548,90 @@ Kora не обрабатывает содержимое запроса, резу
     }
     ```
 
+### Несколько баз данных
+
+Иногда требуется чтобы в рамках одного приложения был доступ к разным базам данных в разных репозиториях,
+это можно решить следующим образом. 
+Требуется создать отдельный экземпляр базы данных и подключить его в репозиторий,
+ниже будет показан пример для [JDBC](database-jdbc.md) базы данных, но принцип аналогичный и для других типов подключений.
+
+Требуется скопировать фабрики создания `JdbcDatabase` и его конфигурации из модуля `JdbcDatabaseModule` 
+и указать им свой тег, который будет указывать что это соединения для другой базы данных.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends JdbcDatabaseModule {
+
+        final class OtherDatabase { }
+
+        @Tag(OtherDatabase.class)
+        default JdbcDatabaseConfig otherJdbcDataBaseConfig(Config config, 
+                                                           ConfigValueExtractor<JdbcDatabaseConfig> extractor) {
+            var value = config.get("db.other");
+            return extractor.extract(value);
+        }
+
+        @Tag(OtherDatabase.class)
+        default JdbcDatabase otherJdbcDataBase(@Tag(OtherDatabase.class) JdbcDatabaseConfig config,
+                                               DataBaseTelemetryFactory telemetryFactory,
+                                               @Tag(OtherDatabase.class) @Nullable Executor executor) {
+            return new JdbcDatabase(config, telemetryFactory, executor);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : JdbcDatabaseModule {
+
+        class OtherDatabase
+
+        @Tag(OtherDatabase::class)
+        fun otherJdbcDataBaseConfig(
+            config: Config,
+            extractor: ConfigValueExtractor<JdbcDatabaseConfig?>
+        ): JdbcDatabaseConfig {
+            val value = config.get("db.other")
+            return extractor.extract(value) ?: throw ConfigValueExtractionException.missingValue(value)
+        }
+
+        @Tag(OtherDatabase::class)
+        fun otherJdbcDataBase(
+            @Tag(OtherDatabase::class) config: JdbcDatabaseConfig?,
+            telemetryFactory: DataBaseTelemetryFactory?,
+            @Tag(OtherDatabase::class) executor: Executor?
+        ): JdbcDatabase {
+            return JdbcDatabase(config, telemetryFactory, executor)
+        }
+    }
+    ```
+
+А в репозиториях, которые будут использовать эту базу данных теперь требуется указывать тег этого подключения:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository(executorTag = @Tag(OtherDatabase.class))
+    public interface OtherJdbcRepository extends JdbcRepository {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository(executorTag = Tag(value = [OtherDatabase::class]))
+    interface OtherJdbcRepository : JdbcRepository {
+    
+    }
+    ```
+
+Репозитории с подключением к основной базе данных, не требуют тега.
+
 ### Макросы
 
 Самой неприятной частью написания SQL запросов может быть перечисление и поддержание в соответствие колонок и полей сущности в актуальном состоянии.
