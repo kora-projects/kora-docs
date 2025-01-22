@@ -547,6 +547,90 @@ For more details about transactions, see the documentation for the specific repo
     }
     ```
 
+### Multiple databases
+
+Sometimes you need to access different databases in different repositories within the same application,
+this can be solved in the following way.
+You need to create a separate database instance and connect it to a repository,
+below is an example for [JDBC](database-jdbc.md) database, but the principle is similar for other types of connections.
+
+It is required to copy the `JdbcDatabase` creation factories and its configuration from the `JdbcDatabaseModule` module
+and give them their own tag, which will indicate that they are connections for another database.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends JdbcDatabaseModule {
+
+        final class OtherDatabase { }
+
+        @Tag(OtherDatabase.class)
+        default JdbcDatabaseConfig otherJdbcDataBaseConfig(Config config, 
+                                                           ConfigValueExtractor<JdbcDatabaseConfig> extractor) {
+            var value = config.get("db.other");
+            return extractor.extract(value);
+        }
+
+        @Tag(OtherDatabase.class)
+        default JdbcDatabase otherJdbcDataBase(@Tag(OtherDatabase.class) JdbcDatabaseConfig config,
+                                               DataBaseTelemetryFactory telemetryFactory,
+                                               @Tag(OtherDatabase.class) @Nullable Executor executor) {
+            return new JdbcDatabase(config, telemetryFactory, executor);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : JdbcDatabaseModule {
+
+        class OtherDatabase
+
+        @Tag(OtherDatabase::class)
+        fun otherJdbcDataBaseConfig(
+            config: Config,
+            extractor: ConfigValueExtractor<JdbcDatabaseConfig?>
+        ): JdbcDatabaseConfig {
+            val value = config.get("db.other")
+            return extractor.extract(value) ?: throw ConfigValueExtractionException.missingValue(value)
+        }
+
+        @Tag(OtherDatabase::class)
+        fun otherJdbcDataBase(
+            @Tag(OtherDatabase::class) config: JdbcDatabaseConfig?,
+            telemetryFactory: DataBaseTelemetryFactory?,
+            @Tag(OtherDatabase::class) executor: Executor?
+        ): JdbcDatabase {
+            return JdbcDatabase(config, telemetryFactory, executor)
+        }
+    }
+    ```
+
+And repositories that will use this database are now required to specify the tag of this connection:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository(executorTag = @Tag(OtherDatabase.class))
+    public interface OtherJdbcRepository extends JdbcRepository {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository(executorTag = Tag(value = [OtherDatabase::class]))
+    interface OtherJdbcRepository : JdbcRepository {
+    
+    }
+    ```
+
+Repositories with a main database connection, doesn't require tag.
+
 ### Macros
 
 The most frustrating part of writing SQL queries can be listing and keeping the columns and fields of an entity up to date.
