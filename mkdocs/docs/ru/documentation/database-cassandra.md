@@ -540,6 +540,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
+
     ```kotlin
     class ResultMapper : CassandraResultSetMapper<UUID> {
         override fun apply(rows: ResultSet): UUID {
@@ -581,6 +583,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class RowMapper : CassandraRowMapper<UUID> {
@@ -626,6 +630,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ColumnMapper : CassandraRowColumnMapper<UUID> {
@@ -675,6 +681,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ParameterMapper : CassandraParameterColumnMapper<UUID?> {

@@ -171,6 +171,8 @@ If you need to convert the result manually, it is suggested to use `VertxRowSetM
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
+
     ```kotlin
     class ResultMapper : VertxRowSetMapper<List<UUID>> {
         override fun apply(rows: RowSet<Row>): List<UUID> {
@@ -212,6 +214,8 @@ If you need to convert the string manually, it is suggested to use `VertxRowMapp
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class RowMapper : VertxRowMapper<UUID> {
@@ -257,6 +261,8 @@ If you need to convert the column value manually, it is suggested to use the `Ve
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ColumnMapper : VertxResultColumnMapper<UUID> {
@@ -304,6 +310,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ParameterMapper : VertxParameterColumnMapper<UUID?> {

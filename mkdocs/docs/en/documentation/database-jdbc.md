@@ -188,6 +188,8 @@ If you need to convert the result manually, it is suggested to use `JdbcResultSe
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
+
     ```kotlin
     class ResultMapper : JdbcResultSetMapper<Long> {
 
@@ -252,6 +254,8 @@ If you need to convert the string manually, it is suggested to use `JdbcRowMappe
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
+
     ```kotlin
     class RowMapper : JdbcRowMapper<UUID> {
 
@@ -298,6 +302,8 @@ If you need to convert the column value manually, it is suggested to use the `Jd
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ColumnMapper : JdbcResultColumnMapper<UUID> {
@@ -349,6 +355,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ParameterMapper : JdbcParameterColumnMapper<UUID?> {

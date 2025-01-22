@@ -183,6 +183,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
+
     ```kotlin
     class ResultMapper : R2dbcResultFluxMapper<UUID, Flux<UUID>> {
         override fun apply(resultFlux: Flux<Result>): Flux<UUID> {
@@ -224,6 +226,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class RowMapper : R2dbcRowMapper<UUID> {
@@ -269,6 +273,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ColumnMapper : R2dbcResultColumnMapper<UUID> {
@@ -318,6 +324,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ParameterMapper : R2dbcParameterColumnMapper<UUID?> {

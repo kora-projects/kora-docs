@@ -171,6 +171,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
+
     ```kotlin
     class ResultMapper : VertxRowSetMapper<List<UUID>> {
         override fun apply(rows: RowSet<Row>): List<UUID> {
@@ -212,6 +214,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class RowMapper : VertxRowMapper<UUID> {
@@ -257,6 +261,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ColumnMapper : VertxResultColumnMapper<UUID> {
@@ -304,6 +310,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ParameterMapper : VertxParameterColumnMapper<UUID?> {

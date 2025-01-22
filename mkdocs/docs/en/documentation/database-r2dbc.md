@@ -183,6 +183,8 @@ If you need to convert the result manually, it is suggested to use `R2dbcResultF
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
+
     ```kotlin
     class ResultMapper : R2dbcResultFluxMapper<UUID, Flux<UUID>> {
         override fun apply(resultFlux: Flux<Result>): Flux<UUID> {
@@ -224,6 +226,8 @@ If you need to convert the string manually, it is suggested to use `R2dbcRowMapp
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class RowMapper : R2dbcRowMapper<UUID> {
@@ -269,6 +273,8 @@ If you need to convert the column value manually, it is suggested to use the `R2
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ColumnMapper : R2dbcResultColumnMapper<UUID> {
@@ -318,6 +324,8 @@ If you want to convert the value of a query parameter manually, it is suggested 
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
 
     ```kotlin
     class ParameterMapper : R2dbcParameterColumnMapper<UUID?> {

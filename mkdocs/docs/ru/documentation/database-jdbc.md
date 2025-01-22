@@ -188,6 +188,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
+
     ```kotlin
     class ResultMapper : JdbcResultSetMapper<Long> {
 
@@ -253,6 +255,8 @@
 
 === ":simple-kotlin: `Kotlin`"
 
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
+
     ```kotlin
     class RowMapper : JdbcRowMapper<UUID> {
 
@@ -299,6 +303,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ColumnMapper : JdbcResultColumnMapper<UUID> {
@@ -350,6 +356,8 @@
     ```
 
 === ":simple-kotlin: `Kotlin`"
+
+    Для Kotlin писать преобразователи надо только для `T?` типов, так в интерфейсах тип указан как `@Nullable`.
 
     ```kotlin
     class ParameterMapper : JdbcParameterColumnMapper<UUID?> {
