@@ -18,7 +18,7 @@ Fixed:
 
 * Fixed Cache `Redis` multiple key get 
 * Fixed `Cassandra` row mappers for primitive return types 
-* Fixed `OpenAPI` discriminator enum naming 
+* Fixed `OpenAPI` generation discriminator enum naming 
 * Fixed `Quartz` default properties values 
 * Fixed Allow empty interfaces as targets of `@ConfigValueExtractor` targets 
 * Fixed handling of `null` values for sealed interfaces in `JSON` parsing 
