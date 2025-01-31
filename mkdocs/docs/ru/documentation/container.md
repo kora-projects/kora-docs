@@ -857,7 +857,7 @@ public interface Lifecycle {
 
     ```kotlin
     interface SomeModule {
-    fun serviceA(): ServiceA = ServiceA()
+        fun serviceA(): ServiceA = ServiceA()
 
         fun serviceB(): ServiceB = ServiceB()
 
