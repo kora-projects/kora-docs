@@ -5,7 +5,27 @@ hide:
   - navigation
 ---
 
-## 1.1.18
+## 1.1.19
+
+Added:
+
+* Added enriched HTTP-server parameter parsing API with `Set<T>` support
+* Added more `Cassandra` default result mappers 
+* Improved `ClientClassGenerator` error handling for Path/Query mismatch
+* Added `ViolationExceptionHttpServerResponseMapper` context injection before execution
+  
+Fixed:
+
+* Fixed Cache `Redis` multiple key get 
+* Fixed `Cassandra` row mappers for primitive return types 
+* Fixed `OpenAPI` discriminator enum naming 
+* Fixed `Quartz` default properties values 
+* Fixed Allow empty interfaces as targets of `@ConfigValueExtractor` targets 
+* Fixed handling of `null` values for sealed interfaces in `JSON` parsing 
+* Fixed `OpenAPI` parameter `typeMapping` for Java primitive types
+* Fixed parameterized generic class to be discovered as final components 
+
+### 1.1.18
 
 Added:
 
