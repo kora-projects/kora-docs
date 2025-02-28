@@ -17,10 +17,24 @@ services {
       propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
       propArray = ["v1", "v2"] //(7)!
       propArrayAsString = "v1, v2" //(8)!
-      propMap { //(9)!
+      propMap = { //(9)!
           "k1" = "v1"
           "k2" = "v2"
       }
+      propObject = { //(10)!
+          p1 = "v1"
+          p2 = "v2"
+      }
+      propObjects = [ //(11)!
+        {
+          p1 = "v1"
+          p2 = "v2"
+        },
+        {
+          p1 = "v3"
+          p2 = "v4"
+        }
+      ]
     }
 }
 ```
@@ -34,6 +48,8 @@ services {
 7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
 8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
 9.  Configuration value as a dictionary key and value
+10. Configuration value as a mapped class
+11. Configuration value as a list of mapped classes
 
 Configuration representation in code:
 
@@ -61,6 +77,18 @@ Configuration representation in code:
         List<String> propArrayAsString();
 
         Map<String, String> propMap();
+
+        @ConfigValueExtractor
+        public interface ObjectConfig {
+            
+            String p1();
+
+            String p2();
+        }
+
+        ObjectConfig propObject();
+
+        List<ObjectConfig> propObjects();
     }
     ```
 
@@ -87,6 +115,18 @@ Configuration representation in code:
         fun propArrayAsString(): List<String>
 
         fun propMap(): Map<String, String>
+
+        @ConfigValueExtractor
+        interface ObjectConfig {
+            
+            fun p1(): String
+
+            fun p2(): String
+        }
+
+        fun propObject(): ObjectConfig
+
+        fun propObjects(): List<ObjectConfig>
     }
     ```
 
@@ -152,6 +192,14 @@ services:
         propMap: #(9)!
             k1: "v1"
             k2: "v2"
+        propObject: #(10)!
+            p1: "v1"
+            p2: "v2"
+        propObjects: #(11)!
+            - p1: "v1"
+              p2: "v2"
+            - p1: "v1"
+              p2: "v2"
 ```
 
 1. String configuration value
@@ -163,6 +211,8 @@ services:
 7.  String list configuration value, the value is set as an array of strings or can also be set as a string with values separated by commas
 8.  String list configuration value, the value is set as a string with values separated by commas or can also be set as an array of strings
 9.  Configuration value as a dictionary key and value
+10. Configuration value as a mapped class
+11. Configuration value as a list of mapped classes
 
 Configuration representation in code:
 
@@ -190,6 +240,18 @@ Configuration representation in code:
         List<String> propArrayAsString();
 
         Map<String, String> propMap();
+
+        @ConfigValueExtractor
+        public interface ObjectConfig {
+            
+            String p1();
+
+            String p2();
+        }
+
+        ObjectConfig propObject();
+
+        List<ObjectConfig> propObjects();
     }
     ```
 
@@ -216,6 +278,18 @@ Configuration representation in code:
         fun propArrayAsString(): List<String>
 
         fun propMap(): Map<String, String>
+
+        @ConfigValueExtractor
+        interface ObjectConfig {
+            
+            fun p1(): String
+
+            fun p2(): String
+        }
+
+        fun propObject(): ObjectConfig
+
+        fun propObjects(): List<ObjectConfig>
     }
     ```
 

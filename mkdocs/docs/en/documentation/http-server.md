@@ -805,11 +805,12 @@ Available signatures for repository methods out of the box:
 ## Interceptors
 
 You can create interceptors to change behavior or create additional behavior using the `HttpServerInterceptor` class.
-Interceptors can be overlaid:
 
-- On specific methods of the controller
-- On the whole controller class
-- On all controller classes simultaneously (requires using `@Tag(HttpServerModule.class)` over the interceptor class).
+Interceptors can be used on:
+
+- Specific controller methods
+- Entire controller
+- All controllers at once (requires using `@Tag(HttpServerModule.class)` over the interceptor class) (there can be only one such interceptor).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -821,21 +822,10 @@ Interceptors can be overlaid:
         public static final class MethodInterceptor implements HttpServerInterceptor {
 
             @Override
-            public CompletionStage<HttpServerResponse> intercept(Context context, HttpServerRequest request, InterceptChain chain) throws Exception {
-                return chain.process(context, request).exceptionally(e -> {
-                    if (e instanceof HttpServerResponseException ex) {
-                        return ex;
-                    }
-
-                    var body = HttpBody.plaintext(e.getMessage());
-                    if (e instanceof IllegalArgumentException) {
-                        return HttpServerResponse.of(400, body);
-                    } else if (e instanceof TimeoutException) {
-                        return HttpServerResponse.of(408, body);
-                    } else {
-                        return HttpServerResponse.of(500, body);
-                    }
-                });
+            public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                                 HttpServerRequest request, 
+                                                                 InterceptChain chain) throws Exception {
+                return chain.process(context, request);
             }
         }
 
@@ -861,15 +851,7 @@ Interceptors can be overlaid:
                 request: HttpServerRequest,
                 chain: HttpServerInterceptor.InterceptChain
             ): CompletionStage<HttpServerResponse> {
-                return chain.process(context, request).exceptionally { e ->
-                    val body = HttpBody.plaintext(e.message)
-                    when (e) {
-                        is HttpServerResponseException -> e
-                        is IllegalArgumentException -> HttpServerResponse.of(400, body)
-                        is TimeoutException -> HttpServerResponse.of(408, body)
-                        else -> HttpServerResponse.of(500, body)
-                    }
-                }
+                return chain.process(context, request)
             }
         }
 
@@ -877,6 +859,72 @@ Interceptors can be overlaid:
         @HttpRoute(method = HttpMethod.POST, path = "/intercepted")
         fun helloWorld(): String {
             return "Hello World"
+        }
+    }
+    ```
+
+### Error handling
+
+Error handling at the level of all HTTP responses can also be realized by means of an interceptor,
+below is a simple example of such an interceptor.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(HttpServerModule.class)
+    @Component
+    public final class ErrorInterceptor implements HttpServerInterceptor {
+
+        @Override
+        public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                             HttpServerRequest request, 
+                                                             InterceptChain chain) throws Exception {
+            return chain.process(context, request).exceptionally(e -> {
+                if(e instanceof CompletionException) {
+                    e = e.getCause();
+                }
+                if (e instanceof HttpServerResponseException ex) {
+                    return ex;
+                }
+
+                var body = HttpBody.plaintext(e.getMessage());
+                if (e instanceof IllegalArgumentException) {
+                    return HttpServerResponse.of(400, body);
+                } else if (e instanceof TimeoutException) {
+                    return HttpServerResponse.of(408, body);
+                } else {
+                    return HttpServerResponse.of(500, body);
+                }
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(HttpServerModule.class)
+    @Component
+    class ErrorInterceptor : HttpServerInterceptor {
+
+        override fun intercept(
+            context: Context,
+            request: HttpServerRequest,
+            chain: HttpServerInterceptor.InterceptChain
+        ): CompletionStage<HttpServerResponse> {
+            return chain.process(context, request).exceptionally { e ->
+                val error = if (e is CompletionException) e.cause!! else e
+                if (error is HttpServerResponseException) {
+                    return@exceptionally error
+                }
+
+                val body = HttpBody.plaintext(error.message)
+                when (error) {
+                    is IllegalArgumentException -> HttpServerResponse.of(400, body)
+                    is TimeoutException -> HttpServerResponse.of(408, body)
+                    else -> HttpServerResponse.of(500, body)
+                }
+            }
         }
     }
     ```

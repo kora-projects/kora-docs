@@ -90,10 +90,10 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
         circuitbreaker {
             default {
                 slidingWindowSize = 100 //(1)!
-                minimumRequiredCalls = 50 //(2)!
+                minimumRequiredCalls = 10 //(2)!
                 failureRateThreshold = 50 //(3)!
                 waitDurationInOpenState = "25s" //(4)!
-                permittedCallsInHalfOpenState = 10 //(5)!
+                permittedCallsInHalfOpenState = 15 //(5)!
             }
         }
     }
@@ -113,10 +113,10 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
       circuitbreaker:
         default:
           slidingWindowSize: 100 #(1)!
-          minimumRequiredCalls: 50 #(2)!
+          minimumRequiredCalls: 10 #(2)!
           failureRateThreshold: 50 #(3)!
           waitDurationInOpenState: "25s" #(4)!
-          permittedCallsInHalfOpenState: 10 #(5)!
+          permittedCallsInHalfOpenState: 15 #(5)!
     ```
 
     1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)

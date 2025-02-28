@@ -504,7 +504,9 @@ In tests, you can create a graph extending the main application and use it withi
     }
     ```
 
-Then it is required to create an extended test graph of the application:
+Then it is required to create an extended test graph of the application in test source's directory.
+Remember to label components as `@Root` since they are most likely not used by anyone,
+but the tests and will not otherwise be included in the graph:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -532,7 +534,27 @@ Then it is required to create an extended test graph of the application:
     }
     ```
 
-It is required to exclude scanning of Kora created classes by JUnit (sometimes an error occurs during test search):
+===! ":fontawesome-brands-java: `Java`"
+
+    In order for the test application graph to be generated, we need to add processors as test dependencies in `build.gradle`:
+
+    ```groovy
+    dependencies {
+        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    In order for the test application graph to be generated, we need to add processors as test dependencies in `build.gradle.kts`:
+
+    ```groovy
+    dependencies {
+        kspTest("ru.tinkoff.kora:symbol-processors")
+    }
+    ```
+
+It may be required to exclude scanning of Kora generated classes by JUnit (sometimes an error occurs during test search):
 
 ===! ":fontawesome-brands-java: `Java`"
 

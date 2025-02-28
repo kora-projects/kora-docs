@@ -541,13 +541,7 @@ The container constructor is as follows:
 public KafkaSubscribeConsumerContainer(KafkaListenerConfig config,
                                        Deserializer<K> keyDeserializer,
                                        Deserializer<V> valueDeserializer,
-                                       BaseKafkaRecordsHandler<K, V> handler) {
-    this.factory = new KafkaConsumerFactory<>(config);
-    this.handler = handler;
-    this.keyDeserializer = keyDeserializer;
-    this.valueDeserializer = valueDeserializer;
-    this.config = config;
-}
+                                       BaseKafkaRecordsHandler<K, V> handler)
 ```
 
 `BaseKafkaRecordsHandler<K,V>` is the basic functional interface of the handler:
