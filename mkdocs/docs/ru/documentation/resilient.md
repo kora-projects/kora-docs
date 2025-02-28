@@ -91,10 +91,10 @@
         circuitbreaker {
             default {
                 slidingWindowSize = 100 //(1)!
-                minimumRequiredCalls = 50 //(2)!
+                minimumRequiredCalls = 10 //(2)!
                 failureRateThreshold = 50 //(3)!
                 waitDurationInOpenState = "25s" //(4)!
-                permittedCallsInHalfOpenState = 10 //(5)!
+                permittedCallsInHalfOpenState = 15 //(5)!
             }
         }
     }
@@ -113,10 +113,10 @@
       circuitbreaker:
         default:
           slidingWindowSize: 100 #(1)!
-          minimumRequiredCalls: 50 #(2)!
+          minimumRequiredCalls: 10 #(2)!
           failureRateThreshold: 50 #(3)!
           waitDurationInOpenState: "25s" #(4)!
-          permittedCallsInHalfOpenState: 10 #(5)!
+          permittedCallsInHalfOpenState: 15 #(5)!
     ```
 
     1.  Предельное кол-во запросов в рамках которых рассчитывается `failureRateThreshold` для определения состояния (**обязательный**)

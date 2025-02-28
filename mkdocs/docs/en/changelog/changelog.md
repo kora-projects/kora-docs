@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.1.19
+## 1.1.20
+
+Added:
+
+* Added `@EntityCassandra` annotation with processors
+* Added more flexible way of gRPC component configuration
+* Added warning in `@Json` extensions for non annotated types 
+* Replaced deprecated OpenTelemetry `SemanticAttributes` usages 
+
+Fixed:
+
+* Fixed Cassandra `UDT` mappers for lists
+* Fixed partially `T is not a sub type of the class/interface that contains` in Kotlin
+* Fixed discriminators models in OpenAPI generator
+
+### 1.1.19
 
 Added:
 
