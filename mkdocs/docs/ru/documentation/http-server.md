@@ -805,11 +805,12 @@
 ## Перехватчики
 
 Можно создавать перехватчики для изменения поведения либо создания дополнительного поведения используя класс `HttpServerInterceptor`.
-Перехватчики можно накладывать:
 
-- На конкретные методы контроллера
-- На весь класс контроллер целиком
-- На все классы контроллеры одновременно (требуется использовать `@Tag(HttpServerModule.class)` над классом перехватчиком)
+Перехватчики можно использовать на:
+
+- Конкретных методах контроллера
+- Контроллере целиком
+- Всех контроллерах сразу (требуется использовать `@Tag(HttpServerModule.class)` над классом перехватчиком) (такой перехватчик может быть лишь один)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -821,21 +822,10 @@
         public static final class MethodInterceptor implements HttpServerInterceptor {
 
             @Override
-            public CompletionStage<HttpServerResponse> intercept(Context context, HttpServerRequest request, InterceptChain chain) throws Exception {
-                return chain.process(context, request).exceptionally(e -> {
-                    if (e instanceof HttpServerResponseException ex) {
-                        return ex;
-                    }
-
-                    var body = HttpBody.plaintext(e.getMessage());
-                    if (e instanceof IllegalArgumentException) {
-                        return HttpServerResponse.of(400, body);
-                    } else if (e instanceof TimeoutException) {
-                        return HttpServerResponse.of(408, body);
-                    } else {
-                        return HttpServerResponse.of(500, body);
-                    }
-                });
+            public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                                 HttpServerRequest request, 
+                                                                 InterceptChain chain) throws Exception {
+                return chain.process(context, request);
             }
         }
 
@@ -861,15 +851,7 @@
                 request: HttpServerRequest,
                 chain: HttpServerInterceptor.InterceptChain
             ): CompletionStage<HttpServerResponse> {
-                return chain.process(context, request).exceptionally { e ->
-                    val body = HttpBody.plaintext(e.message)
-                    when (e) {
-                        is HttpServerResponseException -> e
-                        is IllegalArgumentException -> HttpServerResponse.of(400, body)
-                        is TimeoutException -> HttpServerResponse.of(408, body)
-                        else -> HttpServerResponse.of(500, body)
-                    }
-                }
+                return chain.process(context, request)
             }
         }
 
@@ -877,6 +859,72 @@
         @HttpRoute(method = HttpMethod.POST, path = "/intercepted")
         fun helloWorld(): String {
             return "Hello World"
+        }
+    }
+    ```
+
+### Обработка ошибок
+
+Обработка ошибок на уровне всех HTTP ответов может быть реализована также посредствам перехватчика, 
+ниже представлен простой пример такого перехватчика.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(HttpServerModule.class)
+    @Component
+    public final class ErrorInterceptor implements HttpServerInterceptor {
+
+        @Override
+        public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                             HttpServerRequest request, 
+                                                             InterceptChain chain) throws Exception {
+            return chain.process(context, request).exceptionally(e -> {
+                if(e instanceof CompletionException) {
+                    e = e.getCause();
+                }
+                if (e instanceof HttpServerResponseException ex) {
+                    return ex;
+                }
+
+                var body = HttpBody.plaintext(e.getMessage());
+                if (e instanceof IllegalArgumentException) {
+                    return HttpServerResponse.of(400, body);
+                } else if (e instanceof TimeoutException) {
+                    return HttpServerResponse.of(408, body);
+                } else {
+                    return HttpServerResponse.of(500, body);
+                }
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(HttpServerModule.class)
+    @Component
+    class ErrorInterceptor : HttpServerInterceptor {
+
+        override fun intercept(
+            context: Context,
+            request: HttpServerRequest,
+            chain: HttpServerInterceptor.InterceptChain
+        ): CompletionStage<HttpServerResponse> {
+            return chain.process(context, request).exceptionally { e ->
+                val error = if (e is CompletionException) e.cause!! else e
+                if (error is HttpServerResponseException) {
+                    return@exceptionally error
+                }
+
+                val body = HttpBody.plaintext(error.message)
+                when (error) {
+                    is IllegalArgumentException -> HttpServerResponse.of(400, body)
+                    is TimeoutException -> HttpServerResponse.of(408, body)
+                    else -> HttpServerResponse.of(500, body)
+                }
+            }
         }
     }
     ```

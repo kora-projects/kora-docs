@@ -18,10 +18,24 @@ services {
       propReference = ${services.foo.bar}Other${services.foo.baz} //(6)!
       propArray = ["v1", "v2"] //(7)!
       propArrayAsString = "v1, v2" //(8)!
-      propMap { //(9)!
+      propMap = { //(9)!
           "k1" = "v1"
           "k2" = "v2"
       }
+      propObject = { //(10)!
+          p1 = "v1"
+          p2 = "v2"
+      }
+      propObjects = [ //(11)!
+        {
+          p1 = "v1"
+          p2 = "v2"
+        },
+        {
+          p1 = "v3"
+          p2 = "v4"
+        }
+      ]
     }
 }
 ```
@@ -35,6 +49,8 @@ services {
 7.  Значение конфигурации списка строк, значение задается как массив строк либо также можно задать как строку, где значения разделены запятыми
 8.  Значение конфигурации списка строк, значение задается как строка, где значения разделены запятыми либо также можно задать как массив строк
 9.  Значение конфигурации в виде словаря ключ и значение
+10. Значение конфигурации в виде отображенного класса
+11. Значение конфигурации в виде списка отображенных классов
 
 Отображение конфигурации в коде:
 
@@ -62,6 +78,18 @@ services {
         List<String> propArrayAsString();
 
         Map<String, String> propMap();
+
+        @ConfigValueExtractor
+        public interface ObjectConfig {
+            
+            String p1();
+
+            String p2();
+        }
+
+        ObjectConfig propObject();
+
+        List<ObjectConfig> propObjects();
     }
     ```
 
@@ -88,6 +116,18 @@ services {
         fun propArrayAsString(): List<String>
 
         fun propMap(): Map<String, String>
+
+        @ConfigValueExtractor
+        interface ObjectConfig {
+            
+            fun p1(): String
+
+            fun p2(): String
+        }
+
+        fun propObject(): ObjectConfig
+
+        fun propObjects(): List<ObjectConfig>
     }
     ```
 
@@ -171,6 +211,14 @@ services:
     propMap: #(9)!
       k1: "v1"
       k2: "v2"
+    propObject: #(10)!
+      p1: "v1"
+      p2: "v2"
+    propObjects: #(11)!
+      - p1: "v1"
+        p2: "v2"
+      - p1: "v1"
+        p2: "v2"
 ```
 
 1.  Cтроковое значение конфигурации
@@ -182,6 +230,8 @@ services:
 7.  Значение конфигурации списка строк, значение задается как массив строк либо также можно задать как строку, где значения разделены запятыми
 8.  Значение конфигурации списка строк, значение задается как строка, где значения разделены запятыми либо также можно задать как массив строк
 9.  Значение конфигурации в виде словаря ключ и значение
+10. Значение конфигурации в виде отображенного класса
+11. Значение конфигурации в виде списка отображенных классов
 
 Отображение конфигурации в коде:
 
@@ -209,6 +259,18 @@ services:
         List<String> propArrayAsString();
 
         Map<String, String> propMap();
+
+        @ConfigValueExtractor
+        public interface ObjectConfig {
+            
+            String p1();
+
+            String p2();
+        }
+
+        ObjectConfig propObject();
+
+        List<ObjectConfig> propObjects();
     }
     ```
 
@@ -235,6 +297,18 @@ services:
         fun propArrayAsString(): List<String>
 
         fun propMap(): Map<String, String>
+
+        @ConfigValueExtractor
+        interface ObjectConfig {
+            
+            fun p1(): String
+
+            fun p2(): String
+        }
+
+        fun propObject(): ObjectConfig
+
+        fun propObjects(): List<ObjectConfig>
     }
     ```
 
