@@ -5,16 +5,23 @@ hide:
   - navigation
 ---
 
-## 1.1.21
+## 1.1.22
+
+Исправлено:
+
+* Исправлен создаваемый `OpenAPI` конструктор модели, где дискриминатор с `1` значением, был обязательным аргументом в Java
+* Исправлено именование полей модели с типом `Enum` массива создаваемого `OpenAPI`
+
+### 1.1.21
 
 Добавлено:
 
-* Добавлена поддержка сигнатуры `Cache<K, Optional<T>>` в кешах
+* Добавлена поддержка сигнатуры `Cache<K, Optional<T>>` в кешах в Java
 * Добавлена поддержка `Record/Data` классов в качестве само-параметра в базах данных
 * Добавлена поддержка `nullable` и/или `non required` параметра OpenAPI `additionalProperties`
 * Добавлен парсинг `BigDecimal` с использованием `JsonReader<BigDecimal>` из контейнера зависимостей, а не статической функции
 * Добавлен оптимизированный доступ к получению `HTTP-серверных` параметров и заголовков
-* Добавлено оптимизированный `Cassandra` обработчик `List<T>` для пустых значений
+* Добавлен оптимизированный `Cassandra` обработчик `List<T>` для пустых значений
 * Добавлена усиленная проверка конфигурации `CircuitBreaker` на старте
 * Добавлено логирование медленно инициализируемых узлов в контейнере зависимостей
 
@@ -137,7 +144,7 @@ hide:
 
 * Добавлен специальный тип [JsonNullable](../documentation/json.md#jsonnullable)
 * Добавлен параметр конфигурации [KafkaConsumer](../documentation/kafka.md#_3), позволяющий обрабатывать пустые события после `poll()`
-* Добавлена поддержка параметра OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#_6)
+* Добавлена поддержка параметра OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#_6) (**Изменено поведение по умолчанию**, теперь *nullable* и *non required* поля [Include.Always](../documentation/json.md#_9) по умолчанию, если не включен `JsonNullable`)
 * Добавлен Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#_2)
 * Улучшена телеметрия [Camunda Rest](../documentation/camunda7-rest.md#_2)
 * Улучшено штатное завершение работы HTTP-сервера, KafkaListener, gRPC-сервера, планировщиков

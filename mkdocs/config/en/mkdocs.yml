@@ -5,7 +5,6 @@ site_dir: "../../generated/en"
 # Project information
 site_name: Kora
 site_url: https://kora-projects.github.io/kora-docs/en/
-site_description: Kora Framework
 copyright: T-Bank
 nav:
   - Examples:

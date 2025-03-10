@@ -5,11 +5,18 @@ hide:
   - navigation
 ---
 
-## 1.1.21
+## 1.1.22
+
+Fixed:
+
+* Fixed `OpenAPI` generated model constructor, where discriminator with single value was a required construct argument in Java
+* Fixed `OpenAPI` generated model field name with `enum array` type
+
+### 1.1.21
 
 Added:
 
-* Added `Cache<K, Optional<T>>` cache signature support
+* Added `Cache<K, Optional<T>>` cache signature support in Java
 * Added database `Record/Data` class as self query parameter
 * Added OpenAPI `additionalProperties` support for `nullable` and/or `non required` parameters
 * Added `BigDecimal` parsing using `JsonReader<BigDecimal>` from dependency container and not static function
@@ -137,7 +144,7 @@ Added:
 
 * Added [JsonNullable](../documentation/json.md#jsonnullable-wrapper) special type
 * Added config parameter [KafkaConsumer](../documentation/kafka.md#configuration) that allows empty records after `poll()`
-* Added OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) option support
+* Added OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) option support (**Changed default behavior**, now *nullable* and *non required* fields [Include.Always](../documentation/json.md#_9) default if `JsonNullable` is not enabled)
 * Added Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#configuration)
 * Improved Camunda Rest Telemetry 
 * Improved Graceful shutdown for HTTP Server, KafkaListener, gRPC Server, Schedulers

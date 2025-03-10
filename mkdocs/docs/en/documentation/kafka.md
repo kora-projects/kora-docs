@@ -245,8 +245,9 @@ Example of `assign` strategy configuration:
 
 Available signatures for Kafka consumer out-of-the-box methods, where `K` refers to the key type and `V` to the message value type.
 
-Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) from `ConsumerRecord`,
-`Exception` (optional) in case of serialization/connection error and after all events are processed, `commitSync()` is called:
+Calls `poll()` for the `ConsumerRecords<K, V>` bundle and passes each event individually to a handler.
+The handler accepts `value` (mandatory), `key` (optional), `Headers` (optional) from `ConsumerRecord`,
+`Exception` (optional) in case of serialization/connection error and after processing **each** event, `commitSync()` is called:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -276,7 +277,9 @@ Allows to accept `value` (mandatory), `key` (optional), `Headers` (optional) fro
     }
     ```
 
-Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional), once all `ConsumerRecords` have been processed, `commitSync()` is called:
+Calls `poll()` for the `ConsumerRecords<K, V>` bundle and passes each event individually to handler.
+The handler accepts `ConsumerRecord` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (optional)
+and `commitSync()` is called after processing **each event**:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -296,9 +299,29 @@ Accepts `ConsumerRecord`/`ConsumerRecords` and `KafkaConsumerRecordsTelemetryCon
     }
     ```
 
-Accepts `ConsumerRecord`/`ConsumerRecords` and `Consumer`.
-As in the previous case, `commit` must be called manually.
-Called for each `ConsumerRecord` obtained by calling `poll()`:
+Calls `poll()` for the `ConsumerRecords<K, V>` bundle and passes the entire batch to handler.
+Handler accepts `ConsumerRecords` and `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordsTelemetryContext` (optional)
+and `commitSync()` is called after processing **whole batch** of events:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someConsumer")
+    void process(ConsumerRecords<K, V> record) {
+        // some handler code
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someConsumer")
+    fun process(record: ConsumerRecords<K, V>) {
+        // some handler code
+    }
+    ```
+
+In case `Consumer<K, V>` is taken as an argument, `commit` must be **called manually**.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -877,7 +900,7 @@ similar to what would happen in the case of `org.apache.kafka.kafka.clients.prod
 ### Transactions
 
 It is possible to send a message to Kafka in [within a transaction](https://www.confluent.io/blog/transactions-apache-kafka/), this is supposed to use the
-`@KafkaPublisher` annotation to create such a `KafkaProducer`.
+`@KafkaPublisher` annotation and inherit `TransactionalPublisher` interface to create such a `KafkaProducer`.
 
 It is required to first create a regular `KafkaProducer` and then use it to create a transactional Producer:
 
