@@ -479,8 +479,9 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Доступные сигнатуры для методов Kafka потребителя из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 
-Позволяет принимать `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
-`Exception` (опционально) в случае ошибки сериализации/соединения и после обработки всех событий вызывается `commitSync()`:
+Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт каждое событие по отдельности в обработчик.
+Обработчик принимает `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
+`Exception` (опционально) в случае ошибки сериализации/соединения и после обработки **каждого** события вызывается `commitSync()`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -510,7 +511,9 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-Принимает `ConsumerRecord`/`ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально) после обработки вызывается `commitSync()`:
+Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт каждое событие по отдельности в обработчик.
+Обработчик принимает `ConsumerRecord` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
+и после обработки **каждого** события вызывается `commitSync()`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -530,10 +533,29 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-Принимает `ConsumerRecord`/`ConsumerRecords` и `Consumer`.
-Вызывается для каждого `ConsumerRecord` полученного при вызове `poll()`:
+Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт всю пачку событий в обработчик.
+Обработчик принимает `ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
+и после обработки **всей пачки** событий вызывается `commitSync()`:
 
-В данном случае `commit` нужно **вызывать вручную**.
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someConsumer")
+    void process(ConsumerRecords<K, V> record) {
+        // some handler code
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someConsumer")
+    fun process(record: ConsumerRecords<K, V>) {
+        // some handler code
+    }
+    ```
+
+В случае если аргументом принимается `Consumer<K, V>`, то `commit` нужно **вызывать самостоятельно**.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -779,7 +801,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 ### Транзакции
 
 Возможно отправлять сообщение в Kafka в [рамках транзакции](https://www.confluent.io/blog/transactions-apache-kafka/), для этого предполагается использовать
-аннотацию `@KafkaPublisher` для создания такого `KafkaProducer`.
+аннотацию `@KafkaPublisher` и наследование интерфейса `TransactionalPublisher` для создания такого `KafkaProducer`.
 
 Требуется сначала создать обычного `KafkaProducer` а затем его использовать для создания транзакционного Producer'а:
 
