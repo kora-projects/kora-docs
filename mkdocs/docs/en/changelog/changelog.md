@@ -5,7 +5,14 @@ hide:
   - navigation
 ---
 
-## 1.1.21
+## 1.1.22
+
+Fixed:
+
+* Fixed `OpenAPI` Java model discriminator with 1 value was a required arg constructor
+* Fixed `OpenAPI` enum array model field name generation
+
+### 1.1.21
 
 Added:
 
