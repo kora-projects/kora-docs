@@ -9,8 +9,8 @@ hide:
 
 Fixed:
 
-* Fixed `OpenAPI` Java model discriminator with 1 value was a required arg constructor
-* Fixed `OpenAPI` enum array model field name generation
+* Fixed `OpenAPI` generated model constructor, where discriminator with single value was a required construct argument in Java
+* Fixed `OpenAPI` generated model field name with `enum array` type
 
 ### 1.1.21
 
