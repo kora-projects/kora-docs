@@ -5,7 +5,35 @@ hide:
   - navigation
 ---
 
-## 1.1.20
+## 1.1.21
+
+Added:
+
+* Added `Cache<K, Optional<T>>` cache signature support
+* Added database `Record/Data` class as self query parameter
+* Added OpenAPI `additionalProperties` support for `nullable` and/or `non required` parameters
+* Added `BigDecimal` parsing using `JsonReader<BigDecimal>` from dependency container and not static function
+* Added optimized `HTTP Server` query and header retrieval
+* Added optimized `Cassandra` mapper `List<T>` for empty values
+* Added `CircuitBreaker` config on-start check reinforced
+* Added ability to log slow initialized nodes in dependency container
+
+Fixed:
+
+* Fixed `HTTP Client` should check response codes in only `@Tag` annotated methods
+* Fixed `S3Client` Kotlin generated constructor not been primary
+* Fixed Database Kotlin `@Column` annotation name substitution in mapper
+* Fixed OpenAPI parameter `Enum` variable naming
+* Fixed `Wrapped<T>` generic support for Java dependency container
+* Fixed `List<T>` and `Set<T>` correct query parameter parsing in `HTTP Server`
+* Fixed `SoapClient` processing xml element `Wrapped<T>` for requests/responses
+* Fixed `JdbcMappers` error handling when not provide mappers for `T?` entities in Kotlin
+* Fixed `JUnit5` mock component sometimes not found in dependency container
+* Fixed `HttpServerRequest#route` marked `nullable` when not matched with any controller
+* Fixed generated `HTTP Client` should not use `this` to access static mappers
+* Fixed generated `ConfigValueExtractor` contained unused fields
+
+### 1.1.20
 
 Added:
 
