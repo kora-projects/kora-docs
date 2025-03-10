@@ -5,23 +5,24 @@ Camunda integration, telemetry for all modules, resilient module and much more.
 
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
-- Dependency injection and inversion at compile time via annotations
-- Declarative components generation at compile time via annotations
+- Dependency injection and inversion via annotations
+- Sufficiently high-level simple abstractions and development tools
 - Aspect-oriented programming via annotations
-- Pre-configurable integration modules
+- Large set of preconfigured integrations
+- Tracing and metrics according to `OpenTelemetry` standard and logging for all modules
 - Easy and rapid testing with [JUnit5](junit5.md)
-- Simple, clear and detailed documentation backed by [service examples](../examples/kora-examples.md)
+- Simple and detailed documentation supported by [examples of working services](../examples/kora-examples.md)
 
 In order to achieve high-performance and efficient code, Kora stands on these principles:
 
-- Source code generation through compile-time annotation processors
 - Avoiding Reflection API in runtime
-- Avoiding dynamic proxies
+- Avoiding dynamic proxies in runtime
+- Avoiding bytecode generation at compile time and runtime
+- Source code generation via compile-time annotation processors
 - Fine-grained abstractions
 - Free aspects
-- Using the most efficient implementations for modules
+- Using the most efficient implementations for integrations
 - Encouraging and using effective programming practices and natural language constructs
-- Avoiding bytecode generation at compile time and runtime
 
 ## Annotation Handlers
 
@@ -122,7 +123,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.20")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.22")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -161,7 +162,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.20"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.22"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -187,7 +188,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.20")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.22")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -206,7 +207,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.20"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.22"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
