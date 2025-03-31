@@ -5,7 +5,27 @@ hide:
   - navigation
 ---
 
-## 1.1.22
+## 1.1.23
+
+Added:
+
+* Added pretty string write method to `JsonWriter`
+* Added `maxConnectionAge` and `maxConnectionAgeGrace` config options to gRPC-server
+
+Fixed:
+
+* Fixed boolean value extraction in `DefaultServiceConfigConfigValueExtractor`
+* Fixed `UndertowPrivateApiHandler` should write private api results on IO thread
+* Fixed `JsonExtension` should not attempt to generate `JsonWriter`/`JsonReader` for non sealed interfaces
+* Fixed Graph dependency adding hint message and match strategy
+* Fixed HTTP `Interceptor` release should be called after dependent nodes released
+* Fixed `CircuitBreakerConfig` error message
+* Fixed `JDK` scheduling pool potential outOfThreads
+* Fixed `JUnit` extension full graph only with mocked parts
+* Fixed `JsonWriter`/`JsonReader` Kotlin generation field accessor check
+* Fixed and reinforced JUnit parallel and `@Nested` tests proper execution
+
+### 1.1.22
 
 Fixed:
 

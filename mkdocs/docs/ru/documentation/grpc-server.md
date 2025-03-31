@@ -102,16 +102,18 @@
         maxMessageSize = "4MiB" //(2)!
         reflectionEnabled = false //(3)!
         shutdownWait = "30s" //(4)!
+        maxConnectionAge = "0s" //(5)!
+        maxConnectionAgeGrace = "0s" //(6)!
         telemetry {
             logging {
-                enabled = false //(5)!
+                enabled = false //(7)!
             }
             metrics {
-                enabled = true //(6)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(6)!
+                enabled = true //(8)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
             }
             tracing {
-                enabled = true //(8)!
+                enabled = true //(10)!
             }
         }
     }
@@ -121,10 +123,12 @@
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
     3.  Включает сервис [gRPC Server Reflection](#_8)
     4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
-    5.  Включает логгирование модуля (по умолчанию `false`)
-    6.  Включает метрики модуля (по умолчанию `true`)
-    7.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    8.  Включает трассировку модуля (по умолчанию `true`)
+    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
+    6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
+    7.  Включает логгирование модуля (по умолчанию `false`)
+    8.  Включает метрики модуля (по умолчанию `true`)
+    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    10.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -134,24 +138,28 @@
       maxMessageSize: "4MiB" #(2)!
       reflectionEnabled: false #(3)!
       shutdownWait: "30s" #(4)!
+      maxConnectionAge: "0s" #(5)!
+      maxConnectionAgeGrace: "0s" #(6)!
       telemetry:
         logging:
-          enabled: false #(5)!
+          enabled: false #(7)!
         metrics:
-          enabled: true #(6)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(6)!
-        telemetry:
           enabled: true #(8)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+        telemetry:
+          enabled: true #(10)!
     ```
 
     1.  Порт gRPC сервера
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
     3.  Включает сервис [gRPC Server Reflection](#_8)
     4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
-    5.  Включает логгирование модуля (по умолчанию `false`)
-    6.  Включает метрики модуля (по умолчанию `true`)
-    7.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    8.  Включает трассировку модуля (по умолчанию `true`)
+    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
+    6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
+    7.  Включает логгирование модуля (по умолчанию `false`)
+    8.  Включает метрики модуля (по умолчанию `true`)
+    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    10.  Включает трассировку модуля (по умолчанию `true`)
 
 Можно также настроить [Netty транспорт](netty.md).
 
@@ -230,7 +238,7 @@
 ## Отладка
 
 Поддерживается [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
-который предоставляет информацию об общедоступных gRPC-сервисах на сервере 
+который предоставляет информацию об общедоступных gRPC-сервисах на сервере
 и помогает клиентам во время выполнения строить запросы и ответы RPC без предварительно скомпилированной информации о сервисе.
 Он используется инструментом командной строки gRPC (gRPC CLI), с помощью которого можно исследовать proto-файлы сервера и отправлять/получать тестовые RPC.
 Reflection поддерживается только для сервисов, основанных на proto.
