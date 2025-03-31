@@ -23,6 +23,7 @@ Fixed:
 * Fixed `JDK` scheduling pool potential outOfThreads
 * Fixed `JUnit` extension full graph only with mocked parts
 * Fixed `JsonWriter`/`JsonReader` Kotlin generation field accessor check
+* Fixed and reinforced JUnit parallel and `@Nested` tests proper execution
 
 ### 1.1.22
 
