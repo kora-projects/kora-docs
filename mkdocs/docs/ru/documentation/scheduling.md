@@ -45,7 +45,7 @@
 
     ```javascript
     scheduling {
-        threads = 20 //(1)!
+        threads = 2 //(1)!
         shutdownWait = "30s" //(2)!
         telemetry {
             logging {
@@ -73,7 +73,7 @@
 
     ```yaml
     scheduling:
-      threads: 20 #(1)!
+      threads: 2 #(1)!
       shutdownWait: "30s" #(2)!
       telemetry:
         logging:

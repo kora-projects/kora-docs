@@ -53,7 +53,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
     ```javascript
     scheduling {
-        threads = 20 //(1)!
+        threads = 2 //(1)!
         shutdownWait = "30s" //(2)!
         telemetry {
             logging {
@@ -81,7 +81,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
     ```yaml
     scheduling:
-      threads: 20 #(1)!
+      threads: 2 #(1)!
       shutdownWait: "30s" #(2)!
       telemetry:
         logging:
