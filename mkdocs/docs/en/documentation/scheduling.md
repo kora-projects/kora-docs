@@ -53,7 +53,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
     ```javascript
     scheduling {
-        threads = 20 //(1)!
+        threads = 2 //(1)!
         shutdownWait = "30s" //(2)!
         telemetry {
             logging {
@@ -81,7 +81,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
     ```yaml
     scheduling:
-      threads: 20 #(1)!
+      threads: 2 #(1)!
       shutdownWait: "30s" #(2)!
       telemetry:
         logging:
@@ -102,14 +102,11 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
 ### Fixed rate
 
-Scheduling with startup at fixed intervals.
+Scheduling with tasks running at fixed time intervals, regardless of whether the previous task has completed or not
+This can lead to simultaneous execution of several tasks.
 
-For example, if the period is set to 10 seconds and each task execution takes 5 seconds to complete,
-then the task will run every 10 seconds.
-
-But if a task execution takes longer to complete than the defined period,
-the next execution will start only after the current one finishes.
-The task executions will not happen concurrently.
+For example, if the period is set to 10 seconds, and each task execution takes 5 seconds,
+next task execution will start 5 seconds after the previous one completed.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -194,10 +191,11 @@ SomeService of configuration via a config file:
 
 ### Fixed delay
 
-Awaits fixed delay from the end of the previous task execution before starting the next execution.
+The scheduler waits for a fixed period of time from the end of the previous task execution.
+Multiple tasks will not be executed simultaneously.
 
-It does not matter how long the current execution takes, the next execution is started exactly after the previous task is finished
-and the specified waiting interval between tasks.
+It does not matter how long the current execution takes,
+the next task will start after the previous task is finished and the specified waiting interval.
 
 ===! ":fontawesome-brands-java: `Java`"
 
