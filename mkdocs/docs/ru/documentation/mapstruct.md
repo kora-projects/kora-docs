@@ -27,8 +27,8 @@
         allowSourcesFromOtherPlugins = true
     }
     tasks.withType<KspTask> {
+        dependsOn(tasks.named("kaptGenerateStubsKotlin").get())
         dependsOn(tasks.named("kaptKotlin").get())
-        tasks.named("kaptGenerateStubsKotlin").get()
     }
     ```
 

@@ -27,8 +27,8 @@ Module allows you to integrate the [MapStruct](https://mapstruct.org/) library t
         allowSourcesFromOtherPlugins = true
     }
     tasks.withType<KspTask> {
+        dependsOn(tasks.named("kaptGenerateStubsKotlin").get())
         dependsOn(tasks.named("kaptKotlin").get())
-        tasks.named("kaptGenerateStubsKotlin").get()
     }
     ```
 

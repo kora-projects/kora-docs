@@ -20,6 +20,7 @@ database abstraction in the form of [repositories](documentation/database-common
 avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements thin fine-grained abstraction, free aspects,
 only the most efficient modules implementations, all leading to high application performance,
 All this leads to high performance, low response time and handling a large number of requests per second.
+All this is already implemented in framework and does not require any manipulations or configurations on the part of developer.
 
 `Efficiency` - All facts above and the fact that the dependency container is created
 at compile time and initialized as parallel as possible, leads to low startup time.
@@ -46,6 +47,8 @@ but rather encourages the use of small and simple abstraction to solve small pro
 Subsequently, the aggregate of these simple abstractions can eventually solve large complex problems,
 but are not difficult to understand when viewed in isolation,
 without putting undue mental strain on the developer.
+Together, transparency and simplicity allow you to greatly increase the productivity of development,
+not only the programmer individually, but the entire development team.
 
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 

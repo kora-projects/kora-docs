@@ -71,14 +71,15 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
         * `java-reactive-client` - create [reactive](https://projectreactor.io/docs/core/release/reference/) client, you need to connect [Project Reactor](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) yourself.
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpClient = tasks.register("openApiGenerateHttpClient", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
         outputDir = "$buildDir/generated/openapi" //(2)!  
-        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
-        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api" //(3)!
+        modelPackage = "${corePackage}.model" //(4)!
+        invokerPackage = "${corePackage}.invoker" //(5)!
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
@@ -87,6 +88,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
             clientConfigPrefix: "httpClient.myclient" //(7)!
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpClient.get().outputDir } //(8)!
+    compileJava.dependsOn openApiGenerateHttpClient //(9)!
     ```
 
     1. Path to OpenAPI file from which classes will be created
@@ -96,6 +99,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     5. Package from calling classes
     6. Mode of plugin operation (creating Java client / Kotlin / Java server, etc.)
     7. Prefix path to client configuration file
+    8. Register the generated classes as the source code of the project
+    9. Make code compilation dependent on HTTP client class generation (first generate, then compile)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -114,14 +119,15 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
         * `kotlin-suspend-client` - create suspend client
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpClient = tasks.register<GenerateTask>("openApiGenerateHttpClient") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
         outputDir = "$buildDir/generated/openapi" //(2)!
-        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
-        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api" //(3)!
+        modelPackage = "${corePackage}.model" //(4)!
+        invokerPackage = "${corePackage}.invoker" //(5)!
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
@@ -130,6 +136,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
             "clientConfigPrefix" to "httpClient.myclient" //(7)!
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpClient.get().outputDir) } //(8)!
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpClient) } //(9)!
     ```
 
     1. Path to OpenAPI file from which classes will be created
@@ -139,6 +147,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     5. Package from calling classes
     6. Mode of plugin operation (creating Java client / Kotlin / Java server, etc.)
     7. Prefix path to client configuration file
+    8. Register the generated classes as the source code of the project
+    9. Make code compilation dependent on HTTP client class generation (first generate, then compile)
 
 Once created, the HTTP client will be available for deployment as a dependency on the created interface.
 
@@ -157,14 +167,15 @@ In order to do this, set the `configOptions.interceptors` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpClient = tasks.register("openApiGenerateHttpClient", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
@@ -192,19 +203,22 @@ In order to do this, set the `configOptions.interceptors` parameter:
                     """
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpClient.get().outputDir }
+    compileJava.dependsOn openApiGenerateHttpClient
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpClient = tasks.register<GenerateTask>("openApiGenerateHttpClient") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
@@ -231,6 +245,8 @@ In order to do this, set the `configOptions.interceptors` parameter:
                     """
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpClient.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpClient) }
     ```
 
 ### Tags
@@ -243,14 +259,15 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpClient = tasks.register("openApiGenerateHttpClient", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
@@ -259,31 +276,34 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
             clientConfigPrefix: "httpClient.myclient",
             tags: """
                   {
-                    "*": { // applies to all tags except those explicitly specified (in this case, instrument)
-                      "httpClientTag": "some.tag.Common.class",
-                      "telemetryTag": "some.tag.Common.class"
+                    "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                      "httpClientTag": "some.tag.Common",
+                      "telemetryTag": "some.tag.Common"
                     },
-                    "instrument": { // apply to instrument
-                      "httpClientTag": "some.tag.Instrument.class",
-                      "telemetryTag": "some.tag.Instrument.class"
+                    "instrument": { // применится для instrument
+                      "httpClientTag": "some.tag.Instrument",
+                      "telemetryTag": "some.tag.Instrument"
                     }
                   }
                   """
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpClient.get().outputDir }
+    compileJava.dependsOn openApiGenerateHttpClient
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpClient = tasks.register<GenerateTask>("openApiGenerateHttpClient") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
@@ -291,18 +311,20 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
             "mode" to "kotlin-client",
             "clientConfigPrefix" to "httpClient.myclient",
             "tags" to """{
-                            "*": { // applies to all tags except those explicitly specified (in this case, instrument)
-                              "httpClientTag": "some.tag.Common.class",
-                              "telemetryTag": "some.tag.Common.class"
+                            "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                              "httpClientTag": "some.tag.Common",
+                              "telemetryTag": "some.tag.Common"
                             },
-                            "instrument": { // apply to instrument
-                              "httpClientTag": "some.tag.Instrument.class",
-                              "telemetryTag": "some.tag.Instrument.class"
+                            "instrument": { // применится для instrument
+                              "httpClientTag": "some.tag.Instrument",
+                              "telemetryTag": "some.tag.Instrument"
                             }
                          }
                          """
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpClient.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpClient) }
     ```
 
 ## Server
@@ -324,14 +346,15 @@ A minimal example of configuring a plugin to create HTTP server handlers:
         * `java-reactive-server` - create a [reactive](https://projectreactor.io/docs/core/release/reference/) server, you need to connect [Project Reactor](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) yourself.
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpServer = tasks.register("openApiGenerateHttpServer", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
         outputDir = "$buildDir/generated/openapi" //(2)!  
-        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
-        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api" //(3)!
+        modelPackage = "${corePackage}.model" //(4)!
+        invokerPackage = "${corePackage}.invoker" //(5)!
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
@@ -339,6 +362,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
             mode: "java-server" //(6)!
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir } //(7)!
+    compileJava.dependsOn openApiGenerateHttpServer //(8)!
     ```
 
     1. Path to OpenAPI file from which classes will be created
@@ -347,6 +372,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     4. Package from classes of models, DTOs, etc.
     5. Package from calling classes
     6. Mode of plugin operation (creating Java client / Kotlin / Java server, etc.)
+    7. Register the generated classes as the source code of the project
+    8. Make code compilation dependent on HTTP client class generation (first generate, then compile)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -362,14 +389,15 @@ A minimal example of configuring a plugin to create HTTP server handlers:
         * `kotlin-suspend-server` - create suspend server
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpServer = tasks.register<GenerateTask>("openApiGenerateHttpServer") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml" //(1)!
         outputDir = "$buildDir/generated/openapi" //(2)!
-        apiPackage = "ru.tinkoff.kora.example.openapi.api" //(3)!
-        modelPackage = "ru.tinkoff.kora.example.openapi.model" //(4)!
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker" //(5)!
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api" //(3)!
+        modelPackage = "${corePackage}.model" //(4)!
+        invokerPackage = "${corePackage}.invoker" //(5)!
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
@@ -377,6 +405,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
             "mode" to "kotlin-server" //(6)!
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpServer.get().outputDir) } //(7)!
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpServer) } //(8)!
     ```
 
     1. Path to OpenAPI file from which classes will be created
@@ -385,6 +415,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     4. Package from classes of models, DTOs, etc.
     5. Package from calling classes
     6. Mode of plugin operation (creating Java client / Kotlin / Java server, etc.)
+    7. Register the generated classes as the source code of the project
+    8. Make code compilation dependent on HTTP client class generation (first generate, then compile)
 
 Once created, the handlers will be automatically registered.
 
@@ -395,14 +427,15 @@ In order to generate models and controllers with annotations from the [validatio
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpServer = tasks.register("openApiGenerateHttpServer", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
@@ -411,6 +444,8 @@ In order to generate models and controllers with annotations from the [validatio
             enableServerValidation: "true"  //(1)!
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir }
+    compileJava.dependsOn openApiGenerateHttpServer
     ```
 
     1. Enabling validation on the HTTP server controller side
@@ -418,14 +453,15 @@ In order to generate models and controllers with annotations from the [validatio
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpServer = tasks.register<GenerateTask>("openApiGenerateHttpServer") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
@@ -434,6 +470,8 @@ In order to generate models and controllers with annotations from the [validatio
             "enableServerValidation" to "true" //(1)!
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpServer.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpServer) }
     ```
 
     1. Enabling validation on the HTTP server controller side
@@ -453,19 +491,20 @@ In order to do this, set the `configOptions.interceptors` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    openApiGenerate {
+    def openApiGenerateHttpServer = tasks.register("openApiGenerateHttpServer", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        def corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = [
             DISABLE_ALL: "true"
         ]
         configOptions = [
-            mode: "java-client",
+            mode: "java-server",
             interceptors: """
                     {
                       "*": [
@@ -488,24 +527,27 @@ In order to do this, set the `configOptions.interceptors` parameter:
                     """
         ]
     }
+    sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir }
+    compileJava.dependsOn openApiGenerateHttpServer
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    openApiGenerate {
+    val openApiGenerateHttpServer = tasks.register<GenerateTask>("openApiGenerateHttpServer") {
         generatorName = "kora"
         group = "openapi tools"
         inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
         outputDir = "$buildDir/generated/openapi"
-        apiPackage = "ru.tinkoff.kora.example.openapi.api"
-        modelPackage = "ru.tinkoff.kora.example.openapi.model"
-        invokerPackage = "ru.tinkoff.kora.example.openapi.invoker"
+        val corePackage = "ru.tinkoff.kora.example.openapi"
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
         openapiNormalizer = mapOf(
             "DISABLE_ALL" to "true"
         )
         configOptions = mapOf(
-            "mode" to "kotlin-client",
+            "mode" to "kotlin-server",
             "interceptors" to """{
                       "*": [
                         {
@@ -527,6 +569,8 @@ In order to do this, set the `configOptions.interceptors` parameter:
                     """
         )
     }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpServer.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpServer) }
     ```
 
 ### Authorization
