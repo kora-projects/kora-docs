@@ -3,6 +3,8 @@ many different modules for quickly building applications such as HTTP server and
 database abstraction in the form of repositories, S3 client, gRPC server and client,
 Camunda integration, telemetry for all modules, resilient module and much more.
 
+You can read about the core features of Kora [here](../index.md).
+
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
 - Dependency injection and inversion via annotations
