@@ -340,6 +340,7 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `prefixPath` - префикс пути серверного HTTP обработчика
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -384,6 +385,7 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `prefixPath` - префикс пути серверного HTTP обработчика
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера
