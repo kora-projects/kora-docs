@@ -72,47 +72,83 @@ Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttp
     ```javascript
     tracing {
       exporter {
-        endpoint = "http://localhost:4317" // (1)!
-        exportTimeout = "2s" // (2)!
-        scheduleDelay = "2s" // (3)!
-        maxExportBatchSize = 512 // (4)!
-        maxQueueSize = 1024 // (5)!
+        endpoint = "http://localhost:4317" //(1)!
+        connectTimeout = "60s" //(2)!
+        exportTimeout = "3s" //(3)!
+        scheduleDelay = "2s" //(4)!
+        maxExportBatchSize = 512 //(5)!
+        maxQueueSize = 2048 //(6)!
+        batchExportTimeout = "30s" //(7)!
+        compression = "gzip" //(8)!
+        exportUnsampledSpans = false //(9)!
+        retry {
+          maxAttempts = 5 //(10)!
+          initialBackoff = "1s" //(11)!
+          maxBackoff = "5s" //(12)!
+          backoffMultiplier = 1.5 //(13)!
+        }
       }
-      attributes { // (6)!
+      attributes { //(14)!
         "service.name" = "example-service"
         "service.namespace" = "kora"
       }
     }
     ```
 
-    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**required**)
-    2.  Maximum time to wait for the collector to process telemetry
-    3.  Time between exporting telemetry to the collector
-    4.  Maximum number of telemetry within one export
-    5.  Maximum queue size of unsent telemetry
-    6.  Additional telemetry attributes
+    1. URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**mandatory**)
+    2. Time to wait for connection to exporter
+    3. Maximum time to wait for telemetry processing by collector
+    4. Time between exporting telemetry to the collector 
+    5. Maximum number of telemetry within one export
+    6. Maximum queue size of unsent telemetry
+    7. Maximum waiting time for export
+    8. Telemetry compression mechanism when exporting
+    9. Whether to export unsampled telemetry
+    10. Maximum number of export attempts
+    11. Initial value of waiting time before next export attempt
+    12. Maximum wait value before next export attempt
+    13. Waiting delay value multiplier
+    14. Additional telemetry attributes
 
+Translated with DeepL.com (free version)
 === ":simple-yaml: `YAML`"
 
     ```yaml
     tracing:
       exporter:
-        endpoint: http://localhost:4317 # (1)!
-        exportTimeout: 2s # (2)!
-        scheduleDelay: 2s # (3)!
-        maxExportBatchSize: 512 # (4)!
-        maxQueueSize: 1024 # (6)!
-      attributes: # (6)!
+        endpoint: http://localhost:4317 #(1)!
+        connectTimeout: 60s #(2)!
+        exportTimeout: 3s #(3)!
+        scheduleDelay: 2s #(4)!
+        maxExportBatchSize: 512 #(5)!
+        maxQueueSize: 2048 #(6)!
+        batchExportTimeout: 30s #(7)!
+        compression: gzip #(8)!
+        exportUnsampledSpans: false #(9)!
+        retry:
+          maxAttempts: 5 #(10)!
+          initialBackoff: 1s #(11)!
+          maxBackoff: 5s #(12)!
+          backoffMultiplier: 1.5 #(13)!
+      attributes: #(14)!
         service.name: example-service
         service.namespace: kora
     ```
 
-    1.  URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**required**)
-    2.  Maximum time to wait for the collector to process telemetry
-    3.  Time between exporting telemetry to the collector
-    4.  Maximum number of telemetry within one export
-    5.  Maximum queue size of unsent telemetry
-    6.  Additional telemetry attributes
+    1. URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**mandatory**)
+    2. Time to wait for connection to exporter
+    3. Maximum time to wait for telemetry processing by collector
+    4. Time between exporting telemetry to the collector 
+    5. Maximum number of telemetry within one export
+    6. Maximum queue size of unsent telemetry
+    7. Maximum waiting time for export
+    8. Telemetry compression mechanism when exporting
+    9. Whether to export unsampled telemetry
+    10. Maximum number of export attempts
+    11. Initial value of waiting time before next export attempt
+    12. Maximum wait value before next export attempt
+    13. Waiting delay value multiplier
+    14. Additional telemetry attributes
 
 Trace collection configuration parameters are described in modules that include trace collection, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 

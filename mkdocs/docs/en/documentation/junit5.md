@@ -273,6 +273,8 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     testImplementation "org.mockito:mockito-core:5.17.0"
     ```
 
+    **Important**, it is assumed that `MockitoExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
+
     [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) and [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html) annotations and all parameters of these annotations are supported.
     It is recommended to read more about how these annotations work in the [official Mockito library documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html).
 
@@ -281,6 +283,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
     The stub component will be injected as a dependency into the arguments and/or fields of the test class and into all components that required it as a dependency.
     All dependent components that are not required anywhere else within the test will be excluded for non-necessity.
+
 
     Example of a test using a `@Mock` component and injecting a mock in a field:
 
@@ -355,6 +358,8 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     testImplementation("io.mockk:mockk:1.13.11")
     ```
 
+    **Important**, it is assumed that `MockkExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
+
     [@MockK](https://mockk.io/#annotations) and [@SpyK](https://mockk.io/#annotations) annotations and all parameters of these annotations are supported.
 
     It is also possible to use [Mockito](https://site.mockito.org/) if desired. 
@@ -363,6 +368,8 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     ```groovy
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
+
+    **Important**, it is assumed that `MockitoExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
 
     [@MockK](https://mockk.io/#annotations) annotation allows you to make a class mock
     annotated component and control the behavior of its methods using `MockK`. 
@@ -758,7 +765,7 @@ in this case only this configuration will be used without any configuration file
 In order to add/replace/mock components within an unannotated application dependency container requires implementing the `KoraAppTestGraphModifier` interface and
 Implement a method to provide a dependency container modifier.
 
-It is forbidden to use `KoraAppTestGraphModifier` and embedding in the constructor because then you cannot get the graph before embedding.
+It is forbidden to use `KoraAppTestGraphModifier` and embedding in the constructor because then you can't get the graph before embedding.
 
 ### Adding
 
