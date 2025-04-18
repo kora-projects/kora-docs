@@ -274,6 +274,8 @@
     testImplementation "org.mockito:mockito-core:5.17.0"
     ```
 
+    **Важно**, подразумевается что `MockitoExtension` не будет использоваться и будет отключен, нельзя совмещать его работу совместно с `@KoraAppTest`.
+
     Поддерживаются аннотациии [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) и [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html), а также все параметры этих аннотаций.
     Рекомендуется подробнее ознакомиться с работой этих аннотацией в [официальной документации библиотеки Mockito](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html).
 
@@ -356,6 +358,8 @@
     testImplementation("io.mockk:mockk:1.13.11")
     ```
 
+    **Важно**, подразумевается что `MockkExtension` не будет использоваться и будет отключен, нельзя совмещать его работу совместно с `@KoraAppTest`.
+
     Поддерживаются аннотациии [@MockK](https://mockk.io/#annotations) и [@SpyK](https://mockk.io/#annotations), а также все параметры этих аннотаций.
 
     Также есть возможность при желании использовать [Mockito](https://site.mockito.org/). 
@@ -364,6 +368,8 @@
     ```groovy
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
+
+    **Важно**, подразумевается что `MockitoExtension` не будет использоваться и будет отключен, нельзя совмещать его работу совместно с `@KoraAppTest`.
 
     Аннотация [@MockK](https://mockk.io/#annotations) позволяет сделать класс заглушку 
     проаннотированного компонента и контролировать поведение его методов с помощью `MockK`. 
