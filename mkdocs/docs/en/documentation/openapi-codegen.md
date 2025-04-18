@@ -340,6 +340,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `prefixPath` - path prefix for HTTP Server controllers
     - `mode` in which mode the generator should operate, available values:
         * `java-server` - create a synchronous server
         * `java-async-server` - create a [CompletionStage](https://www.baeldung.com/java-completablefuture) server
@@ -384,6 +385,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `prefixPath` - path prefix for HTTP Server controllers
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-server` - create synchronous server
         * `kotlin-suspend-server` - create suspend server
