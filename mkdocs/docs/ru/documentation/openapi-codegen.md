@@ -65,6 +65,7 @@
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-client` - создание синхронного клиента
         * `java-async-client` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) клиента
@@ -114,6 +115,7 @@
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-client` - создание синхронного клиента
         * `kotlin-suspend-client` - создание suspend клиента
@@ -340,6 +342,7 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -384,6 +387,7 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера

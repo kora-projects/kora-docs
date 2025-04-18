@@ -5,7 +5,28 @@ hide:
   - navigation
 ---
 
-## 1.1.23
+## 1.1.24
+
+Added:
+
+- Added OpenAPI `Enum` Cyrillic translite constants support 
+- Added OpenAPI `Enum` constant SnakeCase additional naming 
+- Added OpenAPI `filterWithModels` custom option for filtering models when `openapiNormalizer` [FILTER option](https://openapi-generator.tech/docs/customization/#available-filters) is specified
+- Added OpenAPI `prefixPath` custom option for HTTP-server controllers generator
+- Added OpenAPI Kotlin HTTP-server authorization optimizations
+- Added more [tracing exporter](../documentation/tracing.md) configurable options 
+
+Fixed:
+
+- Fixed KSP generation of `JsonWriter` for Java classes 
+- Fixed `CircuitBreaker` half-open proper error count 
+- Fixed Redis Cache potential NPE for `putAsync` operation
+- Fixed `KafkaConsumer` metric `report lag` proper value export
+- Fixed OpenAPI discriminator field `JsonField` naming for child models
+- Fixed OpenAPI discriminator for free Form error handling 
+- Fixed OpenAPI management block in HTTP-server specified endpoints paths even if management endpoints are disabled
+
+### 1.1.23
 
 Added:
 
