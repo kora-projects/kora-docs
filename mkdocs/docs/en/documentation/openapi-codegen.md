@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.23")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
         }
     }
     ```
@@ -27,7 +27,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.23")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
         }
     }
     ```
@@ -65,6 +65,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `mode` in which mode the generator should operate, available values:
         * `java-client` - create synchronous client
         * `java-async-client` - create [CompletionStage](https://www.baeldung.com/java-completablefuture) client
@@ -114,6 +115,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-client` - create synchronous client
         * `kotlin-suspend-client` - create suspend client
@@ -340,6 +342,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
+    - `prefixPath` - path prefix for HTTP-server controllers
     - `mode` in which mode the generator should operate, available values:
         * `java-server` - create a synchronous server
         * `java-async-server` - create a [CompletionStage](https://www.baeldung.com/java-completablefuture) server
@@ -384,6 +388,8 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
+    - `prefixPath` - path prefix for HTTP-server controllers
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-server` - create synchronous server
         * `kotlin-suspend-server` - create suspend server
