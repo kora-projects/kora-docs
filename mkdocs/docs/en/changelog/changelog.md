@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.1.24
+## 1.1.25
+
+Added:
+
+- Added more common default mappers for `Json` and `StringConverter`
+
+Fixed:
+
+- Fixed OpenAPI `Enum` field naming and translite field naming 
+- Fixed OpenAPI option `filterWithModels` to work with complex hierarchy and recursion 
+- Fixed support for Kotlin properties in `@ConfigSource` interfaces 
+- Fixed support private functions and properties in `PromisedProxy` implementations 
+- Fixed `JsonReader` generation for sealed interfaces
+
+### 1.1.24
 
 Added:
 
