@@ -279,13 +279,13 @@ Two annotations are added to support isolated classes:
     public sealed interface Event {
 
         @JsonDiscriminatorValue("firstType")
-        record FirstTypeEvent(String id, FirstData data) implements Event {}
+        record FirstTypeEvent(String id, String type) implements Event {}
 
         @JsonDiscriminatorValue("secondType")
-        record SecondTypeEvent(String id, SecondData data) implements Event {}
+        record SecondTypeEvent(String id, Integer code) implements Event {}
 
         @JsonDiscriminatorValue("thirdType")
-        record ThirdTypeEvent(String id, ThirdData data) implements Event {}
+        record ThirdTypeEvent(String id, Boolean status) implements Event {}
     }
     ```
 
@@ -297,13 +297,13 @@ Two annotations are added to support isolated classes:
     sealed interface Event {
 
         @JsonDiscriminatorValue("firstType")
-        data class FirstTypeEvent(val id: String, data: FirstData) : Event
+        data class FirstTypeEvent(val id: String, val type: String) : Event
 
         @JsonDiscriminatorValue("secondType")
-        data class SecondTypeEvent(val id: String, data: SecondData) : Event
+        data class SecondTypeEvent(val id: String, val code: Integer) : Event
 
         @JsonDiscriminatorValue("thirdType")
-        data class ThirdTypeEvent(val id: String, data: ThirdData) : Event
+        data class ThirdTypeEvent(val id: String, val status: Boolean) : Event
     }
     ```
 
