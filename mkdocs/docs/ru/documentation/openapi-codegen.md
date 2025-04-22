@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.25")
         }
     }
     ```
@@ -19,6 +19,8 @@
     plugins {
         id "org.openapi.generator" version "7.4.0"
     }
+
+    Использование других версий плагина не гарантируется т.к. может быть не совместимо на уровне кода.
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -27,7 +29,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.25")
         }
     }
     ```
@@ -37,6 +39,8 @@
     plugins {
         id("org.openapi.generator") version("7.4.0")
     }
+
+    Использование других версий плагина не гарантируется т.к. может быть не совместимо на уровне кода.
     ```
 
 Требует подключения [HTTP сервера](http-server.md) либо [HTTP клиента](http-client.md).
@@ -57,15 +61,15 @@
 
     Доступные Kora параметры плагина (`configOptions`):
 
-    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
+    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов. Значение `строка`.
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
-    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
-    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
-    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
-    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
+    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI. Значение `строка`.
+    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан). Значение `строка`.
+    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
+    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-client` - создание синхронного клиента
         * `java-async-client` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) клиента
@@ -107,15 +111,15 @@
 
     Доступные Kora параметры плагина (`configOptions`):
 
-    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов
+    - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов. Значение `строка`.
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI
-    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан)
-    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
-    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
-    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
+    - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI. Значение `строка`.
+    - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан). Значение `строка`.
+    - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
+    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-client` - создание синхронного клиента
         * `kotlin-suspend-client` - создание suspend клиента
@@ -337,13 +341,13 @@
 
     Доступные Kora параметры плагина (`configOptions`):
 
-    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
-    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках. Значения: `true`, `false`
+    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода. Значения: `true`, `false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
-    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
-    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
-    - `prefixPath` - префикс пути обработчиков HTTP-сервера
+    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
+    - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -363,7 +367,7 @@
             DISABLE_ALL: "true"
         ]
         configOptions = [
-            mode: "java-server" //(6)!
+            mode: "java-server", //(6)!
         ]
     }
     sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir } //(7)!
@@ -383,13 +387,13 @@
 
     Доступные Kora параметры плагина (`configOptions`):
 
-    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках: `true, false`
-    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода: `true, false`
+    - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках. Значения: `true`, `false`
+    - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода. Значения: `true`, `false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
-    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку
-    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`
-    - `prefixPath` - префикс пути обработчиков HTTP-сервера
+    - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
+    - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
+    - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера

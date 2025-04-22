@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.25")
         }
     }
     ```
@@ -19,6 +19,8 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     plugins {
         id "org.openapi.generator" version "7.4.0"
     }
+
+    Use of other versions of the plugin is not guaranteed as it may not be compatible at the code level.
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -27,7 +29,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.24")
+            classpath("ru.tinkoff.kora:openapi-generator:1.1.25")
         }
     }
     ```
@@ -37,6 +39,8 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     plugins {
         id("org.openapi.generator") version("7.4.0")
     }
+
+    Use of other versions of the plugin is not guaranteed as it may not be compatible at the code level.
     ```
 
 Requires [HTTP server](http-server.md) or [HTTP client](http-client.md) module.
