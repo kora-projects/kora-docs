@@ -3,7 +3,7 @@ site_dir: "../../generated/ru"
 
 
 # Project information
-site_name: Kora
+site_name: Kora фреймворк
 site_url: https://kora-projects.github.io/kora-docs/ru/
 copyright: Т-Банк
 nav:
