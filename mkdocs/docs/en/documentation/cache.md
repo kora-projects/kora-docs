@@ -125,6 +125,10 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
     ```
 
     1. URI to connect to Redis (**required**)
+       Connection for 1 server: `redis://locahost:6379`, 
+       Connection for N servers: `redis://locahost:6379,locahost:6380`, 
+       Connection with SSL: `rediss://locahost:6380`
+       Connection with TLS: `redis+tls://locahost:6380`
     2. Username for connection (optional)
     3. Password for connection (optional)
     4. Database number for connection (optional)
@@ -146,6 +150,10 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
     ```
 
     1. URI to connect to Redis (**required**)
+       Connection for 1 server: `redis://locahost:6379`, 
+       Connection for N servers: `redis://locahost:6379,locahost:6380`, 
+       Connection with SSL: `rediss://locahost:6380`
+       Connection with TLS: `redis+tls://locahost:6380`
     2. Username for connection (optional)
     3. Password for connection (optional)
     4. Database number for connection (optional)
