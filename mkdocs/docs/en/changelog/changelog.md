@@ -5,7 +5,24 @@ hide:
   - navigation
 ---
 
-## 1.1.25
+## 1.1.26
+
+Added:
+
+- Updated dependencies minor version
+
+Fixed:
+
+- Fixed resilient `CircuitBreaker` half open error count introduced in [1.1.24](#1124)
+- Fixed field order when mapping via `JsonObjectCodec`
+- Fixed AOP support for default methods in AP processed interfaces (like `@HttpClient` interface)
+- Fixed JSON processing for library `Enum` when invoked via extension
+- Fixed JSON type propagation for sealed types when invoked via extension
+- Fixed OpenAPI generator security `Cookie` authorization for Kotlin HTTP-server
+- Fixed OpenAPI generator model validation for Kotlin
+- Fixed JUnit testing `Wrapped<T>` test component proper support and mocking
+
+### 1.1.25
 
 Added:
 
