@@ -14,7 +14,7 @@ Both programming languages are first-level citizen languages for framework.
 Framework is written in Java and has its own dependency container with inversion of control that works at compile time.
 Kora is a cloud-oriented server framework and offers many modules for quickly building applications such as 
 [HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers, 
-database abstraction in the form of [repositories](documentation/database-common.md), telemetry for all modules, resilient module and much more.
+database abstraction in the form of [repositories](documentation/database-common.md), telemetry and metrics for modules according to `OpenTelemetry` standard, resilient module and much more.
 
 `Performance` - Kora generates high-performant code at compile time,
 avoiding the use of Reflection API in runtime, avoiding dynamic proxies, implements thin fine-grained abstraction, free aspects,
@@ -42,6 +42,9 @@ and compatibility with [GraalVM out of the box](documentation/graalvm-native.md)
 
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
 makes it easy to learn framework without the need for developers to spend years memorizing the “guts and intricacies of the framework”.
+Kora aims to do all framework optimizations in-house, 
+provide for you the most optimal implementations of integrations whether it is HTTP server or client,
+take the work off you as a developer and provide only productive and efficient solutions out of the box.
 Kora does not involve complex designs or abstractions,
 but rather encourages the use of small and simple abstraction to solve small problems.
 Subsequently, the aggregate of these simple abstractions can eventually solve large complex problems,
