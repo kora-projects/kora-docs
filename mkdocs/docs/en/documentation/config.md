@@ -728,7 +728,7 @@ you might need to specify in custom configurations, or you can extend the behavi
     * Enum (any custom ENUM type)
     * `List<T>` (where `T` is any of the above listed types)
     * `Set<T>` (where `T` is any of the above types)
-    * `Map<String, T>` (where `T` is any of the above types)
+    * `Map<K, V>` (where `K` or `V` is any of the above types)
     * `Either<A, B>` (where `A` and `B` are any of the above types)
 
 ### Size
