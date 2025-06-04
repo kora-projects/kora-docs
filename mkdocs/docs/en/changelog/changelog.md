@@ -5,7 +5,28 @@ hide:
   - navigation
 ---
 
-## 1.1.26
+## 1.1.27
+
+Added:
+
+- Added `AWS S3 Client` contract `Head` interface support
+- Added config support for `Map` with custom key declaration (`Enum`/`UUID`/etc)
+- Added `JsonReader` unchecked read methods
+- Added improved annotation processor graph resolution error output
+
+Fixed:
+
+- Fixed `AWS S3 Client` method `objectMeta` implementation
+- Fixed JDK HTTP-client `content-type` extraction
+- Fixed lost `onComplete` signal for `JdkHttpClientResponse`
+- Fixed JDBC repositories and Kotlin 2.0 compiler errors in syntax compatibility
+- Fixed OpenAPI generator `@Valid` annotation generation for `Enum`
+- Fixed Kafka Consumer Telemetry deprecated method library compatibility
+- Fixed OpenAPI `FILTER` for complex hierarchy recursion scan
+- Fixed OpenAPI generator some models missing property `override` for Kotlin
+- Fixed `gRPC` server telemetry interceptor error handling
+
+### 1.1.26
 
 Added:
 
