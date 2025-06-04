@@ -122,6 +122,6 @@ Example of the complete configuration described in the `LiquibaseConfig` class (
     by increasing the number of working application replicas. Since this will lead to a migration call on each replica setup.
     Also keep in mind that every restart of the application will also trigger migrations.
 
-    In such cases we recommend using something like [Flyway Gradle plugin](https://documentation.red-gate.com/fd/gradle-task-184127407.html) for local development,
+    In such cases we recommend using something like [Flyway Gradle plugin](https://plugins.gradle.org/plugin/org.flywaydb.flyway) for local development,
     for tests use Flyway startup from code after database startup, for Kubernetes combat environment use [K8S Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
-    or migration from CI via [Flyway Gradle plugin](https://documentation.red-gate.com/fd/gradle-task-184127407.html).
+    or migration from CI via [Flyway Gradle plugin](https://plugins.gradle.org/plugin/org.flywaydb.flyway).
