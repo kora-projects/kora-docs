@@ -5,7 +5,7 @@ hide:
   - navigation
 ---
 
-## 1.1.28
+## 1.1.29
 
 Added:
 
