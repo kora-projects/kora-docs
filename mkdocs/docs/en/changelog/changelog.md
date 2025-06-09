@@ -5,7 +5,7 @@ hide:
   - navigation
 ---
 
-## 1.1.28
+## 1.1.29
 
 Added:
 
@@ -18,6 +18,12 @@ Fixed:
 
 - Fixed `JDK HTTP-client` lazy evaluation for `content-type`
 - Fixed `HTTP-client` body logging
+
+### 1.1.28
+
+Fixed:
+
+- Fixed `Kotlin KSP` error message for unknown type during dependecy graph build
 
 ### 1.1.27
 
