@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.1.27
+## 1.1.28
+
+Added:
+
+- Added `OpenAPI` generator `ImplicitHeaders` & `ImplicitHeadersRegex` options support
+- Added enabled config option for all `resilient` components
+- Added `Kafka` consumer metrics `KafkaClientMetrics` micrometer support
+- Added Micrometer `gRPC` server tags provider
+
+Fixed:
+
+- Fixed `JDK HTTP-client` lazy evaluation for `content-type`
+- Fixed `HTTP-client` body logging
+
+### 1.1.27
 
 Added:
 

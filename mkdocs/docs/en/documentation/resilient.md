@@ -94,6 +94,7 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
                 failureRateThreshold = 50 //(3)!
                 waitDurationInOpenState = "25s" //(4)!
                 permittedCallsInHalfOpenState = 15 //(5)!
+                enabled = true //(6)!
             }
         }
     }
@@ -104,6 +105,7 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
     3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
     4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
     5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
+    6.  Enable or disable circuit breaker (default `true`)
 
 
 === ":simple-yaml: `YAML`"
@@ -117,6 +119,7 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
           failureRateThreshold: 50 #(3)!
           waitDurationInOpenState: "25s" #(4)!
           permittedCallsInHalfOpenState: 15 #(5)!
+          enabled: true #(6)!
     ```
 
     1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)
@@ -124,6 +127,7 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
     3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
     4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
     5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
+    6.  Enable or disable circuit breaker (default `true`)
 
 An example of overriding named settings for a particular CircuitBreaker:
 
@@ -307,6 +311,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
                 delay = "100ms" //(1)!
                 attempts = 2 //(2)!
                 delayStep = "100ms" //(3)!
+                enabled = true //(4)!
             }
         }
     }
@@ -315,6 +320,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
     1. Initial delay time for the operation at Retry (**required**)
     2. Number of Retry attempts for the operation (**required**)
     3. Delay step which is accumulated in consequence of subsequent Retry attempts
+    4.  Enable or disable retrier (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -325,11 +331,13 @@ Example of the complete configuration described in the `RetryConfig` class (defa
           delay: "100ms" #(1)!
           attempts: 2 #(2)!
           delayStep: "100ms" #(3)!
+          enabled: true #(4)!
     ```
 
     1. Initial delay time for the operation at Retry (**required**)
     2. Number of Retry attempts for the operation (**required**)
     3. Delay step which is accumulated in consequence of subsequent Retry attempts
+    4.  Enable or disable retrier (default `true`)
 
 ### Exception filtering
 
@@ -494,12 +502,14 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
         timeout {
             default {
                 duration = "1s" //(1)!
+                enabled = true //(2)!
             }
         }
     }
     ```
 
     1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
+    2.  Enable or disable timeouter (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -508,9 +518,11 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
       timeout:
         default:
           delay: "1s" #(1)!
+          enabled: true #(2)!
     ```
 
     1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
+    2.  Enable or disable timeouter (default `true`)
 
 ### Imperative usage
 
@@ -645,12 +657,14 @@ Example of the complete configuration described in the `FallbackConfig` class (d
         fallback {
             custom {
                 failurePredicateName = "MyPredicate" //(1)!
+                enabled = true //(2)!
             }
         }
     }
     ```
 
     1. Name of the predicate from the `name()` method
+    2.  Enable or disable fallback (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -659,9 +673,11 @@ Example of the complete configuration described in the `FallbackConfig` class (d
       fallback:
         custom:
           failurePredicateName: "MyPredicate" #(1)!
+          enabled: true #(2)!
     ```
 
     1. Name of the predicate from the `name()` method
+    2.  Enable or disable fallback (default `true`)
 
 ### Exception filtering
 
