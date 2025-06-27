@@ -103,16 +103,19 @@
         SimpleService {
             url = "grpc://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
+            keepAliveTime = "0s" //(3)!
+            keepAliveTimeout = "0s" //(4)!
+            loadBalancingPolicy = "pick_first" //(5)!
             telemetry {
                 logging {
-                    enabled = false //(3)!
+                    enabled = false //(6)!
                 }
                 metrics {
-                    enabled = true //(4)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                    enabled = true //(7)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
                 }
                 tracing {
-                    enabled = true //(6)!
+                    enabled = true //(9)!
                 }
             }
         }
@@ -121,10 +124,13 @@
 
     1.  URL сервера куда делать запросы (**обязательный**)
     2.  Максимальное время запроса (по умолчанию отсутвует)
-    3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    3.  Устанавливает интервал времени между PING фреймами
+    4.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
+    5.  Устанавливает политику балансировки
+    6.  Включает логгирование модуля (по умолчанию `false`)
+    7.  Включает метрики модуля (по умолчанию `true`)
+    8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    9.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -133,22 +139,28 @@
       SimpleService:
         url: "grpc://localhost:8090" //(1)!
         timeout: "10s" //(2)!
+        keepAliveTime: "0s" //(3)!
+        keepAliveTimeout: "0s" //(4)!
+        loadBalancingPolicy: "pick_first" //(5)!
         telemetry:
           logging:
-            enabled: false #(1)!
+            enabled: false #(6)!
           metrics:
-            enabled: true #(2)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
+            enabled: true #(7)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
           telemetry:
-            enabled: true #(4)!
+            enabled: true #(9)!
     ```
 
     1.  URL сервера куда делать запросы (**обязательный**)
     2.  Максимальное время запроса (по умолчанию отсутвует)
-    3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    3.  Устанавливает интервал времени между PING фреймами
+    4.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
+    5.  Устанавливает политику балансировки
+    6.  Включает логгирование модуля (по умолчанию `false`)
+    7.  Включает метрики модуля (по умолчанию `true`)
+    8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    9.  Включает трассировку модуля (по умолчанию `true`)
 
 Можно также настроить [Netty транспорт](netty.md).
 

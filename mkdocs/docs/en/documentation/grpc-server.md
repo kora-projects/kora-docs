@@ -104,16 +104,18 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
         shutdownWait = "30s" //(4)!
         maxConnectionAge = "0s" //(5)!
         maxConnectionAgeGrace = "0s" //(6)!
+        keepAliveTime = "0s" //(7)!
+        keepAliveTimeout = "0s" //(8)!
         telemetry {
             logging {
-                enabled = false //(7)!
+                enabled = false //(9)!
             }
             metrics {
-                enabled = true //(8)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                enabled = true //(10)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
             }
             tracing {
-                enabled = true //(10)!
+                enabled = true //(12)!
             }
         }
     }
@@ -125,10 +127,12 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
     5. Sets a custom max connection age, connection lasting longer than which will be gracefully terminated. An unreasonably small value might be increased. A random jitter of +/-10% will be added to it.
     6. Sets a custom grace time for the graceful connection termination. Once the max connection age is reached, RPCs have the grace time to complete. RPCs that do not complete in time will be cancelled, allowing the connection to terminate.
-    7. Enables module logging (default `false`)
-    8. Enables module metrics (default `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    10. Enables module tracing (default `true`)
+    7. Sets the interval in milliseconds between PING frames
+    8. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
+    9. Enables module logging (default `false`)
+    10. Enables module metrics (default `true`)
+    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    12. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,14 +144,16 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
       shutdownWait: "30s" #(4)!
       maxConnectionAge: "0s" #(5)!
       maxConnectionAgeGrace: "0s" #(6)!
+      keepAliveTime: "0s" #(7)!
+      keepAliveTimeout: "0s" #(8)!
       telemetry:
         logging:
-          enabled: false #(7)!
+          enabled: false #(9)!
         metrics:
-          enabled: true #(8)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-        telemetry:
           enabled: true #(10)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+        telemetry:
+          enabled: true #(12)!
     ```
 
     1. gRPC server port
@@ -156,10 +162,12 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
     5. Sets a custom max connection age, connection lasting longer than which will be gracefully terminated. An unreasonably small value might be increased. A random jitter of +/-10% will be added to it.
     6. Sets a custom grace time for the graceful connection termination. Once the max connection age is reached, RPCs have the grace time to complete. RPCs that do not complete in time will be cancelled, allowing the connection to terminate.
-    7. Enables module logging (default `false`)
-    8. Enables module metrics (default `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    10. Enables module tracing (default `true`)
+    7. Sets the interval in milliseconds between PING frames
+    8. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
+    9. Enables module logging (default `false`)
+    10. Enables module metrics (default `true`)
+    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    12. Enables module tracing (default `true`)
 
 You can also configure [Netty transport](netty.md).
 
