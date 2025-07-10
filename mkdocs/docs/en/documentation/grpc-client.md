@@ -103,16 +103,19 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
         SimpleService {
             url = "grpc://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
+            keepAliveTime = "0s" //(3)!
+            keepAliveTimeout = "0s" //(4)!
+            loadBalancingPolicy = "pick_first" //(5)!
             telemetry {
                 logging {
-                    enabled = false //(3)!
+                    enabled = false //(6)!
                 }
                 metrics {
-                    enabled = true //(4)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                    enabled = true //(7)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
                 }
                 tracing {
-                    enabled = true //(6)!
+                    enabled = true //(9)!
                 }
             }
         }
@@ -121,10 +124,13 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
 
     1. URL of the server where to make requests (**required**)
     2. Maximum request time (optional)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    3. Sets the interval in milliseconds between PING frames
+    4. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
+    5. Sets the load balancing policy
+    6. Enables module logging (default `false`)
+    7. Enables module metrics (default `true`)
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -133,22 +139,28 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
       SimpleService:
         url: "grpc://localhost:8090" //(1)!
         timeout: "10s" //(2)!
+        keepAliveTime: "0s" //(3)!
+        keepAliveTimeout: "0s" //(4)!
+        loadBalancingPolicy: "pick_first" //(5)!
         telemetry:
           logging:
-            enabled: false #(1)!
+            enabled: false #(6)!
           metrics:
-            enabled: true #(2)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(3)!
+            enabled: true #(7)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
           telemetry:
-            enabled: true #(4)!
+            enabled: true #(9)!
     ```
 
     1. URL of the server where to make requests (**required**)
     2. Maximum request time (optional)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    3. Sets the interval in milliseconds between PING frames
+    4. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
+    5. Sets the load balancing policy
+    6. Enables module logging (default `false`)
+    7. Enables module metrics (default `true`)
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    9. Enables module tracing (default `true`)
 
 You can also configure [Netty transport](netty.md).
 
