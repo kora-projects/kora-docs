@@ -5,7 +5,16 @@ hide:
   - navigation
 ---
 
-## 1.1.29
+
+## 1.1.30
+
+Added:
+
+- Allow to set Map of system properties for `KoraConfigModification` in JUnit config
+- Added improved gRPC Server & Client configuration
+- Added gRPC Client result status for metrics
+
+### 1.1.29
 
 Added:
 

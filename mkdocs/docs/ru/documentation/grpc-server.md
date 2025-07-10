@@ -104,16 +104,18 @@
         shutdownWait = "30s" //(4)!
         maxConnectionAge = "0s" //(5)!
         maxConnectionAgeGrace = "0s" //(6)!
+        keepAliveTime = "0s" //(7)!
+        keepAliveTimeout = "0s" //(8)!
         telemetry {
             logging {
-                enabled = false //(7)!
+                enabled = false //(9)!
             }
             metrics {
-                enabled = true //(8)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                enabled = true //(10)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
             }
             tracing {
-                enabled = true //(10)!
+                enabled = true //(12)!
             }
         }
     }
@@ -125,10 +127,12 @@
     4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
     5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
     6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
-    7.  Включает логгирование модуля (по умолчанию `false`)
-    8.  Включает метрики модуля (по умолчанию `true`)
-    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    10.  Включает трассировку модуля (по умолчанию `true`)
+    7.  Устанавливает интервал времени между PING фреймами
+    8.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
+    9.  Включает логгирование модуля (по умолчанию `false`)
+    10.  Включает метрики модуля (по умолчанию `true`)
+    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    12.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,14 +144,16 @@
       shutdownWait: "30s" #(4)!
       maxConnectionAge: "0s" #(5)!
       maxConnectionAgeGrace: "0s" #(6)!
+      keepAliveTime: "0s" #(7)!
+      keepAliveTimeout: "0s" #(8)!
       telemetry:
         logging:
-          enabled: false #(7)!
+          enabled: false #(9)!
         metrics:
-          enabled: true #(8)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-        telemetry:
           enabled: true #(10)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+        telemetry:
+          enabled: true #(12)!
     ```
 
     1.  Порт gRPC сервера
@@ -156,10 +162,12 @@
     4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
     5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
     6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
-    7.  Включает логгирование модуля (по умолчанию `false`)
-    8.  Включает метрики модуля (по умолчанию `true`)
-    9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    10.  Включает трассировку модуля (по умолчанию `true`)
+    7.  Устанавливает интервал времени между PING фреймами
+    8.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
+    9.  Включает логгирование модуля (по умолчанию `false`)
+    10.  Включает метрики модуля (по умолчанию `true`)
+    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    12.  Включает трассировку модуля (по умолчанию `true`)
 
 Можно также настроить [Netty транспорт](netty.md).
 

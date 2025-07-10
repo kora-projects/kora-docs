@@ -943,7 +943,7 @@ Example of a complete repository with all the basic methods for operating an ent
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
 
-##### Composite example
+#### Composite example
 
 Example repository with [composite identifier](#composite) and basic methods to operate on an entity,
 it is almost identical to the previous one except for the `WHERE` conditions for search and delete for [Postgres SQL](https://postgrespro.com/docs/postgresql):
@@ -1087,7 +1087,7 @@ it is almost identical to the previous one except for the `WHERE` conditions for
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
 
-##### Inheritance example
+#### Inheritance example
 
 You can also create an abstract CRUD repository and then use it in inheritance for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
