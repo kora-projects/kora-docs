@@ -438,6 +438,34 @@ Example of a simple configuration described in `CassandraConfig` class (example 
               enabled: true
         ```
 
+### Code configuration
+
+You can configure the driver manually in your code using `CassandraConfigurer` to modify the `CqlSession` builder:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyCassandraConfigurer implements CassandraConfigurer {
+
+        @Override
+        public CqlSessionBuilder configure(CqlSessionBuilder builder) {
+            return builder.withClientId(UUID.randomUUID());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyCassandraConfigurer : CassandraConfigurer {
+        override fun configure(builder: CqlSessionBuilder): CqlSessionBuilder {
+            return builder.withClientId(UUID.randomUUID())
+        }
+    }
+    ```
+
 ## Usage
 
 ===! ":fontawesome-brands-java: `Java`"

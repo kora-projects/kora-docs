@@ -176,3 +176,34 @@ You can create a span with the current one in parent as follows:
         .setParent(telemetryContext.getContext())
         .build();
     ```
+
+## Get tracing
+
+Obtain the current tracing `Span`, you can use the `getSpan` method in `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getSpan();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getSpan();
+    ```
+
+Obtain the current trace ID, you can use the `getTraceId()` method in `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getTraceId();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getTraceId();
+    ```
+

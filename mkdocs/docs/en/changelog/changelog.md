@@ -5,8 +5,26 @@ hide:
   - navigation
 ---
 
+## 1.1.31
 
-## 1.1.30
+Added:
+
+- Added `@KafkaListener` skip record logic via [KafkaSkipRecordException](../documentation/kafka.md#exception-skipping)
+- Added `Redis` cache `SSL` configuration options
+- Added `OpentelemetryContext` methods for `getSpan` and `getTraceId`
+- Added ability to post process `Cassandra` config with `CassandraConfigurer`
+- Added OpenAPI HTTP-server generator `delegateMethodBodyMode` option
+- Added OpenAPI generator `Javadoc` and improved code style for generated classes
+
+Fixed:
+
+- Fixed HTTP-client `JdkProxySelector` should not cache proxy IP address 
+- Fixed `KafkaAssignConsumer` stopping topic polling on graph refresh
+- Fixed support Json reader/writer generation for sealed hierarchies with `Nothing` as type variable in `Kotlin`
+- Fixed OpenAPI generator `implicitHeaders` option extraction 
+- Fixed `JUnit` testing complex `Wrapped<T>` support 
+
+### 1.1.30
 
 Added:
 
