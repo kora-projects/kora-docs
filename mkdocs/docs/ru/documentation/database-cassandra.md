@@ -438,6 +438,34 @@
               enabled: true
         ```
 
+### Ручная конфигурация
+
+Возможно конфигурировать драйвер вручную в коде, используя `CassandraConfigurer` для модификации построителя `CqlSession`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyCassandraConfigurer implements CassandraConfigurer {
+
+        @Override
+        public CqlSessionBuilder configure(CqlSessionBuilder builder) {
+            return builder.withClientId(UUID.randomUUID());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyCassandraConfigurer : CassandraConfigurer {
+        override fun configure(builder: CqlSessionBuilder): CqlSessionBuilder {
+            return builder.withClientId(UUID.randomUUID())
+        }
+    }
+    ```
+
 ## Использование
 
 ===! ":fontawesome-brands-java: `Java`"
