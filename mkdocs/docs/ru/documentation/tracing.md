@@ -175,3 +175,34 @@
         .setParent(telemetryContext.getContext())
         .build();
     ```
+
+## Получение трассировки
+
+Чтобы получить текущий `Span` трассировки можно использовать метод `getSpan` у `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getSpan();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getSpan();
+    ```
+
+Для получения текущего идентификатора трассировки можно использовать метод `getTraceId()` у `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getTraceId();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getTraceId();
+    ```
+

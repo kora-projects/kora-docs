@@ -420,6 +420,11 @@ In case deserialization from `Json` is required, the `@Json` tag can be used:
         fun process1(key: String, @Json value: JsonEvent) {
             // some handler code
         }
+
+        @KafkaListener("kafka.someConsumer2")
+        fun process2(record: ConsumerRecord<String, @Json JsonEvent>) {
+            // some handler code
+        }
     }
     ```
 
@@ -429,6 +434,61 @@ For non-key handlers, the default is `Deserializer<byte[]>` since it simply retu
 
 If the method labeled `@KafkaListener` throws an exception, Consumer will be restarted,
 because there is no general solution on how to handle this and the developer **must** decide how to handle it.
+
+#### Пропуск обработки
+
+If you need to skip processing a specific event (`ConsumerRecord`) during processing for business logic reasons,
+you can throw a `KafkaSkipRecordException` by passing the actual exception to the constructor.
+In this case, all metrics will be correctly accounted for and recorded, processing of the corresponding event will be skipped, and the next event will begin to be processed.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer1")
+        void process1(String key, String value) {
+            if ("skip".equals(value)) {
+                throw new KafkaSkipRecordException(new IllegalArgumentException("Want to skip!"))
+            }
+            // some handler code
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer1")
+        fun process1(key: String, value: String) {
+            if (value == "skip") {
+                throw KafkaSkipRecordException(IllegalArgumentException("Want to skip!"))
+            }
+            // some handler code
+        }
+    }
+    ```
+
+If you want to implement your own skippable exceptions,
+you can use the `SkippableRecordException` interface, which should be implemented in your exceptions.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class MyKafkaSkipRecordException extends RuntimeException implements SkippableRecordException {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class MyKafkaSkipRecordException : RuntimeException(), SkippableRecordException
+    ```
 
 #### Deserialization errors
 
