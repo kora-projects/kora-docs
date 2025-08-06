@@ -348,6 +348,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `prefixPath` - path prefix for HTTP-server controllers
+    - `delegateMethodBodyMode` - behavior for method body generation in delegate class. `none` - do not generate method body, `throw-exception` - throw exception in method body. For `throw-exception` additionally generates module with default Delegate class implementation if not exists another implementation in application graph
     - `mode` in which mode the generator should operate, available values:
         * `java-server` - create a synchronous server
         * `java-async-server` - create a [CompletionStage](https://www.baeldung.com/java-completablefuture) server
@@ -394,6 +395,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `prefixPath` - path prefix for HTTP-server controllers
+    - `delegateMethodBodyMode` - behavior for method body generation in delegate class. `none` - do not generate method body, `throw-exception` - throw exception in method body. For `throw-exception` additionally generates module with default Delegate class implementation if not exists another implementation in application graph
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-server` - create synchronous server
         * `kotlin-suspend-server` - create suspend server
