@@ -5,7 +5,26 @@ hide:
   - navigation
 ---
 
-## 1.1.30
+## 1.1.31
+
+Добавлено:
+
+- Добавлена логика пропуска записей `@KafkaListener` через [KafkaSkipRecordException](../documentation/kafka.md#_7)
+- Добавлены параметры конфигурации `SSL` для кэша `Redis`
+- Добавлены методы [OpentelemetryContext](../documentation/tracing.md#_3) для `getSpan` и `getTraceId`
+- Добавлена возможность постобработки конфигурации `Cassandra` с помощью `CassandraConfigurer`
+- Добавлена опция `delegateMethodBodyMode` генератора HTTP-сервера OpenAPI
+- Добавлен `Javadoc` в делегаты и улучшен стиль кода для сгенерированных классов в генератор OpenAPI
+
+Исправлено:
+
+- Исправлено кэширование IP-адреса прокси у `JdkProxySelector` HTTP-клиента
+- Исправлено `KafkaAssignConsumer` прекращал вычитывание топика при обновлении графа
+- Исправлена генерация читателя/писателя Json для запечатанных иерархий с типом `Nothing` в `Kotlin`
+- Исправлено извлечение опции `implicitHeaders` генератора OpenAPI
+- Исправлена поддержка тестирования сложных `Wrapped<T>` компонент в `JUnit`
+
+### 1.1.30
 
 Добавлен:
 

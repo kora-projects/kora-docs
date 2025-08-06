@@ -348,6 +348,7 @@
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
+    - `delegateMethodBodyMode` - способ генерации тела метода в delegate классе. `none` - не генерировать тело метода, `throw-exception` - бросать исключение в теле метода. Для `throw-exception` дополнительно будет сгенерирован модуль со стандартной реализацией Delegate класса, если в графе приложения нет другой реализации
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-server` - создание синхронного сервера
         * `java-async-server` - создание [CompletionStage](https://www.baeldung.com/java-completablefuture) сервера
@@ -394,6 +395,7 @@
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
+    - `delegateMethodBodyMode` - способ генерации тела метода в delegate классе. `none` - не генерировать тело метода, `throw-exception` - бросать исключение в теле метода. Для `throw-exception` дополнительно будет сгенерирован модуль со стандартной реализацией Delegate класса, если в графе приложения нет другой реализации
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-server` - создание синхронного сервера
         * `kotlin-suspend-server` - создание suspend сервера

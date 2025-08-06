@@ -320,6 +320,11 @@
         fun process1(key: String, @Json value: JsonEvent) {
             // some handler code
         }
+
+        @KafkaListener("kafka.someConsumer2")
+        fun process2(record: ConsumerRecord<String, @Json JsonEvent>) {
+            // some handler code
+        }
     }
     ```
 
@@ -329,6 +334,61 @@
 
 Если метод помеченный `@KafkaListener` выбросит исключение, то Consumer будет перезапущен,
 потому что нет общего решения, как реагировать на это и разработчик **должен** сам решить как эту ситуацию обрабатывать.
+
+#### Пропуск обработки
+
+В случае когда требуется пропустить обработку **конкретного события** (`ConsumerRecord`) в процессе обработки по причинам бизнес-логики, 
+можно выбросить исключение `KafkaSkipRecordException` передав в конструктор реальное исключение.
+В таком случае все метрики будут корректно учтены и записаны, обработка соответствующего события будет пропущена и начнется обрабатываться следующее событие.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer1")
+        void process1(String key, String value) {
+            if ("skip".equals(value)) {
+                throw new KafkaSkipRecordException(new IllegalArgumentException("Want to skip!"))
+            }
+            // some handler code
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer1")
+        fun process1(key: String, value: String) {
+            if (value == "skip") {
+                throw KafkaSkipRecordException(IllegalArgumentException("Want to skip!"))
+            }
+            // some handler code
+        }
+    }
+    ```
+
+В случае если хочется реализовать свои пропускаемые исключения, 
+то можно использовать `SkippableRecordException` интерфейс который следует реализовать в своих исключениях.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class MyKafkaSkipRecordException extends RuntimeException implements SkippableRecordException {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class MyKafkaSkipRecordException : RuntimeException(), SkippableRecordException
+    ```
 
 #### Ошибки десериализации
 
