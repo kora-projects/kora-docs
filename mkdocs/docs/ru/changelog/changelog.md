@@ -5,7 +5,46 @@ hide:
   - navigation
 ---
 
-## 1.1.31
+## 1.2.0
+
+Требования обновления:
+
+- Обновите плагин генератора OpenAPI до версии `7.14.0`
+- Если вы полагались на `@JsonInclude(ALWAYS)` для полей `isNullable` и `NonRequired` в генераторе OpenAPI, требуется вручную добавить в конфигурацию генератора `forceIncludeOptional = "true"` опцию
+
+Добавлено:
+
+- Добавлена поддержка виртуальных потоков для обработки HTTP-сервера [Undertow](../documentation/http-server.md#_2)
+- Добавлены аннотации `@DisallowConcurrentExecution` и `@PersistJobDataAfterExecution` для [задач Quartz](../documentation/scheduling.md#_16)
+- Добавлена поддержка вызовов `postCommit` и `postRollback` для метода [JdbcConnectionFactory#inTx](../documentation/database-jdbc.md##_15)
+- Добавлена поддержка параметров HTTP-клиента `@Cookie`
+- Добавлена поддержка реализации методов из супер-интерфейсов в HTTP-клиенте
+- Добавлена поддержка `Mockito` сессии и проверки неиспользуемых заглушек в [JUnit-тестах](../documentation/junit5.md#_7)
+- Добавлено прежнее поведение по умолчанию генератора OpenAPI без `@JsonInclude(Always)` для полей `isNullable` и `NonRequired` как до версии 1.1.13
+- Добавлена опция `forceIncludeOptional` для добавления `@JsonInclude(Always)` для полей `isNullable` и `NonRequired` в генератор OpenAPI
+- Добавлено маскирование заголовков `Cookie/Set-Cookie` в HTTP по умолчанию
+- Добавлен [LettuceConfigurator](../documentation/cache.md#redis) для Redis Lettuce клиента
+- Добавлены метрики для Redis Lettuce клиента
+- Добавлено больше данных для телеметрии `@KafkaProducer`
+- Добавлен конфигуратор тегов метрик HTTP-клиента
+- Добавлен конфигуратор тегов метрик gRPC-клиента
+- Добавлена поддержка инкрементальной обработки Gradle
+- Добавлена поддержка инкрементальной обработки Kotlin KSP
+- Улучшены метрики `@KafkaListener` и `@KafkaProducer` и добавлены конфигураторы тегов
+- Улучшены метрики и логирование `@CircuitBreaker`
+- Обновлены почти все зависимости до последних версий
+
+Исправлено:
+
+- Исправлено когда профиль `Cassandra` требовал `contactPoints` в конфигурации
+- Исправлен доступ к не примитивным `@Embedded` полям
+- Исправлен генератор OpenAPI не корректный префикс аннотации `param:` в Kotlin
+- Исправлен генератор OpenAPI `Form` для полей, не являющихся строками
+- Исправлены параметры методов сохраняли аннотации AOP для сгенерированных классов
+- Исправлено конфликт `System Properties` в JUnit-тестах при одновременной инициализации нескольких графов
+- Исправлена валидация `@Validation` при обработке сигнатур методов `@NotNull` и `@Nullable`
+
+### 1.1.31
 
 Добавлено:
 

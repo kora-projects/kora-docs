@@ -207,6 +207,51 @@ Example of a complete configuration for `mycache.config` cache, parameters are d
     2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
     3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
+#### Configurator
+
+Можно зарегистрировать `LettuceConfigurator` который позволит до настроить `Lettuce` клиент перед созданием.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyLettuceConfigurator implements LettuceConfigurator {
+        @Override
+        public DefaultClientResources.Builder configure(DefaultClientResources.Builder resouceBuilder) {
+            return resouceBuilder;
+        }
+
+        @Override
+        public ClusterClientOptions.Builder configure(ClusterClientOptions.Builder clusterBuilder) {
+            return clusterBuilder;
+        }
+
+        @Override
+        public ClientOptions.Builder configure(ClientOptions.Builder clientBuilder) {
+            return clientBuilder;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class MyLettuceConfigurator : LettuceConfigurator {
+
+        override fun configure(resouceBuilder: DefaultClientResources.Builder): DefaultClientResources.Builder {
+            return resouceBuilder
+        }
+
+        override fun configure(clusterBuilder: ClusterClientOptions.Builder): ClusterClientOptions.Builder {
+            return clusterBuilder
+        }
+
+        override fun configure(clientBuilder: ClientOptions.Builder): ClientOptions.Builder {
+            return clientBuilder
+        }
+    }
+    ```
+
 ## Usage
 
 Creating a cache will require registering a typed `@Cache` contract.

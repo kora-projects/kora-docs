@@ -232,7 +232,7 @@ Example of a test where components are injected in method arguments:
     }
     ```
 
-#### Tag
+### Tag
 
 In order to inject a dependency/mock that has an `@Tag`, you must specify the appropriate `@Tag` annotation next to the argument for injection:
 
@@ -262,7 +262,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     }
     ```
 
-#### Mock
+### Mock
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -433,6 +433,60 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
         @Test
         fun example() {
             assertEquals("?", component1.get())
+        }
+    }
+    ```
+
+#### Mock strictness
+
+You can check usage of `Mockito` mocks in tests by setting the verification level using the `@MockitoStrictness` annotation.
+
+It works similarly to `MockitoSession` and is an imitation of a session within the Mockito framework,
+which usually involves the execution of a single test method.
+It provides a mechanism for managing the lifecycle of imitations and ensuring proper cleanup and verification.
+
+It allows you to maintain strict stub guarantees using the `Strictness` enumeration,
+which helps identify unused calls and potentially throw an `UnnecessaryStubbingException`
+or write a warning to the log.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @MockitoStrictness(Strictness.STRICT_STUBS)
+    @KoraAppTest(Application.class)
+    class SomeTests {
+
+        @Mock
+        @TestComponent
+        private Supplier<String> component1;
+
+        @BeforeEach
+        void mock() {
+            Mockito.when(component1.get()).thenReturn("?");
+        }
+
+        @Test
+        void example() {
+            // component1.get() usage required
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @MockitoStrictness(Strictness.STRICT_STUBS)
+    @KoraAppTest(Application::class)
+    class SomeTests(@Mock @TestComponent val component1: Supplier<String>) {
+
+        @BeforeEach
+        fun mock() {
+            on { component1.get() } doReturn "?"
+        }
+
+        @Test
+        fun example() {
+            // component1.get() usage required
         }
     }
     ```

@@ -62,7 +62,7 @@ and `HttpClientConfig` classes (default or example values are specified):
                 enabled = false //(11)!
                 mask = "***" //(12)!
                 maskQueries = [ ] //(13)!
-                maskHeaders = [ "authorization" ] //(14)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
                 pathTemplate = true //(15)!
             }
             metrics {
@@ -116,7 +116,7 @@ and `HttpClientConfig` classes (default or example values are specified):
           enabled: false #(11)!
           mask: "***" #(12)!
           maskQueries: [ ] #(13)!
-          maskHeaders: [ "authorization" ] #(14)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
           pathTemplate: true #(15)!
         metrics:
           enabled: true #(16)!
@@ -233,7 +233,7 @@ and `HttpClientConfig` classes (default or example values are specified):
                 enabled = false //(10)!
                 mask = "***" //(11)!
                 maskQueries = [ ] //(12)!
-                maskHeaders = [ "authorization" ] //(13)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
                 pathTemplate = true //(14)!
             }
             metrics {
@@ -285,7 +285,7 @@ and `HttpClientConfig` classes (default or example values are specified):
           enabled: false #(10)!
           mask: "***" #(11)!
           maskQueries: [ ] #(12)!
-          maskHeaders: [ "authorization" ] #(13)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
           pathTemplate: true #(14)!
         metrics:
           enabled: true #(15)!
@@ -375,7 +375,7 @@ and `HttpClientConfig` classes (default or example values are specified):
                 enabled = false //(10)!
                 mask = "***" //(11)!
                 maskQueries = [ ] //(12)!
-                maskHeaders = [ "authorization" ] //(13)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
                 pathTemplate = true //(14)!
             }
             metrics {
@@ -427,7 +427,7 @@ and `HttpClientConfig` classes (default or example values are specified):
           enabled: false #(10)!
           mask: "***" #(11)!
           maskQueries: [ ] #(12)!
-          maskHeaders: [ "authorization" ] #(13)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
           pathTemplate: true #(14)!
         metrics:
           enabled: true #(15)!
@@ -528,7 +528,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
                     enabled = false //(3)!
                     mask = "***" //(4)!
                     maskQueries = [ ] //(5)!
-                    maskHeaders = [ "authorization" ] //(6)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
                     pathTemplate = true //(7)!
                 }
                 metrics {
@@ -566,7 +566,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
             enabled: false #(3)!
             mask: "***" #(4)!
             maskQueries: [ ] #(5)!
-            maskHeaders: [ "authorization" ] #(6)!
+            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
             pathTemplate: true #(7)!
           metrics:
             enabled: true #(8)!
@@ -604,7 +604,7 @@ and method `hello` the final path will be `httpClient.someClient.hello`
                         enabled = false //(2)!
                         mask = "***" //(3)!
                         maskQueries = [ ] //(4)!
-                        maskHeaders = [ "authorization" ] //(5)!
+                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
                         pathTemplate = true //(6)!
                     }
                     metrics {
@@ -642,7 +642,7 @@ and method `hello` the final path will be `httpClient.someClient.hello`
               enabled: false #(2)!
                 mask: "***" #(3)!
                 maskQueries: [ ] #(4)!
-                maskHeaders: [ "authorization" ] #(5)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
                 pathTemplate: true #(6)!
             metrics:
               enabled: true #(7)!

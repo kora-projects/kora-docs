@@ -489,7 +489,7 @@ This approach works for `@Batch` queries as well.
     }
     ```
 
-## Transactions
+## Transaction
 
 In order to execute blocking queries, Kora has a `JdbcConnectionFactory` interface, which is provided in a method within the `JdbcRepository` contract.
 All repository methods called within a transaction lambda will be executed in that transaction.
@@ -582,6 +582,104 @@ If you need some more complex logic for a query and `@Query` is not enough, you 
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
             return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
+                // do some work
+                listOf(one, two)
+            })
+        }
+    }
+    ```
+
+### Post-commit actions
+
+If you need to perform any actions after committing a transaction,
+you can add the appropriate actions using `addPostCommitAction`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final EntityRepository repository;
+
+        public SomeService(EntityRepository repository) {
+            this.repository = repository;
+        }
+
+        public List<Entity> saveAll(Entity one, Entity two) {
+            return repository.getJdbcConnectionFactory().inTx(connection -> {
+                repository.getJdbcConnectionFactory().currentConnectionContext().addPostCommitAction((conn) -> {
+                    // do some work
+                });
+
+                // do some work
+                return List.of(one, two);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val repository: EntityRepository) {
+
+        fun saveAll(one: Entity, two: Entity): List<Entity> {
+            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
+                repository.jdbcConnectionFactory.currentConnectionContext().addPostCommitAction((conn) -> {
+                    // do some work
+                });
+
+                // do some work
+                listOf(one, two)
+            })
+        }
+    }
+    ```
+
+### Post-rollback actions
+
+If you need to perform any actions after rolling back a transaction,
+you can add the appropriate actions using `addPostRollbackAction`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final EntityRepository repository;
+
+        public SomeService(EntityRepository repository) {
+            this.repository = repository;
+        }
+
+        public List<Entity> saveAll(Entity one, Entity two) {
+            return repository.getJdbcConnectionFactory().inTx(connection -> {
+                repository.getJdbcConnectionFactory().currentConnectionContext().addPostRollbackAction((conn, e) -> {
+                    // do some work
+                });
+
+                // do some work
+                return List.of(one, two);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val repository: EntityRepository) {
+
+        fun saveAll(one: Entity, two: Entity): List<Entity> {
+            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
+                repository.jdbcConnectionFactory.currentConnectionContext().addPostRollbackAction((conn, e) -> {
+                    // do some work
+                });
+
                 // do some work
                 listOf(one, two)
             })

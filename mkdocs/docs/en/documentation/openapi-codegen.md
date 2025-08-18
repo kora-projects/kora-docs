@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.31")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.0")
         }
     }
     ```
@@ -29,7 +29,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.1.31")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.0")
         }
     }
     ```
@@ -69,6 +69,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `mode` in which mode the generator should operate, available values:
         * `java-client` - create synchronous client
@@ -119,6 +120,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `mode` in which mode the generator should operate, available values:
         * `kotlin-client` - create synchronous client
@@ -346,6 +348,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `prefixPath` - path prefix for HTTP-server controllers
     - `delegateMethodBodyMode` - behavior for method body generation in delegate class. `none` - do not generate method body, `throw-exception` - throw exception in method body. For `throw-exception` additionally generates module with default Delegate class implementation if not exists another implementation in application graph
@@ -393,6 +396,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
+    - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.
     - `filterWithModels` - filter and exclude also unnecessary models from generation when the [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) option in `openapiNormalizer` is specified
     - `prefixPath` - path prefix for HTTP-server controllers
     - `delegateMethodBodyMode` - behavior for method body generation in delegate class. `none` - do not generate method body, `throw-exception` - throw exception in method body. For `throw-exception` additionally generates module with default Delegate class implementation if not exists another implementation in application graph
