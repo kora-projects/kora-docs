@@ -1,8 +1,9 @@
 Модуль для создания планировщиков в декларативном стиле с помощью аннотаций.
 
-## Нативный
+## Встроенный
 
-Создание планировщика с использованием стандартного [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) который поставляется с JVM.
+Создание планировщика с использованием стандартного [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) который
+поставляется с JVM.
 
 Для создания планировщика через аспекты используются специальные аннотации которые по сути дублируются сигнатуры методов `ScheduledExecutorService`.
 Параметры аннотаций соответствуют параметрам методов `scheduleAtFixedRate`, `scheduleWithFixedDelay`, `schedule` соответственно.
@@ -186,7 +187,7 @@
 Планировщик ожидает фиксированный промежуток времени от окончания предыдущего исполнения задачи.
 Выполнения нескольких задач не будет происходить одновременно.
 
-Не имеет значения, сколько времени занимает текущее исполнение, 
+Не имеет значения, сколько времени занимает текущее исполнение,
 следующая задача запустится после завершения предыдущей задачи и заданного промежутка ожидания.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -353,7 +354,7 @@
 
 ### Штатное завершение
 
-Если вы хотите предварительно завершить обработку при [штатном завершении](container.md#_24) сервиса не дожидаясь ее окончания, 
+Если вы хотите предварительно завершить обработку при [штатном завершении](container.md#_24) сервиса не дожидаясь ее окончания,
 требуется проверять [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) статус и прекращать работу самостоятельно.
 
 ## Quartz
@@ -620,3 +621,71 @@
 
     1. Тег триггера
     2. Тег триггера
+
+### Неконкурентный запуск
+
+Аннотация, которая говорит что метод с аннотацией не должен выполняться параллельно.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @DisallowConcurrentExecution
+        @ScheduleWithCron(config = "job")
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @DisallowConcurrentExecution
+        @ScheduleWithCron(config = "job")
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+### Неизменное выполнение
+
+Аннотация, которая говорит обновить принудительно `org.quartz.JobDataMap` обновить во время выполнения и требует,
+чтобы планировщик повторно сохранил `org.quartz.JobDataMap` по завершении выполнения.
+
+Рекомендуется использовать совместно с аннотацией `@DisallowConcurrentExecution`,
+чтобы избежать конфликтов при хранении данных при одновременном выполнении задач.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @PersistJobDataAfterExecution
+        @ScheduleWithCron(config = "job")
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @PersistJobDataAfterExecution
+        @ScheduleWithCron(config = "job")
+        fun schedule() {
+            // do something
+        }
+    }
+    ```

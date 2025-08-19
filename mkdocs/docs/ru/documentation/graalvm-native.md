@@ -11,7 +11,7 @@ Kora создает свои вспомогательные классы во в
     Плагин `build.gradle`:
     ```groovy
     plugins {
-        id "org.graalvm.buildtools.native" version "0.10.4"
+        id "org.graalvm.buildtools.native" version "0.11.0"
     }
     ```
 
@@ -42,7 +42,7 @@ Kora создает свои вспомогательные классы во в
     Плагин `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.graalvm.buildtools.native") version("0.10.4")
+        id("org.graalvm.buildtools.native") version("0.11.0")
     }
     ```
 
