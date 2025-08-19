@@ -81,8 +81,8 @@ Kafka producers, database repositories and so on, but gives a huge performance a
     Configuration in `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
     }
 
     kotlin {
@@ -125,7 +125,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -144,8 +144,8 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     The minimum required configuration of the application will be presented below `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
         id("application")
     }
 
@@ -164,7 +164,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -190,7 +190,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -209,7 +209,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -265,7 +265,7 @@ which is provided by Gradle.
     ./gradlew distTar
     ```
 
-    Example of configured application can be seen [here](https://github.com/kora-projects/kora-java-crud-template/blob/master/build.gradle)
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-java-template/blob/master/build.gradle)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -273,8 +273,8 @@ which is provided by Gradle.
     ```groovy
     plugins {
         id("application")
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
     }
     ```
 
@@ -314,7 +314,7 @@ which is provided by Gradle.
     ./gradlew distTar
     ```
 
-    Example of configured application can be seen [here](https://github.com/kora-projects/kora-kotlin-crud-template/blob/master/build.gradle.kts)
+    Example of configured application can be seen [here](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts)
 
 ## Terminology
 

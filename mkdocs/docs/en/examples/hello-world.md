@@ -51,7 +51,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -66,8 +66,8 @@ Basic concepts and description of the framework can be read on the [main page](.
     `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
         id("application")
     }
 
@@ -88,7 +88,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -334,8 +334,8 @@ Now an optimal Json writer will be generated for our object, and we will see Jso
 
 === ":fontawesome-brands-java: `Java`"
 
-    You can create a new Java service by using [template on GitHub](https://github.com/kora-projects/kora-java-crud-template)
+    You can create a new Java service by using [template on GitHub](https://github.com/kora-projects/kora-java-template)
 
 === ":simple-kotlin: `Kotlin`"
 
-    You can create a new Kotlin service using [template on GitHub](https://github.com/kora-projects/kora-kotlin-crud-template).
+    You can create a new Kotlin service using [template on GitHub](https://github.com/kora-projects/kora-kotlin-template).

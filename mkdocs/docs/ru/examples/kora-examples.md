@@ -26,8 +26,8 @@ search:
 
 === ":fontawesome-brands-java: `Java`"
 
-    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-crud-template)
+    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-template)
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-crud-template)
+    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-template)

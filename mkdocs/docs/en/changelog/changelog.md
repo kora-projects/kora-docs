@@ -5,7 +5,46 @@ hide:
   - navigation
 ---
 
-## 1.1.31
+## 1.2.0
+
+Migration required:
+
+- Update OpenAPI generator plugin to `7.14.0`
+- If relying on `@JsonInclude(ALWAYS)` for `isNullable` and `NonRequired` fields in OpenAPI generator manually added in generator config `forceIncludeOptional = "true"` option
+
+Added:
+
+- Added virtual thread based executor for `Undertow` HTTP-server processing
+- Added `@DisallowConcurrentExecution` and `@PersistJobDataAfterExecution` annotations for Quartz jobs
+- Added `post-commit` and `post-rollback` callbacks for `JdbcConnectionFactory#inTx` method
+- Added HTTP client `@Cookie` parameters support
+- Added HTTP client processor should implement methods from super interfaces
+- Added Kora `JUnit` mockito session & report unused stubbing
+- Added OpenAPI generator behavior with remove `@JsonInclude(Always)` as default behavior since 1.1.13
+- Added OpenAPI generator `forceIncludeOptional` option to add `@JsonInclude(Always)` for `isNullable` and `NonRequired` fields in the OpenAPI generator
+- Added masking `Cookie/Set-Cookie` HTTP headers by default
+- Added Redis Lettuce factory `LettuceConfigurator` for client
+- Added Redis Lettuce metrics
+- Added more data providing for `@KafkaProducer` telemetry
+- Added HTTP client metric tags provider
+- Added gRPC client metric tags provider
+- Added Gradle incremental processing support
+- Added Kotlin KSP incremental processing support
+- Improved `@KafkaListener` & `@KafkaProducer` metrics
+- Improved resilient `@CircuitBreaker` logging and metrics
+- Updated all dependencies for their up-to-date versions
+
+Fixed:
+
+- Fixed `Cassandra` profiles should not require contact points in config
+- Fixed `@Embedded` non-primitive field accessors
+- Fixed OpenAPI generator failing `param:` annotation prefix for Kotlin
+- Fixed OpenAPI generator `Form` generation for non-String fields
+- Fixed method parameters preserve AOP annotations for generated classes
+- Fixed JUnit tests concurrent multiple graph initialization `System Properties` conflict
+- Fixed `@Validation` correct treating for `@NotNull` and `@Nullable` method signatures
+
+### 1.1.31
 
 Added:
 

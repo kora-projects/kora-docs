@@ -301,7 +301,8 @@ where when the `Validator<Foo>` validator is called, the validator for `Validato
 
 ### Result validation
 
-In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validate-annotations):
+In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validate-annotations).
+In order to check that the value is not `null`, you need to use any `@NotNull/@Nonnull` annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 

@@ -544,7 +544,10 @@
     1. Будет выполнено в рамках транзакции либо откатится если вся лямбра выкинет исключение
     2. Будет выполнено в рамках транзакции либо откатится если вся лямбра выкинет исключение
 
-Уровень изоляции берется из конфигурации `dsProperties` пула Hikari, 
+Транзакция считается успешно зафиксированной после выполнения метода, если метод не выбросил исключение.
+В случае если метод выбросил исключение, все изменения в БД в рамках транзакции не будут применены.
+
+Уровень изоляции транзакции берется из конфигурации `dsProperties` пула Hikari, 
 либо можно самостоятельно поменять его через `java.sql.Connection` перед выполнением запросов.
 
 ```java
@@ -584,6 +587,108 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
             return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
+                // do some work
+                listOf(one, two)
+            })
+        }
+    }
+    ```
+
+### После коммит действия
+
+В случае если требуется выполнить какие-либо действия после фиксации транзакции, 
+можно добавить соответствущие действия с помощью `addPostCommitAction`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final EntityRepository repository;
+
+        public SomeService(EntityRepository repository) {
+            this.repository = repository;
+        }
+
+        public List<Entity> saveAll(Entity one, Entity two) {
+            return repository.getJdbcConnectionFactory().inTx(connection -> {
+                var ccc = repository.getJdbcConnectionFactory().currentConnectionContext();
+                ccc.addPostCommitAction(conn) -> {
+                    // do some work
+                });
+
+                // do some work
+                return List.of(one, two);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val repository: EntityRepository) {
+
+        fun saveAll(one: Entity, two: Entity): List<Entity> {
+            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection -> 
+                val ccc = repository.jdbcConnectionFactory.currentConnectionContext()
+                ccc.addPostCommitAction { conn -> {
+                    // do some work   
+                }
+
+                // do some work
+                listOf(one, two)
+            })
+        }
+    }
+    ```
+
+### После откат действия
+
+В случае если требуется выполнить какие-либо действия после отката транзакции, 
+можно добавить соответствущие действия с помощью `addPostRollbackAction`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final EntityRepository repository;
+
+        public SomeService(EntityRepository repository) {
+            this.repository = repository;
+        }
+
+        public List<Entity> saveAll(Entity one, Entity two) {
+            return repository.getJdbcConnectionFactory().inTx(connection -> {
+                var ccc = repository.getJdbcConnectionFactory().currentConnectionContext();
+                ccc.addPostRollbackAction((conn, e) -> {
+                    // do some work
+                });
+
+                // do some work
+                return List.of(one, two);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val repository: EntityRepository) {
+
+        fun saveAll(one: Entity, two: Entity): List<Entity> {
+            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
+                val ccc = repository.jdbcConnectionFactory.currentConnectionContext()
+                ccc.addPostRollbackAction { conn, e ->
+                    // do some work   
+                }
+
                 // do some work
                 listOf(one, two)
             })

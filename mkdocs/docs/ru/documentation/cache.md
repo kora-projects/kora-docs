@@ -207,6 +207,51 @@
     2.  При чтении устанавливает время [expiration](https://redis.io/commands/getex/)
     3.  Префикс ключа в определенном кеше для избежания коллизий ключе в рамках Redis базы данных, может быть пустой строкой тогда ключи будут без префикса (**обязательный**)
 
+#### Донастройка
+
+Можно зарегистрировать `LettuceConfigurator` который позволит до настроить `Lettuce` клиент перед созданием.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyLettuceConfigurator implements LettuceConfigurator {
+        @Override
+        public DefaultClientResources.Builder configure(DefaultClientResources.Builder resouceBuilder) {
+            return resouceBuilder;
+        }
+
+        @Override
+        public ClusterClientOptions.Builder configure(ClusterClientOptions.Builder clusterBuilder) {
+            return clusterBuilder;
+        }
+
+        @Override
+        public ClientOptions.Builder configure(ClientOptions.Builder clientBuilder) {
+            return clientBuilder;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class MyLettuceConfigurator : LettuceConfigurator {
+
+        override fun configure(resouceBuilder: DefaultClientResources.Builder): DefaultClientResources.Builder {
+            return resouceBuilder
+        }
+
+        override fun configure(clusterBuilder: ClusterClientOptions.Builder): ClusterClientOptions.Builder {
+            return clusterBuilder
+        }
+
+        override fun configure(clientBuilder: ClientOptions.Builder): ClientOptions.Builder {
+            return clientBuilder
+        }
+    }
+    ```
+
 ## Использование
 
 Для создания кеша потребуется зарегистрировать типизированный `@Cache` контракт.
