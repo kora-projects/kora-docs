@@ -628,3 +628,71 @@ This involves creating your custom `trigger` based on the Quartz library and reg
 
     1. Trigger tag
     2. Trigger tag
+
+### Non-concurrent execution
+
+Annotation that says that a method with an annotation should not be executed in parallel.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @DisallowConcurrentExecution
+        @ScheduleWithCron(config = "job")
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @DisallowConcurrentExecution
+        @ScheduleWithCron(config = "job")
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+### Persistent execution
+
+Annotation that says to forcefully update `org.quartz.JobDataMap` during execution and requires
+the scheduler to resave `org.quartz.JobDataMap` upon completion of execution.
+
+It is recommended to use this annotation in conjunction with the `@DisallowConcurrentExecution` annotation
+to avoid conflicts when storing data during concurrent task execution.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @PersistJobDataAfterExecution
+        @ScheduleWithCron(config = "job")
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @PersistJobDataAfterExecution
+        @ScheduleWithCron(config = "job")
+        fun schedule() {
+            // do something
+        }
+    }
+    ```

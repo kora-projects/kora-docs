@@ -233,7 +233,7 @@
     }
     ```
 
-#### Тег
+### Тег
 
 Для внедрения зависимости которая имеет `@Tag`, требуется указать соответствующую аннотацию `@Tag` рядом с внедряемым аргументом:
 
@@ -263,7 +263,7 @@
     }
     ```
 
-#### Заглушки
+### Заглушки
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -271,7 +271,7 @@
 
     Требуется подключить библиотеку [Mockito](https://site.mockito.org/) как зависимость `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.17.0"
+    testImplementation "org.mockito:mockito-core:5.18.0"
     ```
 
     **Важно**, подразумевается что `MockitoExtension` не будет использоваться и будет отключен, нельзя совмещать его работу совместно с `@KoraAppTest`.
@@ -433,6 +433,60 @@
         @Test
         fun example() {
             assertEquals("?", component1.get())
+        }
+    }
+    ```
+
+#### Проверка заглушек
+
+Возможно проверять использование заглушек `Mockito` в тестах с помощью задания уровня проверки по средствам аннотации `@MockitoStrictness`.
+
+Работает аналогично `MockitoSession` и представляет собой имитацию сессии в рамках фреймворка Mockito, 
+которая обычно включает в себя выполнение одного тестового метода. 
+Она предоставляет механизм для управления жизненным циклом имитаций и обеспечения надлежащей очистки и проверки.
+
+Позволяет поддерживать строгие гарантии заглушек с помощью перечисления `Strictness`, 
+которое помогает выявлять неиспользуемые вызовы и потенциально выбрасывать исключение `UnnecessaryStubbingException` 
+или писать в лог предупреждения.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @MockitoStrictness(Strictness.STRICT_STUBS)
+    @KoraAppTest(Application.class)
+    class SomeTests {
+
+        @Mock
+        @TestComponent
+        private Supplier<String> component1;
+
+        @BeforeEach
+        void mock() {
+            Mockito.when(component1.get()).thenReturn("?");
+        }
+
+        @Test
+        void example() {
+            // component1.get() usage required
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @MockitoStrictness(Strictness.STRICT_STUBS)
+    @KoraAppTest(Application::class)
+    class SomeTests(@Mock @TestComponent val component1: Supplier<String>) {
+
+        @BeforeEach
+        fun mock() {
+            on { component1.get() } doReturn "?"
+        }
+
+        @Test
+        fun example() {
+            // component1.get() usage required
         }
     }
     ```

@@ -67,7 +67,7 @@ Example of the complete configuration described in the `CamundaRestConfig` class
                     stacktrace = true //(13)!
                     mask = "***" //(14)!
                     maskQueries = [ ] //(15)!
-                    maskHeaders = [ "authorization" ] //(16)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(16)!
                     pathTemplate = true //(17)!
                 }
                 metrics {
@@ -130,7 +130,7 @@ Example of the complete configuration described in the `CamundaRestConfig` class
             stacktrace: true #(13)!
             mask: "***" #(14)!
             maskQueries: [ ] #(15)!
-            maskHeaders: [ "authorization" ] #(16)!
+            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(16)!
             pathTemplate: true #(17)!
           metrics:
             enabled: true #(18)!

@@ -11,7 +11,7 @@ Example of building a native image using [plugin](https://graalvm.github.io/nati
     Plugin `build.gradle`:
     ```groovy
     plugins {
-        id "org.graalvm.buildtools.native" version "0.10.4"
+        id "org.graalvm.buildtools.native" version "0.11.0"
     }
     ```
 
@@ -42,7 +42,7 @@ Example of building a native image using [plugin](https://graalvm.github.io/nati
     Plugin `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.graalvm.buildtools.native") version("0.10.4")
+        id("org.graalvm.buildtools.native") version("0.11.0")
     }
     ```
 

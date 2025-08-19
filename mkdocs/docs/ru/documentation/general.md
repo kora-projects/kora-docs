@@ -81,8 +81,8 @@ Kafka продюсеров, репозиториев баз данных и та
     Конфигурация в `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
     }
 
     kotlin {
@@ -125,7 +125,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -145,8 +145,8 @@ Kafka продюсеров, репозиториев баз данных и та
     ```groovy
     plugins {
         id("application")
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
     }
 
     kotlin {
@@ -164,7 +164,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -190,7 +190,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -209,7 +209,7 @@ Kafka продюсеров, репозиториев баз данных и та
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -264,7 +264,7 @@ Kafka продюсеров, репозиториев баз данных и та
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-java-crud-template/blob/master/build.gradle)
+    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-java-template/blob/master/build.gradle)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -272,8 +272,8 @@ Kafka продюсеров, репозиториев баз данных и та
     ```groovy
     plugins {
         id("application")
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
     }
     ```
 
@@ -313,7 +313,7 @@ Kafka продюсеров, репозиториев баз данных и та
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-kotlin-crud-template/blob/master/build.gradle.kts)
+    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts)
 
 ## Терминология
 

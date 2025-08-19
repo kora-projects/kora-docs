@@ -51,7 +51,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.1.31")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.0")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
         implementation "ru.tinkoff.kora:http-server-undertow"
@@ -66,8 +66,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     `build.gradle.kts`:
     ```groovy
     plugins {
-        kotlin("jvm") version ("1.9.10")
-        id("com.google.devtools.ksp") version ("1.9.10-1.0.13")
+        kotlin("jvm") version ("1.9.25")
+        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
         id("application")
     }
 
@@ -88,7 +88,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.1.31"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.0"))
         ksp("ru.tinkoff.kora:symbol-processors")
 
         implementation("ru.tinkoff.kora:http-server-undertow")
@@ -334,8 +334,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 
 === ":fontawesome-brands-java: `Java`"
 
-    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-crud-template)
+    Создать новый Java сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-java-template)
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-crud-template)
+    Создать новый Kotlin сервис можно использовав [шаблон на GitHub](https://github.com/kora-projects/kora-kotlin-template)
