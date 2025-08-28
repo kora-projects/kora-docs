@@ -118,7 +118,7 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
         user = "admin" //(2)!
         password = "12345" //(3)!
         database = 1 //(4)!
-        protocol = "REP3" //(5)!
+        protocol = "RESP3" //(5)!
         socketTimeout = "15s" //(6)!
         commandTimeout = "15s" //(7)!
         ssl {
@@ -150,7 +150,7 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
       user: "admin" #(2)!
       password: "12345" #(3)!
       database: 1 #(4)!
-      protocol: "REP3" #(5)!
+      protocol: "RESP3" #(5)!
       socketTimeout: "15s" #(6)!
       commandTimeout: "15s" #(7)!
       ssl:

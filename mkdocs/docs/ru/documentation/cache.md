@@ -118,7 +118,7 @@
         user = "admin" //(2)!
         password = "12345" //(3)!
         database = 0 //(4)!
-        protocol = "REP3" //(5)!
+        protocol = "RESP3" //(5)!
         socketTimeout = "10s" //(6)!
         commandTimeout = "60s" //(7)!
         ssl {
@@ -150,7 +150,7 @@
       user: "admin" #(2)!
       password: "12345" #(3)!
       database: 0 #(4)!
-      protocol: "REP3" #(5)!
+      protocol: "RESP3" #(5)!
       socketTimeout: "10s" #(6)!
       commandTimeout: "60s" #(7)!
       ssl:
