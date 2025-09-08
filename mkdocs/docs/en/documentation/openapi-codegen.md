@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.0")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.2")
         }
     }
     ```
@@ -29,7 +29,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.0")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.2")
         }
     }
     ```
@@ -175,86 +175,56 @@ In order to do this, set the `configOptions.interceptors` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    def openApiGenerateHttpClient = tasks.register("openApiGenerateHttpClient", GenerateTask) {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        def corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = [
-            DISABLE_ALL: "true"
-        ]
-        configOptions = [
-            mode: "java-client",
-            interceptors: """
+    configOptions = [
+        mode: "java-client",
+        interceptors: """
+                {
+                  "*": [
                     {
-                      "*": [
-                        {
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ],
-                      "pet": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor"
-                        }
-                      ],
-                      "shop": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor",
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ]
+                      "tag": "ru.tinkoff.example.MyTag"
                     }
-                    """
-        ]
-    }
-    sourceSets.main { java.srcDirs += openApiGenerateHttpClient.get().outputDir }
-    compileJava.dependsOn openApiGenerateHttpClient
+                  ],
+                  "pet": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor"
+                    }
+                  ],
+                  "shop": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor",
+                      "tag": "ru.tinkoff.example.MyTag"
+                    }
+                  ]
+                }
+                """
+    ]
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    val openApiGenerateHttpClient = tasks.register<GenerateTask>("openApiGenerateHttpClient") {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        val corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = mapOf(
-            "DISABLE_ALL" to "true"
-        )
-        configOptions = mapOf(
-            "mode" to "kotlin-client",
-            "interceptors" to """{
-                      "*": [
-                        {
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ],
-                      "pet": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor"
-                        }
-                      ],
-                      "shop": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor",
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ]
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "interceptors" to """{
+                  "*": [
+                    {
+                      "tag": "ru.tinkoff.example.MyTag"
                     }
-                    """
-        )
-    }
-    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpClient.get().outputDir) }
-    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpClient) }
+                  ],
+                  "pet": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor"
+                    }
+                  ],
+                  "shop": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor",
+                      "tag": "ru.tinkoff.example.MyTag"
+                    }
+                  ]
+                }
+                """
+    )
     ```
 
 ### Tags
@@ -267,72 +237,40 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    def openApiGenerateHttpClient = tasks.register("openApiGenerateHttpClient", GenerateTask) {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        def corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = [
-            DISABLE_ALL: "true"
-        ]
-        configOptions = [
-            mode: "java-client",
-            clientConfigPrefix: "httpClient.myclient",
-            tags: """
-                  {
-                    "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
-                      "httpClientTag": "some.tag.Common",
-                      "telemetryTag": "some.tag.Common"
-                    },
-                    "instrument": { // применится для instrument
-                      "httpClientTag": "some.tag.Instrument",
-                      "telemetryTag": "some.tag.Instrument"
-                    }
-                  }
-                  """
-        ]
-    }
-    sourceSets.main { java.srcDirs += openApiGenerateHttpClient.get().outputDir }
-    compileJava.dependsOn openApiGenerateHttpClient
+    configOptions = [
+        mode: "java-client",
+        tags: """
+              {
+                "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                  "httpClientTag": "some.tag.Common",
+                  "telemetryTag": "some.tag.Common"
+                },
+                "instrument": { // применится для instrument
+                  "httpClientTag": "some.tag.Instrument",
+                  "telemetryTag": "some.tag.Instrument"
+                }
+              }
+              """
+    ]
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    val openApiGenerateHttpClient = tasks.register<GenerateTask>("openApiGenerateHttpClient") {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        val corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = mapOf(
-            "DISABLE_ALL" to "true"
-        )
-        configOptions = mapOf(
-            "mode" to "kotlin-client",
-            "clientConfigPrefix" to "httpClient.myclient",
-            "tags" to """{
-                            "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
-                              "httpClientTag": "some.tag.Common",
-                              "telemetryTag": "some.tag.Common"
-                            },
-                            "instrument": { // применится для instrument
-                              "httpClientTag": "some.tag.Instrument",
-                              "telemetryTag": "some.tag.Instrument"
-                            }
-                         }
-                         """
-        )
-    }
-    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpClient.get().outputDir) }
-    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpClient) }
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "tags" to """{
+                        "*": { // применится для всех тегов, кроме явно указанных (в данном случае instrument)
+                          "httpClientTag": "some.tag.Common",
+                          "telemetryTag": "some.tag.Common"
+                        },
+                        "instrument": { // применится для instrument
+                          "httpClientTag": "some.tag.Instrument",
+                          "telemetryTag": "some.tag.Instrument"
+                        }
+                     }
+                     """
+    )
     ```
 
 ## Server
@@ -443,25 +381,10 @@ In order to generate models and controllers with annotations from the [validatio
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    def openApiGenerateHttpServer = tasks.register("openApiGenerateHttpServer", GenerateTask) {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        def corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = [
-            DISABLE_ALL: "true"
-        ]
-        configOptions = [
-            mode: "java-server",
-            enableServerValidation: "true"  //(1)!
-        ]
-    }
-    sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir }
-    compileJava.dependsOn openApiGenerateHttpServer
+    configOptions = [
+        mode: "java-server",
+        enableServerValidation: "true"  //(1)!
+    ]
     ```
 
     1. Enabling validation on the HTTP server controller side
@@ -469,25 +392,10 @@ In order to generate models and controllers with annotations from the [validatio
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    val openApiGenerateHttpServer = tasks.register<GenerateTask>("openApiGenerateHttpServer") {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        val corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = mapOf(
-            "DISABLE_ALL" to "true"
-        )
-        configOptions = mapOf(
-            "mode" to "kotlin-server",
-            "enableServerValidation" to "true" //(1)!
-        )
-    }
-    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpServer.get().outputDir) }
-    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpServer) }
+    configOptions = mapOf(
+        "mode" to "kotlin-server",
+        "enableServerValidation" to "true" //(1)!
+    )
     ```
 
     1. Enabling validation on the HTTP server controller side
@@ -507,86 +415,56 @@ In order to do this, set the `configOptions.interceptors` parameter:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    def openApiGenerateHttpServer = tasks.register("openApiGenerateHttpServer", GenerateTask) {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        def corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = [
-            DISABLE_ALL: "true"
-        ]
-        configOptions = [
-            mode: "java-server",
-            interceptors: """
+    configOptions = [
+        mode: "java-server",
+        interceptors: """
+                {
+                  "*": [
                     {
-                      "*": [
-                        {
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ],
-                      "pet": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor"
-                        }
-                      ],
-                      "shop": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor",
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ]
+                      "tag": "ru.tinkoff.example.MyTag"
                     }
-                    """
-        ]
-    }
-    sourceSets.main { java.srcDirs += openApiGenerateHttpServer.get().outputDir }
-    compileJava.dependsOn openApiGenerateHttpServer
+                  ],
+                  "pet": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor"
+                    }
+                  ],
+                  "shop": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor",
+                      "tag": "ru.tinkoff.example.MyTag"
+                    }
+                  ]
+                }
+                """
+    ]
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```groovy
-    val openApiGenerateHttpServer = tasks.register<GenerateTask>("openApiGenerateHttpServer") {
-        generatorName = "kora"
-        group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        val corePackage = "ru.tinkoff.kora.example.openapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
-        openapiNormalizer = mapOf(
-            "DISABLE_ALL" to "true"
-        )
-        configOptions = mapOf(
-            "mode" to "kotlin-server",
-            "interceptors" to """{
-                      "*": [
-                        {
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ],
-                      "pet": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor"
-                        }
-                      ],
-                      "shop": [
-                        {
-                          "type": "ru.tinkoff.example.MyInterceptor",
-                          "tag": "ru.tinkoff.example.MyTag"
-                        }
-                      ]
+    configOptions = mapOf(
+        "mode" to "kotlin-server",
+        "interceptors" to """{
+                  "*": [
+                    {
+                      "tag": "ru.tinkoff.example.MyTag"
                     }
-                    """
-        )
-    }
-    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateHttpServer.get().outputDir) }
-    tasks.withType<KspTask> { dependsOn(openApiGenerateHttpServer) }
+                  ],
+                  "pet": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor"
+                    }
+                  ],
+                  "shop": [
+                    {
+                      "type": "ru.tinkoff.example.MyInterceptor",
+                      "tag": "ru.tinkoff.example.MyTag"
+                    }
+                  ]
+                }
+                """
+    )
     ```
 
 ### Authorization
