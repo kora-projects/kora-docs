@@ -5,6 +5,31 @@ hide:
   - navigation
 ---
 
+## 1.2.2
+
+Added:
+
+- Added HTTP-server controller `@Tag` propagation support 
+- Added `Redis` option `forceCluster` for single URI connection
+
+Fixed:
+
+- Fixed `Opentelemetry` gRPC exporter dependency for `OkHttp` client 
+- Fixed OpenAPI generator `Form` generation for `byte[]` args 
+- Fixed OpenAPI generator improve `discriminator` parent model 
+- Fixed OpenAPI generator `Validation` for inner models 
+- Fixed OpenAPI generator `Kotlin` nullable items
+- Fixed `Undertow` HttpServer check for `Virtual Threads` enabled 
+- Improved some exception messages, logging
+
+### 1.2.1
+
+Fixed:
+
+- Fixed `JDBC` connection context shared when multiple DataSources registered
+- Fixed `Tracing` missing `OK` status in most of the modules
+- Fixed `OpentelemetryContext` NPE occurred for not Span context
+
 ## 1.2.0
 
 Migration required:

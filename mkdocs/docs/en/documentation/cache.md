@@ -118,12 +118,13 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
         user = "admin" //(2)!
         password = "12345" //(3)!
         database = 1 //(4)!
-        protocol = "REP3" //(5)!
+        protocol = "RESP3" //(5)!
         socketTimeout = "15s" //(6)!
         commandTimeout = "15s" //(7)!
+        forceCluster = "false" //(8)!
         ssl {
-            ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(8)!
-            handshakeTimeout = "10s" //(9)!
+            ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
+            handshakeTimeout = "10s" //(10)!
         } 
     }
     ```
@@ -139,8 +140,9 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
-    8. Ciphers algorithms to use for secure connections between client and server (optional)
-    9. Timeout for establishing a secure connection between client and server (optional)
+    8. Force cluster connection even if 1 URI is specified (optional)
+    9. Ciphers algorithms to use for secure connections between client and server (optional)
+    10. Timeout for establishing a secure connection between client and server (optional)
  
 === ":simple-yaml: `YAML`"
 
@@ -150,13 +152,14 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
       user: "admin" #(2)!
       password: "12345" #(3)!
       database: 1 #(4)!
-      protocol: "REP3" #(5)!
+      protocol: "RESP3" #(5)!
       socketTimeout: "15s" #(6)!
       commandTimeout: "15s" #(7)!
+      forceCluster: false #(8)!
       ssl:
         ciphers:
-          - "TLS_CHACHA20_POLY1305_SHA256" #(8)!
-        handshakeTimeout: "10s" #(9)!
+          - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
+        handshakeTimeout: "10s" #(10)!
     ```
 
     1. URI to connect to Redis (**required**)
@@ -170,8 +173,9 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
     5. Protocol for connection
     6. Connection timeout
     7. Command execution timeout
-    8. Ciphers algorithms to use for secure connections between client and server (optional)
-    9. Timeout for establishing a secure connection between client and server (optional)
+    8. Force cluster connection even if 1 URI is specified (optional)
+    9. Ciphers algorithms to use for secure connections between client and server (optional)
+    10. Timeout for establishing a secure connection between client and server (optional)
 
 Redis cache configurations configure the behavior of a particular cache.
 

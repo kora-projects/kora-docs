@@ -159,21 +159,73 @@
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var context = Context.current();
-    var telemetryContext = OpentelemetryContext.get(context);
-    var newSpan = this.tracer.spanBuilder("some-span")
-        .setParent(telemetryContext.getContext())
-        .build();
+    @Component
+    public final class MyService {
+
+        private final io.opentelemetry.api.trace.Tracer tracer;
+
+        public MyService(Tracer tracer) {
+            this.tracer = tracer;
+        }
+
+        public String doTraceWork() {
+            var ctx = ru.tinkoff.kora.common.Context.current();
+            var otctx = OpentelemetryContext.get(ctx);
+            var span = tracer.spanBuilder("myOperation")
+                    .setParent(otctx.getContext())
+                    .startSpan();
+
+            OpentelemetryContext.set(ctx, otctx.add(span));
+            try {
+                var result = doWork();
+                span.setStatus(StatusCode.OK);
+                return result;
+            } catch (Exception e) {
+                span.recordException(e);
+                span.setStatus(StatusCode.ERROR, e.getMessage());
+                throw e;
+            } finally {
+                span.end();
+                OpentelemetryContext.set(ctx, otctx);
+            }
+        }
+
+        public String doWork() {
+            // do some work
+        }
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val context = Context.current();
-    val telemetryContext = OpentelemetryContext.get(context);
-    val newSpan = this.tracer.spanBuilder("some-span")
-        .setParent(telemetryContext.getContext())
-        .build();
+    @Component
+    class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
+
+        fun doTraceWork(): String {
+            val ctx = ru.tinkoff.kora.common.Context.current()
+            val otctx = OpentelemetryContext.get(ctx)
+            val span = tracer.spanBuilder("myOperation")
+                .setParent(otctx.getContext())
+                .startSpan()
+
+            OpentelemetryContext.set(ctx, otctx.add(span))
+            try {
+                val result = doWork()
+                span.setStatus(StatusCode.OK)
+                return result
+            } catch (e: Exception) {
+                span.recordException(e)
+                span.setStatus(StatusCode.ERROR, e.message)
+                throw e
+            } finally {
+                span.end()
+                OpentelemetryContext.set(ctx, otctx)
+            }
+        }
+
+        fun doWork(): String = // do some work
+    }
     ```
 
 ## Получение трассировки
