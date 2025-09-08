@@ -28,17 +28,19 @@ This also allows effectively use horizontal scaling practices
 and maximize resource utilization not only within the application, but also within the entire cluster.
 Kora assumes exactly one most efficient solution per problem, uses and encourages approaches
 that guide the developer to write clear and efficient code.
-All of this makes the entire development team efficient and allows the context to be offloaded
-from the developer's head into understandable code that is easy to write, and subsequently read and maintain.
+This utilization not only reduces infrastructure costs, but also significantly increases the stability of your services
+in the event of sudden peak loads and improves the processing time of user requests.
+Source code creation approach allows for dependency container checking at compile time 
+and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
 
 `Transparency` - Kora generates human-readable source code at compile time 
 with fine-grained abstractions and free aspects, which leads to high readability of code
 and a developer's understanding of the underlying mechanisms of the framework if required with no black box effect.
 High readability, one most effective solution per problem, familiar high-level abstractions, 
 all this gives transparency in the understanding of the code base on the part of the whole development team 
-and makes it easy to immerse new developers, especially interns.
-Also, the source code creation approach allows for dependency container checking at compile time 
-and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
+and makes it easy to immerse new developers, especially interns. Developers are given the opportunity to understand and control
+how to work with the development tool, which allows them to use it effectively and not waste unnecessary time studying/learning
+and memorizing tricky techniques for working with the framework.
 
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
 makes it easy to learn framework without the need for developers to spend years memorizing the “guts and intricacies of the framework”.
@@ -50,8 +52,10 @@ but rather encourages the use of small and simple abstraction to solve small pro
 Subsequently, the aggregate of these simple abstractions can eventually solve large complex problems,
 but are not difficult to understand when viewed in isolation,
 without putting undue mental strain on the developer.
-Together, transparency and simplicity allow you to greatly increase the productivity of development,
-not only the programmer individually, but the entire development team.
+Kora implies exactly one most effective solution to one problem,
+uses and encourages approaches that guide developers to write clear and effective code.
+This simplifies development and increases the efficiency of the entire development team,
+allowing developers to transfer context from their heads into clear code that is easy to write, read and maintain.
 
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
