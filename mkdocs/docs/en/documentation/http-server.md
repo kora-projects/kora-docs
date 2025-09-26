@@ -1,6 +1,14 @@
 Module provides a thin layer of abstraction over HTTP server libraries to create HTTP request handlers
 using both declarative-style annotations and imperative-style annotations.
 
+???+ warning “Tip”
+
+    **We recommend** using an approach where OpenAPI file is primary contract
+    and controllers are created from it using a OpenAPI generator. 
+    This approach allows you to achieve consistency between the consumer and owner of the contract
+    and allows you to share this contract to create clients for it using the same approach. 
+    For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
+
 ## Dependency
 
 Implementation based on [Undertow](https://undertow.io/).
