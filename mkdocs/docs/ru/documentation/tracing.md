@@ -151,10 +151,42 @@
 
 Параметры конфигурации сбора трассировки описываются в модулях в которых присутствует сбор трассировки, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md) и т.д.
 
-## Императивная трассировка
+## Контекст трассировки
 
-Помимо автоматически создаваемых спанов вы можете пользоваться объектом `Tracer` из контейнера. 
-Создать спан с текущим в parent можно следующим образом:
+Чтобы получить текущий `Span` трассировки можно использовать метод `getSpan` у `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getSpan();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getSpan();
+    ```
+
+Для получения текущего идентификатора трассировки можно использовать метод `getTraceId()` у `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var traceId = OpentelemetryContext.getTraceId();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val traceId = OpentelemetryContext.getTraceId();
+    ```
+
+## Синхронная трассировка
+
+Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer` 
+из контейнера для создания своих трассировок.
+
+Создать трассировку синхронного кода от текущего родительского можно следующим образом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -228,33 +260,87 @@
     }
     ```
 
-## Получение трассировки
+## Асинхронная трассировка
 
-Чтобы получить текущий `Span` трассировки можно использовать метод `getSpan` у `OpentelemetryContext`:
+Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer`
+из контейнера для создания своих трассировок. Главная сложность заключается в прокидывании `Fork`'а контекста 
+в другой поток исполнения, для корректной работы трассировки.
+
+Создать трассировку асинхронного кода от текущего родительского можно следующим образом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
+    Пример показан для `CompletableStage` асинхронного подхода:
+    
     ```java
-    var span = OpentelemetryContext.getSpan();
+    @Component
+    public final class MyService {
+
+        private final io.opentelemetry.api.trace.Tracer tracer;
+
+        public MyService(Tracer tracer) {
+            this.tracer = tracer;
+        }
+
+        public CompletionStage<String> doTraceWork() {
+            var ctx = ru.tinkoff.kora.common.Context.current().fork();
+            var otctx = OpentelemetryContext.get(ctx);
+            var span = tracer.spanBuilder("myOperation")
+                    .setParent(otctx.getContext())
+                    .startSpan();
+
+            return CompletableFuture.supplyAsync(() -> {
+                        OpentelemetryContext.set(ctx, otctx.add(span));
+                        var result = doWork();
+                        return result;
+                    })
+                    .whenComplete((r, e) -> {
+                        if (e != null) {
+                            span.recordException(e);
+                            span.setStatus(StatusCode.ERROR, e.getMessage());
+                        } else {
+                            span.setStatus(StatusCode.OK);
+                        }
+                        span.end();
+                    });
+        }
+
+        public String doWork() {
+            // do some work
+        }
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin
-    val span = OpentelemetryContext.getSpan();
-    ```
-
-Для получения текущего идентификатора трассировки можно использовать метод `getTraceId()` у `OpentelemetryContext`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    var span = OpentelemetryContext.getTraceId();
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
+    Пример показан для `suspend` асинхронного подхода:
 
     ```kotlin
-    val span = OpentelemetryContext.getTraceId();
-    ```
+    @Component
+    class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
 
+        fun doTraceWork(): String {
+            val ctx = ru.tinkoff.kora.common.Context.current()
+            val otctx = OpentelemetryContext.get(ctx)
+            val span = tracer.spanBuilder("myOperation")
+                .setParent(otctx.getContext())
+                .startSpan()
+
+            OpentelemetryContext.set(ctx, otctx.add(span))
+            try {
+                val result = doWork()
+                span.setStatus(StatusCode.OK)
+                return result
+            } catch (e: Exception) {
+                span.recordException(e)
+                span.setStatus(StatusCode.ERROR, e.message)
+                throw e
+            } finally {
+                span.end()
+                OpentelemetryContext.set(ctx, otctx)
+            }
+        }
+
+        fun doWork(): String = // do some work
+    }
+    ```

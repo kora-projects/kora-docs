@@ -501,7 +501,7 @@ For example, when you have different Read API and Write API applications with co
 which may be required as part of testing one and the other.
 Or, you may need some save/delete/update functions just for testing as a quick test utility.
 
-????+ warning “Recommendation”
+???+ warning "Recommendation"
 
     **Highly Recommend Testing** applications as a [black box](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java)
     and rely on this approach as the primary source of truth and correctness of the application.

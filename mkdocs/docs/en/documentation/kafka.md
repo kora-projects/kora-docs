@@ -213,8 +213,37 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
 `subscribe` strategy involves the use of [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/),
 to group the executors so that they do not duplicate the reading of records from their queue across multiple application instances.
 
-In the case where you want each application instance to read messages from a topic at the same time as the others, the `assign` strategy is supposed to be used,
-to do this you simply **don't specify** `group.id` in the consumer configuration, but in this strategy you can only specify 1 topic at a time.
+Example of `subscribe` strategy configuration:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    kafka {
+        someConsumer {
+            topics: "first"
+            driverProperties {
+              "group.id": "my-group-id"
+              "bootstrap.servers": "localhost:9093"
+            }
+        }
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    kafka:
+      someConsumer:
+        topics: "first"
+        driverProperties:
+          "group.id": "my-group-id"
+          "bootstrap.servers": "localhost:9093"
+    ```
+
+`assign` connection strategy implies that each instance of the application reads messages from the topic simultaneously with others,
+i.e., messages are duplicated between all instances of the application within the topic.
+To use this strategy, simply **do not specify** `group.id` in the consumer configuration.
+However, only one topic can be specified at a time in this strategy.
 
 Example of `assign` strategy configuration:
 
@@ -1074,3 +1103,88 @@ It is also possible to manually perform all manipulations with `KafkaProducer`:
     1. Transaction identifier prefix
     2. Connection set size for transactions
     3. Maximum transaction waiting time
+
+### Сигнатуры
+
+Signatures available for Kafka producer methods out of the box, where `K` refers to the key type and `V` refers to the message value type.
+
+Allows sending `value` (required), `key` (optional), and `headers` (optional) from `ProducerRecord`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        void send(K key, V value, Headers headers);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(key: K, value: V, headers: Headers)
+    } 
+    ```
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Result of the `RecordMetadata` operation can be either `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>`:
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        RecordMetadata send(V value);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        Future<RecordMetadata> sendFuture(V value);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        CompletionStage<RecordMetadata> sendStage(V value);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    You can get it as a result of the `RecordMetadata` operation or have the `suspend` modifier:
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: V): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        suspend fun sendSuspend(value: V): RecordMetadata
+    } 
+    ```
+
+It is possible to send `ProducerRecord` and `Callback` (optional) and combine response signatures:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+          void send(ProducerRecord<K, V> record, Callback callback);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        fun send(record: ProducerRecord<K, V>, callback: Callback)
+    }
+    ```

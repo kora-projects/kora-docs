@@ -17,7 +17,7 @@ nav:
       - Mapping:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
-      - Monitoring:
+      - Observability:
         - Probes: documentation/probes.md
         - Logging: documentation/logging-slf4j.md
         - Metrics: documentation/metrics.md
@@ -154,6 +154,7 @@ plugins:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
       lang:
         - en
+  - glightbox               # https://squidfunk.github.io/mkdocs-material/reference/images/#lightbox
 
 
 # Extensions

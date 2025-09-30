@@ -213,8 +213,37 @@
 `subscribe` стратегия подразумевает использование [group.id](https://medium.com/@kirill.sereda/kafka-%D0%B4%D0%BB%D1%8F-%D1%81%D0%B0%D0%BC%D1%8B%D1%85-%D0%BC%D0%B0%D0%BB%D0%B5%D0%BD%D1%8C%D0%BA%D0%B8%D1%85-f42864cb1bfb),
 чтобы объединить исполнителей в группы и они не дублировали вычитывание записей из своей очереди в рамках нескольких экземпляров приложений.
 
-В случае же если надо чтобы каждый экземпляр приложения читал сообщения из топика одновременно с другими, предполагается использовать `assign` стратегию,
-для этого надо просто **не указывать** `group.id` в конфигурации потребителя, но в такой стратегии можно указать одновременно лишь 1 топик.
+Пример конфигурации `subscribe` стратегии:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    kafka {
+        someConsumer {
+            topics: "first"
+            driverProperties {
+              "group.id": "my-group-id"
+              "bootstrap.servers": "localhost:9093"
+            }
+        }
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    kafka:
+      someConsumer:
+        topics: "first"
+        driverProperties:
+          "group.id": "my-group-id"
+          "bootstrap.servers": "localhost:9093"
+    ```
+
+`assign` стратегия подключения подразумевает, что каждый экземпляр приложения читает сообщения из топика одновременно с другими,
+то есть сообщения дублируются между всеми экземплярами приложения в рамках топика.
+Для использования такой стратегии надо просто **не указывать** `group.id` в конфигурации потребителя, 
+но в такой стратегии можно указать одновременно лишь 1 топик.
 
 Пример конфигурации `assign` стратегии:
 
@@ -328,7 +357,7 @@
     }
     ```
 
-Для обработчиков, не использующих ключ, по умолчанию используется `Deserializer<byte[]>` т.к. он просто возвращает не обработанные байты.
+Для потребителей, не использующих ключ, по умолчанию используется `Deserializer<byte[]>` т.к. он просто возвращает не обработанные байты.
 
 ### Обработка исключений
 
@@ -392,7 +421,8 @@
 
 #### Ошибки десериализации
 
-Если вы используете сигнатуру с `ConsumerRecord` или `ConsumerRecords`, то вы получите исключение десериализации значения в момент вызова методов `key` или `value`.
+Если вы используете сигнатуру с `ConsumerRecord` или `ConsumerRecords`, 
+то вы получите исключение десериализации значения в момент вызова методов `key()` или `value()` у события.
 В этот момент стоит его обработать нужным вам образом.
 
 Выбрасываются следующие исключения:
@@ -402,8 +432,9 @@
 
 Из этих исключений можно получить сырой `ConsumerRecord<byte[], byte[]>`.
 
-Если вы используете сигнатуру с распакованными `key`/`value`/`headers`, то можно добавить последним аргументом `Exception`, `Throwable`, `RecordKeyDeserializationException`
-или `RecordValueDeserializationException`.
+Если вы используете сигнатуру с распакованными `key`/`value`/`headers`, 
+то можно добавить последним аргументом `Exception`, `Throwable`, `RecordKeyDeserializationException` или `RecordValueDeserializationException`,
+для обработки таких ошибок.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -527,7 +558,7 @@ public KafkaSubscribeConsumerContainer(KafkaListenerConfig config,
                                        BaseKafkaRecordsHandler<K, V> handler)
 ```
 
-`BaseKafkaRecordsHandler<K,V>` это базовый функциональный интерфейс обработчика:
+`BaseKafkaRecordsHandler<K,V>` это базовый функциональный интерфейс потребителя:
 ```java
 @FunctionalInterface
 public interface BaseKafkaRecordsHandler<K, V> {
@@ -539,21 +570,19 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Доступные сигнатуры для методов Kafka потребителя из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 
-Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт каждое событие по отдельности в обработчик.
-Обработчик принимает `value` (обязательный), `key` (опционально), `Headers` (опционально) от `ConsumerRecord`,
-`Exception` (опционально) в случае ошибки сериализации/соединения и после обработки **каждого** события вызывается `commitSync()`:
+Работа потребителя начинается с вызова `poll()` для пачки `ConsumerRecords<K, V>`, каждое событие по аргументам передается в потребителя.
+Потребитель может принимать `value` (обязательный), `key` (опциональный), `Headers` (опциональный) аргумент от `ConsumerRecord<K, V>`,
+после обработки **каждого** события вызывается `commitSync()`.
+
+Учитывайте что при использовании такой сигнатуры в случае ошибки чтения ключа/значения потребитель уйдет 
+в бесконечный цикл повторных вычитываний без фиксации текущего сдвига по топику.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("kafka.someConsumer")
     void process(K key, V value, Headers headers) {
-        // some handler code
-    }
-
-    @KafkaListener("kafka.someOtherConsumer")
-    void process(@Nullable V value, @Nullable Exception exception) {
-        // some handler code
+        // some value handling work
     }
     ```
 
@@ -562,17 +591,46 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```kotlin
     @KafkaListener("kafka.someConsumer")
     fun process(key: K, value: V, headers: Headers) {
-        // some handler code
-    }
-
-    @KafkaListener("kafka.someOtherConsumer")
-    fun process(value: V?, exception: Exception?) {
-        // some handler code
+        // some value handling work
     }
     ```
 
-Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт каждое событие по отдельности в обработчик.
-Обработчик принимает `ConsumerRecord` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
+Рекомендуется дополнительно использовать в потребителе аргумент `Exception` (опциональный), 
+который будет сигнализировать о случаях ошибки чтения ключа/значения.
+
+Учитывайте что в таком случае все значения становятся опциональными, т.к. может вернуться либо результат, либо ошибка.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someOtherConsumer")
+    void process(@Nullable V value, @Nullable Exception exception) {
+        if(exception != null) {
+            // do deserialization handling work
+        } else {
+            // some value handling work
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someOtherConsumer")
+    fun process(value: V?, exception: Exception?) {
+        if(exception != null) {
+            // do deserialization handling work
+        } else {
+            // some value handling work
+        }
+    }
+    ```
+
+Возможно также принимать аргументом `ConsumerRecord<K, V>`, в таком случае ошибка чтения ключа/значения 
+может быть выброшена при обращении к методам `key()`/`value()` у события.
+
+Работа потребителя начинается с вызова `poll()` для пачки `ConsumerRecords<K, V>` и передаёт каждое событие `ConsumerRecord<K, V>` по отдельности в потребителя.
+Потребитель принимает `ConsumerRecord` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
 и после обработки **каждого** события вызывается `commitSync()`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -580,7 +638,16 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```java
     @KafkaListener("kafka.someConsumer")
     void process(ConsumerRecord<K, V> record) {
-        // some handler code
+        try {
+            var key = record.key();
+            var value = record.value();
+
+            // some value handling work
+        } catch (RecordKeyDeserializationException e) {
+            // do deserialization handling work
+        } catch (RecordValueDeserializationException e) {
+            // do deserialization handling work
+        }
     }
     ```
 
@@ -589,12 +656,23 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```kotlin
     @KafkaListener("kafka.someConsumer")
     fun process(record: ConsumerRecord<K, V>) {
-        // some handler code
+        try {
+            val key = record.key()
+            val value = record.value()
+
+            // some value handling work
+        } catch (e: RecordKeyDeserializationException) {
+            // do deserialization handling work
+        } catch (e: RecordValueDeserializationException) {
+            // do deserialization handling work
+        }
     }
     ```
 
-Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт всю пачку событий в обработчик.
-Обработчик принимает `ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
+Возможно также принимать аргументом `ConsumerRecords<K, V>` и обрабатывать всю пачку самостоятельно.
+
+Вызывается `poll()` для пачки `ConsumerRecords<K, V>` и передаёт всю пачку событий в потребитель.
+Потребитель принимает `ConsumerRecords` и `KafkaConsumerRecordsTelemetryContext`/`KafkaConsumerRecordTelemetryContext` (опционально)
 и после обработки **всей пачки** событий вызывается `commitSync()`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -602,7 +680,18 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```java
     @KafkaListener("kafka.someConsumer")
     void process(ConsumerRecords<K, V> record) {
-        // some handler code
+        for (var record : records) {
+            try {
+                var key = record.key();
+                var value = record.value();
+
+                // some value handling work
+            } catch (RecordKeyDeserializationException e) {
+                // do deserialization handling work
+            } catch (RecordValueDeserializationException e) {
+                // do deserialization handling work
+            }
+        }
     }
     ```
 
@@ -611,18 +700,43 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```kotlin
     @KafkaListener("kafka.someConsumer")
     fun process(record: ConsumerRecords<K, V>) {
-        // some handler code
+        for (record in records) {
+            try {
+                val key = record.key()
+                val value = record.value()
+
+                // some value handling work
+            } catch (e: RecordKeyDeserializationException) {
+                // do deserialization handling work
+            } catch (e: RecordValueDeserializationException) {
+                // do deserialization handling work
+            }
+        }
     }
     ```
 
-В случае если аргументом принимается `Consumer<K, V>`, то `commit` нужно **вызывать самостоятельно**.
+Можно также контролировать самостоятельно, как и когда вызывать фиксацию сдвига по топику у потребителя.
+Такая сигнатура доступна как для одного события, так и для пачки событий.
+
+В случае если аргументом принимается `Consumer<K, V>`, то `commit` всегда нужно **вызывать самостоятельно**.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KafkaListener("kafka.someConsumer")
     void process(ConsumerRecord<K, V> record, Consumer<K, V> consumer) {
-        // some handler code
+        try {
+            var key = record.key();
+            var value = record.value();
+
+            // some value handling work
+        } catch (RecordKeyDeserializationException e) {
+            // do deserialization handling work
+        } catch (RecordValueDeserializationException e) {
+            // do deserialization handling work
+        } finally {
+            consumer.commitSync()
+        }
     }
     ```
 
@@ -631,7 +745,18 @@ public interface BaseKafkaRecordsHandler<K, V> {
     ```kotlin
     @KafkaListener("kafka.someConsumer")
     fun process(record: ConsumerRecord<K, V>, consumer: Consumer<K, V>) {
-        // some handler code
+        try {
+            val key = record.key()
+            val value = record.value()
+
+            // some value handling work
+        } catch (e: RecordKeyDeserializationException) {
+            // do deserialization handling work
+        } catch (e: RecordValueDeserializationException) {
+            // do deserialization handling work
+        } finally {
+            consumer.commitSync()
+        }
     }
     ```
 
@@ -660,12 +785,12 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-Параметр аннотации указывает на путь до конфигурации.
+Параметр аннотации указывает на путь до конфигурации продюсера.
 
 ### Топик
 
-В случае если требуется использовать типизированные контракты на определенные топики то предполагается использование аннотации `@KafkaPublisher.Topic`
-для создания таких контрактов:
+В случае если требуется использовать типизированные контракты на определенные топики 
+то предполагается использование аннотации `@KafkaPublisher.Topic` для создания таких контрактов:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -981,7 +1106,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Доступные сигнатуры для методов Kafka продюсера из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 
-Позволяет отправлять `value` и `key` (опционально) и `headers` (опционально) от `ProducerRecord`:
+Позволяет отправлять `value` (обязательный) и `key` (опциональный) и `headers` (опциональный) от `ProducerRecord`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1005,10 +1130,9 @@ public interface BaseKafkaRecordsHandler<K, V> {
     } 
     ```
 
-
 ===! ":fontawesome-brands-java: `Java`"
 
-    Можно получать как результат операции `RecordMetadata` либо `Future<RecordMetadata>`:
+    Можно получать как результат операции `RecordMetadata` либо `Future<RecordMetadata>` либо `CompletionStage<RecordMetadata>`:
 
     ```java
     @KafkaPublisher("kafka.someProducer")
@@ -1027,8 +1151,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 === ":simple-kotlin: `Kotlin`"
 
-    Можно получать как результат операции `RecordMetadata` и иметь модификатор `suspend`:
-
+    Можно получать как результат операции `RecordMetadata` либо иметь модификатор `suspend`:
     ```kotlin
     @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
@@ -1062,3 +1185,4 @@ public interface BaseKafkaRecordsHandler<K, V> {
         fun send(record: ProducerRecord<K, V>, callback: Callback)
     }
     ```
+
