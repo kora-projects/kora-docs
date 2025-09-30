@@ -480,7 +480,7 @@ created for the server from OpenAPI, you can pull any type of authorization [Bas
      
         @Tag(ApiSecurity.BearerAuth.class)
         default HttpServerPrincipalExtractor<Principal> bearerHttpServerPrincipalExtractor() {
-            return (request, value) -> CompletableFuture.completedFuture(new MyPrincipal(request.headers().getFirst(“Authorization”)));
+            return (request, value) -> CompletableFuture.completedFuture(new MyPrincipal(request.headers().getFirst("Authorization")));
         }
     }
     ```
@@ -495,7 +495,7 @@ created for the server from OpenAPI, you can pull any type of authorization [Bas
         fun bearerHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
             return HttpServerPrincipalExtractor<Principal> { request, value ->
                 CompletableFuture.completedFuture<Principal>(
-                    MyPrincipal(request.headers().getFirst(“Authorization”)))
+                    MyPrincipal(request.headers().getFirst("Authorization")))
                 )
             }
         }
@@ -504,7 +504,7 @@ created for the server from OpenAPI, you can pull any type of authorization [Bas
 
 ## Recommendations
 
-????+ warning "Advice"
+???+ warning "Advice"
 
     In case you have something that is not created by the plugin, or the behavior is different from what you want or other versions,
     you should carefully check the [plugin configuration](#configuration) settings and examine them, 

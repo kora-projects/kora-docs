@@ -152,7 +152,37 @@ Translated with DeepL.com (free version)
 
 Trace collection configuration parameters are described in modules that include trace collection, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
-## Imperative tracing
+## Tracing context
+
+Obtain the current tracing `Span`, you can use the `getSpan` method in `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var span = OpentelemetryContext.getSpan();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val span = OpentelemetryContext.getSpan();
+    ```
+
+Obtain the current trace ID, you can use the `getTraceId()` method in `OpentelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var traceId = OpentelemetryContext.getTraceId();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val traceId = OpentelemetryContext.getTraceId();
+    ```
+
+## Tracing sync
 
 In addition to automatically created spans, you can use the `Tracer` object from the dependency container.
 You can create a span with the current one in parent as follows:
@@ -250,12 +280,12 @@ Obtain the current trace ID, you can use the `getTraceId()` method in `Opentelem
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var span = OpentelemetryContext.getTraceId();
+    var traceId = OpentelemetryContext.getTraceId();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val span = OpentelemetryContext.getTraceId();
+    val traceId = OpentelemetryContext.getTraceId();
     ```
 

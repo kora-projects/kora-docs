@@ -3,7 +3,7 @@ many different modules for quickly building applications such as HTTP server and
 database abstraction in the form of repositories, S3 client, gRPC server and client,
 Camunda integration, telemetry for all modules, resilient module and much more.
 
-You can read about the core features of Kora [here](../index.md).
+You can read about the core features of Kora [on home page](../index.md).
 
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
@@ -11,7 +11,7 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 - Sufficiently high-level simple abstractions and development tools
 - Aspect-oriented programming via annotations
 - Large set of preconfigured integrations
-- Tracing and metrics according to `OpenTelemetry` standard and logging for all modules
+- Observability, tracing, metrics according to `OpenTelemetry` standard and logging for all modules
 - Easy and rapid testing with [JUnit5](junit5.md)
 - Simple and detailed documentation supported by [examples of working services](../examples/kora-examples.md)
 
