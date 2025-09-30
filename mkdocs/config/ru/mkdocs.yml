@@ -17,7 +17,7 @@ nav:
       - Конвертация:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
-      - Мониторинг:
+      - Наблюдаемость:
         - Пробы: documentation/probes.md
         - Логирование: documentation/logging-slf4j.md
         - Метрики: documentation/metrics.md

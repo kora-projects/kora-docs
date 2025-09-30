@@ -54,7 +54,7 @@ Source code creation approach allows for dependency container checking at compil
 and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
 
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
-makes it easy to learn framework without the need for developers to spend years memorizing the “guts of the framework”.
+makes it easy to learn framework without the need for developers to spend years memorizing the "guts of the framework".
 Kora aims to do all framework optimizations in-house, 
 provide for you the most optimal implementations of integrations whether it is HTTP server or client,
 take the work off you as a developer and provide only productive and efficient solutions out of the box.
@@ -77,8 +77,8 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 
 - Dependency injection and inversion via annotations
 - Sufficiently high-level simple abstractions and development tools
-- Aspect-oriented programming via annotations
+- Transparent aspect-oriented programming via annotations
 - Large set of preconfigured integrations
-- Tracing and metrics according to `OpenTelemetry` standard and logging for all modules
+- Observability, tracing and metrics according to `OpenTelemetry` standard and logging for all modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)
 - Simple and detailed documentation supported by [examples of working services](examples/kora-examples.md)

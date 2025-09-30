@@ -1,4 +1,4 @@
-??? warning “Experimental module”
+??? warning "Experimental module"
 
     **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
     for this reason, API may potentially undergo minor changes before fully stable.

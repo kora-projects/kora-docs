@@ -22,7 +22,7 @@ hide:
 - Исправлена поддержка преобразования типа в OpenAPI генераторе для формата вида `type+format`
 - Исправлен фильтр операций OpenAPI генератора при фильтрации моделей для разделов `responses` и `requests`
 - Исправлено разрешение тегов OpenAPI генератора для Non-Json преобразователя в Java
-- Усилено ведение журнала исключений Resilient модуля для `CircuitBreaker`, `Retry` и `Fallback` на уровне `TRACE`
+- Улучшен вывод исключений Resilient модуля для `CircuitBreaker`, `Retry` и `Fallback` на уровне `TRACE`
 
 ### 1.2.2
 

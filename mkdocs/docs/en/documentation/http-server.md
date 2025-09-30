@@ -1,7 +1,7 @@
 Module provides a thin layer of abstraction over HTTP server libraries to create HTTP request handlers
 using both declarative-style annotations and imperative-style annotations.
 
-???+ warning “Tip”
+???+ warning "Tip"
 
     **We recommend** using an approach where OpenAPI file is primary contract
     and controllers are created from it using a OpenAPI generator. 
