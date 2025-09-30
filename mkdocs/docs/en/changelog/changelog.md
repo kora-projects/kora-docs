@@ -5,7 +5,26 @@ hide:
   - navigation
 ---
 
-## 1.2.2
+## 1.2.3
+
+Added: 
+
+- Added `ConsumerRecordWrapper#unwrap` for accessing original record 
+
+Fixed:
+
+- Fixed `OkHttpClient` connection retry behavior disabled by default
+- Fixed database name propagation in tracing
+- Fixed `NPE` on `HttpServerResponseException.of` with empty message on throwable 
+- Fixed Resilient module `Retry` incorrect behavior on `disabled` and `attemptMax=0` in Kotlin
+- Fixed `HttpClientResponseMapper` resolution on `ResponseCodeMapper` annotation in Kotlin
+- Fixed OpenAPI generator `Validation` loop cause `StackOverFlow`
+- Fixed OpenAPI generator config mapping `type+format` type support
+- Fixed OpenAPI generator operation filter with filter models for `responses` and `requests` sections
+- Fixed OpenAPI generator non-json mapper tag resolution in Java
+- Reinforced Resilient `CircuitBreaker` & `Retry` & `Fallback` exception logging on `TRACE` level
+
+### 1.2.2
 
 Added:
 
