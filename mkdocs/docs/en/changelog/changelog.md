@@ -18,7 +18,7 @@ Fixed:
 - Fixed `NPE` on `HttpServerResponseException.of` with empty message on throwable 
 - Fixed Resilient module `Retry` incorrect behavior on `disabled` and `attemptMax=0` in Kotlin
 - Fixed `HttpClientResponseMapper` resolution on `ResponseCodeMapper` annotation in Kotlin
-- Fixed OpenAPI generator `Validation` loop cause `StackOverFlow`
+- Fixed OpenAPI generator loop cause `StackOverFlow` when check models for server `Validation`
 - Fixed OpenAPI generator config mapping `type+format` type support
 - Fixed OpenAPI generator operation filter with filter models for `responses` and `requests` sections
 - Fixed OpenAPI generator non-json mapper tag resolution in Java

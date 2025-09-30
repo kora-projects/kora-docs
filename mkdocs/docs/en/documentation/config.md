@@ -680,7 +680,7 @@ environment variables and system variables, you simply inject the configuration 
 
 ### Recommendations
 
-???+ warning "Tip"
+???+ warning "Recommendation"
 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when you update the configuration it will cause all graph components that use it to be updated,

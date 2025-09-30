@@ -68,7 +68,7 @@ The sample shall return `ReadinessProbeFailure` in case of error, and `null` in 
 
 ## Recommendations
 
-???+ warning "Tip"
+???+ warning "Recommendation"
 
     **We strongly discourage runs that test external dependencies such as databases or other services.**
 

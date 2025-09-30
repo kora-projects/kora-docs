@@ -116,7 +116,7 @@ Example of the complete configuration described in the `LiquibaseConfig` class (
 
 ## Recommendations
 
-???+ warning "Tip"
+???+ warning "Recommendation"
 
     **We do not recommend** using migration modules to run applications in an environment where with horizontal scaling 
     by increasing the number of working application replicas. Since this will lead to a migration call on each replica setup.
