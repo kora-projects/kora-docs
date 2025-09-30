@@ -39,7 +39,7 @@ Kora является облачно ориентированным фреймв
 
 <figure markdown="span">
   ![Kora замер времени запуска](https://raw.githubusercontent.com/kora-projects/.github/refs/heads/master/storage/images/run_in_container_joker_2024.jpeg "Kora Startup"){ width=600 }
-  <figcaption>Kora замер времени запуска</figcaption>
+  <figcaption>Kora замер времени запуска PetClinic</figcaption>
 </figure>
 
 `Прозрачность` - Создание читаемого исходного кода во время компиляции, 

@@ -1,7 +1,7 @@
 Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
 using declarative-style annotations or using client in imperative-style.
 
-???+ warning "Tip"
+???+ tip "Recommendation"
 
     **We recommend** using an approach where OpenAPI file is primary contract
     and clients are created from it using a OpenAPI generator. 

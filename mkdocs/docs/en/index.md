@@ -39,7 +39,7 @@ in the event of sudden peak loads and improves user requests latency.
 
 <figure markdown="span">
   ![Kora startup benchmark](https://raw.githubusercontent.com/kora-projects/.github/refs/heads/master/storage/images/run_in_container_joker_2024.jpeg "Kora Startup"){ width=600 }
-  <figcaption>Kora startup benchmark</figcaption>
+  <figcaption>Kora startup benchmark of PetClinic</figcaption>
 </figure>
 
 `Transparency` - Kora generates human-readable source code at compile time 

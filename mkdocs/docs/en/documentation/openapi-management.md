@@ -93,7 +93,7 @@ An example of the configuration described in the `OpenApiManagementConfig` class
 
 ## Recommendations
 
-???+ warning "Tip"
+???+ tip "Recommendation"
 
     We recommend using [contract first approach](openapi-codegen.md) and generate code using this contract, 
     in this approach same contract file is displayed.
