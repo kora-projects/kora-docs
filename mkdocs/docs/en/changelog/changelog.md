@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.2.3
+## 1.2.4
+
+Added:
+
+- Added improved errors & hint output for `UnresolvedDependencyException` and other annotation processors
+- Added OpenAPI generator `forceIncludeNonRequired` option
+- Added config parsing of Duration based on Java `Duration` format
+
+Fixed:
+
+- Fixed Resilient `CircuitBreaker` incorrect release when ignored exceptions in `HALF_OPEN` state 
+- Fixed HTTP Client encode space char in `@Path` param as `%20` symbol
+- Fixed incorrect `@ScheduleWithCron` job `Quartz` execution at startup 
+- Fixed OpenAPI generator `forceIncludeOptional` missing `@JsonInclude(ALWAYS)` for Kotlin 
+
+### 1.2.3
 
 Added: 
 
@@ -76,7 +91,7 @@ Added:
 - Added Kotlin KSP incremental processing support
 - Improved `@KafkaListener` & `@KafkaProducer` metrics
 - Improved resilient `@CircuitBreaker` logging and metrics
-- Updated all dependencies for their up-to-date versions
+- Updated all dependencies for their [up-to-date versions]((https://github.com/kora-projects/kora/pull/392/files#diff-697f70cdd88ba88fe77eebda60c7e143f6ad1286bca75017421e93ad84fb87df))
 
 Fixed:
 
@@ -574,7 +589,7 @@ Added:
 
 - Added OpenTelemetry metrics [1.23](../documentation/metrics.md#standard) new standard
 - Added GraalVM and GraalVM virtual threads support for most modules
-- Dependencies updated and synchronized across all modules
+- Dependencies updated and synchronized across [all modules]((https://github.com/kora-projects/kora/pull/4/files#diff-d979b641bd0ea7c9da3fe113f9657636df1002652c75042cfe3b5203da064215))
 - Component build message improved
 - Lifecycle logging standardized
 

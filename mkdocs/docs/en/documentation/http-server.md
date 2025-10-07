@@ -12,6 +12,9 @@ using both declarative-style annotations and imperative-style annotations.
 ## Dependency
 
 Implementation based on [Undertow](https://undertow.io/).
+Undertow is a lightweight open-source web server for Java applications.
+It is built on asynchronous and non-blocking I/O operations using NIO,
+which ensures high performance and low resource consumption.
 
 ===! ":fontawesome-brands-java: `Java`"
 

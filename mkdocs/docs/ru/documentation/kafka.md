@@ -1042,7 +1042,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     })
     ```
 
-Также возможно в ручную произвести все манипуляции с `KafkaProducer`:
+Также возможно вручную произвести все манипуляции с `KafkaProducer`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
