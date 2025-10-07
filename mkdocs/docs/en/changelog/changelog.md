@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.2.3
+## 1.2.4
+
+Added:
+
+- Added improved `UnresolvedDependencyException` and other annotation processors errors output
+- Added OpenAPI generator `forceIncludeNonRequired` option
+- Added config parsing of Duration based on Java `Duration` format
+
+Fixed:
+
+- Fixed Resilient `CircuitBreaker` incorrect release when ignored exceptions in `HALF_OPEN` state 
+- Fixed HTTP Client encode space char in `@Path` param as `%20` symbol
+- Fixed `@ScheduleWithCron` executing right at startup 
+- Fixed OpenAPI generator `forceIncludeOptional` missing `@JsonInclude(ALWAYS)` for Kotlin 
+
+### 1.2.3
 
 Added: 
 
