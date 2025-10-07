@@ -164,7 +164,7 @@
 
 ### Результат
 
-Если требуется преобразовать результат в ручную, предлагается использовать `JdbcResultSetMapper`:
+Если требуется преобразовать результат вручную, предлагается использовать `JdbcResultSetMapper`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -231,7 +231,8 @@
 
 ### Строка
 
-Если требуется преобразовать строку в ручную, предлагается использовать `JdbcRowMapper`:
+Если требуется преобразовать строку вручную, предлагается использовать `JdbcRowMapper`,
+имейте в виду, что порядок колонок начинается с `1`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -240,7 +241,7 @@
 
         @Override
         public UUID apply(ResultSet rs) throws SQLException {
-            return UUID.fromString(rs.getString(0));
+            return UUID.fromString(rs.getString(1));
         }
     }
 
@@ -262,7 +263,7 @@
 
         @Throws(SQLException::class)
         override fun apply(rs: ResultSet): UUID {
-            return UUID.fromString(rs.getString(0))
+            return UUID.fromString(rs.getString(1))
         }
     }
 
@@ -277,7 +278,7 @@
 
 ### Колонка
 
-Если требуется преобразовать значение колонки в ручную, предлагается использовать `JdbcResultColumnMapper`:
+Если требуется преобразовать значение колонки вручную, предлагается использовать `JdbcResultColumnMapper`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -332,7 +333,7 @@
 
 ### Параметр
 
-Если требуется преобразовать значение параметра запроса в ручную, предлагается использовать `JdbcParameterColumnMapper`:
+Если требуется преобразовать значение параметра запроса вручную, предлагается использовать `JdbcParameterColumnMapper`:
 
 ===! ":fontawesome-brands-java: `Java`"
 

@@ -230,7 +230,8 @@ All embedded entities also should use this annotation:
 
 ### Row
 
-If you need to convert the string manually, it is suggested to use `JdbcRowMapper`:
+If you need to convert the string manually, it is suggested to use `JdbcRowMapper`, 
+keep in mind that the order of the columns starts from `1`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -239,7 +240,7 @@ If you need to convert the string manually, it is suggested to use `JdbcRowMappe
 
         @Override
         public UUID apply(ResultSet rs) throws SQLException {
-            return UUID.fromString(rs.getString(0));
+            return UUID.fromString(rs.getString(1));
         }
     }
 
@@ -261,7 +262,7 @@ If you need to convert the string manually, it is suggested to use `JdbcRowMappe
 
         @Throws(SQLException::class)
         override fun apply(rs: ResultSet): UUID {
-            return UUID.fromString(rs.getString(0))
+            return UUID.fromString(rs.getString(1))
         }
     }
 
