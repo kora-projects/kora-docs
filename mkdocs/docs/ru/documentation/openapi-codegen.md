@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.3")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
         }
     }
     ```
@@ -29,7 +29,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.3")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
         }
     }
     ```
@@ -70,6 +70,7 @@
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `java-client` - создание синхронного клиента
@@ -121,6 +122,7 @@
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `mode` в каком режиме работать генератору, доступные значения:
         * `kotlin-client` - создание синхронного клиента
@@ -286,7 +288,8 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
-    - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeOptional` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
     - `delegateMethodBodyMode` - способ генерации тела метода в delegate классе. `none` - не генерировать тело метода, `throw-exception` - бросать исключение в теле метода. Для `throw-exception` дополнительно будет сгенерирован модуль со стандартной реализацией Delegate класса, если в графе приложения нет другой реализации
@@ -334,7 +337,8 @@
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
-    - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeOptional` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
+    - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.
     - `filterWithModels` - фильтровать и исключать из генерации также ненужные модели когда указана опция [FILTER](https://openapi-generator.tech/docs/customization/#available-filters) в `openapiNormalizer`. Значения: `true`, `false`
     - `prefixPath` - префикс пути обработчиков HTTP-сервера. Значение: `строка`
     - `delegateMethodBodyMode` - способ генерации тела метода в delegate классе. `none` - не генерировать тело метода, `throw-exception` - бросать исключение в теле метода. Для `throw-exception` дополнительно будет сгенерирован модуль со стандартной реализацией Delegate класса, если в графе приложения нет другой реализации
