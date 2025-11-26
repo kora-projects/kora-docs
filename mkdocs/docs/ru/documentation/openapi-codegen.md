@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.5")
         }
     }
     ```
@@ -29,7 +29,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.5")
         }
     }
     ```
@@ -64,10 +64,11 @@
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов. Значение `строка`.
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI. Значение `строка`.
     - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан). Значение `строка`.
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
+    - `authAllowMultiple` - генерировать перехватчики для [мульти-авторизации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) если таковая указана в спецификации. Значения: `true`, `false`
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
     - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.
@@ -116,10 +117,11 @@
     - `clientConfigPrefix` - префикс конфигурации созданных HTTP-клиентов. Значение `строка`.
     - `tags` - возможность проставлять дополнительные теги на созданные HTTP-клиенты
     - `interceptors` - возможность указывать перехватчики для HTTP-клиентов
-    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `primaryAuth` - указать какой [механизм авторизации](http-client.md#_30) использовать как основной если указано несколько [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI. Значение `строка`.
     - `securityConfigPrefix` - префикс конфигурации механизм авторизации [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (путь конфигурации будет заданный префикс + имя [securitySchemes]((https://swagger.io/docs/specification/authentication/)) в OpenAPI, либо просто имя в OpenAPI если префикс не задан). Значение `строка`.
     - `authAsMethodArgument` - возможность указывать авторизацию как аргумент метода HTTP клиента, а не через перехватчик. Значения: `true`, `false`
+    - `authAllowMultiple` - генерировать перехватчики для [мульти-авторизации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) если таковая указана в спецификации. Значения: `true`, `false`
+    - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами HTTP-клиента
     - `enableJsonNullable` - обрабатывать `nullable=true` и `required=false` поля схем как [JsonNullable](json.md#jsonnullable) обертку. Значения: `true`, `false`
     - `forceIncludeOptional` - проставлять принудительно `@JsonInclude(Always)` для `nullable=true` и `required=false` полей вместо `enableJsonNullable`. Значения: `true`, `false`.
     - `forceIncludeNonRequired` - проставлять принудительно [@JsonInclude(Always)](json.md#_9) для только `required=false` полей. Значения: `true`, `false`.

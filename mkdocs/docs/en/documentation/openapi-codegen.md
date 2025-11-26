@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.5")
         }
     }
     ```
@@ -29,7 +29,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.4")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.5")
         }
     }
     ```
@@ -67,6 +67,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
     - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
+    - `authAllowMultiple` - generate interceptors for [multi-authentication](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) if it is specified in the specification. Values: `true`, `false`    
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
     - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.
@@ -119,6 +120,8 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
     - `primaryAuth` - specify which [authorization mechanism](http-client.md#authorization) to use as the primary one if several [securitySchemes]((https://swagger.io/docs/specification/authentication/)) are specified in OpenAPI
     - `securityConfigPrefix` - prefix of authorization mechanism configuration [Basic](http-client.md#basic)/[ApiKey](http-client.md#apikey) (configuration path will be specified prefix + name [securitySchemes]((https://swagger.io/docs/specification/authentication/)) in OpenAPI, or just name in OpenAPI if prefix is not specified).
     - `authAsMethodArgument` - ability to specify authorization as an argument of an HTTP client method rather than through an interceptor
+    - `authAllowMultiple` - generate interceptors for [multi-authentication](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) if it is specified in the specification. Values: `true`, `false`
+    - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `additionalContractAnnotations` - ability to specify additional annotations over HTTP client methods
     - `enableJsonNullable` - Treat `nullable=true` and `required=false` schema fields as a [JsonNullable](json.md#jsonnullable-wrapper) wrapper
     - `forceIncludeOptional` - Force to set `@JsonInclude(Always)` for fields with `nullable=true` and `required=false` instead of `enableJsonNullable`. Values: `true`, `false`.

@@ -3,7 +3,7 @@ site_dir: "../../generated/en"
 
 
 # Project information
-site_name: Kora Framework 1.2.4
+site_name: Kora Framework 1.2.5
 site_url: https://kora-projects.github.io/kora-docs/en/
 copyright: T-Bank
 nav:

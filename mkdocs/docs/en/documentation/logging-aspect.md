@@ -149,6 +149,133 @@ public String methodWithOnlyLogReturnAndArgs(String strParam,int numParam) {
     </tr>
 </table>
 
+### MDC (Mapped Diagnostic Context)
+
+The `@Mdc` annotation allows adding key-value pairs to MDC (Mapped Diagnostic Context) for structured logging.
+MDC allows adding contextual information to each log message.
+
+The annotation can be applied to methods and method parameters. Multiple application is supported.
+
+**Parameters of the `@Mdc` annotation:**
+
+- `key()` - Key for the MDC entry. If not specified, the name of the annotated parameter is used.
+- `value()` - Value for the MDC entry. If not specified, the value of the annotated parameter is used.
+- `global()` - If true, the MDC value will be available globally within the thread, not just during method execution.
+
+#### Parameter annotation
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    public String test(@Mdc String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun test(@Mdc s: String): String {
+        return "1"
+    }
+    ```
+
+In this case, the MDC key will match the parameter name ("s"), and the value will be the parameter value.
+
+#### Parameter annotation with key
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    public String test(@Mdc(key = "123") String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun test(@Mdc(key = "123") s: String): String {
+        return "1"
+    }
+    ```
+
+Here, the MDC key will be "123", and the value will be the value of parameter "s".
+
+#### Method use
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key1", value = "value2")
+    public String test(String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key1", value = "value2")
+    fun test(s: String): String {
+        return "1"
+    }
+    ```
+
+This example demonstrates:
+- Method annotation with local MDC value
+
+#### Combined
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key", value = "value", global = true)
+    @Mdc(key = "key1", value = "value2")
+    public Integer test(@Mdc(key = "123") String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key", value = "value", global = true)
+    @Mdc(key = "key1", value = "value2")
+    fun test(@Mdc(key = "123") s: String): String {
+        return "1"
+    }
+    ```
+
+In this example, two MDC annotations are applied to the method, and one annotation is applied to the parameter.
+
+#### Generated value for MDC value
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key", value = "${java.util.UUID.randomUUID().toString()}")
+    public Integer test(String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key", value = "\${java.util.UUID.randomUUID().toString()}")
+    fun test(s: String): String {
+        return "1"
+    }
+    ```
+
+When calling the method, an MDC entry will be added with the key "key" and a value as generated random UUID.
+
+**Example log with MDC:**
+```
+INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value key1=value2 123=testValue
+```
+
 ## Signatures
 
 Available signatures for repository methods out of the box:

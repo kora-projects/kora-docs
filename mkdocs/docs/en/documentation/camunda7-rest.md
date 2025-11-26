@@ -61,21 +61,30 @@ Example of the complete configuration described in the `CamundaRestConfig` class
                     endpoint = "/rapidoc" //(11)!
                 }
             }
+            cors {
+                enabled = false //(12)!
+                allowOrigin = "*" //(13)!
+                allowHeaders = [ "*" ] //(14)!
+                allowMethods = [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ] //(15)!
+                allowCredentials = true //(16)!
+                exposeHeaders = [ "*" ] //(17)!
+                maxAge = "1h" //(18)!
+            }
             telemetry {
                 logging {
-                    enabled = false //(12)!
-                    stacktrace = true //(13)!
-                    mask = "***" //(14)!
-                    maskQueries = [ ] //(15)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(16)!
-                    pathTemplate = true //(17)!
+                    enabled = false //(19)!
+                    stacktrace = true //(20)!
+                    mask = "***" //(21)!
+                    maskQueries = [ ] //(22)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(23)!
+                    pathTemplate = true //(24)!
                 }
                 metrics {
-                    enabled = true //(18)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(19)!
+                    enabled = true //(25)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(26)!
                 }
                 tracing {
-                    enabled = true //(20)!
+                    enabled = true //(27)!
                 }
             }
         }
@@ -95,15 +104,22 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     9. Path where the SwaggerUI will be accessed
     10. On/Off of the controller that gives Rapidoc
     11. Path where Rapidoc will be available
-    12.  Enables module logging (default `false`)
-    13.  Enables call stack logging in case of exception
-    14.  Mask that is used to hide specified headers and request/response parameters
-    15.  List of request parameters to be hidden
-    16.  List of request/response headers that should be hidden
-    17.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    18.  Enables module metrics (default `true`)
-    19.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    20.  Enables module tracing (default is `true`)
+    12.  Enables CORS filter (default `false`)
+    13.  Allowed origins for CORS (default `null`)
+    14.  Allowed headers for CORS requests (default `["*"]`)
+    15.  Allowed HTTP methods for CORS requests (default `["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]`)
+    16.  Allows transmission of credentials in CORS requests (default `true`)
+    17.  Headers that can be exposed to the client in CORS responses (default `["*"]`)
+    18.  Maximum caching time for CORS preflight requests (default `1 hour`)
+    19.  Enables module logging (default `false`)
+    20.  Enables call stack logging in case of exception
+    21.  Mask that is used to hide specified headers and request/response parameters
+    22.  List of request parameters to be hidden
+    23.  List of request/response headers that should be hidden
+    24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    25.  Enables module metrics (default `true`)
+    26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    27.  Enables module tracing (default is `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -124,19 +140,27 @@ Example of the complete configuration described in the `CamundaRestConfig` class
           rapidoc:
             enabled: false #(10)!
             endpoint: "/rapidoc" #(11)!
+          cors:
+            enabled: false #(12)!
+            allowOrigin: "*" #(13)!
+            allowHeaders: [ "*" ] #(14)!
+            allowMethods: [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ] #(15)!
+            allowCredentials: true #(16)!
+            exposeHeaders: [ "*" ] #(17)!
+            maxAge: "1h" #(18)!
         telemetry:
           logging:
-            enabled: false #(12)!
-            stacktrace: true #(13)!
-            mask: "***" #(14)!
-            maskQueries: [ ] #(15)!
-            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(16)!
-            pathTemplate: true #(17)!
+            enabled: false #(19)!
+            stacktrace: true #(20)!
+            mask: "***" #(21)!
+            maskQueries: [ ] #(22)!
+            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(23)!
+            pathTemplate: true #(24)!
           metrics:
-            enabled: true #(18)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
+            enabled: true #(25)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(26)!
           tracing:
-            enabled: true #(20)!
+            enabled: true #(27)!
     ```
 
     1. Enable/disable REST API
@@ -152,15 +176,22 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     9. Path where the SwaggerUI will be accessed
     10. On/Off of the controller that gives Rapidoc
     11. Path where Rapidoc will be available
-    12.  Enables module logging (default `false`)
-    13.  Enables call stack logging in case of exception
-    14.  Mask that is used to hide specified headers and request/response parameters
-    15.  List of request parameters to be hidden
-    16.  List of request/response headers that should be hidden
-    17.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    18.  Enables module metrics (default `true`)
-    19.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    20.  Enables module tracing (default is `true`)
+    12.  Enables CORS filter (default `false`)
+    13.  Allowed origins for CORS (default `null`)
+    14.  Allowed headers for CORS requests (default `["*"]`)
+    15.  Allowed HTTP methods for CORS requests (default `["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]`)
+    16.  Allows transmission of credentials in CORS requests (default `true`)
+    17.  Headers that can be exposed to the client in CORS responses (default `["*"]`)
+    18.  Maximum caching time for CORS preflight requests (default `1 hour`)
+    19.  Enables module logging (default `false`)
+    20.  Enables call stack logging in case of exception
+    21.  Mask that is used to hide specified headers and request/response parameters
+    22.  List of request parameters to be hidden
+    23.  List of request/response headers that should be hidden
+    24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    25.  Enables module metrics (default `true`)
+    26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    27.  Enables module tracing (default is `true`)
 
 ## Applications
 

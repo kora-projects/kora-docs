@@ -50,37 +50,38 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
                     maxPoolSize = 25 //(2)!
                     queueSize = 25 //(3)!
                     maxJobsPerAcquisition = 2 //(4)!
+                    virtualThreadsEnabled = true //(5)!
                 }
                 deployment {
-                    tenantId = "Camunda" //(5)!
-                    name = "KoraEngineAutoDeployment" //(6)!
-                    deployChangedOnly = true //(7)!
-                    resources = "classpath:bpm" //(8)!
-                    delay = "1m" //(9)!
+                    tenantId = "Camunda" //(6)!
+                    name = "KoraEngineAutoDeployment" //(7)!
+                    deployChangedOnly = true //(8)!
+                    resources = "classpath:bpm" //(9)!
+                    delay = "1m" //(10)!
                 }
                 parallelInitialization {
-                    enabled = true //(10)!
-                    validateIncompleteStatements = true //(11)!
+                    enabled = true //(11)!
+                    validateIncompleteStatements = true //(12)!
                 }
                 admin {
-                    id = "admin" //(12)!
-                    password = "admin" //(13)!
-                    firstname = "Ivan" //(14)!
-                    lastname = "Ivanov" //(15)!
-                    email = "admin@mail.ru" //(16)!
+                    id = "admin" //(13)!
+                    password = "admin" //(14)!
+                    firstname = "Ivan" //(15)!
+                    lastname = "Ivanov" //(16)!
+                    email = "admin@mail.ru" //(17)!
                 }
                 telemetry {
                     logging {
-                        enabled = false //(17)!
-                        stacktrace = true //(18)!
+                        enabled = false //(18)!
+                        stacktrace = true //(19)!
                     }
                     metrics {
-                        enabled = true //(19)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(20)!
+                        enabled = true //(20)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(21)!
                     }
-                    engineTelemetryEnabled = false //(21)!
+                    engineTelemetryEnabled = false //(22)!
                     tracing {
-                        enabled = true //(22)!
+                        enabled = true //(23)!
                     }
                 }
             }
@@ -92,24 +93,25 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
     2. Maximum number of threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
     3. Size of the task queue before tasks are thrown out of the [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) execution queue
     4. Maximum number of tasks in the [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) execution (default is the number of CPU cores multiplied by 2)
-    5. Indeterminator tenant [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources (default is none)
-    6. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
-    7. Flag that says that only modified resources should be loaded
-    8. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
-    9. Delay before deploying new resources to engine
-    10. Whether to enable parallel loading, which slightly improves the engine startup speed
-    11. Whether to check for incomplete engine configuration requests
-    12. Camunda administrator identifier (optional)
-    13. Camunda Administrator Password (optional)
-    14. Camunda Administrator Name (optional)
-    15. Last name of Camunda administrator (optional)
-    16. Email of the Camunda administrator (optional)
-    17. Enables module logging (default is `false`)
-    18. Enables error stack logging (default is `true`)
-    19. Enables module metrics (default `true`)
-    20. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    21. Enables collection of engine metrics/telemetry (default is `false`)
-    22. Enables module tracing (default `true`)
+    5. Use [virtual threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) as the basis for JobExecutor. All previous options are irrelevant when virtual threads are enabled
+    6. Indeterminator tenant [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources (default is none)
+    7. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
+    8. Flag that says that only modified resources should be loaded
+    9. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
+    10. Delay before deploying new resources to engine
+    11. Whether to enable parallel loading, which slightly improves the engine startup speed
+    12. Whether to check for incomplete engine configuration requests
+    13. Camunda administrator identifier (optional)
+    14. Camunda Administrator Password (optional)
+    15. Camunda Administrator Name (optional)
+    16. Last name of Camunda administrator (optional)
+    17. Email of the Camunda administrator (optional)
+    18. Enables module logging (default is `false`)
+    19. Enables error stack logging (default is `true`)
+    20. Enables module metrics (default `true`)
+    21. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    22. Enables collection of engine metrics/telemetry (default is `false`)
+    23. Enables module tracing (default `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -122,55 +124,57 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
             maxPoolSize: 25 #(2)!
             queueSize: 25 #(3)!
             maxJobsPerAcquisition: 2 #(4)!
+            virtualThreadsEnabled: true #(5)!
           deployment:
-            tenantId: "Camunda" #(5)!
-            name: "KoraEngineAutoDeployment" #(6)!
-            deployChangedOnly: true #(7)!
-            resources: "classpath:bpm" #(8)!
-            delay: "1m" #(9)!
+            tenantId: "Camunda" #(6)!
+            name: "KoraEngineAutoDeployment" #(7)!
+            deployChangedOnly: true #(8)!
+            resources: "classpath:bpm" #(9)!
+            delay: "2m" #(9)!
           parallelInitialization:
-            enabled: true #(10)!
-            validateIncompleteStatements: true #(11)!
+            enabled: true #(11)!
+            validateIncompleteStatements: true #(12)!
           admin:
-            id: "admin" #(12)!
-            password: "admin" #(13)!
-            firstname: "Ivan" #(14)!
-            lastname: "Ivanov" #(15)!
-            email: "admin@mail.ru" #(16)!
+            id: "admin" #(13)!
+            password: "admin" #(14)!
+            firstname: "Ivan" #(15)!
+            lastname: "Ivanov" #(16)!
+            email: "admin@mail.ru" #(17)!
           telemetry:
             logging:
-              enabled: false #(17)!
-              stacktrace: true #(18)!
+              enabled: false #(18)!
+              stacktrace: true #(19)!
             metrics:
-              enabled: true #(19)!
-              slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(20)!
-            engineTelemetryEnabled: false #(21)!
+              enabled: true #(20)!
+              slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(21)!
+            engineTelemetryEnabled: false #(22)!
             tracing:
-              enabled: true #(22)!
+              enabled: true #(23)!
     ```
 
     1. Minimum number of live threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
     2. Maximum number of threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
     3. Size of the task queue before tasks are thrown out of the [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) execution queue
     4. Maximum number of tasks in the [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) execution (default is the number of CPU cores multiplied by 2)
-    5. Indeterminator tenant [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources (default is none)
-    6. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
-    7. Flag that says that only modified resources should be loaded
-    8. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
-    9. Delay before deploying new resources to engine
-    10. Whether to enable parallel loading, which slightly improves the engine startup speed
-    11. Whether to check for incomplete engine configuration requests
-    12. Camunda administrator identifier (optional)
-    13. Camunda Administrator Password (optional)
-    14. Camunda Administrator Name (optional)
-    15. Last name of Camunda administrator (optional)
-    16. Email of the Camunda administrator (optional)
-    17. Enables module logging (default is `false`)
-    18. Enables error stack logging (default is `true`)
-    19. Enables module metrics (default `true`)
-    20. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    21. Enables collection of engine metrics/telemetry (default is `false`)
-    22. Enables module tracing (default `true`)
+    5. Use [virtual threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) as the basis for JobExecutor. All previous options are irrelevant when virtual threads are enabled
+    6. Indeterminator tenant [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources (default is none)
+    7. Name of [load](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) resources
+    8. Flag that says that only modified resources should be loaded
+    9. Paths to find BPMN/FORM/DMN resources that will be loaded into the engine after startup
+    10. Delay before deploying new resources to engine
+    11. Whether to enable parallel loading, which slightly improves the engine startup speed
+    12. Whether to check for incomplete engine configuration requests
+    13. Camunda administrator identifier (optional)
+    14. Camunda Administrator Password (optional)
+    15. Camunda Administrator Name (optional)
+    16. Last name of Camunda administrator (optional)
+    17. Email of the Camunda administrator (optional)
+    18. Enables module logging (default is `false`)
+    19. Enables error stack logging (default is `true`)
+    20. Enables module metrics (default `true`)
+    21. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    22. Enables collection of engine metrics/telemetry (default is `false`)
+    23. Enables module tracing (default `true`)
 
 ## Applications
 
