@@ -6,7 +6,7 @@ hide:
 - toc
 ---
 
-Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Performance, Efficiency, Transparency, Simplicity.
+Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Simplicity, Performance, Efficiency, Transparency.
 Kora aims to provide reasonably high-level and simple declarative tools, thin and familiar high-level abstractions for developers,
 which at compile time are translated into hardware-performant and human-readable code.
 Both programming languages are first-level citizen languages for framework.

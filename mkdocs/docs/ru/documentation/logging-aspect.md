@@ -318,6 +318,133 @@
     </tr>
 </table>
 
+### MDC (Mapped Diagnostic Context)
+
+Аннотация `@Mdc` позволяет добавлять пары ключ-значение в MDC (Mapped Diagnostic Context) для структурированного логирования. 
+MDC позволяет добавлять контекстную информацию к каждому лог-сообщению.
+
+Аннотация может применяться к методам и параметрам методов. Поддерживается множественное применение.
+
+**Параметры аннотации `@Mdc`:**
+
+- `key()` - Ключ для MDC записи. Если не указано, используется имя аннотированного параметра.
+- `value()` - Значение для MDC записи. Если не указано, используется значение аннотированного параметра.
+- `global()` - Если true, MDC значение будет доступно глобально в рамках потока, а не только во время выполнения метода.
+
+#### Аннотация параметра
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    public String test(@Mdc String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun test(@Mdc s: String): String {
+        return "1"
+    }
+    ```
+
+В этом случае ключ MDC будет совпадать с именем параметра ("s"), а значением будет значение параметра.
+
+#### Аннотация параметра с ключом
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    public String test(@Mdc(key = "123") String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun test(@Mdc(key = "123") s: String): String {
+        return "1"
+    }
+    ```
+
+Здесь ключ MDC будет "123", а значением - значение параметра "s".
+
+#### Аннотация метода
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key1", value = "value2")
+    public String test(String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key1", value = "value2")
+    fun test(s: String): String {
+        return "1"
+    }
+    ```
+
+В этом примере демонстрируется:
+- Аннотация метода с локальным MDC значением
+
+#### Комбинированное
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key", value = "value", global = true)
+    @Mdc(key = "key1", value = "value2")
+    public String test(@Mdc(key = "123") String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key", value = "value", global = true)
+    @Mdc(key = "key1", value = "value2")
+    fun test(@Mdc(key = "123") s: String): String {
+        return "1"
+    }
+    ```
+
+В этом примере к методу применены две аннотации MDC, а к параметру одна аннотация.
+
+#### Генерация значения из кода
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java 
+    @Mdc(key = "key", value = "${java.util.UUID.randomUUID().toString()}")
+    public String test(String s) {
+        return "1";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Mdc(key = "key", value = "\${java.util.UUID.randomUUID().toString()}")
+    fun test(s: String): String {
+        return "1";
+    }
+    ```
+
+При вызове метода в MDC будет добавлена запись с ключом "key" и в данном случае значением будет случайный UUID.
+
+**Пример лога с MDC:**
+```
+INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value key1=value2 123=testValue
+```
+
 ## Сигнатуры
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
