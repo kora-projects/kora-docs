@@ -9,11 +9,11 @@ hide:
 
 Added:
 
-- Added Camunda BPMN Rest `CORS` support 
-- Added OpenAPI generator HTTP client [multiple auth specification](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) support via [config option](../documentation/openapi-codegen.md#client)
-- Added Camunda BPMN engine virtual thread executor and `preconfigure` option
 - Added logging `@Mdc` annotation aspect
+- Added OpenAPI generator HTTP client [multiple auth specification](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) support via [config option](../documentation/openapi-codegen.md#client)
 - Added `ProgrammaticDriverConfigLoaderBuilder` to `CassandraConfigurer` config option
+- Added Camunda BPMN Rest `CORS` support 
+- Added Camunda BPMN engine virtual thread executor and `preconfigure` option
 - Restored `OkHttpClient` option `retryOnConnectionFailure#true` by default 
 - Improved annotation processing errors message output
 

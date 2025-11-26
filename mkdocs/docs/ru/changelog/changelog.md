@@ -9,11 +9,11 @@ hide:
 
 Добавлено:
 
-- Добавлена поддержка `CORS` для Camunda BPMN REST модуля
-- Добавлена поддержка [множественной спецификации аутентификации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) HTTP-клиента OpenAPI через [параметр конфигурации](../documentation/openapi-codegen.md#_6)
-- Добавлен виртуальный потоковый исполнитель и параметр `preconfigure` для движка Camunda BPMN
 - Добавлена аннотация `@Mdc` для аспекта логирования
+- Добавлена поддержка [множественной спецификации аутентификации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) HTTP-клиента OpenAPI через [параметр конфигурации](../documentation/openapi-codegen.md#_6)
 - Добавлен `ProgrammaticDriverConfigLoaderBuilder` в метод конфигурации `CassandraConfigurer`
+- Добавлен виртуальный потоковый исполнитель и параметр `preconfigure` для движка Camunda BPMN
+- Добавлена поддержка `CORS` для Camunda BPMN REST модуля
 - Восстановлено поведение `OkHttpClient` со значением параметра `retryOnConnectionFailure#true` по умолчанию
 - Улучшен вывод сообщений об ошибках при обработке аннотаций
 
