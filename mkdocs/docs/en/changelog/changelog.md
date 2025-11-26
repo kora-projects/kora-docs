@@ -5,7 +5,35 @@ hide:
   - navigation
 ---
 
-## 1.2.4
+## 1.2.5
+
+Added:
+
+- Added Camunda BPMN Rest `CORS` support 
+- Added OpenAPI generator HTTP client [multiple auth specification](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) support via [config option](../documentation/openapi-codegen.md#client)
+- Added Camunda BPMN engine virtual thread executor and `preconfigure` option
+- Added logging `@Mdc` annotation aspect
+- Added `ProgrammaticDriverConfigLoaderBuilder` to `CassandraConfigurer` config option
+- Restored `OkHttpClient` option `retryOnConnectionFailure#true` by default 
+- Improved annotation processing errors message output
+
+Fixed:
+
+- Fixed `suspend` function support in generated promised proxies in Kotlin
+- Fixed `AbstractRedisCache#invalidateAll` proper behavior to evict only cache specific keys (slower performance)
+- Fixed database query parameter substitution when prefix matched other parameter
+- Fixed `@KafkaListener` generated factory handler missing `@Tag` annotation
+- Fixed `Caffeine` cache tracing by disabling it cause useless 
+- Fixed `AwsS3ObjectMeta` NPE when missing size response parameter
+- Fixed config `Collection<T>` empty string value incorrectly treated not as empty collection 
+- Fixed `@Mapping` should work with abstract class implementations
+- Fixed OpenAPI generator `filterWithModel` for requests section
+- Fixed OpenAPI HTTP Client auth parameter as argument extract name 
+- Fixed Camunda REST request body reading for POST requests
+- Fixed HTTP Client `@CodeMapper` signature matching for complex generic types
+- Fixed `@Component` and `@Root` for HttpClient and Repository testing generated graph
+
+### 1.2.4
 
 Added:
 

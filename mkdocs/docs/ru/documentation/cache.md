@@ -125,7 +125,19 @@
         ssl {
             ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
             handshakeTimeout = "10s" //(10)!
-        } 
+        }
+        telemetry {
+            logging {
+                enabled = false //(11)!
+            }
+            metrics {
+                enabled = true //(12)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+            }
+            tracing {
+                enabled = true //(14)!
+            }
+        }
     }
     ```
 
@@ -143,6 +155,10 @@
     8.  Форсировать кластерное подключение даже если указан 1 URI для подключения (необязательно)
     9.  Алгоритмы шифрования, используемые для безопасного соединения между клиентом и сервером (необязательно)
     10.  Таймаут времени установки безопасного соединения с сервером (необязательно)
+    11.  Включает логгирование модуля (по умолчанию `false`)
+    12.  Включает метрики модуля (по умолчанию `true`)
+    13.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    14.  Включает трассировку модуля (по умолчанию `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -160,6 +176,14 @@
         ciphers:
           - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
         handshakeTimeout: "10s" #(10)!
+      telemetry:
+        logging:
+          enabled: false #(11)!
+        metrics:
+          enabled: true #(12)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+        tracing:
+          enabled: true #(14)!
     ```
 
     1.  URI для подключения к Redis (**обязательный**)
@@ -176,6 +200,10 @@
     8.  Форсировать кластерное подключение даже если указан 1 URI для подключения (необязательно)
     9.  Алгоритмы шифрования, используемые для безопасного соединения между клиентом и сервером (необязательно)
     10.  Таймаут времени установки безопасного соединения с сервером (необязательно)
+    11.  Включает логгирование модуля (по умолчанию `false`)
+    12.  Включает метрики модуля (по умолчанию `true`)
+    13.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
+    14.  Включает трассировку модуля (по умолчанию `true`)
 
 Конфигурации Redis кэша настраивает именно поведение конкретного кэша.
 
