@@ -5,7 +5,16 @@ hide:
   - navigation
 ---
 
-## 1.2.5
+## 1.2.6
+
+Fixed:
+
+- Fixed database repository query parameter name parsing
+- Fixed Cache `GET_*` metrics for `Caffeine`
+- Fixed correct usage of `KSType.toClassName` in KSP
+- Improved `Swagger UI` bundle.js settings
+
+### 1.2.5
 
 Added:
 
