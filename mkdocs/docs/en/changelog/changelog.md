@@ -5,7 +5,13 @@ hide:
   - navigation
 ---
 
-## 1.2.6
+## 1.2.7
+
+Added:
+
+- Allow `CompletableFuture<RecordMetadata>` and `Deferred<RecordMetadata>` results in `@KafkaPublisher` in Kotlin
+
+### 1.2.6
 
 Fixed:
 
