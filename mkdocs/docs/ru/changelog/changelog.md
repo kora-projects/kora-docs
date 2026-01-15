@@ -9,7 +9,7 @@ hide:
 
 Добавлено:
 
-- Добавлена поддержка `CompletableFuture` и `Deferred` возвращаемых значений в `@KafkaPublisher` для Kotlin
+- Добавлена поддержка `CompletableFuture<RecordMetadata>` и `Deferred<RecordMetadata>` возвращаемых значений в `@KafkaPublisher` для Kotlin
 
 ### 1.2.6
 

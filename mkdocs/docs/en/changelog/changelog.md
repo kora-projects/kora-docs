@@ -9,7 +9,7 @@ hide:
 
 Added:
 
-- Allow `CompletableFuture` and `Deferred` results in `@KafkaPublisher` in Kotlin
+- Allow `CompletableFuture<RecordMetadata>` and `Deferred<RecordMetadata>` results in `@KafkaPublisher` in Kotlin
 
 ### 1.2.6
 
