@@ -1151,7 +1151,8 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 === ":simple-kotlin: `Kotlin`"
 
-    Можно получать как результат операции `RecordMetadata` либо иметь модификатор `suspend`:
+    Можно получать как результат операции `RecordMetadata` либо иметь модификатор `suspend` либо `Future<RecordMetadata>` либо `CompletionStage<RecordMetadata>` либо `Deferred<RecordMetadata>`:
+
     ```kotlin
     @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
@@ -1161,6 +1162,15 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         suspend fun sendSuspend(value: V): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): Future<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): CompletionStage<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): Deferred<RecordMetadata>
     } 
     ```
 
