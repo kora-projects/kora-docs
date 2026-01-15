@@ -5,7 +5,13 @@ hide:
   - navigation
 ---
 
-## 1.2.6
+## 1.2.7
+
+Добавлено:
+
+- Добавлена поддержка `CompletableFuture` и `Deferred` возвращаемых значений в `@KafkaPublisher` для Kotlin
+
+### 1.2.6
 
 Исправлено:
 

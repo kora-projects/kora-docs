@@ -674,7 +674,7 @@ in order to send messages to any topic it is supposed to create a method with th
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
           void send(ProducerRecord<String, String> record);
     }
@@ -683,7 +683,7 @@ in order to send messages to any topic it is supposed to create a method with th
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
         fun send(record: ProducerRecord<String, String>)
     }
@@ -699,7 +699,7 @@ to create such contracts:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
@@ -710,7 +710,7 @@ to create such contracts:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
@@ -819,7 +819,7 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
@@ -830,7 +830,7 @@ Allows `value` and `key` (optional) and `headers` (optional) to be sent from `Pr
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
@@ -842,33 +842,14 @@ Can be received as the result of a `RecordMetadata` operation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
+    Can be also obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
+
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         RecordMetadata send(String value);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): RecordMetadata
-    } 
-    ```
-
-Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @@KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         Future<RecordMetadata> send(String value);
@@ -880,12 +861,26 @@ Can be obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<
 
 === ":simple-kotlin: `Kotlin`"
 
+    Can be also obtained as the result of a `suspend` or `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` or `Deferred<RecordMetadata>` operation:
+
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        suspend fun sendSuspend(value: V): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String): Future<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): CompletionStage<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): Deferred<RecordMetadata>
     } 
     ```
 
@@ -894,7 +889,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
           void send(ProducerRecord<String, String> record, Callback callback);
@@ -904,7 +899,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         fun send(record: ProducerRecord<String, String>, callback: Callback)
@@ -919,7 +914,7 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyKafkaProducer {
 
         void send(ProducerRecord<@Tag(MyTag1.class) String, @Tag(MyTag2.class) String> record);
@@ -932,7 +927,7 @@ Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyKafkaProducer {
 
         fun send(record: ProducerRecord<@Tag(MyTag1::class) String, @Tag(MyTag2::class) String>)
@@ -947,7 +942,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyKafkaProducer {
 
         @Json
@@ -963,7 +958,7 @@ If you want to serialize as Json, you should use `@Json` annotation:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyKafkaProducer {
 
         @Json
@@ -996,7 +991,7 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
@@ -1012,7 +1007,7 @@ It is required to first create a regular `KafkaProducer` and then use it to crea
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @@KafkaPublisher("kafka.someProducer")
+    @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
