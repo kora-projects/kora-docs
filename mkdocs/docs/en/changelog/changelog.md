@@ -5,7 +5,14 @@ hide:
   - navigation
 ---
 
-## 1.2.7
+## 1.2.8
+
+Fixed:
+
+- Fixed database `inTxSuspend` potential concurrent issues in Kotlin coroutines
+- Fixed connection leaking in HTTP client `telemetry` interceptor
+
+### 1.2.7
 
 Added:
 
@@ -87,7 +94,7 @@ Fixed:
 Added:
 
 - Added HTTP-server controller `@Tag` propagation support 
-- Added `Redis` option `forceCluster` for single URI connection
+- Added `Redis` option `forceClusterClient` for single URI connection
 
 Fixed:
 

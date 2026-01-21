@@ -121,7 +121,7 @@
         protocol = "RESP3" //(5)!
         socketTimeout = "10s" //(6)!
         commandTimeout = "60s" //(7)!
-        forceCluster = "false" //(8)!
+        forceClusterClient = "false" //(8)!
         ssl {
             ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
             handshakeTimeout = "10s" //(10)!
@@ -171,7 +171,7 @@
       protocol: "RESP3" #(5)!
       socketTimeout: "10s" #(6)!
       commandTimeout: "60s" #(7)!
-      forceCluster: false #(8)!
+      forceClusterClient: false #(8)!
       ssl:
         ciphers:
           - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
