@@ -121,7 +121,7 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
         protocol = "RESP3" //(5)!
         socketTimeout = "15s" //(6)!
         commandTimeout = "15s" //(7)!
-        forceCluster = "false" //(8)!
+        forceClusterClient = "false" //(8)!
         ssl {
             ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
             handshakeTimeout = "10s" //(10)!
@@ -155,7 +155,7 @@ Example of a complete configuration for *lettuce* driver, parameters are describ
       protocol: "RESP3" #(5)!
       socketTimeout: "15s" #(6)!
       commandTimeout: "15s" #(7)!
-      forceCluster: false #(8)!
+      forceClusterClient: false #(8)!
       ssl:
         ciphers:
           - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
