@@ -11,10 +11,10 @@ Kora aims to provide reasonably high-level and simple declarative tools, thin an
 which at compile time are translated into hardware-performant and human-readable code.
 Both programming languages are first-level citizen languages for framework.
 
-Framework is written in Java and has its own dependency container with inversion of control that works at compile time.
-Kora is a cloud-oriented server framework and offers many modules for quickly building applications such as 
+Kora is completely original framework written from scratch in Java and has its own custom-written dependency container with inversion of control that works at compile time.
+Kora is cloud-oriented server framework and offers many modules for quickly building applications such as 
 [HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers, 
-database abstraction in the form of [repositories](documentation/database-common.md), resilient module and much more.
+database abstraction in the form of [repositories](documentation/database-common.md), telemetry, resilient module and much more.
 
 Kora also places great emphasis on:
 

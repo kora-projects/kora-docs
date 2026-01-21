@@ -3,9 +3,8 @@ site_dir: "../../generated/en"
 
 
 # Project information
-site_name: Kora Framework 1.2.7
+site_name: Kora Framework 1.2.8
 site_url: https://kora-projects.github.io/kora-docs/en/
-copyright: T-Bank
 nav:
   - Examples:
       - Repository examples: examples/kora-examples.md
@@ -134,12 +133,6 @@ extra:
       link: /kora-docs/en/
       lang: en
   social:
-    - icon: fontawesome/brands/youtube
-      link: https://www.youtube.com/@kod_zheltyi
-      name: "YouTube corporate blog"
-    - icon: simple/habr
-      link: https://habr.com/ru/companies/tbank/articles/
-      name: "Habrahabr corporate blog"
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora
       name: "GitHub project"

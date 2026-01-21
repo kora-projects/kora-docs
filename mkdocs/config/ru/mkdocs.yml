@@ -3,9 +3,8 @@ site_dir: "../../generated/ru"
 
 
 # Project information
-site_name: Kora фреймворк 1.2.7
+site_name: Kora фреймворк 1.2.8
 site_url: https://kora-projects.github.io/kora-docs/ru/
-copyright: Т-Банк
 nav:
   - Примеры:
       - Репозиторий примеров: examples/kora-examples.md
@@ -134,12 +133,6 @@ extra:
       link: /kora-docs/en/
       lang: en
   social:
-    - icon: fontawesome/brands/youtube
-      link: https://youtube.com/@kod_zheltyi
-      name: "Корпоративный блог на YouTube"
-    - icon: simple/habr
-      link: https://habr.com/ru/companies/tbank/articles/
-      name: "Корпоративный блог на Хабрахабр"
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora
       name: "GitHub проекта"
