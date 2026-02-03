@@ -109,7 +109,7 @@
     ```kotlin
     @Module
     interface MetricsConfigModule {
-        fun commonTagsInit(): PrometheusMeterRegistryInitializer? {
+        fun commonTagsInit(): PrometheusMeterRegistryInitializer {
             return PrometheusMeterRegistryInitializer {
                 it.config().commonTags("tag", "value")
                 it
