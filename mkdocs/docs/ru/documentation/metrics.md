@@ -121,12 +121,6 @@
 Так же стандартные метрики имеют некоторые конфигурации, такие как `ServiceLayerObjectives` для Distribution summary метрик.
 Имена полей конфигурации можно посмотреть в `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
 
-## Стандарты
-
-Изначальный формат метрик использовал стандарт OpenTelemetry `V120`, после Kora `1.1.0` появилась возможность предоставления метрик
-в стандарте OpenTelemetry `V123`, частичный список изменений можно посмотреть [в документации OpenTelemetry](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
-и [рекомендациях миграции OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)
-
 ## Справочник метрик
 
 Все метрики используют [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) для именования и тегов,
