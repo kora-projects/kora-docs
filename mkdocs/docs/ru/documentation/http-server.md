@@ -165,7 +165,7 @@ Undertow — это легковесный веб-сервер с открыты
     22.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     23.  Включает трассировку модуля (по умолчанию `true`)
 
-Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-сервер).
+Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-server).
 
 ## Контроллер декларативный
 

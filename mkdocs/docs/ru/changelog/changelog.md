@@ -637,7 +637,7 @@ hide:
 
 Добавлено:
 
-- Добавлена поддержка метрик OpenTelemetry нового стандарта [1.23](../documentation/metrics.md#_5)
+- Добавлена поддержка метрик OpenTelemetry нового стандарта [1.23](../documentation/metrics.md#standard)
 - Добавлена поддержка GraalVM для большинства модулей и поддержка виртуальных потоков в GraalVM
 - Обновлены и синхронизированы [зависимости всех модулей](https://github.com/kora-projects/kora/pull/4/files#diff-d979b641bd0ea7c9da3fe113f9657636df1002652c75042cfe3b5203da064215)
 - Добавлено улучшенное сообщение при сборке компонент
