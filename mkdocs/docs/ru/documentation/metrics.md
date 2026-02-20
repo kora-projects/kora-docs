@@ -121,102 +121,155 @@
 Так же стандартные метрики имеют некоторые конфигурации, такие как `ServiceLayerObjectives` для Distribution summary метрик.
 Имена полей конфигурации можно посмотреть в `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
 
+## Стандарты
+
+Изначальный формат метрик использовал стандарт OpenTelemetry `V120`, после Kora `1.1.0` появилась возможность предоставления метрик
+в стандарте OpenTelemetry `V123`, частичный список изменений можно посмотреть [в документации OpenTelemetry](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
+и [рекомендациях миграции OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)
+
 ## Справочник метрик
 
-Все метрики используют [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) для именования и тегов,
-а также поддерживают настраиваемые SLO через конфигурацию.
+Все метрики Kora используют [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) для именования и тегов.
 
-### HTTP
+Используемые типы метрик [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | http-server-common | Длительность обработки HTTP-запроса на сервере | `http.request.method`, `http.route`, `url.scheme`, `server.address` |
-| `http.server.active_requests` | `http_server_active_requests` | Gauge | http-server-common | Количество активных HTTP-запросов | `http.request.method`, `http.route`, `url.scheme`, `server.address` |
-| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | http-client-common | Длительность HTTP-запроса клиента | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type` |
+- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — распределение значений, в частности длительностей
+- [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — монотонно возрастающий счётчик
+- [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — текущее значение метрики
 
-### Database
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `db.client.operation.duration` | `db_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | database-common | Длительность операции/запроса к БД | `db.client.connection.pool.name`, `db.query.text`, `db.operation.name` |
+### HTTP сервер
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность обработки HTTP-запроса на сервере | `http.request.method`, `http.route`, `url.scheme`, `server.address` |
+| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Количество активных HTTP-запросов | `http.request.method`, `http.route`, `url.scheme`, `server.address` |
+
+Подробнее о модуле в документации [HTTP сервер](http-server.md).
+
+### HTTP клиент
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность HTTP-запроса клиента | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type` |
+
+Подробнее о модуле в документации [HTTP клиент](http-client.md).
+
+### База данных
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `db.client.operation.duration` | `db_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность операции/запроса к БД | `db.client.connection.pool.name`, `db.query.text`, `db.operation.name` |
+
+Подробнее о модуле в документации [Базы данных](database-common.md).
 
 ### Kafka
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | kafka (producer) | Длительность отправки сообщения | `messaging.system`, `messaging.destination.name`, `messaging.client.id`, `messaging.operation.type` |
-| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | Counter | kafka (producer) | Количество отправленных сообщений | `messaging.system`, `messaging.destination.name`, `messaging.client.id` |
-| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | kafka (consumer) | Длительность обработки батча сообщений | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.kafka.consumer.name` |
-| `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | Gauge | kafka (consumer) | Лаг консьюмера по партициям | `messaging.system`, `messaging.destination.name`, `messaging.destination.partition.id`, `messaging.client.id`, `messaging.kafka.consumer.name` |
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность отправки сообщения | `messaging.system`, `messaging.destination.name`, `messaging.client.id`, `messaging.operation.type` |
+| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество отправленных сообщений | `messaging.system`, `messaging.destination.name`, `messaging.client.id` |
+| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность обработки батча сообщений | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.kafka.consumer.name` |
+| `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Лаг консьюмера по партициям | `messaging.system`, `messaging.destination.name`, `messaging.destination.partition.id`, `messaging.client.id`, `messaging.kafka.consumer.name` |
 
-### gRPC
+Подробнее о модуле в документации [Kafka](kafka.md).
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `rpc.server.duration` | `rpc_server_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | grpc-server | Длительность обработки gRPC-вызова на сервере | `rpc.system`, `rpc.service`, `rpc.method` |
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | grpc-client | Длительность gRPC-вызова клиента | `rpc.method`, `rpc.service`, `rpc.system`, `server.address`, `server.port` |
+### gRPC сервер
 
-### Scheduling
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `rpc.server.duration` | `rpc_server_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность обработки gRPC-вызова на сервере | `rpc.system`, `rpc.service`, `rpc.method` |
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `scheduling.job.duration` | `scheduling_job_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | scheduling-common | Длительность выполнения запланированной задачи | `code.function` |
+Подробнее о модуле в документации [gRPC сервер](grpc-server.md).
 
-### Cache (Redis)
+### gRPC клиент
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `cache.duration` | `cache_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | cache-redis | Длительность операции кэша (GET, SET, DELETE и т.д.) | `cache`, `operation`, `origin` |
-| `cache.ratio` | `cache_ratio_total` | Counter | cache-redis | Счетчик попаданий/промахов кэша | `cache`, `origin` |
-| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | cache-redis (lettuce) | Латентность завершения Redis-команды | `type`, `local`, `remote`, `command`, `error.type` |
-| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | cache-redis (lettuce) | Латентность первого ответа Redis-команды | `type`, `local`, `remote`, `command`, `error.type` |
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность gRPC-вызова клиента | `rpc.method`, `rpc.service`, `rpc.system`, `server.address`, `server.port` |
 
-### Resilience
+Подробнее о модуле в документации [gRPC клиент](grpc-client.md).
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `resilient.retry.attempts` | `resilient_retry_attempts_total` | Counter | resilient | Количество попыток ретрая | `name` |
-| `resilient.retry.exhausted` | `resilient_retry_exhausted_total` | Counter | resilient | Количество исчерпанных ретраев | `name` |
-| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_total` | Counter | resilient | Количество таймаутов | `name` |
-| `resilient.fallback.attempts` | `resilient_fallback_attempts_total` | Counter | resilient | Количество вызовов фолбэка | `type`, `name` |
-| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | Gauge | resilient | Состояние circuit breaker (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `name` |
-| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_total` | Counter | resilient | Переходы состояния circuit breaker | `name`, `state` |
-| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_total` | Counter | resilient | Попытки/отказы вызова через circuit breaker | `name`, `state`, `status` |
+### Планировщик
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `scheduling.job.duration` | `scheduling_job_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность выполнения запланированной задачи | `code.function` |
+
+Подробнее о модуле в документации [Планировщик](scheduling.md).
+
+### Кэш
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `cache.duration` | `cache_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность операции кэша (GET, SET, DELETE и т.д.) | `cache`, `operation`, `origin` |
+| `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Счётчик попаданий/промахов кэша | `cache`, `origin` |
+| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Латентность завершения Redis-команды | `type`, `local`, `remote`, `command`, `error.type` |
+| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Латентность первого ответа Redis-команды | `type`, `local`, `remote`, `command`, `error.type` |
+
+Подробнее о модуле в документации [Кэш](cache.md).
+
+### Отказоустойчивость
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `resilient.retry.attempts` | `resilient_retry_attempts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество попыток ретрая | `name` |
+| `resilient.retry.exhausted` | `resilient_retry_exhausted_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество исчерпанных ретраев | `name` |
+| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество таймаутов | `name` |
+| `resilient.fallback.attempts` | `resilient_fallback_attempts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Количество вызовов фолбэка | `type`, `name` |
+| `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Состояние circuit breaker (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `name` |
+| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Переходы состояния circuit breaker | `name`, `state` |
+| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Попытки/отказы вызова через circuit breaker | `name`, `state`, `status` |
+
+Подробнее о модуле в документации [Отказоустойчивость](resilient.md).
 
 ### JMS
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `messaging.receive.duration` | `messaging_receive_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | jms | Длительность получения JMS-сообщения | `messaging.system`, `messaging.destination.name` |
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `messaging.receive.duration` | `messaging_receive_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность получения JMS-сообщения | `messaging.system`, `messaging.destination.name` |
 
-### SOAP
+### SOAP клиент
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | soap-client | Длительность SOAP-вызова клиента | `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port` |
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность SOAP-вызова клиента | `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port` |
 
-### S3
+Подробнее о модуле в документации [SOAP клиент](soap-client.md).
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | s3-client | Длительность S3 API-операции | `rpc.system`, `rpc.method`, `aws.s3.bucket` |
+### S3 клиент
 
-### Camunda
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность S3 API-операции | `rpc.system`, `rpc.method`, `aws.s3.bucket` |
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | camunda-engine-bpmn | Длительность выполнения Camunda BPMN Java delegate | `delegate` |
-| `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | Timer | camunda-zeebe-worker | Длительность обработки задачи Zeebe worker | `job.name`, `job.type` |
+Подробнее о модуле в документации [S3 клиент](s3-client.md).
 
-### System
+### Camunda 7 BPMN
 
-| Метрика | Prometheus | Тип | Модуль | Описание | Теги |
-|---------|------------|-----|--------|----------|------|
-| `kora.up` | `kora_up` | Gauge | micrometer | Статус/версия фреймворка | `version` |
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность выполнения Camunda BPMN Java delegate | `delegate` |
 
-### JVM (Micrometer)
+Подробнее о модуле в документации [Camunda 7 BPMN](camunda7-bpmn.md).
 
-Стандартные JVM-метрики собираются автоматически через Micrometer:
+### Camunda 8 Worker
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Длительность обработки задачи Zeebe worker | `job.name`, `job.type` |
+
+Подробнее о модуле в документации [Camunda 8 Worker](camunda8-worker.md).
+
+### Система
+
+| Метрика | Prometheus | Тип | Описание | Теги |
+|---------|------------|-----|----------|------|
+| `kora.up` | `kora_up` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Статус/версия фреймворка | `version` |
+
+### JVM
+
+Стандартные JVM-метрики собираются автоматически через [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
 
 - `jvm.gc.*` — сборка мусора
 - `jvm.memory.*` — память

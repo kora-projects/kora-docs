@@ -164,6 +164,8 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
 
 You can also configure [Netty transport](netty.md).
 
+Module metrics are described in the [Metrics Reference](metrics.md#grpc-client) section.
+
 ## Service
 
 Created gRPC services can be injected as dependency:
