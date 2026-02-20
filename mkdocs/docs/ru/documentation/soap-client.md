@@ -103,7 +103,7 @@
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     6.  Включает трассировку модуля (по умолчанию `true`)
 
-Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#soap-клиент).
+Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#soap-client).
 
 ## Использование
 
