@@ -176,6 +176,8 @@
     22.  Включает сбор метрик/телеметрии оркестратора (по умолчанию `false`)
     23.  Включает трассировку модуля (по умолчанию `true`)
 
+Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-7-bpmn).
+
 ## Исполнители
 
 Регистрировать в Camunda можно как свои [JavaDelegate](https://docs.camunda.org/manual/7.21/user-guide/process-engine/delegation-code/),

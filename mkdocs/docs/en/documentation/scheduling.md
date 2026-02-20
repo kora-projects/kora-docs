@@ -100,6 +100,8 @@ Example of the complete configuration described in the `ScheduledExecutorService
     5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     6. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
+
 ### Fixed rate
 
 Scheduling with tasks running at fixed time intervals, regardless of whether the previous task has completed or not

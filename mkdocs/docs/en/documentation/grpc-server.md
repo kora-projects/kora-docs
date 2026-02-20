@@ -171,6 +171,8 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
 
 You can also configure [Netty transport](netty.md).
 
+Module metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
+
 ## Handlers
 
 Created gRPC service handlers are required to be tagged with the `@Component` annotation:
