@@ -165,6 +165,8 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     22.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     23.  Enables module tracing (default is `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
+
 ## SomeController declarative
 
 The `@HttpController` annotation should be used to create a controller, and the `@Component` annotation should be used to register it as a dependency.

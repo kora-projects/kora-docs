@@ -208,6 +208,8 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     13. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     14. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
+
 ### Consume strategy
 
 `subscribe` strategy involves the use of [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/),

@@ -211,6 +211,8 @@ Example of a complete configuration for `mycache.config` cache, parameters are d
     2.  When reading, sets the time [expiration](https://redis.io/commands/getex/) (optional)
     3.  Prefix a key in a specific cache to avoid key collisions within a Redis database, can be an empty string then keys will be without prefixes (**required**)
 
+Module metrics are described in the [Metrics Reference](metrics.md#cache) section.
+
 #### Configurator
 
 Можно зарегистрировать `LettuceConfigurator` который позволит до настроить `Lettuce` клиент перед созданием.
