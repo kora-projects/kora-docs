@@ -52,33 +52,34 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     httpServer {
         publicApiHttpPort = 8080 //(1)!
         privateApiHttpPort = 8085 //(2)!
-        privateApiHttpMetricsPath = "/metrics" //(3)!
-        privateApiHttpReadinessPath = "/system/readiness" //(4)!
-        privateApiHttpLivenessPath = "/system/liveness" //(5)!
-        ignoreTrailingSlash = false //(6)!
-        ioThreads = 2 //(7)!
-        blockingThreads = 2 //(8)!
-        shutdownWait = "30s" //(9)!
-        threadKeepAliveTimeout = "60s" //(10)!
-        socketReadTimeout = "0s" //(11)!
-        socketWriteTimeout = "0s" //(12)!
-        socketKeepAliveEnabled = false //(13)!
-        virtualThreadsEnabled = false //(14)!
+        internalApiHttpPort = 8090 //(3)!
+        privateApiHttpMetricsPath = "/metrics" //(4)!
+        privateApiHttpReadinessPath = "/system/readiness" //(5)!
+        privateApiHttpLivenessPath = "/system/liveness" //(6)!
+        ignoreTrailingSlash = false //(7)!
+        ioThreads = 2 //(8)!
+        blockingThreads = 2 //(9)!
+        shutdownWait = "30s" //(10)!
+        threadKeepAliveTimeout = "60s" //(11)!
+        socketReadTimeout = "0s" //(12)!
+        socketWriteTimeout = "0s" //(13)!
+        socketKeepAliveEnabled = false //(14)!
+        virtualThreadsEnabled = false //(15)!
         telemetry {
             logging {
-                enabled = false //(15)!
-                stacktrace = true //(16)!
-                mask = "***" //(17)!
-                maskqueries = [ ] //(18)!
-                maskheaders = [ "authorization", "cookie", "set-cookie" ] //(19)!
-                pathtemplate = true //(20)!
+                enabled = false //(16)!
+                stacktrace = true //(17)!
+                mask = "***" //(18)!
+                maskqueries = [ ] //(19)!
+                maskheaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
+                pathtemplate = true //(21)!
             }
             metrics {
-                enabled = true //(21)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(22)!
+                enabled = true //(22)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
             }
             tracing {
-                enabled = true //(23)!
+                enabled = true //(24)!
             }
         }
     }
@@ -86,27 +87,28 @@ Example of the complete configuration described in the `HttpServerConfig` class 
 
     1.  Public server port
     2.  Private server port
-    3.  Path to get [metrics](metrics.md) on the private server
-    4.  Path to get [probes](probes.md) status on the private server
-    5.  Path to get [probes viability](probes.md) status on a private server
-    6.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
-    7.  Number of network threads, default is the number of CPU cores or minimum `2`.
-    8.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
-    9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Maximum lifetime of the request handler thread
-    11.  Maximum waiting time for reading data from the socket/connection
-    12.  Maximum waiting time for writing data to the socket/connection
-    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
-    14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Enables module logging (default `false`)
-    16.  Enables call stack logging in case of exception
-    17.  Mask that is used to hide specified headers and request/response parameters
-    18.  List of request parameters to be hidden
-    19.  List of request/response headers that should be hidden
-    20.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    21.  Enables module metrics (default `true`)
-    22.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    23.  Enables module tracing (default is `true`)
+    3.  Internal API server port (for inter-service communication)
+    4.  Path to get [metrics](metrics.md) on the private server
+    5.  Path to get [probes](probes.md) status on the private server
+    6.  Path to get [probes viability](probes.md) status on a private server
+    7.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
+    8.  Number of network threads, default is the number of CPU cores or minimum `2`.
+    9.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
+    10.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
+    11.  Maximum lifetime of the request handler thread
+    12.  Maximum waiting time for reading data from the socket/connection
+    13.  Maximum waiting time for writing data to the socket/connection
+    14.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
+    15.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
+    16.  Enables module logging (default `false`)
+    17.  Enables call stack logging in case of exception
+    18.  Mask that is used to hide specified headers and request/response parameters
+    19.  List of request parameters to be hidden
+    20.  List of request/response headers that should be hidden
+    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    22.  Enables module metrics (default `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    24.  Enables module tracing (default is `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -114,56 +116,103 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     httpServer:
       publicApiHttpPort: 8080 #(1)!
       privateApiHttpPort: 8085 #(2)!
-      privateApiHttpMetricsPath: "/metrics" #(3)!
-      privateApiHttpReadinessPath: "/system/readiness" #(4)!
-      privateApiHttpLivenessPath: "/system/liveness" #(5)!
-      ignoreTrailingSlash: false #(6)!
-      ioThreads: 2 #(7)!
-      blockingThreads: 2 #(8)!
-      shutdownWait: "30s" #(9)!
-      threadKeepAliveTimeout: "60s" #(10)!
-      socketReadTimeout: "0s" #(11)!
-      socketWriteTimeout: "0s" #(12)!
-      socketKeepAliveEnabled: false #(13)!
-      virtualThreadsEnabled: false #(14)!
+      internalApiHttpPort: 8090 #(3)!
+      privateApiHttpMetricsPath: "/metrics" #(4)!
+      privateApiHttpReadinessPath: "/system/readiness" #(5)!
+      privateApiHttpLivenessPath: "/system/liveness" #(6)!
+      ignoreTrailingSlash: false #(7)!
+      ioThreads: 2 #(8)!
+      blockingThreads: 2 #(9)!
+      shutdownWait: "30s" #(10)!
+      threadKeepAliveTimeout: "60s" #(11)!
+      socketReadTimeout: "0s" #(12)!
+      socketWriteTimeout: "0s" #(13)!
+      socketKeepAliveEnabled: false #(14)!
+      virtualThreadsEnabled: false #(15)!
       telemetry:
         logging:
-          enabled: false #(15)!
-          stacktrace: true #(16)!
-          mask: "***" #(17)!
-          maskQueries: [ ] #(18)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(19)!
-          pathTemplate: true #(20)!
+          enabled: false #(16)!
+          stacktrace: true #(17)!
+          mask: "***" #(18)!
+          maskQueries: [ ] #(19)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(20)!
+          pathTemplate: true #(21)!
         metrics:
-          enabled: true #(21)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(22)!
+          enabled: true #(22)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
         telemetry:
-          enabled: true #(23)!
+          enabled: true #(24)!
     ```
 
     1.  Public server port
     2.  Private server port
-    3.  Path to get [metrics](metrics.md) on the private server
-    4.  Path to get [probes](probes.md) status on the private server
-    5.  Path to get [probes viability](probes.md) status on a private server
-    6.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
-    7.  Number of network threads, default is the number of CPU cores or minimum `2`.
-    8.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
-    9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Maximum lifetime of the request handler thread
-    11.  Maximum waiting time for reading data from the socket/connection
-    12.  Maximum waiting time for writing data to the socket/connection
-    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
-    14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Enables module logging (default `false`)
-    16.  Enables call stack logging in case of exception
-    17.  Mask that is used to hide specified headers and request/response parameters
-    18.  List of request parameters to be hidden
-    19.  List of request/response headers that should be hidden
-    20.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    21.  Enables module metrics (default `true`)
-    22.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    23.  Enables module tracing (default is `true`)
+    3.  Internal API server port (for inter-service communication)
+    4.  Path to get [metrics](metrics.md) on the private server
+    5.  Path to get [probes](probes.md) status on the private server
+    6.  Path to get [probes viability](probes.md) status on a private server
+    7.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
+    8.  Number of network threads, default is the number of CPU cores or minimum `2`.
+    9.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
+    10.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
+    11.  Maximum lifetime of the request handler thread
+    12.  Maximum waiting time for reading data from the socket/connection
+    13.  Maximum waiting time for writing data to the socket/connection
+    14.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
+    15.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
+    16.  Enables module logging (default `false`)
+    17.  Enables call stack logging in case of exception
+    18.  Mask that is used to hide specified headers and request/response parameters
+    19.  List of request parameters to be hidden
+    20.  List of request/response headers that should be hidden
+    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    22.  Enables module metrics (default `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    24.  Enables module tracing (default is `true`)
+
+## Internal API
+
+The framework supports launching an additional HTTP server on a separate port for internal API — endpoints
+intended for inter-service communication on an internal network,
+separated from public endpoints for security purposes.
+
+To register a controller on the internal API server, use the `@InternalApi` annotation:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @InternalApi //(1)!
+    @Component
+    @HttpController
+    public final class InternalController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/internal/check")
+        public HttpServerResponse check() {
+            return HttpServerResponse.of(200, HttpBody.plaintext("OK"));
+        }
+    }
+    ```
+
+    1. Indicates that the controller will be registered on the internal HTTP server
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @InternalApi //(1)!
+    @Component
+    @HttpController
+    class InternalController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/internal/check")
+        fun check(): HttpServerResponse {
+            return HttpServerResponse.of(200, HttpBody.plaintext("OK"))
+        }
+    }
+    ```
+
+    1. Indicates that the controller will be registered on the internal HTTP server
+
+The internal API server supports telemetry (logging, metrics, tracing) as it handles business traffic.
+Interceptors (`HttpServerInterceptor`) annotated with `@InternalApi` will only be applied to the internal server.
 
 ## SomeController declarative
 
