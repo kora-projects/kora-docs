@@ -152,6 +152,8 @@ An example of overriding named settings for a particular CircuitBreaker:
           waitDurationInOpenState: "50s"
     ```
 
+Module metrics are described in the [Metrics Reference](metrics.md#resilience) section.
+
 ### Exception filtering
 
 In order to register which errors should be recorded as CircuitBreaker errors, you can override the default filter,

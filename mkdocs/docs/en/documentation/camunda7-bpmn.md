@@ -176,6 +176,8 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
     22. Enables collection of engine metrics/telemetry (default is `false`)
     23. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#camunda-7-bpmn) section.
+
 ## Applications
 
 You can register in Camunda user [JavaDelegate](https://docs.camunda.org/manual/7.21/user-guide/process-engine/delegation-code/)

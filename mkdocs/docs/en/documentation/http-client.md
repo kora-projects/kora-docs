@@ -152,6 +152,8 @@ and `HttpClientConfig` classes (default or example values are specified):
     17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     18. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
+
 #### Configurer
 
 Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be available as component:

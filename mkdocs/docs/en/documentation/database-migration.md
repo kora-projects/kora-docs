@@ -42,20 +42,44 @@ Example of the complete configuration described in the `FlywayConfig` class (def
 
     ```javascript
     flyway {
-        locations = "db/migration" //(1)!
+        enabled = true //(1)!
+        locations = ["db/migration"] //(2)!
+        executeInTransaction = true //(3)!
+        validateOnMigrate = true //(4)!
+        mixed = false //(5)!
+        configurationProperties = {} //(6)!
     }
     ```
 
-    1.  Directory paths where to look for migration scripts
+    1. Whether database migration is enabled when the application starts. If `false`, migrations will not be executed.
+    2. Directory paths where migration scripts are located.
+    3. Whether to execute migrations within a transaction.
+    4. Whether to verify checksums of existing migrations before execution. An error will occur if they do not match.
+    5. Whether to allow mixing transactional and non-transactional SQL operations in a single migration. If enabled, the entire migration will be executed **without a transaction** to avoid errors in databases where certain operations cannot be run inside a transaction.
+
+       This setting is only relevant for databases that do not support executing certain operations within a transaction: PostgreSQL, Aurora PostgreSQL, SQL Server, and SQLite.
+    6. Additional key-value configuration properties for `Flyway#configurationProperties`.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     flyway:
-      locations: "db/migration" #(1)!
+        enabled: true #(1)!
+        locations: ["db/migration"] #(2)!
+        executeInTransaction: true #(3)!
+        validateOnMigrate: true #(4)!
+        mixed: false #(5)!
+        configurationProperties: {} #(6)!
     ```
 
-    1.  Directory paths where to look for migration scripts
+    1. Whether database migration is enabled when the application starts. If `false`, migrations will not be executed.
+    2. Directory paths where migration scripts are located.
+    3. Whether to execute migrations within a transaction.
+    4. Whether to verify checksums of existing migrations before execution. An error will occur if they do not match.
+    5. Whether to allow mixing transactional and non-transactional SQL operations in a single migration. If enabled, the entire migration will be executed **without a transaction** to avoid errors in databases where certain operations cannot be run inside a transaction.
+
+       This setting is only relevant for databases that do not support executing certain operations within a transaction: PostgreSQL, Aurora PostgreSQL, SQL Server, and SQLite.
+    6. Additional key-value configuration properties for `Flyway#configurationProperties`.
 
 ## Liquibase
 

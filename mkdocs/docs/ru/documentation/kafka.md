@@ -208,6 +208,8 @@
     13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     14. Включает трассировку модуля (по умолчанию `true`)
 
+Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#kafka).
+
 ### Стратегия подключения
 
 `subscribe` стратегия подразумевает использование [group.id](https://medium.com/@kirill.sereda/kafka-%D0%B4%D0%BB%D1%8F-%D1%81%D0%B0%D0%BC%D1%8B%D1%85-%D0%BC%D0%B0%D0%BB%D0%B5%D0%BD%D1%8C%D0%BA%D0%B8%D1%85-f42864cb1bfb),
