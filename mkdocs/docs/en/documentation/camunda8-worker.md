@@ -159,6 +159,8 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
     19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     20. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#camunda-8-worker) section.
+
 ## Worker
 
 Worker is a handler that can perform a specific job in a process.

@@ -103,6 +103,8 @@ Example of the complete configuration described in the `SoapServiceConfig` class
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     6. Enables module tracing (default `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#soap-client) section.
+
 ## Usage
 
 Once all components have been created the created SOAP service is available for deployment, an example for a `SimpleService` service is shown below:

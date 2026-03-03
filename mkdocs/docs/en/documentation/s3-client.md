@@ -142,6 +142,8 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
     13.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     14.  Enables module tracing (default is `true`)
 
+Module metrics are described in the [Metrics Reference](metrics.md#s3-client) section.
+
 ### Response format
 
 When using AWS module, it is possible to return special response formats specific only to AWS library:
