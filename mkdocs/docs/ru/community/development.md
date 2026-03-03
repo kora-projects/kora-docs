@@ -7,5 +7,5 @@ search:
 
 ## Kora плагин
 
-[Kora плагин для IntelliJ IDEA](https://plugins.jetbrains.com/plugin/30225-kora) предоставляет навигацию 
+[Kora плагин для IntelliJ IDEA](https://plugins.jetbrains.com/plugin/30747-kora-support) предоставляет навигацию 
 и отображение точек внедрения зависимостей и их реализаций в рамках Kora DI.

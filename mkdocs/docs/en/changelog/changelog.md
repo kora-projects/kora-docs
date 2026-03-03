@@ -42,6 +42,7 @@ Fixed:
 ### 1.2.9
 
 Added:
+
 - Add MAX_ENTITY_SIZE undertow option in http server config with default `256MiB`
 
 Fixed:
