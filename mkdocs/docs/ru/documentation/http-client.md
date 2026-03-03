@@ -157,6 +157,8 @@
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     19.  Включает трассировку модуля (по умолчанию `true`)
 
+Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-client).
+
 #### Конфигуратор
 
 Пример настройки построителя OkHttp клиента, `OkHttpConfigurer` должен быть доступен как компонент:
