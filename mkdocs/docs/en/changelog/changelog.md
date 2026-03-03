@@ -5,7 +5,50 @@ hide:
   - navigation
 ---
 
-## 1.2.8
+## 1.2.12
+
+Added:
+
+- Added OpenAPI generate support for `nameMapping` option for field names
+
+Fixed:
+
+- Fixed `KafkaPublisher` correct method handling of `CompletableFuture` signature in Kotlin
+- Fixed HTTP declarative client usage of `Map<String, List<T>>` query parameter
+- Fixed OpenAPI generate correct reserved keyword field names and support for `nameMapping` option
+
+### 1.2.11
+
+Added:
+- Enriched Flyway config with more options
+
+Fixed:
+
+- Fixed interface config default values in Kotlin broken in `1.2.10`
+- Fixed `TraceParent` header in HTTP server responses when interceptor throws error
+
+### 1.2.10
+
+Added:
+
+- Added data classes configs aware of default values in constructor in Kotlin
+
+Fixed:
+
+- Fixed HTTP spans not following OpenTelemetry status specification
+- Fixed SQL parameter regex to handle `=` symbol without spaces for repositories
+
+### 1.2.9
+
+Added:
+- Add MAX_ENTITY_SIZE undertow option in http server config with default `256MiB`
+
+Fixed:
+
+- Fixed not necessary clearing HTTP server telemetry context after starting request processing
+- Fixed JUnit extension support for `Wrapped<T>` components finding in TestGraph
+
+### 1.2.8
 
 Fixed:
 

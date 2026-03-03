@@ -54,6 +54,8 @@ nav:
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md
+  - Сообщество:
+      - Разработки: community/development.md
   - Журнал изменений: changelog/changelog.md
 
 
