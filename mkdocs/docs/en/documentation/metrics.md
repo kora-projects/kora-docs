@@ -133,7 +133,8 @@ All Kora metrics use [OpenTelemetry semantic conventions](https://opentelemetry.
 
 [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html) metric types used:
 
-- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — value distribution, including durations
+- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — used for collecting distributions of arbitrary values.
+This metric type enables efficient data visualization across buckets and percentile calculation.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
 

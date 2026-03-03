@@ -47,7 +47,7 @@ Example of the complete configuration described in the `FlywayConfig` class (def
         executeInTransaction = true //(3)!
         validateOnMigrate = true //(4)!
         mixed = false //(5)!
-        configurationProperties = {} //(6)!
+        configurationProperties {} //(6)!
     }
     ```
 
@@ -56,7 +56,6 @@ Example of the complete configuration described in the `FlywayConfig` class (def
     3. Whether to execute migrations within a transaction.
     4. Whether to verify checksums of existing migrations before execution. An error will occur if they do not match.
     5. Whether to allow mixing transactional and non-transactional SQL operations in a single migration. If enabled, the entire migration will be executed **without a transaction** to avoid errors in databases where certain operations cannot be run inside a transaction.
-
        This setting is only relevant for databases that do not support executing certain operations within a transaction: PostgreSQL, Aurora PostgreSQL, SQL Server, and SQLite.
     6. Additional key-value configuration properties for `Flyway#configurationProperties`.
 
@@ -77,7 +76,6 @@ Example of the complete configuration described in the `FlywayConfig` class (def
     3. Whether to execute migrations within a transaction.
     4. Whether to verify checksums of existing migrations before execution. An error will occur if they do not match.
     5. Whether to allow mixing transactional and non-transactional SQL operations in a single migration. If enabled, the entire migration will be executed **without a transaction** to avoid errors in databases where certain operations cannot be run inside a transaction.
-
        This setting is only relevant for databases that do not support executing certain operations within a transaction: PostgreSQL, Aurora PostgreSQL, SQL Server, and SQLite.
     6. Additional key-value configuration properties for `Flyway#configurationProperties`.
 

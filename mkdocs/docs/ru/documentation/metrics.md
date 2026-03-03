@@ -133,7 +133,8 @@
 
 Используемые типы метрик [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
 
-- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — распределение значений, в частности длительностей
+- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — применяется как инструмент для сбора распределения произвольных величин. 
+Тип метрики позволяет эффективно визуализировать данные по бакетам и рассчитывать персентиль.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — монотонно возрастающий счётчик
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — текущее значение метрики
 

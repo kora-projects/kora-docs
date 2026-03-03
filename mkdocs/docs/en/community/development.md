@@ -7,5 +7,5 @@ This section provides developments and extensions for Kora Framework created by 
 
 ## Kora plugin
 
-[Kora plugin for IntelliJ IDEA](https://plugins.jetbrains.com/plugin/30225-kora) provides navigation 
+[Kora plugin for IntelliJ IDEA](https://plugins.jetbrains.com/plugin/30747-kora-support) provides navigation 
 and display of dependency injection points and their implementations within Kora DI.
