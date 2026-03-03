@@ -20,6 +20,7 @@ Fixed:
 ### 1.2.11
 
 Added:
+
 - Enriched Flyway config with more options
 
 Fixed:
@@ -31,7 +32,7 @@ Fixed:
 
 Added:
 
-- Added data classes configs aware of default values in constructor in Kotlin
+- Added aware of default values in constructors of `data` classes configs in Kotlin
 
 Fixed:
 

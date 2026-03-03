@@ -64,21 +64,22 @@ Example of the complete configuration described in the `HttpServerConfig` class 
         socketWriteTimeout = "0s" //(12)!
         socketKeepAliveEnabled = false //(13)!
         virtualThreadsEnabled = false //(14)!
+        maxRequestBodySize = "256MiB" //(15)!
         telemetry {
             logging {
-                enabled = false //(15)!
-                stacktrace = true //(16)!
-                mask = "***" //(17)!
-                maskqueries = [ ] //(18)!
-                maskheaders = [ "authorization", "cookie", "set-cookie" ] //(19)!
-                pathtemplate = true //(20)!
+                enabled = false //(16)!
+                stacktrace = true //(17)!
+                mask = "***" //(18)!
+                maskqueries = [ ] //(19)!
+                maskheaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
+                pathtemplate = true //(21)!
             }
             metrics {
-                enabled = true //(21)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(22)!
+                enabled = true //(22)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
             }
             tracing {
-                enabled = true //(23)!
+                enabled = true //(24)!
             }
         }
     }
@@ -98,15 +99,16 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     12.  Maximum waiting time for writing data to the socket/connection
     13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
     14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Enables module logging (default `false`)
-    16.  Enables call stack logging in case of exception
-    17.  Mask that is used to hide specified headers and request/response parameters
-    18.  List of request parameters to be hidden
-    19.  List of request/response headers that should be hidden
-    20.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    21.  Enables module metrics (default `true`)
-    22.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    23.  Enables module tracing (default is `true`)
+    15.  Maximum allowed size of the incoming request body
+    16.  Enables module logging (default `false`)
+    17.  Enables call stack logging in case of exception
+    18.  Mask that is used to hide specified headers and request/response parameters
+    19.  List of request parameters to be hidden
+    20.  List of request/response headers that should be hidden
+    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    22.  Enables module metrics (default `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    24.  Enables module tracing (default is `true`)
 
 === ":simple-yaml: `YAML`"
 
@@ -126,19 +128,20 @@ Example of the complete configuration described in the `HttpServerConfig` class 
       socketWriteTimeout: "0s" #(12)!
       socketKeepAliveEnabled: false #(13)!
       virtualThreadsEnabled: false #(14)!
+      maxRequestBodySize: "256MiB" #(15)!
       telemetry:
         logging:
-          enabled: false #(15)!
-          stacktrace: true #(16)!
-          mask: "***" #(17)!
-          maskQueries: [ ] #(18)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(19)!
-          pathTemplate: true #(20)!
+          enabled: false #(16)!
+          stacktrace: true #(17)!
+          mask: "***" #(18)!
+          maskQueries: [ ] #(19)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(20)!
+          pathTemplate: true #(21)!
         metrics:
-          enabled: true #(21)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(22)!
+          enabled: true #(22)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
         telemetry:
-          enabled: true #(23)!
+          enabled: true #(24)!
     ```
 
     1.  Public server port
@@ -155,15 +158,16 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     12.  Maximum waiting time for writing data to the socket/connection
     13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
     14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Enables module logging (default `false`)
-    16.  Enables call stack logging in case of exception
-    17.  Mask that is used to hide specified headers and request/response parameters
-    18.  List of request parameters to be hidden
-    19.  List of request/response headers that should be hidden
-    20.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    21.  Enables module metrics (default `true`)
-    22.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    23.  Enables module tracing (default is `true`)
+    15.  Maximum allowed size of the incoming request body
+    16.  Enables module logging (default `false`)
+    17.  Enables call stack logging in case of exception
+    18.  Mask that is used to hide specified headers and request/response parameters
+    19.  List of request parameters to be hidden
+    20.  List of request/response headers that should be hidden
+    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
+    22.  Enables module metrics (default `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
+    24.  Enables module tracing (default is `true`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
