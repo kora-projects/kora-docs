@@ -171,6 +171,9 @@ Example of the complete configuration described in the `HttpServerConfig` class 
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
+Kora provides fine-grained control over the Undertow HTTP server through two dedicated configuration interfaces: `UndertowConfigurer` and `HttpHandlerConfigurer`. 
+These allow you to customize server behavior and request processing pipeline without sacrificing integration with Kora’s modular architecture.
+
 ## SomeController declarative
 
 The `@HttpController` annotation should be used to create a controller, and the `@Component` annotation should be used to register it as a dependency.

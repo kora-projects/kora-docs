@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.2.12
+## 1.2.13
+
+Added:
+
+- Added support for custom Undertow HTTP handler configuration via `HttpHandlerConfigurer`
+- Added `UndertowConfigurer` for advanced HTTP server setup in Undertow
+
+Fixed:
+
+- Fixed `of` method contract in `HttpServerResponseException` to ensure consistent exception creation
+- Fixed OpenAPI reserved keywords splitting to properly handle different target languages `Java/Kotlin`
+- Fixed AOP method propagation for `@Mapping` and `@Tag` annotations
+- Fixed Kora app KSP processor to validate only required elements, reducing unnecessary checks
+- Optimized Database repository coroutine dispatcher initialization to improve startup performance
+
+### 1.2.12
 
 Added:
 
