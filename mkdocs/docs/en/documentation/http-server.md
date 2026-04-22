@@ -70,9 +70,9 @@ Example of the complete configuration described in the `HttpServerConfig` class 
                 enabled = false //(16)!
                 stacktrace = true //(17)!
                 mask = "***" //(18)!
-                maskqueries = [ ] //(19)!
-                maskheaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
-                pathtemplate = true //(21)!
+                maskQueries = [ ] //(19)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
+                pathTemplate = true //(21)!
             }
             metrics {
                 enabled = true //(22)!

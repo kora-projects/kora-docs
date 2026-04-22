@@ -5,7 +5,16 @@ hide:
   - navigation
 ---
 
-## 1.2.13
+## 1.2.14
+
+Fixed:
+
+- Fixed HTTP client and Database repository parent interfaces search for AOP methods
+- Fixed correct Redis cache `mappingFunction` and `null` restricted key handling 
+- Fixed Cache super interfaces search for implementation
+- Fixed JUnit test extension graph cleanup in `afterAll` for `@Nested` test classes with `PER_METHOD` initialization
+
+### 1.2.13
 
 Added:
 
