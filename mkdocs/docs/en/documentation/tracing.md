@@ -259,33 +259,87 @@ You can create a span with the current one in parent as follows:
     }
     ```
 
-## Get tracing
+## Асинхронная трассировка
 
-Obtain the current tracing `Span`, you can use the `getSpan` method in `OpentelemetryContext`:
+In addition to spans automatically created by the framework, you can use the `Tracer` object from the container to create your own traces. The main challenge lies in correctly propagating the context `Fork` to another execution thread to ensure the trace works properly.
+
+To create a trace for asynchronous code inherited from the current parent context, you can do the following:
 
 ===! ":fontawesome-brands-java: `Java`"
 
+    Example is shown for the `CompletableStage` asynchronous approach:
+    
     ```java
-    var span = OpentelemetryContext.getSpan();
+    @Component
+    public final class MyService {
+
+        private final io.opentelemetry.api.trace.Tracer tracer;
+
+        public MyService(Tracer tracer) {
+            this.tracer = tracer;
+        }
+
+        public CompletionStage<String> doTraceWork() {
+            var ctx = ru.tinkoff.kora.common.Context.current().fork();
+            var otctx = OpentelemetryContext.get(ctx);
+            var span = tracer.spanBuilder("myOperation")
+                    .setParent(otctx.getContext())
+                    .startSpan();
+
+            return CompletableFuture.supplyAsync(() -> {
+                        OpentelemetryContext.set(ctx, otctx.add(span));
+                        var result = doWork();
+                        return result;
+                    })
+                    .whenComplete((r, e) -> {
+                        if (e != null) {
+                            span.recordException(e);
+                            span.setStatus(StatusCode.ERROR, e.getMessage());
+                        } else {
+                            span.setStatus(StatusCode.OK);
+                        }
+                        span.end();
+                    });
+        }
+
+        public String doWork() {
+            // do some work
+        }
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin
-    val span = OpentelemetryContext.getSpan();
-    ```
-
-Obtain the current trace ID, you can use the `getTraceId()` method in `OpentelemetryContext`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    var traceId = OpentelemetryContext.getTraceId();
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
+    Example is shown for the `suspend` asynchronous approach:
 
     ```kotlin
-    val traceId = OpentelemetryContext.getTraceId();
-    ```
+    @Component
+    class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
 
+        suspend fun doTraceWork(): String {
+            val ctx = ru.tinkoff.kora.common.Context.current()
+            val otctx = OpentelemetryContext.get(ctx)
+            val span = tracer.spanBuilder("myOperation")
+                .setParent(otctx.getContext())
+                .startSpan()
+
+            OpentelemetryContext.set(ctx, otctx.add(span))
+            return withContext(Context.Kotlin.asCoroutineContext(ctx)) {
+                try {
+                    val result = doWork()
+                    span.setStatus(StatusCode.OK)
+                    result
+                } catch (e: Exception) {
+                    span.recordException(e)
+                    span.setStatus(StatusCode.ERROR, e.message)
+                    throw e
+                } finally {
+                    span.end()
+                    OpentelemetryContext.set(ctx, otctx)
+                }
+            }
+        }
+
+        fun doWork(): String = // do some work
+    }
+    ```

@@ -319,7 +319,7 @@
     @Component
     class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
 
-        fun doTraceWork(): String {
+        suspend fun doTraceWork(): String {
             val ctx = ru.tinkoff.kora.common.Context.current()
             val otctx = OpentelemetryContext.get(ctx)
             val span = tracer.spanBuilder("myOperation")
@@ -327,17 +327,19 @@
                 .startSpan()
 
             OpentelemetryContext.set(ctx, otctx.add(span))
-            try {
-                val result = doWork()
-                span.setStatus(StatusCode.OK)
-                return result
-            } catch (e: Exception) {
-                span.recordException(e)
-                span.setStatus(StatusCode.ERROR, e.message)
-                throw e
-            } finally {
-                span.end()
-                OpentelemetryContext.set(ctx, otctx)
+            return withContext(Context.Kotlin.asCoroutineContext(ctx)) {
+                try {
+                    val result = doWork()
+                    span.setStatus(StatusCode.OK)
+                    result
+                } catch (e: Exception) {
+                    span.recordException(e)
+                    span.setStatus(StatusCode.ERROR, e.message)
+                    throw e
+                } finally {
+                    span.end()
+                    OpentelemetryContext.set(ctx, otctx)
+                }
             }
         }
 

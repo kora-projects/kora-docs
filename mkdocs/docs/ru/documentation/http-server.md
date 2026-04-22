@@ -72,7 +72,7 @@ Undertow — это легковесный веб-сервер с открыты
                 mask = "***" //(18)!
                 maskqueries = [ ] //(19)!
                 maskheaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
-                pathtemplate = true //(21)!
+                pathTemplate = true //(21)!
             }
             metrics {
                 enabled = true //(22)!
