@@ -1,15 +1,3248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Redirect</title>
-    <meta charset="UTF-8" http-equiv="refresh" content="0; url=/kora-docs/ru/" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kora is a compile-time Java and Kotlin framework for cloud-native services with fast startup, transparent generated code, and production-ready modules.">
+    <meta property="og:site_name" content="Kora Framework">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Kora Framework">
+    <meta property="og:description" content="A compile-time Java and Kotlin framework for fast, transparent, cloud-native services.">
+    <meta property="og:image" content="/kora-docs/en/assets/img/kora-long.png">
+    <title>Kora Framework - Compile-time Java and Kotlin services</title>
+    <link rel="icon" href="/kora-docs/en/assets/img/kora.ico">
     <style>
-        .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
+        :root {
+            color-scheme: dark;
+            --bg: #060606;
+            --panel: #101010;
+            --panel-strong: #161616;
+            --line: rgba(255, 255, 255, 0.12);
+            --line-strong: rgba(255, 176, 46, 0.42);
+            --text: #f7f3ea;
+            --muted: #a8a29a;
+            --soft: #756f66;
+            --brand: #ffb02e;
+            --brand-strong: #ffcf6b;
+            --green: #50d890;
+            --blue: #72a7ff;
+            --red: #ff726f;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-width: 320px;
+            margin: 0;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 72px 72px,
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 72px 72px,
+                radial-gradient(ellipse at 52% -20%, rgba(255, 176, 46, 0.24), transparent 46%),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
+            letter-spacing: 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        code, pre {
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        }
+
+        .page-shell {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(6, 6, 6, 0.78);
+            backdrop-filter: blur(18px);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: min(1180px, calc(100% - 40px));
+            height: 68px;
+            margin: 0 auto;
+            gap: 18px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: max-content;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .brand-icon {
+            display: inline-grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border: 1px solid rgba(255, 176, 46, 0.6);
+            border-radius: 7px;
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.95), rgba(255, 207, 107, 0.88));
+            color: #111;
+            font-weight: 900;
+            line-height: 1;
+            box-shadow: 0 0 34px rgba(255, 176, 46, 0.22);
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .brand-version {
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .nav-links a:hover,
+        .lang a:hover {
+            color: var(--text);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: max-content;
+        }
+
+        .lang {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .lang a {
+            padding: 7px 10px;
+        }
+
+        .lang a:first-child {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 15px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.28);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .button.primary {
+            border-color: rgba(255, 176, 46, 0.75);
+            background: var(--brand);
+            color: #111;
+        }
+
+        .button.primary:hover {
+            background: var(--brand-strong);
+        }
+
+        .hero {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 92px 0 70px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.03fr) minmax(380px, 0.97fr);
+            align-items: center;
+            gap: 54px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: fit-content;
+            margin: 0 0 22px;
+            padding: 8px 11px;
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            background: rgba(255, 176, 46, 0.08);
+            color: var(--brand-strong);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .eyebrow::before {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--green);
+            box-shadow: 0 0 22px rgba(80, 216, 144, 0.8);
+            content: "";
+        }
+
+        h1 {
+            max-width: 760px;
+            margin: 0;
+            font-size: clamp(48px, 7vw, 96px);
+            line-height: 0.93;
+            letter-spacing: 0;
+        }
+
+        .speed-word {
+            position: relative;
+            display: inline-block;
+            animation: speed-electric-text 3.8s ease-in-out infinite;
+        }
+
+        .speed-word::after {
+            position: absolute;
+            left: -0.08em;
+            right: -0.08em;
+            bottom: 0.04em;
+            height: 0.09em;
+            border-radius: 999px;
+            background:
+                linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 207, 107, 0.18) 12%,
+                    rgba(255, 207, 107, 0.9) 36%,
+                    rgba(255, 255, 255, 0.78) 48%,
+                    rgba(255, 207, 107, 0.82) 58%,
+                    transparent 100%);
+            box-shadow: 0 0 18px rgba(255, 176, 46, 0.28);
+            opacity: 0;
+            transform: scaleX(0.08);
+            transform-origin: left center;
+            animation: speed-electric-line 3.8s ease-in-out infinite;
+            content: "";
+        }
+
+        .speed-word::before {
+            position: absolute;
+            inset: -0.08em -0.12em -0.02em;
+            pointer-events: none;
+            background:
+                linear-gradient(116deg, transparent 20%, rgba(255, 207, 107, 0.72) 21%, transparent 23%) 8% 25% / 32% 32% no-repeat,
+                linear-gradient(64deg, transparent 44%, rgba(255, 255, 255, 0.64) 45%, transparent 47%) 73% 18% / 28% 30% no-repeat,
+                linear-gradient(132deg, transparent 52%, rgba(255, 176, 46, 0.62) 53%, transparent 55%) 58% 76% / 34% 26% no-repeat;
+            filter: drop-shadow(0 0 10px rgba(255, 176, 46, 0.45));
+            opacity: 0;
+            animation: speed-electric-sparks 3.8s steps(1) infinite;
+            content: "";
+        }
+
+        .magic-word {
+            position: relative;
+            display: inline-block;
+            cursor: crosshair;
+            text-shadow: 0 0 0 rgba(114, 167, 255, 0);
+            transition: color 180ms ease, opacity 260ms ease, text-shadow 180ms ease, filter 260ms ease;
+        }
+
+        .magic-word:hover {
+            color: #fff8ef;
+            text-shadow:
+                0 0 14px rgba(114, 167, 255, 0.26),
+                0 0 28px rgba(255, 176, 46, 0.16);
+        }
+
+        .magic-word.is-damaged {
+            color: rgba(255, 248, 239, var(--magic-visibility, 0.92));
+            opacity: var(--magic-visibility, 0.92);
+            filter:
+                blur(var(--magic-blur, 0px))
+                contrast(var(--magic-contrast, 1.02));
+            text-shadow:
+                1px 0 rgba(114, 167, 255, var(--magic-ghost, 0.08)),
+                -1px 1px rgba(255, 207, 107, var(--magic-ghost, 0.05)),
+                0 0 20px rgba(255, 255, 255, var(--magic-ghost, 0.06));
+        }
+
+        .magic-word::after {
+            position: absolute;
+            inset: -0.02em -0.06em;
+            pointer-events: none;
+            opacity: var(--glass-opacity, 0);
+            background:
+                linear-gradient(118deg, transparent 0 28%, rgba(255, 255, 255, 0.18) 29%, transparent 31%),
+                linear-gradient(54deg, transparent 0 62%, rgba(114, 167, 255, 0.12) 63%, transparent 65%);
+            mix-blend-mode: screen;
+            content: "";
+        }
+
+        .magic-final {
+            display: none;
+        }
+
+        .magic-crack {
+            position: absolute;
+            left: var(--crack-left, 50%);
+            top: var(--crack-top, 50%);
+            width: var(--crack-size, 38px);
+            height: var(--crack-size, 38px);
+            pointer-events: none;
+            opacity: var(--crack-opacity, 0.78);
+            transform: translate(-50%, -50%) rotate(var(--crack-rotate, 0deg));
+            filter:
+                drop-shadow(0 0 1px rgba(255, 255, 255, 0.72))
+                drop-shadow(0 0 4px rgba(114, 167, 255, 0.34));
+            transition: opacity 2.4s ease;
+        }
+
+        .magic-crack::before,
+        .magic-crack::after {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1px;
+            height: 100%;
+            background:
+                linear-gradient(180deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.94) 12%,
+                    rgba(184, 218, 255, 0.78) 42%,
+                    rgba(255, 255, 255, 0.46) 62%,
+                    transparent 100%);
+            transform-origin: 50% 50%;
+            content: "";
+        }
+
+        .magic-crack::after {
+            height: 72%;
+            transform: rotate(62deg);
+        }
+
+        .magic-crack span {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1px;
+            height: var(--ray-height, 58%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(114, 167, 255, 0.22), transparent);
+            transform: rotate(var(--ray-rotate, -44deg));
+            transform-origin: top center;
+        }
+
+        .magic-crack span:nth-child(2) {
+            height: 46%;
+            transform: rotate(var(--ray-rotate-2, 34deg));
+        }
+
+        .magic-crack span:nth-child(3) {
+            height: 34%;
+            transform: rotate(var(--ray-rotate-3, 104deg));
+        }
+
+        .spell-shot {
+            position: fixed;
+            z-index: 30;
+            left: 0;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            pointer-events: none;
+            background: radial-gradient(circle, #fff 0 18%, var(--spell-color) 38%, transparent 72%);
+            box-shadow:
+                0 0 12px var(--spell-color),
+                0 0 28px var(--spell-color);
+            offset-path: var(--spell-path);
+            offset-rotate: auto;
+            animation: spell-flight var(--spell-duration, 900ms) cubic-bezier(0.19, 0.9, 0.28, 1) forwards;
+        }
+
+        .spell-shot::after {
+            position: absolute;
+            right: 7px;
+            top: 50%;
+            width: 64px;
+            height: 3px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, var(--spell-color));
+            filter: blur(0.4px);
+            transform: translateY(-50%);
+            content: "";
+        }
+
+        @keyframes spell-flight {
+            0% {
+                opacity: 0;
+                offset-distance: 0%;
+                transform: scale(0.7);
+            }
+            8% {
+                opacity: 1;
+            }
+            78% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                offset-distance: 100%;
+                transform: scale(0.18);
+            }
+        }
+
+        .magic-word.is-hit {
+            animation: magic-hit 220ms ease-out;
+        }
+
+        .magic-word.is-shattered {
+            display: block;
+            width: min(9.4em, 100%);
+            margin: -0.04em auto 0;
+            color: transparent;
+            cursor: default;
+            opacity: 1;
+            filter: none;
+            font-size: 0.46em;
+            line-height: 0.98;
+            text-align: center;
+            text-shadow: none;
+            animation: final-glass-break 780ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+        }
+
+        .magic-word.is-shattered .magic-label,
+        .magic-word.is-shattered .magic-dot {
+            display: none;
+        }
+
+        .magic-word.is-shattered .magic-final {
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+            color: #f8efe3;
+            font-weight: 800;
+            white-space: normal;
+            text-align: center;
+            text-shadow:
+                0 0 22px rgba(114, 167, 255, 0.2),
+                0 0 18px rgba(255, 176, 46, 0.14);
+            animation: workaround-reveal 900ms ease-out 180ms both;
+        }
+
+        .magic-word.is-shattered .magic-final span {
+            display: block;
+        }
+
+        .magic-word.is-shattered::after {
+            inset: -0.16em -0.12em;
+            opacity: 0.95;
+            background:
+                linear-gradient(112deg, transparent 0 17%, rgba(255, 255, 255, 0.9) 17.4%, transparent 18.1%),
+                linear-gradient(48deg, transparent 0 31%, rgba(184, 218, 255, 0.62) 31.3%, transparent 31.9%),
+                linear-gradient(138deg, transparent 0 46%, rgba(255, 255, 255, 0.72) 46.2%, transparent 46.9%),
+                linear-gradient(72deg, transparent 0 64%, rgba(255, 207, 107, 0.45) 64.2%, transparent 64.8%),
+                linear-gradient(158deg, transparent 0 78%, rgba(255, 255, 255, 0.55) 78.3%, transparent 78.9%);
+            filter: drop-shadow(0 0 8px rgba(114, 167, 255, 0.28));
+            animation: final-crack-flash 1.1s ease-out both;
+        }
+
+        .magic-shard {
+            position: absolute;
+            z-index: 3;
+            left: 50%;
+            top: 50%;
+            width: var(--shard-width, 12px);
+            height: var(--shard-height, 18px);
+            pointer-events: none;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(114, 167, 255, 0.24) 58%, rgba(255, 207, 107, 0.16));
+            clip-path: polygon(50% 0, 100% 82%, 12% 100%);
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(var(--shard-rotate, 0deg));
+            animation: shard-fall 1350ms cubic-bezier(0.14, 0.86, 0.22, 1) forwards;
+            animation-delay: var(--shard-delay, 0ms);
+            mix-blend-mode: screen;
+        }
+
+        @keyframes magic-hit {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            30% {
+                transform: translate(1px, -1px);
+            }
+            62% {
+                transform: translate(-1px, 1px);
+            }
+        }
+
+        @keyframes final-glass-break {
+            0% {
+                transform: translate(0, 0) skewX(0deg);
+            }
+            18% {
+                transform: translate(2px, -1px) skewX(-3deg);
+            }
+            34% {
+                transform: translate(-3px, 2px) skewX(3deg);
+            }
+            52% {
+                transform: translate(1px, 0) skewX(-1deg);
+            }
+            100% {
+                transform: translate(0, 0) skewX(0deg);
+            }
+        }
+
+        @keyframes workaround-reveal {
+            0% {
+                opacity: 0;
+                transform: translateY(0.28em) scale(0.96);
+                filter: blur(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes final-crack-flash {
+            0% {
+                opacity: 0;
+            }
+            18% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.42;
+            }
+        }
+
+        @keyframes shard-fall {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--shard-rotate, 0deg)) scale(0.5);
+            }
+            14% {
+                opacity: 0.95;
+            }
+            100% {
+                opacity: 0;
+                transform:
+                    translate(calc(-50% + var(--shard-x, 0px)), calc(-50% + var(--shard-y, 80px)))
+                    rotate(calc(var(--shard-rotate, 0deg) + var(--shard-spin, 120deg)))
+                    scale(0.92);
+            }
+        }
+
+        .electric-arc {
+            position: absolute;
+            z-index: 1;
+            width: var(--arc-width, 34px);
+            height: var(--arc-height, 14px);
+            left: var(--arc-left, 50%);
+            top: var(--arc-top, 0);
+            pointer-events: none;
+            border-top: 2px solid rgba(255, 226, 142, 0.92);
+            border-right: 1px solid rgba(255, 176, 46, 0.58);
+            border-radius: 48% 52% 0 0;
+            filter: drop-shadow(0 0 8px rgba(255, 176, 46, 0.58));
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(var(--arc-rotate, 0deg)) scale(0.55);
+            animation: electric-arc-pop 420ms ease-out forwards;
+        }
+
+        .electric-arc::after {
+            position: absolute;
+            width: 38%;
+            height: 1px;
+            right: -18%;
+            top: 18%;
+            background: rgba(255, 255, 255, 0.74);
+            box-shadow: 0 0 8px rgba(255, 207, 107, 0.7);
+            transform: rotate(26deg);
+            content: "";
+        }
+
+        @keyframes electric-arc-pop {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--arc-rotate, 0deg)) scale(0.4);
+            }
+            24% {
+                opacity: 1;
+            }
+            52% {
+                opacity: 0.82;
+                transform: translate(-50%, -50%) rotate(var(--arc-rotate, 0deg)) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--arc-rotate, 0deg)) scale(1.14);
+            }
+        }
+
+        @keyframes speed-electric-text {
+            0%, 58%, 100% {
+                color: inherit;
+                text-shadow: none;
+            }
+            62% {
+                color: #fff9ed;
+                text-shadow:
+                    0 0 10px rgba(255, 207, 107, 0.3),
+                    0 0 24px rgba(255, 176, 46, 0.18);
+            }
+            65% {
+                color: inherit;
+                text-shadow: none;
+            }
+            68% {
+                color: #fff8e8;
+                text-shadow: 0 0 18px rgba(255, 207, 107, 0.26);
+            }
+        }
+
+        @keyframes speed-electric-line {
+            0%, 58%, 100% {
+                opacity: 0;
+                transform: scaleX(0.08);
+            }
+            62% {
+                opacity: 0.78;
+                transform: scaleX(0.72);
+            }
+            68% {
+                opacity: 0.36;
+                transform: scaleX(1);
+            }
+            74% {
+                opacity: 0;
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes speed-electric-sparks {
+            0%, 58%, 64%, 70%, 100% {
+                opacity: 0;
+            }
+            60%, 66% {
+                opacity: 0.8;
+            }
+            68% {
+                opacity: 0.45;
+            }
+        }
+
+        .hero-copy {
+            max-width: 690px;
+            margin: 24px 0 0;
+            color: #c7c0b6;
+            font-size: clamp(18px, 2vw, 22px);
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 34px;
+        }
+
+        .command {
+            display: inline-flex;
+            align-items: center;
+            min-height: 48px;
+            max-width: 100%;
+            padding: 0 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.34);
+            color: #d8d2c8;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .command span {
+            color: var(--brand-strong);
+        }
+
+        .hero-note {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 42px;
+        }
+
+        .metric {
+            min-height: 88px;
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.035);
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 22px;
+            line-height: 1.1;
+        }
+
+        .metric span {
+            display: block;
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .console {
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: var(--radius);
+            background: linear-gradient(180deg, rgba(25, 25, 25, 0.96), rgba(8, 8, 8, 0.96));
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .console::before {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, transparent, rgba(255, 176, 46, 0.08), transparent),
+                linear-gradient(rgba(255, 255, 255, 0.03) 50%, transparent 50%) 0 0 / 100% 6px;
+            content: "";
+        }
+
+        .console-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 46px;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .console-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .console-title::before {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--green);
+            box-shadow: 0 0 16px rgba(80, 216, 144, 0.72);
+            content: "";
+        }
+
+        .lights {
+            display: flex;
+            gap: 8px;
+        }
+
+        .lights span {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--red);
+        }
+
+        .lights span:nth-child(2) {
+            background: var(--brand);
+        }
+
+        .lights span:nth-child(3) {
+            background: var(--green);
+        }
+
+        pre {
+            position: relative;
+            margin: 0;
+            padding: 24px;
+            overflow-x: auto;
+            color: #efe8dc;
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .console-code {
+            display: block;
+            min-height: 448px;
+        }
+
+        .console-code::after {
+            display: inline-block;
+            width: 8px;
+            height: 1.18em;
+            margin-left: 2px;
+            background: var(--brand);
+            vertical-align: -0.18em;
+            animation: blink 920ms steps(1) infinite;
+            content: "";
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .token-anno { color: #ffcf6b; }
+        .token-type { color: #72a7ff; }
+        .token-key { color: #ff9f7f; }
+        .token-string { color: #95e6a8; }
+        .token-muted { color: #8f887d; }
+
+        .build-strip {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .build-step {
+            padding: 18px;
+            background: rgba(13, 13, 13, 0.98);
+        }
+
+        .build-step {
+            position: relative;
+            border: 0;
+            color: var(--text);
+            cursor: pointer;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .build-step:not(.is-active)::after {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, transparent, rgba(255, 176, 46, 0.16), transparent);
+            opacity: 0;
+            transform: translateX(-78%);
+            animation: inactive-tab-hint 3.6s ease-in-out infinite;
+            content: "";
+        }
+
+        .build-step.is-active {
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.16), rgba(13, 13, 13, 0.98) 62%),
+                rgba(13, 13, 13, 0.98);
+        }
+
+        @keyframes inactive-tab-hint {
+            0%, 54%, 100% {
+                opacity: 0;
+                transform: translateX(-78%);
+            }
+            68% {
+                opacity: 0.72;
+            }
+            86% {
+                opacity: 0;
+                transform: translateX(78%);
+            }
+        }
+
+        .build-step span {
+            display: block;
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .build-step strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 15px;
+        }
+
+        .build-step.is-active span {
+            color: var(--brand-strong);
+        }
+
+        .snippet-dots {
+            display: flex;
+            gap: 8px;
+            padding: 14px 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(13, 13, 13, 0.98);
+        }
+
+        .snippet-dot {
+            width: 28px;
+            height: 3px;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            padding: 0;
+        }
+
+        .snippet-dot.is-active {
+            background: var(--brand);
+            box-shadow: 0 0 20px rgba(255, 176, 46, 0.46);
+        }
+
+        .section {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 70px 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 26px;
+            margin-bottom: 28px;
+        }
+
+        .section-header.wide-title {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+            align-items: end;
+        }
+
+        .section-header.wide-title h2 {
+            max-width: 820px;
+        }
+
+        .section-header.wide-title .section-lead {
+            max-width: 300px;
+            font-size: 14px;
+        }
+
+        .section h2 {
+            max-width: 760px;
+            margin: 0;
+            font-size: clamp(34px, 4vw, 56px);
+            line-height: 1.02;
+            letter-spacing: 0;
+        }
+
+        .section-lead {
+            max-width: 430px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 16px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .feature {
+            min-height: 260px;
+            padding: 24px;
+            background: rgba(10, 10, 10, 0.92);
+        }
+
+        .feature + .feature {
+            border-left: 1px solid var(--line);
+        }
+
+        .feature-index {
+            color: var(--brand);
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .feature h3,
+        .module h3 {
+            margin: 18px 0 10px;
+            font-size: 20px;
+            letter-spacing: 0;
+        }
+
+        .feature p,
+        .module p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .diagram {
+            margin-top: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            background: #070707;
+            overflow: hidden;
+        }
+
+        .diagram-row {
+            display: grid;
+            grid-template-columns: 118px 1fr;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .diagram-row:last-child {
+            border-bottom: 0;
+        }
+
+        .diagram-label {
+            padding: 13px 14px;
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .diagram-value {
+            padding: 13px 14px;
+            color: #d9d2c8;
+            font-size: 13px;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .benchmark-panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.08), transparent 36%),
+                rgba(255, 255, 255, 0.035);
+            overflow: hidden;
+        }
+
+        .benchmark-topline {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            border-bottom: 1px solid var(--line);
+            background: rgba(10, 10, 10, 0.78);
+        }
+
+        .benchmark-stat {
+            min-height: 98px;
+            padding: 20px 22px;
+        }
+
+        .benchmark-stat + .benchmark-stat {
+            border-left: 1px solid var(--line);
+        }
+
+        .benchmark-stat span {
+            display: block;
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .benchmark-stat strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 24px;
+            line-height: 1.1;
+        }
+
+        .benchmark-chart {
+            display: grid;
+            gap: 13px;
+            padding: 24px;
+        }
+
+        .benchmark-row {
+            display: grid;
+            grid-template-columns: 178px minmax(0, 1fr) 96px;
+            align-items: center;
+            gap: 14px;
+            min-height: 36px;
+        }
+
+        .benchmark-name {
+            color: #d9d2c8;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .benchmark-track {
+            position: relative;
+            height: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.055);
+            overflow: hidden;
+        }
+
+        .benchmark-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: calc(var(--score) * 1%);
+            border-radius: inherit;
+            background:
+                linear-gradient(90deg, rgba(118, 167, 222, 0.66), rgba(86, 196, 154, 0.52));
+            box-shadow: 0 0 18px rgba(114, 167, 255, 0.08);
+            transform: scaleX(0);
+            transform-origin: left center;
+            animation: benchmark-grow 3900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: calc(var(--row) * 90ms);
+        }
+
+        .benchmark-row.is-kora .benchmark-name {
+            color: var(--brand-strong);
+        }
+
+        .benchmark-row.is-kora .benchmark-fill {
+            background:
+                linear-gradient(90deg, var(--brand), var(--brand-strong), #fff4ce);
+            box-shadow:
+                0 0 18px rgba(255, 176, 46, 0.42),
+                0 0 34px rgba(255, 207, 107, 0.18);
+        }
+
+        .benchmark-value {
+            color: var(--muted);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 12px;
+            text-align: right;
+        }
+
+        .benchmark-note {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 0 24px 24px;
+            color: var(--soft);
+            font-size: 12px;
+        }
+
+        .benchmark-note a {
+            color: var(--brand-strong);
+        }
+
+        .startup-panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(80, 216, 144, 0.08), transparent 38%),
+                rgba(255, 255, 255, 0.035);
+            overflow: hidden;
+        }
+
+        .startup-chart {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: end;
+            min-height: 430px;
+            gap: 34px;
+            padding: 50px 34px 34px;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 42px / 100% 72px,
+                rgba(10, 10, 10, 0.6);
+        }
+
+        .startup-bar {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 340px;
+            padding-top: 66px;
+            padding-bottom: 58px;
+        }
+
+        .startup-column {
+            position: relative;
+            width: min(110px, 48%);
+            height: calc(var(--startup-score) * 2.4px);
+            min-height: 28px;
+            border-radius: 4px 4px 0 0;
+            background: linear-gradient(180deg, var(--startup-top), var(--startup-bottom));
+            box-shadow: 0 0 28px var(--startup-glow);
+            transform: scaleY(0);
+            transform-origin: bottom center;
+        }
+
+        #startup.is-running .startup-column {
+            animation: startup-grow var(--startup-duration) linear forwards;
+        }
+
+        .startup-column::after {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 24%),
+                linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            opacity: 0.42;
+            content: "";
+        }
+
+        .startup-ready {
+            position: absolute;
+            bottom: calc(96px + var(--startup-score) * 2.4px);
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            max-width: 170px;
+            padding: 7px 9px;
+            border: 1px solid rgba(80, 216, 144, 0.36);
+            border-radius: 999px;
+            background: rgba(8, 22, 15, 0.88);
+            color: #bff7d8;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.1;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 220ms ease, transform 220ms ease;
+            pointer-events: none;
+        }
+
+        .startup-ready::before {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--green);
+            box-shadow: 0 0 16px rgba(80, 216, 144, 0.85);
+            content: "";
+            flex: 0 0 auto;
+            animation: startup-ready-pulse 1250ms ease-in-out infinite;
+        }
+
+        .startup-bar.is-ready .startup-ready {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .startup-bolt {
+            position: absolute;
+            z-index: 2;
+            width: var(--bolt-width, 34px);
+            height: var(--bolt-height, 12px);
+            left: var(--bolt-left, 50%);
+            top: var(--bolt-top, 40%);
+            pointer-events: none;
+            border-top: 2px solid rgba(255, 226, 142, 0.88);
+            border-radius: 60% 40% 45% 55%;
+            filter: drop-shadow(0 0 7px rgba(255, 207, 107, 0.62));
+            transform: translate(-50%, -50%) rotate(var(--bolt-rotate, 0deg)) scale(0.35);
+            animation: startup-bolt-pop 360ms ease-out forwards;
+        }
+
+        .startup-bolt::after {
+            position: absolute;
+            width: 36%;
+            height: 1px;
+            right: -16%;
+            top: 20%;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 8px rgba(255, 207, 107, 0.68);
+            transform: rotate(28deg);
+            content: "";
+        }
+
+        .startup-value-wrap {
+            position: absolute;
+            left: 50%;
+            bottom: calc(58px + var(--startup-score) * 2.4px * var(--startup-progress, 0));
+            transform: translateX(-50%);
+        }
+
+        .startup-value {
+            color: var(--text);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 20px;
+            font-weight: 900;
+            opacity: 1;
+        }
+
+        .startup-label {
+            position: absolute;
+            bottom: 0;
+            min-height: 42px;
+            width: 100%;
+            color: #d9d2c8;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.18;
+            text-align: center;
+        }
+
+        .startup-bar:not(.is-kora) .startup-column {
+            opacity: 0.82;
+        }
+
+        .startup-caption {
+            display: flex;
+            justify-content: space-between;
+            gap: 64px;
+            padding: 20px 24px 24px;
+            color: var(--soft);
+            font-size: 12px;
+        }
+
+        .startup-caption span {
+            max-width: 430px;
+        }
+
+        .startup-caption span:last-child {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .startup-caption-break {
+            display: block;
+            white-space: nowrap;
+        }
+
+        .architecture-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 0.88fr) minmax(320px, 0.42fr);
+            gap: 14px;
+        }
+
+        .pillar-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .pillar {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr);
+            gap: 16px;
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.06), transparent 42%),
+                rgba(255, 255, 255, 0.035);
+        }
+
+        .pillar-index {
+            display: grid;
+            place-items: center;
+            width: 44px;
+            height: 44px;
+            border: 1px solid rgba(255, 176, 46, 0.3);
+            border-radius: 999px;
+            color: var(--brand-strong);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .pillar h3 {
+            margin: 0 0 7px;
+            font-size: 20px;
+            line-height: 1.15;
+        }
+
+        .pillar p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .architecture-card {
+            position: sticky;
+            top: 92px;
+            align-self: start;
+            padding: 26px;
+            border: 1px solid rgba(255, 176, 46, 0.28);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(160deg, rgba(255, 176, 46, 0.13), transparent 46%),
+                rgba(10, 10, 10, 0.86);
+            box-shadow: 0 18px 64px rgba(0, 0, 0, 0.24);
+        }
+
+        .architecture-card small {
+            color: var(--brand-strong);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .architecture-card strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 30px;
+            line-height: 1.02;
+        }
+
+        .architecture-card p {
+            margin: 14px 0 0;
+            color: #cfc7bc;
+            font-size: 14px;
+        }
+
+        .architecture-flow {
+            display: grid;
+            gap: 0;
+            margin-top: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .architecture-flow span {
+            position: relative;
+            display: block;
+            padding: 13px 14px 13px 18px;
+            color: #d9d2c8;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .architecture-flow span::before {
+            position: absolute;
+            left: 0;
+            top: 13px;
+            bottom: 13px;
+            width: 3px;
+            border-radius: 999px;
+            background: rgba(255, 176, 46, 0.75);
+            content: "";
+        }
+
+        .architecture-flow strong {
+            display: block;
+            margin: 0 0 4px;
+            color: var(--brand-strong);
+            font-size: 13px;
+            line-height: 1.1;
+        }
+
+        .architecture-flow em {
+            display: block;
+            color: var(--muted);
+            font-style: normal;
+            font-weight: 650;
+            line-height: 1.35;
+        }
+
+        .architecture-flow span + span {
+            border-top: 1px solid rgba(255, 255, 255, 0.09);
+        }
+
+        @keyframes startup-grow {
+            to {
+                transform: scaleY(1);
+            }
+        }
+
+        @keyframes startup-bolt-pop {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--bolt-rotate, 0deg)) scale(0.35);
+            }
+            32% {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(var(--bolt-rotate, 0deg)) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(var(--bolt-rotate, 0deg)) scale(1.35);
+            }
+        }
+
+        @keyframes startup-ready-pulse {
+            0%,
+            100% {
+                opacity: 0.72;
+                box-shadow: 0 0 10px rgba(80, 216, 144, 0.45);
+                transform: scale(0.92);
+            }
+            50% {
+                opacity: 1;
+                box-shadow:
+                    0 0 12px rgba(80, 216, 144, 0.95),
+                    0 0 24px rgba(80, 216, 144, 0.42);
+                transform: scale(1.16);
+            }
+        }
+
+        @keyframes benchmark-grow {
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        .module {
+            position: relative;
+            min-height: 190px;
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.035);
+            cursor: pointer;
+            overflow: hidden;
+            transition:
+                transform 180ms ease,
+                border-color 180ms ease,
+                background 180ms ease,
+                box-shadow 180ms ease;
+        }
+
+        .module::before {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.08) 42%, transparent 64%);
+            opacity: 0;
+            transform: translateX(-38%);
+            transition: opacity 180ms ease, transform 420ms ease;
+            content: "";
+            pointer-events: none;
+        }
+
+        .module::after {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 26px;
+            height: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            color: var(--soft);
+            content: "+";
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1;
+            transition: border-color 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        .module:hover,
+        .module:focus-visible,
+        .module.is-active {
+            transform: translateY(-3px);
+            border-color: rgba(255, 176, 46, 0.34);
+            background:
+                radial-gradient(circle at var(--mx, 78%) var(--my, 22%), rgba(255, 176, 46, 0.13), transparent 34%),
+                rgba(255, 255, 255, 0.05);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+            outline: 0;
+        }
+
+        .module:hover::before,
+        .module:focus-visible::before,
+        .module.is-active::before {
+            opacity: 1;
+            transform: translateX(36%);
+        }
+
+        .module:hover::after,
+        .module:focus-visible::after,
+        .module.is-active::after {
+            border-color: rgba(255, 176, 46, 0.46);
+            color: var(--brand-strong);
+            transform: rotate(90deg);
+        }
+
+        .module small {
+            color: var(--brand-strong);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .module-detail {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 0.74fr) minmax(280px, 0.26fr);
+            gap: 24px;
+            margin-top: 14px;
+            padding: 24px;
+            border: 1px solid rgba(255, 176, 46, 0.28);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.1), transparent 36%),
+                rgba(10, 10, 10, 0.9);
+            box-shadow: 0 20px 70px rgba(0, 0, 0, 0.26);
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        .module-detail[hidden] {
+            display: none;
+        }
+
+        .module-detail.is-open {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .module-detail small {
+            color: var(--brand-strong);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .module-detail h3 {
+            margin: 8px 0 10px;
+            font-size: 28px;
+            line-height: 1.08;
+        }
+
+        .module-detail p {
+            margin: 0;
+            color: #cfc7bc;
+        }
+
+        .module-detail-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 14px 0 0;
+        }
+
+        .module-detail-tags span {
+            padding: 6px 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.045);
+            color: #d9d2c8;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .module-detail ul {
+            display: grid;
+            gap: 10px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .module-detail li {
+            position: relative;
+            padding-left: 18px;
+        }
+
+        .module-detail li::before {
+            position: absolute;
+            left: 0;
+            top: 0.68em;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--brand);
+            box-shadow: 0 0 16px rgba(255, 176, 46, 0.3);
+            content: "";
+        }
+
+        .module-detail-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 2;
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .module-detail-close:hover {
+            border-color: rgba(255, 176, 46, 0.42);
+            color: var(--brand-strong);
+        }
+
+        .cta-band {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 24px;
+            padding: 32px;
+            border: 1px solid rgba(255, 176, 46, 0.38);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.18), transparent 44%),
+                rgba(255, 255, 255, 0.045);
+        }
+
+        .cta-band h2 {
+            font-size: clamp(30px, 4vw, 48px);
+        }
+
+        .cta-band p {
+            max-width: 690px;
+            margin: 12px 0 0;
+            color: #c7c0b6;
+        }
+
+        .interest-band {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 24px;
+            padding: 28px 30px;
+            border: 1px solid rgba(80, 216, 144, 0.28);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(80, 216, 144, 0.13), transparent 42%),
+                linear-gradient(315deg, rgba(255, 176, 46, 0.12), transparent 44%),
+                rgba(255, 255, 255, 0.04);
+            box-shadow: 0 18px 64px rgba(0, 0, 0, 0.22);
+        }
+
+        .interest-band small {
+            display: block;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .interest-band h2 {
+            margin-top: 8px;
+            font-size: clamp(28px, 3.4vw, 44px);
+        }
+
+        .interest-band p {
+            max-width: 720px;
+            margin: 12px 0 0;
+            color: #c7c0b6;
+        }
+
+        footer {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 34px 0 48px;
+            border-top: 1px solid var(--line);
+            color: var(--soft);
+            font-size: 13px;
+        }
+
+        .footer-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .back-to-top {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            z-index: 45;
+            display: grid;
+            place-items: center;
+            width: 44px;
+            height: 44px;
+            border: 1px solid rgba(255, 176, 46, 0.42);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.18), rgba(13, 13, 13, 0.94)),
+                rgba(13, 13, 13, 0.94);
+            color: var(--brand-strong);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, background 180ms ease;
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
+        }
+
+        .back-to-top:hover {
+            border-color: rgba(255, 176, 46, 0.72);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.28), rgba(20, 20, 20, 0.98)),
+                rgba(20, 20, 20, 0.98);
+        }
+
+        .back-to-top.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .back-to-top span {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        @media (max-width: 980px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding-top: 64px;
+            }
+
+            .hero-grid,
+            .cta-band,
+            .interest-band {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-grid {
+                gap: 34px;
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .feature + .feature {
+                border-left: 0;
+            }
+
+            .feature:nth-child(2n) {
+                border-left: 1px solid var(--line);
+            }
+
+            .feature:nth-child(n+3) {
+                border-top: 1px solid var(--line);
+            }
+
+            .module-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .module-detail {
+                grid-template-columns: 1fr;
+            }
+
+            .architecture-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .architecture-card {
+                position: static;
+            }
+
+            .benchmark-topline {
+                grid-template-columns: 1fr;
+            }
+
+            .benchmark-stat + .benchmark-stat {
+                border-left: 0;
+                border-top: 1px solid var(--line);
+            }
+        }
+
+        @media (max-width: 680px) {
+            .nav,
+            .hero,
+            .section,
+            footer {
+                width: min(100% - 28px, 1180px);
+            }
+
+            .nav {
+                height: auto;
+                min-height: 66px;
+                flex-wrap: wrap;
+                padding: 12px 0;
+            }
+
+            .nav-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .button {
+                min-height: 38px;
+                padding: 0 12px;
+                font-size: 13px;
+            }
+
+            h1 {
+                font-size: clamp(42px, 14vw, 62px);
+            }
+
+            .hero-note,
+            .build-strip,
+            .feature-grid,
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benchmark-row {
+                grid-template-columns: 1fr;
+                gap: 7px;
+            }
+
+            .benchmark-value {
+                text-align: left;
+            }
+
+            .benchmark-note {
+                display: block;
+            }
+
+            .startup-chart {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                gap: 22px;
+            }
+
+            .startup-bar {
+                min-height: 260px;
+            }
+
+            .startup-caption {
+                display: block;
+            }
+
+            .startup-caption-break {
+                white-space: normal;
+            }
+
+            .pillar {
+                grid-template-columns: 1fr;
+            }
+
+            .module-detail {
+                padding: 22px;
+            }
+
+            .feature:nth-child(2n),
+            .feature + .feature {
+                border-left: 0;
+            }
+
+            .feature:nth-child(n+2) {
+                border-top: 1px solid var(--line);
+            }
+
+            .section {
+                padding: 48px 0;
+            }
+
+            .section-header,
+            .footer-inner {
+                display: block;
+            }
+
+            .section-lead {
+                margin-top: 12px;
+            }
+
+            .magic-word.is-shattered {
+                width: min(9.4em, calc(100vw - 48px));
+            }
+
+            .footer-links {
+                margin-top: 16px;
+            }
+
+            pre {
+                padding: 18px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="centralizedContainer">
-    <div><a href="/kora-docs/ru/">Redirect</a> to landing page.</div>
+<div class="page-shell">
+    <header class="topbar">
+        <nav class="nav" aria-label="Primary navigation">
+            <a class="brand" href="/kora-docs/">
+                <span class="brand-icon" aria-hidden="true">K</span>
+                <span class="brand-mark">Kora <span class="brand-version">1.2.5</span></span>
+            </a>
+            <div class="nav-links" aria-label="Page sections">
+                <a href="#principles">Principles</a>
+                <a href="#modules">Modules</a>
+                <a href="/kora-docs/en/guides/getting-started/">Guide</a>
+                <a href="https://github.com/kora-projects">GitHub</a>
+            </div>
+            <div class="nav-actions">
+                <div class="lang" aria-label="Documentation language">
+                    <a href="/kora-docs/en/">EN</a>
+                    <a href="/kora-docs/ru/">RU</a>
+                </div>
+                <a class="button" href="/kora-docs/en/">Docs</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-grid">
+                <div>
+                    <p class="eyebrow">Java and Kotlin general-purpose backend framework</p>
+                    <h1>Ship <span class="speed-word">fast</span> services without <span class="magic-word" data-final="workarounds, dirty hacks and kludges"><span class="magic-label">magic</span><span class="magic-final" aria-hidden="true"><span>workarounds,</span><span>dirty hacks</span><span>and kludges.</span></span><span class="magic-dot">.</span></span></h1>
+                    <p class="hero-copy">
+                        Kora builds the application graph at compile time, generates transparent source code, and gives cloud-native services a fastest production JVM stack from day one.
+                    </p>
+                    <div class="hero-actions" id="start">
+                        <a class="button primary" href="/kora-docs/en/guides/getting-started/">Get started</a>
+                        <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
+                        <div class="command" aria-label="Gradle dependency example"><code><span>ru.tinkoff.kora</span>:kora-parent:1.2.5</code></div>
+                    </div>
+                    <div class="hero-note" aria-label="Framework highlights">
+                        <div class="metric">
+                            <strong>0</strong>
+                            <span>runtime reflections</span>
+                        </div>
+                        <div class="metric">
+                            <strong>JDK 17+</strong>
+                            <span>modern Java baseline with Kotlin support</span>
+                        </div>
+                        <div class="metric">
+                            <strong>OTel</strong>
+                            <span>metrics and tracing across modules</span>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="console" aria-label="Kora code example">
+                    <div class="console-header">
+                        <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+                        <span class="console-title" id="snippet-title">Application.java</span>
+                    </div>
+                    <pre><code class="console-code" id="snippet-code"></code></pre>
+                    <div class="snippet-dots" aria-label="Code example progress">
+                        <button class="snippet-dot is-active" type="button" aria-label="Show controller example"></button>
+                        <button class="snippet-dot" type="button" aria-label="Show repository example"></button>
+                        <button class="snippet-dot" type="button" aria-label="Show HTTP client example"></button>
+                        <button class="snippet-dot" type="button" aria-label="Show Kafka consumer example"></button>
+                        <button class="snippet-dot" type="button" aria-label="Show resilient service example"></button>
+                    </div>
+                    <div class="build-strip">
+                        <button class="build-step is-active" type="button" data-snippet-mode="source">
+                            <span>High-level API</span>
+                            <strong>Familiar top-level abstractions</strong>
+                        </button>
+                        <button class="build-step" type="button" data-snippet-mode="generated">
+                            <span>Generated sources</span>
+                            <strong>Performant generated human readable source code</strong>
+                        </button>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="section" id="principles">
+            <div class="section-header">
+                <h2>Built for teams that want speed, control and clarity.</h2>
+                <p class="section-lead">Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature">
+                    <span class="feature-index">01</span>
+                    <h3>Compile-time DI</h3>
+                    <p>The container graph is generated and validated during compilation, with eager and parallel initialization at startup.</p>
+                    <div class="diagram" aria-hidden="true">
+                        <div class="diagram-row"><span class="diagram-label">Source</span><span class="diagram-value">@KoraApp, @Component, @Module</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Build</span><span class="diagram-value">ApplicationGraph</span></div>
+                    </div>
+                </article>
+                <article class="feature">
+                    <span class="feature-index">02</span>
+                    <h3>Transparent code</h3>
+                    <p>No black-box runtime wiring. Kora generates source code that can be inspected, debugged, and reasoned about by the team and AI.</p>
+                    <div class="diagram" aria-hidden="true">
+                        <div class="diagram-row"><span class="diagram-label">Avoids</span><span class="diagram-value">reflection, dynamic proxies</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Keeps</span><span class="diagram-value">plain Java and Kotlin</span></div>
+                    </div>
+                </article>
+                <article class="feature">
+                    <span class="feature-index">03</span>
+                    <h3>Contract-first APIs</h3>
+                    <p>OpenAPI can be the source of truth for HTTP servers and clients, with generated handlers, models, validation, and security hooks.</p>
+                    <div class="diagram" aria-hidden="true">
+                        <div class="diagram-row"><span class="diagram-label">Spec</span><span class="diagram-value">openapi.yaml</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Output</span><span class="diagram-value">server or client code</span></div>
+                    </div>
+                </article>
+                <article class="feature">
+                    <span class="feature-index">04</span>
+                    <h3>Cloud-native by default</h3>
+                    <p>HTTP management ports, probes, metrics, tracing, logging, graceful shutdown, and database telemetry are part of the standard path.</p>
+                    <div class="diagram" aria-hidden="true">
+                        <div class="diagram-row"><span class="diagram-label">Private</span><span class="diagram-value">/metrics, /system/readiness</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Signal</span><span class="diagram-value">OpenTelemetry</span></div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" id="performance">
+            <div class="section-header">
+                <h2>Benchmark pressure, visible in motion.</h2>
+                <p class="section-lead">A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.</p>
+            </div>
+            <div class="benchmark-panel" aria-label="TechEmpower query benchmark comparison">
+                <div class="benchmark-topline">
+                    <div class="benchmark-stat">
+                        <span>Snapshot</span>
+                        <strong>Single query</strong>
+                    </div>
+                    <div class="benchmark-stat">
+                        <span>Metric</span>
+                        <strong>Responses / sec</strong>
+                    </div>
+                </div>
+                <div class="benchmark-chart">
+                    <div class="benchmark-row is-kora" style="--score: 100; --row: 0">
+                        <span class="benchmark-name">Kora JDBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">50,781</span>
+                    </div>
+                    <div class="benchmark-row is-kora" style="--score: 90.0; --row: 1">
+                        <span class="benchmark-name">Kora Reactive</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">45,725</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 88.3; --row: 2">
+                        <span class="benchmark-name">Micronaut Data JDBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">44,860</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 86.7; --row: 3">
+                        <span class="benchmark-name">Spring JDBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">44,013</span>
+                    </div>
+                    <div class="benchmark-row is-kora" style="--score: 85.3; --row: 4">
+                        <span class="benchmark-name">Kora Coroutines</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">43,317</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 79.3; --row: 5">
+                        <span class="benchmark-name">Micronaut JDBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">40,278</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 75.6; --row: 6">
+                        <span class="benchmark-name">Quarkus Hibernate</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">38,384</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 62.9; --row: 7">
+                        <span class="benchmark-name">Micronaut R2DBC</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">31,940</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 62.1; --row: 8">
+                        <span class="benchmark-name">Micronaut Vert.x PG Client</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">31,561</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 62.0; --row: 9">
+                        <span class="benchmark-name">Spring JPA</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">31,480</span>
+                    </div>
+                </div>
+                <div class="benchmark-note">
+                    <span>Values use the "Single query" interval from the linked external results.</span>
+                    <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fstatic.squiry.xyz%2Fresults%2F20240124114707.json&hw=ph&test=db">Open TechEmpower snapshot</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="modules">
+            <div class="section-header">
+                <h2>A practical stack, one module at a time.</h2>
+                <p class="section-lead">Start small, add only integrations your service needs, and keep every dependency in controll.</p>
+            </div>
+            <div class="module-grid">
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="http">
+                    <small>HTTP</small>
+                    <h3>Servers, clients, OpenAPI</h3>
+                    <p>Undertow-based HTTP server, declarative clients, management API, request mapping, interceptors, and OpenAPI generation.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="data">
+                    <small>Data</small>
+                    <h3>SQL-first repositories</h3>
+                    <p>JDBC, Cassandra, migrations, query macros, generated mappers, and explicit database access.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="ops">
+                    <small>Ops</small>
+                    <h3>Observability included</h3>
+                    <p>Micrometer metrics, OpenTelemetry tracing, structured logging, liveness and readiness probes, and graceful shutdown.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="integration">
+                    <small>Integration</small>
+                    <h3>Kafka, gRPC, S3</h3>
+                    <p>Messaging, RPC, storage, SOAP, Camunda, and infrastructure integrations with the same explicit module style.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="aop">
+                    <small>AOP</small>
+                    <h3>Aspects without runtime cost</h3>
+                    <p>Validation, cache, resilience, scheduling, and logging aspects generated around clear annotations and interfaces.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="deploy">
+                    <small>Deploy</small>
+                    <h3>Ready for containers</h3>
+                    <p>Fast startup, low overhead, GraalVM native support, HOCON configuration, and test patterns for real services.</p>
+                </article>
+            </div>
+            <div class="module-detail" id="module-detail" hidden>
+                <button class="module-detail-close" type="button" aria-label="Close module details">&times;</button>
+                <div>
+                    <small id="module-detail-kicker">HTTP</small>
+                    <h3 id="module-detail-title">Servers, clients, OpenAPI</h3>
+                    <p id="module-detail-copy">Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.</p>
+                    <div class="module-detail-tags" id="module-detail-tags"></div>
+                </div>
+                <ul id="module-detail-points"></ul>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="interest-band">
+                <div>
+                    <small>Already curious?</small>
+                    <h2>Would you like to know more?</h2>
+                    <p>Start with readable examples, inspect generated source, and follow the same compile-time path from annotations to explicit runtime code.</p>
+                </div>
+                <div class="hero-actions">
+                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Read the guide</a>
+                    <a class="button" href="/kora-docs/en/examples/kora-examples/">Examples</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="startup">
+            <div class="section-header wide-title">
+                <h2>Fastest to boot,<br>fastest to serve.</h2>
+                <p class="section-lead">Fast lightweight readiness helps horizontal scaling absorb peak load faster and avoids heavy startup spikes during rolling deployments. Lower is better.</p>
+            </div>
+            <div class="startup-panel" aria-label="Application startup time comparison">
+                <div class="startup-chart">
+                    <div class="startup-bar is-kora" style="--startup-score: 16.3; --startup-duration: 4890ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
+                        <span class="startup-ready">Serving user traffic</span>
+                        <span class="startup-value-wrap"><span class="startup-value" data-target="4.89" data-duration="4890">0.00s</span></span>
+                        <span class="startup-column"></span>
+                        <span class="startup-label">Kora</span>
+                    </div>
+                    <div class="startup-bar" style="--startup-score: 70.4; --startup-duration: 21130ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
+                        <span class="startup-value-wrap"><span class="startup-value" data-target="21.13" data-duration="21130">0.00s</span></span>
+                        <span class="startup-column"></span>
+                        <span class="startup-label">Spring Max Optimized</span>
+                    </div>
+                    <div class="startup-bar" style="--startup-score: 88.4; --startup-duration: 26530ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
+                        <span class="startup-value-wrap"><span class="startup-value" data-target="26.53" data-duration="26530">0.00s</span></span>
+                        <span class="startup-column"></span>
+                        <span class="startup-label">Spring Stock</span>
+                    </div>
+                </div>
+                <div class="startup-caption">
+                    <span>10x PetClinic service in a Docker container, 1 CPU and 1 GB memory, with full production integrations.</span>
+                    <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="architecture">
+            <div class="section-header">
+                <h2>Kora is Based.</h2>
+                <p class="section-lead">Base principals of Kora engineering decisions keeps services transparent, fast to start, easy to maintain.</p>
+            </div>
+            <div class="architecture-panel">
+                <div class="pillar-list">
+                    <article class="pillar">
+                        <span class="pillar-index">01</span>
+                        <div>
+                            <h3>Compile-time dependency injection</h3>
+                            <p>The dependency container is built and validated during compilation from @KoraApp, @Component, @Module, and submodule declarations. Missing or ambiguous dependencies fail before the service starts.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">02</span>
+                        <div>
+                            <h3>Generated source code, not runtime magic</h3>
+                            <p>Kora avoids runtime Reflection API, dynamic proxies, and runtime bytecode generation for the graph. Generated readable source that can be inspected, maintained, debugged, and reviewed by human or AI.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">03</span>
+                        <div>
+                            <h3>Fine-grained and best-performant modules</h3>
+                            <p>Kora uses carefully selected, fast, optimized integrations and asks you to enable only the modules your service needs. Teams do not have to research which web server, HTTP client, database approach, Redis client, or messaging integration should become the internal standard before building the service.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">04</span>
+                        <div>
+                            <h3>JVM abstractions that look familiar</h3>
+                            <p>Kora uses native Java and Kotlin language constructs to declare framework mechanisms instead of forcing developers into a foreign programming model. HTTP handlers, Kafka listeners, repositories, config interfaces, and aspects feel natural in the language you already use, while compile-time generation handles the repetitive work.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">05</span>
+                        <div>
+                            <h3>Get context out of your head</h3>
+                            <p>Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">06</span>
+                        <div>
+                            <h3>No magic, no frustration</h3>
+                            <p>Proxy-heavy frameworks can make annotations feel simple until behavior depends on hidden runtime proxy rules, self-invocation, reflection, or container-specific conventions that change from one version to another. Kora keeps the mechanism transparent: generated source and docs hold the context, so developers do not need to memorize annotation folklore or keep invisible framework state in their heads.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">07</span>
+                        <div>
+                            <h3>Highload-grade optimized out of the box</h3>
+                            <p>Kora is based on highload-grade production optimizations from the first request: fast startup, explicit dependency graphs, generated adapters, and lean module integrations. Developers do not need to read hundreds of articles, watch hundreds of talks, spend thousands of hours benchmarking framework internals, or tune the framework itself before shipping. It is already done inside Kora. Just start writing services.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">08</span>
+                        <div>
+                            <h3>One problem, one solution</h3>
+                            <p>Kora favors one recommended solution based on JVM best practices instead of many competing framework styles. Teams spend less time writing internal rules, preparing talks about correct usage, or debating which abstraction should be allowed.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">09</span>
+                        <div>
+                            <h3>No lore required, Kora just works</h3>
+                            <p>You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">10</span>
+                        <div>
+                            <h3>Simple and fast testing</h3>
+                            <p>Test the service through the same explicit component graph it uses in production. Inject test components, replace dependencies, override configuration, keep component tests fast, and add Testcontainers-backed integration tests when real infrastructure matters.</p>
+                        </div>
+                    </article>
+                    <article class="pillar">
+                        <span class="pillar-index">11</span>
+                        <div>
+                            <h3>Enterprise-grade by design</h3>
+                            <p>Tracing, metrics, structured logging, probes, resilience, and graceful shutdown for all modules are designed as framework capabilities rather than late add-ons. The operational contract remains visible in generated and handwritten code.</p>
+                        </div>
+                    </article>
+                </div>
+                <aside class="architecture-card">
+                    <small>Kora contract</small>
+                    <strong>Stop fighting the framework. Start shipping services.</strong>
+                    <p>Keep business code direct and focused while Kora makes framework mechanics simple and predictable for you. Runtime becomes code that just works as expected.</p>
+                    <div class="architecture-flow" aria-label="Kora architecture flow">
+                        <span><strong>Declare</strong><em>Controllers, repositories, listeners, config, and resilience policy.</em></span>
+                        <span><strong>Compile</strong><em>Validate wiring and generate implementations.</em></span>
+                        <span><strong>Test</strong><em>Cover every side with fast, component and integration tests that are easy to write.</em></span>
+                        <span><strong>Ship</strong><em>Run fast, reliable and predictable services without <i>magic</i> in production.</em></span>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="cta-band">
+                <div>
+                    <h2>Build your first Kora service.</h2>
+                    <p>Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.</p>
+                </div>
+                <div class="hero-actions">
+                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Read the guide</a>
+                    <a class="button" href="/kora-docs/en/examples/kora-examples/">Examples</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <span>Kora Framework documentation.</span>
+            <div class="footer-links">
+                <a href="/kora-docs/en/">English docs</a>
+                <a href="/kora-docs/ru/">Russian docs</a>
+                <a href="https://github.com/kora-projects">GitHub</a>
+                <a href="https://t.me/kora_users">Telegram</a>
+            </div>
+        </div>
+    </footer>
+    <button class="back-to-top" type="button" aria-label="Back to top">
+        <span aria-hidden="true">&uarr;</span>
+    </button>
 </div>
+<script>
+    (() => {
+        const backToTop = document.querySelector(".back-to-top");
+        if (!backToTop) return;
+
+        const updateBackToTop = () => {
+            backToTop.classList.toggle("is-visible", window.scrollY > 520);
+        };
+
+        backToTop.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        window.addEventListener("scroll", updateBackToTop, { passive: true });
+        updateBackToTop();
+    })();
+
+    (() => {
+        const modules = {
+            http: {
+                kicker: "HTTP",
+                title: "Servers, clients, OpenAPI",
+                copy: "Build contract-first APIs where the OpenAPI file can be the source of truth and the generated handlers become ordinary Java or Kotlin source. Kora keeps the HTTP layer thin over Undertow, with public and private ports, request mappers, response mappers, interceptors, telemetry, and graceful shutdown configured explicitly.",
+                tags: ["OpenAPI-first", "Undertow", "Private API", "Virtual threads", "Typed mappers"],
+                points: [
+                    "Use declarative controllers for simple services or generate server and client contracts from the same OpenAPI specification.",
+                    "Separate public traffic from private management endpoints such as /metrics, /system/readiness, and /system/liveness.",
+                    "Configure logging, SLO buckets, tracing, masked headers, request path templates, and graceful shutdown in HOCON or YAML.",
+                    "Keep request handling understandable: route classes, body mappers, response mappers, and interceptors are visible generated code.",
+                    "Run on a lightweight Undertow runtime with Java 21 virtual-thread support available when blocking handlers need it."
+                ]
+            },
+            data: {
+                kicker: "Data",
+                title: "SQL-first repositories",
+                copy: "Keep database access honest: the developer writes the query, Kora generates the implementation, and the resulting source shows parameter binding, row mapping, telemetry, and error handling. This gives teams ORM-like productivity without hiding the query plan.",
+                tags: ["Repository pattern", "SQL visible", "Compile-time mappers", "Batch queries", "Telemetry"],
+                points: [
+                    "Repository interfaces annotated with @Repository and @Query compile into concrete implementations before runtime.",
+                    "SQL stays in the source, while macros can expand model columns and reduce repetitive field lists.",
+                    "Generated binders and mappers remove boilerplate but remain readable when debugging production behavior.",
+                    "JDBC and Cassandra modules expose driver-specific power without forcing a generic abstraction over every database.",
+                    "Batch queries, generated identifiers, custom mappers, and database telemetry fit the same repository model."
+                ]
+            },
+            ops: {
+                kicker: "Ops",
+                title: "Observability included",
+                copy: "Production signals are not an afterthought. Metrics, tracing, logging, readiness, liveness, masking, and graceful shutdown are wired as ordinary Kora modules, so the operational surface is visible in the same component graph as the business code.",
+                tags: ["Prometheus", "Micrometer", "OpenTelemetry", "Readiness", "Tracing"],
+                points: [
+                    "Micrometer registers a PrometheusMeterRegistry and exposes metrics through the private HTTP server.",
+                    "OpenTelemetry traces can be exported through OTLP over gRPC or HTTP with endpoint, batching, retry, and resource attributes configured.",
+                    "HTTP, HTTP client, database, Kafka, and other modules can create telemetry contexts around real operations.",
+                    "Readiness and liveness endpoints are first-class private API routes for Kubernetes and container platforms.",
+                    "Sensitive headers and query values can be masked in logs, keeping observability useful without leaking secrets."
+                ]
+            },
+            integration: {
+                kicker: "Integration",
+                title: "Kafka, gRPC, S3",
+                copy: "Infrastructure adapters follow the same source-first style as HTTP and data access. Kafka listeners, publishers, gRPC clients, S3 clients, SOAP integrations, and Camunda modules are typed, configured, observable, and lifecycle-managed by the application graph.",
+                tags: ["Kafka listeners", "Publishers", "gRPC", "S3", "Lifecycle"],
+                points: [
+                    "Kafka consumers are declared with @KafkaListener and can use separate config paths for different topics or topic patterns.",
+                    "Typed keys and values, JSON mapping, empty-record handling, deserialization errors, and consumer threading are part of the listener contract.",
+                    "Kafka publishers support topic annotations, custom signatures, publish errors, and transactional producers when needed.",
+                    "Telemetry configuration follows the same model: logging, metrics, tracing, SLO buckets, and shutdown wait.",
+                    "gRPC, S3, SOAP, and Camunda integrations plug into the same dependency graph instead of becoming side-channel wiring."
+                ]
+            },
+            aop: {
+                kicker: "AOP",
+                title: "Aspects without runtime cost",
+                copy: "Use annotations for cross-cutting behavior without accepting a runtime proxy maze. Kora generates wrappers that can be inspected, reasoned about, and tuned through configuration, so resilience and policy remain visible to engineers and AI tooling.",
+                tags: ["Retry", "Timeout", "Circuit breaker", "Fallback", "Cache"],
+                points: [
+                    "@Timeout limits execution time, @Retry repeats failed calls, @CircuitBreaker protects dependencies, and @Fallback provides recovery.",
+                    "Aspect order is explicit and documented, so teams can understand how timeout, retry, breaker, and fallback interact.",
+                    "Defaults can be shared globally, while named configurations tune policies for specific clients or operations.",
+                    "Validation, cache, scheduling, and logging aspects use the same compile-time generation model.",
+                    "The result is policy code that reads like normal source instead of disappearing into runtime reflection and dynamic proxies."
+                ]
+            },
+            deploy: {
+                kicker: "Deploy",
+                title: "Ready for containers",
+                copy: "Kora is designed for services that need to start quickly, expose the right private endpoints, and remain predictable under orchestration. Compile-time helper classes, no runtime reflection for the graph, and tested native-image modules make deployment less fragile.",
+                tags: ["Fast readiness", "HOCON", "No runtime reflection", "Native-image", "Graceful shutdown"],
+                points: [
+                    "Application graph creation is generated and validated during compilation, reducing startup work in the container.",
+                    "HOCON configuration supports required and optional environment substitutions, defaults, references, lists, maps, and typed config interfaces.",
+                    "Private HTTP endpoints provide metrics, readiness, and liveness without mixing them with public API traffic.",
+                    "GraalVM native-image support is documented for configuration, JSON, probes, metrics, tracing, HTTP, JDBC, Cassandra, Kafka, gRPC, resilient, cache, validation, scheduling, and logging modules.",
+                    "Lifecycle and graceful shutdown settings are explicit, helping services behave well during rolling deploys and restarts."
+                ]
+            }
+        };
+
+        const cards = Array.from(document.querySelectorAll(".module[data-module]"));
+        const detail = document.getElementById("module-detail");
+        if (!detail || cards.length === 0) {
+            return;
+        }
+
+        const kicker = document.getElementById("module-detail-kicker");
+        const title = document.getElementById("module-detail-title");
+        const copy = document.getElementById("module-detail-copy");
+        const tags = document.getElementById("module-detail-tags");
+        const points = document.getElementById("module-detail-points");
+        const close = detail.querySelector(".module-detail-close");
+
+        const openDetail = (card) => {
+            const data = modules[card.dataset.module];
+            if (!data) {
+                return;
+            }
+
+            cards.forEach((item) => {
+                const active = item === card;
+                item.classList.toggle("is-active", active);
+                item.setAttribute("aria-expanded", active ? "true" : "false");
+            });
+
+            kicker.textContent = data.kicker;
+            title.textContent = data.title;
+            copy.textContent = data.copy;
+            tags.innerHTML = data.tags.map((tag) => `<span>${tag}</span>`).join("");
+            points.innerHTML = data.points.map((point) => `<li>${point}</li>`).join("");
+            detail.hidden = false;
+            detail.classList.add("is-open");
+        };
+
+        const closeDetail = () => {
+            detail.classList.remove("is-open");
+            cards.forEach((item) => {
+                item.classList.remove("is-active");
+                item.setAttribute("aria-expanded", "false");
+            });
+            window.setTimeout(() => {
+                detail.hidden = true;
+            }, 220);
+        };
+
+        cards.forEach((card) => {
+            card.addEventListener("pointermove", (event) => {
+                const rect = card.getBoundingClientRect();
+                card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+                card.style.setProperty("--my", `${event.clientY - rect.top}px`);
+            });
+            card.addEventListener("click", () => openDetail(card));
+            card.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openDetail(card);
+                }
+            });
+        });
+
+        close?.addEventListener("click", closeDetail);
+    })();
+
+    (() => {
+        const values = Array.from(document.querySelectorAll(".startup-value[data-target]"));
+        if (values.length === 0) {
+            return;
+        }
+
+        const maxDuration = Math.max(...values.map((item) => Number(item.dataset.duration) || 0));
+        const section = document.querySelector("#startup");
+        const koraBar = document.querySelector(".startup-bar.is-kora");
+        let started = false;
+        let koraReady = false;
+
+        const burstKora = () => {
+            if (!koraBar) {
+                return;
+            }
+
+            const timings = [0, 70, 128, 178, 226, 268];
+            timings.forEach((delay) => {
+                window.setTimeout(() => {
+                    const bolt = document.createElement("span");
+                    bolt.className = "startup-bolt";
+
+                    bolt.style.setProperty("--bolt-left", `${22 + Math.random() * 58}%`);
+                    bolt.style.setProperty("--bolt-top", `${28 + Math.random() * 42}%`);
+                    bolt.style.setProperty("--bolt-width", `${18 + Math.random() * 34}px`);
+                    bolt.style.setProperty("--bolt-height", `${7 + Math.random() * 15}px`);
+                    bolt.style.setProperty("--bolt-rotate", `${-36 + Math.random() * 72}deg`);
+
+                    koraBar.appendChild(bolt);
+                    window.setTimeout(() => bolt.remove(), 520);
+                }, delay);
+            });
+        };
+
+        const run = () => {
+            if (started) {
+                return;
+            }
+            started = true;
+            section?.classList.add("is-running");
+
+            const start = performance.now();
+            const tick = (now) => {
+                const elapsed = now - start;
+
+                values.forEach((item) => {
+                    const target = Number(item.dataset.target);
+                    const duration = Number(item.dataset.duration) || maxDuration;
+                    const progress = Math.min(elapsed / duration, 1);
+                    item.textContent = `${(target * progress).toFixed(2)}s`;
+                    item.closest(".startup-bar")?.style.setProperty("--startup-progress", progress);
+
+                    if (!koraReady && item.closest(".startup-bar")?.classList.contains("is-kora") && progress >= 1) {
+                        koraReady = true;
+                        koraBar?.classList.add("is-ready");
+                        burstKora();
+                    }
+                });
+
+                if (elapsed < maxDuration) {
+                    window.requestAnimationFrame(tick);
+                }
+            };
+
+            window.requestAnimationFrame(tick);
+        };
+
+        if ("IntersectionObserver" in window) {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    observer.disconnect();
+                    run();
+                }
+            }, { threshold: 0.28 });
+            if (section) {
+                observer.observe(section);
+                window.requestAnimationFrame(() => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top < window.innerHeight && rect.bottom > 0) {
+                        observer.disconnect();
+                        run();
+                    }
+                });
+            }
+        } else {
+            run();
+        }
+    })();
+
+    (() => {
+        const speedWord = document.querySelector(".speed-word");
+        if (!speedWord) {
+            return;
+        }
+
+        const burst = () => {
+            const timings = [360, 270, 205, 150, 108, 76, 52];
+            let delay = 0;
+
+            timings.forEach((step, index) => {
+                delay += step;
+                window.setTimeout(() => {
+                    const arc = document.createElement("span");
+                    arc.className = "electric-arc";
+
+                    const left = 6 + Math.random() * 88;
+                    const top = -12 + Math.random() * 118;
+                    const width = 16 + Math.random() * 42;
+                    const height = 6 + Math.random() * 20;
+                    const rotate = -34 + Math.random() * 68;
+
+                    arc.style.setProperty("--arc-left", `${left}%`);
+                    arc.style.setProperty("--arc-top", `${top}%`);
+                    arc.style.setProperty("--arc-width", `${width}px`);
+                    arc.style.setProperty("--arc-height", `${height}px`);
+                    arc.style.setProperty("--arc-rotate", `${rotate}deg`);
+                    arc.style.animationDuration = `${300 + index * 18}ms`;
+
+                    speedWord.appendChild(arc);
+                    window.setTimeout(() => arc.remove(), 620);
+                }, delay);
+            });
+        };
+
+        window.setTimeout(burst, 2100);
+        window.setInterval(burst, 3800);
+    })();
+
+    (() => {
+        const magicWord = document.querySelector(".magic-word");
+        if (!magicWord) {
+            return;
+        }
+
+        const colors = ["#72a7ff", "#ffcf6b", "#95e6a8", "#ff9f7f", "#c79bff", "#5ee7ff"];
+        let active = false;
+        let timer = null;
+        let finalTimer = null;
+        let damage = 0;
+        let shattered = false;
+
+        const randomBetween = (min, max) => min + Math.random() * (max - min);
+
+        const targetPoint = () => {
+            const rect = magicWord.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width * randomBetween(0.12, 0.88),
+                y: rect.top + rect.height * randomBetween(0.22, 0.78),
+                localX: randomBetween(12, 88),
+                localY: randomBetween(20, 76)
+            };
+        };
+
+        const sourcePoint = (target) => {
+            const side = Math.floor(Math.random() * 4);
+            const margin = 90;
+            if (side === 0) return { x: randomBetween(-margin, window.innerWidth + margin), y: -margin };
+            if (side === 1) return { x: window.innerWidth + margin, y: randomBetween(-margin, window.innerHeight + margin) };
+            if (side === 2) return { x: randomBetween(-margin, window.innerWidth + margin), y: window.innerHeight + margin };
+            return { x: -margin, y: randomBetween(-margin, window.innerHeight + margin) };
+        };
+
+        const addCrack = (impact) => {
+            if (shattered) return;
+
+            const crack = document.createElement("span");
+            crack.className = "magic-crack";
+            crack.style.setProperty("--crack-left", `${impact.localX}%`);
+            crack.style.setProperty("--crack-top", `${impact.localY}%`);
+            crack.style.setProperty("--crack-size", `${randomBetween(34, 76)}px`);
+            crack.style.setProperty("--crack-rotate", `${randomBetween(-55, 55)}deg`);
+            crack.style.setProperty("--ray-rotate", `${randomBetween(-80, 80)}deg`);
+            crack.style.setProperty("--ray-rotate-2", `${randomBetween(18, 156)}deg`);
+            crack.style.setProperty("--ray-rotate-3", `${randomBetween(-160, -22)}deg`);
+            crack.style.setProperty("--ray-height", `${randomBetween(46, 82)}%`);
+            crack.style.setProperty("--crack-opacity", `${randomBetween(0.48, 0.84)}`);
+            for (let i = 0; i < 3; i += 1) {
+                crack.appendChild(document.createElement("span"));
+            }
+            magicWord.appendChild(crack);
+
+            damage = Math.min(1, damage + randomBetween(0.055, 0.1));
+            magicWord.classList.add("is-damaged");
+            magicWord.style.setProperty("--magic-visibility", String(Math.max(0.34, 1 - damage * 0.62)));
+            magicWord.style.setProperty("--magic-blur", `${Math.min(1.6, damage * 1.35)}px`);
+            magicWord.style.setProperty("--magic-contrast", String(1 + damage * 0.72));
+            magicWord.style.setProperty("--magic-ghost", String(0.08 + damage * 0.2));
+            magicWord.style.setProperty("--glass-opacity", String(Math.min(0.5, damage * 0.58)));
+
+            magicWord.classList.remove("is-hit");
+            void magicWord.offsetWidth;
+            magicWord.classList.add("is-hit");
+
+            window.setTimeout(() => {
+                crack.style.opacity = "0";
+                window.setTimeout(() => {
+                    crack.remove();
+                    if (shattered) return;
+                    damage = Math.max(0, damage - 0.075);
+                    magicWord.style.setProperty("--magic-visibility", String(Math.max(0.34, 1 - damage * 0.62)));
+                    magicWord.style.setProperty("--magic-blur", `${Math.min(1.6, damage * 1.35)}px`);
+                    magicWord.style.setProperty("--magic-contrast", String(1 + damage * 0.72));
+                    magicWord.style.setProperty("--magic-ghost", String(0.08 + damage * 0.2));
+                    magicWord.style.setProperty("--glass-opacity", String(Math.min(0.5, damage * 0.58)));
+                    if (damage <= 0.02 && !magicWord.querySelector(".magic-crack")) {
+                        magicWord.classList.remove("is-damaged");
+                        magicWord.removeAttribute("style");
+                    }
+                }, 2600);
+            }, 15000 + randomBetween(0, 2200));
+        };
+
+        const castSpell = () => {
+            if (shattered) return;
+
+            const impact = targetPoint();
+            const source = sourcePoint(impact);
+            const controlA = {
+                x: source.x + (impact.x - source.x) * randomBetween(0.22, 0.36) + randomBetween(-150, 150),
+                y: source.y + (impact.y - source.y) * randomBetween(0.16, 0.32) + randomBetween(-100, 100)
+            };
+            const controlB = {
+                x: source.x + (impact.x - source.x) * randomBetween(0.58, 0.78) + randomBetween(-120, 120),
+                y: source.y + (impact.y - source.y) * randomBetween(0.58, 0.82) + randomBetween(-90, 90)
+            };
+
+            const shot = document.createElement("span");
+            shot.className = "spell-shot";
+            shot.style.setProperty("--spell-color", colors[Math.floor(Math.random() * colors.length)]);
+            shot.style.setProperty("--spell-duration", `${Math.floor(randomBetween(720, 1180))}ms`);
+            shot.style.setProperty(
+                "--spell-path",
+                `path("M ${source.x} ${source.y} C ${controlA.x} ${controlA.y}, ${controlB.x} ${controlB.y}, ${impact.x} ${impact.y}")`
+            );
+            document.body.appendChild(shot);
+
+            const duration = Number.parseInt(shot.style.getPropertyValue("--spell-duration"), 10);
+            window.setTimeout(() => addCrack(impact), Math.max(180, duration - 90));
+            window.setTimeout(() => shot.remove(), duration + 180);
+        };
+
+        const schedule = () => {
+            if (!active || shattered) return;
+            castSpell();
+            timer = window.setTimeout(schedule, randomBetween(220, 620));
+        };
+
+        const start = () => {
+            if (active || shattered) return;
+            active = true;
+            finalTimer = window.setTimeout(shatterMagic, 200000);
+            schedule();
+        };
+
+        const stop = () => {
+            active = false;
+            window.clearTimeout(timer);
+            window.clearTimeout(finalTimer);
+            finalTimer = null;
+        };
+
+        const shatterMagic = () => {
+            if (shattered) return;
+            shattered = true;
+            active = false;
+            window.clearTimeout(timer);
+            window.clearTimeout(finalTimer);
+
+            damage = 1;
+            magicWord.classList.add("is-damaged", "is-shattered");
+            magicWord.style.setProperty("--magic-visibility", "0.22");
+            magicWord.style.setProperty("--magic-blur", "0.8px");
+            magicWord.style.setProperty("--magic-contrast", "1.8");
+            magicWord.style.setProperty("--magic-ghost", "0.32");
+            magicWord.style.setProperty("--glass-opacity", "0.72");
+
+            for (let i = 0; i < 18; i += 1) {
+                const shard = document.createElement("span");
+                shard.className = "magic-shard";
+                shard.style.setProperty("--shard-width", `${randomBetween(7, 19)}px`);
+                shard.style.setProperty("--shard-height", `${randomBetween(10, 30)}px`);
+                shard.style.setProperty("--shard-x", `${randomBetween(-160, 160)}px`);
+                shard.style.setProperty("--shard-y", `${randomBetween(42, 180)}px`);
+                shard.style.setProperty("--shard-rotate", `${randomBetween(-90, 90)}deg`);
+                shard.style.setProperty("--shard-spin", `${randomBetween(-260, 260)}deg`);
+                shard.style.setProperty("--shard-delay", `${i * 18}ms`);
+                magicWord.appendChild(shard);
+                window.setTimeout(() => shard.remove(), 1900 + i * 18);
+            }
+        };
+
+        magicWord.addEventListener("mouseenter", () => {
+            start();
+        });
+
+        magicWord.addEventListener("mouseleave", () => {
+            stop();
+        });
+
+        document.addEventListener("mousemove", (event) => {
+            const rect = magicWord.getBoundingClientRect();
+            const inside = event.clientX >= rect.left
+                && event.clientX <= rect.right
+                && event.clientY >= rect.top
+                && event.clientY <= rect.bottom;
+            if (inside) {
+                start();
+            } else if (active) {
+                stop();
+            }
+        });
+    })();
+
+    (() => {
+        const sourceSnippets = [
+            {
+                title: "HelloController.java",
+                code: `@Component
+@HttpController
+public final class HelloController {
+    @HttpRoute(method = HttpMethod.GET, path = "/hello/{name}")
+    public String hello(@Path String name) {
+        return "Hello, " + name + "!";
+    }
+}`
+            },
+            {
+                title: "UserRepository.java",
+                code: `@Repository
+public interface UserRepository extends JdbcRepository {
+
+    @EntityJdbc
+    @Table("users")
+    record User(@Id UUID id,
+                @Column("email") String email,
+                @Column("created_at") OffsetDateTime createdAt) {}
+
+    @Query("""
+        SELECT %{return#selects} 
+        FROM %{return#table}
+        WHERE id = :id""")
+    @Nullable
+    User findById(UUID id);
+
+    @Query("INSERT INTO %{user#inserts}")
+    UpdateCount insert(User user);
+}`
+            },
+            {
+                title: "HttpClient.java",
+                code: `@HttpClient(configPath = "httpClient.payments")
+public interface PaymentClient {
+
+    @Json
+    @HttpRoute(method = HttpMethod.POST, path = "/payments")
+    PaymentResponse create(@Json PaymentRequest request);
+
+    @HttpRoute(method = HttpMethod.GET, path = "/payments/{id}")
+    @Nullable
+    PaymentResponse findById(@Path UUID id);
+}`
+            },
+            {
+                title: "KafkaConsumer.java",
+                code: `@Component
+public final class EventsConsumer {
+
+    @KafkaListener("kafka.consumer.events")
+    public void process(@Nullable Long key,
+                        @Nullable @Json Payment value,
+                        @Nullable Exception exception) {
+        if (exception instanceof RecordKeyDeserializationException) {
+            System.out.println("Invalid key!");
+            return;
+        } else if (exception instanceof RecordValueDeserializationException) {
+            System.out.println("Invalid value!");
+            return;
+        } else if (exception != null) {
+            System.out.println("Failed!");
+            return;
+        }
+
+        handleEvent(key, value);
+    }
+}`
+            },
+            {
+                title: "ResilientService.java",
+                code: `@Component
+public final class ResilientService {
+    private final PaymentClient client;
+
+    public ResilientService(PaymentClient client) {
+        this.client = client;
+    }
+
+    @Fallback(value = "payments", method = "fallback(request)")
+    @CircuitBreaker("payments")
+    @Retry("payments")
+    @Timeout("payments")
+    public PaymentResponse charge(PaymentRequest request) {
+        return client.create(request);
+    }
+
+    protected PaymentResponse fallback(PaymentRequest request) {
+        return PaymentResponse.pending(request.id());
+    }
+}`
+            }
+        ];
+
+        const generatedSnippets = [
+            {
+                title: "$HelloController_Route.java",
+                code: `@Generated("HttpServerAnnotationProcessor")
+public final class $HelloController_Route
+        implements HttpServerRequestHandler {
+
+    private final HelloController _controller;
+    private final BlockingRequestExecutor _executor;
+    private final HttpServerResponseMapper<String> _responseMapper;
+
+    public CompletionStage<HttpServerResponse> handle(Context _ctx,
+                                                      HttpServerRequest _request) {
+        var name = _request.pathParams().get("name");
+        return _executor.execute(_ctx, () -> {
+            var _result = _controller.hello(name);
+            return _responseMapper.apply(_ctx, _request, _result);
+        });
+    }
+}`
+            },
+            {
+                title: "$UserRepository_Impl.java",
+                code: `@Generated("RepositoryAnnotationProcessor")
+public final class $UserRepository_Impl implements UserRepository {
+    private static final QueryContext FIND_BY_ID = new QueryContext(
+        "SELECT id, email, created_at\\n"
+      + "FROM users\\n"
+      + "WHERE id = :id",
+        "SELECT id, email, created_at\\n"
+      + "FROM users\\n"
+      + "WHERE id = ?",
+        "UserRepository.findById"
+    );
+
+    public User findById(UUID id) {
+        var _ctxCurrent = Context.current();
+        var _telemetry = connectionFactory.telemetry()
+            .createContext(_ctxCurrent, FIND_BY_ID);
+
+        try (var con = connectionFactory.newConnection();
+             var stmt = con.prepareStatement(FIND_BY_ID.sql())) {
+            uuidMapper.set(stmt, 1, id);
+            var result = userMapper.apply(stmt.executeQuery());
+            _telemetry.close(null);
+            return result;
+        } catch (Exception e) {
+            _telemetry.close(e);
+            throw e;
+        }
+    }
+}`
+            },
+            {
+                title: "$PaymentClient_Impl.java",
+                code: `@Generated("HttpClientAnnotationProcessor")
+public final class $PaymentClient_Impl implements PaymentClient {
+    private final HttpClient _client;
+    private final HttpClientRequestMapper<PaymentRequest> _requestMapper;
+    private final HttpClientResponseMapper<PaymentResponse> _responseMapper;
+
+    public PaymentResponse create(PaymentRequest request) {
+        final HttpBodyOutput _body;
+        try {
+            _body = _requestMapper.apply(Context.current(), request);
+        } catch (Exception e) {
+            throw new HttpClientEncoderException(e);
+        }
+
+        var _request = HttpClientRequest.of("POST", "/payments", "/payments", HttpHeaders.of(), _body, null);
+        try (var _response = _client.execute(_request).toCompletableFuture().get()) {
+            if (_response.code() >= 200 && _response.code() < 300) {
+                return _responseMapper.apply(_response);
+            }
+            throw HttpClientResponseException.fromResponseFuture(_response).get();
+        } catch (Exception e) {
+            throw new HttpClientUnknownException(e);
+        }
+    }
+}`
+            },
+            {
+                title: "$KafkaConsumer_Handler.java",
+                code: `@Generated("KafkaAnnotationProcessor")
+public final class $KafkaConsumer_Handler implements KafkaRecordHandler<Long, Payment> {
+    private final EventsConsumer consumer;
+    private final KafkaConsumerTelemetry telemetry;
+    private final KafkaRecordKeyDeserializer<Long> keyDeserializer;
+    private final KafkaRecordValueDeserializer<Payment> valueDeserializer;
+
+    public void handle(ConsumerRecord<byte[], byte[]> record, @Nullable Exception exception) {
+        var ctx = telemetry.get(record);
+        Long key = null;
+        Payment value = null;
+        Exception error = exception;
+
+        try {
+            if (error == null && record.key() != null) {
+                key = keyDeserializer.deserialize(record.key());
+            }
+            if (error == null && record.value() != null) {
+                value = valueDeserializer.deserialize(record.value());
+            }
+        } catch (RecordKeyDeserializationException | RecordValueDeserializationException e) {
+            error = e;
+        }
+
+        try {
+            consumer.process(key, value, error);
+            ctx.close(null);
+        } catch (Exception e) {
+            ctx.close(e);
+            throw e;
+        }
+    }
+}`
+            },
+            {
+                title: "$ResilientService__AopProxy.java",
+                code: `@AopProxy
+@Generated("AopAnnotationProcessor")
+public final class $ResilientService__AopProxy extends ResilientService {
+
+    private PaymentResponse timeout(PaymentRequest request) {
+        return timeout.execute(() -> super.charge(request));
+    }
+
+    private PaymentResponse retry(PaymentRequest request) {
+        return retry.retry(() -> timeout(request));
+    }
+
+    public PaymentResponse charge(PaymentRequest request) {
+        try {
+            circuitBreaker.acquire();
+            var result = retry(request);
+            circuitBreaker.releaseOnSuccess();
+            return result;
+        } catch (Throwable e) {
+            circuitBreaker.releaseOnError(e);
+            return fallback(request);
+        }
+    }
+}`
+            }
+        ];
+
+        const title = document.getElementById("snippet-title");
+        const code = document.getElementById("snippet-code");
+        const dots = Array.from(document.querySelectorAll(".snippet-dot"));
+        const modeButtons = Array.from(document.querySelectorAll("[data-snippet-mode]"));
+        const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+        const typeDuration = 3000;
+        const previewDuration = 6000;
+        let index = 0;
+        let sequence = 0;
+        let snippets = sourceSnippets;
+
+        const escapeHtml = (value) => value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        const highlight = (value) => {
+            let html = escapeHtml(value);
+            const tokens = [];
+            const stash = (className) => (match) => {
+                const marker = `\u0000${tokens.length}\u0000`;
+                tokens.push(`<span class="${className}">${match}</span>`);
+                return marker;
+            };
+
+            html = html
+                .replace(/\/\/[^\n]*/g, stash("token-muted"))
+                .replace(/@\w+(?:\([^)]*\))?/g, stash("token-anno"))
+                .replace(/"[^"\n]*"/g, stash("token-string"))
+                .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof)\b/g, '<span class="token-key">$1</span>')
+                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|V)\b/g, '<span class="token-type">$1</span>');
+
+            return html.replace(/\u0000(\d+)\u0000/g, (_, id) => tokens[Number(id)]);
+        };
+
+        const setActive = (nextIndex) => {
+            index = nextIndex;
+            title.textContent = snippets[index].title;
+            dots.forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === index));
+        };
+
+        const typeSnippet = async (snippet, token) => {
+            code.innerHTML = "";
+            const text = snippet.code;
+            const step = 1;
+            const delay = typeDuration / Math.ceil(text.length / step);
+            for (let i = 0; i <= text.length; i += step) {
+                if (token !== sequence) return;
+                code.innerHTML = highlight(text.slice(0, i));
+                await sleep(delay);
+            }
+            code.innerHTML = highlight(text);
+        };
+
+        const run = async () => {
+            const token = ++sequence;
+            while (token === sequence) {
+                setActive(index);
+                code.innerHTML = "";
+                await sleep(120);
+                await typeSnippet(snippets[index], token);
+                await sleep(previewDuration);
+                index = (index + 1) % snippets.length;
+            }
+        };
+
+        dots.forEach((dot, dotIndex) => {
+            dot.addEventListener("click", () => {
+                sequence += 1;
+                setActive(dotIndex);
+                code.innerHTML = "";
+                window.setTimeout(run, 160);
+            });
+        });
+
+        modeButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                sequence += 1;
+                snippets = button.dataset.snippetMode === "generated"
+                    ? generatedSnippets
+                    : sourceSnippets;
+                index = 0;
+                code.innerHTML = "";
+                modeButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+                dots.forEach((dot, dotIndex) => {
+                    dot.hidden = dotIndex >= snippets.length;
+                    dot.classList.toggle("is-active", dotIndex === 0);
+                });
+                window.setTimeout(run, 160);
+            });
+        });
+
+        run();
+    })();
+</script>
 </body>
 </html>
