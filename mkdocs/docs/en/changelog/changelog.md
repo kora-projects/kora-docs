@@ -5,7 +5,24 @@ hide:
   - navigation
 ---
 
-## 1.2.14
+## 1.2.15
+
+Added:
+
+- Added support for `null` keys and added more key & value mappers for Redis Cache
+- Added OpenAPI generator server validation interceptor disabling option
+- Added Swagger UI `OAuth2` redirect page support 
+- Added partial support for OpenAPI 3.1.x version in Swagger UI
+
+Fixed:
+
+- Fixed `ConfigParser` generator working for empty interfaces with super types
+- Fixed Kotlin `R2dbcTypesExtension.kt` for type extraction 
+- Fixed and reinforced `GraalVM` configs
+- Fixed `@Log` mark `AopAnnotation` only for supported ones
+- Fixed `R2DBC` and `Vertx` Kotlin issues 
+
+### 1.2.14
 
 Fixed:
 
