@@ -9,7 +9,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.14")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.15")
         }
     }
     ```
@@ -29,7 +29,7 @@
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.14")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.15")
         }
     }
     ```
@@ -286,6 +286,7 @@
     Доступные Kora параметры плагина (`configOptions`):
 
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках. Значения: `true`, `false`
+    - `enableServerValidationInterceptor` - Добавлять ли перехватчик валидатора для отдельного маппинга исключений валидации в HTTP-ответы. Значения: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода. Значения: `true`, `false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера
@@ -335,6 +336,7 @@
     Доступные Kora параметры плагина (`configOptions`):
 
     - `enableServerValidation` - создавать ли валидаторы по описанию OpenAPI сецификации для сервера и включать ли валидацию на HTTP-обработчиках. Значения: `true`, `false`
+    - `enableServerValidationInterceptor` - Добавлять ли перехватчик валидатора для отдельного маппинга исключений валидации в HTTP-ответы. Значения: `true, false`
     - `requestInDelegateParams` - прокидывать ли `HttpServerRequest` принудительно как аргумент метода. Значения: `true`, `false`
     - `interceptors` - возможность указывать перехватчики для HTTP-контроллеров
     - `additionalContractAnnotations` - возможность указывать дополнительные аннотации над методами контроллера

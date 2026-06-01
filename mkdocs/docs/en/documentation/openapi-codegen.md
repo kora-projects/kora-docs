@@ -9,7 +9,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.14")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.15")
         }
     }
     ```
@@ -29,7 +29,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.14")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.15")
         }
     }
     ```
@@ -287,6 +287,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     Available Kora plugin parameters:
 
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
+    - `enableServerValidationInterceptor` - whether add validator interceptor for separate validation exception mapping to HTTP responses: `true, false`
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
@@ -336,6 +337,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
     Available Kora plugin parameters:
 
     - `enableServerValidation` - whether to create validators according to the OpenAPI secification description for the server and whether to enable validation on HTTP handlers: `true, false`.
+    - `enableServerValidationInterceptor` - whether add validator interceptor for separate validation exception mapping to HTTP responses: `true, false`
     - `requestInDelegateParams` - whether to expected `HttpServerRequest` as a method argument: `true, false`
     - `interceptors` - ability to specify interceptors for HTTP controllers
     - `additionalContractAnnotations` - ability to specify additional annotations for controller methods
