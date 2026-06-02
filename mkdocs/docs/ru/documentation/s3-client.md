@@ -1,27 +1,33 @@
+---
+description: "Explains Kora S3 clients for AWS and Minio, declarative and imperative clients, file operations, metadata, key templates, and exception handling. Use when working with @S3.Client, @S3.Get, @S3.List, @S3.Put, @S3.Delete, S3ClientModule, AwsS3Client, MinioS3Client."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora S3 clients for AWS and Minio, declarative and imperative clients, file operations, metadata, key templates, and exception handling; key triggers include @S3.Client, @S3.Get, @S3.List, @S3.Put, @S3.Delete, S3ClientModule, AwsS3Client, MinioS3Client."
+---
+
 ??? warning "Экспериментальный модуль"
 
-    **Эксперементальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию, 
+    **Эксперементальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию,
     по этой причине API может потенциально притерпеть незначительные изменения перед полной готовностью.
 
 Модуль предоставляет тонкий слой абстракции для создания S3-клиентов
 с помощью аннотаций в декларативном стиле, либо использование клиентов в императивном стиле для работы с [хранилищем S3](https://aws.amazon.com/ru/s3/faqs/).
 
-## AWS
+## AWS { #aws }
 
 Реализация S3-клиента основанная на библиотеке [AWS](https://github.com/aws/aws-sdk-java-v2).
 
 Для работы и внедрения доступны компоненты:
 
-- Императивные [Kora S3 клиенты](#_23)
+- Императивные [Kora S3 клиенты](#client-imperative)
 - `S3Client` синхронный AWS S3 клиент
 - `S3AsyncClient` асинхронный AWS S3 клиент
 - `S3AsyncClient` с тегом `@Tag(MultipartUpload.class)` асинхронный AWS S3 клиент для пакетной загрузки
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:s3-client-aws"
     ```
@@ -34,7 +40,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:s3-client-aws")
     ```
@@ -47,7 +53,7 @@
 
 Требуется подключить любой модуль [HTTP-клиента](http-client.md).
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `AwsS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
 
@@ -144,34 +150,34 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#s3-client).
 
-### Формат ответа
+### Формат ответа { #response-format }
 
 В случае использование AWS модуля, есть возможность получать специальные форматы ответа специфичные только AWS библиотеке:
 
 | Операция                          | Формат ответа                                                                                                                                                                                                                                                                 |
 |-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Получение файла](#_8)            | [GetObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/GetObjectResponse.html) / [ResponseInputStream<GetObjectResponse>](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/ResponseInputStream.html)     |
-| [Получение метаданных файла](#_9) | [HeadObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/HeadObjectResponse.html)                                                                                                                                              |
-| [Перечисление файлов](#_12)       | [ListObjectsV2Response](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/ListObjectsV2Response.html)                                                                                                                                        |
-| [Добавление файла](#_16)          | [PutObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/PutObjectResponse.html)                                                                                                                                                |
-| [Удаление файла](#_19)            | [DeleteObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectResponse.html) / [DeleteObjectsResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectsResponse.html) |
+| [Получение файла](#get-file)            | [GetObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/GetObjectResponse.html) / [ResponseInputStream<GetObjectResponse>](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/ResponseInputStream.html)     |
+| [Получение метаданных файла](#metadata) | [HeadObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/HeadObjectResponse.html)                                                                                                                                              |
+| [Перечисление файлов](#list-files)       | [ListObjectsV2Response](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/ListObjectsV2Response.html)                                                                                                                                        |
+| [Добавление файла](#add-file)          | [PutObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/PutObjectResponse.html)                                                                                                                                                |
+| [Удаление файла](#delete-file)            | [DeleteObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectResponse.html) / [DeleteObjectsResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectsResponse.html) |
 
-## Minio
+## Minio { #minio }
 
 Реализация S3-клиента основанная на библиотеке [Minio](https://github.com/minio/minio-java).
 Учитывайте что реализация использует [OkHttp](https://github.com/square/okhttp) написанный на Kotlin и использует соответствующие зависимости.
 
 Для работы и внедрения доступны компоненты:
 
-- Императивные [Kora S3 клиенты](#_23)
+- Императивные [Kora S3 клиенты](#client-imperative)
 - `MinioClient` синхронный Minio S3 клиент
 - `MinioAsyncClient` асинхронный Minio S3 клиент
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:s3-client-minio"
     ```
@@ -184,7 +190,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:s3-client-minio")
     ```
@@ -197,7 +203,7 @@
 
 Можно подключить [OkHttp модуль](http-client.md#okhttp) либо будет создан стандартный HTTP-клиент.
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Пример полной конфигурации, описанной в классе `MinioS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
 
@@ -280,15 +286,15 @@
     10.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     11.  Включает трассировку модуля (по умолчанию `true`)
 
-## Клиент декларативный
+## Клиент декларативный { #client-declarative }
 
 Предлагается использовать специальные аннотации для создания декларативного клиента:
 
 * `@S3.Client` — указывает что интерфейс является декларативным S3-клиентом
-* `@S3.Get` — указывает что метод выполняет операцию [получения файла/метаданных](#_1)
-* `@S3.List` — указывает что метод выполняет операцию [получения списка файлов/метаданных](#_1)
-* `@S3.Put` — указывает что метод выполняет операцию [добавления файла](#_1)
-* `@S3.Delete` — указывает что метод выполняет операцию [удаления файла](#_1)
+* `@S3.Get` — указывает что метод выполняет операцию [получения файла/метаданных](#dependency)
+* `@S3.List` — указывает что метод выполняет операцию [получения списка файлов/метаданных](#dependency)
+* `@S3.Put` — указывает что метод выполняет операцию [добавления файла](#dependency)
+* `@S3.Delete` — указывает что метод выполняет операцию [удаления файла](#dependency)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -296,8 +302,8 @@
     @S3.Client
     public interface SomeClient {
 
-        @S3.Get 
-        S3Object operation(String key); 
+        @S3.Get
+        S3Object operation(String key);
     }
     ```
 
@@ -307,12 +313,12 @@
     @S3.Client
     interface SomeClient {
 
-        @S3.Get 
+        @S3.Get
         fun operation(key: String): S3Object
     }
     ```
 
-### Конфигурация клиента
+### Конфигурация клиента { #client-configuration }
 
 Конфигурация конкретной реализации `@S3.Client`:
 
@@ -322,8 +328,8 @@
     @S3.Client("s3client.someClient") //(1)!
     public interface SomeClient {
 
-        @S3.Get 
-        S3Object operation(String key); 
+        @S3.Get
+        S3Object operation(String key);
     }
     ```
 
@@ -335,7 +341,7 @@
     @S3.Client("s3client.someClient") //(1)!
     interface SomeClient {
 
-        @S3.Get 
+        @S3.Get
         fun operation(key: String): S3Object
     }
     ```
@@ -366,7 +372,7 @@
 
     1.  Корзина ([bucket](https://aws.amazon.com/ru/s3/faqs/)) где будут хранится файлы
 
-### Получение файла
+### Получение файла { #get-file }
 
 Секция описывает операцию получения файла/метаданных с помощью декларативного S3-клиента.
 Предлагается использовать аннотацию `@S3.Get` для указания операции.
@@ -407,7 +413,7 @@
     2. Получение в ответ файла вместе данными
     3. Ключ файла можно указать в аннотации
 
-#### Метаданные
+#### Метаданные { #metadata }
 
 Операция получения файла по ключу может возвращать как полный файл вместе с данными `S3Object`,
 так и облегченный вариант в виде метаданных файла без данных `S3ObjectMeta`,
@@ -439,7 +445,7 @@
 
     1. Получение в ответ метаданные файла
 
-#### Шаблон ключа
+#### Шаблон ключа { #key-template }
 
 Ключ можно указывать также как шаблон и подставлять туда аргументы метода как части шаблона,
 все аргументы метода должны быть частью составного ключа.
@@ -472,7 +478,7 @@
     1. Шаблон по которому собирать шаблон ключа, каждый аргумент шаблона будет подставлен через `toString()`, аргументы в шаблоне указывается как имена аргументов метода в `{ковычках}`
     2. Все аргументы метода должны быть частью шаблона ключа
 
-#### Множество ключей
+#### Множество ключей { #multiple-keys }
 
 Можно также получать сразу множество файлов по ключам как полный файл вместе с данными `S3Object`,
 так и облегченный вариант в виде множества метаданных файлов без данных `S3ObjectMeta`.
@@ -505,7 +511,7 @@
     1. Операция получения файла для множества ключей **не должна** содержать шаблон ключа
     2. Операция должна принимать список ключей и отдавать список `S3Object` либо `S3ObjectMeta`
 
-### Перечисление файлов
+### Перечисление файлов { #list-files }
 
 Секция описывает операцию получения списка файлов/метаданных с помощью декларативного S3-клиента.
 Предлагается использовать аннотацию `@S3.List` для указания операции.
@@ -555,7 +561,7 @@
     2. Префикс можно указать в аннотации
     3. Можно указывать ограничение по выборке файлов для операции перечисления, максимальное количество файлов для операции `1000`:
 
-#### Метаданные
+#### Метаданные { #metadata-2 }
 
 Операция получения файла по ключу может возвращать как полный файл вместе с данными `S3ObjectList`,
 так и облегченный вариант в виде метаданных файла без данных `S3ObjectMetaList`,
@@ -587,7 +593,7 @@
 
     1. Получение в ответ метаданные файлов
 
-#### Шаблон префикса
+#### Шаблон префикса { #prefix-template }
 
 Префикс можно указывать также как шаблон и подставлять туда аргументы метода как части шаблона,
 все аргументы метода должны быть частью составного ключа.
@@ -618,7 +624,7 @@
 
     1. Шаблон по которому собирать шаблон префикса, каждый аргумент шаблона будет подставлен через `toString()`, аргументы в шаблоне указывается как имена аргументов метода в `{ковычках}`
 
-#### Разделитель
+#### Разделитель { #separator }
 
 Можно указывать разделитель для [префикса ключа](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-prefixes.html), исключать нужные файлы из выборки:
 
@@ -648,7 +654,7 @@
 
     1. Указывается разделитель по которому будет фильтроваться перечисления файлов
 
-### Добавление файла
+### Добавление файла { #add-file }
 
 Секция описывает операцию добавления файла с помощью декларативного S3-клиента.
 Предлагается использовать аннотацию `@S3.Put` для операции.
@@ -692,7 +698,7 @@
     2. Само тело файла которое будет добавлено в хранилище
     3. Ключ также можно указать в аннотации если он статичен
 
-#### Тело файла
+#### Тело файла { #file-body }
 
 Тело файла (`S3Body`) может быть создано из `byte[]` / `ByteBuffer` / `InputStream` / `Flow.Publisher<ByteBuffer>` через соответсвующее статические методы конструкторы.
 
@@ -700,7 +706,7 @@
 
 В случае если не будет указан тип файла, он будет проставлен как `application/octet-stream`.
 
-#### Шаблон ключа
+#### Шаблон ключа { #key-template-2 }
 
 Ключ можно указывать также как шаблон и подставлять туда аргументы метода как части шаблона,
 все аргументы метода должны быть частью составного ключа.
@@ -733,7 +739,7 @@
     1. Шаблон по которому собирать шаблон ключа, каждый аргумент шаблона будет подставлен через `toString()`, аргументы в шаблоне указывается как имена аргументов метода в `{ковычках}`
     2. Все аргументы метода должны быть частью шаблона ключа либо `S3Body`
 
-### Удаление файла
+### Удаление файла { #delete-file }
 
 Секция описывает операцию удаление файла с помощью декларативного S3-клиента.
 Предлагается использовать аннотацию `@S3.Delete` для операции.
@@ -774,7 +780,7 @@
     2. Получение в ответ файла вместе данными
     3. Ключ файла можно указать в аннотации
 
-#### Шаблон ключа
+#### Шаблон ключа { #key-template-3 }
 
 Ключ можно указывать также как шаблон и подставлять туда аргументы метода как части шаблона,
 все аргументы метода должны быть частью составного ключа.
@@ -807,7 +813,7 @@
     1. Шаблон по которому собирать шаблон ключа, каждый аргумент шаблона будет подставлен через `toString()`, аргументы в шаблоне указывается как имена аргументов метода в `{ковычках}`
     2. Все аргументы метода должны быть частью шаблона ключа
 
-#### Множество ключей
+#### Множество ключей { #multiple-keys-2 }
 
 Можно также получать сразу множество файлов по ключам как полный файл вместе с данными `S3Object`,
 так и облегченный вариант в виде множества метаданных файлов без данных `S3ObjectMeta`.
@@ -840,7 +846,7 @@
     1. Операция получения файла для множества ключей **не должна** содержать шаблон ключа
     2. Операция должна принимать список ключей и отдавать `void`
 
-### Сигнатуры
+### Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов декларативного HTTP клиента из коробки:
 
@@ -859,14 +865,14 @@
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
 
-## Клиент императивный
+## Клиент императивный { #client-imperative }
 
 Можно внедрить императивный Kora клиента для работы с S3, предоставляется как клиент для синхронной так и асинхронной работы:
 
 - `S3KoraClient` - клиент для синхронной работы
 - `S3KoraAsyncClient` - клиент для асинхронной работы
 
-## Ошибки
+## Ошибки { #exceptions }
 
 В случае ошибки работы клиента будут брошены специальные ошибки:
 

@@ -1,6 +1,12 @@
+---
+description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags. Use when working with @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags; key triggers include @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer, KafkaSkipRecordException."
+---
+
 Module for creating declarative [Apache Kafka](https://kafka.apache.org/) `Consumer` and `Producer` using annotations.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -28,7 +34,7 @@ Module for creating declarative [Apache Kafka](https://kafka.apache.org/) `Consu
     interface Application : KafkaModule
     ```
 
-## Consumer
+## Consumer { #consumer }
 
 Descriptions of working with [Kafka Consumer](https://docs.confluent.io/platform/current/clients/consumer.html)
 
@@ -103,7 +109,7 @@ each with its own individual configuration. It looks like this:
 
 The value in the annotation indicates from which part of the configuration file the settings should be taken. As far as getting the configuration is concerned - works similarly to `@ConfigSource`
 
-### Configuration
+### Configuration { #configuration }
 
 Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `kafka.someConsumer` is given below.
 
@@ -210,7 +216,7 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
 
 Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
 
-### Consume strategy
+### Consume strategy { #consume-strategy }
 
 `subscribe` strategy involves the use of [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/),
 to group the executors so that they do not duplicate the reading of records from their queue across multiple application instances.
@@ -272,7 +278,7 @@ Example of `assign` strategy configuration:
           "bootstrap.servers": "localhost:9093"
     ```
 
-### Signatures
+### Signatures { #signatures }
 
 Available signatures for Kafka consumer out-of-the-box methods, where `K` refers to the key type and `V` to the message value type.
 
@@ -372,7 +378,7 @@ In case `Consumer<K, V>` is taken as an argument, `commit` must be **called manu
     }
     ```
 
-### Deserialization
+### Deserialization { #deserialization }
 
 `Deserializer` - used to deserialize `ConsumerRecord` keys and values.
 
@@ -461,12 +467,12 @@ In case deserialization from `Json` is required, the `@Json` tag can be used:
 
 For non-key handlers, the default is `Deserializer<byte[]>` since it simply returns unhandled bytes.
 
-### Exception handling
+### Exception handling { #exception-handling }
 
 If the method labeled `@KafkaListener` throws an exception, Consumer will be restarted,
 because there is no general solution on how to handle this and the developer **must** decide how to handle it.
 
-#### Exception skipping
+#### Exception skipping { #exception-skipping }
 
 If you need to skip processing a specific event (`ConsumerRecord`) during processing for business logic reasons,
 you can throw a `KafkaSkipRecordException` by passing the actual exception to the constructor.
@@ -521,7 +527,7 @@ you can use the `SkippableRecordException` interface, which should be implemente
     class MyKafkaSkipRecordException : RuntimeException(), SkippableRecordException
     ```
 
-#### Deserialization errors
+#### Deserialization errors { #deserialization-errors }
 
 If you use a signature with `ConsumerRecord` or `ConsumerRecords`, you will get a value deserialization exception at the moment of calling the `key` or `value` methods.
 At that point, it is worth handling it in the way you want.
@@ -572,7 +578,7 @@ or `RecordValueDeserializationException`.
 
 Note that all arguments become optional, meaning we expect to either have a key and value or an exception.
 
-### Custom tag
+### Custom tag { #custom-tag }
 
 Automatic tag is created for the consumer by default, it can be viewed in the generated module at compile time.
 
@@ -604,7 +610,7 @@ If for some reason you need to override the consumer tag, you can set it as an a
     }
     ```
 
-### Rebalance events
+### Rebalance events { #rebalance-events }
 
 You can listen and react to rebalance events with your implementation of the `ConsumerAwareRebalanceListener` interface,
 it should be provided as a component by the consumer tag:
@@ -645,7 +651,7 @@ it should be provided as a component by the consumer tag:
     }
     ```
 
-### Manual override
+### Manual override { #manual-override }
 
 Kora provides a small wrapper over `KafkaConsumer` that allows you to easily trigger the handling of incoming events.
 
@@ -666,7 +672,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 }
 ```
 
-## Producer
+## Producer { #producer }
 
 Descriptions of working with [Kafka Producer](https://docs.confluent.io/platform/current/clients/producer.html)
 
@@ -693,7 +699,7 @@ in order to send messages to any topic it is supposed to create a method with th
 
 The annotation parameter indicates the path to the configuration.
 
-### Topic
+### Topic { #topic }
 
 In case it is required to use typed contracts for specific topics, the `@KafkaPublisher.Topic` annotation is supposed to be used
 to create such contracts:
@@ -722,7 +728,7 @@ to create such contracts:
 
 The annotation parameter indicates the path for the configuration of the topic.
 
-### Configuration
+### Configuration { #configuration-2 }
 
 Configuration describes the settings of a particular `@KafkaPublisher` and an example is given below for the configuration on the `kafka.someConsumer` path.
 
@@ -814,7 +820,7 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
     1. Topic where method will send data (**required**)
     2. Partition of the topic where method will send data (optional)
 
-### Signatures
+### Signatures { #signatures-2 }
 
 Allows `value` and `key` (optional) and `headers` (optional) to be sent from `ProducerRecord`:
 
@@ -908,7 +914,7 @@ It is possible to send `ProducerRecord` with or without `Callback` and combine t
     }
     ```
 
-### Serialization
+### Serialization { #serialization }
 
 In order to specify which `Serializer` to take from a container, there is an option to use tags.
 Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
@@ -973,17 +979,17 @@ If you want to serialize as Json, you should use `@Json` annotation:
     }
     ```
 
-### Exception handling
+### Exception handling { #exception-handling-2 }
 
 In case of a submission error in a method annotated `@Topic` and which does not return `Future<RecordMetadata>` a `ru.tinkoff.kora.kafka.kora.kafka.common.exceptions.KafkaPublishException` will be thrown.
 where in `cause` will lie the actual error from `KafkaProducer`.
 
-#### Serialization errors
+#### Serialization errors { #serialization-errors }
 
 In case of a key/value serialization error in a method annotated with `@Topic`, `org.apache.kafka.common.errors.SerializationException` will be thrown
 similar to what would happen in the case of `org.apache.kafka.kafka.clients.producer.Producer#send`.
 
-### Transactions
+### Transactions { #transactions }
 
 It is possible to send a message to Kafka in [within a transaction](https://www.confluent.io/blog/transactions-apache-kafka/), this is supposed to use the
 `@KafkaPublisher` annotation and inherit `TransactionalPublisher` interface to create such a `KafkaProducer`.
@@ -1067,7 +1073,7 @@ It is also possible to manually perform all manipulations with `KafkaProducer`:
     }
     ```
 
-#### Configuration
+#### Configuration { #configuration-3 }
 
 `KafkaPublisherConfig.TransactionConfig` is used to configure `@KafkaPublisher` with the `TransactionalPublisher` interface:
 
@@ -1101,7 +1107,7 @@ It is also possible to manually perform all manipulations with `KafkaProducer`:
     2. Connection set size for transactions
     3. Maximum transaction waiting time
 
-### Сигнатуры
+### Сигнатуры { #signatures-3 }
 
 Signatures available for Kafka producer methods out of the box, where `K` refers to the key type and `V` refers to the message value type.
 

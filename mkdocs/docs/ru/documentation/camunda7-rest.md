@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 7 REST API exposure, OpenAPI management, REST configuration, CORS, telemetry, and graceful shutdown settings. Use when working with CamundaRestModule, OpenAPI, HttpServerConfig, CamundaRestConfig, CORS, telemetry."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 7 REST API exposure, OpenAPI management, REST configuration, CORS, telemetry, and graceful shutdown settings; key triggers include CamundaRestModule, OpenAPI, HttpServerConfig, CamundaRestConfig, CORS, telemetry."
+---
+
 ??? warning "Экспериментальный модуль"
 
     **Эксперементальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию, 
@@ -5,11 +11,11 @@
 
 Модуль для подключения [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) для [Camunda 7 BPMN модуля](camunda7-bpmn.md)
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:camunda-rest-undertow"
     ```
@@ -22,7 +28,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:camunda-rest-undertow")
     ```
@@ -35,7 +41,7 @@
 
 Требует подключения [Camunda BPMN модуля](camunda7-bpmn.md).
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `CamundaRestConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -94,7 +100,7 @@
     1.  Включить/выключить REST API
     2.  Путь префикс до REST API
     3.  Порт на котором будет запускаться REST API сервер
-    4.  Максимальное время ожидания [штатного завершения](container.md#_24)
+    4.  Максимальное время ожидания [штатного завершения](container.md#component-lifecycle)
     5.  Относительный путь до OpenAPI файлов в `resources` директории, по умолчанию указан файл `openapi.json` OpenAPI из [зависимости Camunda](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi)
     6.  Вкл/Выкл контроллера который отдает OpenAPI 
     7.  Путь по которому будет доступен OpenAPI
@@ -166,7 +172,7 @@
     1.  Включить/выключить REST API
     2.  Путь префикс до REST API
     3.  Порт на котором будет запускаться REST API сервер
-    4.  Максимальное время ожидания [штатного завершения](container.md#_24)
+    4.  Максимальное время ожидания [штатного завершения](container.md#component-lifecycle)
     5.  Относительный путь до OpenAPI файлов в `resources` директории, по умолчанию указан файл `openapi.json` OpenAPI из [зависимости Camunda](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi)
     6.  Вкл/Выкл контроллера который отдает OpenAPI 
     7.  Путь по которому будет доступен OpenAPI
@@ -193,6 +199,6 @@
     26. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     27. Включает трассировку модуля (по умолчанию `true`)
 
-## Приложения
+## Приложения { #applications }
 
 Можно регистрировать произвольные `jakarta.ws.rs.core.Application` с ресурсами для API (например для других [webapp](https://docs.camunda.org/manual/7.21/webapps/)) предоставляя их как компоненты в контейнер зависимостей.

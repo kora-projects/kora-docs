@@ -1,13 +1,19 @@
+---
+description: "Explains Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing. Use when working with TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing; key triggers include TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
+---
+
 Модуль для сбора трассировка приложения по стандарту [OpenTelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/)
 и экспорта трассировки по gRPC/HTTP в формате OTLP. 
 
-## gRPC
+## gRPC { #grpc }
 
 Модуль позволяет собирать трассировку с помощью [gRPC протокола](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) посредствам `GrpcSender`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc"
     ```
@@ -20,7 +26,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc")
     ```
@@ -31,13 +37,13 @@
     interface Application : OpentelemetryGrpcExporterModule
     ```
 
-## HTTP
+## HTTP { #http }
 
 Модуль позволяет собирать трассировку с помощью [HTTP протокола](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) посредствам `HttpSender`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-http"
     ```
@@ -50,7 +56,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
     ```
@@ -61,7 +67,7 @@
     interface Application : OpentelemetryHttpExporterModule
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Обязательным полем является только `endpoint`, аттрибуты из поля `attributes` будут отправляться с каждым спаном.
 
@@ -151,7 +157,7 @@
 
 Параметры конфигурации сбора трассировки описываются в модулях в которых присутствует сбор трассировки, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md) и т.д.
 
-## Контекст трассировки
+## Контекст трассировки { #tracing-context }
 
 Чтобы получить текущий `Span` трассировки можно использовать метод `getSpan` у `OpentelemetryContext`:
 
@@ -181,7 +187,7 @@
     val traceId = OpentelemetryContext.getTraceId();
     ```
 
-## Синхронная трассировка
+## Синхронная трассировка { #tracing-sync }
 
 Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer` 
 из контейнера для создания своих трассировок.
@@ -260,7 +266,7 @@
     }
     ```
 
-## Асинхронная трассировка
+## Асинхронная трассировка { #async-tracing }
 
 Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer`
 из контейнера для создания своих трассировок. Главная сложность заключается в прокидывании `Fork`'а контекста 

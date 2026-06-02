@@ -1,7 +1,13 @@
+---
+description: "Explains Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing. Use when working with TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing; key triggers include TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
+---
+
 Module for collecting application trace according to [OpenTelemetry] standard(https://opentelemetry.io/docs/what-is-opentelemetry/)
 and export trace by gRPC in OTLP format.
 
-## gRPC
+## gRPC { #grpc }
 
 Module allows trace collection using [gRPC protocol](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) by means of `GrpcSender`.
 
@@ -31,7 +37,7 @@ Module allows trace collection using [gRPC protocol](https://github.com/open-tel
     interface Application : OpentelemetryGrpcExporterModule
     ```
 
-## HTTP
+## HTTP { #http }
 
 Module allows to collect trace using [HTTP protocol](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) by means of `HttpSender`.
 
@@ -61,7 +67,7 @@ Module allows to collect trace using [HTTP protocol](https://github.com/open-tel
     interface Application : OpentelemetryHttpExporterModule
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 `endpoint` is the only a required field, attributes from the `attributes` field will be sent with each span.
 
@@ -152,7 +158,7 @@ Translated with DeepL.com (free version)
 
 Trace collection configuration parameters are described in modules that include trace collection, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
-## Tracing context
+## Tracing context { #tracing-context }
 
 Obtain the current tracing `Span`, you can use the `getSpan` method in `OpentelemetryContext`:
 
@@ -182,7 +188,7 @@ Obtain the current trace ID, you can use the `getTraceId()` method in `Opentelem
     val traceId = OpentelemetryContext.getTraceId();
     ```
 
-## Tracing sync
+## Tracing sync { #tracing-sync }
 
 In addition to automatically created spans, you can use the `Tracer` object from the dependency container.
 You can create a span with the current one in parent as follows:
@@ -259,7 +265,7 @@ You can create a span with the current one in parent as follows:
     }
     ```
 
-## Асинхронная трассировка
+## Асинхронная трассировка { #async-tracing }
 
 In addition to spans automatically created by the framework, you can use the `Tracer` object from the container to create your own traces. The main challenge lies in correctly propagating the context `Fork` to another execution thread to ensure the trace works properly.
 

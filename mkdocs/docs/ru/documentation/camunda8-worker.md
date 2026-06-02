@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+---
+
 ??? warning "Экспериментальный модуль"
 
     **Эксперементальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию, 
@@ -5,11 +11,11 @@
 
 Модуль для подключения клиента и создания исполнителей для внешнего оркестратора процессов [Camunda 8 (Zeebe)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:camunda-zeebe-worker"
     ```
@@ -22,7 +28,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:camunda-zeebe-worker")
     ```
@@ -33,7 +39,7 @@
     interface Application : ZeebeWorkerModule
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации клиента описанной в классе `ZeebeClientConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -161,12 +167,12 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-8-worker).
 
-## Исполнители
+## Исполнители { #worker }
 
 Исполнитель - это обработчик, способный выполнять определенное задание в процессе. 
 Каждый раз, когда необходимо выполнить такое задание, оно представляется в виде задачи исполнителю.
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Существует конфигурация по умолчанию, которая применяется ко всем исполнителям при создании
 и затем применяются именованные настройки конкретного исполнителя ([по типу исполнителя `Type`](https://docs.camunda.io/docs/components/concepts/job-workers/)) 
@@ -254,7 +260,7 @@
     13.  Устанавливает коэффициент джиттера. Следующая задержка изменяется случайным образом в диапазоне +/- этого коэффициента. 
         Например, если следующая задержка рассчитывается как 1 с, а `jitter` равен 0,1, то фактическая следующая задержка может быть где-то между 0,9 и 1,1 с
 
-### Декларативные
+### Декларативные { #declarative }
 
 Можно создавать декларативно [исполнителей](https://docs.camunda.io/docs/components/concepts/job-workers/) которые будут выполнять работу в рамках Zeebe оркестратора.
 
@@ -286,7 +292,7 @@
     }
     ```
 
-#### Параметр контекст
+#### Параметр контекст { #parameter-context }
 
 Можно внедрять контекст исполнения как аргумент метода,
 контекст исполнения имеет метаданные задачи, исполнителя и процесса доступные для текущей задачи, которая на исполнении.
@@ -317,7 +323,7 @@
     }
     ```
 
-#### Параметр переменная
+#### Параметр переменная { #parameter-variable }
 
 Можно внедрять [переменные процесса](https://docs.camunda.io/docs/components/concepts/variables/) как аргументы метода,
 переменная процесса является частью состояния процесса и может быть установлена на старте или как часть результата исполнителя.
@@ -386,7 +392,7 @@
     }
     ```
 
-#### Параметр переменные
+#### Параметр переменные { #parameter-variables }
 
 Можно внедрить сразу несколько [переменных процесса](https://docs.camunda.io/docs/components/concepts/variables/) как аргумент метода,
 как один объект, который представляет собой JSON объекты в состоянии процесса.
@@ -427,7 +433,7 @@
     }
     ```
 
-#### Результат
+#### Результат { #result }
 
 Можно не просто выполнять работу, но и возвращать результат выполнения работы как переменную в контекст процесса.
 
@@ -497,7 +503,7 @@
     }
     ```
 
-#### Ошибки
+#### Ошибки { #errors }
 
 В случае если требуется завершить исполнение ошибкой, можно бросить исключение `JobWorkerException` где можно указать,
 как код ошибки, так и сообщение и переменные процесса если того требуется.
@@ -528,7 +534,7 @@
     }
     ```
 
-### Императивные
+### Императивные { #imperative }
 
 Можно также создавать более низкоуровневые исполнители и напрямую работать с контрактами `ZeebeClient` и его интерфейсом.
 
@@ -564,7 +570,7 @@
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов репозитория из коробки:
 

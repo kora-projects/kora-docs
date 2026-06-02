@@ -1,6 +1,12 @@
+---
+description: "Explains Kora validation annotations, class and method validation, argument and result validation, custom validators, and supported validation signatures. Use when working with @Validate, @Valid, @NotNull, @NotEmpty, @Pattern, @Range, @Size, @Validator."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora validation annotations, class and method validation, argument and result validation, custom validators, and supported validation signatures; key triggers include @Validate, @Valid, @NotNull, @NotEmpty, @Pattern, @Range, @Size, @Validator, ValidationModule."
+---
+
 Module for validating classes/records and methods using annotations.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -28,7 +34,7 @@ Module for validating classes/records and methods using annotations.
     interface Application : ValidationModule
     ```
 
-## Validation annotations
+## Validation annotations { #validation-annotations }
 
 Special validation annotations are used by Kora to validate fields/arguments, they represent simple checks.
 
@@ -40,7 +46,7 @@ Available validation annotations:
 - `@Range` - Checks that the number is in the specified range
 - `@Size` - Checks that a collection (List, Set, Map) or `String` has a size in the specified range.
 
-## Class validation
+## Class validation { #class-validation }
 
 It is suggested to use the `@Valid` annotation to mark a class that needs a validator from the Kora framework.
 
@@ -89,9 +95,9 @@ can be implemented by its signature `Validator<Foo>` as a component dependency a
 The validator returns a list of violations after validation, they can be used to manually compose the error either
 you can use the `validateAndThrow` method which throws a `ViolationException` exception in case of a validation error.
 
-### Field validation
+### Field validation { #field-validation }
 
-It is expected to use a special provided validation [annotation](#annotation-validation) validation set for field validation.
+It is expected to use a special provided validation [annotation](#validation-annotations) validation set for field validation.
 
 An example of an object marked up for validation looks like this:
 
@@ -115,11 +121,11 @@ An example of an object marked up for validation looks like this:
     Data class Foo(@field:NotEmpty val number: String)
     ```
 
-#### Required fields
+#### Required fields { #required-fields }
 
 All fields are required (`NotNull`) by default, so `NotNull` checks will be created for all of them in the `Validator`.
 
-#### Optional fields
+#### Optional fields { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -142,7 +148,7 @@ All fields are required (`NotNull`) by default, so `NotNull` checks will be crea
     data class Foo(val number: String?)
     ```
 
-#### Embedded fields
+#### Embedded fields { #embedded-fields }
 
 In order to validate fields of complex objects for which validators are created (or provided independently),
 or fields that are not supported by standard validation tools,
@@ -171,7 +177,7 @@ the `@Valid` annotation is supposed to be used:
 In the example above, a `Validator<Bar>` validator would be created for `Bar` and a `Validator<Foo>` would be created for `Foo`,
 where when the `Validator<Foo>` validator is called, the validator for `Validator<Bar>` will be called internally.
 
-### Validation options
+### Validation options { #validation-options }
 
 There are two types of validation:
 
@@ -185,11 +191,11 @@ ValidatorContext context = ValidationContext.builder().failFast(true).build();
 List<Violation> violations = fooValidator.validate(value,context);
 ```
 
-## Method validation
+## Method validation { #method-validation }
 
-It is expected to use a special provided set of [annotations](#annotation-validation) validation for validating method arguments and result.
+It is expected to use a special provided set of [annotations](#validation-annotations) validation for validating method arguments and result.
 
-### Argument validation
+### Argument validation { #argument-validation }
 
 It is required to use the `@Validate` annotation over the method to validate method arguments:
 
@@ -219,11 +225,11 @@ It is required to use the `@Validate` annotation over the method to validate met
     }
     ```
 
-#### Required arguments
+#### Required arguments { #required-arguments }
 
 All arguments are required (`NotNull`) by default, so `NotNull` checks will be created for all of them.
 
-#### Optional arguments
+#### Optional arguments { #optional-arguments }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -258,7 +264,7 @@ All arguments are required (`NotNull`) by default, so `NotNull` checks will be c
     }
     ```
 
-#### Embedded arguments
+#### Embedded arguments { #embedded-arguments }
 
 In order to validate fields of complex objects for which validators are created (or provided independently),
 or fields that are not supported by standard validation tools,
@@ -299,9 +305,9 @@ or fields that are not supported by standard validation tools,
 In the example above, a `Validator<Bar>` validator would be created for `Bar` and a `Validator<Foo>` would be created for `Foo`,
 where when the `Validator<Foo>` validator is called, the validator for `Validator<Bar>` will be called internally.
 
-### Result validation
+### Result validation { #result-validation }
 
-In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validate-annotations).
+In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validation-annotations).
 In order to check that the value is not `null`, you need to use any `@NotNull/@Nonnull` annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -345,7 +351,7 @@ In order to check that the value is not `null`, you need to use any `@NotNull/@N
     2. Indicates that the result requires validation with a validator from the return value type
     3. Standard validation annotation
 
-### Validation options
+### Validation options { #validation-options-2 }
 
 There are two types of validation:
 
@@ -379,7 +385,7 @@ Example of FailFast validation:
     }
     ```
 
-## Custom validation annotations
+## Custom validation annotations { #custom-validation-annotations }
 
 Creating your custom annotation requires:
 
@@ -501,7 +507,7 @@ Creating your custom annotation requires:
     data class Foo(@field:MyValid val number: String)
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

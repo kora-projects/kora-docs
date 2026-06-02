@@ -1,7 +1,13 @@
+---
+description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support. Use when working with openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support; key triggers include openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth."
+---
+
 Module for creating declarative HTTP handlers [HTTP server](http-server.md)
 or create declarative [HTTP clients](http-client.md) from OpenAPI contracts using [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle).
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -45,7 +51,7 @@ or create declarative [HTTP clients](http-client.md) from OpenAPI contracts usin
 
 Requires [HTTP server](http-server.md) or [HTTP client](http-client.md) module.
 
-## Configuration
+## Configuration { #configuration }
 
 Configuration is required for [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle) parameters:
 
@@ -53,7 +59,7 @@ Configuration is required for [OpenAPI Generator plugin](https://openapi-generat
 - Configuring `configOptions` plugin parameter in [documentation](https://openapi-generator.tech/docs/generators/java/#config-options).
 - Configuring `openapiNormalizer` plugin parameter in [documentation](https://openapi-generator.tech/docs/customization/#openapi-normalizer).
 
-## Client
+## Client { #client }
 
 A minimal example of configuring a plugin to create a declarative HTTP client:
 
@@ -165,7 +171,7 @@ A minimal example of configuring a plugin to create a declarative HTTP client:
 
 Once created, the HTTP client will be available for deployment as a dependency on the created interface.
 
-### Interceptors
+### Interceptors { #interceptors }
 
 It is possible to put [interceptors](http-client.md#interceptors) on created clients with `@HttpClient` annotation.
 
@@ -232,7 +238,7 @@ In order to do this, set the `configOptions.interceptors` parameter:
     )
     ```
 
-### Tags
+### Tags { #tags }
 
 It is possible to put parameters `httpClientTag` and `telemetryTag` on created clients with `@HttpClient` annotation.
 The value is a Json object, the key of which is the api tag from the contract, and the value is the object with the fields `httpClientTag` and `telemetryTag`.
@@ -278,7 +284,7 @@ For this purpose it is necessary to set the `configOptions.tags` parameter:
     )
     ```
 
-## Server
+## Server { #server }
 
 A minimal example of configuring a plugin to create HTTP server handlers:
 
@@ -383,7 +389,7 @@ A minimal example of configuring a plugin to create HTTP server handlers:
 
 Once created, the handlers will be automatically registered.
 
-### Validation
+### Validation { #validation }
 
 In order to generate models and controllers with annotations from the [validation](validation.md) module, the `enableServerValidation` option must be set:
 
@@ -409,7 +415,7 @@ In order to generate models and controllers with annotations from the [validatio
 
     1. Enabling validation on the HTTP server controller side
 
-### Interceptors
+### Interceptors { #interceptors-2 }
 
 It is possible to put [interceptors](http-server.md#interceptors) on created controllers with `@HttpController` annotation.
 
@@ -476,7 +482,7 @@ In order to do this, set the `configOptions.interceptors` parameter:
     )
     ```
 
-### Authorization
+### Authorization { #authorization }
 
 Kora provides an interface to extract authorization information within the interceptor,
 created for the server from OpenAPI, you can pull any type of authorization [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
@@ -511,7 +517,7 @@ created for the server from OpenAPI, you can pull any type of authorization [Bas
     }
     ```
 
-## Recommendations
+## Recommendations { #recommendations }
 
 ???+ warning "Advice"
 

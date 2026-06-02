@@ -1,11 +1,17 @@
-Модуль предоставляет реализацию репозиториев на основе [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) протокола работы с базами данных 
+---
+description: "Explains Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures. Use when working with @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcConnectionFactory, JdbcRepository."
+---
+
+Модуль предоставляет реализацию репозиториев на основе [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) протокола работы с базами данных
 и с использованием [Hikari](https://github.com/brettwooldridge/HikariCP) для управления набором соединений.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-jdbc"
     ```
@@ -18,7 +24,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-jdbc")
     ```
@@ -31,7 +37,7 @@
 
 Также **требуется предоставить** реализацию драйвера базы данных как зависимость.
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `JdbcDatabaseConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -54,7 +60,7 @@
         initializationFailTimeout = "0s" //(13)!
         readinessProbe = false //(14)!
         dsProperties { //(15)!
-            "hostRecheckSeconds": "2" 
+            "hostRecheckSeconds": "2"
         }
         telemetry {
             logging {
@@ -84,7 +90,7 @@
     11.  Максимальное время жизни соединения в Hikari
     12.  Максимальное время соединение может отстуствовать в Hikari до того как будет считаться утечкой (по умолчанию отсутвует)
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию отсутвует)
-    14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    14.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     15.  Дополнительные атрибуты JDBC соединения `dataSourceProperties` (ниже пример `hostRecheckSeconds` параметра) (по умолчанию отсутвует)
     16.  Включает логгирование модуля (по умолчанию `false`)
     17.  Включает метрики модуля (по умолчанию `true`)
@@ -110,7 +116,7 @@
       initializationFailTimeout: "0s" //(13)!
       readinessProbe: false //(14)!
       dsProperties: #(15)!
-        hostRecheckSeconds: "1"  
+        hostRecheckSeconds: "1"
       telemetry:
         logging:
           enabled: false #(16)!
@@ -135,14 +141,14 @@
     11.  Максимальное время жизни соединения в Hikari
     12.  Максимальное время соединение может отстуствовать в Hikari до того как будет считаться утечкой (по умолчанию отсутвует)
     13.  Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию отсутвует)
-    14.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    14.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     15.  Дополнительные атрибуты JDBC соединения `dataSourceProperties` (ниже пример `hostRecheckSeconds` параметра) (по умолчанию отсутвует)
     16.  Включает логгирование модуля (по умолчанию `false`)
     17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     19.  Включает трассировку модуля (по умолчанию `true`)
 
-## Использование
+## Использование { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -158,11 +164,11 @@
     interface EntityRepository : JdbcRepository
     ```
 
-## Конвертация
+## Конвертация { #mapping }
 
-Возможно переопределять преобразование различных частей [сущности](database-common.md) и параметров запроса, для этого Kora предоставляет специальные интерфейсы. 
+Возможно переопределять преобразование различных частей [сущности](database-common.md) и параметров запроса, для этого Kora предоставляет специальные интерфейсы.
 
-### Результат
+### Результат { #result }
 
 Если требуется преобразовать результат вручную, предлагается использовать `JdbcResultSetMapper`:
 
@@ -208,7 +214,7 @@
     }
     ```
 
-#### Сущность
+#### Сущность { #entity }
 
 Для оптимального преобразование сущности предполагается использовать аннотацию `@EntityJdbc`
 для создания обработчиками аннотаций преобразователя результата.
@@ -229,7 +235,7 @@
     data class Entity(val id: String, val name: String)
     ```
 
-### Строка
+### Строка { #row }
 
 Если требуется преобразовать строку вручную, предлагается использовать `JdbcRowMapper`,
 имейте в виду, что порядок колонок начинается с `1`:
@@ -276,7 +282,7 @@
     }
     ```
 
-### Колонка
+### Колонка { #column }
 
 Если требуется преобразовать значение колонки вручную, предлагается использовать `JdbcResultColumnMapper`:
 
@@ -331,7 +337,7 @@
     }
     ```
 
-### Параметр
+### Параметр { #parameter }
 
 Если требуется преобразовать значение параметра запроса вручную, предлагается использовать `JdbcParameterColumnMapper`:
 
@@ -379,7 +385,7 @@
     }
     ```
 
-### Поддерживаемые типы
+### Поддерживаемые типы { #supported-types }
 
 ??? abstract "Список поддерживаемых типов для аргументов/возвращаемых значений из коробки"
 
@@ -402,7 +408,7 @@
     * OffsetTime
     * OffsetDateTime
 
-## Выборка по списку
+## Выборка по списку { #select-by-list }
 
 Иногда требуется выборка по списку значений из базы, на уровне драйвера все эти параметры должны быть отдельно проставлены, так как длина списка не известна
 это не самая очевидная задача так как Kora старается делать все преобразования во время компиляции и убирать любые преобразования строк особенно в SQL во время выполнения,
@@ -455,7 +461,7 @@
     }
     ```
 
-## Созданный идентификатор
+## Созданный идентификатор { #generated-identifier }
 
 Если необходимо получить в качестве результата созданные базой данных первичные ключи сущности,
 предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
@@ -491,9 +497,9 @@
     }
     ```
 
-## Транзакции
+## Транзакции { #transaction }
 
-Для выполнения блокирующих запросов в Kora есть интерфейс `JdbcConnectionFactory`, 
+Для выполнения блокирующих запросов в Kora есть интерфейс `JdbcConnectionFactory`,
 который предоставляется в методе в рамках контракта `JdbcRepository`.
 Все методы репозитория вызванные в рамках лямбды транзакции будут выполнены в этой самой транзакции.
 
@@ -548,14 +554,14 @@
 Транзакция считается успешно зафиксированной после выполнения метода, если метод не выбросил исключение.
 В случае если метод выбросил исключение, все изменения в БД в рамках транзакции не будут применены.
 
-Уровень изоляции транзакции берется из конфигурации `dsProperties` пула Hikari, 
+Уровень изоляции транзакции берется из конфигурации `dsProperties` пула Hikari,
 либо можно самостоятельно поменять его через `java.sql.Connection` перед выполнением запросов.
 
 ```java
 connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 ```
 
-### Ручное управление
+### Ручное управление { #connection }
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `java.sql.Connection`:
 
@@ -595,9 +601,9 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
     }
     ```
 
-### После коммит действия
+### После коммит действия { #post-commit-actions }
 
-В случае если требуется выполнить какие-либо действия после фиксации транзакции, 
+В случае если требуется выполнить какие-либо действия после фиксации транзакции,
 можно добавить соответствущие действия с помощью `addPostCommitAction`.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -633,10 +639,10 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
     class SomeService(private val repository: EntityRepository) {
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
-            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection -> 
+            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
                 val ccc = repository.jdbcConnectionFactory.currentConnectionContext()
                 ccc.addPostCommitAction { conn -> {
-                    // do some work   
+                    // do some work
                 }
 
                 // do some work
@@ -646,9 +652,9 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
     }
     ```
 
-### После откат действия
+### После откат действия { #post-rollback-actions }
 
-В случае если требуется выполнить какие-либо действия после отката транзакции, 
+В случае если требуется выполнить какие-либо действия после отката транзакции,
 можно добавить соответствущие действия с помощью `addPostRollbackAction`.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -687,7 +693,7 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
                 val ccc = repository.jdbcConnectionFactory.currentConnectionContext()
                 ccc.addPostRollbackAction { conn, e ->
-                    // do some work   
+                    // do some work
                 }
 
                 // do some work
@@ -697,7 +703,7 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов репозитория из коробки:
 

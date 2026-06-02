@@ -1,15 +1,21 @@
+---
+description: "Explains Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures. Use when working with @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures; key triggers include @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+---
+
 Модуль для создания кешей на основе [Caffeine](https://github.com/ben-manes/caffeine) или [Redis](https://redis.io/docs/about/)
 с помощью аннотаций в декларативном стиле, так и использование их императивном стиле.
 
-## Caffeine
+## Caffeine { #caffeine }
 
 Реализация на основе библиотеки [Caffeine](https://github.com/ben-manes/caffeine) для кэша внутри памяти приложения.
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:cache-caffeine"
     ```
@@ -22,7 +28,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:cache-caffeine")
     ```
@@ -33,7 +39,7 @@
     interface Application : CaffeineCacheModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Пример полной конфигурации для `mycache.config` кэша, параметры описаны в классе `CaffeineCacheConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -71,15 +77,15 @@
     3.  Начальный размер кэша (помогает избежать расширения кэша в случае активного набухания) (необязательно)
     4.  Максимальный размер кэша (При достижении границы **или чуть ранее** будет исключать из кэша [наименее актуальные значения](https://blog.skillfactory.ru/glossary/lru/)) (по умолчанию `100000`)
 
-## Redis
+## Redis { #redis }
 
 Реализация на основе базы данных в памяти [Redis](https://redis.io/docs/about/) и драйвера подключения [Lettuce](https://github.com/lettuce-io/lettuce-core).
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:cache-redis"
     ```
@@ -92,7 +98,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:cache-redis")
     ```
@@ -103,7 +109,7 @@
     interface Application : RedisCacheModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Требуется отдельно сконфигурировать Lettuce драйвер для подключения к Redis.
 Используется одно подключение для всех кешей.
@@ -241,7 +247,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#cache).
 
-#### Донастройка
+#### Донастройка { #configurator }
 
 Можно зарегистрировать `LettuceConfigurator` который позволит до настроить `Lettuce` клиент перед созданием.
 
@@ -286,7 +292,7 @@
     }
     ```
 
-## Использование
+## Использование { #usage }
 
 Для создания кеша потребуется зарегистрировать типизированный `@Cache` контракт.
 Интерфейс контракта должен наследоваться только от предоставляемых Kora'ой реализаций: `CaffeineCache` / `RedisCache`.
@@ -308,7 +314,7 @@
     interface MyCache : CaffeineCache<String, String>
     ```
 
-### Императивный подход
+### Императивный подход { #imperative }
 
 Кеши доступны для внедрения как зависимости по интерфейсу и могут использовать вкупе с декларативными операциями.
 
@@ -318,11 +324,11 @@
 Интерфейсы предоставляют операции получения, удаления, обновления, пакетных операций и тп.
 Также реализации кешей могут предоставлять специфичные для себя контракты.
 
-### Декларативный подход
+### Декларативный подход { #declarative }
 
 Все примеры использования аспектов будут подразумевать реализацию кэша выше.
 
-#### Получение
+#### Получение { #get }
 
 Для кэширования и получения значения из кэша для метода *get()* следует проаннотировать его аннотацией `@Cacheable`.
 
@@ -354,7 +360,7 @@
     }
     ```
 
-#### Сохранение
+#### Сохранение { #put }
 
 Для добавления значений в кэш через метод *put()* следует проаннотировать его аннотацией `@CachePut`.
 Метод проаннотированный `@CachePut` будет вызван и его значение положено в кэш определенный в *value*.
@@ -387,7 +393,7 @@
     }
     ```
 
-#### Удаление
+#### Удаление { #invalidate }
 
 Для удаления значения по ключу из кэша через метод *evict()* следует проаннотировать его аннотацией `@CacheInvalidate`.
 Метод проаннотированный `@CacheInvalidate` будет вызван и затем по ключу для кэша определенного в *value* будут удалены значения по ключу.
@@ -420,7 +426,7 @@
     }
     ```
 
-#### Полное удаление
+#### Полное удаление { #invalidate-all }
 
 Для удаления всех значений из кэша через метод *evictAll()* следует проаннотировать его аннотацией `@CacheInvalidate` и указать параметр *invalidateAll = true*.
 
@@ -452,7 +458,7 @@
     }
     ```
 
-#### Композитный кэш
+#### Композитный кэш { #composite-cache }
 
 В случае если у вас есть несколько кешей то требуется подключить оба модуля и указать соответствующее количество аннотаций над методом.
 
@@ -516,7 +522,7 @@
 
 Порядок вызова аспектов соответствует порядку аннотаций над методом, сверху внизу.
 
-## Ключ
+## Ключ { #key }
 
 В случае если ключ кэша представляет собой 1 аргумент, то требуется зарегистрировать `Cache` с сигнатурой соответствующей типам ключа и значения.
 
@@ -534,7 +540,7 @@
     interface MyCache : CaffeineCache<String, String>
     ```
 
-### Преобразование
+### Преобразование { #conversion }
 
 В случае если аргумент не может быть преобразован в ключ кеша, то реализация кеша затребует соответствующий преобразователь
 с интерфейсом `CacheKeyMapper`, в случае если аргументов для ключа будет 2 то потребуется `CacheKeyMapper2` и так далее.
@@ -580,7 +586,7 @@
     }
     ```
 
-### Композитный ключ
+### Композитный ключ { #composite-key }
 
 В случае если ключ кэша представляет собой N аргументов, то требуется зарегистрировать `Cache` с использованием 
 собственного класса который бы описывал такой ключ.
@@ -614,7 +620,7 @@
 Если используется `RedisCache` то подразумевается что по умолчанию все аргументы композитного ключа будут не `null`, 
 либо потребуется использовать собственный преобразователь ключа.
 
-### Порядок аргументов
+### Порядок аргументов { #argument-ordering }
 
 В случае если метод принимает аргументы которые хочется исключить из композитного ключа,
 либо же порядок аргументов не соответствует порядку аргументов конструктора композитного ключа,
@@ -646,7 +652,7 @@
     }
     ```
 
-## Подгружаемый кэш
+## Подгружаемый кэш { #loadable-cache }
 
 Библиотека предоставляет компонент для построения сущности, которая объединяет операции GET и PUT, без использования аспектов - `LoadableCache`
 
@@ -683,7 +689,7 @@
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 

@@ -1,3 +1,9 @@
+---
+description: "Explains Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpClientModule, OkHttp."
+---
+
 Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
 using declarative-style annotations or using client in imperative-style.
 
@@ -9,12 +15,12 @@ using declarative-style annotations or using client in imperative-style.
     and update API faster in case of new version by just updaing contract file. 
     For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
 
-## OkHttp
+## OkHttp { #okhttp }
 
 HTTP client implementation based on [OkHttp](https://github.com/square/okhttp) library.
 Please note that the implementation is written in Kotlin and uses appropriate dependencies.
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -42,7 +48,7 @@ Please note that the implementation is written in Kotlin and uses appropriate de
     interface Application : OkHttpClientModule
     ```
 
-### Configuration
+### Configuration { #configuration }
 
 Example of the complete configuration described in the `OkHttpClientConfig`
 and `HttpClientConfig` classes (default or example values are specified):
@@ -154,7 +160,7 @@ and `HttpClientConfig` classes (default or example values are specified):
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
 
-#### Configurer
+#### Configurer { #configurer }
 
 Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be available as component:
 
@@ -182,11 +188,11 @@ Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be av
     }
     ```
 
-## AsyncHttpClient
+## AsyncHttpClient { #asynchttpclient }
 
 HTTP client implementation based on the [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client) library.
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -216,7 +222,7 @@ HTTP client implementation based on the [Async HTTP Client](https://github.com/A
 
 The `HttpClient` interface implementation is `AsyncHttpClient` and is available for manual implementation.
 
-### Configuration
+### Configuration { #configuration-2 }
 
 Example of the complete configuration described in the `AsyncHttpClientConfig` 
 and `HttpClientConfig` classes (default or example values are specified):
@@ -324,11 +330,11 @@ and `HttpClientConfig` classes (default or example values are specified):
 
 You can also configure [Netty transport](netty.md).
 
-## Native client
+## Native client { #native-client }
 
 Implementation of an HTTP client based on the native client provided in the [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
 
-### Dependency
+### Dependency { #dependency-3 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -358,7 +364,7 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
 The `HttpClient` interface implementation is `JdkHttpClient` and is available for manual implementation.
 
-### Configuration
+### Configuration { #configuration-3 }
 
 Example of the complete configuration described in the `JdkHttpClientConfig`
 and `HttpClientConfig` classes (default or example values are specified):
@@ -464,7 +470,7 @@ and `HttpClientConfig` classes (default or example values are specified):
     16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     17. Enables module tracing (default `true`)
 
-## Client declarative
+## Client declarative { #client-declarative }
 
 It is suggested to use special annotations to create a declarative client:
 
@@ -493,7 +499,7 @@ It is suggested to use special annotations to create a declarative client:
     }
     ```
 
-#### Client Configuration
+#### Client Configuration { #client-configuration }
 
 The default configuration of a particular implementation of `@HttpClient` uses the following path `httpClient.{lower case class name}` for configuration lookup,
 or specified in the `configPath` parameter in the annotation:
@@ -596,7 +602,7 @@ Example configuration in the case of the `httpClient.someClient` path described 
     9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     10. Enables module tracing (default `true`)
 
-### Method Configuration
+### Method Configuration { #method-configuration }
 
 Using the above HTTP client example, it is possible to configure separately some of the parameters for a particular method, the configuration path
 is determined by the path to the client and the method name, in the example above the configuration is `httpClient.someClient`
@@ -671,12 +677,12 @@ and method `hello` the final path will be `httpClient.someClient.hello`
     8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     9. Enables module tracing (default `true`)
 
-### Request
+### Request { #request }
 
 The section describes HTTP request transformations at a declarative HTTP client.
 It is suggested to use special annotations to specify request parameters.
 
-#### Path parameter
+#### Path parameter { #path-parameter }
 
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{quote}` in the path
 and the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
@@ -703,7 +709,7 @@ and the name of the parameter is specified in `value` or is equal to the name of
     }
     ```
 
-#### Query parameter
+#### Query parameter { #query-parameter }
 
 `@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
 
@@ -757,7 +763,7 @@ where the key is the parameter name and must be of type `String`, and the parame
     }
     ```
 
-#### Header
+#### Header { #header }
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), parameter name is specified in `value` or defaults to the method argument name.
 
@@ -810,12 +816,12 @@ where the key is the parameter name and must be of type `String`, and the parame
     }
     ```
 
-#### Request body
+#### Request body { #request-body }
 
 Specifying the body of a request requires using a method argument without special annotations,
 the default supported types are `byte[]`, `ByteBuffer` or `String`.
 
-##### Json
+##### Json { #json }
 
 In order to indicate that the body is Json and needs to automatically create such a writer and embed it,
 is required to use the special `@Json` tag annotation:
@@ -852,7 +858,7 @@ is required to use the special `@Json` tag annotation:
 
 [Json](json.md) module is required.
 
-##### Text form
+##### Text form { #text-form }
 
 You can use `FormUrlEncoded` as the body argument type and it will be processed as [form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
@@ -900,7 +906,7 @@ An example of a method call with this form would look like this:
     )
     ```
 
-##### Binary Form
+##### Binary Form { #binary-form }
 
 You can use `FormMultipart` as the body argument type and it will be treated as [binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
@@ -955,7 +961,7 @@ An example of a method call with this form would look like this:
     )
     ```
 
-##### Custom body
+##### Custom body { #custom-body }
 
 If the body needs to be written in a way different from the standard mechanisms,
 it is possible to use a special `HttpClientRequestMapper` interface to implement your custom logic:
@@ -1000,7 +1006,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
     }
     ```
 
-#### Cookie
+#### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
 
@@ -1026,7 +1032,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
     }
     ```
 
-#### Required parameters
+#### Required parameters { #required-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1036,7 +1042,7 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 
     By default, all arguments declared in a method that do not use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax are considered **required** (*NotNull*).
 
-#### Optional parameters
+#### Optional parameters { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1067,15 +1073,15 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
     }
     ```
 
-### Response
+### Response { #response }
 
 The section describes the transformation of an HTTP response from a declarative HTTP client.
 
-#### Response body
+#### Response body { #response-body }
 
 By default, you can use the standard response body return value types such as `void`, `byte[]`, `ByteBuffer` or `String`.
 
-##### Json
+##### Json { #json-2 }
 
 If the body is to be read as Json, the `@Json` annotation must be used over the method.
 
@@ -1113,7 +1119,7 @@ If the body is to be read as Json, the `@Json` annotation must be used over the 
 
 [Json](json.md) module is required.
 
-##### Response Entity
+##### Response Entity { #response-entity }
 
 If the intention is to read the body and also get the headers and status code of the response,
 it is intended to use `HttpResponseEntity`, which is a wrapper over the response body.
@@ -1148,7 +1154,7 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
     }
     ```
 
-#### Custom response
+#### Custom response { #custom-response }
 
 If you need to read the response in a different way, you can use the special `HttpClientResponseMapper` interface:
 
@@ -1204,12 +1210,12 @@ If you need to read the response in a different way, you can use the special `Ht
     }
     ```
 
-#### Response Error
+#### Response Error { #response-error }
 
 By default, when no converter tag or converter itself is specified, the conversion will be applied for `2xx` HTTP status codes,
 for all others a `HttpClientResponseException` exception will be thrown, which contains [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status), response body and response headers.
 
-#### Conversion by Code
+#### Conversion by Code { #conversion-by-code }
 
 If specific conversions are required depending on the [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) of the response, you can use the `@ResponseCodeMapper` annotation to specify a
 correspondence between the HTTP status code and the `HttpClientResponseMapper` resolver.
@@ -1259,7 +1265,7 @@ You can also use `ResponseCodeMapper.DEFAULT` as an indication of the default be
 In the example above, `ResponseSuccessMapper` will be used for status code `200`,
 and for all other status codes the `ResponseErrorMapper` will be used.
 
-### Signatures
+### Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 
@@ -1278,7 +1284,7 @@ Available signatures for repository methods out of the box:
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
-## Interceptors
+## Interceptors { #interceptors }
 
 You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` class.
 Interceptors can be applied to specific methods or to the entire `@HttpClient` class:
@@ -1335,11 +1341,11 @@ Interceptors can be applied to specific methods or to the entire `@HttpClient` c
     }
     ```
 
-### Authorization
+### Authorization { #authorization }
 
 Kora provides out-of-the-box interceptors that can be used for [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/) authorization.
 
-#### Basic
+#### Basic { #basic }
 
 You need to configure an interceptor and configuration for [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/) authorization:
 
@@ -1411,7 +1417,7 @@ Then add interceptor for the entire HTTP client or specific methods.
     }
     ```
 
-#### ApiKey
+#### ApiKey { #apikey }
 
 You need to configure an interceptor and configuration for [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/) authorization:
 
@@ -1477,7 +1483,7 @@ Then add interceptor for the entire HTTP client or specific methods.
     }
     ```
 
-#### Bearer
+#### Bearer { #bearer }
 
 You need to configure an interceptor for [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/) authorization:
 
@@ -1541,12 +1547,12 @@ Then add interceptor for the entire HTTP client or specific methods.
     }
     ```
 
-#### OAuth
+#### OAuth { #oauth }
 
 Authorization by [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) is similar to [Bearer](#bearer),
 you need to implement `HttpClientTokenProvider` yourself and put it in dependency container.
 
-## Client imperative
+## Client imperative { #client-imperative }
 
 The base client represents the `HttpClient` interface and is available for deployment:
 

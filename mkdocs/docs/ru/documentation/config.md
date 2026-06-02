@@ -1,7 +1,13 @@
-Модуль конфигурации отвечает за отображение значений из файлов конфигурации на классы в Kora 
+---
+description: "Explains Kora configuration system for HOCON and YAML, typed config extraction, config injection, config sources, watchers, and supported value types. Use when working with @ConfigSource, @ConfigValueExtractor, @Environment, @SystemProperties, Config, HoconConfigModule, YamlConfigModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora configuration system for HOCON and YAML, typed config extraction, config injection, config sources, watchers, and supported value types; key triggers include @ConfigSource, @ConfigValueExtractor, @Environment, @SystemProperties, Config, HoconConfigModule, YamlConfigModule."
+---
+
+Модуль конфигурации отвечает за отображение значений из файлов конфигурации на классы в Kora
 и их последующее использование для настройки приложения.
 
-## HOCON
+## HOCON { #hocon }
 
 Поддержка [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) реализована с помощью [Typesafe Config](https://github.com/lightbend/config).
 HOCON — это формат конфиг-файлов, основанный на JSON. Формат менее строгий нежели JSON и обладает слегка другим синтаксисом.
@@ -81,7 +87,7 @@ services {
 
         @ConfigValueExtractor
         public interface ObjectConfig {
-            
+
             String p1();
 
             String p2();
@@ -119,7 +125,7 @@ services {
 
         @ConfigValueExtractor
         interface ObjectConfig {
-            
+
             fun p1(): String
 
             fun p2(): String
@@ -131,11 +137,11 @@ services {
     }
     ```
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:config-hocon"
     ```
@@ -148,7 +154,7 @@ services {
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:config-hocon")
     ```
@@ -159,11 +165,11 @@ services {
     interface Application : HoconConfigModule
     ```
 
-### Файл
+### Файл { #file }
 
 По умолчанию ожидаются файлы конфигурации [reference.conf и application.conf](https://github.com/lightbend/config#note-about-resolving-substitutions-in-referenceconf-and-applicationconf)
 
-Во-первых, все файлы `reference.conf` объединяются, во-вторых, файл `application.conf` накладывается на неразрешенный 
+Во-первых, все файлы `reference.conf` объединяются, во-вторых, файл `application.conf` накладывается на неразрешенный
 файл `reference.conf`, результат вычисляется и проверяется что все значения переменных доступны.
 
 Предполагается что конфигурация приложения находится в файле `application.conf`, а конфигурации библиотек в `reference.conf`.
@@ -193,7 +199,7 @@ services {
     }
     ```
 
-## YAML
+## YAML { #yaml }
 
 Поддержка [YAML](https://yaml.org/) реализована с помощью [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
 
@@ -262,7 +268,7 @@ services:
 
         @ConfigValueExtractor
         public interface ObjectConfig {
-            
+
             String p1();
 
             String p2();
@@ -300,7 +306,7 @@ services:
 
         @ConfigValueExtractor
         interface ObjectConfig {
-            
+
             fun p1(): String
 
             fun p2(): String
@@ -312,11 +318,11 @@ services:
     }
     ```
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:config-yaml"
     ```
@@ -329,7 +335,7 @@ services:
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:config-yaml")
     ```
@@ -340,7 +346,7 @@ services:
     interface Application : YamlConfigModule
     ```
 
-### Файл
+### Файл { #file-2 }
 
 По умолчанию ожидаются файлы конфигурации `reference.yaml` и `application.yaml`.
 
@@ -374,12 +380,12 @@ services:
     }
     ```
 
-## Пользовательские конфигурации
+## Пользовательские конфигурации { #custom-configuration }
 
 Пользовательская конфигурация предоставляет собой отображение файла конфигурации на пользовательский интерфейс.
 Такой пользовательский интерфейс в последствии может быть внедрен как зависимость наравне с другими компонентами.
 
-### В приложении
+### В приложении { #application-config }
 
 Для создания пользовательских конфигураций следует использовать аннотацию `@ConfigSource`:
 
@@ -390,7 +396,7 @@ services:
     public interface FooServiceConfig {
 
         String bar();
-        
+
         int baz();
     }
     ```
@@ -452,9 +458,9 @@ services:
     class FooService(val config: FooServiceConfig)
     ```
 
-### В библиотеке
+### В библиотеке { #library-config }
 
-Для создания пользовательских конфигураций в рамках пользовательских библиотеках следует использовать аннотацию `@ConfigValueExtractor` 
+Для создания пользовательских конфигураций в рамках пользовательских библиотеках следует использовать аннотацию `@ConfigValueExtractor`
 которая создаст правила обработки файла конфигурации в экземпляр класса конфигурации.
 
 Рассмотрим пример когда есть такой класс конфигурации:
@@ -466,7 +472,7 @@ services:
     public interface FooLibraryConfig {
 
         String bar();
-        
+
         int baz();
     }
     ```
@@ -531,11 +537,11 @@ services:
 
 Затем подключив модуль `FooLibraryModule` в приложении, конфиг `FooServiceConfig` можно использовать как зависимость в других классах.
 
-### Обязательные значения
+### Обязательные значения { #required-values }
 
 По умолчанию все значения объявленные в конфиге считаются **обязательными** (*NotNull*) и должны присутствовать в файле конфигурации.
 
-### Необязательные значения
+### Необязательные значения { #optional-values }
 
 Если есть необходимость указать значение из файла конфигурации как необязательное, то можно воспользоваться таким форматом:
 
@@ -570,7 +576,7 @@ services:
     }
     ```
 
-### Значения по умолчанию
+### Значения по умолчанию { #default-values }
 
 Если есть необходимость использовать задать в отображении значение по умолчанию, то можно воспользоваться `default` модификатором:
 
@@ -602,7 +608,7 @@ services:
     }
     ```
 
-## Внедрение конфигурации
+## Внедрение конфигурации { #injecting-configuration }
 
 Можно внедрять базовый класс `ru.tinkoff.kora.config.common.Config` который предоставляет из себя общую абстракцию над
 отображением файла конфигурации. Результирующие отображение конфигурации состоит из нескольких слоев которые представляют из себя:
@@ -611,9 +617,9 @@ services:
 - Системные переменные
 - Файл конфигурации
 
-### Переменные окружения
+### Переменные окружения { #environment-variables }
 
-В случае если требуется внедрить конфигурацию **только** [переменных окружения](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit), 
+В случае если требуется внедрить конфигурацию **только** [переменных окружения](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit),
 то для этого можно использовать аннотацию `@Environment` как тег для класса конфигурации:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -637,7 +643,7 @@ services:
     class FooService(@Environment val config: Config)
     ```
 
-### Системные переменные
+### Системные переменные { #system-variables }
 
 В случае если требуется внедрить конфигурацию **только** [системных переменных](https://www.baeldung.com/java-system-get-property-vs-system-getenv),
 то для этого можно использовать аннотацию `@SystemProperties` как тег для класса конфигурации:
@@ -663,9 +669,9 @@ services:
     class FooService(@SystemProperties val config: Config)
     ```
 
-### Файл конфигурации
+### Файл конфигурации { #configuration-file }
 
-В случае если требуется внедрить полную конфигурацию приложения которая состоит **только** из файла конфигурации, 
+В случае если требуется внедрить полную конфигурацию приложения которая состоит **только** из файла конфигурации,
 то для этого можно использовать аннотацию `@ApplicationConfig` как тег для класса конфигурации:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -689,7 +695,7 @@ services:
     class FooService(@ApplicationConfig val config: Config)
     ```
 
-### Результирующая конфигурация
+### Результирующая конфигурация { #resulting-configuration }
 
 В случае если требуется внедрить полную конфигурацию приложения которая состоит из файла конфигурации,
 переменных окружения и системных переменных, то для этого требуется просто внедрить класс конфигурации без тега:
@@ -715,25 +721,25 @@ services:
     class FooService(val config: Config)
     ```
 
-### Совет
+### Совет { #recommendations }
 
 ???+ warning "Совет"
 
     **Мы не советуем** использовать напрямую `ru.tinkoff.kora.config.common.Config` как зависимость в компонентах,
     так как при обновлении конфигурации это повлечет обновление всех компонент графа которые используют его у себя,
-    рекомендуется всегда создавать [пользовательские конфигурации](#_5).
+    рекомендуется всегда создавать [пользовательские конфигурации](#custom-configuration).
 
-## Наблюдатель
+## Наблюдатель { #config-watcher }
 
-По умолчанию в Kora работает наблюдатель за файлом конфигурации который обновляет его содержимое, 
+По умолчанию в Kora работает наблюдатель за файлом конфигурации который обновляет его содержимое,
 что влечет в случае изменения файла конфигурации обновление графа зависимостей для компонент которые затронули изменения.
 
 Можно отключить наблюдатель с помощь:
 
-1. Переменной окружения `KORA_CONFIG_WATCHER_ENABLED` 
+1. Переменной окружения `KORA_CONFIG_WATCHER_ENABLED`
 2. Системного свойства `kora.config.watcher.enabled`
 
-## Поддерживаемые типы
+## Поддерживаемые типы { #supported-types }
 
 Экстракторы конфигурации предоставляют обширный список поддерживаемых типов, который охватывает большинство из того,
 что вам может понадобиться для указания в пользовательских конфигурациях, либо вы можете расширить поведение собственным `ConfigValueExtractor<T>` компонентом.
@@ -768,7 +774,7 @@ services:
     * `Map<K, V>` (где `K` или `V` любой из выше перечисленных типов)
     * `Either<A, B>` (где `A` и `B` любой из выше перечисленных типов)
 
-### Размер
+### Размер { #size }
 
 `Size` - специальный тип который позволяет задавать размер байт в удобной человеку системе исчислений по стандарту [IEEE 1541—2002](https://ru.ruwiki.ru/wiki/IEEE_1541-2002) (двоичный), так и в стандарте [СИ](https://ru.ruwiki.ru/wiki/%D0%95%D0%B4%D0%B8%D0%BD%D0%B8%D1%86%D1%8B_%D0%B8%D0%B7%D0%BC%D0%B5%D1%80%D0%B5%D0%BD%D0%B8%D1%8F_%D1%91%D0%BC%D0%BA%D0%BE%D1%81%D1%82%D0%B8_%D0%BD%D0%BE%D1%81%D0%B8%D1%82%D0%B5%D0%BB%D0%B5%D0%B9_%D0%B8_%D0%BE%D0%B1%D1%8A%D1%91%D0%BC%D0%B0_%D0%B8%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B8#%D0%91%D0%B0%D0%B9%D1%82) (десятичный).
 

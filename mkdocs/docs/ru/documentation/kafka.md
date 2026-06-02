@@ -1,10 +1,16 @@
+---
+description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags. Use when working with @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags; key triggers include @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer, KafkaSkipRecordException."
+---
+
 Модуль для создания декларативных [Apache Kafka](https://kafka.apache.org/) `Consumer` и `Producer` с помощью аннотаций.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:kafka"
     ```
@@ -17,7 +23,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:kafka")
     ```
@@ -28,7 +34,7 @@
     interface Application : KafkaModule
     ```
 
-## Потребитель
+## Потребитель { #consumer }
 
 Описания работы с [Kafka Consumer](https://docs.confluent.io/platform/current/clients/consumer.html)
 
@@ -103,7 +109,7 @@
 
 Значение в аннотации указывает, из какой части файла конфигурации нужно брать настройки. В том, что касается получения конфигурации — работает аналогично `@ConfigSource`
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Конфигурация описывает настройки конкретного `@KafkaListener` и ниже указан пример для конфигурации по пути `kafka.someConsumer`.
 
@@ -154,7 +160,7 @@
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#_24)
+    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#component-lifecycle)
     10.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
     11. Включает логгирование модуля (по умолчанию `false`)
     12. Включает метрики модуля (по умолчанию `true`)
@@ -201,7 +207,7 @@
     6.  Максимальное время ожидания между неожиданными исключениями во время обработки
     7.  Временной интервал в рамках которого требуется делать обновление партиций в случае `assign` метода 
     8.  Количество потоков на которых будет запущен потребитель для параллельной обработки (если будет равен 0 то ни один потребитель не будет запущен вообще)
-    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#_24)
+    9. Время ожидания обработки перед выключением потребителя в случае [штатного завершения](container.md#component-lifecycle)
     10.  *Properties* из официального клиента кафки, документацию по ним можно посмотреть по [ссылке](https://kafka.apache.org/documentation/#consumerconfigs) (**обязательный**)
     11. Включает логгирование модуля (по умолчанию `false`)
     12. Включает метрики модуля (по умолчанию `true`)
@@ -210,7 +216,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#kafka).
 
-### Стратегия подключения
+### Стратегия подключения { #consume-strategy }
 
 `subscribe` стратегия подразумевает использование [group.id](https://medium.com/@kirill.sereda/kafka-%D0%B4%D0%BB%D1%8F-%D1%81%D0%B0%D0%BC%D1%8B%D1%85-%D0%BC%D0%B0%D0%BB%D0%B5%D0%BD%D1%8C%D0%BA%D0%B8%D1%85-f42864cb1bfb),
 чтобы объединить исполнителей в группы и они не дублировали вычитывание записей из своей очереди в рамках нескольких экземпляров приложений.
@@ -272,7 +278,7 @@
           "bootstrap.servers": "localhost:9093"
     ```
 
-### Десериализация
+### Десериализация { #deserialization }
 
 `Deserializer` - используется для десериализации ключей и значений `ConsumerRecord`.
 
@@ -361,12 +367,12 @@
 
 Для потребителей, не использующих ключ, по умолчанию используется `Deserializer<byte[]>` т.к. он просто возвращает не обработанные байты.
 
-### Обработка исключений
+### Обработка исключений { #exception-handling }
 
 Если метод помеченный `@KafkaListener` выбросит исключение, то Consumer будет перезапущен,
 потому что нет общего решения, как реагировать на это и разработчик **должен** сам решить как эту ситуацию обрабатывать.
 
-#### Пропуск обработки
+#### Пропуск обработки { #exception-skipping }
 
 В случае когда требуется пропустить обработку **конкретного события** (`ConsumerRecord`) в процессе обработки по причинам бизнес-логики, 
 можно выбросить исключение `KafkaSkipRecordException` передав в конструктор реальное исключение.
@@ -421,7 +427,7 @@
     class MyKafkaSkipRecordException : RuntimeException(), SkippableRecordException
     ```
 
-#### Ошибки десериализации
+#### Ошибки десериализации { #deserialization-errors }
 
 Если вы используете сигнатуру с `ConsumerRecord` или `ConsumerRecords`, 
 то вы получите исключение десериализации значения в момент вызова методов `key()` или `value()` у события.
@@ -474,7 +480,7 @@
 
 Обратите внимание, что все аргументы становятся необязательными, то есть мы ожидаем что у нас либо будут ключ и значение, либо исключение.
 
-### Пользовательский тег
+### Пользовательский тег { #custom-tag }
 
 По умолчанию для потребителя создается автоматический тег по которому происходит внедрение, его можно посмотреть в созданном модуле на этапе компиляции.
 
@@ -506,7 +512,7 @@
     }
     ```
 
-### События ребалансировки
+### События ребалансировки { #rebalance-events }
 
 Можно слушать и реагировать на события ребалансировки с помощью свой реализации интерфейса `ConsumerAwareRebalanceListener`,
 его следует предоставить как компонент по тегу потребителя:
@@ -547,7 +553,7 @@
     }
     ```
 
-### Ручное управление
+### Ручное управление { #manual-override }
 
 Kora предоставляет небольшую обёртку над `KafkaConsumer`, позволяющую легко запустить обработку входящих событий.
 
@@ -568,7 +574,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 }
 ```
 
-### Сигнатуры
+### Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов Kafka потребителя из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 
@@ -762,7 +768,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-## Продюсер
+## Продюсер { #producer }
 
 Описания работы с [Kafka Producer](https://docs.confluent.io/platform/current/clients/producer.html)
 
@@ -789,7 +795,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Параметр аннотации указывает на путь до конфигурации продюсера.
 
-### Топик
+### Топик { #topic }
 
 В случае если требуется использовать типизированные контракты на определенные топики 
 то предполагается использование аннотации `@KafkaPublisher.Topic` для создания таких контрактов:
@@ -818,7 +824,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
 Параметр аннотации указывает на путь для конфигурации топика.
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Конфигурация описывает настройки конкретного `@KafkaPublisher` и ниже указан пример для конфигурации по пути `kafka.someConsumer`.
 
@@ -910,7 +916,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     1.  В какой топик метод будет отправлять данные (**обязательный**)
     2.  В какой partition топика метод будет отправлять данные (по умолчанию отсутвует)
 
-### Сериализация
+### Сериализация { #serialization }
 
 Для уточнения какой `Serializer` взять из контейнера есть возможность использовать теги.
 Теги необходимо устанавливать на параметры `ProducerRecord` или `key`/`value` методов:
@@ -975,17 +981,17 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-### Обработка исключений
+### Обработка исключений { #exception-handling-2 }
 
 В случае ошибки отправки методе проаннотированным `@Topic` и который не возвращает `Future<RecordMetadata>` будет выброшено `ru.tinkoff.kora.kafka.common.exceptions.KafkaPublishException`
 где в `cause` будет лежать реальная ошибка из `KafkaProducer`.
 
-#### Ошибки сериализации
+#### Ошибки сериализации { #serialization-errors }
 
 В случае ошибки сериализации ключа/значения в методе проаннотированным `@Topic` будет выброшено `org.apache.kafka.common.errors.SerializationException`
 аналогично как это было бы в случае `org.apache.kafka.clients.producer.Producer#send`
 
-### Транзакции
+### Транзакции { #transactions }
 
 Возможно отправлять сообщение в Kafka в [рамках транзакции](https://www.confluent.io/blog/transactions-apache-kafka/), для этого предполагается использовать
 аннотацию `@KafkaPublisher` и наследование интерфейса `TransactionalPublisher` для создания такого `KafkaProducer`.
@@ -1070,7 +1076,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
-#### Конфигурация
+#### Конфигурация { #configuration-3 }
 
 `KafkaPublisherConfig.TransactionConfig` используется для конфигурации `@KafkaPublisher` с интерфейсом `TransactionalPublisher`:
 
@@ -1104,7 +1110,7 @@ public interface BaseKafkaRecordsHandler<K, V> {
     2.  Размер набора соединений для транзакций
     3.  Максимальное время ожидания транзакции
 
-### Сигнатуры
+### Сигнатуры { #signatures-3 }
 
 Доступные сигнатуры для методов Kafka продюсера из коробки, где под `K` подразумевается тип ключа и под `V` тип значения сообщения.
 

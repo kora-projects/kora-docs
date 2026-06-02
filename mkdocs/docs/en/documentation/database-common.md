@@ -1,3 +1,9 @@
+---
+description: "Explains Common Kora database model and repository conventions: entities, identifiers, naming, embedded fields, query macros, batch queries, and repository inheritance. Use when working with @Table, @Column, @Id, @Embedded, @Repository, @Query, @Batch, @Mapping."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Common Kora database model and repository conventions: entities, identifiers, naming, embedded fields, query macros, batch queries, and repository inheritance; key triggers include @Table, @Column, @Id, @Embedded, @Repository, @Query, @Batch, @Mapping, Entity, Repository."
+---
+
 Basic principles and mechanisms of database modules in Kora.
 
 We think that the best way to communicate with a SQL database is to communicate in its native SQL language.
@@ -5,7 +11,7 @@ Other tools often have limitations on using specific functions of a particular d
 or a complex program language for building queries that requires additional and considerable time to learn and master,
 carries a lot of non-obviousness and potential errors on the part of the developer, and also sometimes has low performance.
 
-## Entity
+## Entity { #entity }
 
 An entity is a representation of data from a database in the form of a class with fields.
 
@@ -26,7 +32,7 @@ In the case of an empty constructor, the fields will be filled [via setters](htt
     data class Entity(val id: String, val name: String)
     ```
 
-### Table
+### Table { #table }
 
 You can specify which table the entity belongs to, this will be needed if you use [macros](#macros) when building queries.
 
@@ -46,7 +52,7 @@ If no table is specified, macros will use the class name in [snake_lower_case](h
     data class Entity(val id: String, val name: String)
     ```
 
-### Identifier
+### Identifier { #identifier }
 
 Since all data manipulations are performed by converting the entity into a driver query,
 there is no need to allocate a special primary key within an entity to work with the entity.
@@ -66,7 +72,7 @@ the `@Id` annotation can be used for this purpose.
     data class Entity(@field:Id val id: String, val name: String)
     ```
 
-#### Sequential
+#### Sequential { #sequential }
 
 Let's look at creating an identity as a sequence of numbers using Postgres as an example,
 Kora suggests using the database mechanism [identity column](https://www.tutorialsteacher.com/postgresql/identity-column).
@@ -119,7 +125,7 @@ or use [special constructs](https://www.postgresql.org/docs/current/dml-returnin
     }
     ```
 
-#### Random
+#### Random { #random }
 
 It is suggested to use the standard `UUID` from Java to create a random identifier:
 
@@ -171,11 +177,11 @@ The identifier will be created at the stage of object creation in the custom app
     }
     ```
 
-#### Composite
+#### Composite { #composite }
 
 When a composite key is required, it is intended to use the `@Embedded` annotation to create [embedded fields](#embedded-fields).
 
-### Naming
+### Naming { #naming }
 
 By default, entity field names are translated to [snake_lower_case](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/) when retrieving a
 result.
@@ -196,7 +202,7 @@ If you want to customize the mapping of specific fields from the database to an 
                       @field:Column("NAME") val name: String)
     ```
 
-#### Naming Strategy
+#### Naming Strategy { #naming-strategy }
 
 If you want to use a naming strategy for the entire entity, it is suggested to create a `NameConverter` implementation and then use it in the `@NamingStrategy` annotation.
 It is required that the `NameConverter` implementation has a constructor without parameters.
@@ -225,7 +231,7 @@ Either use the available strategies from Kora:
                       val name: String)
     ```
 
-### Required fields
+### Required fields { #required-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -245,7 +251,7 @@ Either use the available strategies from Kora:
                       val name: String)
     ```
 
-### Optional fields
+### Optional fields { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -284,7 +290,7 @@ Either use the available strategies from Kora:
                       val name: String?)
     ```
 
-### Embedded fields
+### Embedded fields { #embedded-fields }
 
 In case you want to use nested fields, i.e. convert entity fields into specific classes, you can use the `@Embedded` annotation.
 
@@ -386,7 +392,7 @@ CREATE TABLE IF NOT EXISTS entities
 )
 ```
 
-## Repository
+## Repository { #repository }
 
 Main tool for working with databases in Kora is to use [repository pattern](https://java-design-patterns.com/patterns/repository/#explanation) when designing the database access abstraction.
 Repository interface must be annotated with `@Repository`.
@@ -434,7 +440,7 @@ Repository must extend of one of the implementations, in the examples below the 
     1. Indicates that the interface is a repository.
     2. Indicates that it is necessary to create a method implementation that executes the SQL query specified in the annotation.
 
-### Batch query
+### Batch query { #batch-query }
 
 Kora supports batch queries with the `@Batch` annotation.
 
@@ -470,7 +476,7 @@ which can increase the speed of execution.
     **Batch query** can't return arbitrary values, such a method can return `Unit`, or `UpdateCount`, 
     or database-generated identifiers for [JDBC](database-jdbc.md#generated-identifier) or [R2DBC](database-r2dbc.md#generated-identifier) drivers.
 
-### Affected rows
+### Affected rows { #affected-rows }
 
 Kora does not process the contents of the query, the result of the method is always derived from the rows returned by the database.
 If you want to get the number of updated rows as a result, you should use a special type `UpdateCount`.
@@ -497,7 +503,7 @@ If you want to get the number of updated rows as a result, you should use a spec
     }
     ```
 
-### Manual query
+### Manual query { #manual-query }
 
 In case there is not enough functionality for some reason with queries in `@Query` annotation or manual control of the connection is required,
 you can use the built-in connection factory method to create a method with fully manual control.
@@ -547,7 +553,7 @@ For more details about transactions, see the documentation for the specific repo
     }
     ```
 
-### Multiple databases
+### Multiple databases { #multiple-databases }
 
 Sometimes you need to access different databases in different repositories within the same application,
 this can be solved in the following way.
@@ -631,7 +637,7 @@ And repositories that will use this database are now required to specify the tag
 
 Repositories with a main database connection, doesn't require tag.
 
-### Macros
+### Macros { #macros }
 
 The most frustrating part of writing SQL queries can be listing and keeping the columns and fields of an entity up to date.
 
@@ -688,7 +694,7 @@ The syntax of the macros looks as follows: `%{return#selects}`.
         SELECT id, entity_name, code FROM entities
         ```
 
-#### Commands
+#### Commands { #commands }
 
 Available macros commands:
 
@@ -698,7 +704,7 @@ Available macros commands:
 - `updates` - creates a column enumeration construction and corresponding entity fields for `UPDATE` query
 - `where` - creates a column enumeration construction with a value from the entity for the `WHERE` part of the query
 
-#### Field enumeration
+#### Field enumeration { #field-enumeration }
 
 The macros supports additional syntax for enumerating certain fields in a command,
 if you suddenly need to do a partial update or data retrieval.
@@ -755,7 +761,7 @@ Special enumeration symbols are available:
         VALUES(:entity.name, :entity.code)
         ```
 
-##### Identifier
+##### Identifier { #identifier-2 }
 
 When listing fields in a macro, it is possible to use the special keyword `@id`
 to refer immediately to the entity identifier annotated with [annotation](#identifier) `@Id`.
@@ -806,7 +812,7 @@ This can be especially useful when the identifier is a [compound key](#embedded-
         VALUES(:entity.name, :entity.code)
         ```
 
-#### Repository example
+#### Repository example { #repository-example }
 
 Example of a complete repository with all the basic methods for operating an entity for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
@@ -943,7 +949,7 @@ Example of a complete repository with all the basic methods for operating an ent
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
 
-#### Composite example
+#### Composite example { #composite-example }
 
 Example repository with [composite identifier](#composite) and basic methods to operate on an entity,
 it is almost identical to the previous one except for the `WHERE` conditions for search and delete for [Postgres SQL](https://postgrespro.com/docs/postgresql):
@@ -1087,7 +1093,7 @@ it is almost identical to the previous one except for the `WHERE` conditions for
         SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
         ```
 
-#### Inheritance example
+#### Inheritance example { #inheritance-example }
 
 You can also create an abstract CRUD repository and then use it in inheritance for [Postgres SQL](https://postgrespro.com/docs/postgresql):
 

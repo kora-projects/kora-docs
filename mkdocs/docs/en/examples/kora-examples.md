@@ -1,6 +1,9 @@
 ---
 search:
   exclude: true
+description: "Explains Kora Examples in Kora documentation. Use when working with Kora Examples."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Examples."
 ---
 
 Introduction to Kora is recommended to start with [Hello World example](hello-world.md) with explanations,

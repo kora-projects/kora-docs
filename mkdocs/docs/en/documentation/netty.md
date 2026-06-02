@@ -1,13 +1,19 @@
+---
+description: "Explains Kora Netty customization and transport configuration used by HTTP clients, gRPC clients and servers, and Vert.x integrations. Use when working with NettyModule, EventLoopGroup, NettyTransport, Epoll, KQueue, NIO."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Netty customization and transport configuration used by HTTP clients, gRPC clients and servers, and Vert.x integrations; key triggers include NettyModule, EventLoopGroup, NettyTransport, Epoll, KQueue, NIO."
+---
+
 Functionality customizing Netty components used by other modules like [Vertx](database-vertx.md), [HTTP Async client](http-client.md#asynchttpclient), [gRPC client](grpc-client.md), [gRPC server](grpc-server.md).
 
 Module itself does not provide any utility on its own,
 but only serves to configure [Netty transport and Netty event loop](https://netty.io/4.1/api/io/netty/channel/EventLoop.html) within Kora.
 
-## Connection
+## Connection { #connection }
 
 The module will be transitively provided to dependencies that use it.
 
-## Configuration
+## Configuration { #configuration }
 
 An example of the configuration described in the `NettyTransportConfig` class:
 

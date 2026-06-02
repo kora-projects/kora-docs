@@ -1,8 +1,14 @@
+---
+description: "Explains Kora readiness and liveness probes, probe configuration, dependency health checks, and Kubernetes-style availability reporting. Use when working with ReadinessProbe, LivenessProbe, ProbeFailure, ProbesModule, CircuitBreaker."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora readiness and liveness probes, probe configuration, dependency health checks, and Kubernetes-style availability reporting; key triggers include ReadinessProbe, LivenessProbe, ProbeFailure, ProbesModule, CircuitBreaker."
+---
+
 Functionality that gives the application two methods for obtaining probes on a private port about service readiness/liveness.
 
 Provided by adding a [private HTTP server](http-server.md) module.
 
-## Liveness
+## Liveness { #liveness }
 
 This sample is responsible for indicating whether the application is currently alive. Kora tries to start giving this sample as early as possible, so that orchestrators know for sure that there are no problems at startup and don't try to restart the application.
 
@@ -34,7 +40,7 @@ public interface LivenessProbe {
 
 The sample shall return `LivenessProbeFailure` on error, and `null` on success.
 
-## Readiness
+## Readiness { #readiness }
 
 This sample is responsible for indicating whether the application is currently ready to run.
 
@@ -66,7 +72,7 @@ public interface ReadinessProbe {
 
 The sample shall return `ReadinessProbeFailure` in case of error, and `null` in case of success.
 
-## Recommendations
+## Recommendations { #recommendations }
 
 ???+ warning "Recommendation"
 

@@ -1,10 +1,16 @@
+---
+description: "Explains Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures. Use when working with @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures; key triggers include @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule, CassandraRepository."
+---
+
 Модуль предоставляет реализацию репозиториев для базы данных [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) с использованием драйвера [DataStax](https://docs.datastax.com/en/developer/java-driver/4.17/).
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-cassandra"
     ```
@@ -17,7 +23,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-cassandra")
     ```
@@ -28,7 +34,7 @@
     interface Application : CassandraDatabaseModule
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример простой конфигурация, описанной в классе `CassandraConfig` (указаны примеры значений):
 
@@ -438,7 +444,7 @@
               enabled: true
         ```
 
-### Ручная конфигурация
+### Ручная конфигурация { #code-configuration }
 
 Возможно конфигурировать драйвер вручную в коде, используя `CassandraConfigurer` для модификации построителя `CqlSession`:
 
@@ -466,7 +472,7 @@
     }
     ```
 
-## Использование
+## Использование { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -482,7 +488,7 @@
     interface EntityRepository : CassandraRepository
     ```
 
-### Профиль
+### Профиль { #profile }
 
 Можно переопределять общие настройки, частными настройками из профиля, предположим есть такая конфигурация профиля `someProfile`:
 
@@ -538,11 +544,11 @@
 
 Настройки, указанные в профиле, будут применяться к каждому запросу, конкретно в этом случае — будет установлен таймаут в 10с.
 
-## Конвертация
+## Конвертация { #mapping }
 
 Возможно переопределять преобразование различных частей [сущности](database-common.md) и параметров запроса, для этого Kora предоставляет специальные интерфейсы.
 
-### Результат
+### Результат { #result }
 
 Если требуется преобразовать результат вручную, предлагается использовать `CassandraResultSetMapper`:
 
@@ -586,7 +592,7 @@
     }
     ```
 
-### Строка
+### Строка { #row }
 
 Если требуется преобразовать строку вручную, предлагается использовать `CassandraRowMapper`:
 
@@ -631,7 +637,7 @@
     }
     ```
 
-### Колонка
+### Колонка { #column }
 
 Если требуется преобразовать значение колонки вручную, предлагается использовать `CassandraRowColumnMapper`:
 
@@ -683,7 +689,7 @@
     }
     ```
 
-### Параметр
+### Параметр { #parameter }
 
 Если требуется преобразовать значение параметра запроса вручную, предлагается использовать `CassandraParameterColumnMapper`:
 
@@ -730,7 +736,7 @@
     }
     ```
 
-### Асинхронно
+### Асинхронно { #async }
 
 Из-за особенностей вспомогательного класса для извлечения данных из `AsyncResultSet` для асинхронных запросов (Mono или Suspend), можно использовать только `CassandraReactiveResultSetMapper`:
 
@@ -772,7 +778,7 @@
     }
     ```
 
-## UDT
+## UDT { #udt }
 
 Есть поддержка [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html) 
 типов с помощью `@UDT` аннотации:
@@ -799,7 +805,7 @@
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов репозитория из коробки:
 

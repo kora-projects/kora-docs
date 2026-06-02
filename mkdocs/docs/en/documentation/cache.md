@@ -1,11 +1,17 @@
+---
+description: "Explains Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures. Use when working with @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures; key triggers include @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+---
+
 Module for creating caches based on [Caffeine](https://github.com/ben-manes/caffeine) or [Redis](https://redis.io/docs/about/)
 using both declarative-style annotations and using their imperative style.
 
-## Caffeine
+## Caffeine { #caffeine }
 
 Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine) for in-memory caches within the application.
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -33,7 +39,7 @@ Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine
     interface Application : CaffeineCacheModule
     ```
 
-### Configuration
+### Configuration { #configuration }
 
 Example of complete configuration for `mycache.config` cache, parameters are described in the `CaffeineCacheConfig` class (default or example values are specified):
 
@@ -71,11 +77,11 @@ Example of complete configuration for `mycache.config` cache, parameters are des
     3. Initial cache size (helps to avoid cache expansion in case of active swelling) (optional)
     4. Maximum cache size (When the boundary is reached **or slightly earlier** will exclude the least relevant values from the cache) (default is `100000`)
 
-## Redis
+## Redis { #redis }
 
 Implementation based on in-memory database [Redis](https://redis.io/docs/about/) and connection driver [Lettuce](https://github.com/lettuce-io/lettuce-core).
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -103,7 +109,7 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
     interface Application : RedisCacheModule
     ```
 
-### Configuration
+### Configuration { #configuration-2 }
 
 It is required to separately configure the Lettuce driver to connect to Redis.
 A single connection is used for all caches.
@@ -213,7 +219,7 @@ Example of a complete configuration for `mycache.config` cache, parameters are d
 
 Module metrics are described in the [Metrics Reference](metrics.md#cache) section.
 
-#### Configurator
+#### Configurator { #configurator }
 
 Можно зарегистрировать `LettuceConfigurator` который позволит до настроить `Lettuce` клиент перед созданием.
 
@@ -258,7 +264,7 @@ Module metrics are described in the [Metrics Reference](metrics.md#cache) sectio
     }
     ```
 
-## Usage
+## Usage { #usage }
 
 Creating a cache will require registering a typed `@Cache` contract.
 The contract interface should only be inherited from Kora's provided implementations: `CaffeineCache` / `RedisCache`.
@@ -280,7 +286,7 @@ To register `@Cache` and specify the config, it is required to annotate with the
     interface MyCache : CaffeineCache<String, String>
     ```
 
-### Imperative
+### Imperative { #imperative }
 
 Caches are available for injection as dependencies on the interface and can be used in conjunction with declarative operations.
 
@@ -290,11 +296,11 @@ and `RedisCache` provides both `Cache` and `AsyncCache` for asynchronous operati
 The interfaces provide get, delete, update, batch, etc. operations.
 Cache implementations can also provide self-specific contracts.
 
-### Declarative
+### Declarative { #declarative }
 
 All aspect use cases will assume the cache implementation above.
 
-#### Get
+#### Get { #get }
 
 To cache and retrieve a value from the cache for the *get()* method, annotate it with the `@Cacheable` annotation.
 
@@ -326,7 +332,7 @@ The key for the cache is compiled from the method arguments, the order of the ar
     }
     ```
 
-#### Put
+#### Put { #put }
 
 To add values to the cache via the *put()* method, annotate it with the `@CachePut` annotation.
 The method annotated with `@CachePut` will be called and its value put into the cache defined in *value*.
@@ -359,7 +365,7 @@ The key for the cache is compiled from the method arguments, the order of the ar
     }
     ```
 
-#### Invalidate
+#### Invalidate { #invalidate }
 
 To remove a keyed value from the cache via the *evict()* method, annotate it with the `@CacheInvalidate` annotation.
 The method annotated with `@CacheInvalidate` will be called and then the keyed values for the cache defined in *value* will be deleted by key.
@@ -392,7 +398,7 @@ The key for the cache is compiled from the method arguments, the order of the ar
     }
     ```
 
-#### Invalidate all
+#### Invalidate all { #invalidate-all }
 
 To remove all values from the cache via the *evictAll()* method, annotate it with the `@CacheInvalidate` annotation and specify the *invalidateAll = true* parameter.
 
@@ -424,7 +430,7 @@ The method annotated with `@CacheInvalidate` will be called and then all of the 
     }
     ```
 
-#### Composite cache
+#### Composite cache { #composite-cache }
 
 In case you have multiple caches, you need to connect both modules and specify the appropriate number of annotations over the method.
 
@@ -488,7 +494,7 @@ And the annotated class itself is like this:
 
 The order of aspect calls corresponds to the order of annotations above the method, top to bottom.
 
-## Key
+## Key { #key }
 
 In case the cache key represents 1 argument, it is required to register `Cache` with a signature corresponding to the key and value types.
 
@@ -506,7 +512,7 @@ In case the cache key represents 1 argument, it is required to register `Cache` 
     interface MyCache : CaffeineCache<String, String>
     ```
 
-### Conversion
+### Conversion { #conversion }
 
 In case an argument cannot be converted to a cache key, the cache implementation will require an appropriate converter
 with the `CacheKeyMapper` interface, in case there are 2 arguments for the key then `CacheKeyMapper2` will be required, and so on.
@@ -552,7 +558,7 @@ example of converting a complex object into a simple cache key:
     }
     ```
 
-### Composite key
+### Composite key { #composite-key }
 
 In case the cache key represents N arguments, it is required to register `Cache` using an
 class to describe such a key.
@@ -586,7 +592,7 @@ Example for `Cache` where the composite key consists of 2 elements:
 If `RedisCache` is used, it is assumed that all composite key arguments will default to non `null`,
 or a custom key resolver will need to be used.
 
-### Argument ordering
+### Argument ordering { #argument-ordering }
 
 If the method accepts arguments that you want to exclude from the composite key,
 or the order of the arguments does not match the order of the arguments of the composite key constructor,
@@ -618,7 +624,7 @@ you should use the `parameters` annotation attribute and define which method arg
     }
     ```
 
-## Loadable Cache
+## Loadable Cache { #loadable-cache }
 
 The library provides a component for building an entity that combines GET and PUT operations without using aspects - `LoadableCache`
 
@@ -655,7 +661,7 @@ The library provides a component for building an entity that combines GET and PU
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

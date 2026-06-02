@@ -1,3 +1,9 @@
+---
+description: "Explains Kora framework fundamentals, annotation processors, compatibility, Gradle build setup, dependencies, application runtime, and terminology. Use when working with @KoraApp, annotation processors, Gradle, BOM, kora-parent, application plugin."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora framework fundamentals, annotation processors, compatibility, Gradle build setup, dependencies, application runtime, and terminology; key triggers include @KoraApp, annotation processors, Gradle, BOM, kora-parent, application plugin."
+---
+
 Kora is a cloud-oriented server-side Java framework and offers
 many different modules for quickly building applications such as HTTP server and client, Kafka consumers, 
 database abstraction in the form of repositories, S3 client, gRPC server and client,
@@ -26,7 +32,7 @@ In order to achieve high-performance and efficient code, Kora stands on these pr
 - Using the most efficient implementations for integrations
 - Encouraging and using effective programming practices and natural language constructs
 
-## Annotation Handlers
+## Annotation Handlers { #annotation-handlers }
 
 The main pillar on which the Kora framework is built is annotation processors.
 
@@ -54,7 +60,7 @@ The main pillar on which the Kora framework is built is annotation processors.
 This approach allows you to use the familiar paradigm of programming by means of creating HTTP handlers,
 Kafka producers, database repositories and so on, but gives a huge performance and transparency advantage over the well-known JVM frameworks.
 
-## Compatibility
+## Compatibility { #compatibility }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -92,7 +98,7 @@ Kafka producers, database repositories and so on, but gives a huge performance a
     }
     ```
 
-## Build System
+## Build System { #build-system }
 
 Since annotation processors are the main pillar, it is assumed that you will use the [Gradle](https://gradle.org/guides/) build system,
 because it supports annotation processors, incremental builds and is the most advanced build system in the JVM ecosystem.
@@ -171,7 +177,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
 
     You can also check out [Hello World example](../examples/hello-world.md) for a more detailed description.
 
-## Dependencies
+## Dependencies { #dependencies }
 
 Annotation processors are the main pillar on which Kora is built, they are a mandatory dependency,
 and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) should not be forgotten:
@@ -214,7 +220,7 @@ and the [BOM dependency](https://docs.gradle.org/current/userguide/platforms.htm
     }
     ```
 
-## Run
+## Run { #run }
 
 Running and working with the application through the build system is supposed to be done using the [application plugin](https://docs.gradle.org/current/userguide/application_plugin.html)
 which is provided by Gradle.
@@ -316,11 +322,11 @@ which is provided by Gradle.
 
     Example of configured application can be seen [here](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts)
 
-## Terminology
+## Terminology { #terminology }
 
 This section describes the basic terms found throughout the documentation and within the Kora framework:
 
 - Factory - is factory a method that, creates instances of a component/classes/dependencies.
-- Module - [module](container.md#external-factory) is a pluggable dependency, often external, that provides some factory methods and new functionality to the application.
+- Module - [module](container.md#external-module-factory) is a pluggable dependency, often external, that provides some factory methods and new functionality to the application.
 - Component - [component](container.md#components) is a singleton class that implements some logic and is a dependency in a dependency container.
 - Aspect - is aspect logic that will extend the standard behavior of a method by via annotation before and/or after its execution.

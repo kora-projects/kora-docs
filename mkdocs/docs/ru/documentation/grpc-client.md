@@ -1,10 +1,16 @@
+---
+description: "Explains Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping. Use when working with GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping; key triggers include GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+---
+
 Модуль для подключения gRPC клиентов на основе функционала [grpc.io](https://grpc.io/docs/languages/java/basics/)
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-client"
     implementation "io.grpc:grpc-protobuf:1.62.2"
@@ -19,7 +25,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-client")
     implementation("io.grpc:grpc-protobuf:1.62.2")
@@ -32,7 +38,7 @@
     interface Application : GrpcClientModule
     ```
 
-### Плагин
+### Плагин { #plugin }
 
 Код для gRPC-клиента создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
@@ -90,7 +96,7 @@
     }
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Сервис gRPC с именем `SimpleService` будет иметь конфигурацию с путем `grpcClient.SimpleService`.
 
@@ -166,7 +172,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-client).
 
-## Сервис
+## Сервис { #service }
 
 Созданные gRPC сервисы можно внедрять как зависимости:
 
@@ -193,17 +199,17 @@
     }
     ```
 
-## Перехватчики
+## Перехватчики { #interceptors }
 
 [Перехватчики](https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html) позволяют перехватывать запросы перед тем, как они будут переданы сервисам.
 
-### Стандартные
+### Стандартные { #default }
 
 При запуске клиента по-умолчанию используются следующие перехватчики:
 
 - `GrpcClientConfigInterceptor`
 
-### Собственные
+### Собственные { #custom }
 
 Для добавления собственного перехватчика требуется зарегистрировать перехватчика как компонент с тегом сервиса.
 
@@ -237,4 +243,4 @@
     }
     ```
 
-Либо можно модифицировать сервис посредствам [GraphInterceptor](container.md#_26).
+Либо можно модифицировать сервис посредствам [GraphInterceptor](container.md#indirect-dependency).

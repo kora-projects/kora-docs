@@ -1,6 +1,12 @@
+---
+description: "Explains Kora configuration system for HOCON and YAML, typed config extraction, config injection, config sources, watchers, and supported value types. Use when working with @ConfigSource, @ConfigValueExtractor, @Environment, @SystemProperties, Config, HoconConfigModule, YamlConfigModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora configuration system for HOCON and YAML, typed config extraction, config injection, config sources, watchers, and supported value types; key triggers include @ConfigSource, @ConfigValueExtractor, @Environment, @SystemProperties, Config, HoconConfigModule, YamlConfigModule."
+---
+
 Module is responsible for mapping the values of configuration files to classes in Kora and then using them for application settings.
 
-## HOCON
+## HOCON { #hocon }
 
 Support for [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) is implemented with [Typesafe Config](https://github.com/lightbend/config).
 HOCON is a JSON-based config file format. The format is less strict than JSON and has a slightly different syntax.
@@ -130,7 +136,7 @@ Configuration representation in code:
     }
     ```
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -158,7 +164,7 @@ Configuration representation in code:
     interface Application : HoconConfigModule
     ```
 
-### File
+### File { #file }
 
 By default, the configuration files [reference.conf and application.conf](https://github.com/lightbend/config#note-about-resolving-substitutions-in-referenceconf-and-applicationconf) are expected.
 
@@ -174,7 +180,7 @@ Prioritize reading the `application.conf` configuration file:
 - Use the `application.conf` file if available (file from `resources` directory)
 - Use an empty configuration file if none of the above is present
 
-## YAML
+## YAML { #yaml }
 
 Support for [YAML](https://yaml.org/) is implemented using [SnakeYAML](https://github.com/snakeyaml/snakeyaml).
 
@@ -293,7 +299,7 @@ Configuration representation in code:
     }
     ```
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -321,7 +327,7 @@ Configuration representation in code:
     interface Application : YamlConfigModule
     ```
 
-#### File
+#### File { #file-2 }
 
 By default, the `reference.yaml` and `application.yaml` configuration files are expected.
 
@@ -337,12 +343,12 @@ Prioritize reading the `application.yaml` configuration file:
 - Use the `application.yaml` file if available (file from `resources` directory)
 - Use an empty configuration file if none of the above is present
 
-## Custom configuration
+## Custom configuration { #custom-configuration }
 
 A custom configuration provides a mapping of the configuration file to a user interface.
 Such a user interface can later be injected as a dependency along with other components.
 
-### Application config
+### Application config { #application-config }
 
 In order to simplify the creation of custom configurations, the `@ConfigSource` annotation should be used:
 
@@ -415,7 +421,7 @@ After that, the `FooServiceConfig` class can already be used as a dependency in 
     class FooService(val config: FooServiceConfig)
     ```
 
-### Library config
+### Library config { #library-config }
 
 In order to create custom configurations within custom libraries, use the `@ConfigValueExtractor` annotation
 which will create rules for processing a configuration file into an instance of a configuration class.
@@ -494,11 +500,11 @@ The factory will expect a configuration of the following kind:
 
 Then by connecting the `FooLibraryModule` module in the application, the `FooServiceConfig` config can be used as a dependency in other classes.
 
-### Required values
+### Required values { #required-values }
 
 By default, all values declared in the config are considered **required** (*NotNull*) and must be present in the configuration file.
 
-### Optional values
+### Optional values { #optional-values }
 
 If you need to specify a value from the configuration file as optional, you can use this format:
 
@@ -533,7 +539,7 @@ If you need to specify a value from the configuration file as optional, you can 
     }
     ```
 
-### Default values
+### Default values { #default-values }
 
 If there is a need to use default values in a class, you can use this format:
 
@@ -565,7 +571,7 @@ If there is a need to use default values in a class, you can use this format:
     }
     ```
 
-## Injecting configuration
+## Injecting configuration { #injecting-configuration }
 
 You can inject the base class `ru.tinkoff.kora.config.common.Config` which provides a common abstraction over the
 configuration file mapping. The resulting configuration mapping consists of several layers that represent:
@@ -574,7 +580,7 @@ configuration file mapping. The resulting configuration mapping consists of seve
 - System variables
 - Configuration file
 
-#### Environment variables
+#### Environment variables { #environment-variables }
 
 In case you want to embed the configuration **only** [environment variables](https://ru.hexlet.io/courses/cli-basics/lessons/environment-variables/theory_unit),
 you can use the `@Environment` annotation as a tag for the configuration class:
@@ -600,7 +606,7 @@ you can use the `@Environment` annotation as a tag for the configuration class:
     class FooService(@Environment val config: Config)
     ```
 
-### System variables
+### System variables { #system-variables }
 
 In case you want to inject a configuration of **only** [system variables](https://www.baeldung.com/java-system-get-property-vs-system-getenv),
 then you can use the `@SystemProperties` annotation as a tag for the configuration class:
@@ -626,7 +632,7 @@ then you can use the `@SystemProperties` annotation as a tag for the configurati
     class FooService(@SystemProperties val config: Config)
     ```
 
-### Configuration file
+### Configuration file { #configuration-file }
 
 In case you want to inject a complete application configuration that consists **only** of a configuration file,
 you can use the `@ApplicationConfig` annotation as a tag for the configuration class:
@@ -652,7 +658,7 @@ you can use the `@ApplicationConfig` annotation as a tag for the configuration c
     class FooService(@ApplicationConfig val config: Config)
     ```
 
-### Resulting configuration
+### Resulting configuration { #resulting-configuration }
 
 If you want to inject a complete application configuration that consists of a configuration file,
 environment variables and system variables, you simply inject the configuration class without the tag:
@@ -678,7 +684,7 @@ environment variables and system variables, you simply inject the configuration 
     class FooService(val config: Config)
     ```
 
-### Recommendations
+### Recommendations { #recommendations }
 
 ???+ warning "Recommendation"
 
@@ -686,7 +692,7 @@ environment variables and system variables, you simply inject the configuration 
     because when you update the configuration it will cause all graph components that use it to be updated,
     it is recommended to always create custom user configuration interfaces.
 
-## Config Watcher
+## Config Watcher { #config-watcher }
 
 By default, Kora has a configuration file watcher that updates the contents of the configuration file,
 which causes the dependency graph for the affected components to be updated if the configuration file is changed.
@@ -696,7 +702,7 @@ You can disable the watcher by using:
 1. Environment variable `KORA_CONFIG_WATCHER_ENABLED`.
 2. System property `kora.config.watcher.enabled`.
 
-## Supported types
+## Supported types { #supported-types }
 
 Configuration Extractors provide an extensive list of supported types that covers most of what
 you might need to specify in custom configurations, or you can extend the behavior with your custom `ConfigValueExtractor<T>` component.
@@ -731,7 +737,7 @@ you might need to specify in custom configurations, or you can extend the behavi
     * `Map<K, V>` (where `K` or `V` is any of the above types)
     * `Either<A, B>` (where `A` and `B` are any of the above types)
 
-### Size
+### Size { #size }
 
 `Size` is a special type that allows you to specify the size of bytes in a human-friendly system of calculations according to both the [IEEE 1541-2002](https://en.wikipedia.org/wiki/IEEE_1541-2002) (binary) standard and the [SI](https://en.wikipedia.org/wiki/Binary_prefix) (decimal) standard.
 

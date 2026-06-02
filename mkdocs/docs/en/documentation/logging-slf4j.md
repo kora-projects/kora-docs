@@ -1,7 +1,13 @@
+---
+description: "Explains Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC. Use when working with Slf4jModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC; key triggers include Slf4jModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
+---
+
 Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine for the entire framework,
 it is expected that an implementation based on [Logback](#logback) will be used.
 
-## Usage
+## Usage { #usage }
 
 Loggers are required to be provided through the [SLF4J](https://www.slf4j.org/manual.html#hello_world) factory.
 
@@ -17,7 +23,7 @@ Loggers are required to be provided through the [SLF4J](https://www.slf4j.org/ma
     val logger = LoggerFactory.getLogger(SomeService::class.java);
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Logging levels described in the `LoggingConfig` class:
 
@@ -48,7 +54,7 @@ Logging levels described in the `LoggingConfig` class:
 
 Logback configuration parameters are described in the modules that include logback, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
-### Module
+### Module { #module }
 
 Enabling/disabling logging of certain modules is specified in the configuration of the modules themselves.
 
@@ -106,11 +112,11 @@ Logging of **all modules is disabled** by default, for convenience below is a se
     9. Kafka [consumer](kafka.md#consumer) (Specified for a specific consumer)
     10. Kafka [producer](kafka.md#producer) (Specified for a specific producer)
 
-## Logback
+## Logback { #logback }
 
 The module provides a logging implementation based on [Logback](https://www.baeldung.com/logback), adds support for structured logs and the ability to configure logging levels via [config file](config.md).
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -138,7 +144,7 @@ The module provides a logging implementation based on [Logback](https://www.bael
     interface Application : LogbackModule
     ```
 
-### Configuration
+### Configuration { #configuration-2 }
 
 It is assumed that [Logback](https://logback.qos.ch/manual/configuration.html) will be configured via `logback.xml`, and only logging levels will be specified in the Kora configuration, example `logback.xml`:
 
@@ -162,12 +168,12 @@ It is assumed that [Logback](https://logback.qos.ch/manual/configuration.html) w
 </configuration>
 ```
 
-## Other implementation
+## Other implementation { #other-implementation }
 
 Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine, you can plug in any custom compatible implementation.
 The base module adds support for structured logs and the ability to configure logging levels via [config file](config.md).
 
-### Dependency
+### Dependency { #dependency-2 }
 
 A generic logging implementation will need to be connected:
 
@@ -197,14 +203,14 @@ A generic logging implementation will need to be connected:
     interface Application : LoggingModule
     ```
 
-### Usage
+### Usage { #usage-2 }
 
 When using your custom implementation, you would need to provide an implementation of `LoggingLevelApplier` that implements the
 setting the logging level and resetting it.
 
 It will also be necessary for the implementation to independently support `StructuredArgument`, `StructuredArgumentWriter` and `MDC` if they are to be used.
 
-## Structured Logs
+## Structured Logs { #structured-logs }
 
 You can pass structured data to a log record in two ways via:
 
@@ -213,7 +219,7 @@ You can pass structured data to a log record in two ways via:
 
 The marker and parameter methods also take `Long`, `Integer`, `String`, `Boolean` and `Map<String, String>` as arguments.
 
-### Marker
+### Marker { #marker }
 
 You can pass structured data to the log via a marker:
 
@@ -235,7 +241,7 @@ You can pass structured data to the log via a marker:
     logger.info(marker, "message")
     ```
 
-### Parameter
+### Parameter { #parameter }
 
 You can transfer structured data to the log via parameters:
 
@@ -257,7 +263,7 @@ You can transfer structured data to the log via parameters:
     logger.info("message", parameter)
     ```
 
-### MDC
+### MDC { #mdc }
 
 Structured data can be attached to all records within a context using the `ru.tinkoff.kora.logging.common.MDC` class:
 

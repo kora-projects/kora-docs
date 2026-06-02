@@ -1,11 +1,17 @@
+---
+description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+---
+
 Модуль Json позволяет создавать производительные и без использования рефлексии 
 читатели и писатели для классов приложения посредствам разметки классов аннотациями.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:json-module"
     ```
@@ -18,7 +24,7 @@
     
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:json-module")
     ```
@@ -29,7 +35,7 @@
     interface Application : JsonModule
     ```
 
-## Запись
+## Запись { #writer }
 
 Можно воспользоваться `@JsonWriter` для создания только писателя:
 
@@ -47,7 +53,7 @@
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Чтение
+## Чтение { #reader }
 
 Можно воспользоваться `@JsonReader` для создания только читателя:
 
@@ -65,7 +71,7 @@
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Чтение & Запись
+## Чтение & Запись { #reader-and-writer }
 
 Можно воспользоваться `@Json` для создания сразу читателя и писателя.
 В большинстве случаев предпочтительнее использовать именно аннотацию `@Json`:
@@ -84,7 +90,7 @@
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Обязательные поля
+## Обязательные поля { #required-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -104,7 +110,7 @@
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Необязательное поля
+## Необязательное поля { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -131,7 +137,7 @@
     )
     ```
 
-## Именование поля
+## Именование поля { #field-naming }
 
 В случае если поле в Json называется иначе от того что требуется использовать в классе, 
 можно использовать аннотацию `@JsonField` для соответствия поля в Json и DTO.
@@ -154,7 +160,7 @@
     )
     ```
 
-## Игнорирование поля
+## Игнорирование поля { #field-ignore }
 
 В случае если поле в DTO не хочется читать/писать,
 можно использовать аннотацию `@JsonSkip` и проигнорировать такое поле.
@@ -177,7 +183,7 @@
     )
     ```
 
-## Уровни записи
+## Уровни записи { #serialization-levels }
 
 Поведение по умолчанию не подразумевает запись полей с `null` значениями. (1)
 { .annotate }
@@ -214,7 +220,7 @@
     )
     ```
 
-## Указание конструктора
+## Указание конструктора { #serialization-constructor }
 
 В случае если хочется использовать определенный конструктор для сериализации, 
 то это можно сделать с указанием над конструктором аннотации `@JsonReader` либо аннотации которая имеет меньший приоритет `@Json`:
@@ -243,7 +249,7 @@
     }
     ```
 
-## JsonNullable обертка
+## JsonNullable обертка { #jsonnullable-wrapper }
 
 В случае если во время десериализации, хочется отличать отсутствующее поле от указанного `null` значения,
 предполагается использовать специальный тип `JsonNullable`, который позволяет отражать все состояния поля после десериализации.
@@ -262,7 +268,7 @@
     data class Dto(val field1: String, val field2: JsonNullable<Int>)
     ```
 
-## Изолированные классы и интерфейсы
+## Изолированные классы и интерфейсы { #sealed-classes-and-interfaces }
 
 В случае если требуется писать различные Json объекты в зависимости от значения в конкретном поле, предполагается использовать
 [изолированный класс/интерфейс](https://habr.com/ru/companies/otus/articles/720044/) для представления таких объектов.
@@ -321,7 +327,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 }
 ```
 
-## Поддерживаемые типы
+## Поддерживаемые типы { #supported-types }
 
 Модуль предоставляет обширный список поддерживаемых из коробки типов которые покрывают большую часть того что может понадобиться.
 
@@ -360,7 +366,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
     * ZoneId
     * Duration
 
-### Собственные типы
+### Собственные типы { #custom-types }
 
 В случае если требуется писать/читать собственный тип, то предлагается зарегистрировать собственную [фабрику](container.md) для `JsonReader` / `JsonWriter`:
 
@@ -398,14 +404,14 @@ Json объект ниже будет записан в класс `FirstTypeEve
     }
     ```
 
-## Jackson
+## Jackson { #jackson }
 
 В случае если хочется использовать `Jackson` для записи/чтения, то можно самому зарегистрировать [фабрику](container.md)
 предоставляющую `ObjectMapper` и соответствующие `Mappers` которые требуются в других Kora модулях будут предоставлены зависимостью ниже:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     annotationProcessor "ru.tinkoff.kora:json-annotation-processor"
     implementation "ru.tinkoff.kora:jackson-module"
@@ -419,7 +425,7 @@ Json объект ниже будет записан в класс `FirstTypeEve
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     ksp("ru.tinkoff.kora:json-annotation-processor")
     implementation("ru.tinkoff.kora:jackson-module")

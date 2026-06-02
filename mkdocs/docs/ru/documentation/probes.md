@@ -1,8 +1,14 @@
+---
+description: "Explains Kora readiness and liveness probes, probe configuration, dependency health checks, and Kubernetes-style availability reporting. Use when working with ReadinessProbe, LivenessProbe, ProbeFailure, ProbesModule, CircuitBreaker."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora readiness and liveness probes, probe configuration, dependency health checks, and Kubernetes-style availability reporting; key triggers include ReadinessProbe, LivenessProbe, ProbeFailure, ProbesModule, CircuitBreaker."
+---
+
 Функционал дающий приложению два метода для получения проб на служебном порту для предоставления информации о жизнеспособности и готовности сервиса.
 
 Предоставляется по средствам подключения [служебного HTTP сервера](http-server.md).
 
-## Жизнеспособности
+## Жизнеспособности { #liveness }
 
 Эта проба отвечает за признак — является ли приложение живым в данный момент. Kora старается начать отдавать эту пробу как можно раньше, чтобы оркестраторы точно знали, что нет проблем при старте и не пытались сделать рестарт приложения.
 
@@ -34,7 +40,7 @@ public interface LivenessProbe {
 
 В случае ошибки проба должна возвращать `LivenessProbeFailure`, а в случае успеха `null`.
 
-## Готовности
+## Готовности { #readiness }
 
 Эта проба отвечает за признак — является ли приложение готовым к работе в данный момент. 
 
@@ -66,12 +72,12 @@ public interface ReadinessProbe {
 
 В случае ошибки проба должна возвращать `ReadinessProbeFailure`, а в случае успеха `null`.
 
-## Совет
+## Совет { #recommendations }
 
 ???+ warning "Совет"
 
     **Мы крайне не советуем делать пробы, проверяющие внешние зависимости, такие как базы данных или другие сервисы.**
 
-    В случае недоступности внешних зависимостей рекомендуется использовать шаблон [Прерыватель](resilient.md#_2). 
+    В случае недоступности внешних зависимостей рекомендуется использовать шаблон [Прерыватель](resilient.md#circuitbreaker).
 
 Хорошим примером для `ReadinessProbe` может служить проба, которая возвращает ошибку во время прогрева сервиса.

@@ -1,10 +1,16 @@
+---
+description: "Explains Kora validation annotations, class and method validation, argument and result validation, custom validators, and supported validation signatures. Use when working with @Validate, @Valid, @NotNull, @NotEmpty, @Pattern, @Range, @Size, @Validator."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora validation annotations, class and method validation, argument and result validation, custom validators, and supported validation signatures; key triggers include @Validate, @Valid, @NotNull, @NotEmpty, @Pattern, @Range, @Size, @Validator, ValidationModule."
+---
+
 Модуль для валидации моделей и методов с помощью аннотаций аспектов.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:validation-module"
     ```
@@ -17,7 +23,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:validation-module")
     ```
@@ -29,7 +35,7 @@
     ```
 
 
-## Аннотации валидации
+## Аннотации валидации { #validation-annotations }
 
 Специальные аннотации валидации используются Kora для проверки значений полей классов или аргументов метода.
 
@@ -41,7 +47,7 @@
 - `@Range` - Проверяет что число находится в заданном диапазоне
 - `@Size` - Проверяет что коллекция (List, Set, Map) или `String` имеет размер в заданном диапазоне
 
-## Валидация класса
+## Валидация класса { #class-validation }
 
 Предлагается использовать аннотацию `@Valid` для маркировки класса которому требуется создать валидатор посредствам Kora.
 
@@ -68,8 +74,8 @@
     public final class Example {
 
         private final Validator<Foo> fooValidator;
-        
-        public Example(Validator<Foo> fooValidator) { 
+
+        public Example(Validator<Foo> fooValidator) {
             this.fooValidator = fooValidator;
         }
     }
@@ -88,9 +94,9 @@
 Валидатор после валидации возвращает список нарушений, они могут использоваться для ручного составление ошибки либо
 можно использовать метод `validateAndThrow` который бросит исключение `ViolationException` в случае ошибки валидации.
 
-### Валидация полей
+### Валидация полей { #field-validation }
 
-Предполагается использовать для валидации полей специальный предоставляемый набор [аннотаций](#аннотации-валидации) валидации.
+Предполагается использовать для валидации полей специальный предоставляемый набор [аннотаций](#validation-annotations) валидации.
 
 Пример размеченного для валидации объекта выглядит так:
 
@@ -101,7 +107,7 @@
     public record Foo(@NotEmpty String number) { }
     ```
 
-    Для Record классов используется синтаксис доступа к полям через Record-like контракты геттеров, 
+    Для Record классов используется синтаксис доступа к полям через Record-like контракты геттеров,
     в случае `Foo` и поля `code` будет использоваться *getter* `code()` в созданом `Validator`.
 
     Для обычного класса ожидается что будет использоваться синтаксис Java *Getters*, например для поля `id` будет использоваться *getter* `getId()`,
@@ -114,11 +120,11 @@
     data class Foo(@field:NotEmpty val number: String)
     ```
 
-#### Обязательные поля
+#### Обязательные поля { #required-fields }
 
 Предполагается что все поля по умолчанию являются обязательными (`NotNull`), значит для всех них будут созданы `NotNull` проверки в `Validator`.
 
-#### Необязательные поля
+#### Необязательные поля { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -141,7 +147,7 @@
     data class Foo(val number: String?)
     ```
 
-#### Вложенные поля
+#### Вложенные поля { #embedded-fields }
 
 Для валидации полей сложных объектов для которых созданы валидаторы (или предоставлены самостоятельно),
 либо полей которые не поддерживаются стандартными средствами валидации,
@@ -170,11 +176,11 @@
 В примере выше для `Bar` будет создан валидатор `Validator<Bar>` и для `Foo` будет создан `Validator<Foo>`,
 где при вызове валидатора `Validator<Foo>` будет вызываться внутри валидатор для `Validator<Bar>`.
 
-#### Опции валидации
+#### Опции валидации { #validation-options }
 
 Есть два вида валидации:
 
-- `Full` - проверяются все поля которые только размечены, собираются все возможные ошибки валидации 
+- `Full` - проверяются все поля которые только размечены, собираются все возможные ошибки валидации
   и только потом бросается исключение. (**Поведение по умолчанию**)
 - `FailFast` - исключение бросается на первой встреченной ошибке валидации.
 
@@ -184,11 +190,11 @@ ValidatorContext context = ValidationContext.builder().failFast(true).build();
 List<Violation> violations = fooValidator.validate(value,context);
 ```
 
-## Валидация метода
+## Валидация метода { #method-validation }
 
-Предполагается использовать для валидации аргументов метода и результата специальный предоставляемый набор [аннотаций](#аннотации-валидации) валидации.
+Предполагается использовать для валидации аргументов метода и результата специальный предоставляемый набор [аннотаций](#validation-annotations) валидации.
 
-### Валидация аргументов
+### Валидация аргументов { #argument-validation }
 
 Чтобы провалидировать аргументы методы, требуется использовать аннотацию `@Validate` над методом:
 
@@ -218,11 +224,11 @@ List<Violation> violations = fooValidator.validate(value,context);
     }
     ```
 
-#### Обязательные аргументы
+#### Обязательные аргументы { #required-arguments }
 
 Предполагается что все аргументы по умолчанию являются обязательными (`NotNull`), значит для всех них будут созданы `NotNull` проверки.
 
-#### Необязательные аргументы
+#### Необязательные аргументы { #optional-arguments }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -257,7 +263,7 @@ List<Violation> violations = fooValidator.validate(value,context);
     }
     ```
 
-#### Вложенные аргументы
+#### Вложенные аргументы { #embedded-arguments }
 
 Для валидации полей сложных объектов для которых созданы валидаторы (или предоставлены самостоятельно),
 либо полей которые не поддерживаются стандартными средствами валидации,
@@ -298,9 +304,9 @@ List<Violation> violations = fooValidator.validate(value,context);
 В примере выше для `Bar` будет создан валидатор `Validator<Bar>` и для `Foo` будет создан `Validator<Foo>`,
 где при вызове валидатора `Validator<Foo>` будет вызываться внутри валидатор для `Validator<Bar>`.
 
-### Валидация результата
+### Валидация результата { #result-validation }
 
-Чтобы провалидировать результат метода, требуется использовать аннотацию `@Validate` над методом и разметить его соответствующими [аннотациями](#аннотации-валидации),
+Чтобы провалидировать результат метода, требуется использовать аннотацию `@Validate` над методом и разметить его соответствующими [аннотациями](#validation-annotations),
 для проверки, что значение не равно `null` требуется использовать любую `@NotNull/@Nonnull` аннотацию:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -344,7 +350,7 @@ List<Violation> violations = fooValidator.validate(value,context);
     2. Указывает что результат требуется валидировать валидатором с типа возвращаемого значения
     3. Стандартная аннотация валидации
 
-### Опции валидации
+### Опции валидации { #validation-options-2 }
 
 Есть два вида валидации:
 
@@ -378,7 +384,7 @@ List<Violation> violations = fooValidator.validate(value,context);
     }
     ```
 
-## Собственные аннотации валидации
+## Собственные аннотации валидации { #custom-validation-annotations }
 
 Для создания собственной аннотации требуется:
 
@@ -500,7 +506,7 @@ List<Violation> violations = fooValidator.validate(value,context);
     data class Foo(@field:MyValid val number: String)
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
 

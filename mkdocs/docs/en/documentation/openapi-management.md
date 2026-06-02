@@ -1,7 +1,13 @@
+---
+description: "Explains Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server. Use when working with OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server; key triggers include OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+---
+
 A module to provide an OpenAPI file from an application,
 as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](https://rapidocweb.com/) for displaying OpenAPI.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -31,7 +37,7 @@ as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](http
 
 Requires [HTTP server](http-server.md) module.
 
-## Configuration
+## Configuration { #configuration }
 
 An example of the configuration described in the `OpenApiManagementConfig` class:
 
@@ -91,7 +97,7 @@ An example of the configuration described in the `OpenApiManagementConfig` class
     6. On/Off of the controller that gives Rapidoc
     7. Path where Rapidoc will be available
 
-## Recommendations
+## Recommendations { #recommendations }
 
 ???+ tip "Recommendation"
 

@@ -1,3 +1,9 @@
+---
+description: "Explains Kora S3 clients for AWS and Minio, declarative and imperative clients, file operations, metadata, key templates, and exception handling. Use when working with @S3.Client, @S3.Get, @S3.List, @S3.Put, @S3.Delete, S3ClientModule, AwsS3Client, MinioS3Client."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora S3 clients for AWS and Minio, declarative and imperative clients, file operations, metadata, key templates, and exception handling; key triggers include @S3.Client, @S3.Get, @S3.List, @S3.Put, @S3.Delete, S3ClientModule, AwsS3Client, MinioS3Client."
+---
+
 ??? warning "Experimental module"
 
     **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
@@ -6,7 +12,7 @@
 Module provides a thin layer of abstraction for creating S3-clients
 using declarative-style annotations, or using imperative-style clients to work with [S3 storage](https://aws.amazon.com/s3/faqs/).
 
-## AWS
+## AWS { #aws }
 
 S3 client implementation based on the [AWS library](https://github.com/aws/aws-sdk-java-v2).
 
@@ -17,7 +23,7 @@ Components available for injection:
 - `S3AsyncClient` asynchronous AWS S3 client
 - `S3AsyncClient` with tag `@Tag(MultipartUpload.class)` asynchronous AWS S3 client for batch uploading
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -47,7 +53,7 @@ Components available for injection:
 
 Requires any [HTTP client](http-client.md) module to be added.
 
-### Configuration
+### Configuration { #configuration }
 
 Complete configuration described in the `AwsS3ClientConfig` and `S3Config` classes (example values or default values are specified):
 
@@ -144,7 +150,7 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
 
 Module metrics are described in the [Metrics Reference](metrics.md#s3-client) section.
 
-### Response format
+### Response format { #response-format }
 
 When using AWS module, it is possible to return special response formats specific only to AWS library:
 
@@ -156,7 +162,7 @@ When using AWS module, it is possible to return special response formats specifi
 | [Add file](#add-file)          | [PutObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/PutObjectResponse.html)                                                                                                                                                |
 | [Delete file](#delete-file)    | [DeleteObjectResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectResponse.html) / [DeleteObjectsResponse](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/DeleteObjectsResponse.html) |
 
-## Minio
+## Minio { #minio }
 
 S3 client implementation based on [Minio](https://github.com/minio/minio-java) library.
 Note that the implementation uses [OkHttp](https://github.com/square/okhttp) written in Kotlin and uses appropriate dependencies.
@@ -167,7 +173,7 @@ Available components for injection:
 - `MinioClient` synchronous Minio S3 client
 - `MinioAsyncClient` asynchronous Minio S3 client
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -197,7 +203,7 @@ Available components for injection:
 
 You can add [OkHttp module](http-client.md#okhttp) dependency or a standard HTTP client will be created automatically.
 
-### Configuration
+### Configuration { #configuration-2 }
 
 Complete configuration described in the `MinioS3ClientConfig` and `S3Config` classes (example values or default values are specified):
 
@@ -280,7 +286,7 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
     10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     11. Enables module tracing (default is `true`)
 
-## Client declarative
+## Client declarative { #client-declarative }
 
 It is suggested to use special annotations to create a declarative client:
 
@@ -312,7 +318,7 @@ It is suggested to use special annotations to create a declarative client:
     }
     ```
 
-### Client Configuration
+### Client Configuration { #client-configuration }
 
 Configuration of a particular implementation of `@S3.Client`:
 
@@ -366,7 +372,7 @@ Configuration in the case of the `s3client.someClient` path described in the `S3
 
     1.  Bucket ([bucket](https://aws.amazon.com/ru/s3/faqs/)) where files will be stored
 
-#### Get file
+#### Get file { #get-file }
 
 Section describes the operation of getting a file/metadata using a declarative S3 client.
 It is suggested to use the `@S3.Get` annotation to specify the operation.
@@ -407,7 +413,7 @@ It is suggested to use the `@S3.Get` annotation to specify the operation.
     2. file together with data in response
     3. key of the file can be specified in the annotation
 
-#### Metadata
+#### Metadata { #metadata }
 
 Get file by key operation can return either a complete file `S3Object` along with data,
 or a lightweight version in the form of file metadata `S3ObjectMeta` without data,
@@ -439,7 +445,7 @@ this method is much faster because it does not return file data.
 
     1. Receive file metadata in response
 
-#### Key template
+#### Key template { #key-template }
 
 You can also specify a key as a template and substitute method arguments there as part of the template,
 all method arguments must be part of the compound key.
@@ -472,7 +478,7 @@ all method arguments must be part of the compound key.
     1. template to build the key template, each template argument will be substituted via `toString()`, the arguments in the template are specified as method argument names in `{covens}`.
     2. All method arguments must be part of the key template
 
-#### Multiple keys
+#### Multiple keys { #multiple-keys }
 
 It is also possible to retrieve multiple files at once by key, either as a complete file along with the `S3Object` data,
 or a lighter version as a set of metadata files without `S3ObjectMeta` data.
@@ -505,7 +511,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
     1. The get file operation for multiple keys **must** not** contain a key pattern
     2. the operation must accept a list of keys and give a list of `S3Object` or `S3ObjectMeta`.
 
-### List files
+### List files { #list-files }
 
 The section describes the operation to get a list of files/metadata using a declarative S3 client.
 It is suggested that the `@S3.List` annotation be used to specify the operation.
@@ -555,7 +561,7 @@ you can also specify a file selection limit, the maximum number of files for the
     2. prefix can be specified in the annotation
     3. you can specify the file selection limit for the enumeration operation, the maximum number of files for the `1000` operation:
 
-#### Metadata
+#### Metadata { #metadata-2 }
 
 Get file by key operation can return either a complete file `S3ObjectList` along with data,
 or a lightweight version in the form of file metadata `S3ObjectMetaList` without data,
@@ -587,7 +593,7 @@ this method is much faster because it does not return file data.
 
     1. Receive file metadata in response
 
-#### Prefix template
+#### Prefix template { #prefix-template }
 
 A prefix can also be specified as a template and method arguments can be substituted there as part of the template,
 all method arguments must be part of a compound key.
@@ -618,7 +624,7 @@ all method arguments must be part of a compound key.
 
     1. template to build the prefix template, each template argument will be substituted via `toString()`, the arguments in the template are specified as method argument names in `{covens}`.
 
-#### Separator
+#### Separator { #separator }
 
 You can specify a delimiter for [key prefix](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-prefixes.html), to exclude required files from the sample:
 
@@ -648,7 +654,7 @@ You can specify a delimiter for [key prefix](https://docs.aws.amazon.com/AmazonS
 
     1. Specifies the delimiter by which the file enumeration will be filtered
 
-### Add file
+### Add file { #add-file }
 
 Section describes the operation of adding a file using a declarative S3 client.
 It is suggested to use the `@S3.Put` annotation for the operation.
@@ -692,7 +698,7 @@ It is required to specify the key and body of the file to be added:
     2. file body itself, which will be added to the repository
     3. key can also be specified in the annotation if it is static
 
-#### File body
+#### File body { #file-body }
 
 File body (`S3Body`) can be created from `byte[]` / `ByteBuffer` / `InputStream` / `Flow.Publisher<ByteBuffer>` via the corresponding static constructor methods.
 
@@ -700,7 +706,7 @@ If the file is very large or its length is unknown and streaming is required, it
 
 If no file type is specified, it will be set as `application/octet-stream`.
 
-#### Key template
+#### Key template { #key-template-2 }
 
 Key can also be specified as a template and method arguments can be substituted there as part of the template,
 all method arguments must be part of a compound key.
@@ -733,7 +739,7 @@ all method arguments must be part of a compound key.
     1. template to build the key template, each template argument will be substituted via `toString()`, the arguments in the template are specified as method argument names in `{covens}`.
     2. All method arguments must be part of the key template either `S3Body`
 
-### Delete file
+### Delete file { #delete-file }
 
 Section describes the operation of deleting a file using a declarative S3 client.
 It is suggested to use the `@S3.Delete` annotation for the operation.
@@ -774,7 +780,7 @@ It is suggested to use the `@S3.Delete` annotation for the operation.
     2. Receiving a file with data in response
     3. The key of the file can be specified in the annotation
 
-#### Key template
+#### Key template { #key-template-3 }
 
 Key can also be specified as a template and method arguments can be substituted there as part of the template,
 all method arguments must be part of the composite key.
@@ -807,7 +813,7 @@ all method arguments must be part of the composite key.
     1. template to build the key template, each template argument will be substituted via `toString()`, the arguments in the template are specified as method argument names in `{covens}`.
     2. All method arguments must be part of the key template
 
-#### Multiple keys
+#### Multiple keys { #multiple-keys-2 }
 
 It is also possible to retrieve multiple files at once by key, either as a complete file along with the `S3Object` data,
 or a lighter version as a set of metadata files without `S3ObjectMeta` data.
@@ -840,7 +846,7 @@ or a lighter version as a set of metadata files without `S3ObjectMeta` data.
     1. a get file operation for multiple keys **must** not** contain a key pattern
     2. the operation must accept a list of keys and return `void`.
 
-### Signatures
+### Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 
@@ -859,14 +865,14 @@ Available signatures for repository methods out of the box:
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
-## Client imperative
+## Client imperative { #client-imperative }
 
 It is possible to implement an imperative Kora client to work with S3, both synchronous and asynchronous clients are provided:
 
 - `S3KoraClient` - client for synchronous operation
 - `S3KoraAsyncClient` - client for asynchronous operation.
 
-## Exceptions
+## Exceptions { #exceptions }
 
 Special errors will be thrown if a client operation error occurs:
 

@@ -4,6 +4,9 @@ search:
 hide:
 - navigation
 - toc
+description: "Explains Index in Kora documentation. Use when working with Index."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Index."
 ---
 
 Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Simplicity, Performance, Efficiency, Transparency.
