@@ -2462,7 +2462,7 @@
             "Familiar top-level abstractions": "Знакомые верхнеуровневые абстракции",
             "Generated sources": "Сгенерированные исходники",
             "Generated human-readable source code": "Сгенерированный читаемый исходный код",
-            "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и ясность.",
+            "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и простота.",
             "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
             "Compile-time DI": "Внедрение во время компиляции",
             "The container graph is generated and validated during compilation, with eager and parallel initialization at startup.": "Граф контейнера генерируется и проверяется во время компиляции, а при запуске инициализируется максимально параллельно.",
@@ -3108,7 +3108,7 @@
             }
             magicWord.appendChild(crack);
 
-            damage = Math.min(1, damage + randomBetween(0.055, 0.1));
+            damage = Math.min(1, damage + randomBetween(0.018, 0.033));
             magicWord.classList.add("is-damaged");
             magicWord.style.setProperty("--magic-visibility", String(Math.max(0.34, 1 - damage * 0.62)));
             magicWord.style.setProperty("--magic-blur", `${Math.min(1.6, damage * 1.35)}px`);
@@ -3125,7 +3125,7 @@
                 window.setTimeout(() => {
                     crack.remove();
                     if (shattered) return;
-                    damage = Math.max(0, damage - 0.075);
+                    damage = Math.max(0, damage - 0.025);
                     magicWord.style.setProperty("--magic-visibility", String(Math.max(0.34, 1 - damage * 0.62)));
                     magicWord.style.setProperty("--magic-blur", `${Math.min(1.6, damage * 1.35)}px`);
                     magicWord.style.setProperty("--magic-contrast", String(1 + damage * 0.72));
@@ -3177,7 +3177,7 @@
         const start = () => {
             if (active || shattered) return;
             active = true;
-            finalTimer = window.setTimeout(shatterMagic, 20000);
+            finalTimer = window.setTimeout(shatterMagic, 200000);
             schedule();
         };
 
