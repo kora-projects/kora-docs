@@ -6,6 +6,8 @@ agent:
 
 Module for creating a fault-tolerant application using approaches such as *CircuitBreaker, Fallback, Timeout, Retry* using aspect annotations.
 
+For a step-by-step walkthrough before the reference details, see [Resilience](../guides/resilient.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -223,7 +225,6 @@ Configuration:
     ```
 
     1. Name of the predicate from the `name()` method
-
 
 ### Imperative usage { #imperative-usage }
 

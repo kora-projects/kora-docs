@@ -6,9 +6,47 @@ site_dir: "../../generated/en"
 site_name: Kora Framework 1.2.15
 site_url: https://kora-projects.github.io/kora-docs/en/
 nav:
-  - Examples:
-      - Repository examples: examples/kora-examples.md
-      - Hello world example: examples/hello-world.md
+  - Guides:
+      - Introduction: examples/kora-examples.md
+      - Basics:
+          - Hello world: guides/getting-started.md
+          - Introduction to Kora: guides/dependency-injection-introduction.md
+          - Dependency Injection: guides/dependency-injection.md
+          - HOCON Configuration: guides/config-hocon.md
+          - YAML Configuration: guides/config-yaml.md
+          - JSON: guides/json.md
+      - HTTP and API:
+          - HTTP Server: guides/http-server.md
+          - Advanced HTTP Server: guides/http-server-advanced.md
+          - HTTP Client: guides/http-client.md
+          - Advanced HTTP Client: guides/http-client-advanced.md
+          - OpenAPI HTTP Server: guides/openapi-http-server.md
+          - Advanced OpenAPI HTTP Server: guides/openapi-http-server-advanced.md
+          - OpenAPI HTTP Client: guides/openapi-http-client.md
+      - Database:
+          - JDBC Database: guides/database-jdbc.md
+          - Advanced JDBC Database: guides/database-jdbc-advanced.md
+          - Cassandra Database: guides/database-cassandra.md
+      - Advanced features:
+          - Cache: guides/cache.md
+          - Multi-Level Cache: guides/cache-multi-level.md
+          - Resilience: guides/resilient.md
+          - Validation: guides/validation.md
+      - Observability:
+          - Metrics: guides/observability-metrics.md
+          - Tracing: guides/observability-tracing.md
+          - Probes: guides/observability-probes.md
+      - Integrations:
+          - Kafka: guides/messaging-kafka.md
+          - gRPC Server: guides/grpc-server.md
+          - Advanced gRPC Server: guides/grpc-server-advanced.md
+          - gRPC Client: guides/grpc-client.md
+          - Advanced gRPC Client: guides/grpc-client-advanced.md
+          - S3: guides/s3.md
+      - Testing:
+          - Component testing: guides/testing-junit.md
+          - Integration Testing: guides/testing-integration.md
+          - Black-Box Testing: guides/testing-black-box.md
   - Documentation:
       - General: documentation/general.md
       - Dependency injection: documentation/container.md

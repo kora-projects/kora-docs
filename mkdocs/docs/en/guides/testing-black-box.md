@@ -1,20 +1,25 @@
----
+﻿---
+search:
+  exclude: true
 title: Black Box Testing with Kora
 summary: Learn comprehensive black box testing strategies for Kora applications using Testcontainers and HTTP APIs
 tags: testing, black-box-tests, testcontainers, http-testing, end-to-end-testing
 ---
 
-# Black Box Testing with Kora
+# Black Box Testing with Kora { #black-box-testing-kora }
 
-This guide covers comprehensive black box testing strategies for Kora applications. Black box tests validate the complete application through its public HTTP APIs, providing the highest confidence that your application works correctly end-to-end.
+This guide introduces black-box testing for Kora HTTP applications. It covers how to start the full application as a test target, call it only through public HTTP endpoints, and verify behavior
+without reaching into services, repositories, or generated graph internals. You will also see how Testcontainers and HTTP clients make these tests close to real runtime usage.
 
-!!! important "Continuation of JUnit Testing Guide"
+===! ":fontawesome-brands-java: `Java`"
 
-    This guide is a continuation of the **[JUnit Testing](../testing-junit.md)** guide. It assumes you have completed the JUnit testing guide and are familiar with Kora's testing fundamentals, component tests, and integration tests.
+    If you want to check your progress along the way, use the finished working example: [Kora Java Testing Black Box App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-testing-black-box-app).
 
-    If you haven't completed the JUnit testing guide yet, please do so first as this guide builds upon that foundation.
+=== ":simple-kotlin: `Kotlin`"
 
-## What You'll Build
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Testing Black Box App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-testing-black-box-app).
+
+## What You'll Build { #youll-build }
 
 You'll create comprehensive black box tests that cover:
 
@@ -24,750 +29,690 @@ You'll create comprehensive black box tests that cover:
 - **API Contract Validation**: Ensuring API behavior matches specifications
 - **End-to-End Scenarios**: Testing complete user workflows
 
-## What You'll Need
+## What You'll Need { #youll-need }
 
 - JDK 17 or later
-- Gradle 7.0+
+- Gradle 7+
 - Docker (for Testcontainers)
 - A text editor or IDE
-- Completed [JUnit Testing](../testing-junit.md) guide
+- Completed [Database Integration](database-jdbc.md) guide
 
-## Prerequisites
+## Prerequisites { #prerequisites }
 
-!!! note "Required: Complete JUnit Testing Guide"
+!!! note "Required: Complete Database JDBC Guide"
 
-    This guide assumes you have completed the **[JUnit Testing](../testing-junit.md)** guide and have:
+    This guide assumes you have completed **[Database Integration](database-jdbc.md)** and have a working Kora project with JDBC repository, Flyway migrations, `UserService`, `UserController`, and basic Kora testing dependencies.
 
-    - A working Kora project with UserService and UserController
-    - Testing dependencies configured (Kora test framework, Testcontainers, etc.)
-    - Basic understanding of Kora's testing patterns
+    If you haven't completed the database JDBC guide yet, do that first, because this guide runs the full application in containers and checks the API from the outside.
 
-    If you haven't completed the JUnit testing guide yet, please do so first.
+## Overview { #overview }
 
-## Black Box Testing Overview
+Black-box testing treats the application as an external system. The test does not call services, repositories, generated graph classes, or controller methods directly. It starts the application, sends
+real HTTP requests, and verifies real HTTP responses.
 
-Black box testing represents the pinnacle of software testing confidence - testing your complete application exactly as users experience it, through its public HTTP APIs. Unlike component or integration tests that validate internal implementation details, black box tests treat your application as a complete black box, focusing solely on inputs and outputs without knowledge of internal workings.
+### Why Black Box First { #black-box-first }
 
-### What Makes Black Box Testing the Gold Standard?
+Kora applications start quickly because dependency graphs are generated at compile time and most wiring work is already known before runtime. That changes the usual testing trade-off. In many
+frameworks, black-box tests are so expensive that teams reserve them only for a small smoke suite. In Kora, running the whole application is often practical enough to make black-box tests the main
+source of confidence for user-facing behavior.
 
-**Black box testing validates the complete user experience:**
+The reason is not that component or integration tests are unimportant. They are still useful for focused feedback. The reason is that many real bugs live between layers:
 
-- **User Perspective Testing**: Tests the application exactly as real users interact with it
-- **API Contract Validation**: Ensures HTTP APIs behave correctly with proper request/response cycles
-- **End-to-End Workflow Testing**: Validates complete business processes from start to finish
-- **Integration Issue Detection**: Catches problems that only appear when all components work together
-- **Production Readiness Assurance**: Provides highest confidence that the application works in production
+- a controller route is wired differently than a service test assumed
+- JSON mapping or validation fails before service code runs
+- configuration works in a unit test but not in the packaged application
+- migrations and runtime database settings do not match
+- an error response has the wrong status code or body shape
 
-### Why Kora Recommends Black Box Testing as Primary Approach
+Black-box tests catch those problems because they exercise the same public boundary a real client uses. They are slower than component tests, but they validate the behavior that matters most to API
+consumers.
 
-**Black box testing catches issues that other testing levels miss:**
+### What External Tests Prove { #external-tests-prove }
 
-- **Serialization/Deserialization Bugs**: JSON parsing, validation, and transformation issues
-- **HTTP Layer Problems**: Headers, status codes, content types, and routing issues
-- **Configuration Integration**: Environment variables, profiles, and runtime configuration
-- **Middleware Issues**: Authentication, authorization, logging, and monitoring integration
-- **Cross-Cutting Concerns**: Transactions, caching, and error handling across the full stack
+Black-box tests are valuable because they include the whole runtime path:
 
-Despite being slower than component tests, Kora strongly recommends black box testing as the primary approach because Kora applications have extremely fast startup times. This makes black box tests practical and not prohibitively slow, while providing the highest confidence that your application works correctly end-to-end.
+- HTTP routing and status codes
+- JSON serialization and deserialization
+- validation and error responses
+- configuration loading
+- dependency graph startup
+- database connectivity and migrations
+- cross-cutting behavior such as logging, probes, or middleware
 
-### Black Box Testing vs Other Testing Approaches
+That makes them the best test type for user-facing behavior. If a black-box test passes, a client can call the application in the same way the test did.
 
-| Testing Type | Scope | Infrastructure | Speed | Confidence | Catches |
-|-------------|-------|----------------|-------|------------|---------|
-| **Component Tests** | Component interactions | Mocked | ⚡ Fast | 🔧 Medium | Business logic bugs |
-| **Integration Tests** | Infrastructure integration | Real (Testcontainers) | 🐌 Slow | 🔧 High | Data persistence issues |
-| **Black Box Tests** | Complete application | Real (Containerized) | 🐌 Slowest | 🔧 Highest | User experience issues |
+### Containers as the Test Environment { #containers-test-environment }
 
-### When to Use Black Box Testing
+In this guide, the application itself runs in a container and [PostgreSQL](https://www.postgresql.org/docs/) runs in another [Testcontainers](https://java.testcontainers.org/)-managed container. The
+test communicates with the application over HTTP, not through in-process objects. This makes the setup closer to deployment than component or integration tests.
 
-**Black box tests are essential for:**
+The practical black-box flow is:
 
-- **API Contract Verification**: Ensuring HTTP endpoints behave as specified
-- **User Workflow Validation**: Testing complete user journeys and business processes
-- **Regression Prevention**: Catching breaking changes in user-facing behavior
-- **Production Readiness**: Final validation before deployment
-- **Integration Issue Detection**: Finding problems between application layers
+1. build or start the application container
+2. start required infrastructure containers
+3. pass runtime configuration into the application
+4. call public endpoints through HTTP
+5. assert response status codes, headers, bodies, and persisted behavior
 
-**Black box tests are NOT ideal for:**
+### Trade-Offs { #trade-offs }
 
-- **Fast Development Feedback**: Use component tests during active development
-- **Algorithm Testing**: Use unit tests for complex mathematical logic
-- **Performance Testing**: Requires specialized load testing tools
-- **Debugging Internal Logic**: Use component/integration tests for internal validation
+Black-box tests are slower and require [Docker](https://docs.docker.com/), but they catch classes of problems that narrower tests cannot see: wrong ports, broken packaging, missing runtime
+configuration, invalid container environment, HTTP contract drift, and wiring problems that only appear when the full application starts.
 
-### How Black Box Testing Works in Practice
+They should not replace every focused test. Use component tests for quick feedback on business logic, integration tests for persistence boundaries, and black-box tests as the strongest check that the
+complete application works from a client's point of view.
 
-**Containerized Application Testing:**
-1. **Application Packaging**: Your complete application runs in a Docker container
-2. **Infrastructure Provisioning**: Real databases and services via Testcontainers
-3. **HTTP API Testing**: Tests send real HTTP requests to the containerized application
-4. **Response Validation**: Complete validation of HTTP responses, status codes, and data
-5. **State Verification**: Database queries to verify data persistence and integrity
+The practical flow is:
 
-**Test Isolation and Realism:**
-- **Fresh Environment**: Each test gets a clean application instance and database
-- **Real HTTP Communication**: Actual network calls, not mocked HTTP clients
-- **Production Configuration**: Tests with production-like settings and dependencies
-- **Complete Stack Validation**: From HTTP request to database and back
+1. package the application so it can run in a container
+2. start PostgreSQL and the application with Testcontainers
+3. inject runtime configuration through container environment variables
+4. call the public HTTP API from the test
+5. assert response codes, JSON bodies, and persistent state
 
-### Black Box Testing Trade-offs
+## Dependencies { #dependencies }
 
-**Higher Resource Requirements:**
-- **Slower Execution**: Container startup and HTTP calls take more time
-- **Resource Intensive**: Requires Docker and more system resources
-- **Complex Setup**: More infrastructure configuration than simpler tests
-
-**But the confidence gained is worth it:**
-- **Production Bug Prevention**: Catches issues before they reach production
-- **User Experience Validation**: Ensures applications work as users expect
-- **Integration Issue Detection**: Finds problems between components and layers
-- **Contract Compliance**: Verifies API contracts are maintained across changes
-
-!!! important "Kora's Primary Testing Strategy"
-
-    Kora strongly recommends **black box testing** as the primary testing approach. While unit and integration tests are valuable for development feedback, black box tests validate the complete user experience and catch integration issues that other test types miss.
-
-!!! note "AppContainer Pattern"
-
-    Kora examples use the `AppContainer` pattern to run the complete application in a containerized environment for black box testing.
+Add testing dependencies for black-box tests in your black-box module.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    First, create an application container:
+    Add to `build.gradle`:
 
-    Create `src/test/java/ru/tinkoff/kora/example/AppContainer.java`:
+    ```groovy
+    dependencies {
+        testImplementation platform("org.junit:junit-bom:5.14.3")
 
-    ```java
-    package ru.tinkoff.kora.example;
-
-    import java.net.URI;
-    import java.nio.file.Paths;
-    import java.time.Duration;
-    import java.util.Map;
-    import org.slf4j.LoggerFactory;
-    import org.testcontainers.containers.GenericContainer;
-    import org.testcontainers.containers.output.Slf4jLogConsumer;
-    import org.testcontainers.containers.wait.strategy.Wait;
-    import org.testcontainers.images.builder.ImageFromDockerfile;
-    import org.testcontainers.utility.DockerImageName;
-
-    public final class AppContainer extends GenericContainer<AppContainer> {
-
-        private AppContainer() {
-            super(new ImageFromDockerfile("kora-example")
-                    .withDockerfile(Paths.get("Dockerfile").toAbsolutePath()));
-        }
-
-        private AppContainer(DockerImageName image) {
-            super(image);
-        }
-
-        public static AppContainer build() {
-            final String appImage = System.getenv("IMAGE_KORA_EXAMPLE");
-            return (appImage != null && !appImage.isBlank())
-                    ? new AppContainer(DockerImageName.parse(appImage))
-                    : new AppContainer();
-        }
-
-        @Override
-        protected void configure() {
-            super.configure();
-            withExposedPorts(8080, 8085); // 8080 for API, 8085 for health checks
-            withStartupTimeout(Duration.ofSeconds(120));
-            withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer.class)));
-            waitingFor(Wait.forHttp("/system/readiness").forPort(8085).forStatusCode(200));
-        }
-
-        public int getPort() {
-            return getMappedPort(8080);
-        }
-
-        public URI getURI() {
-            return URI.create(String.format("http://%s:%s", getHost(), getPort()));
-        }
-
-        public URI getSystemURI() {
-            return URI.create(String.format("http://%s:%s", getHost(), getMappedPort(8085)));
-        }
+        testImplementation "org.junit.jupiter:junit-jupiter"
+        testImplementation project(":guide-database-jdbc-app")
+        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "org.json:json:20231013"
+        testImplementation "org.testcontainers:junit-jupiter:1.21.4"
+        testImplementation "org.testcontainers:testcontainers:1.21.4"
+        testImplementation "org.testcontainers:postgresql:1.21.4"
     }
-    ```
 
-    Then create the black box test:
+    test {
+        dependsOn ":guide-database-jdbc-app:distTar"
+        inputs.file("../guide-database-jdbc-app/Dockerfile")
+        inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
 
-    Create `src/test/java/ru/tinkoff/kora/example/BlackBoxTests.java`:
-
-    ```java
-    package ru.tinkoff.kora.example;
-
-    import static org.junit.jupiter.api.Assertions.*;
-    import static org.skyscreamer.jsonassert.JSONAssert.*;
-    import static org.skyscreamer.jsonassert.JSONCompareMode.*;
-
-    import io.goodforgod.testcontainers.extensions.ContainerMode;
-    import io.goodforgod.testcontainers.extensions.Network;
-    import io.goodforgod.testcontainers.extensions.jdbc.ConnectionPostgreSQL;
-    import io.goodforgod.testcontainers.extensions.jdbc.JdbcConnection;
-    import io.goodforgod.testcontainers.extensions.jdbc.Migration;
-    import io.goodforgod.testcontainers.extensions.jdbc.TestcontainersPostgreSQL;
-    import java.net.http.HttpClient;
-    import java.net.http.HttpRequest;
-    import java.net.http.HttpResponse;
-    import java.time.Duration;
-    import java.util.Map;
-    import org.json.JSONObject;
-    import org.junit.jupiter.api.AfterAll;
-    import org.junit.jupiter.api.BeforeAll;
-    import org.junit.jupiter.api.Test;
-
-    @TestcontainersPostgreSQL(
-            network = @Network(shared = true),
-            mode = ContainerMode.PER_RUN,
-            migration = @Migration(
-                    engine = Migration.Engines.FLYWAY,
-                    apply = Migration.Mode.PER_METHOD,
-                    drop = Migration.Mode.PER_METHOD))
-    class BlackBoxTests {
-
-        private static final AppContainer container = AppContainer.build()
-                .withNetwork(org.testcontainers.containers.Network.SHARED);
-
-        @ConnectionPostgreSQL
-        private JdbcConnection connection;
-
-        @BeforeAll
-        public static void setup(@ConnectionPostgreSQL JdbcConnection connection) {
-            var params = connection.paramsInNetwork().orElseThrow();
-            container.withEnv(Map.of(
-                    "POSTGRES_JDBC_URL", params.jdbcUrl(),
-                    "POSTGRES_USER", params.username(),
-                    "POSTGRES_PASS", params.password(),
-                    "CACHE_MAX_SIZE", "0")); // Disable cache for testing
-
-            container.start();
-        }
-
-        @AfterAll
-        public static void cleanup() {
-            container.stop();
-        }
-
-        @Test
-        void createUser_ShouldCreateAndReturnUser() throws Exception {
-            // Given
-            var httpClient = HttpClient.newHttpClient();
-            var requestBody = new JSONObject()
-                    .put("name", "John Doe")
-                    .put("email", "john@example.com");
-
-            // When
-            var request = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .uri(container.getURI().resolve("/users"))
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            // Then
-            assertEquals(200, response.statusCode());
-            var responseBody = new JSONObject(response.body());
-            assertNotNull(responseBody.optString("id"));
-            assertEquals("John Doe", responseBody.getString("name"));
-            assertEquals("john@example.com", responseBody.getString("email"));
-        }
-
-        @Test
-        void getUser_ShouldReturnUser() throws Exception {
-            // Given - Create a user first
-            var httpClient = HttpClient.newHttpClient();
-            var createRequestBody = new JSONObject()
-                    .put("name", "Jane Doe")
-                    .put("email", "jane@example.com");
-
-            var createRequest = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                    .uri(container.getURI().resolve("/users"))
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            var createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString());
-            assertEquals(200, createResponse.statusCode());
-            var createResponseBody = new JSONObject(createResponse.body());
-            var userId = createResponseBody.getString("id");
-
-            // When - Get the user
-            var getRequest = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(container.getURI().resolve("/users/" + userId))
-                    .build();
-
-            var getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
-
-            // Then
-            assertEquals(200, getResponse.statusCode());
-            var getResponseBody = new JSONObject(getResponse.body());
-            assertEquals(userId, getResponseBody.getString("id"));
-            assertEquals("Jane Doe", getResponseBody.getString("name"));
-            assertEquals("jane@example.com", getResponseBody.getString("email"));
-        }
-
-        @Test
-        void getUser_NotFound_ShouldReturn404() throws Exception {
-            // Given
-            var httpClient = HttpClient.newHttpClient();
-
-            // When
-            var request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(container.getURI().resolve("/users/non-existent-id"))
-                    .build();
-
-            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            // Then
-            assertEquals(404, response.statusCode());
-        }
-
-        @Test
-        void updateUser_ShouldUpdateAndReturnUser() throws Exception {
-            // Given - Create a user first
-            var httpClient = HttpClient.newHttpClient();
-            var createRequestBody = new JSONObject()
-                    .put("name", "John")
-                    .put("email", "john@example.com");
-
-            var createRequest = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                    .uri(container.getURI().resolve("/users"))
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            var createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString());
-            assertEquals(200, createResponse.statusCode());
-            var createResponseBody = new JSONObject(createResponse.body());
-            var userId = createResponseBody.getString("id");
-
-            // When - Update the user
-            var updateRequestBody = new JSONObject()
-                    .put("name", "John Updated")
-                    .put("email", "john.updated@example.com");
-
-            var updateRequest = HttpRequest.newBuilder()
-                    .PUT(HttpRequest.BodyPublishers.ofString(updateRequestBody.toString()))
-                    .uri(container.getURI().resolve("/users/" + userId))
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            var updateResponse = httpClient.send(updateRequest, HttpResponse.BodyHandlers.ofString());
-
-            // Then
-            assertEquals(200, updateResponse.statusCode());
-            var updateResponseBody = new JSONObject(updateResponse.body());
-            assertEquals(userId, updateResponseBody.getString("id"));
-            assertEquals("John Updated", updateResponseBody.getString("name"));
-            assertEquals("john.updated@example.com", updateResponseBody.getString("email"));
-
-            // Verify custom header
-            assertTrue(updateResponse.headers().firstValue("X-Updated-At").isPresent());
-        }
-
-        @Test
-        void deleteUser_ShouldRemoveUser() throws Exception {
-            // Given - Create a user first
-            var httpClient = HttpClient.newHttpClient();
-            var createRequestBody = new JSONObject()
-                    .put("name", "John")
-                    .put("email", "john@example.com");
-
-            var createRequest = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                    .uri(container.getURI().resolve("/users"))
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            var createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString());
-            assertEquals(200, createResponse.statusCode());
-            var createResponseBody = new JSONObject(createResponse.body());
-            var userId = createResponseBody.getString("id");
-
-            // When - Delete the user
-            var deleteRequest = HttpRequest.newBuilder()
-                    .DELETE()
-                    .uri(container.getURI().resolve("/users/" + userId))
-                    .build();
-
-            var deleteResponse = httpClient.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
-
-            // Then
-            assertEquals(204, deleteResponse.statusCode());
-
-            // Verify user is deleted
-            var getRequest = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(container.getURI().resolve("/users/" + userId))
-                    .build();
-
-            var getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
-            assertEquals(404, getResponse.statusCode());
+        useJUnitPlatform()
+        testLogging {
+            showStandardStreams(true)
+            events("passed", "skipped", "failed")
+            exceptionFormat("full")
         }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    First, create an application container:
-
-    Create `src/test/kotlin/ru/tinkoff/kora/example/AppContainer.kt`:
+    Add to `build.gradle.kts`:
 
     ```kotlin
-    package ru.tinkoff.kora.example
+    dependencies {
+        testImplementation(platform("org.junit:junit-bom:5.14.3"))
+
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation(project(":guide-database-jdbc-app"))
+        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("org.json:json:20231013")
+        testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+        testImplementation("org.testcontainers:testcontainers:1.21.4")
+        testImplementation("org.testcontainers:postgresql:1.21.4")
+    }
+
+    tasks.test {
+        dependsOn(":guide-database-jdbc-app:distTar")
+        inputs.file("../guide-database-jdbc-app/Dockerfile")
+        inputs.file(project(":guide-database-jdbc-app").tasks.named("distTar").flatMap { it.archiveFile })
+
+        useJUnitPlatform()
+        testLogging {
+            showStandardStreams = true
+            events("passed", "skipped", "failed")
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
+    ```
+
+## Dockerfile Setup { #dockerfile-setup }
+
+Before creating `AppContainer`, add Docker packaging for the JDBC application from [Database Integration](database-jdbc.md).
+
+Create `guides/guide-database-jdbc-app/Dockerfile`:
+
+```dockerfile
+FROM eclipse-temurin:17-jre-jammy
+
+ARG TARGET_DIR=/opt/app
+
+COPY build/distributions/application.tar /application.tar
+RUN mkdir -p ${TARGET_DIR}
+RUN tar -xf /application.tar -C ${TARGET_DIR}
+RUN rm /application.tar
+
+ARG DOCKER_USER=app
+RUN groupadd -r ${DOCKER_USER} && useradd -rg ${DOCKER_USER} ${DOCKER_USER}
+USER ${DOCKER_USER}
+
+EXPOSE 8080/tcp
+EXPOSE 8085/tcp
+CMD ["/opt/app/application/bin/application"]
+```
+
+In black-box module `build.gradle`, make tests depend on distribution archive:
+
+```groovy
+test {
+    dependsOn ":guide-database-jdbc-app:distTar"
+    inputs.file("../guide-database-jdbc-app/Dockerfile")
+    inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
+}
+```
+
+## Application Container { #application-container }
+
+`AppContainer` is a reusable wrapper around your application Docker image.
+It encapsulates startup details so your test class stays focused on scenarios, not container plumbing.
+
+What happens inside `AppContainer`:
+
+- builds image from JDBC guide Dockerfile
+- exposes public (`8080`) and private (`8085`) ports
+- waits for `/system/readiness` on private port before tests run
+- exposes helper methods to build HTTP base URI
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Create `src/test/java/ru/tinkoff/kora/guide/testingblackbox/AppContainer.java`:
+
+    ```java
+    package ru.tinkoff.kora.guide.testingblackbox;
+
+    import java.net.URI;
+    import java.nio.file.Path;
+    import java.time.Duration;
+    import org.slf4j.LoggerFactory;
+    import org.testcontainers.containers.GenericContainer;
+    import org.testcontainers.containers.output.Slf4jLogConsumer;
+    import org.testcontainers.containers.wait.strategy.Wait;
+    import org.testcontainers.images.builder.ImageFromDockerfile;
+
+    final class AppContainer extends GenericContainer<AppContainer> {
+
+        AppContainer() {
+            super(new ImageFromDockerfile("guide-database-jdbc-black-box")
+                    .withDockerfile(Path.of("../guide-database-jdbc-app/Dockerfile")));
+
+            withExposedPorts(8080, 8085);
+            withStartupTimeout(Duration.ofMinutes(1));
+            waitingFor(Wait.forHttp("/system/readiness").forPort(8085).forStatusCode(200));
+            withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer.class)));
+        }
+
+        URI getURI() {
+            return URI.create("http://" + getHost() + ":" + getMappedPort(8080));
+        }
+
+        URI getSystemURI() {
+            return URI.create("http://" + getHost() + ":" + getMappedPort(8085));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Create `src/test/kotlin/ru/tinkoff/kora/guide/testingblackbox/AppContainer.kt`:
+
+    ```kotlin
+    package ru.tinkoff.kora.guide.testingblackbox
 
     import java.net.URI
-    import java.nio.file.Paths
+    import java.nio.file.Path
     import java.time.Duration
     import org.slf4j.LoggerFactory
     import org.testcontainers.containers.GenericContainer
     import org.testcontainers.containers.output.Slf4jLogConsumer
     import org.testcontainers.containers.wait.strategy.Wait
     import org.testcontainers.images.builder.ImageFromDockerfile
-    import org.testcontainers.utility.DockerImageName
 
-    class AppContainer : GenericContainer<AppContainer> {
+    class AppContainer : GenericContainer<AppContainer>(
+        ImageFromDockerfile("guide-database-jdbc-black-box")
+            .withDockerfile(Path.of("../guide-database-jdbc-app/Dockerfile"))
+    ) {
 
-        private constructor() : super(
-            ImageFromDockerfile("kora-example")
-                .withDockerfile(Paths.get("Dockerfile").toAbsolutePath())
-        )
-
-        private constructor(image: DockerImageName) : super(image)
-
-        companion object {
-            fun build(): AppContainer {
-                val appImage = System.getenv("IMAGE_KORA_EXAMPLE")
-                return if (!appImage.isNullOrBlank()) {
-                    AppContainer(DockerImageName.parse(appImage))
-                } else {
-                    AppContainer()
-                }
-            }
-        }
-
-        override fun configure() {
-            super.configure()
-            withExposedPorts(8080, 8085) // 8080 for API, 8085 for health checks
-            withStartupTimeout(Duration.ofSeconds(120))
-            withLogConsumer(Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer::class.java)))
+        init {
+            withExposedPorts(8080, 8085)
+            withStartupTimeout(Duration.ofMinutes(1))
             waitingFor(Wait.forHttp("/system/readiness").forPort(8085).forStatusCode(200))
+            withLogConsumer(Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer::class.java)))
         }
 
-        fun getPort(): Int = getMappedPort(8080)
+        fun getURI(): URI = URI.create("http://$host:${getMappedPort(8080)}")
 
-        fun getURI(): URI = URI.create("http://${host}:${getPort()}")
-
-        fun getSystemURI(): URI = URI.create("http://${host}:${getMappedPort(8085)}")
+        fun getSystemURI(): URI = URI.create("http://$host:${getMappedPort(8085)}")
     }
     ```
 
-    Then create the black box test:
+## Testcontainers { #testcontainers }
 
-    Create `src/test/kotlin/ru/tinkoff/kora/example/BlackBoxTests.kt`:
+In a black-box test, the application has already been built as a separate Docker artifact. The test does not modify its Kora graph and does not add test components into the application: the container
+runs the same code that was packaged during the build.
+
+What the test can change is the container runtime environment: environment variables, network, ports, startup order, and external infrastructure. In this guide, the test starts PostgreSQL next to the
+application and passes connection settings to the application through `withEnv(...)`. From the application's point of view, this is ordinary production-style configuration from the environment; the
+values are simply provided by Testcontainers for the duration of the test.
+
+Now define infrastructure lifecycle in your test class.
+`@Testcontainers` enables automatic container lifecycle handling, and `@Container` marks managed containers.
+
+In this step:
+
+- `PostgreSQLContainer` provides a real DB
+- `AppContainer` depends on Postgres startup
+- app DB env values are injected from Postgres container getters
+- shared network is used for container-to-container hostname access
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Start `src/test/java/ru/tinkoff/kora/guide/testingblackbox/BlackBoxTests.java` with:
+
+    ```java
+    package ru.tinkoff.kora.guide.testingblackbox;
+
+    import java.time.Duration;
+    import org.junit.jupiter.api.Test;
+    import org.slf4j.LoggerFactory;
+    import org.testcontainers.containers.Network;
+    import org.testcontainers.containers.PostgreSQLContainer;
+    import org.testcontainers.containers.output.Slf4jLogConsumer;
+    import org.testcontainers.junit.jupiter.Container;
+    import org.testcontainers.junit.jupiter.Testcontainers;
+
+    @Testcontainers
+    class BlackBoxTests {
+
+        @Container
+        private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withNetwork(Network.SHARED)
+                .withNetworkAliases("postgres")
+                .withStartupTimeout(Duration.ofSeconds(30))
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(PostgreSQLContainer.class)));
+
+        @Container
+        private static final AppContainer APP = new AppContainer()
+                .withNetwork(Network.SHARED)
+                .dependsOn(POSTGRES)
+                .withEnv("POSTGRES_JDBC_URL", "jdbc:postgresql://postgres:5432/" + POSTGRES.getDatabaseName())
+                .withEnv("POSTGRES_USER", POSTGRES.getUsername())
+                .withEnv("POSTGRES_PASS", POSTGRES.getPassword());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Start `src/test/kotlin/ru/tinkoff/kora/guide/testingblackbox/BlackBoxTests.kt` with:
 
     ```kotlin
-    package ru.tinkoff.kora.example
+    package ru.tinkoff.kora.guide.testingblackbox
 
-    import io.goodforgod.testcontainers.extensions.ContainerMode
-    import io.goodforgod.testcontainers.extensions.Network
-    import io.goodforgod.testcontainers.extensions.jdbc.ConnectionPostgreSQL
-    import io.goodforgod.testcontainers.extensions.jdbc.JdbcConnection
-    import io.goodforgod.testcontainers.extensions.jdbc.Migration
-    import io.goodforgod.testcontainers.extensions.jdbc.TestcontainersPostgreSQL
-    import org.json.JSONObject
-    import org.junit.jupiter.api.AfterAll
-    import org.junit.jupiter.api.Assertions.*
-    import org.junit.jupiter.api.BeforeAll
-    import org.junit.jupiter.api.Test
-    import org.skyscreamer.jsonassert.JSONAssert
-    import org.skyscreamer.jsonassert.JSONCompareMode
-    import java.net.http.HttpClient
-    import java.net.http.HttpRequest
-    import java.net.http.HttpResponse
     import java.time.Duration
+    import org.junit.jupiter.api.Test
+    import org.slf4j.LoggerFactory
+    import org.testcontainers.containers.Network
+    import org.testcontainers.containers.PostgreSQLContainer
+    import org.testcontainers.containers.output.Slf4jLogConsumer
+    import org.testcontainers.junit.jupiter.Container
+    import org.testcontainers.junit.jupiter.Testcontainers
 
-    @TestcontainersPostgreSQL(
-        network = Network(shared = true),
-        mode = ContainerMode.PER_RUN,
-        migration = Migration(
-            engine = Migration.Engines.FLYWAY,
-            apply = Migration.Mode.PER_METHOD,
-            drop = Migration.Mode.PER_METHOD
-        )
-    )
+    @Testcontainers
     class BlackBoxTests {
 
         companion object {
-            private val container = AppContainer.build()
-                .withNetwork(org.testcontainers.containers.Network.SHARED)
 
-            @ConnectionPostgreSQL
-            private lateinit var connection: JdbcConnection
-
-            @BeforeAll
+            @Container
             @JvmStatic
-            fun setup() {
-                val params = connection.paramsInNetwork().orElseThrow()
-                container.withEnv(mapOf(
-                    "POSTGRES_JDBC_URL" to params.jdbcUrl(),
-                    "POSTGRES_USER" to params.username(),
-                    "POSTGRES_PASS" to params.password(),
-                    "CACHE_MAX_SIZE" to "0"
-                ))
-                container.start()
-            }
+            private val POSTGRES = PostgreSQLContainer("postgres:16-alpine")
+                .withNetwork(Network.SHARED)
+                .withNetworkAliases("postgres")
+                .withStartupTimeout(Duration.ofSeconds(30))
+                .withLogConsumer(Slf4jLogConsumer(LoggerFactory.getLogger(PostgreSQLContainer::class.java)))
 
-            @AfterAll
+            @Container
             @JvmStatic
-            fun cleanup() {
-                container.stop()
-            }
-        }
-
-        @Test
-        fun `createUser should create user via API`() {
-            // Given
-            val httpClient = HttpClient.newHttpClient()
-            val requestBody = JSONObject()
-                .put("name", "John")
-                .put("email", "john@example.com")
-
-            // When
-            val request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                .uri(container.getURI().resolve("/users"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(200, response.statusCode(), response.body())
-            connection.assertCountsEquals(1, "users")
-
-            val responseBody = JSONObject(response.body())
-            assertNotNull(responseBody.optString("id"))
-            assertEquals("John", responseBody.getString("name"))
-            assertEquals("john@example.com", responseBody.getString("email"))
-        }
-
-        @Test
-        fun `getUser should return user via API`() {
-            // Given - Create user first
-            val httpClient = HttpClient.newHttpClient()
-            val createRequestBody = JSONObject()
-                .put("name", "Jane")
-                .put("email", "jane@example.com")
-
-            val createRequest = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                .uri(container.getURI().resolve("/users"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString())
-            assertEquals(200, createResponse.statusCode())
-            val createResponseBody = JSONObject(createResponse.body())
-            val userId = createResponseBody.getString("id")
-
-            // When - Get the user
-            val getRequest = HttpRequest.newBuilder()
-                .GET()
-                .uri(container.getURI().resolve("/users/$userId"))
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(200, getResponse.statusCode(), getResponse.body())
-            JSONAssert.assertEquals(createResponseBody.toString(), getResponse.body(), JSONCompareMode.LENIENT)
-        }
-
-        @Test
-        fun `getUsers with pagination should return paginated results`() {
-            // Given - Create multiple users
-            val httpClient = HttpClient.newHttpClient()
-            val users = arrayOf(
-                arrayOf("Alice", "alice@example.com"),
-                arrayOf("Bob", "bob@example.com"),
-                arrayOf("Charlie", "charlie@example.com"),
-                arrayOf("David", "david@example.com")
-            )
-
-            for (user in users) {
-                val requestBody = JSONObject()
-                    .put("name", user[0])
-                    .put("email", user[1])
-
-                val request = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                    .uri(container.getURI().resolve("/users"))
-                    .header("Content-Type", "application/json")
-                    .timeout(Duration.ofSeconds(5))
-                    .build()
-
-                val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-                assertEquals(200, response.statusCode())
-            }
-
-            // When - Get paginated results
-            val getRequest = HttpRequest.newBuilder()
-                .GET()
-                .uri(container.getURI().resolve("/users?page=1&size=2&sort=name"))
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(200, getResponse.statusCode(), getResponse.body())
-            val responseBody = JSONObject(getResponse.body())
-            val usersArray = responseBody.getJSONArray("users")
-            assertEquals(2, usersArray.length())
-            // Should return second page: Charlie, David (alphabetically sorted)
-            assertEquals("Charlie", usersArray.getJSONObject(0).getString("name"))
-            assertEquals("David", usersArray.getJSONObject(1).getString("name"))
-        }
-
-        @Test
-        fun `updateUser should update user via API`() {
-            // Given - Create user first
-            val httpClient = HttpClient.newHttpClient()
-            val createRequestBody = JSONObject()
-                .put("name", "John")
-                .put("email", "john@example.com")
-
-            val createRequest = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                .uri(container.getURI().resolve("/users"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString())
-            assertEquals(200, createResponse.statusCode())
-            val createResponseBody = JSONObject(createResponse.body())
-            val userId = createResponseBody.getString("id")
-
-            // When - Update the user
-            val updateRequestBody = JSONObject()
-                .put("name", "John Updated")
-                .put("email", "john.updated@example.com")
-
-            val updateRequest = HttpRequest.newBuilder()
-                .PUT(HttpRequest.BodyPublishers.ofString(updateRequestBody.toString()))
-                .uri(container.getURI().resolve("/users/$userId"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val updateResponse = httpClient.send(updateRequest, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(200, updateResponse.statusCode(), updateResponse.body())
-            val updateResponseBody = JSONObject(updateResponse.body())
-            assertEquals(userId, updateResponseBody.getString("id"))
-            assertEquals("John Updated", updateResponseBody.getString("name"))
-            assertEquals("john.updated@example.com", updateResponseBody.getString("email"))
-
-            // Verify custom header
-            assertTrue(updateResponse.headers().firstValue("X-Updated-At").isPresent())
-        }
-
-        @Test
-        fun `deleteUser should delete user via API`() {
-            // Given - Create user first
-            val httpClient = HttpClient.newHttpClient()
-            val createRequestBody = JSONObject()
-                .put("name", "John")
-                .put("email", "john@example.com")
-
-            val createRequest = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(createRequestBody.toString()))
-                .uri(container.getURI().resolve("/users"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString())
-            assertEquals(200, createResponse.statusCode())
-            val createResponseBody = JSONObject(createResponse.body())
-            val userId = createResponseBody.getString("id")
-
-            // When - Delete the user
-            val deleteRequest = HttpRequest.newBuilder()
-                .DELETE()
-                .uri(container.getURI().resolve("/users/$userId"))
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val deleteResponse = httpClient.send(deleteRequest, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(204, deleteResponse.statusCode())
-
-            // Verify user is deleted
-            val getRequest = HttpRequest.newBuilder()
-                .GET()
-                .uri(container.getURI().resolve("/users/$userId"))
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString())
-            assertEquals(404, getResponse.statusCode())
-        }
-
-        @Test
-        fun `getUser not found should return 404`() {
-            // Given
-            val httpClient = HttpClient.newHttpClient()
-
-            // When
-            val request = HttpRequest.newBuilder()
-                .GET()
-                .uri(container.getURI().resolve("/users/999"))
-                .timeout(Duration.ofSeconds(5))
-                .build()
-
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-
-            // Then
-            assertEquals(404, response.statusCode())
+            private val APP = AppContainer()
+                .withNetwork(Network.SHARED)
+                .dependsOn(POSTGRES)
+                .withEnv("POSTGRES_JDBC_URL", "jdbc:postgresql://postgres:5432/${POSTGRES.databaseName}")
+                .withEnv("POSTGRES_USER", POSTGRES.username)
+                .withEnv("POSTGRES_PASS", POSTGRES.password)
         }
     }
+    ```
+
+## Write tests { #tests }
+
+After container wiring is ready, add HTTP scenario tests to the same `BlackBoxTests` class.
+These tests verify API behavior end-to-end through the running application container.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Add imports:
+
+    ```java
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
+
+    import java.net.http.HttpClient;
+    import java.net.http.HttpRequest;
+    import java.net.http.HttpResponse;
+    import java.util.UUID;
+    import org.json.JSONArray;
+    import org.json.JSONObject;
+    ```
+
+    Add test methods and helpers:
+
+    ```java
+    @Test
+    void createUser_ShouldCreateAndReturnUser() throws Exception {
+        var response = sendJson("POST", "/users", new JSONObject()
+                .put("name", "John Doe")
+                .put("email", uniqueEmail("john")));
+
+        assertEquals(201, response.statusCode());
+        var responseBody = new JSONObject(response.body());
+        assertTrue(responseBody.has("id"));
+        assertEquals("John Doe", responseBody.getString("name"));
+    }
+
+    @Test
+    void getUser_ShouldReturnUser() throws Exception {
+        var createResponse = sendJson("POST", "/users", new JSONObject()
+                .put("name", "Jane Doe")
+                .put("email", uniqueEmail("jane")));
+        var userId = new JSONObject(createResponse.body()).getString("id");
+
+        var getRequest = HttpRequest.newBuilder()
+                .GET()
+                .uri(APP.getURI().resolve("/users/" + userId))
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        var getResponse = HttpClient.newHttpClient().send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, getResponse.statusCode());
+        var body = new JSONObject(getResponse.body());
+        assertEquals(userId, body.getString("id"));
+        assertEquals("Jane Doe", body.getString("name"));
+    }
+
+    @Test
+    void getUser_NotFound_ShouldReturn404() throws Exception {
+        var request = HttpRequest.newBuilder()
+                .GET()
+                .uri(APP.getURI().resolve("/users/999999"))
+                .timeout(Duration.ofSeconds(10))
+                .build();
+
+        var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(404, response.statusCode());
+    }
+
+    @Test
+    void getUsers_WithPagination_ShouldReturnSizedResult() throws Exception {
+        sendJson("POST", "/users", new JSONObject().put("name", "Alice").put("email", uniqueEmail("alice")));
+        sendJson("POST", "/users", new JSONObject().put("name", "Bob").put("email", uniqueEmail("bob")));
+        sendJson("POST", "/users", new JSONObject().put("name", "Charlie").put("email", uniqueEmail("charlie")));
+
+        var request = HttpRequest.newBuilder()
+                .GET()
+                .uri(APP.getURI().resolve("/users?page=0&size=2&sort=name"))
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, response.statusCode());
+        var users = new JSONArray(response.body());
+        assertEquals(2, users.length());
+    }
+
+    @Test
+    void updateUser_ShouldUpdateAndReturnUser() throws Exception {
+        var createResponse = sendJson("POST", "/users", new JSONObject()
+                .put("name", "John")
+                .put("email", uniqueEmail("upd")));
+        var userId = new JSONObject(createResponse.body()).getString("id");
+
+        var updateRequest = HttpRequest.newBuilder()
+                .PUT(HttpRequest.BodyPublishers.ofString(new JSONObject()
+                        .put("name", "John Updated")
+                        .put("email", uniqueEmail("updated"))
+                        .toString()))
+                .uri(APP.getURI().resolve("/users/" + userId))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        var updateResponse = HttpClient.newHttpClient().send(updateRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, updateResponse.statusCode());
+        var body = new JSONObject(updateResponse.body());
+        assertEquals("John Updated", body.getString("name"));
+    }
+
+    @Test
+    void deleteUser_ShouldRemoveUser() throws Exception {
+        var createResponse = sendJson("POST", "/users", new JSONObject()
+                .put("name", "John")
+                .put("email", uniqueEmail("del")));
+        var userId = new JSONObject(createResponse.body()).getString("id");
+
+        var deleteRequest = HttpRequest.newBuilder()
+                .DELETE()
+                .uri(APP.getURI().resolve("/users/" + userId))
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        var deleteResponse = HttpClient.newHttpClient().send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+        assertEquals(204, deleteResponse.statusCode());
+
+        var getRequest = HttpRequest.newBuilder()
+                .GET()
+                .uri(APP.getURI().resolve("/users/" + userId))
+                .timeout(Duration.ofSeconds(10))
+                .build();
+        var getResponse = HttpClient.newHttpClient().send(getRequest, HttpResponse.BodyHandlers.ofString());
+        assertEquals(404, getResponse.statusCode());
+    }
+
+    private HttpResponse<String> sendJson(String method, String path, JSONObject payload) throws Exception {
+        var request = HttpRequest.newBuilder()
+                .uri(APP.getURI().resolve(path))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10));
+
+        if ("POST".equals(method)) {
+            request.POST(HttpRequest.BodyPublishers.ofString(payload.toString()));
+        } else if ("PUT".equals(method)) {
+            request.PUT(HttpRequest.BodyPublishers.ofString(payload.toString()));
+        } else {
+            throw new IllegalArgumentException("Unsupported method: " + method);
+        }
+
+        return HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String uniqueEmail(String prefix) {
+        return prefix + "-" + UUID.randomUUID() + "@example.com";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Add imports:
+
+    ```kotlin
+    import java.net.http.HttpClient
+    import java.net.http.HttpRequest
+    import java.net.http.HttpResponse
+    import java.util.UUID
+    import org.json.JSONArray
+    import org.json.JSONObject
+    import org.junit.jupiter.api.Assertions.assertEquals
+    import org.junit.jupiter.api.Assertions.assertTrue
+    ```
+
+    Add test methods and helpers:
+
+    ```kotlin
+    @Test
+    fun createUserShouldCreateAndReturnUser() {
+        val response = sendJson("POST", "/users", JSONObject()
+            .put("name", "John Doe")
+            .put("email", uniqueEmail("john")))
+
+        assertEquals(201, response.statusCode())
+        val body = JSONObject(response.body())
+        assertTrue(body.has("id"))
+        assertEquals("John Doe", body.getString("name"))
+    }
+
+    @Test
+    fun getUserShouldReturnUser() {
+        val createResponse = sendJson("POST", "/users", JSONObject()
+            .put("name", "Jane Doe")
+            .put("email", uniqueEmail("jane")))
+        val userId = JSONObject(createResponse.body()).getString("id")
+
+        val getRequest = HttpRequest.newBuilder()
+            .GET()
+            .uri(APP.getURI().resolve("/users/$userId"))
+            .timeout(Duration.ofSeconds(10))
+            .build()
+        val getResponse = HttpClient.newHttpClient().send(getRequest, HttpResponse.BodyHandlers.ofString())
+
+        assertEquals(200, getResponse.statusCode())
+        val body = JSONObject(getResponse.body())
+        assertEquals(userId, body.getString("id"))
+        assertEquals("Jane Doe", body.getString("name"))
+    }
+
+    @Test
+    fun getUserNotFoundShouldReturn404() {
+        val request = HttpRequest.newBuilder()
+            .GET()
+            .uri(APP.getURI().resolve("/users/999999"))
+            .timeout(Duration.ofSeconds(10))
+            .build()
+
+        val response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+        assertEquals(404, response.statusCode())
+    }
+
+    @Test
+    fun getUsersWithPaginationShouldReturnSizedResult() {
+        sendJson("POST", "/users", JSONObject().put("name", "Alice").put("email", uniqueEmail("alice")))
+        sendJson("POST", "/users", JSONObject().put("name", "Bob").put("email", uniqueEmail("bob")))
+        sendJson("POST", "/users", JSONObject().put("name", "Charlie").put("email", uniqueEmail("charlie")))
+
+        val request = HttpRequest.newBuilder()
+            .GET()
+            .uri(APP.getURI().resolve("/users?page=0&size=2&sort=name"))
+            .timeout(Duration.ofSeconds(10))
+            .build()
+        val response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+
+        assertEquals(200, response.statusCode())
+        val users = JSONArray(response.body())
+        assertEquals(2, users.length())
+    }
+
+    @Test
+    fun updateUserShouldUpdateAndReturnUser() {
+        val createResponse = sendJson("POST", "/users", JSONObject()
+            .put("name", "John")
+            .put("email", uniqueEmail("upd")))
+        val userId = JSONObject(createResponse.body()).getString("id")
+
+        val updateRequest = HttpRequest.newBuilder()
+            .PUT(HttpRequest.BodyPublishers.ofString(JSONObject()
+                .put("name", "John Updated")
+                .put("email", uniqueEmail("updated"))
+                .toString()))
+            .uri(APP.getURI().resolve("/users/$userId"))
+            .header("Content-Type", "application/json")
+            .timeout(Duration.ofSeconds(10))
+            .build()
+        val updateResponse = HttpClient.newHttpClient().send(updateRequest, HttpResponse.BodyHandlers.ofString())
+
+        assertEquals(200, updateResponse.statusCode())
+        val body = JSONObject(updateResponse.body())
+        assertEquals("John Updated", body.getString("name"))
+    }
+
+    @Test
+    fun deleteUserShouldRemoveUser() {
+        val createResponse = sendJson("POST", "/users", JSONObject()
+            .put("name", "John")
+            .put("email", uniqueEmail("del")))
+        val userId = JSONObject(createResponse.body()).getString("id")
+
+        val deleteRequest = HttpRequest.newBuilder()
+            .DELETE()
+            .uri(APP.getURI().resolve("/users/$userId"))
+            .timeout(Duration.ofSeconds(10))
+            .build()
+        val deleteResponse = HttpClient.newHttpClient().send(deleteRequest, HttpResponse.BodyHandlers.ofString())
+        assertEquals(204, deleteResponse.statusCode())
+
+        val getRequest = HttpRequest.newBuilder()
+            .GET()
+            .uri(APP.getURI().resolve("/users/$userId"))
+            .timeout(Duration.ofSeconds(10))
+            .build()
+        val getResponse = HttpClient.newHttpClient().send(getRequest, HttpResponse.BodyHandlers.ofString())
+        assertEquals(404, getResponse.statusCode())
+    }
+
+    private fun sendJson(method: String, path: String, payload: JSONObject): HttpResponse<String> {
+        val requestBuilder = HttpRequest.newBuilder()
+            .uri(APP.getURI().resolve(path))
+            .header("Content-Type", "application/json")
+            .timeout(Duration.ofSeconds(10))
+
+        when (method) {
+            "POST" -> requestBuilder.POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+            "PUT" -> requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(payload.toString()))
+            else -> throw IllegalArgumentException("Unsupported method: $method")
+        }
+
+        return HttpClient.newHttpClient().send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    private fun uniqueEmail(prefix: String): String = "$prefix-${UUID.randomUUID()}@example.com"
     ```
 
 !!! tip "Black Box Testing Benefits"
 
-    **Why prioritize black box testing?**
+    Why prioritize black box testing?
 
-    - **Real User Experience**: Tests actual HTTP APIs as users would use them
-    - **Integration Validation**: Catches issues between components, serialization, etc.
-    - **Contract Verification**: Ensures API contracts are maintained
-    - **Deployment Confidence**: Validates complete application behavior
-    - **Regression Prevention**: Catches breaking changes in user-facing behavior
+    - Real User Experience: Tests actual HTTP APIs as users would use them
+    - Integration Validation: Catches issues between components, serialization, etc.
+    - Contract Verification: Ensures API contracts are maintained
+    - Deployment Confidence: Validates complete application behavior
+    - Regression Prevention: Catches breaking changes in user-facing behavior
 
 !!! note "Container Management"
 
     The `AppContainer` pattern provides:
 
-    - **Dockerfile-based Testing**: Tests your actual application image
-    - **Environment Isolation**: Fresh container per test run
-    - **Health Check Integration**: Waits for application readiness
-    - **Port Management**: Automatic port mapping and URI construction
-    - **Log Integration**: Application logs available in test output
+    - Dockerfile-based Testing: Tests your actual application image
+    - Environment Isolation: Fresh container per test run
+    - Health Check Integration: Waits for application readiness
+    - Port Management: Automatic port mapping and URI construction
+    - Log Integration: Application logs available in test output
 
-## Running Black Box Tests
+## Testing { #testing }
 
 Run your black box tests using Gradle:
 
@@ -775,137 +720,154 @@ Run your black box tests using Gradle:
 # Run all tests including black box tests
 ./gradlew test
 
-# Run only black box tests
-./gradlew test --tests "*BlackBoxTests*"
-
 # Run with verbose output
 ./gradlew test --info
 ```
 
 !!! tip "Test Execution Tips"
 
-    - **Docker Required**: Black box tests require Docker to run containers
-    - **Network Access**: Tests may take longer due to container startup
-    - **Resource Intensive**: Consider running black box tests separately from unit tests
-    - **Parallel Execution**: Black box tests typically run sequentially due to container conflicts
+    - Docker Required: Black box tests require Docker to run containers
+    - Network Access: Tests may take longer due to container startup
+    - Resource Intensive: Consider running black box tests separately from unit tests
+    - Parallel Execution: Black box tests typically run sequentially due to container conflicts
 
-## Best Practices for Black Box Testing
+## Best Practices { #best-practices }
 
-### Test Organization
+Test Organization:
 
-- **API Contract Tests**: Test each endpoint's contract (request/response format)
-- **Business Logic Tests**: Test complete user workflows and business rules
-- **Error Scenario Tests**: Test error conditions and edge cases
-- **Integration Tests**: Test interactions between services
+- API Contract Tests: Test each endpoint's contract (request/response format)
+- Business Logic Tests: Test complete user workflows and business rules
+- Error Scenario Tests: Test error conditions and edge cases
+- Integration Tests: Test interactions between services
 
-### Test Data Management
+Test Data Management:
 
-- **Isolated Test Data**: Each test should create its own test data
-- **Cleanup Strategy**: Use database cleanup or fresh containers between tests
-- **Realistic Data**: Use realistic test data that matches production patterns
-- **Data Validation**: Verify data persistence and retrieval
+- Isolated Test Data: Each test should create its own test data
+- Cleanup Strategy: Use database cleanup or fresh containers between tests
+- Realistic Data: Use realistic test data that matches production patterns
+- Data Validation: Verify data persistence and retrieval
 
-### Performance Considerations
+Performance Considerations:
 
-- **Container Reuse**: Consider reusing containers when possible to reduce startup time
-- **Parallel Execution**: Run black box tests in parallel when containers allow it
-- **Resource Limits**: Set appropriate resource limits for test containers
-- **Timeout Management**: Configure appropriate timeouts for HTTP requests
+- Container Reuse: Consider reusing containers when possible to reduce startup time
+- Parallel Execution: Run black box tests in parallel when containers allow it
+- Resource Limits: Set appropriate resource limits for test containers
+- Timeout Management: Configure appropriate timeouts for HTTP requests
 
-### Debugging Black Box Tests
+Debugging Black Box Tests:
 
-- **Container Logs**: Access container logs for debugging application issues
-- **Network Inspection**: Use tools like Wireshark to inspect HTTP traffic
-- **Database Inspection**: Query test databases directly for data validation
-- **Application Metrics**: Monitor application metrics during test execution
+- Container Logs: Access container logs for debugging application issues
+- Network Inspection: Use tools like Wireshark to inspect HTTP traffic
+- Database Inspection: Query test databases directly for data validation
+- Application Metrics: Monitor application metrics during test execution
 
-## Summary
+## Summary { #summary }
 
-Black box testing provides the highest confidence in your Kora application's correctness by testing the complete user experience through HTTP APIs. By using the `AppContainer` pattern with Testcontainers, you can create realistic, isolated test environments that validate your application's behavior end-to-end.
+Black box testing provides the highest confidence in your Kora application's correctness by testing the complete user experience through HTTP APIs. By using the `AppContainer` pattern with
+Testcontainers, you can create realistic, isolated test environments that validate your application's behavior end-to-end.
 
 Key takeaways:
 
-- **Black Box First**: Kora recommends black box testing as the primary testing strategy
-- **Containerized Testing**: Use Docker containers for realistic test environments
-- **API Contract Validation**: Test complete HTTP API contracts
-- **End-to-End Validation**: Test complete user workflows and business logic
-- **Isolation**: Each test gets a fresh environment with proper cleanup
+- Black Box First: Kora recommends black box testing as the primary testing strategy
+- Containerized Testing: Use Docker containers for realistic test environments
+- API Contract Validation: Test complete HTTP API contracts
+- End-to-End Validation: Test complete user workflows and business logic
+- Isolation: Each test gets a fresh environment with proper cleanup
 
 Black box tests complement component and integration tests by providing the final validation that your application works correctly from the user's perspective.
 
-## What's Next?
+## Key Concepts { #key-concepts }
 
-- Explore [Configuration Overrides](../testing-junit.md#configuration-overrides-for-testing) for advanced test scenarios
-- Learn about [Test Reporting and Coverage](../testing-junit.md#test-reporting-and-coverage)
-- Study [Testing Best Practices](../testing-junit.md#best-practices) for comprehensive testing strategies
+Black Box Testing Strategy:
 
-## Key Concepts Learned
+- Black Box First: Kora's recommended primary testing approach for highest confidence
+- End-to-End Validation: Test complete user workflows through HTTP APIs
+- API Contract Testing: Validate complete request/response cycles
+- User Perspective Testing: Test application behavior as users experience it
 
-### Black Box Testing Strategy
-- **Black Box First**: Kora's recommended primary testing approach for highest confidence
-- **End-to-End Validation**: Test complete user workflows through HTTP APIs
-- **API Contract Testing**: Validate complete request/response cycles
-- **User Perspective Testing**: Test application behavior as users experience it
+AppContainer Pattern:
 
-### AppContainer Pattern
-- **Containerized Applications**: Run complete applications in Docker containers
-- **Realistic Environments**: Test with actual infrastructure and dependencies
-- **Network Isolation**: Each test gets dedicated ports and network configuration
-- **Automatic Lifecycle**: Containers start/stop automatically with test execution
+- Containerized Applications: Run complete applications in Docker containers
+- Realistic Environments: Test with actual infrastructure and dependencies
+- Network Isolation: Each test gets dedicated ports and network configuration
+- Automatic Lifecycle: Containers start/stop automatically with test execution
 
-### HTTP API Testing
-- **Complete Request Flow**: Test from HTTP request to database and back
-- **Status Code Validation**: Verify correct HTTP response codes
-- **Response Content Validation**: Check JSON responses and data correctness
-- **Error Handling**: Test error scenarios and proper error responses
+HTTP API Testing:
 
-### Test Isolation and Performance
-- **Fresh Environments**: Each test starts with clean database and application state
-- **Resource Cleanup**: Automatic cleanup of containers and connections
-- **Parallel Execution**: Tests can run concurrently for faster execution
-- **Realistic Load**: Test with actual network calls and database operations
+- Complete Request Flow: Test from HTTP request to database and back
+- Status Code Validation: Verify correct HTTP response codes
+- Response Content Validation: Check JSON responses and data correctness
+- Error Handling: Test error scenarios and proper error responses
 
-## Troubleshooting
+Test Isolation and Performance:
 
-### AppContainer Not Starting
+- Fresh Environments: Each test starts with clean database and application state
+- Resource Cleanup: Automatic cleanup of containers and connections
+- Parallel Execution: Tests can run concurrently for faster execution
+- Realistic Load: Test with actual network calls and database operations
+
+## Troubleshooting { #troubleshooting }
+
+AppContainer Not Starting:
+
 - Ensure Docker is running and accessible
 - Check that application JAR is built and available
 - Verify Docker image configuration and base images
 - Check container logs for startup errors
 
-### HTTP Connection Issues
+HTTP Connection Issues:
+
 - Ensure application container is fully started before tests run
 - Check that HTTP port is correctly exposed and mapped
 - Verify network configuration between test and application containers
 - Check application logs for HTTP server startup issues
 
-### Port Conflicts
+Port Conflicts:
+
 - Ensure each test uses unique ports for application containers
 - Check that ports are not already in use by other processes
 - Use dynamic port allocation to avoid conflicts
 - Verify port cleanup after test completion
 
-### Database Setup Problems
+!!! tip "Flyway Migrations in Tests"
+
+    You can execute Flyway migrations from test setup code instead of relying on Flyway auto-run inside the application container.
+    This is useful when you want explicit migration control in test lifecycle (for example, schema reset per suite).
+    In this guide we use application startup migrations to keep black-box setup straightforward, but test-driven migrations are also a valid approach.
+
+Database Setup Problems:
+
 - Ensure database container starts before application container
 - Check database connection configuration in application
 - Verify database schema initialization scripts run correctly
 - Check database container logs for startup or connection errors
 
-### Test Timeouts
+Test Timeouts:
+
 - Increase timeout values for slow-starting containers
 - Check application startup time and adjust wait strategies
 - Verify network connectivity between containers
 - Monitor resource usage (CPU/memory) during test execution
 
-### Container Cleanup Issues
+Container Cleanup Issues:
+
 - Ensure proper cleanup in test teardown methods
 - Check for hanging processes after test completion
 - Verify Docker daemon has sufficient resources
 - Use Testcontainers' automatic cleanup features
 
-## Help
+## What's Next? { #whats-next }
 
-- [Testing Documentation](../../documentation/test.md)
-- [Kora GitHub Repository](https://github.com/kora-projects/kora)
-- [GitHub Discussions](https://github.com/kora-projects/kora/discussions)
-- [Testcontainers Documentation](https://www.testcontainers.org/)
+- [Observability](observability.md) to expose probes, metrics, traces, and logs for the packaged application you now test end to end.
+- [Resilient Patterns](resilient.md) to verify failure handling through HTTP-facing scenarios.
+- [OpenAPI HTTP Server](openapi-http-server.md) to move from handwritten endpoints to contract-first generated transport.
+- [HTTP Client](http-client.md) to test service-to-service calls against a running server.
+
+## Help { #help }
+
+If you encounter issues:
+
+- compare black-box tests with [Kora Java Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-database-jdbc-app) and [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-database-jdbc-app)
+- check the [JUnit5 documentation](../documentation/junit5.md)
+- check the [Database Migration documentation](../documentation/database-migration.md)
+- read the [Testcontainers documentation](https://www.testcontainers.org/)

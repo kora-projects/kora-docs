@@ -9,6 +9,8 @@ injecting and then parallel initialization.
 
 The work of the container in Kora is divided into two parts: what is done at runtime and what is done at compile time.
 
+For a step-by-step walkthrough before the reference details, see [Dependency Injection Introduction](../guides/dependency-injection-introduction.md) and [Dependency Injection](../guides/dependency-injection.md).
+
 ## Compile Time { #compile-time }
 
 At compile time, components are searched building the dependency container of the entire application.

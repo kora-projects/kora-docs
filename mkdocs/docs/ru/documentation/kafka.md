@@ -6,6 +6,8 @@ agent:
 
 Модуль для создания декларативных [Apache Kafka](https://kafka.apache.org/) `Consumer` и `Producer` с помощью аннотаций.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Kafka](../guides/messaging-kafka.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -1203,4 +1205,3 @@ public interface BaseKafkaRecordsHandler<K, V> {
         fun send(record: ProducerRecord<K, V>, callback: Callback)
     }
     ```
-

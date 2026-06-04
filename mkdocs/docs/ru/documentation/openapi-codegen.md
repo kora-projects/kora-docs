@@ -7,6 +7,8 @@ agent:
 Модуль для создания декларативных HTTP-обработчиков [HTTP сервера](http-server.md)
 либо создания декларативных [HTTP клиентов](http-client.md) из OpenAPI контрактов с использованием [OpenAPI Generator плагином](https://openapi-generator.tech/docs/plugins#gradle).
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [OpenAPI HTTP сервер](../guides/openapi-http-server.md), [OpenAPI HTTP сервер продвинутый](../guides/openapi-http-server-advanced.md) и [OpenAPI HTTP клиент](../guides/openapi-http-client.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

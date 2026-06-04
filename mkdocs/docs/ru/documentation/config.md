@@ -7,6 +7,8 @@ agent:
 Модуль конфигурации отвечает за отображение значений из файлов конфигурации на классы в Kora
 и их последующее использование для настройки приложения.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Конфигурация HOCON](../guides/config-hocon.md) и [Конфигурация YAML](../guides/config-yaml.md).
+
 ## HOCON { #hocon }
 
 Поддержка [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) реализована с помощью [Typesafe Config](https://github.com/lightbend/config).

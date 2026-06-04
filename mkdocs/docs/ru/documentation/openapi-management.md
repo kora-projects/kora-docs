@@ -7,6 +7,8 @@ agent:
 Модуль для предоставления OpenAPI файла из приложения, 
 а также [Swagger UI](https://swagger.io/tools/swagger-ui/) и [Rapidoc](https://rapidocweb.com/) для отображения OpenAPI.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [OpenAPI HTTP сервер](../guides/openapi-http-server.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

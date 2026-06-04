@@ -8,6 +8,8 @@ Functionality that gives the application two methods for obtaining probes on a p
 
 Provided by adding a [private HTTP server](http-server.md) module.
 
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
 ## Liveness { #liveness }
 
 This sample is responsible for indicating whether the application is currently alive. Kora tries to start giving this sample as early as possible, so that orchestrators know for sure that there are no problems at startup and don't try to restart the application.

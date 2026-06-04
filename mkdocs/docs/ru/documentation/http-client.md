@@ -15,6 +15,8 @@ agent:
     и быстро обновляться в случае нового контракта по средствам замены файла контракта.
     Подробнее про генератор в [секции про генерации из OpenAPI](openapi-codegen.md).
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [HTTP клиент](../guides/http-client.md) и [HTTP клиент продвинутый](../guides/http-client-advanced.md).
+
 ## OkHttp { #okhttp }
 
 Реализация HTTP клиента основанная на библиотеке [OkHttp](https://github.com/square/okhttp).

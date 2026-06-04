@@ -6,6 +6,8 @@ agent:
 
 Module for creating declarative [Apache Kafka](https://kafka.apache.org/) `Consumer` and `Producer` using annotations.
 
+For a step-by-step walkthrough before the reference details, see [Kafka Messaging](../guides/messaging-kafka.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

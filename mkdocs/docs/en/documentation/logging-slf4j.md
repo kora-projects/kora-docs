@@ -7,6 +7,8 @@ agent:
 Kora uses [slf4j-api](https://www.slf4j.org/) as the logging engine for the entire framework,
 it is expected that an implementation based on [Logback](#logback) will be used.
 
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
 ## Usage { #usage }
 
 Loggers are required to be provided through the [SLF4J](https://www.slf4j.org/manual.html#hello_world) factory.

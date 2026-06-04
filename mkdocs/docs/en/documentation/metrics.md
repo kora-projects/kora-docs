@@ -8,6 +8,8 @@ Module for collecting application metrics using [Micrometer](https://micrometer.
 
 Requires [private HTTP server](http-server.md) module added to provide metrics in [prometheus](https://prometheus.io/docs/concepts/data_model/) format.
 
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -143,7 +145,6 @@ All Kora metrics use [OpenTelemetry semantic conventions](https://opentelemetry.
 This metric type enables efficient data visualization across buckets and percentile calculation.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
-
 
 ### HTTP Server { #http-server }
 

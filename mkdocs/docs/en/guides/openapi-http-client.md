@@ -1,385 +1,490 @@
+﻿---
+search:
+  exclude: true
+title: Contract-First HTTP Client with OpenAPI
+summary: Continue the HTTP Client guide by replacing the handwritten declarative client with an OpenAPI-generated client
+tags: openapi, http-client, contract-first, code-generation, swagger
 ---
-title: Contract-First HTTP Client Development with OpenAPI
-summary: Learn how to generate type-safe HTTP clients from OpenAPI specifications instead of writing manual clients
-tags: openapi, contract-first, code-generation, http-client, type-safety
----
 
-# Contract-First HTTP Client Development with OpenAPI
+# Contract-First HTTP Client with OpenAPI { #contract-first-http-client }
 
-This guide shows you how to replace manual HTTP clients with automatically generated, type-safe clients using OpenAPI specifications. You'll transform your existing manual HTTP client from the HTTP Client guide into a contract-first client that generates both client code and ensures API contract compliance.
-
-## What You'll Build
-
-You'll convert your existing manual HTTP clients into:
-
-- **OpenAPI Specification**: Contract-first API definition shared with server
-- **Generated Client Code**: Type-safe request/response handling
-- **Automatic Validation**: Request/response validation from the specification
-- **Client SDK Generation**: Free API client for other services
-- **Contract Testing**: Ensure client and server contracts match
-
-## What You'll Need
-
-- JDK 17 or later
-- Gradle 7.0+
-- A text editor or IDE
-- Completed [HTTP Client Integration](../http-client.md) guide
-
-## Prerequisites
-
-!!! note "Required: Complete HTTP Client Guide"
-
-    This guide assumes you have completed the **[HTTP Client Integration](../http-client.md)** guide and have a working manual HTTP client implementation.
-
-    If you haven't completed the HTTP client guide yet, please do so first as this guide replaces the manual client implementation with generated code.
-
-## Why Contract-First Development Matters
-
-**The Problem with Code-First APIs**
-
-Traditional API development follows a "code-first" approach where developers write controllers and endpoints directly in code, then attempt to document them afterward. This approach creates several critical problems:
-
-- **Documentation Drift**: API documentation becomes outdated as code evolves
-- **Contract Mismatches**: Client and server teams work from different understandings of the API
-- **Late Validation**: API design issues are discovered only during integration testing
-- **Manual Maintenance**: Documentation, client SDKs, and tests must be maintained separately
-- **Communication Gaps**: Teams waste time clarifying API behavior through meetings and emails
-
-**The Contract-First Solution**
-
-Contract-first development inverts this process by making the API specification the single source of truth. The OpenAPI specification becomes the contract that both client and server implementations must fulfill.
-
-**Why This Approach Transforms Development**
-
-1. **Design Before Implementation**
-   - API design happens at the specification level, allowing stakeholders to review and validate the API contract before any code is written
-   - Business requirements and API design are aligned from day one
-   - Breaking changes are caught during design review, not production deployment
-
-2. **Automated Consistency**
-   - Both client and server code are generated from the same specification, ensuring perfect alignment
-   - No more "it works on my machine" integration issues
-   - Contract compliance is guaranteed by construction
-
-3. **Enhanced Collaboration**
-   - Frontend and backend teams can work simultaneously from the same contract
-   - Product managers can validate API design against business requirements
-   - QA teams can write tests against the specification before implementation begins
-
-4. **Comprehensive Tooling Ecosystem**
-   - **Automatic Documentation**: Swagger UI and ReDoc generate beautiful, interactive API docs
-   - **Client SDK Generation**: Free, type-safe client libraries in multiple languages
-   - **Mock Servers**: Contract-compliant mock implementations for testing
-   - **Validation**: Request/response validation against the specification
-   - **Testing**: Contract tests ensure implementation matches specification
-
-5. **Future-Proof Evolution**
-   - API versioning strategies are built into the specification
-   - Breaking changes are explicitly managed through specification updates
-   - Migration paths can be planned and communicated through the contract
-
-**Real-World Impact**
-
-Companies using contract-first development report:
-- **60% reduction** in API integration bugs
-- **40% faster** API development cycles
-- **80% fewer** documentation-related support tickets
-- **Improved team velocity** through parallel development workflows
-
-**Kora's Contract-First Advantage**
-
-Kora takes contract-first development further by generating not just basic client code, but production-ready implementations with:
-- Native integration with Kora's dependency injection system
-- Built-in observability and monitoring hooks
-- Comprehensive error handling patterns
-- Type-safe request/response handling
-- Automatic retry and circuit breaker integration
-
-## Step-by-Step Implementation
-
-### Use Existing OpenAPI Specification
-
-Instead of creating a new specification, you'll use the same OpenAPI specification from the HTTP Server guide. This ensures your client and server contracts are perfectly aligned and demonstrates the power of contract-first development in action.
-
-Copy the `src/main/resources/openapi/user-api.yaml` file from your HTTP Server project, or create it if it doesn't exist:
-
-??? abstract "Complete OpenAPI Specification"
-
-    ```yaml
-    openapi: 3.0.3
-    info:
-      title: User Management API
-      description: REST API for managing users and their posts
-      version: 1.0.0
-      contact:
-        name: Kora Example API
-        email: api@example.com
-
-    servers:
-      - url: http://localhost:8080/api/v1
-        description: Local development server
-
-    tags:
-      - name: users
-        description: User management operations
-      - name: posts
-        description: User post operations
-
-    paths:
-      /users:
-        get:
-          tags:
-            - users
-          summary: Get all users
-          description: Retrieve a paginated list of users
-          operationId: getUsers
-          parameters:
-            - name: page
-              in: query
-              description: Page number (0-based)
-              required: false
-              schema:
-                type: integer
-                minimum: 0
-                default: 0
-            - name: size
-              in: query
-              description: Page size
-              required: false
-              schema:
-                type: integer
-                minimum: 1
-                maximum: 100
-                default: 10
-            - name: sort
-              in: query
-              description: Sort field
-              required: false
-              schema:
-                type: string
-                enum: [name, email, createdAt]
-                default: name
-          responses:
-            '200':
-              description: Successful operation
-              content:
-                application/json:
-                  schema:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UserResponse'
-
-        post:
-          tags:
-            - users
-          summary: Create a new user
-          description: Create a new user with the provided information
-          operationId: createUser
-          requestBody:
-            description: User information
-            required: true
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/UserRequest'
-          responses:
-            '201':
-              description: User created successfully
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/UserResponse'
-            '400':
-              description: Validation error
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/ErrorResponse'
-
-      /users/{userId}:
-        get:
-          tags:
-            - users
-          summary: Get user by ID
-          description: Retrieve a specific user by their ID
-          operationId: getUser
-          parameters:
-            - name: userId
-              in: path
-              description: User ID
-              required: true
-              schema:
-                type: string
-          responses:
-            '200':
-              description: Successful operation
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/UserResponse'
-            '404':
-              description: User not found
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/ErrorResponse'
-
-        put:
-          tags:
-            - users
-          summary: Update user
-          description: Update an existing user's information
-          operationId: updateUser
-          parameters:
-            - name: userId
-              in: path
-              description: User ID
-              required: true
-              schema:
-                type: string
-          requestBody:
-            description: Updated user information
-            required: true
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/UserRequest'
-          responses:
-            '200':
-              description: User updated successfully
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/UserResponse'
-            '404':
-              description: User not found
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/ErrorResponse'
-
-        delete:
-          tags:
-            - users
-          summary: Delete user
-          description: Delete a user by their ID
-          operationId: deleteUser
-          parameters:
-            - name: userId
-              in: path
-              description: User ID
-              required: true
-              schema:
-                type: string
-          responses:
-            '204':
-              description: User deleted successfully
-            '404':
-              description: User not found
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/ErrorResponse'
-
-      /users/{userId}/posts/{postId}:
-        get:
-          tags:
-            - posts
-          summary: Get user post
-          description: Retrieve a specific post by user ID and post ID
-          operationId: getUserPost
-          parameters:
-            - name: userId
-              in: path
-              description: User ID
-              required: true
-              schema:
-                type: string
-            - name: postId
-              in: path
-              description: Post ID
-              required: true
-              schema:
-                type: string
-          responses:
-            '200':
-              description: Successful operation
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/Post'
-            '404':
-              description: Post not found
-              content:
-                application/json:
-                  schema:
-                    $ref: '#/components/schemas/ErrorResponse'
-
-    components:
-      schemas:
-        UserRequest:
-          type: object
-          required:
-            - name
-            - email
-          properties:
-            name:
-              type: string
-              minLength: 1
-              maxLength: 100
-              description: User's full name
-            email:
-              type: string
-              format: email
-              description: User's email address
-
-        UserResponse:
-          type: object
-          properties:
-            id:
-              type: string
-              description: Unique user identifier
-            name:
-              type: string
-              description: User's full name
-            email:
-              type: string
-              description: User's email address
-            createdAt:
-              type: string
-              format: date-time
-              description: Account creation timestamp
-
-        Post:
-          type: object
-          properties:
-            id:
-              type: string
-              description: Unique post identifier
-            content:
-              type: string
-              description: Post content
-
-        ErrorResponse:
-          type: object
-          properties:
-            message:
-              type: string
-              description: Error message
-            code:
-              type: string
-              description: Error code
-          required:
-            - message
-    ```
-
-### Add OpenAPI Generator Dependencies
-
-Update your `build.gradle` to include OpenAPI generator dependencies for client generation:
+This guide introduces contract-first HTTP clients with Kora and OpenAPI. It covers how an OpenAPI specification generates a typed client, how generated request and response models replace handwritten
+transport interfaces, and how the client is wired into a Kora application service. You will also see how one API contract can describe both sides of an HTTP integration without duplicating method
+signatures by hand.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```gradle title="build.gradle"
+    If you want to check your progress along the way, use the finished working example: [Kora Java OpenAPI HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-openapi-http-client-app).
+
+=== ":simple-kotlin: `Kotlin`"
+
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin OpenAPI HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-openapi-http-client-app).
+
+## What You'll Build { #youll-build }
+
+You will rebuild the client application from [HTTP Client with Kora](http-client.md), but in a contract-first style:
+
+- the remote user API will be described by the same `user-http-server.yaml` contract from [openapi-http-server.md](openapi-http-server.md)
+- Kora will generate a typed client interface from that contract
+- generated request and response models will replace the handwritten client DTOs
+- the client application will still expose one aggregate endpoint for easy manual verification
+- tests will run the generated client against a containerized copy of the OpenAPI server application
+
+## What You'll Need { #youll-need }
+
+- JDK 17 or later
+- Gradle 7+
+- Docker Desktop or another local Docker environment for container-based tests
+- A text editor or IDE
+- Two terminals if you want to run the server and client manually
+
+## Prerequisites { #prerequisites }
+
+!!! note "Required: Complete OpenAPI HTTP Server Guide"
+
+    This guide assumes you have completed **[HTTP Client with Kora](http-client.md)** and **[Contract-First HTTP Server with OpenAPI](openapi-http-server.md)**.
+
+    If you haven't completed those guides yet, do that first, because they already cover the base HTTP client flow and the OpenAPI server contract that this generated client reuses.
+
+## Overview { #overview }
+
+In the basic HTTP client guide, the workflow looked like this:
+
+1. define `UserApiClient` manually
+2. add annotations that describe the remote contract
+3. let Kora generate the implementation from that interface
+4. inject the client and call the server
+
+That is already a very productive model.
+
+But once the server itself is contract-first, a better next step appears:
+
+1. keep the OpenAPI contract as the source of truth
+2. generate the server from that contract
+3. generate the client from that same contract
+4. let both applications evolve from one shared description
+
+In this guide we will move gradually through that transition:
+
+1. understand why a generated client is useful when you already have a generated server
+2. bring the same `user-http-server.yaml` contract into the client-side workflow too
+3. configure Kora OpenAPI client generation
+4. inspect the generated `UsersApi` interface and generated models
+5. replace the handwritten client with the generated one
+6. keep the same aggregate verification flow from `http-client.md`
+7. configure the generated client
+8. run and verify the application
+9. test the generated client against the OpenAPI server app
+
+### What Is Contract-First Development? { #contract-first-development }
+
+Before we generate anything, it helps to understand why teams choose this workflow in the first place.
+
+In a traditional code-first approach, developers usually begin with controllers, endpoints, or client interfaces written directly in code, and only later try to document the API. That can work for
+small systems, but over time it creates real friction between teams and between applications.
+
+#### The Problem with Code-First APIs { #problem-code-first-apis }
+
+When the contract is not the main source of truth, several problems appear:
+
+- **Documentation drift**: API documentation becomes outdated as code evolves
+- **Contract mismatches**: client and server teams build against slightly different understandings of the same API
+- **Late validation**: design problems are discovered only during integration testing or after deployment
+- **Manual maintenance**: documentation, SDKs, examples, and tests must all be updated separately
+- **Communication gaps**: teams spend time clarifying behavior in chats, meetings, and tickets instead of relying on one shared contract
+
+For a client application this is especially painful. A handwritten client may still compile even though the remote API has already changed in a subtle but breaking way.
+
+#### The Contract-First Solution { #contract-first-solution }
+
+Contract-first development inverts that process.
+
+Instead of saying "the code defines the API," we say "the contract defines the code." The OpenAPI specification becomes the single source of truth that both the server and the client must follow.
+
+That means:
+
+- the server is generated from the contract or validated against it
+- the client is generated from the same contract
+- documentation is derived from that same contract too
+
+So instead of maintaining several parallel descriptions of the API, you maintain one shared contract and let tooling do the repetitive synchronization work.
+
+#### Team Workflow Changes { #team-workflow-changes }
+
+Contract-first development is not only a build trick. It changes how teams collaborate.
+
+1. **Design before implementation**
+   API design happens at the specification level first, so the shape of the API can be reviewed before production code appears.
+   That makes it easier to validate paths, payloads, statuses, and naming while the cost of change is still low.
+
+2. **Automated consistency**
+   When both server and client are generated from the same specification, the chance of transport-level drift drops sharply.
+   You do not need to manually keep route definitions, DTO fields, and expected responses synchronized in two different codebases.
+
+3. **Better collaboration across roles**
+   Backend engineers, frontend engineers, QA, and product stakeholders can all reason about the same contract.
+   The OpenAPI file becomes a shared language instead of implementation details being hidden inside one application.
+
+4. **Tooling ecosystem around one contract**
+   The same contract can drive:
+    - generated clients
+    - generated servers
+    - Swagger UI
+    - validation behavior
+    - mock servers
+    - contract-driven tests
+
+5. **Safer long-term evolution**
+   When the contract changes, the impact becomes visible immediately.
+   Breaking changes can be reviewed at the contract level instead of being discovered accidentally when another team updates too late.
+
+#### Why This Matters for the Client { #matters-client }
+
+In this guide, we are looking at contract-first development from the client perspective.
+
+That changes the value proposition a little.
+
+The goal here is not only "generate code because we can." The real goal is:
+
+- to stop duplicating the same transport contract in a handwritten client interface
+- to make the client follow the exact same OpenAPI document as the server
+- to let generated models and response wrappers represent API behavior more explicitly
+
+That is why this guide comes after both `http-client.md` and `openapi-http-server.md`.
+
+You first learn:
+
+- how a handwritten declarative client works
+- how an OpenAPI-driven server works
+
+and only then combine those ideas into one shared contract-first integration flow.
+
+#### Kora's Contract-First Advantage { #koras-contract-first-advantage }
+
+Kora makes this especially practical because the generated client is not a throwaway SDK. It integrates naturally with the rest of the framework:
+
+- generated clients are wired through Kora dependency injection
+- configuration is still handled through normal Kora config paths
+- JSON mapping is still handled by Kora's generated mappers
+- response-code mapping is generated explicitly through typed response wrappers
+- the generated client still behaves like a normal Kora dependency in your application graph
+
+So the result still feels like a Kora application, not like an external codegen tool bolted onto the side.
+
+### Why One Contract { #one-contract }
+
+The basic client guide already showed that a handwritten declarative client is much nicer than low-level HTTP request code. But handwritten declarative clients still have one long-term risk:
+
+- the client and server contracts can slowly drift apart
+
+For example, one side might change:
+
+- a response status
+- a DTO field name
+- a path parameter
+- a required request property
+
+If that contract lives only in handwritten code, those mismatches are often discovered late, during integration testing or after deployment.
+
+A contract-first workflow reduces that risk. The OpenAPI file becomes the shared contract, and both sides are generated from it.
+
+That gives us several practical benefits:
+
+- the server and client describe the same routes and models
+- response wrappers are generated consistently
+- request and response model changes start from one contract file
+- the client no longer needs its own handwritten transport DTOs
+
+So this guide is not about introducing a completely different architecture. It is about taking the client app from `http-client.md` and making it depend on the same contract the server already uses.
+
+## OpenAPI Contract { #openapi-contract }
+
+The most important decision in this guide is very simple:
+
+- do **not** invent a second client-only contract
+- do **not** duplicate the YAML by hand with small differences
+- use the same `user-http-server.yaml` from [openapi-http-server.md](openapi-http-server.md)
+
+That is exactly what the runnable guide app does. Its build points to the contract from the sibling server module:
+
+```text
+../guide-openapi-http-server-app/src/main/resources/openapi/user-http-server.yaml
+```
+
+That file already defines the user API:
+
+- `POST /users`
+- `GET /users/{userId}`
+- `GET /users`
+- `PUT /users/{userId}`
+- `DELETE /users/{userId}`
+
+and it already contains the same transport models:
+
+- `UserRequestTO`
+- `UserResponseTO`
+
+This is the key lesson of the guide. Contract-first development works best when the client and server truly share one contract, not two almost-identical copies.
+
+## Contract to Client { #contract-client }
+
+Even though the OpenAPI file was already created in [openapi-http-server.md](openapi-http-server.md), it is worth pausing here and looking at it again from the client point of view.
+
+We are not creating a new client-specific specification.
+
+We are using the exact same HTTP OpenAPI contract that the server guide introduced. That is the whole point of the workflow:
+
+- one shared contract
+- one server generated from it
+- one client generated from it
+
+So in this guide, when we say "describe the API in OpenAPI", we really mean "reuse the same OpenAPI description that already became the source of truth in the server guide."
+
+The shared contract looks like this:
+
+??? example "OpenAPI contract"
+
+    ```yaml title="src/main/resources/openapi/user-http-server.yaml"
+    openapi: 3.0.3
+    info:
+        title: User Management API
+        description: Contract-first version of the HTTP Server guide API
+        version: 1.0.0
+    tags:
+        -   name: users
+            description: User management operations
+    paths:
+        /users:
+            get:
+                tags:
+                    - users
+                operationId: getUsers
+                summary: Get users
+                parameters:
+                    -   name: page
+                        in: query
+                        required: false
+                        schema:
+                            type: integer
+                            minimum: 0
+                            default: 0
+                    -   name: size
+                        in: query
+                        required: false
+                        schema:
+                            type: integer
+                            minimum: 1
+                            maximum: 100
+                            default: 10
+                    -   name: sort
+                        in: query
+                        required: false
+                        schema:
+                            type: string
+                            enum: [ name, email, createdAt ]
+                            default: name
+                responses:
+                    "200":
+                        description: Users returned
+                        content:
+                            application/json:
+                                schema:
+                                    type: array
+                                    items:
+                                        $ref: "#/components/schemas/UserResponseTO"
+                    "500":
+                        description: Internal server error
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+            post:
+                tags:
+                    - users
+                operationId: createUser
+                summary: Create user
+                requestBody:
+                    required: true
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UserRequestTO"
+                responses:
+                    "201":
+                        description: User created
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/UserResponseTO"
+                    "500":
+                        description: Internal server error
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+        /users/{userId}:
+            get:
+                tags:
+                    - users
+                operationId: getUser
+                summary: Get user by id
+                parameters:
+                    -   name: userId
+                        in: path
+                        required: true
+                        schema:
+                            type: string
+                responses:
+                    "200":
+                        description: User returned
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/UserResponseTO"
+                    "404":
+                        description: User not found
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+                    "500":
+                        description: Internal server error
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+            put:
+                tags:
+                    - users
+                operationId: updateUser
+                summary: Update user
+                parameters:
+                    -   name: userId
+                        in: path
+                        required: true
+                        schema:
+                            type: string
+                requestBody:
+                    required: true
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UserRequestTO"
+                responses:
+                    "200":
+                        description: User updated
+                        headers:
+                            X-Updated-At:
+                                required: true
+                                schema:
+                                    type: string
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/UserResponseTO"
+                    "404":
+                        description: User not found
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+                    "500":
+                        description: Internal server error
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+            delete:
+                tags:
+                    - users
+                operationId: deleteUser
+                summary: Delete user
+                parameters:
+                    -   name: userId
+                        in: path
+                        required: true
+                        schema:
+                            type: string
+                responses:
+                    "204":
+                        description: User deleted
+                    "404":
+                        description: User not found
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+                    "500":
+                        description: Internal server error
+                        content:
+                            application/json:
+                                schema:
+                                    $ref: "#/components/schemas/ErrorResponseTO"
+    components:
+        schemas:
+            ErrorResponseTO:
+                type: object
+                required:
+                    - message
+                properties:
+                    message:
+                        type: string
+            UserRequestTO:
+                type: object
+                required:
+                    - name
+                    - email
+                properties:
+                    name:
+                        type: string
+                        minLength: 1
+                        maxLength: 100
+                    email:
+                        type: string
+                        format: email
+            UserResponseTO:
+                type: object
+                required:
+                    - id
+                    - name
+                    - email
+                    - createdAt
+                properties:
+                    id:
+                        type: string
+                    name:
+                        type: string
+                    email:
+                        type: string
+                    createdAt:
+                        type: string
+                        format: date-time
+    ```
+
+From the client-side perspective, this contract already tells us almost everything we need:
+
+- which operations exist
+- which request model is sent
+- which success model is returned
+- which error model is returned for `404` and `500`
+
+That is why the next generation step is so powerful. The generator is not inventing the client API. It is simply turning this shared contract into typed client abstractions.
+
+## Dependencies { #dependencies }
+
+The application still keeps the same overall shape as the basic client guide:
+
+- it is a standalone Kora application
+- it still exposes one small verification controller
+- it still needs HTTP client support and HTTP server support
+
+But now it also needs OpenAPI generation support.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy title="build.gradle"
+    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
     buildscript {
         dependencies {
             classpath("ru.tinkoff.kora:openapi-generator:$koraVersion")
@@ -387,23 +492,26 @@ Update your `build.gradle` to include OpenAPI generator dependencies for client 
     }
 
     plugins {
-        id "java"
+        id "application"
         id "org.openapi.generator" version "7.14.0"
     }
 
     dependencies {
-        // ... existing dependencies ...
-
-        // HTTP Client dependencies (from HTTP Client guide)
+        implementation("ru.tinkoff.kora:config-hocon")
         implementation("ru.tinkoff.kora:http-client-common")
-        implementation("ru.tinkoff.kora:http-client-jdk")
+        implementation("ru.tinkoff.kora:http-client-ok")
+        implementation("ru.tinkoff.kora:http-server-undertow")
         implementation("ru.tinkoff.kora:json-module")
+        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("ru.tinkoff.kora:validation-module")
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin title="build.gradle.kts"
+    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
     buildscript {
         dependencies {
             classpath("ru.tinkoff.kora:openapi-generator:$koraVersion")
@@ -411,773 +519,776 @@ Update your `build.gradle` to include OpenAPI generator dependencies for client 
     }
 
     plugins {
-        id "kotlin"
-        id "org.openapi.generator" version "7.14.0"
+        id("application")
+        id("org.openapi.generator") version "7.14.0"
     }
 
     dependencies {
-        // ... existing dependencies ...
-
-        // HTTP Client dependencies (from HTTP Client guide)
+        implementation("ru.tinkoff.kora:config-hocon")
         implementation("ru.tinkoff.kora:http-client-common")
-        implementation("ru.tinkoff.kora:http-client-jdk")
+        implementation("ru.tinkoff.kora:http-client-ok")
+        implementation("ru.tinkoff.kora:http-server-undertow")
         implementation("ru.tinkoff.kora:json-module")
+        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("ru.tinkoff.kora:validation-module")
     }
     ```
 
-### Configure OpenAPI Client Code Generation
+At this step, it helps to notice what changed relative to `http-client.md`:
 
-Add the OpenAPI generation task to your `build.gradle` for client code generation:
+- we removed the need for a handwritten `UserApiClient`
+- we added the OpenAPI generator so the client interface can be created from the contract
+- we keep the regular client and server dependencies because the application is still a real runnable Kora service
+
+## HTTP Client Generation { #http-client-generation }
+
+The detailed client generation options, `mode = client`, and `clientConfigPrefix` are described in [OpenAPI Codegen: Client](../documentation/openapi-codegen.md#client).
+
+Now we tell Gradle how to generate the client from that existing contract.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```gradle title="build.gradle"
-    // Add this after the dependencies block
-    def openApiGenerateUserApiClient = tasks.register("openApiGenerateUserApiClient", GenerateTask) {
+    ```groovy title="build.gradle"
+    def openApiGenerateUsersHttpClient = tasks.register("openApiGenerateUsersHttpClient", GenerateTask) {
         generatorName = "kora"
         group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/user-api.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        def corePackage = "ru.tinkoff.kora.example.openapi.userapi"
+        inputSpec = "$projectDir/../guide-openapi-http-server-app/src/main/resources/openapi/user-http-server.yaml"
+        outputDir = "$buildDir/generated/user-http-client"
+        def corePackage = "ru.tinkoff.kora.guide.openapi.httpclient.user"
         apiPackage = "${corePackage}.api"
         modelPackage = "${corePackage}.model"
         invokerPackage = "${corePackage}.invoker"
         configOptions = [
-                mode: "java-client",
+                mode              : "java-client",
+                clientConfigPrefix: "httpClient",
         ]
     }
-    sourceSets.main { java.srcDirs += openApiGenerateUserApiClient.get().outputDir }
-    compileJava.dependsOn openApiGenerateUserApiClient
+
+    sourceSets.main {
+        java.srcDirs += openApiGenerateUsersHttpClient.get().outputDir
+    }
+
+    compileJava.dependsOn openApiGenerateUsersHttpClient
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin title="build.gradle.kts"
-    // Add this after the dependencies block
-    val openApiGenerateUserApiClient = tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("openApiGenerateUserApiClient") {
+    val openApiGenerateUsersHttpClient = tasks.register<GenerateTask>("openApiGenerateUsersHttpClient") {
         generatorName = "kora"
         group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/user-api.yaml"
-        outputDir = "$buildDir/generated/openapi"
-        val corePackage = "ru.tinkoff.kora.example.openapi.userapi"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
+        inputSpec = "$projectDir/../guide-openapi-http-server-app/src/main/resources/openapi/user-http-server.yaml"
+        outputDir = "$buildDir/generated/user-http-client"
+        val corePackage = "ru.tinkoff.kora.guide.openapi.httpclient.user"
+        apiPackage = "$corePackage.api"
+        modelPackage = "$corePackage.model"
+        invokerPackage = "$corePackage.invoker"
         configOptions = mapOf(
-            "mode" to "java-client"
+            "mode" to "java-client",
+            "clientConfigPrefix" to "httpClient"
         )
     }
-    sourceSets.main { java.srcDirs(openApiGenerateUserApiClient.get().outputDir) }
-    tasks.compileKotlin { dependsOn(openApiGenerateUserApiClient) }
+
+    sourceSets.main {
+        java.srcDir(openApiGenerateUsersHttpClient.get().outputDir)
+    }
+
+    tasks.compileJava {
+        dependsOn(openApiGenerateUsersHttpClient)
+    }
     ```
 
-### Generate the Client Code
+This configuration introduces a few ideas that are worth understanding slowly:
 
-Generate the OpenAPI client code by running the Gradle task:
+- `mode = "java-client"` means we are generating a synchronous Java client
+- `inputSpec` points to the exact OpenAPI contract from the previous guide
+- generated sources will be placed in `build/generated/user-http-client`
+- `clientConfigPrefix = "httpClient"` tells the generator where this client should read its runtime configuration
+
+That last point is especially important. The generated client is not just a set of DTOs. It is a real Kora HTTP client that will be wired into the application graph and configured
+through `application.conf`.
+
+## Generated Output { #generated-output }
+
+Run:
 
 ```bash
-./gradlew openApiGenerateUserApiClient
+./gradlew :guides-apps:guide-openapi-http-client-app:openApiGenerateUsersHttpClient
 ```
 
-This will generate:
-- **API interfaces** with type-safe method signatures for client calls
-- **Model classes** for requests/responses (shared with server)
-- **Client implementation** that handles HTTP communication
-- **Validation annotations** from the OpenAPI spec
-
-### Implement Client Usage
-
-Instead of implementing manual HTTP clients, you'll use the generated client with dependency injection. Create a service that uses the generated client:
+After generation, inspect:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/example/client/UserApiClientService.java`:
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/api/UsersApi.java`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/api/UsersApiResponses.java`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/UserRequestTO.java`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/UserResponseTO.java`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/ErrorResponseTO.java`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/api/UsersApi.kt`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/api/UsersApiResponses.kt`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/UserRequestTO.kt`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/UserResponseTO.kt`
+    - `build/generated/user-http-client/ru/tinkoff/kora/guide/openapi/httpclient/user/model/ErrorResponseTO.kt`
+
+The generated client introduces three important new abstractions.
+
+### 1. `UsersApi` { #1-usersapi }
+
+This is the generated interface that replaces the handwritten `UserApiClient` from the basic client guide.
+
+It already contains:
+
+- HTTP method and path mappings
+- query and path parameter annotations
+- body annotations
+- response mappers
+
+So instead of writing the transport contract ourselves, we now inherit it from the OpenAPI file.
+
+### 2. Generated Transport Models { #2-generated-transport-models }
+
+The client now uses generated transport models:
+
+- `UserRequestTO`
+- `UserResponseTO`
+
+Those models belong to the OpenAPI contract layer.
+
+In the basic guide, the client reused local DTO classes. Here we intentionally let the OpenAPI contract define the transport models too. That removes one more place where drift could happen.
+
+### 3. `UsersApiResponses` { #3-usersapiresponses }
+
+This is one of the most useful parts of the generated client.
+
+Instead of flattening all outcomes into exceptions or one body type, the generator creates typed response wrappers such as:
+
+- `CreateUserApiResponse`
+- `GetUserApiResponse`
+- `DeleteUserApiResponse`
+- `UpdateUserApiResponse`
+
+That means the client can model different HTTP outcomes explicitly. For example, `getUser()` can return either:
+
+- `GetUser200ApiResponse`
+- `GetUser404ApiResponse`
+- `GetUser500ApiResponse`
+
+This is more descriptive than a handwritten client that simply assumes one happy-path body for every call.
+
+### Generated Code Shape { #generated-code-shape }
+
+It is worth pausing here and opening the generated files directly. Once you do that, the contract-first workflow becomes much more concrete.
+
+Here is a shortened version of the generated `UsersApi` method for `getUser()`:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.example.client;
+    @HttpClient(configPath = "httpClient.UsersApi")
+    public interface UsersApi {
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.example.openapi.userapi.api.UserApi;
-    import ru.tinkoff.kora.example.openapi.userapi.model.*;
+        @HttpRoute(method = "GET", path = "/users/{userId}")
+        @ResponseCodeMapper(code = 200, mapper = UsersApiClientResponseMappers.GetUser200ApiResponseMapper.class)
+        @ResponseCodeMapper(code = 404, mapper = UsersApiClientResponseMappers.GetUser404ApiResponseMapper.class)
+        @ResponseCodeMapper(code = 500, mapper = UsersApiClientResponseMappers.GetUser500ApiResponseMapper.class)
+        UsersApiResponses.GetUserApiResponse getUser(
+            @Path("userId") String userId
+        );
+    }
+    ```
 
-    import java.util.List;
-    import java.util.concurrent.ExecutionException;
+=== ":simple-kotlin: `Kotlin`"
 
-    @Component
-    public final class UserApiClientService {
+    ```kotlin
+    @HttpClient(configPath = "httpClient.UsersApi")
+    interface UsersApi {
 
-        private final UserApi userApi;
+        @HttpRoute(method = "GET", path = "/users/{userId}")
+        @ResponseCodeMapper(code = 200, mapper = UsersApiClientResponseMappers.GetUser200ApiResponseMapper::class)
+        @ResponseCodeMapper(code = 404, mapper = UsersApiClientResponseMappers.GetUser404ApiResponseMapper::class)
+        @ResponseCodeMapper(code = 500, mapper = UsersApiClientResponseMappers.GetUser500ApiResponseMapper::class)
+        fun getUser(
+            @Path("userId") userId: String
+        ): UsersApiResponses.GetUserApiResponse
+    }
+    ```
 
-        public UserApiClientService(UserApi userApi) {
-            this.userApi = userApi;
-        }
+And here is the corresponding part of `UsersApiResponses`:
 
-        public List<UserResponse> getAllUsers() {
-            return userApi.getUsers(null, null, null);
-        }
+===! ":fontawesome-brands-java: `Java`"
 
-        public List<UserResponse> getUsers(Integer page, Integer size, String sort) {
-            return userApi.getUsers(page, size, sort);
-        }
+    ```java
+    public interface UsersApiResponses {
 
-        public UserResponse createUser(String name, String email) {
-            var request = new UserRequest();
-            request.setName(name);
-            request.setEmail(email);
-            return userApi.createUser(request);
-        }
+        sealed interface GetUserApiResponse {
 
-        public UserResponse getUser(String userId) {
-            return userApi.getUser(userId);
-        }
+            record GetUser200ApiResponse(
+                UserResponseTO content
+            ) implements GetUserApiResponse {}
 
-        public UserResponse updateUser(String userId, String name, String email) {
-            var request = new UserRequest();
-            request.setName(name);
-            request.setEmail(email);
-            return userApi.updateUser(userId, request);
-        }
+            record GetUser404ApiResponse(
+                ErrorResponseTO content
+            ) implements GetUserApiResponse {}
 
-        public void deleteUser(String userId) {
-            userApi.deleteUser(userId);
-        }
-
-        public Post getUserPost(String userId, String postId) {
-            return userApi.getUserPost(userId, postId);
+            record GetUser500ApiResponse(
+                ErrorResponseTO content
+            ) implements GetUserApiResponse {}
         }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/client/UserApiClientService.kt`:
+    ```kotlin
+    interface UsersApiResponses {
+
+        sealed interface GetUserApiResponse {
+
+            data class GetUser200ApiResponse(
+                val content: UserResponseTO
+            ) : GetUserApiResponse
+
+            data class GetUser404ApiResponse(
+                val content: ErrorResponseTO
+            ) : GetUserApiResponse
+
+            data class GetUser500ApiResponse(
+                val content: ErrorResponseTO
+            ) : GetUserApiResponse
+        }
+    }
+    ```
+
+This small slice of generated code already shows most of the important abstractions.
+
+### Generated `getUser()` Walkthrough { #generated-getuser-walkthrough }
+
+Let us unpack what the generator created and why.
+
+`@HttpClient(configPath = "httpClient.UsersApi")`
+
+This tells Kora that the generated interface is a real HTTP client dependency. Kora generates the runtime implementation, puts it into the dependency graph, and binds it to the corresponding config
+section in `application.conf`.
+
+`@HttpRoute(method = "GET", path = "/users/{userId}")`
+
+The generator reads the OpenAPI operation and projects it into a Kora transport annotation. You no longer repeat the route by hand in a handwritten client interface. The OpenAPI contract remains the
+source of truth, and the generated Java or Kotlin interface becomes a transport-specific view of that contract.
+
+`@Path("userId") String userId`
+
+The path parameter from the OpenAPI file becomes a normal typed method argument. Instead of manually assembling URLs, you work with a regular method signature and let the generated implementation
+place the value into the request path.
+
+`@ResponseCodeMapper(...)`
+
+This is one of the most useful pieces of generated code. The contract says that `GET /users/{userId}` may produce:
+
+- `200` with a `UserResponseTO` body
+- `404` with an `ErrorResponseTO` body
+- `500` with an `ErrorResponseTO` body
+
+Because those codes are present in the OpenAPI file, the generator creates response mappers for each of them. At runtime, the client uses the real HTTP status code to decide which typed response
+variant to construct.
+
+This is also why adding `500` to the OpenAPI file matters. If the contract does not describe `500`, the generator has no reason to create a dedicated `GetUser500ApiResponse` abstraction for it.
+
+`UsersApiResponses.GetUserApiResponse`
+
+The return type is not just `UserResponseTO`. It is a sealed response family that models the whole transport contract of that endpoint. That makes the API outcomes explicit right at the call site.
+
+In practice, that leads to code like this:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var response = usersApi.getUser(userId);
+
+    if (response instanceof UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse ok) {
+        return ok.content();
+    }
+    if (response instanceof UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse notFound) {
+        // notFound.content().message() describes the error
+    }
+    if (response instanceof UsersApiResponses.GetUserApiResponse.GetUser500ApiResponse internalError) {
+        // internalError.content().message() describes the error
+    }
+    ```
+
+    If you prefer a more expression-oriented style:
+    ```java
+    return switch (usersApi.getUser(userId)) {
+        case UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse ok ->
+                ok.content().name();
+        case UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse notFound ->
+                "Missing user: " + notFound.content().message();
+        case UsersApiResponses.GetUserApiResponse.GetUser500ApiResponse internalError ->
+                "Server error: " + internalError.content().message();
+    };
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.example.client
+    val response = usersApi.getUser(userId)
+
+    when (response) {
+        is UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse ->
+            return response.content()
+        is UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse -> {
+            // response.content().message() describes the error
+        }
+        is UsersApiResponses.GetUserApiResponse.GetUser500ApiResponse -> {
+            // response.content().message() describes the error
+        }
+    }
+    ```
+
+That style is one of the biggest benefits of generated contract-first clients. The code you write reflects the full API contract, not only the happy path.
+
+### Generator Layers { #generator-layers }
+
+At first glance, the generated code can feel more verbose than a handwritten interface. But each generated layer has a clear role:
+
+- `UsersApi` defines the callable client surface
+- method parameters represent transport inputs such as path and query values
+- generated models such as `UserRequestTO` and `UserResponseTO` represent the OpenAPI payloads
+- generated response wrappers model the allowed HTTP outcomes
+- generated response mappers convert raw HTTP responses into typed variants
+
+So the generator is not producing extra code just to be clever. It is turning the transport contract into explicit, typed abstractions that the compiler can help you work with.
+
+The shared error model matters too. Because the contract now defines `ErrorResponseTO(message)`, the generated client can treat error responses as structured transport data instead of only as status
+codes.
+
+## Generated Client { #generated-client }
+
+The client application still keeps the same overall teaching shape from `http-client.md`:
+
+- one generated client
+- one small aggregate controller
+- one place to manually trigger the flow
+
+But now `ClientTestController` depends on `UsersApi` instead of a handwritten `UserApiClient`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/openapi/httpclient/controller/ClientTestController.java"
+    package ru.tinkoff.kora.guide.openapi.httpclient.controller;
+
+    import java.util.List;
+    import ru.tinkoff.kora.common.Component;
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.api.UsersApi;
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.api.UsersApiResponses;
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.model.UserRequestTO;
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.model.UserResponseTO;
+    import ru.tinkoff.kora.http.common.HttpMethod;
+    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
+    import ru.tinkoff.kora.json.common.annotation.Json;
+
+    @Component
+    @HttpController
+    public final class ClientTestController {
+
+        private final UsersApi usersApi;
+
+        public ClientTestController(UsersApi usersApi) {
+            this.usersApi = usersApi;
+        }
+
+        @HttpRoute(method = HttpMethod.POST, path = "/client/test-all-user-endpoints")
+        @Json
+        public TestResults testAllUserEndpoints() {
+            try {
+                var created = this.usersApi.createUser(new UserRequestTO("Client Demo User", "client-demo@example.com"));
+                boolean userCreated = created instanceof UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse create201
+                        && create201.content() != null;
+                var createdUser = created instanceof UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse create201
+                        ? create201.content()
+                        : null;
+
+                var getUserResponse = createdUser == null ? null : this.usersApi.getUser(createdUser.id());
+                boolean userFetched = getUserResponse instanceof UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse getUser200
+                        && createdUser.id().equals(getUser200.content().id());
+
+                var getUsersResponse = this.usersApi.getUsers(0, 10, "name");
+                List<UserResponseTO> users = getUsersResponse instanceof UsersApiResponses.GetUsersApiResponse.GetUsers200ApiResponse getUsers200
+                        ? getUsers200.content()
+                        : List.of();
+                boolean usersListed = createdUser != null && users.stream().anyMatch(user -> user.id().equals(createdUser.id()));
+
+                var deleteResult = createdUser == null ? null : this.usersApi.deleteUser(createdUser.id());
+                boolean userDeleted = deleteResult instanceof UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse;
+
+                boolean allTestsPassed = userCreated && userFetched && usersListed && userDeleted;
+                return new TestResults(userCreated, userFetched, usersListed, userDeleted, allTestsPassed, null);
+            } catch (Exception exception) {
+                return new TestResults(false, false, false, false, false, exception.getMessage());
+            }
+        }
+
+        @Json
+        public record TestResults(
+                boolean userCreated,
+                boolean userFetched,
+                boolean usersListed,
+                boolean userDeleted,
+                boolean allTestsPassed,
+                String error) {}
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/openapi/httpclient/controller/ClientTestController.kt"
+    package ru.tinkoff.kora.guide.openapi.httpclient.controller
 
     import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.example.openapi.userapi.api.UserApi
-    import ru.tinkoff.kora.example.openapi.userapi.model.*
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.api.UsersApi
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.api.UsersApiResponses
+    import ru.tinkoff.kora.guide.openapi.httpclient.user.model.UserRequestTO
+    import ru.tinkoff.kora.http.common.HttpMethod
+    import ru.tinkoff.kora.http.common.annotation.HttpRoute
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController
+    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
-    class UserApiClientService(
-        private val userApi: UserApi
+    @HttpController
+    class ClientTestController(
+        private val usersApi: UsersApi
     ) {
+        @HttpRoute(method = HttpMethod.POST, path = "/client/test-all-user-endpoints")
+        @Json
+        fun testAllUserEndpoints(): TestResults {
+            return try {
+                val created = usersApi.createUser(UserRequestTO("Client Demo User", "client-demo@example.com"))
+                val userCreated =
+                    created is UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse &&
+                        created.content() != null
+                val createdUser =
+                    if (created is UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse) created.content() else null
 
-        fun getAllUsers(): List<UserResponse> {
-            return userApi.getUsers(null, null, null)
+                val getUserResponse = createdUser?.let { usersApi.getUser(it.id()) }
+                val userFetched =
+                    getUserResponse is UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse &&
+                        createdUser != null &&
+                        createdUser.id() == getUserResponse.content().id()
+
+                val getUsersResponse = usersApi.getUsers(0, 10, "name")
+                val users =
+                    if (getUsersResponse is UsersApiResponses.GetUsersApiResponse.GetUsers200ApiResponse) {
+                        getUsersResponse.content()
+                    } else {
+                        emptyList()
+                    }
+                val usersListed = createdUser != null && users.any { it.id() == createdUser.id() }
+
+                val deleteResult = createdUser?.let { usersApi.deleteUser(it.id()) }
+                val userDeleted = deleteResult is UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse
+
+                val allTestsPassed = userCreated && userFetched && usersListed && userDeleted
+                TestResults(userCreated, userFetched, usersListed, userDeleted, allTestsPassed, null)
+            } catch (e: Exception) {
+                TestResults(false, false, false, false, false, e.message)
+            }
         }
 
-        fun getUsers(page: Int?, size: Int?, sort: String?): List<UserResponse> {
-            return userApi.getUsers(page, size, sort)
-        }
-
-        fun createUser(name: String, email: String): UserResponse {
-            val request = UserRequest()
-            request.name = name
-            request.email = email
-            return userApi.createUser(request)
-        }
-
-        fun getUser(userId: String): UserResponse {
-            return userApi.getUser(userId)
-        }
-
-        fun updateUser(userId: String, name: String, email: String): UserResponse {
-            val request = UserRequest()
-            request.name = name
-            request.email = email
-            return userApi.updateUser(userId, request)
-        }
-
-        fun deleteUser(userId: String) {
-            userApi.deleteUser(userId)
-        }
-
-        fun getUserPost(userId: String, postId: String): Post {
-            return userApi.getUserPost(userId, postId)
-        }
+        @Json
+        data class TestResults(
+            val userCreated: Boolean,
+            val userFetched: Boolean,
+            val usersListed: Boolean,
+            val userDeleted: Boolean,
+            val allTestsPassed: Boolean,
+            val error: String?
+        )
     }
     ```
 
-### Remove Manual Client Implementation
+This step is where the guide really becomes concrete.
 
-Now that you have generated client code, you can **remove your manual HTTP client implementations** from the HTTP Client guide. The generated OpenAPI client will handle all the HTTP communication automatically.
+We did **not** rewrite the whole client application.
 
-===! ":fontawesome-brands-java: `Java`"
+We kept the same user-facing flow from `http-client.md`:
 
-    **Delete these files:**
-    - `src/main/java/ru/tinkoff/kora/example/client/UserClient.java`
-    - `src/main/java/ru/tinkoff/kora/example/client/UserServiceClient.java`
+- create a user
+- fetch it
+- list users
+- delete it
 
-=== ":simple-kotlin: `Kotlin`"
+The only thing we replaced was the transport contract layer:
 
-    **Delete these files:**
-    - `src/main/kotlin/ru/tinkoff/kora/example/client/UserClient.kt`
-    - `src/main/kotlin/ru/tinkoff/kora/example/client/UserServiceClient.kt`
+- before: handwritten `UserApiClient`
+- now: generated `UsersApi`
 
-### Update Configuration
+That is exactly the kind of incremental change teams often make in real projects.
 
-Add HTTP client configuration to your `application.conf`:
+## Configuration { #config }
 
-```hocon
-# ... existing configuration ...
+Because the generated client was created with:
 
-# HTTP Client Configuration
-httpClient {
-  UserApi {
-    url = ${USER_API_URL}
-    timeout {
-      connect = 10s
-      read = 30s
-    }
-  }
-}
+```text
+clientConfigPrefix = "httpClient"
 ```
 
-### Test Your Generated Client
+and the generated interface name is `UsersApi`, its runtime config lives under:
 
-Testing your generated OpenAPI client is crucial to ensure it works correctly with the API contract. However, testing against a real server introduces several challenges that can make development slower and less reliable. Instead, we'll use **MockServer** - a powerful tool for creating isolated, contract-compliant API mocks that enable fast, reliable testing.
+```text
+httpClient.UsersApi
+```
 
-## Why MockServer? The Problem with Real Server Testing
+Update `src/main/resources/application.conf`:
 
-When you first start building API clients, it's tempting to test against a real server. However, this approach has significant drawbacks:
+For the full configuration reference, see [HTTP Server](../documentation/http-server.md), [HTTP Client](../documentation/http-client.md) and [Logging SLF4J](../documentation/logging-slf4j.md).
 
-- **Dependency on Server Availability**: Your tests fail if the server is down, being deployed, or has data issues
-- **Slow Test Execution**: Network calls add latency, making test suites slow to run
-- **Flaky Tests**: Network timeouts, server load, or connectivity issues cause intermittent failures
-- **Shared State Issues**: Tests interfere with each other through shared database state
-- **Limited Error Scenario Testing**: Hard to test error conditions without breaking the real server
-- **Development Workflow Bottlenecks**: Client and server teams can't work independently
+===! ":material-code-json: `Hocon`"
 
-## What is MockServer?
+    ```javascript title="src/main/resources/application.conf"
+    httpServer {
+      publicApiHttpPort = 8081 //(1)!
+      privateApiHttpPort = 8086 //(2)!
+      telemetry.logging.enabled = true //(3)!
+    }
 
-**MockServer** is an open-source tool that creates realistic HTTP mock servers for testing purposes. It allows you to:
+    httpClient {
+      UsersApi {
+        url = "http://localhost:8080" //(4)!
+        url = ${?USER_API_URL} //(5)!
+        requestTimeout = 10s //(6)!
+      }
+      telemetry.logging.enabled = true //(7)!
+    }
 
-- **Simulate any HTTP API** with complete control over requests and responses
-- **Define expectations** for specific requests and their corresponding responses
-- **Run in isolated containers** using Testcontainers for clean test environments
-- **Support advanced features** like request matching, response templating, and callback functions
-
-In the context of contract-first development, MockServer becomes your **API contract enforcer** - it ensures your client code correctly implements the OpenAPI specification without needing a running server implementation.
-
-## Why This Testing Approach is Superior
-
-MockServer-based testing transforms how you develop and test API clients:
-
-### **Speed and Reliability**
-- **Sub-millisecond responses** instead of network round-trips
-- **Zero external dependencies** - tests run anywhere, anytime
-- **Predictable execution** - no more flaky network-related failures
-- **Parallel test execution** without resource conflicts
-
-### **Contract-First Validation**
-- **Specification Compliance**: Test that your client correctly implements the OpenAPI contract
-- **Request Validation**: Ensure requests match the API specification exactly
-- **Response Handling**: Verify your client processes all defined response types
-- **Error Scenarios**: Test error conditions safely without affecting real systems
-
-### **Development Workflow Benefits**
-- **Parallel Development**: Client and server teams work independently from the same contract
-- **Fast Feedback**: Immediate test results during development
-- **CI/CD Optimization**: Tests run consistently in any environment
-- **Debugging Simplicity**: Full control over request/response cycles for troubleshooting
-
-### **Comprehensive Testing Coverage**
-- **Success Paths**: Test all happy-path scenarios
-- **Error Conditions**: Simulate 4xx/5xx responses, timeouts, and network errors
-- **Edge Cases**: Test boundary conditions and unusual response formats
-- **Performance**: Validate client behavior under various response times
-
-### **Professional Testing Practices**
-- **Isolation**: Each test runs in its own container with clean state
-- **Reproducibility**: Same test results across different environments
-- **Maintainability**: Tests focus on client logic, not server implementation details
-- **Documentation**: Tests serve as living documentation of expected API behavior
-
-## MockServer in Contract-First Development
-
-MockServer perfectly complements the contract-first approach:
-
-1. **Specification as Source of Truth**: Your OpenAPI spec defines the contract
-2. **MockServer as Contract Interpreter**: Translates the spec into runnable mock endpoints
-3. **Client as Contract Implementer**: Your generated client must work with the mock
-4. **Tests as Contract Validators**: Ensure client and mock (spec) interactions work correctly
-
-This creates a **virtuous cycle** where:
-- The specification drives both client generation and test mocking
-- Tests validate that generated clients work with the specification
-- Any specification changes are immediately reflected in tests
-- Client updates are verified against the contract before integration
-
-## Setting Up MockServer for Testing
-
-Instead of testing against a running server, we'll use MockServer to create proper integration tests. Add Testcontainers and MockServer dependencies:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```gradle title="build.gradle"
-    dependencies {
-        // ... existing dependencies ...
-
-        testImplementation("org.testcontainers:mockserver:1.19.8")
-        testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-        testImplementation("org.mock-server:mockserver-client-java:5.15.0")
+    logging {
+      levels {
+        "ROOT": "INFO" //(8)!
+        "ru.tinkoff.kora": "INFO" //(9)!
+        "ru.tinkoff.kora.guide.openapi.httpclient": "INFO" //(10)!
+      }
     }
     ```
 
-=== ":simple-kotlin: `Kotlin`"
+    1. Default public HTTP port used by application endpoints.
+    2. Default private HTTP port used by probes, metrics, and management endpoints.
+    3. Enables the feature for this configuration section.
+    4. Base URL used by the configured client.
+    5. Base URL used by the configured client. Optional override from `USER_API_URL`.
+    6. Maximum time allowed for a client request.
+    7. Enables the feature for this configuration section.
+    8. Log level for `ROOT`.
+    9. Log level for `ru.tinkoff.kora`.
+    10. Log level for `ru.tinkoff.kora.guide.openapi.httpclient`.
 
-    ```kotlin title="build.gradle.kts"
-    dependencies {
-        // ... existing dependencies ...
+=== ":simple-yaml: `YAML`"
 
-        testImplementation("org.testcontainers:mockserver:1.19.8")
-        testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-        testImplementation("org.mock-server:mockserver-client-java:5.15.0")
-    }
+    ```yaml title="src/main/resources/application.yaml"
+    httpServer:
+      publicApiHttpPort: 8081 #(1)!
+      privateApiHttpPort: 8086 #(2)!
+      telemetry:
+        logging:
+          enabled: true #(3)!
+    httpClient:
+      UsersApi:
+        url: ${?USER_API_URL:"http://localhost:8080"} #(4)!
+        requestTimeout: 10s #(5)!
+      telemetry:
+        logging:
+          enabled: true #(6)!
+    logging:
+      levels:
+        ROOT: "INFO" #(7)!
+        "ru.tinkoff.kora": "INFO" #(8)!
+        "ru.tinkoff.kora.guide.openapi.httpclient": "INFO" #(9)!
     ```
 
-Create a proper integration test using MockServer:
+    1. Default public HTTP port used by application endpoints.
+    2. Default private HTTP port used by probes, metrics, and management endpoints.
+    3. Enables the feature for this configuration section.
+    4. Base URL used by the configured client. Uses the shown default and allows `USER_API_URL` to override it.
+    5. Maximum time allowed for a client request.
+    6. Enables the feature for this configuration section.
+    7. Log level for `ROOT`.
+    8. Log level for `ru.tinkoff.kora`.
+    9. Log level for `ru.tinkoff.kora.guide.openapi.httpclient`.
 
-===! ":fontawesome-brands-java: `Java`"
+This step introduces a subtle but important idea.
 
-    Create `src/test/java/ru/tinkoff/kora/example/client/UserApiClientTest.java`:
+In the handwritten client guide, you decided the config path yourself in `@HttpClient(configPath = ...)`.
 
-    ```java
-    package ru.tinkoff.kora.example.client;
+Here, the generator decides the client annotation for you from:
 
-    import org.junit.jupiter.api.AfterAll;
-    import org.junit.jupiter.api.BeforeAll;
-    import org.junit.jupiter.api.Test;
-    import org.mockserver.client.MockServerClient;
-    import org.mockserver.model.HttpRequest;
-    import org.mockserver.model.HttpResponse;
-    import org.testcontainers.containers.MockServerContainer;
-    import org.testcontainers.junit.jupiter.Container;
-    import org.testcontainers.junit.jupiter.Testcontainers;
-    import org.testcontainers.utility.DockerImageName;
-    import ru.tinkoff.kora.example.openapi.userapi.model.UserResponse;
-    import ru.tinkoff.kora.test.KoraAppTest;
-    import ru.tinkoff.kora.test.KoraConfigModifier;
+- the `clientConfigPrefix`
+- the generated API name
 
-    import java.util.List;
-    import java.util.concurrent.ExecutionException;
+So when something seems "missing" at runtime, it is often worth checking what config path the generated interface actually uses.
 
-    import static org.junit.jupiter.api.Assertions.*;
+## Check Application { #check-app }
 
-    @Testcontainers
-    @KoraAppTest(Application.class)
-    public class UserApiClientTest {
+If you want to verify the flow manually, run both applications in separate terminals.
 
-        @Container
-        private static final MockServerContainer mockServer = new MockServerContainer(
-            DockerImageName.parse("mockserver/mockserver:5.15.0")
-        );
-
-        private static MockServerClient mockServerClient;
-
-        @BeforeAll
-        static void setup() {
-            mockServerClient = new MockServerClient(mockServer.getHost(), mockServer.getServerPort());
-        }
-
-        @AfterAll
-        static void teardown() {
-            if (mockServerClient != null) {
-                mockServerClient.close();
-            }
-        }
-
-        @Test
-        void testCreateUser(UserApiClientService userApiClientService) {
-            // Mock the create user response
-            mockServerClient
-                .when(HttpRequest.request()
-                    .withMethod("POST")
-                    .withPath("/api/v1/users")
-                    .withBody("{\"name\":\"John Doe\",\"email\":\"john@example.com\"}"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(201)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Doe",
-                          "email": "john@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """));
-
-            // Test the client
-            UserResponse result = userApiClientService.createUser("John Doe", "john@example.com");
-
-            assertNotNull(result);
-            assertEquals("123", result.getId());
-            assertEquals("John Doe", result.getName());
-            assertEquals("john@example.com", result.getEmail());
-        }
-
-        @Test
-        void testGetUsers(UserApiClientService userApiClientService) {
-            // Mock the get users response
-            mockServerClient
-                .when(HttpRequest.request()
-                    .withMethod("GET")
-                    .withPath("/api/v1/users"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        [
-                          {
-                            "id": "123",
-                            "name": "John Doe",
-                            "email": "john@example.com",
-                            "createdAt": "2024-01-01T10:00:00Z"
-                          }
-                        ]
-                        """));
-
-            // Test the client
-            List<UserResponse> result = userApiClientService.getAllUsers();
-
-            assertNotNull(result);
-            assertEquals(1, result.size());
-            assertEquals("123", result.get(0).getId());
-            assertEquals("John Doe", result.get(0).getName());
-        }
-
-        @Test
-        void testGetUser(UserApiClientService userApiClientService) {
-            // Mock the get user response
-            mockServerClient
-                .when(HttpRequest.request()
-                    .withMethod("GET")
-                    .withPath("/api/v1/users/123"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Doe",
-                          "email": "john@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """));
-
-            // Test the client
-            UserResponse result = userApiClientService.getUser("123");
-
-            assertNotNull(result);
-            assertEquals("123", result.getId());
-            assertEquals("John Doe", result.getName());
-        }
-
-        @Test
-        void testUpdateUser(UserApiClientService userApiClientService) {
-            // Mock the update user response
-            mockServerClient
-                .when(HttpRequest.request()
-                    .withMethod("PUT")
-                    .withPath("/api/v1/users/123")
-                    .withBody("{\"name\":\"John Updated\",\"email\":\"john.updated@example.com\"}"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Updated",
-                          "email": "john.updated@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """));
-
-            // Test the client
-            UserResponse result = userApiClientService.updateUser("123", "John Updated", "john.updated@example.com");
-
-            assertNotNull(result);
-            assertEquals("123", result.getId());
-            assertEquals("John Updated", result.getName());
-            assertEquals("john.updated@example.com", result.getEmail());
-        }
-
-        @Test
-        void testDeleteUser(UserApiClientService userApiClientService) {
-            // Mock the delete user response
-            mockServerClient
-                .when(HttpRequest.request()
-                    .withMethod("DELETE")
-                    .withPath("/api/v1/users/123"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(204));
-
-            // Test the client - should not throw exception
-            userApiClientService.deleteUser("123");
-        }
-
-        @KoraConfigModifier
-        static KoraConfigModifier configModifier() {
-            return config -> config
-                .withSystemProperty("USER_API_URL", "http://localhost:" + mockServer.getServerPort());
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/ru/tinkoff/kora/example/client/UserApiClientTest.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.example.client
-
-    import org.junit.jupiter.api.AfterAll
-    import org.junit.jupiter.api.BeforeAll
-    import org.junit.jupiter.api.Test
-    import org.mockserver.client.MockServerClient
-    import org.mockserver.model.HttpRequest
-    import org.mockserver.model.HttpResponse
-    import org.testcontainers.containers.MockServerContainer
-    import org.testcontainers.junit.jupiter.Container
-    import org.testcontainers.junit.jupiter.Testcontainers
-    import org.testcontainers.utility.DockerImageName
-    import ru.tinkoff.kora.example.openapi.userapi.model.UserResponse
-    import ru.tinkoff.kora.test.KoraAppTest
-    import ru.tinkoff.kora.test.KoraConfigModifier
-    import kotlin.test.assertEquals
-    import kotlin.test.assertNotNull
-
-    @Testcontainers
-    @KoraAppTest(Application::class)
-    class UserApiClientTest {
-
-        companion object {
-            @Container
-            private val mockServer = MockServerContainer(
-                DockerImageName.parse("mockserver/mockserver:5.15.0")
-            )
-
-            private lateinit var mockServerClient: MockServerClient
-
-            @BeforeAll
-            @JvmStatic
-            fun setup() {
-                mockServerClient = MockServerClient(mockServer.host, mockServer.serverPort)
-            }
-
-            @AfterAll
-            @JvmStatic
-            fun teardown() {
-                mockServerClient.close()
-            }
-        }
-
-        @Test
-        fun testCreateUser(userApiClientService: UserApiClientService) {
-            // Mock the create user response
-            mockServerClient
-                .`when`(HttpRequest.request()
-                    .withMethod("POST")
-                    .withPath("/api/v1/users")
-                    .withBody("{\"name\":\"John Doe\",\"email\":\"john@example.com\"}"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(201)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Doe",
-                          "email": "john@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """))
-
-            // Test the client
-            val result = userApiClientService.createUser("John Doe", "john@example.com")
-
-            assertNotNull(result)
-            assertEquals("123", result.id)
-            assertEquals("John Doe", result.name)
-            assertEquals("john@example.com", result.email)
-        }
-
-        @Test
-        fun testGetUsers(userApiClientService: UserApiClientService) {
-            // Mock the get users response
-            mockServerClient
-                .`when`(HttpRequest.request()
-                    .withMethod("GET")
-                    .withPath("/api/v1/users"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        [
-                          {
-                            "id": "123",
-                            "name": "John Doe",
-                            "email": "john@example.com",
-                            "createdAt": "2024-01-01T10:00:00Z"
-                          }
-                        ]
-                        """))
-
-            // Test the client
-            val result = userApiClientService.getAllUsers()
-
-            assertNotNull(result)
-            assertEquals(1, result.size)
-            assertEquals("123", result[0].id)
-            assertEquals("John Doe", result[0].name)
-        }
-
-        @Test
-        fun testGetUser(userApiClientService: UserApiClientService) {
-            // Mock the get user response
-            mockServerClient
-                .`when`(HttpRequest.request()
-                    .withMethod("GET")
-                    .withPath("/api/v1/users/123"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Doe",
-                          "email": "john@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """))
-
-            // Test the client
-            val result = userApiClientService.getUser("123")
-
-            assertNotNull(result)
-            assertEquals("123", result.id)
-            assertEquals("John Doe", result.name)
-        }
-
-        @Test
-        fun testUpdateUser(userApiClientService: UserApiClientService) {
-            // Mock the update user response
-            mockServerClient
-                .`when`(HttpRequest.request()
-                    .withMethod("PUT")
-                    .withPath("/api/v1/users/123")
-                    .withBody("{\"name\":\"John Updated\",\"email\":\"john.updated@example.com\"}"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("""
-                        {
-                          "id": "123",
-                          "name": "John Updated",
-                          "email": "john.updated@example.com",
-                          "createdAt": "2024-01-01T10:00:00Z"
-                        }
-                        """))
-
-            // Test the client
-            val result = userApiClientService.updateUser("123", "John Updated", "john.updated@example.com")
-
-            assertNotNull(result)
-            assertEquals("123", result.id)
-            assertEquals("John Updated", result.name)
-            assertEquals("john.updated@example.com", result.email)
-        }
-
-        @Test
-        fun testDeleteUser(userApiClientService: UserApiClientService) {
-            // Mock the delete user response
-            mockServerClient
-                .`when`(HttpRequest.request()
-                    .withMethod("DELETE")
-                    .withPath("/api/v1/users/123"))
-                .respond(HttpResponse.response()
-                    .withStatusCode(204))
-
-            // Test the client - should not throw exception
-            userApiClientService.deleteUser("123")
-        }
-
-        @KoraConfigModifier
-        fun configModifier(): KoraConfigModifier {
-            return KoraConfigModifier { config ->
-                config.withSystemProperty("USER_API_URL", "http://localhost:${mockServer.serverPort}")
-            }
-        }
-    }
-    ```
-
-Run your tests:
+### Terminal 1: OpenAPI Server { #terminal-1-openapi-server }
 
 ```bash
-./gradlew test --tests UserApiClientTest
+./gradlew run
 ```
 
-You should see all tests pass, demonstrating that your generated OpenAPI client correctly handles all CRUD operations with proper request/response mapping.
+This application exposes:
 
-## Key Concepts Learned
+- the user API on `http://localhost:8080`
+- `/openapi`
+- `/swagger-ui`
 
-### Contract-First Client Development
-- **Shared Specifications**: Same OpenAPI spec for both client and server ensures contract compliance
-- **Type Safety**: Compile-time guarantees for request/response structures
-- **Automatic Validation**: Built-in request/response validation from the specification
-- **Error Handling**: Proper exception mapping for HTTP errors
+### Terminal 2: OpenAPI Client { #terminal-2-openapi-client }
 
-### Generated Client Benefits
-- **Consistency**: All API calls follow the same patterns
-- **Productivity**: No manual request construction or response parsing
-- **Reliability**: Generated code is less error-prone than manual implementations
-- **Maintainability**: API changes start with specification updates
+```bash
+./gradlew run
+```
 
-### Client vs Server Generation
+This application exposes its own aggregate verification endpoint on:
 
-| Aspect | Client Generation | Server Generation |
-|--------|-------------------|-------------------|
-| **Mode** | `java-client` | `java-server` |
-| **Output** | HTTP client interfaces | HTTP route handlers |
-| **Usage** | Call external APIs | Handle incoming requests |
-| **Validation** | Request validation | Request + response validation |
-| **Dependencies** | HTTP client modules | HTTP server modules |
+- `http://localhost:8081/client/test-all-user-endpoints`
 
-## Next Steps
+Now trigger the whole client scenario:
 
-Continue your API development journey:
+```bash
+curl -X POST http://localhost:8081/client/test-all-user-endpoints
+```
 
-- **Next Guide**: [Database Integration](../database-jdbc.md) - Add persistence to your APIs
-- **Complete the Contract**: [OpenAPI HTTP Server](../openapi-http-server.md) - Generate servers from the same specification (already available)
-- **Related Guides**:
-  - [Observability & Monitoring](../observability.md) - Add comprehensive monitoring
-  - [Resilience Patterns](../resilient.md) - Add fault tolerance to your clients
-- **Advanced Topics**:
-  - [OpenAPI Codegen Configuration](../../documentation/openapi-codegen.md) - Customize client generation
-  - [API Versioning Strategies](../../documentation/openapi-codegen.md#versioning) - Handle API evolution
-  - [Custom Client Configuration](../../documentation/http-client.md) - Advanced HTTP client setup
+Expected result: a JSON object where `allTestsPassed` is `true`.
 
-## Troubleshooting
+## Testing { #testing }
 
-### Code Generation Issues
-- **Task not found**: Ensure the OpenAPI generator plugin is properly configured in `build.gradle`
-- **Generation fails**: Check your OpenAPI YAML syntax with an online validator
-- **Missing dependencies**: Verify all required dependencies are included
+The runnable guide app also includes a test suite that points the generated client at a containerized copy of `guide-openapi-http-server-app`.
 
-### Client Implementation
-- **Method not found**: Ensure your client service uses the correct generated API interface
-- **Type mismatches**: Check that your request models match the generated API models
-- **Connection errors**: Verify the server is running and the base URL is correct
+Run:
 
-### Runtime Issues
-- **404 errors**: Verify the API paths match your OpenAPI specification
-- **Validation errors**: Check that request bodies conform to the OpenAPI schema
-- **Timeout errors**: Configure appropriate timeout settings in `application.conf`
+```bash
+./gradlew test
+```
 
-### Build Issues
-- **Compilation errors**: Run `./gradlew clean` and regenerate OpenAPI client code
-- **Missing classes**: Ensure `compileJava.dependsOn` is set for the client generation task
-- **IDE issues**: Refresh your IDE project after client code generation
+These tests verify the same basic flow as the handwritten client guide:
 
-This guide transforms your manual HTTP clients into professional, contract-first clients that generate type-safe API calls from a single OpenAPI specification! 🎉
+- create user
+- get user
+- missing user
+- list users with paging and sorting
+- delete user
+
+That makes the comparison between the two guides easy to understand:
+
+- `http-client.md` proves the flow with a handwritten declarative client
+- this guide proves the same flow with a generated OpenAPI client
+
+## Best Practices { #best-practices }
+
+- Reuse the exact same OpenAPI contract between server and client whenever possible.
+- Treat generated code as build output, not as application code you edit manually.
+- Keep application logic outside the generated client, in your own controller or service classes.
+- Inspect the generated interface and response wrappers when the runtime behavior is unclear.
+- Keep one small aggregate verification endpoint for learning scenarios instead of rebuilding the full server inside the client app.
+
+## Summary { #summary }
+
+You took the standalone client app from [HTTP Client with Kora](http-client.md) and rebuilt its transport layer in a contract-first style:
+
+- the client now uses the same `user-http-server.yaml` contract as the OpenAPI server guide
+- Kora generates `UsersApi` from that shared contract
+- generated transport models replace the handwritten client DTOs
+- generated response wrappers make multiple HTTP outcomes explicit
+- the client application still keeps the same simple aggregate verification flow
+
+So the overall client application stays familiar, but the transport contract is now shared with the server instead of being handwritten separately.
+
+## Key Concepts { #key-concepts }
+
+- a contract-first client works best when it reuses the exact same OpenAPI file as the server
+- Kora can generate a typed HTTP client from OpenAPI
+- generated response wrappers such as `GetUserApiResponse` and `DeleteUserApiResponse` make HTTP outcomes explicit
+- adding `500` to the OpenAPI file generates dedicated `500` response variants too
+- generated transport models can replace handwritten client DTOs
+- `clientConfigPrefix` controls where the generated client reads its runtime configuration
+
+## Troubleshooting { #troubleshooting }
+
+**The generated client is missing from the graph:**
+
+Check that:
+
+- the OpenAPI generation task runs before compilation
+- the generated output directory is added to `sourceSets.main`
+- the application includes the HTTP client module, such as `OkHttpClientModule`
+
+**Runtime says the client config is missing:**
+
+Inspect the generated interface and look at its `@HttpClient(configPath = ...)` annotation.
+
+In this guide, the generated client expects:
+
+```text
+httpClient.UsersApi
+```
+
+not just:
+
+```text
+httpClient
+```
+
+**The client and server models look similar but not identical:**
+
+That often means the client is no longer using handwritten DTOs and is now using generated transport models from the OpenAPI contract. Make sure your application code imports:
+
+- `UserRequestTO`
+- `UserResponseTO`
+
+from the generated package.
+
+**The build succeeds but imports do not match:**
+
+Check your generation settings in `build.gradle`:
+
+- `outputDir`
+- `apiPackage`
+- `modelPackage`
+- `invokerPackage`
+
+If those change, your controller imports must change too.
+
+**The generated client does not expose a `500` response variant:**
+
+Inspect the OpenAPI file first.
+
+Generated response variants only appear for status codes that are actually described in the contract. If you want explicit handling for `500`, it must be present in the `responses` section of that
+operation in the shared OpenAPI file.
+
+**Container-based tests cannot reach the server app:**
+
+Check that:
+
+- Docker is running
+- the test depends on `guide-openapi-http-server-app:distTar`
+- the server module Dockerfile points at its own generated distribution
+- `USER_API_URL` is overridden from the container URI in the test config
+
+## What's Next? { #whats-next }
+
+- [Resilient Patterns](resilient.md) to make generated clients safer against slow or unstable dependencies.
+- [Observability](observability.md) to trace generated client calls and measure status-specific outcomes.
+- [HTTP Server Advanced](http-server-advanced.md) and then [HTTP Client Advanced](http-client-advanced.md) if you want to compare contract-generated clients with handwritten advanced clients.
+- [gRPC Server](grpc-server.md) if you want to explore a strongly typed binary contract after OpenAPI.
+
+## Help { #help }
+
+If you get stuck:
+
+- compare with [Kora Java OpenAPI HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-openapi-http-client-app) and [Kora Kotlin OpenAPI HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-openapi-http-client-app)
+- revisit [HTTP Client](http-client.md) for the handwritten client baseline
+- revisit [OpenAPI HTTP Server](openapi-http-server.md) for the server contract this client consumes
+- check the [OpenAPI Codegen documentation](../documentation/openapi-codegen.md)
+- check the [HTTP Client documentation](../documentation/http-client.md)

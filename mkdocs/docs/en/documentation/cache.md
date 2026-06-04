@@ -7,6 +7,8 @@ agent:
 Module for creating caches based on [Caffeine](https://github.com/ben-manes/caffeine) or [Redis](https://redis.io/docs/about/)
 using both declarative-style annotations and using their imperative style.
 
+For a step-by-step walkthrough before the reference details, see [Cache](../guides/cache.md) and [Multi-Level Cache](../guides/cache-multi-level.md).
+
 ## Caffeine { #caffeine }
 
 Library-based implementation of [Caffeine](https://github.com/ben-manes/caffeine) for in-memory caches within the application.

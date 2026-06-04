@@ -7,6 +7,8 @@ agent:
 Модуль предоставляет реализацию репозиториев на основе [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) протокола работы с базами данных
 и с использованием [Hikari](https://github.com/brettwooldridge/HikariCP) для управления набором соединений.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [База данных JDBC](../guides/database-jdbc.md) и [База данных JDBC продвинутая](../guides/database-jdbc-advanced.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

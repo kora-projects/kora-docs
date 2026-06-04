@@ -6,6 +6,8 @@ agent:
 
 Модуль для подключения gRPC серверных обработчиков на основе функционала [grpc.io](https://grpc.io/docs/languages/java/basics/)
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC сервер](../guides/grpc-server.md) и [gRPC сервер продвинутый](../guides/grpc-server-advanced.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

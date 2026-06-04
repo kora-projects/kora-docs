@@ -6,6 +6,8 @@ agent:
 
 Module is responsible for mapping the values of configuration files to classes in Kora and then using them for application settings.
 
+For a step-by-step walkthrough before the reference details, see [HOCON Configuration](../guides/config-hocon.md) and [YAML Configuration](../guides/config-yaml.md).
+
 ## HOCON { #hocon }
 
 Support for [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) is implemented with [Typesafe Config](https://github.com/lightbend/config).

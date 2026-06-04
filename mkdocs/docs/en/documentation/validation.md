@@ -6,6 +6,8 @@ agent:
 
 Module for validating classes/records and methods using annotations.
 
+For a step-by-step walkthrough before the reference details, see [Validation](../guides/validation.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

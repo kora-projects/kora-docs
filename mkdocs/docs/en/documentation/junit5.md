@@ -19,6 +19,8 @@ Module allows you to conduct:
 It is recommended to additionally test the service artifact packaged in the final image,
 as black box using [TestContainers library](https://java.testcontainers.org/).
 
+For a step-by-step walkthrough before the reference details, see [Component Testing](../guides/testing-junit.md), [Integration Testing](../guides/testing-integration.md) and [Black-Box Testing](../guides/testing-black-box.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

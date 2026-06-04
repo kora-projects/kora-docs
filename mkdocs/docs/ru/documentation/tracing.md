@@ -7,6 +7,8 @@ agent:
 Модуль для сбора трассировка приложения по стандарту [OpenTelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/)
 и экспорта трассировки по gRPC/HTTP в формате OTLP. 
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
+
 ## gRPC { #grpc }
 
 Модуль позволяет собирать трассировку с помощью [gRPC протокола](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) посредствам `GrpcSender`.

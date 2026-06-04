@@ -7,6 +7,8 @@ agent:
 Module for collecting application trace according to [OpenTelemetry] standard(https://opentelemetry.io/docs/what-is-opentelemetry/)
 and export trace by gRPC in OTLP format.
 
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
 ## gRPC { #grpc }
 
 Module allows trace collection using [gRPC protocol](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) by means of `GrpcSender`.

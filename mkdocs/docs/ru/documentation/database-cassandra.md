@@ -6,6 +6,8 @@ agent:
 
 Модуль предоставляет реализацию репозиториев для базы данных [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) с использованием драйвера [DataStax](https://docs.datastax.com/en/developer/java-driver/4.17/).
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [База данных Cassandra](../guides/database-cassandra.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

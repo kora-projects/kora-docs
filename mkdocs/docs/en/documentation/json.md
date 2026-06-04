@@ -6,6 +6,8 @@ agent:
 
 Module allows you to create productive and reflection-free JSON readers and writers for application classes using annotations.
 
+For a step-by-step walkthrough before the reference details, see [JSON](../guides/json.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

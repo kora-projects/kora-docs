@@ -1,2164 +1,872 @@
----
+﻿---
+search:
+  exclude: true
 title: Messaging with Kafka
-summary: Learn how to implement event-driven architecture with Apache Kafka for asynchronous processing and microservices communication
-tags: kafka, messaging, event-driven, asynchronous, microservices, publish-subscribe
+summary: Extend the HTTP Server guide with asynchronous user creation using Kafka producer and consumer components in the same Kora application
+tags: kafka, messaging, asynchronous, event-driven, producer, consumer
 ---
 
-# Messaging with Kafka
+# Messaging with Kafka { #messaging-kafka }
 
-This comprehensive guide demonstrates how to implement robust event-driven architecture using Apache Kafka with the Kora framework. You'll master the art of asynchronous messaging, enabling scalable microservices communication, event sourcing patterns, and real-time data processing.
-
-## What is Apache Kafka?
-
-**Apache Kafka** is a distributed event streaming platform designed for high-throughput, fault-tolerant, and scalable data streaming. Originally developed by LinkedIn and later open-sourced through the Apache Software Foundation, Kafka has become the de facto standard for event-driven architectures in modern enterprise systems.
-
-### Core Kafka Concepts
-
-- **Topics**: Named channels where messages are published and stored
-- **Producers**: Applications that publish (send) messages to Kafka topics
-- **Consumers**: Applications that subscribe to and process messages from topics
-- **Brokers**: Kafka server instances that manage topic partitions and message storage
-- **ZooKeeper/Kraft**: Metadata management for cluster coordination
-
-### Key Capabilities
-
-- **Durability**: Messages are persisted to disk and replicated across multiple brokers
-- **Scalability**: Can handle millions of messages per second across distributed clusters
-- **Fault Tolerance**: Automatic failover and data replication ensure high availability
-- **Retention**: Configurable message retention policies for historical data access
-- **Real-time Processing**: Low-latency message delivery for time-sensitive applications
-
-## What is Event-Driven Architecture?
-
-**Event-driven architecture (EDA)** is a software design paradigm where system components communicate through events rather than direct method calls or synchronous API invocations. Events represent significant occurrences or state changes within the system that other components might find interesting.
-
-### Event Types
-
-- **Domain Events**: Business-significant events (UserCreated, OrderPlaced, PaymentProcessed)
-- **System Events**: Infrastructure-level events (ServiceStarted, DatabaseBackupCompleted)
-- **Integration Events**: Cross-service communication events
-
-### EDA Benefits
-
-- **Loose Coupling**: Components don't need direct knowledge of each other
-- **Scalability**: Services can be scaled independently based on event processing load
-- **Fault Tolerance**: System remains operational even if some components fail
-- **Asynchronous Processing**: Non-blocking operations improve system responsiveness
-- **Auditability**: Complete event history provides system observability
-
-## Messaging in Microservices Architecture
-
-In microservices architectures, messaging serves as the nervous system that enables service-to-service communication without tight coupling. Kafka provides the backbone for this communication layer.
-
-### Common Messaging Patterns
-
-- **Publish-Subscribe**: One-to-many communication where multiple consumers can process the same event
-- **Event Sourcing**: Storing application state as a sequence of events
-- **CQRS (Command Query Responsibility Segregation)**: Separating read and write models with event synchronization
-- **Saga Pattern**: Coordinating distributed transactions through event chains
-
-### Use Cases in Enterprise Systems
-
-- **Real-time Analytics**: Processing user behavior events for immediate insights
-- **Data Pipeline Orchestration**: Moving data between systems with guaranteed delivery
-- **Audit Logging**: Comprehensive event trails for compliance and debugging
-- **Notification Systems**: Triggering alerts and communications based on business events
-- **Cache Invalidation**: Updating distributed caches when data changes
-- **Search Index Updates**: Keeping search engines synchronized with primary data stores
-
-## Why Kafka with Kora?
-
-The Kora framework provides first-class support for Kafka integration, offering:
-
-- **Type-Safe APIs**: Compile-time safety for message serialization and deserialization
-- **Dependency Injection**: Seamless integration with Kora's component system
-- **Configuration Management**: HOCON-based configuration for different environments
-- **Observability**: Built-in metrics, tracing, and logging for Kafka operations
-- **Transactional Support**: Ensuring data consistency across databases and events
-
-## When to Use Event-Driven Messaging
-
-Choose Kafka messaging when you need:
-
-- **Asynchronous Processing**: Operations that shouldn't block user requests
-- **High Throughput**: Systems processing thousands of events per second
-- **Data Durability**: Guaranteed message delivery and historical data access
-- **Scalable Architecture**: Systems that need to grow without architectural changes
-- **Real-time Processing**: Immediate reaction to business events
-- **Decoupled Services**: Microservices that communicate without direct dependencies
-
-This guide will transform your synchronous CRUD application into a sophisticated event-driven system, demonstrating enterprise-grade patterns used by companies like Netflix, Uber, and LinkedIn.
-
-## What You'll Build
-
-You'll enhance your existing HTTP API with:
-
-- **Event Publishing**: Send domain events when data changes
-- **Message Consumption**: Process events asynchronously in the background
-- **Event-Driven Architecture**: Decouple services with message-based communication
-- **JSON Serialization**: Structured event data with automatic serialization
-- **Transactional Messaging**: Ensure data consistency across events and database
-- **Comprehensive Testing**: Test publishers and consumers with Testcontainers
-
-## What You'll Need
-
-- JDK 17 or later
-- Gradle 7.0+
-- Docker (for Kafka and testing)
-- A text editor or IDE
-- Completed [Creating Your First Kora App](../getting-started.md) guide
-
-## Prerequisites
-
-!!! note "Required: Complete Basic Kora Setup"
-
-    This guide assumes you have completed the **[Create Your First Kora App](../getting-started.md)** guide and have a working Kora project with basic HTTP server setup.
-
-    If you haven't completed the basic guide yet, please do so first as this guide builds upon that foundation.
-
-## Why Event-Driven Architecture?
-
-**Traditional synchronous communication** has limitations:
-
-- **Tight Coupling**: Services depend directly on each other
-- **Scalability Issues**: Load spikes affect all dependent services
-- **Error Propagation**: Failures cascade through the system
-- **Real-time Constraints**: All operations must complete within request timeout
-
-**Event-driven architecture with Kafka** solves these problems:
-
-- **Loose Coupling**: Services communicate through events, not direct calls
-- **Better Scalability**: Services can process events at their own pace
-- **Fault Tolerance**: Failed services don't break the entire system
-- **Asynchronous Processing**: Long-running tasks don't block user requests
-
-In this step, you'll learn how to publish events to Kafka when your application data changes. We'll set up the infrastructure, create event DTOs, configure publishers, and integrate event publishing into your existing CRUD operations.
-
-## Add Kafka Dependencies
-
-First, add Kafka support to your existing Kora project:
+This guide introduces event-driven messaging with Kora and Apache Kafka. It covers how producers publish domain events, how consumers process those events asynchronously, and how Kora wires Kafka
+modules, JSON serializers, configuration, and lifecycle-managed listeners into the application graph. You will also see how an HTTP request can hand work off to Kafka while a consumer completes the
+operation in the background.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Add to the `dependencies` block in `build.gradle`:
+    If you want to check your progress along the way, use the finished working example: [Kora Java Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-messaging-kafka-app).
 
-    ```gradle title="build.gradle"
+=== ":simple-kotlin: `Kotlin`"
+
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-messaging-kafka-app).
+
+## What You'll Build { #youll-build }
+
+You will turn the existing user API into a small event-driven flow:
+
+- the controller will accept `POST /users`
+- it will generate the future user id
+- it will publish `UserCreatedEvent` to Kafka
+- it will return `202 Accepted` immediately
+- a Kafka consumer in the same application will receive the event
+- that consumer will create the user through the same service and repository stack
+
+The rest of the API still behaves like the HTTP Server guide:
+
+- `GET /users/{userId}`
+- `GET /users`
+- `PUT /users/{userId}`
+- `DELETE /users/{userId}`
+
+So the main change in this guide is not the whole application architecture. The main change is that **user creation becomes asynchronous**.
+
+## What You'll Need { #youll-need }
+
+- JDK 17 or later
+- Gradle 7+
+- Docker for local Kafka and integration tests
+- A text editor or IDE
+- Completed [HTTP Server](http-server.md) guide
+
+## Prerequisites { #prerequisites }
+
+!!! note "Required: Complete HTTP Server First"
+
+    This guide assumes you have completed **[HTTP Server](http-server.md)** and already have `UserController`, `UserService`, `UserRepository`, `InMemoryUserRepository`, `UserRequest`, and `UserResponse`.
+
+    We will keep that familiar structure and evolve it instead of starting from scratch.
+
+    If you haven't completed the HTTP server guide yet, do that first, because this guide changes the create-user flow while preserving the existing HTTP API and service structure.
+
+## Overview { #overview }
+
+This guide changes one part of the HTTP application from synchronous request-response behavior to event-driven behavior. Instead of completing user creation inside the HTTP request, the controller
+publishes an event and returns quickly. A consumer receives that event later and performs the actual write.
+
+That shift is small in code, but important architecturally. It introduces asynchronous work, eventual consistency, message serialization, consumer processing, and the need to keep business logic
+reusable when the trigger is no longer only an HTTP request.
+
+### What Is Event-Driven Architecture? { #event-driven-architecture }
+
+Event-driven architecture is a design style where components communicate by publishing and consuming events. An event is a fact or request for work that other parts of the system can react to without
+the producer calling them directly.
+
+In a synchronous flow, the caller waits while every step finishes:
+
+1. HTTP request arrives.
+2. Controller calls service.
+3. Service writes to repository.
+4. Response returns only after the write is complete.
+
+In an event-driven flow, part of the work moves behind a message boundary:
+
+1. HTTP request arrives.
+2. Controller publishes `UserCreatedEvent`.
+3. Response returns with an accepted or future identifier.
+4. Consumer receives the event.
+5. Consumer calls the service and repository to complete the write.
+
+That means the system becomes eventually consistent. A client may receive a response before the user is visible through `GET /users/{id}`. This is normal for asynchronous flows, but the API behavior,
+tests, and troubleshooting section must make it explicit.
+
+### Why Messaging Is Needed { #messaging-needed }
+
+Messaging helps when doing all work inside one request becomes a poor fit:
+
+- expensive work should not block the user-facing request
+- several components need to react to the same business event
+- producers and consumers should scale independently
+- temporary consumer failure should not always break the entrypoint
+- traffic spikes need buffering instead of immediate downstream pressure
+
+Messaging is not a default replacement for simple method calls. It adds operational complexity: brokers, topics, serialization, retries, duplicate handling, lag, and ordering. Use it when the
+decoupling or asynchronous behavior is worth that complexity.
+
+### What Is Apache Kafka? { #apache-kafka }
+
+[Apache Kafka](https://kafka.apache.org/documentation/) is a distributed event streaming platform. It stores events in named topics, lets producers append records to those topics, and lets consumers
+read records at their own pace. Kafka is commonly used as a durable backbone for event-driven systems because it is built for high throughput, retention, replay, and horizontal scaling.
+
+At a practical level, Kafka gives applications a durable place to publish facts about what happened and lets other components react to those facts later.
+
+#### Core Kafka Concepts { #core-kafka-concepts }
+
+- Topic: a named stream of records
+- Producer: application code that writes records to a topic
+- Consumer: application code that reads records from a topic
+- Consumer group: a group of consumers that share work for a topic
+- Broker: a Kafka server that stores topic data and serves producers and consumers
+- Record key and value: the data sent to Kafka, often serialized from typed application objects
+
+Kafka is not a database replacement. Your main application state still belongs in the database or repository layer. Kafka is the transport that moves business events between components and services.
+
+### Messaging in Services { #messaging-services }
+
+In microservices architectures, messaging often acts as a coordination layer between independently deployed components. Instead of one service knowing every downstream API and waiting for every
+response, it can publish events that other services consume.
+
+Common patterns include:
+
+- Publish-subscribe: one event can be consumed by one or many subscribers
+- Event sourcing: application state is reconstructed from stored events
+- CQRS: write-side changes publish events that update one or more read models
+- Saga pattern: distributed workflows coordinate through a sequence of events
+
+This guide uses the smallest useful version of that idea. The producer and consumer live in the same application so the guide can focus on the messaging model before splitting the flow across several
+services.
+
+### Kafka and Kora { #kora-kafka }
+
+Kora's Kafka modules wire producers and consumers into the application graph. Configuration describes brokers, topics, consumer groups, and serialization. JSON serializers keep event payloads typed,
+while lifecycle-managed consumers start with the application and process records in the background.
+
+The important boundary stays the same as in the HTTP guide:
+
+- the controller handles HTTP input and publishes an event
+- the producer is the outbound messaging adapter
+- the consumer is the inbound messaging adapter
+- the service still owns application behavior
+- the repository still owns storage
+
+The practical flow is:
+
+1. add Kafka modules and dependencies
+2. introduce `UserCreatedEvent`
+3. publish the event from `createUser()`
+4. add a Kafka consumer for that event
+5. route consumer work back through the service and repository
+6. configure Kafka for local development and tests
+
+## Dependencies { #dependencies }
+
+First, add Kafka support to the project you already built in the HTTP Server guide.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Add these dependencies to `build.gradle`:
+
+    ```groovy title="build.gradle"
     dependencies {
-        // ... existing dependencies ...
-
-        // Kafka messaging
         implementation("ru.tinkoff.kora:kafka")
-
-        // JSON serialization for events
         implementation("ru.tinkoff.kora:json-module")
-
-        // Testcontainers for Kafka testing
-        testImplementation("io.goodforgod:testcontainers-extensions-kafka:0.12.2")
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Add to the `dependencies` block in `build.gradle.kts`:
+    Add these dependencies to `build.gradle.kts`:
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        // ... existing dependencies ...
-
-        // Kafka messaging
         implementation("ru.tinkoff.kora:kafka")
-
-        // JSON serialization for events
         implementation("ru.tinkoff.kora:json-module")
-
-        // Testcontainers for Kafka testing
-        testImplementation("io.goodforgod:testcontainers-extensions-kafka:0.12.2")
     }
     ```
 
-## Update Application Module
+Kafka support in Kora comes from `KafkaModule`, and JSON support is important because we want to send structured event objects instead of raw strings.
 
-Add the Kafka module to your application:
+## Modules { #modules }
+
+Now extend your application with Kafka support.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update your `Application.java`:
-
-    ```java
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/Application.java"
     @KoraApp
     public interface Application extends
-            // ... existing modules ...
-            KafkaModule,
-            JsonModule {
+            HoconConfigModule,
+            UndertowHttpServerModule,
+            JsonModule,
+            KafkaModule,  // <----- Connected module
+            LogbackModule {
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update your `Application.kt`:
-
-    ```kotlin
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/Application.kt"
     @KoraApp
     interface Application :
-            // ... existing modules ...
-            KafkaModule,
-            JsonModule
+        HoconConfigModule,
+        UndertowHttpServerModule,
+        JsonModule,
+        KafkaModule,  // <----- Connected module
+        LogbackModule
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
 
-## Docker Setup for Local Development
+At this point nothing publishes or consumes yet. We are only enabling the framework modules that will generate producer and consumer components for us.
 
-Create `docker-compose.yml` in your project root for local Kafka development:
+## Events { #events }
+
+In the HTTP Server guide, `createUser()` returned the created user immediately because the write happened in the same request.
+
+Here we want a different contract:
+
+- the controller accepts the request
+- it generates the future id
+- it publishes an event
+- it returns that id immediately
+
+So we need two new DTOs:
+
+- `UserCreatedEvent` for Kafka
+- `UserAcceptedResponse` for the HTTP response
+
+This is not only a DTO change. It is also a change in how the application thinks about work.
+
+In a synchronous CRUD application, the request thread usually performs everything before the HTTP response is returned. That is often a good starting point, but it becomes much less attractive when
+creating a user also requires other slow or fragile operations such as:
+
+- calling external identity providers
+- provisioning data in another platform
+- sending emails or notifications
+- updating search indexes
+- pushing data into analytics systems
+- triggering workflows in other services
+
+If all of that work happens inside the request, the endpoint becomes slower and more fragile. A single slow downstream integration can make the user wait much longer than expected, and a failure in
+one dependency can break the whole request path.
+
+Publishing an event and processing it later can be a better design because:
+
+- the HTTP request can finish quickly
+- the long-running work moves out of the request thread
+- processing can fail or retry independently
+- the processing logic can later live in another application without changing the event contract
+
+That is exactly what we are modeling in this guide.
+
+For simplicity, the producer and consumer still live in the same application. Conceptually, though, you should think of this as a small simulation of a larger event-driven system:
+
+- the controller accepts the command
+- Kafka carries the event
+- the consumer performs the actual creation work later
+
+So even though the guide uses one application, the architecture is the same kind of architecture teams use when one service publishes an event and another service consumes it.
+
+Add `UserCreatedEvent`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedEvent.java"
+    @Json
+    public record UserCreatedEvent(
+            String id,
+            String name,
+            String email,
+            LocalDateTime createdAt
+    ) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedEvent.kt"
+    @Json
+    data class UserCreatedEvent(
+        val id: String,
+        val name: String,
+        val email: String,
+        val createdAt: LocalDateTime
+    )
+    ```
+
+This is the payload that Kafka will carry from the producer to the consumer.
+
+Add `UserAcceptedResponse`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/dto/UserAcceptedResponse.java"
+    @Json
+    public record UserAcceptedResponse(String id) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/dto/UserAcceptedResponse.kt"
+    @Json
+    data class UserAcceptedResponse(val id: String)
+    ```
+
+Returning only the future id is important for the tutorial narrative. It makes the asynchronous contract visible to the reader: the user is not guaranteed to exist yet at the exact
+moment `POST /users` returns.
+
+## Producer { #kafka-producer }
+
+For details on generated Kafka producers, topic configuration, and error handling, see [Producer](../documentation/kafka.md#producer).
+
+Now we need a producer component that can publish `UserCreatedEvent`.
+
+Kora generates producer implementations from annotated interfaces, so we only declare the contract.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedPublisher.java"
+    @KafkaPublisher("kafka.producer.user-created")
+    public interface UserCreatedPublisher {
+
+        @Topic("kafka.producer.user-created-topic")
+        void send(@Json UserCreatedEvent event);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedPublisher.kt"
+    @KafkaPublisher("kafka.producer.user-created")
+    interface UserCreatedPublisher {
+
+        @Topic("kafka.producer.user-created-topic")
+        fun send(@Json event: UserCreatedEvent)
+    }
+    ```
+
+What is happening here:
+
+- `@KafkaPublisher(...)` tells Kora to generate a Kafka producer component
+- `@Topic(...)` points to the named topic configuration in `application.conf`
+- `@Json` tells Kora to serialize the event as JSON before sending it to Kafka
+
+This is similar in spirit to Kora HTTP clients: you describe the contract, and Kora generates the implementation.
+
+### Publish events { #publish-events }
+
+This is the most important step in the guide.
+
+In the HTTP Server guide, `createUser()` delegated to the service and immediately wrote to the repository. Now we will change only this part of the controller. The other HTTP operations still stay
+close to the original CRUD example.
+
+Update only the constructor dependencies and the `createUser()` method. The other endpoints stay the same as in the HTTP Server guide, so we do not repeat them here.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/controller/UserController.java"
+    @Component
+    @HttpController
+    public final class UserController {
+
+        private final UserCreatedPublisher userCreatedPublisher;
+        private final UserService userService;
+
+        public UserController(UserCreatedPublisher userCreatedPublisher, UserService userService) {
+            this.userCreatedPublisher = userCreatedPublisher;
+            this.userService = userService;
+        }
+
+        @HttpRoute(method = HttpMethod.POST, path = "/users")
+        @Json
+        public HttpResponseEntity<UserAcceptedResponse> createUser(@Json UserRequest request) {
+            var userId = UUID.randomUUID().toString();
+            var event = new UserCreatedEvent(userId, request.name(), request.email(), LocalDateTime.now());
+            this.userCreatedPublisher.send(event);
+            return HttpResponseEntity.of(202, HttpHeaders.of(), new UserAcceptedResponse(userId));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/controller/UserController.kt"
+    @Component
+    @HttpController
+    class UserController(
+        private val userCreatedPublisher: UserCreatedPublisher,
+        private val userService: UserService
+    ) {
+
+        @HttpRoute(method = HttpMethod.POST, path = "/users")
+        @Json
+        fun createUser(@Json request: UserRequest): HttpResponseEntity<UserAcceptedResponse> {
+            val userId = UUID.randomUUID().toString()
+            val event = UserCreatedEvent(userId, request.name, request.email, LocalDateTime.now())
+            userCreatedPublisher.send(event)
+            return HttpResponseEntity.of(202, HttpHeaders.of(), UserAcceptedResponse(userId))
+        }
+    }
+    ```
+
+What changed conceptually:
+
+- `createUser()` no longer persists directly
+- the controller now plays the role of command entry point
+- it returns `202 Accepted` instead of `201 Created`
+- the returned id is the id the future user will have after the event is processed
+
+That is why this guide is a good introduction to messaging. The same business action still exists, but the timing changes.
+
+## Service layer { #service-layer }
+
+We still want this example to feel like a continuation of the HTTP Server guide, so we keep the same layers:
+
+- controller
+- service
+- repository
+
+The only difference is that user creation now enters the system through Kafka.
+
+Because the consumer receives a fully prepared event with id and timestamp, the repository saves a ready `UserResponse` object instead of generating the id itself.
+
+Again, we only show the parts that actually changed compared with the HTTP Server guide.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/repository/UserRepository.java"
+    public interface UserRepository {
+
+        void save(UserResponse user);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/repository/UserRepository.kt"
+    interface UserRepository {
+
+        fun save(user: UserResponse)
+    }
+    ```
+
+The in-memory repository changes only in its `save(...)` method, because it now stores a fully prepared user object:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/repository/InMemoryUserRepository.java"
+    @Component
+    public final class InMemoryUserRepository implements UserRepository {
+
+        private final Map<String, UserResponse> users = new ConcurrentHashMap<>();
+
+        @Override
+        public void save(UserResponse user) {
+            this.users.put(user.id(), user);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/repository/InMemoryUserRepository.kt"
+    @Component
+    class InMemoryUserRepository : UserRepository {
+
+        private val users = ConcurrentHashMap<String, UserResponse>()
+
+        override fun save(user: UserResponse) {
+            users[user.id] = user
+        }
+    }
+    ```
+
+The service also changes only where the Kafka consumer needs a new entrypoint. Everything else in the class stays the same as in the HTTP Server guide.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/service/UserService.java"
+    @Component
+    public final class UserService {
+
+        private final UserRepository userRepository;
+
+        public UserService(UserRepository userRepository) {
+            this.userRepository = userRepository;
+        }
+
+        public void createUser(UserCreatedEvent event) {
+            this.userRepository.save(new UserResponse(event.id(), event.name(), event.email(), event.createdAt()));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/service/UserService.kt"
+    @Component
+    class UserService(
+        private val userRepository: UserRepository
+    ) {
+
+        fun createUser(event: UserCreatedEvent) {
+            userRepository.save(UserResponse(event.id, event.name, event.email, event.createdAt))
+        }
+    }
+    ```
+
+This keeps the guide grounded. The reader is still working with the same `UserService` and `UserRepository` ideas they already learned in the HTTP Server guide.
+
+## Consumer { #kafka-consumer }
+
+For more on `@KafkaListener`, subscription strategies, deserialization, and failures, see [Consume strategy](../documentation/kafka.md#consume-strategy), [Deserialization](../documentation/kafka.md#deserialization), and [Exception handling](../documentation/kafka.md#exception-handling).
+
+Now we can connect the other side of the flow.
+
+The producer already publishes `UserCreatedEvent`. The consumer will listen to that topic and delegate back into the service layer.
+
+At first, a Kafka listener can look as simple as this:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.consumer.user-created")
+    public void process(@Json UserCreatedEvent event) {
+        this.userService.createUser(event);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.consumer.user-created")
+    fun process(@Json event: UserCreatedEvent) {
+        userService.createUser(event)
+    }
+    ```
+
+That is a good first mental model: Kora deserializes the message and passes the event object to your method.
+
+### Events processing { #events-processing }
+
+For real applications, it is often useful to also receive a possible deserialization or mapping error. That is the final form used in this guide:
+
+Here again, we only show the consumer class itself because that is the class being introduced in this step.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedConsumer.java"
+    @Component
+    public final class UserCreatedConsumer {
+
+        private static final Logger logger = LoggerFactory.getLogger(UserCreatedConsumer.class);
+
+        private final UserService userService;
+
+        public UserCreatedConsumer(UserService userService) {
+            this.userService = userService;
+        }
+
+        @KafkaListener("kafka.consumer.user-created")
+        public void process(@Json @Nullable UserCreatedEvent event, @Nullable Exception exception) {
+            if (exception != null) {
+                logger.warn("Failed to consume user creation event", exception);
+                return;
+            }
+            if (event == null) {
+                logger.warn("Received null user creation event without exception");
+                return;
+            }
+            logger.info("Consuming user creation event for user {}", event.id());
+            this.userService.createUser(event);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedConsumer.kt"
+    @Component
+    class UserCreatedConsumer(
+        private val userService: UserService
+    ) {
+
+        private val logger = LoggerFactory.getLogger(UserCreatedConsumer::class.java)
+
+        @KafkaListener("kafka.consumer.user-created")
+        fun process(@Json event: UserCreatedEvent?, exception: Exception?) {
+            if (exception != null) {
+                logger.warn("Failed to consume user creation event", exception)
+                return
+            }
+            if (event == null) {
+                logger.warn("Received null user creation event without exception")
+                return
+            }
+            logger.info("Consuming user creation event for user {}", event.id)
+            userService.createUser(event)
+        }
+    }
+    ```
+
+Why this is useful:
+
+- if deserialization fails, Kora can pass the error to your listener
+- your business code can separate “valid event” from “message could not be read”
+- the guide can show both the simple shape and the more defensive production-style shape
+
+This is also a nice symmetry with the HTTP guides: the controller is still the entry point for the HTTP command, but now the consumer becomes the entry point for the asynchronous processing stage.
+
+## Configuration { #configuration }
+
+Now wire the producer and consumer to the same topic.
+
+For the full configuration reference, see [HTTP Server](../documentation/http-server.md), [Kafka](../documentation/kafka.md) and [Logging SLF4J](../documentation/logging-slf4j.md).
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript title="src/main/resources/application.conf"
+    kafka {
+      producer {
+        user-created {
+          driverProperties {
+            "bootstrap.servers": ${?KAFKA_BOOTSTRAP} //(1)!
+          }
+          telemetry.logging.enabled = true //(2)!
+        }
+
+        user-created-topic {
+          topic = "user-created-events" //(3)!
+        }
+      }
+
+      consumer {
+        user-created {
+          topics = "user-created-events" //(4)!
+          pollTimeout = 250ms //(5)!
+          driverProperties {
+            "bootstrap.servers": ${?KAFKA_BOOTSTRAP} //(6)!
+            "group.id": "guide-messaging-kafka-app" //(7)!
+            "auto.offset.reset" = "earliest" //(8)!
+            "enable.auto.commit" = true //(9)!
+          }
+          telemetry.logging.enabled = true //(10)!
+        }
+      }
+    }
+    ```
+
+    1. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
+    2. Enables the feature for this configuration section.
+    3. Topic or channel name used by the component.
+    4. Value for `kafka.consumer.user-created.topics`.
+    5. Value for `kafka.consumer.user-created.pollTimeout`.
+    6. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
+    7. Value for `kafka.consumer.user-created.driverProperties.group.id`.
+    8. Value for `kafka.consumer.user-created.driverProperties.auto.offset.reset`.
+    9. Value for `kafka.consumer.user-created.driverProperties.enable.auto.commit`.
+    10. Enables the feature for this configuration section.
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml title="src/main/resources/application.yaml"
+    kafka:
+      producer:
+        user-created:
+          driverProperties:
+            "bootstrap.servers": ${?KAFKA_BOOTSTRAP} #(1)!
+          telemetry:
+            logging:
+              enabled: true #(2)!
+        user-created-topic:
+          topic: "user-created-events" #(3)!
+      consumer:
+        user-created:
+          topics: "user-created-events" #(4)!
+          pollTimeout: 250ms #(5)!
+          driverProperties:
+            "bootstrap.servers": ${?KAFKA_BOOTSTRAP} #(6)!
+            "group.id": "guide-messaging-kafka-app" #(7)!
+            "auto.offset.reset": "earliest" #(8)!
+            "enable.auto.commit": true #(9)!
+          telemetry:
+            logging:
+              enabled: true #(10)!
+    ```
+
+    1. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
+    2. Enables the feature for this configuration section.
+    3. Topic or channel name used by the component.
+    4. Value for `kafka.consumer.user-created.topics`.
+    5. Value for `kafka.consumer.user-created.pollTimeout`.
+    6. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
+    7. Value for `kafka.consumer.user-created.driverProperties.group.id`.
+    8. Value for `kafka.consumer.user-created.driverProperties.auto.offset.reset`.
+    9. Value for `kafka.consumer.user-created.driverProperties.enable.auto.commit`.
+    10. Enables the feature for this configuration section.
+
+What this configuration does:
+
+- defines one producer named `user-created`
+- defines one consumer named `user-created`
+- points both of them to the same Kafka topic
+- enables simple logging telemetry so you can see the flow while learning
+
+## Docker Compose { #docker-compose }
+
+For local development, start Kafka with Docker.
+
+Create `docker-compose.yml` in the application module directory:
 
 ```yaml title="docker-compose.yml"
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.7.1
+    image: apache/kafka-native:4.1.0
     restart: unless-stopped
     ports:
-      - '9092:9092'
-      - '9093:9093'
+      - "9092:9092"
+      - "9093:9093"
     environment:
-      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-      AUTO_CREATE_TOPICS: "true"
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.kafka.zookeeper=ERROR,kafka.zookeeper=ERROR,org.apache.kafka=ERROR,kafka=ERROR,kafka.network=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=INFO,kafka.log=ERROR,kafka.server=ERROR,state.change.logger=ERROR
-      ZOOKEEPER_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.kafka.zookeeper=ERROR,org.kafka.zookeeper.server=ERROR,kafka.zookeeper=ERROR,org.apache.kafka=ERROR
-      KAFKA_KRAFT_MODE: "true"
-      KAFKA_PROCESS_ROLES: controller,broker
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
       KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_DOCKER://kafka:29092,CONTROLLER://0.0.0.0:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_DOCKER://kafka:29092
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      CLUSTER_ID: "kora-guide-cluster"
-    healthcheck:
-      test: nc -z localhost 9092 || exit 1
-      interval: 3s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-```
-
-Start Kafka for development:
-
-```bash
-docker-compose up -d kafka
-```
-
-# Kafka Producer
-
-## Kafka Producer Configuration
-
-Add Kafka producer configuration to your `application.conf`:
-
-```hocon title="application.conf"
-# ... existing configuration ...
-
-kafka {
-  producer {
-    events {
-      driverProperties {
-        "bootstrap.servers": ${KAFKA_BOOTSTRAP}
-        "acks": "all"
-        "retries": 3
-      }
-      telemetry {
-        logging.enabled = true
-      }
-    }
-  }
-}
-```
-
-## Creating Event DTOs
-
-Create event classes to represent your domain events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/event/UserEvent.java`:
-
-    ```java
-    package com.example.event;
-
-    import ru.tinkoff.kora.json.common.annotation.Json;
-
-    @Json
-    public record UserEvent(
-            String eventType,
-            String userId,
-            String username,
-            String email,
-            long timestamp
-    ) {
-        public static UserEvent created(String userId, String username, String email) {
-            return new UserEvent("USER_CREATED", userId, username, email, System.currentTimeMillis());
-        }
-
-        public static UserEvent updated(String userId, String username, String email) {
-            return new UserEvent("USER_UPDATED", userId, username, email, System.currentTimeMillis());
-        }
-
-        public static UserEvent deleted(String userId, String username, String email) {
-            return new UserEvent("USER_DELETED", userId, username, email, System.currentTimeMillis());
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/event/UserEvent.kt`:
-
-    ```kotlin
-    package com.example.event;
-
-    import ru.tinkoff.kora.json.common.annotation.Json;
-
-    @Json
-    data class UserEvent(
-        val eventType: String,
-        val userId: String,
-        val username: String,
-        val email: String,
-        val timestamp: Long
-    ) {
-        companion object {
-            fun created(userId: String, username: String, email: String) = UserEvent(
-                "USER_CREATED", userId, username, email, System.currentTimeMillis()
-            )
-
-            fun updated(userId: String, username: String, email: String) = UserEvent(
-                "USER_UPDATED", userId, username, email, System.currentTimeMillis()
-            )
-
-            fun deleted(userId: String, username: String, email: String) = UserEvent(
-                "USER_DELETED", userId, username, email, System.currentTimeMillis()
-            )
-        }
-    }
-    ```
-
-## Creating Event Publishers
-
-Create a publisher interface for sending events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/publisher/UserEventPublisher.java`:
-
-    ```java
-    package com.example.publisher;
-
-    import com.example.event.UserEvent;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher.Topic;
-
-    @KafkaPublisher("kafka.producer.events")
-    public interface UserEventPublisher {
-
-        @Topic("kafka.producer.events.user-topic")
-        void publish(UserEvent event);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/publisher/UserEventPublisher.kt`:
-
-    ```kotlin
-    package com.example.publisher
-
-    import com.example.event.UserEvent
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher.Topic
-
-    @KafkaPublisher("kafka.producer.events")
-    interface UserEventPublisher {
-
-        @Topic("kafka.producer.events.user-topic")
-        fun publish(event: UserEvent)
-    }
-    ```
-
-## Configure Topics
-
-Add topic configuration to `application.conf`:
-
-```hocon title="application.conf"
-kafka {
-  # ... existing configuration ...
-
-  producer {
-    events {
-      # ... existing producer config ...
-
-      user-topic {
-        topic = "user-events"
-      }
-    }
-  }
-}
-```
-
-## Integrating Events with CRUD Operations
-
-Update your existing service to publish events when data changes:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update your `UserService.java`:
-
-    ```java
-    @Component
-    public final class UserService {
-        private final UserRepository userRepository;
-        private final UserEventPublisher eventPublisher;
-
-        public UserService(UserRepository userRepository, UserEventPublisher eventPublisher) {
-            this.userRepository = userRepository;
-            this.eventPublisher = eventPublisher;
-        }
-
-        public UserResponse createUser(UserRequest request) {
-            var user = userRepository.save(request);
-            // Publish event after successful creation
-            eventPublisher.publish(UserEvent.created(user.id(), user.name(), user.email()));
-            return user;
-        }
-
-        public Optional<UserResponse> updateUser(String id, UserRequest request) {
-            return userRepository.findById(id)
-                    .map(existing -> {
-                        var updated = userRepository.save(request);
-                        // Publish event after successful update
-                        eventPublisher.publish(UserEvent.updated(updated.id(), updated.name(), updated.email()));
-                        return updated;
-                    });
-        }
-
-        public boolean deleteUser(String id) {
-            return userRepository.findById(id)
-                    .map(user -> {
-                        var deleted = userRepository.deleteById(id);
-                        if (deleted) {
-                            // Publish event after successful deletion
-                            eventPublisher.publish(UserEvent.deleted(user.id(), user.name(), user.email()));
-                        }
-                        return deleted;
-                    })
-                    .orElse(false);
-        }
-
-        // ... other methods remain unchanged ...
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Update your `UserService.kt`:
-
-    ```kotlin
-    @Component
-    class UserService(
-        private val userRepository: UserRepository,
-        private val eventPublisher: UserEventPublisher
-    ) {
-
-        fun createUser(request: UserRequest): UserResponse {
-            val user = userRepository.save(request)
-            // Publish event after successful creation
-            eventPublisher.publish(UserEvent.created(user.id, user.name, user.email))
-            return user
-        }
-
-        fun updateUser(id: String, request: UserRequest): UserResponse? {
-            return userRepository.findById(id)?.let { existing ->
-                val updated = userRepository.save(request)
-                // Publish event after successful update
-                eventPublisher.publish(UserEvent.updated(updated.id, updated.name, updated.email))
-                updated
-            }
-        }
-
-        fun deleteUser(id: String): Boolean {
-            return userRepository.findById(id)?.let { user ->
-                val deleted = userRepository.deleteById(id)
-                if (deleted) {
-                    // Publish event after successful deletion
-                    eventPublisher.publish(UserEvent.deleted(user.id, user.name, user.email))
-                }
-                deleted
-            } ?: false
-        }
-
-        // ... other methods remain unchanged ...
-    }
-    ```
-
-## Testing Event Publishing
-
-Create tests for your event publishing:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/test/java/com/example/publisher/UserEventPublisherTest.java`:
-
-    ```java
-    package com.example.publisher;
-
-    import com.example.event.UserEvent;
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection;
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.Topics;
-    import org.json.JSONObject;
-    import org.junit.jupiter.api.Test;
-    import com.example.Application;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics("user-events"))
-    @KoraAppTest(Application.class)
-    class UserEventPublisherTest implements KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private KafkaConnection connection;
-
-        @TestComponent
-        private UserEventPublisher publisher;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            );
-        }
-
-        @Test
-        void shouldPublishUserCreatedEvent() {
-            // Given
-            var consumer = connection.subscribe("user-events");
-            var event = UserEvent.created("user-123", "john", "john@example.com");
-
-            // When
-            publisher.publish(event);
-
-            // Then
-            var records = consumer.consume(1);
-            assertEquals(1, records.size());
-
-            var record = records.get(0);
-            var jsonEvent = new JSONObject(record.value());
-            assertEquals("USER_CREATED", jsonEvent.getString("eventType"));
-            assertEquals("user-123", jsonEvent.getString("userId"));
-            assertEquals("john", jsonEvent.getString("username"));
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/com/example/publisher/UserEventPublisherTest.kt`:
-
-    ```kotlin
-    package com.example.publisher
-
-    import com.example.event.UserEvent
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka
-    import io.goodforgod.testcontainers.extensions.kafka.Topics
-    import org.json.JSONObject
-    import org.junit.jupiter.api.Test
-    import com.example.Application
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics(["user-events"]))
-    @KoraAppTest(Application::class)
-    class UserEventPublisherTest : KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private lateinit var connection: KafkaConnection
-
-        @TestComponent
-        private lateinit var publisher: UserEventPublisher
-
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            )
-        }
-
-        @Test
-        fun `should publish user created event`() {
-            // Given
-            val consumer = connection.subscribe("user-events")
-            val event = UserEvent.created("user-123", "john", "john@example.com")
-
-            // When
-            publisher.publish(event)
-
-            // Then
-            val records = consumer.consume(1)
-            assertEquals(1, records.size)
-
-            val record = records[0]
-            val jsonEvent = JSONObject(record.value())
-            assertEquals("USER_CREATED", jsonEvent.getString("eventType"))
-            assertEquals("user-123", jsonEvent.getString("userId"))
-            assertEquals("john", jsonEvent.getString("username"))
-        }
-    }
-    ```
-
-## Testing the Integration
-
-Test that your CRUD operations now publish events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/test/java/com/example/UserServiceEventIntegrationTest.java`:
-
-    ```java
-    package com.example;
-
-    import com.example.dto.UserRequest;
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection;
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.Topics;
-    import org.json.JSONObject;
-    import org.junit.jupiter.api.Test;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics("user-events"))
-    @KoraAppTest(Application.class)
-    class UserServiceEventIntegrationTest implements KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private KafkaConnection connection;
-
-        @TestComponent
-        private UserService userService;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification
-                .ofSystemProperty("KAFKA_BOOTSTRAP", connection.params().bootstrapServers())
-                .withSystemProperty("POSTGRES_JDBC_URL", "jdbc:h2:mem:test")
-                .withSystemProperty("POSTGRES_USER", "sa")
-                .withSystemProperty("POSTGRES_PASS", "");
-        }
-
-        @Test
-        void createUser_ShouldPublishEvent() {
-            // Given
-            var consumer = connection.subscribe("user-events");
-            var request = new UserRequest("John", "john@example.com");
-
-            // When
-            var result = userService.createUser(request);
-
-            // Then
-            assertNotNull(result);
-            var records = consumer.consume(1);
-            assertEquals(1, records.size());
-
-            var event = new JSONObject(records.get(0).value());
-            assertEquals("USER_CREATED", event.getString("eventType"));
-            assertEquals(result.name(), event.getString("username"));
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/com/example/UserServiceEventIntegrationTest.kt`:
-
-    ```kotlin
-    package com.example
-
-    import com.example.dto.UserRequest
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka
-    import io.goodforgod.testcontainers.extensions.kafka.Topics
-    import org.json.JSONObject
-    import org.junit.jupiter.api.Test
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics(["user-events"]))
-    @KoraAppTest(Application::class)
-    class UserServiceEventIntegrationTest : KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private lateinit var connection: KafkaConnection
-
-        @TestComponent
-        private lateinit var userService: UserService
-
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification
-                .ofSystemProperty("KAFKA_BOOTSTRAP", connection.params().bootstrapServers())
-                .withSystemProperty("POSTGRES_JDBC_URL", "jdbc:h2:mem:test")
-                .withSystemProperty("POSTGRES_USER", "sa")
-                .withSystemProperty("POSTGRES_PASS", "")
-        }
-
-        @Test
-        fun `createUser should publish event`() {
-            // Given
-            val consumer = connection.subscribe("user-events")
-            val request = UserRequest("John", "john@example.com")
-
-            // When
-            val result = userService.createUser(request)
-
-            // Then
-            assertNotNull(result)
-            val records = consumer.consume(1)
-            assertEquals(1, records.size)
-
-            val event = JSONObject(records[0].value())
-            assertEquals("USER_CREATED", event.getString("eventType"))
-            assertEquals(result.name, event.getString("username"))
-        }
-    }
-    ```
-
-## Running and testing
-
-Test your event publishing setup:
-
-```bash
-# Start Kafka
-docker-compose up -d kafka
-
-# Run your application
-./gradlew run
-
-# In another terminal, test event publishing
-curl -X POST http://localhost:8080/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
-
-# Check Kafka logs to see events being published
-docker-compose logs kafka
-```
-
-Run the publisher tests:
-
-```bash
-./gradlew test --tests "*UserEventPublisherTest*"
-./gradlew test --tests "*UserServiceEventIntegrationTest*"
-```
-
----
-
-# Kafka Consumer
-
-Now that you can publish events, let's learn how to consume and process them asynchronously. In this step, we'll create consumers that listen for events and process them in the background.
-
-## Add Consumer Configuration
-
-Add consumer configuration to your `application.conf`:
-
-```hocon title="application.conf"
-kafka {
-  # ... existing configuration ...
-
-  consumer {
-    events {
-      topics = ["user-events"]
-      driverProperties {
-        "bootstrap.servers": ${KAFKA_BOOTSTRAP}
-        "group.id": "kora-guide-consumer"
-        "auto.offset.reset": "latest"
-        "enable.auto.commit": true
-      }
-      telemetry {
-        logging.enabled = true
-        metrics.enabled = true
-        tracing.enabled = true
-      }
-    }
-  }
-}
-```
-
-## Creating Event Consumers
-
-Create a consumer to handle user events asynchronously:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/consumer/UserEventConsumer.java`:
-
-    ```java
-    package com.example.consumer;
-
-    import com.example.event.UserEvent;
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaListener;
-
-    @Component
-    public class UserEventConsumer {
-        private static final Logger logger = LoggerFactory.getLogger(UserEventConsumer.class);
-
-        @KafkaListener("kafka.consumer.events")
-        void process(UserEvent event) {
-            logger.info("Processing user event: {} for user {}", event.eventType(), event.username());
-
-            // Process the event asynchronously
-            switch (event.eventType()) {
-                case "USER_CREATED" -> handleUserCreated(event);
-                case "USER_UPDATED" -> handleUserUpdated(event);
-                case "USER_DELETED" -> handleUserDeleted(event);
-                default -> logger.warn("Unknown event type: {}", event.eventType());
-            }
-        }
-
-        private void handleUserCreated(UserEvent event) {
-            logger.info("🎉 New user created: {} ({})", event.username(), event.email());
-            // Here you could:
-            // - Send welcome email
-            // - Create user profile in analytics system
-            // - Send notification to admin
-            // - Update search index
-        }
-
-        private void handleUserUpdated(UserEvent event) {
-            logger.info("📝 User updated: {} ({})", event.username(), event.email());
-            // Here you could:
-            // - Update search index
-            // - Send change notification
-            // - Update analytics profile
-        }
-
-        private void handleUserDeleted(UserEvent event) {
-            logger.info("🗑️ User deleted: {} ({})", event.username(), event.email());
-            // Here you could:
-            // - Clean up user data from external systems
-            // - Send goodbye email
-            // - Archive user analytics data
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/consumer/UserEventConsumer.kt`:
-
-    ```kotlin
-    package com.example.consumer
-
-    import com.example.event.UserEvent
-    import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaListener
-
-    @Component
-    class UserEventConsumer {
-        private val logger = LoggerFactory.getLogger(UserEventConsumer::class.java)
-
-        @KafkaListener("kafka.consumer.events")
-        fun process(event: UserEvent) {
-            logger.info("Processing user event: {} for user {}", event.eventType, event.username)
-
-            // Process the event asynchronously
-            when (event.eventType) {
-                "USER_CREATED" -> handleUserCreated(event)
-                "USER_UPDATED" -> handleUserUpdated(event)
-                "USER_DELETED" -> handleUserDeleted(event)
-                else -> logger.warn("Unknown event type: {}", event.eventType)
-            }
-        }
-
-        private fun handleUserCreated(event: UserEvent) {
-            logger.info("🎉 New user created: {} ({})", event.username, event.email)
-            // Here you could:
-            // - Send welcome email
-            // - Create user profile in analytics system
-            // - Send notification to admin
-            // - Update search index
-        }
-
-        private fun handleUserUpdated(event: UserEvent) {
-            logger.info("📝 User updated: {} ({})", event.username, event.email)
-            // Here you could:
-            // - Update search index
-            // - Send change notification
-            // - Update analytics profile
-        }
-
-        private fun handleUserDeleted(event: UserEvent) {
-            logger.info("🗑️ User deleted: {} ({})", event.username, event.email)
-            // Here you could:
-            // - Clean up user data from external systems
-            // - Send goodbye email
-            // - Archive user analytics data
-        }
-    }
-    ```
-
-## Testing Event Consumption
-
-Create tests for your event consumers:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/test/java/com/example/consumer/UserEventConsumerTest.java`:
-
-    ```java
-    package com.example.consumer;
-
-    import com.example.event.UserEvent;
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection;
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.Topics;
-    import org.junit.jupiter.api.Test;
-    import com.example.Application;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics("user-events"))
-    @KoraAppTest(Application.class)
-    class UserEventConsumerTest implements KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private KafkaConnection connection;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            );
-        }
-
-        @Test
-        void shouldConsumeUserEvents() throws InterruptedException {
-            // Given
-            var producer = connection.producer("user-events");
-            var event = UserEvent.created("user-123", "john", "john@example.com");
-
-            // When
-            producer.send(event);
-
-            // Then - Consumer should process the event
-            // Wait a bit for async processing
-            Thread.sleep(1000);
-
-            // In a real test, you might verify side effects like:
-            // - Email service was called
-            // - Database was updated
-            // - External API was invoked
-            // For now, we just verify the consumer doesn't crash
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/com/example/consumer/UserEventConsumerTest.kt`:
-
-    ```kotlin
-    package com.example.consumer
-
-    import com.example.event.UserEvent
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka
-    import io.goodforgod.testcontainers.extensions.kafka.Topics
-    import org.junit.jupiter.api.Test
-    import com.example.Application
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics(["user-events"]))
-    @KoraAppTest(Application::class)
-    class UserEventConsumerTest : KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private lateinit var connection: KafkaConnection
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            );
-        }
-
-        @Test
-        fun `should consume user events`() {
-            // Given
-            val producer = connection.subscribe("user-events")
-            val event = UserEvent.created("user-123", "john", "john@example.com")
-
-            // When
-            producer.send(event)
-
-            // Then - Consumer should process the event
-            // Wait a bit for async processing
-            Thread.sleep(1000)
-
-            // In a real test, you might verify side effects like:
-            // - Email service was called
-            // - Database was updated
-            // - External API was invoked
-            // For now, we just verify the consumer doesn't crash
-        }
-    }
-    ```
-
-## Running Step 2
-
-Test your complete event-driven system:
-
-```bash
-# Start Kafka
-docker-compose up -d kafka
-
-# Run your application
-./gradlew run
-
-# In another terminal, create a user (this will publish an event)
-curl -X POST http://localhost:8080/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
-
-# Check application logs to see event processing
-# You should see consumer logs like:
-# "🎉 New user created: John Doe (john@example.com)"
-```
-
-Run all tests:
-
-```bash
-./gradlew test
-```
-
-## Advanced Patterns
-
-### Transactional Publishing
-
-For data consistency between database and events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.producer.transactional")
-    public interface TransactionalEventPublisher extends TransactionalPublisher<TransactionalEventPublisher.EventPublisher> {
-
-        @KafkaPublisher("kafka.producer.events")
-        interface EventPublisher {
-            @Topic("kafka.producer.events.user-topic")
-            void publish(UserEvent event);
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.producer.transactional")
-    interface TransactionalEventPublisher : TransactionalPublisher<TransactionalEventPublisher.EventPublisher> {
-
-        @KafkaPublisher("kafka.producer.events")
-        interface EventPublisher {
-            @Topic("kafka.producer.events.user-topic")
-            fun publish(event: UserEvent)
-        }
-    }
-    ```
-
-### Manual Commit for Fine Control
-
-For advanced error handling:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaListener("kafka.consumer.manual")
-    void process(UserEvent event, Consumer<String, String> consumer) {
-        try {
-            // Process event
-            processEvent(event);
-            // Manual commit on success
-            consumer.commitSync();
-        } catch (Exception e) {
-            // Handle error - don't commit, message will be retried
-            logger.error("Failed to process event", e);
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaListener("kafka.consumer.manual")
-    fun process(event: UserEvent, consumer: Consumer<String, String>) {
-        try {
-            // Process event
-            processEvent(event)
-            // Manual commit on success
-            consumer.commitSync()
-        } catch (e: Exception) {
-            // Handle error - don't commit, message will be retried
-            logger.error("Failed to process event", e)
-        }
-    }
-    ```
-
-## Monitoring and Observability
-
-Kora automatically provides metrics and tracing for Kafka operations. View them at your configured endpoints.
-
-## Best Practices
-
-### Event Design
-- Use descriptive event names (UserCreated, OrderPlaced)
-- Include all relevant data in events
-- Use event versioning for schema evolution
-- Keep events immutable
-
-### Consumer Patterns
-- Make consumers idempotent (handle duplicate events)
-- Use dead letter topics for failed messages
-- Implement proper error handling and logging
-- Monitor consumer lag and throughput
-
-### Testing Strategies
-- Test publishers and consumers separately
-- Use Testcontainers for integration tests
-- Test error scenarios and edge cases
-- Verify event data integrity
-
-## Summary
-
-You've successfully implemented event-driven architecture with Kafka:
-
-- **Step 1 - Publishing**: Send domain events when data changes
-- **Step 2 - Consuming**: Process events asynchronously in the background
-- **Event-Driven Architecture**: Decouple services with message-based communication
-- **JSON Serialization**: Structured event data with automatic serialization
-- **Transactional Messaging**: Ensure data consistency across events and database
-- **Comprehensive Testing**: Test all components with Testcontainers
-
-## Key Concepts Learned
-
-### Event-Driven Architecture
-- **Domain Events**: Represent business facts as immutable events
-- **Publish-Subscribe**: Decouple producers and consumers
-- **Asynchronous Processing**: Handle operations without blocking
-
-### Kafka Integration
-- **Publishers**: Send messages with type-safe interfaces
-- **Consumers**: Process messages with automatic serialization
-- **Configuration**: Flexible setup for different environments
-
-### Testing Strategies
-- **Testcontainers**: Realistic testing with Docker containers
-- **Publisher Tests**: Verify events are sent correctly
-- **Consumer Tests**: Ensure events are processed properly
-
-## Next Steps
-
-Continue your event-driven journey:
-
-- **Advanced Kafka**: Explore transactional messaging and exactly-once delivery
-- **Event Sourcing**: Build applications around event streams
-- **CQRS**: Separate read and write models with events
-- **Microservices**: Use events for service communication
-
-## Troubleshooting
-
-### Connection Issues
-- Verify Kafka is running: `docker-compose ps`
-- Check bootstrap servers configuration
-- Ensure network connectivity between containers
-
-### Serialization Errors
-- Verify `@Json` annotations on event classes
-- Check JSON field mappings
-- Validate event data types
-
-### Consumer Not Processing
-- Check topic names match between producer and consumer
-- Verify consumer group configuration
-- Check logs for deserialization errors
-
-### Testcontainers Issues
-- Ensure Docker is running and accessible
-- Check Testcontainers version compatibility
-- Verify network configuration for container communication
-
-## What You'll Build
-
-You'll enhance your existing HTTP API with:
-
-- **Event Publishing**: Send domain events when data changes
-- **Message Consumption**: Process events asynchronously in the background
-- **Event-Driven Architecture**: Decouple services with message-based communication
-- **JSON Serialization**: Structured event data with automatic serialization
-- **Transactional Messaging**: Ensure data consistency across events and database
-- **Comprehensive Testing**: Test publishers and consumers with Testcontainers
-
-## What You'll Need
-
-- JDK 17 or later
-- Gradle 7.0+
-- Docker (for Kafka and testing)
-- A text editor or IDE
-- Completed [Creating Your First Kora App](../getting-started.md) guide
-
-## Prerequisites
-
-!!! note "Required: Complete Basic Kora Setup"
-
-    This guide assumes you have completed the **[Create Your First Kora App](../getting-started.md)** guide and have a working Kora project with basic HTTP server setup.
-
-    If you haven't completed the basic guide yet, please do so first as this guide builds upon that foundation.
-
-## Why Event-Driven Architecture?
-
-**Traditional synchronous communication** has limitations:
-
-- **Tight Coupling**: Services depend directly on each other
-- **Scalability Issues**: Load spikes affect all dependent services
-- **Error Propagation**: Failures cascade through the system
-- **Real-time Constraints**: All operations must complete within request timeout
-
-**Event-driven architecture with Kafka** solves these problems:
-
-- **Loose Coupling**: Services communicate through events, not direct calls
-- **Better Scalability**: Services can process events at their own pace
-- **Fault Tolerance**: Failed services don't break the entire system
-- **Asynchronous Processing**: Long-running tasks don't block user requests
-
-## Add Kafka Dependencies
-
-First, add Kafka support to your existing Kora project:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Add to the `dependencies` block in `build.gradle`:
-
-    ```gradle title="build.gradle"
-    dependencies {
-        // ... existing dependencies ...
-
-        // Kafka messaging
-        implementation("ru.tinkoff.kora:kafka")
-
-        // JSON serialization for events
-        implementation("ru.tinkoff.kora:json-module")
-
-        // Testcontainers for Kafka testing
-        testImplementation("io.goodforgod:testcontainers-extensions-kafka:0.12.2")
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Add to the `dependencies` block in `build.gradle.kts`:
-
-    ```kotlin title="build.gradle.kts"
-    dependencies {
-        // ... existing dependencies ...
-
-        // Kafka messaging
-        implementation("ru.tinkoff.kora:kafka")
-
-        // JSON serialization for events
-        implementation("ru.tinkoff.kora:json-module")
-
-        // Testcontainers for Kafka testing
-        testImplementation("io.goodforgod:testcontainers-extensions-kafka:0.12.2")
-    }
-    ```
-
-## Update Application Module
-
-Add the Kafka module to your application:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update your `Application.java`:
-
-    ```java
-    @KoraApp
-    public interface Application extends
-            // ... existing modules ...
-            KafkaModule,
-            JsonModule {
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Update your `Application.kt`:
-
-    ```kotlin
-    @KoraApp
-    interface Application :
-            // ... existing modules ...
-            KafkaModule,
-            JsonModule
-    ```
-
-## Docker Setup for Local Development
-
-Create `docker-compose.yml` in your project root for local Kafka development:
-
-```yaml title="docker-compose.yml"
-services:
-  kafka:
-    image: confluentinc/cp-kafka:7.7.1
-    restart: unless-stopped
-    ports:
-      - '9092:9092'
-      - '9093:9093'
-    environment:
-      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-      AUTO_CREATE_TOPICS: "true"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.kafka.zookeeper=ERROR,kafka.zookeeper=ERROR,org.apache.kafka=ERROR,kafka=ERROR,kafka.network=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=INFO,kafka.log=ERROR,kafka.server=ERROR,state.change.logger=ERROR
-      ZOOKEEPER_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.kafka.zookeeper=ERROR,org.kafka.zookeeper.server=ERROR,kafka.zookeeper=ERROR,org.apache.kafka=ERROR
-      KAFKA_KRAFT_MODE: "true"
-      KAFKA_PROCESS_ROLES: controller,broker
-      KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_DOCKER://kafka:29092,CONTROLLER://0.0.0.0:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_DOCKER://kafka:29092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      CLUSTER_ID: "kora-guide-cluster"
-    healthcheck:
-      test: nc -z localhost 9092 || exit 1
-      interval: 3s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-
-# Uncomment to run your application in Docker alongside Kafka
-#  app:
-#    image: kora-kafka-guide
-#    build: .
-#    ports:
-#      - '8080:8080'
-#    environment:
-#      KAFKA_BOOTSTRAP: kafka:29092
-#    depends_on:
-#      kafka:
-#        condition: service_healthy
 ```
 
-Start Kafka for development:
+## Run Application { #run-app }
+
+Start Kafka:
 
 ```bash
-docker-compose up -d kafka
+docker compose up -d kafka
 ```
 
-## Kafka Configuration
-
-Add Kafka configuration to your `application.conf`:
-
-```hocon title="application.conf"
-# ... existing configuration ...
-
-kafka {
-  producer {
-    events {
-      driverProperties {
-        "bootstrap.servers": ${KAFKA_BOOTSTRAP}
-        "acks": "all"
-        "retries": 3
-      }
-      telemetry {
-        logging.enabled = true
-        metrics.enabled = true
-        tracing.enabled = true
-      }
-    }
-  }
-
-  consumer {
-    events {
-      topics = ["user-events", "task-events"]
-      driverProperties {
-        "bootstrap.servers": ${KAFKA_BOOTSTRAP}
-        "group.id": "kora-guide-consumer"
-        "auto.offset.reset": "latest"
-        "enable.auto.commit": true
-      }
-      telemetry {
-        logging.enabled = true
-        metrics.enabled = true
-        tracing.enabled = true
-      }
-    }
-  }
-}
-```
-
-## Publishing Events
-
-Create event DTOs and publishers for your domain events.
-
-### Event DTOs
-
-Create event classes for your domain:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/event/UserEvent.java`:
-
-    ```java
-    package com.example.event;
-
-    import ru.tinkoff.kora.json.common.annotation.Json;
-
-    @Json
-    public record UserEvent(
-            String eventType,
-            String userId,
-            String username,
-            String email,
-            long timestamp
-    ) {
-        public static UserEvent created(String userId, String username, String email) {
-            return new UserEvent("USER_CREATED", userId, username, email, System.currentTimeMillis());
-        }
-
-        public static UserEvent updated(String userId, String username, String email) {
-            return new UserEvent("USER_UPDATED", userId, username, email, System.currentTimeMillis());
-        }
-
-        public static UserEvent deleted(String userId, String username, String email) {
-            return new UserEvent("USER_DELETED", userId, username, email, System.currentTimeMillis());
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/event/UserEvent.kt`:
-
-    ```kotlin
-    package com.example.event
-
-    import ru.tinkoff.kora.json.common.annotation.Json
-
-    @Json
-    data class UserEvent(
-        val eventType: String,
-        val userId: String,
-        val username: String,
-        val email: String,
-        val timestamp: Long
-    ) {
-        companion object {
-            fun created(userId: String, username: String, email: String) = UserEvent(
-                "USER_CREATED", userId, username, email, System.currentTimeMillis()
-            )
-
-            fun updated(userId: String, username: String, email: String) = UserEvent(
-                "USER_UPDATED", userId, username, email, System.currentTimeMillis()
-            )
-
-            fun deleted(userId: String, username: String, email: String) = UserEvent(
-                "USER_DELETED", userId, username, email, System.currentTimeMillis()
-            )
-        }
-    }
-    ```
-
-### Event Publisher
-
-Create a publisher interface for sending events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/publisher/UserEventPublisher.java`:
-
-    ```java
-    package com.example.publisher;
-
-    import com.example.event.UserEvent;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher.Topic;
-
-    @KafkaPublisher("kafka.producer.events")
-    public interface UserEventPublisher {
-
-        @Topic("kafka.producer.events.user-topic")
-        void publish(UserEvent event);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/publisher/UserEventPublisher.kt`:
-
-    ```kotlin
-    package com.example.publisher
-
-    import com.example.event.UserEvent
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaPublisher.Topic
-
-    @KafkaPublisher("kafka.producer.events")
-    interface UserEventPublisher {
-
-        @Topic("kafka.producer.events.user-topic")
-        fun publish(event: UserEvent)
-    }
-    ```
-
-### Update Topic Configuration
-
-Add topic configuration to `application.conf`:
-
-```hocon title="application.conf"
-kafka {
-  # ... existing configuration ...
-
-  producer {
-    events {
-      # ... existing producer config ...
-
-      user-topic {
-        topic = "user-events"
-      }
-    }
-  }
-}
-```
-
-## Consuming Events
-
-Create consumers to process events asynchronously.
-
-### Event Consumer
-
-Create a consumer to handle user events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/com/example/consumer/UserEventConsumer.java`:
-
-    ```java
-    package com.example.consumer;
-
-    import com.example.event.UserEvent;
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaListener;
-
-    @Component
-    public class UserEventConsumer {
-        private static final Logger logger = LoggerFactory.getLogger(UserEventConsumer.class);
-
-        @KafkaListener("kafka.consumer.events")
-        void process(UserEvent event) {
-            logger.info("Processing user event: {} for user {}", event.eventType(), event.username());
-
-            // Process the event (e.g., send notifications, update search index, etc.)
-            switch (event.eventType()) {
-                case "USER_CREATED" -> handleUserCreated(event);
-                case "USER_UPDATED" -> handleUserUpdated(event);
-                case "USER_DELETED" -> handleUserDeleted(event);
-                default -> logger.warn("Unknown event type: {}", event.eventType());
-            }
-        }
-
-        private void handleUserCreated(UserEvent event) {
-            logger.info("User created: {} ({})", event.username(), event.email());
-            // Send welcome email, create notification, etc.
-        }
-
-        private void handleUserUpdated(UserEvent event) {
-            logger.info("User updated: {} ({})", event.username(), event.email());
-            // Update search index, send notification, etc.
-        }
-
-        private void handleUserDeleted(UserEvent event) {
-            logger.info("User deleted: {} ({})", event.username(), event.email());
-            // Clean up user data, send goodbye email, etc.
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/com/example/consumer/UserEventConsumer.kt`:
-
-    ```kotlin
-    package com.example.consumer
-
-    import com.example.event.UserEvent
-    import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.kafka.common.annotation.KafkaListener
-
-    @Component
-    class UserEventConsumer {
-        private val logger = LoggerFactory.getLogger(UserEventConsumer::class.java)
-
-        @KafkaListener("kafka.consumer.events")
-        fun process(event: UserEvent) {
-            logger.info("Processing user event: {} for user {}", event.eventType, event.username)
-
-            // Process the event (e.g., send notifications, update search index, etc.)
-            when (event.eventType) {
-                "USER_CREATED" -> handleUserCreated(event)
-                "USER_UPDATED" -> handleUserUpdated(event)
-                "USER_DELETED" -> handleUserDeleted(event)
-                else -> logger.warn("Unknown event type: {}", event.eventType)
-            }
-        }
-
-        private fun handleUserCreated(event: UserEvent) {
-            logger.info("User created: {} ({})", event.username, event.email)
-            // Send welcome email, create notification, etc.
-        }
-
-        private fun handleUserUpdated(event: UserEvent) {
-            logger.info("User updated: {} ({})", event.username, event.email)
-            // Update search index, send notification, etc.
-        }
-
-        private fun handleUserDeleted(event: UserEvent) {
-            logger.info("User deleted: {} ({})", event.username, event.email)
-            // Clean up user data, send goodbye email, etc.
-        }
-    }
-    ```
-
-## Integrating with Your CRUD Application
-
-Update your existing service to publish events when data changes.
-
-### Update User Service
-
-Modify your user service to publish events:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update your `UserService.java`:
-
-    ```java
-    @Component
-    public final class UserService {
-        private final UserRepository userRepository;
-        private final UserEventPublisher eventPublisher;
-
-        public UserService(UserRepository userRepository, UserEventPublisher eventPublisher) {
-            this.userRepository = userRepository;
-            this.eventPublisher = eventPublisher;
-        }
-
-        public UserResponse createUser(UserRequest request) {
-            var user = userRepository.save(request);
-            // Publish event after successful creation
-            eventPublisher.publish(UserEvent.created(user.id(), user.name(), user.email()));
-            return user;
-        }
-
-        public Optional<UserResponse> updateUser(String id, UserRequest request) {
-            return userRepository.findById(id)
-                    .map(existing -> {
-                        var updated = userRepository.save(request);
-                        // Publish event after successful update
-                        eventPublisher.publish(UserEvent.updated(updated.id(), updated.name(), updated.email()));
-                        return updated;
-                    });
-        }
-
-        public boolean deleteUser(String id) {
-            return userRepository.findById(id)
-                    .map(user -> {
-                        var deleted = userRepository.deleteById(id);
-                        if (deleted) {
-                            // Publish event after successful deletion
-                            eventPublisher.publish(UserEvent.deleted(user.id(), user.name(), user.email()));
-                        }
-                        return deleted;
-                    })
-                    .orElse(false);
-        }
-
-        // ... other methods remain unchanged ...
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Update your `UserService.kt`:
-
-    ```kotlin
-    @Component
-    class UserService(
-        private val userRepository: UserRepository,
-        private val eventPublisher: UserEventPublisher
-    ) {
-
-        fun createUser(request: UserRequest): UserResponse {
-            val user = userRepository.save(request)
-            // Publish event after successful creation
-            eventPublisher.publish(UserEvent.created(user.id, user.name, user.email))
-            return user
-        }
-
-        fun updateUser(id: String, request: UserRequest): UserResponse? {
-            return userRepository.findById(id)?.let { existing ->
-                val updated = userRepository.save(request)
-                // Publish event after successful update
-                eventPublisher.publish(UserEvent.updated(updated.id, updated.name, updated.email))
-                updated
-            }
-        }
-
-        fun deleteUser(id: String): Boolean {
-            return userRepository.findById(id)?.let { user ->
-                val deleted = userRepository.deleteById(id)
-                if (deleted) {
-                    // Publish event after successful deletion
-                    eventPublisher.publish(UserEvent.deleted(user.id, user.name, user.email))
-                }
-                deleted
-            } ?: false
-        }
-
-        // ... other methods remain unchanged ...
-    }
-    ```
-
-## Testing Your Events
-
-Create comprehensive tests for your event-driven system.
-
-### Publisher Tests
-
-Test your event publishing:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/test/java/com/example/publisher/UserEventPublisherTest.java`:
-
-    ```java
-    package com.example.publisher;
-
-    import com.example.event.UserEvent;
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection;
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.Topics;
-    import org.json.JSONObject;
-    import org.junit.jupiter.api.Test;
-    import com.example.Application;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics("user-events"))
-    @KoraAppTest(Application.class)
-    class UserEventPublisherTest implements KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private KafkaConnection connection;
-
-        @TestComponent
-        private UserEventPublisher publisher;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            );
-        }
-
-        @Test
-        void shouldPublishUserCreatedEvent() {
-            // Given
-            var consumer = connection.subscribe("user-events");
-            var event = UserEvent.created("user-123", "john", "john@example.com");
-
-            // When
-            publisher.publish(event);
-
-            // Then
-            var records = consumer.consume(1);
-            assertEquals(1, records.size());
-
-            var record = records.get(0);
-            var jsonEvent = new JSONObject(record.value());
-            assertEquals("USER_CREATED", jsonEvent.getString("eventType"));
-            assertEquals("user-123", jsonEvent.getString("userId"));
-            assertEquals("john", jsonEvent.getString("username"));
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/com/example/publisher/UserEventPublisherTest.kt`:
-
-    ```kotlin
-    package com.example.publisher
-
-    import com.example.event.UserEvent
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka
-    import io.goodforgod.testcontainers.extensions.kafka.Topics
-    import org.json.JSONObject
-    import org.junit.jupiter.api.Test
-    import com.example.Application
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics(["user-events"]))
-    @KoraAppTest(Application::class)
-    class UserEventPublisherTest : KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private lateinit var connection: KafkaConnection
-
-        @TestComponent
-        private lateinit var publisher: UserEventPublisher
-
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            )
-        }
-
-        @Test
-        fun `should publish user created event`() {
-            // Given
-            val consumer = connection.subscribe("user-events")
-            val event = UserEvent.created("user-123", "john", "john@example.com")
-
-            // When
-            publisher.publish(event)
-
-            // Then
-            val records = consumer.consume(1)
-            assertEquals(1, records.size)
-
-            val record = records[0]
-            val jsonEvent = JSONObject(record.value())
-            assertEquals("USER_CREATED", jsonEvent.getString("eventType"))
-            assertEquals("user-123", jsonEvent.getString("userId"))
-            assertEquals("john", jsonEvent.getString("username"))
-        }
-    }
-    ```
-
-### Consumer Tests
-
-Test your event consumption:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/test/java/com/example/consumer/UserEventConsumerTest.java`:
-
-    ```java
-    package com.example.consumer;
-
-    import com.example.event.UserEvent;
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection;
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka;
-    import io.goodforgod.testcontainers.extensions.kafka.Topics;
-    import org.junit.jupiter.api.Test;
-    import com.example.Application;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics("user-events"))
-    @KoraAppTest(Application.class)
-    class UserEventConsumerTest implements KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private KafkaConnection connection;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            );
-        }
-
-        @Test
-        void shouldConsumeUserEvents() throws InterruptedException {
-            // Given
-            var producer = connection.producer("user-events");
-            var event = UserEvent.created("user-123", "john", "john@example.com");
-
-            // When
-            producer.send(event);
-
-            // Then - Consumer should process the event
-            // Wait a bit for async processing
-            Thread.sleep(1000);
-
-            // Verify event was processed (check logs or mock dependencies)
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/test/kotlin/com/example/consumer/UserEventConsumerTest.kt`:
-
-    ```kotlin
-    package com.example.consumer
-
-    import com.example.event.UserEvent
-    import io.goodforgod.testcontainers.extensions.kafka.ConnectionKafka
-    import io.goodforgod.testcontainers.extensions.kafka.KafkaConnection
-    import io.goodforgod.testcontainers.extensions.kafka.TestcontainersKafka
-    import io.goodforgod.testcontainers.extensions.kafka.Topics
-    import org.junit.jupiter.api.Test
-    import com.example.Application
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-
-    @TestcontainersKafka(mode = PER_RUN, topics = @Topics(["user-events"]))
-    @KoraAppTest(Application::class)
-    class UserEventConsumerTest : KoraAppTestConfigModifier {
-
-        @ConnectionKafka
-        private lateinit var connection: KafkaConnection
-
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification.ofSystemProperty(
-                "KAFKA_BOOTSTRAP", connection.params().bootstrapServers()
-            )
-        }
-
-        @Test
-        fun `should consume user events`() {
-            // Given
-            val producer = connection.producer("user-events")
-            val event = UserEvent.created("user-123", "john", "john@example.com")
-
-            // When
-            producer.send(event)
-
-            // Then - Consumer should process the event
-            // Wait a bit for async processing
-            Thread.sleep(1000)
-
-            // Verify event was processed (check logs or mock dependencies)
-        }
-    }
-    ```
-
-## Running and Testing
-
-Start your application with Kafka:
+Then run the application:
 
 ```bash
-# Start Kafka
-docker-compose up -d kafka
-
-# Run your application
 ./gradlew run
+```
 
-# In another terminal, test the events
+## Check Application { #check-app }
+
+Create a user:
+
+```bash
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
+  -d '{"name":"John Doe","email":"john@example.com"}'
 ```
 
-Run the tests:
+You should get a response like:
+
+```json
+{
+    "id": "9f6f1d43-8e2c-41ce-a7c1-f1d4d92a7982"
+}
+```
+
+Notice what happened:
+
+- the HTTP request returned immediately
+- the response does not contain the whole created user
+- the user id is already known
+- the real write happens when the Kafka consumer processes the event
+
+Now fetch the user:
 
 ```bash
-./gradlew test
+curl http://localhost:8080/users/9f6f1d43-8e2c-41ce-a7c1-f1d4d92a7982
 ```
 
-## Advanced Patterns
+Depending on timing, there may be a short gap before the user becomes visible. That gap is the whole point of the guide: the creation pipeline is asynchronous now.
 
-### Transactional Publishing
+## Best Practices { #best-practices }
 
-For data consistency between database and events:
+- Keep event DTOs focused on business meaning. `UserCreatedEvent` should represent a fact, not an HTTP request shape.
+- Treat consumer code as another application boundary. Validate and log carefully.
+- Make consumers idempotent when possible. In real systems, the same event may be delivered more than once.
+- Keep the HTTP contract honest. Returning `202 Accepted` is better than pretending the write already finished.
+- Reuse your existing service and repository layers when it keeps the design simple. Kafka should change the flow, not force needless rewrites.
 
-===! ":fontawesome-brands-java: `Java`"
+## Summary { #summary }
 
-    ```java
-    @KafkaPublisher("kafka.producer.transactional")
-    public interface TransactionalEventPublisher extends TransactionalPublisher<TransactionalEventPublisher.EventPublisher> {
+You extended the HTTP Server guide with a first event-driven workflow:
 
-        @KafkaPublisher("kafka.producer.events")
-        interface EventPublisher {
-            @Topic("kafka.producer.events.user-topic")
-            void publish(UserEvent event);
-        }
-    }
-    ```
+- `POST /users` now publishes `UserCreatedEvent`
+- the controller returns `202 Accepted` with the future user id
+- a Kafka consumer receives that event
+- the consumer creates the user through `UserService`
+- the rest of the CRUD API still looks familiar
 
-=== ":simple-kotlin: `Kotlin`"
+That makes this guide a gentle introduction to asynchronous messaging. The application still feels like the same CRUD service, but one important operation now happens through Kafka.
 
-    ```kotlin
-    @KafkaPublisher("kafka.producer.transactional")
-    interface TransactionalEventPublisher : TransactionalPublisher<TransactionalEventPublisher.EventPublisher> {
+## Key Concepts { #key-concepts }
 
-        @KafkaPublisher("kafka.producer.events")
-        interface EventPublisher {
-            @Topic("kafka.producer.events.user-topic")
-            fun publish(event: UserEvent)
-        }
-    }
-    ```
+- Kafka lets you move work out of the HTTP request path
+- producers publish events, consumers process them later
+- `202 Accepted` is a natural HTTP status for asynchronous creation
+- Kora can generate Kafka producers from interfaces
+- Kafka listeners can evolve from a simple event-only signature to a more defensive `event + exception` form
+- event-driven architecture can build on top of the same service and repository layers you already know
 
-### Manual Commit for Fine Control
+## Troubleshooting { #troubleshooting }
 
-For advanced error handling:
+**`POST /users` returns an id but `GET /users/{id}` still returns 404:**
 
-===! ":fontawesome-brands-java: `Java`"
+That usually means the event was published but not consumed yet, or the consumer failed to process it.
 
-    ```java
-    @KafkaListener("kafka.consumer.manual")
-    void process(UserEvent event, Consumer<String, String> consumer) {
-        try {
-            // Process event
-            processEvent(event);
-            // Manual commit on success
-            consumer.commitSync();
-        } catch (Exception e) {
-            // Handle error - don't commit, message will be retried
-            logger.error("Failed to process event", e);
-        }
-    }
-    ```
+Check:
 
-=== ":simple-kotlin: `Kotlin`"
+- Kafka is running
+- the topic name is the same for producer and consumer
+- application logs show the consumer processing the event
 
-    ```kotlin
-    @KafkaListener("kafka.consumer.manual")
-    fun process(event: UserEvent, consumer: Consumer<String, String>) {
-        try {
-            // Process event
-            processEvent(event)
-            // Manual commit on success
-            consumer.commitSync()
-        } catch (e: Exception) {
-            // Handle error - don't commit, message will be retried
-            logger.error("Failed to process event", e)
-        }
-    }
-    ```
+**Consumer never receives the event:**
 
-## Monitoring and Observability
+Check:
 
-Kora automatically provides metrics and tracing for Kafka operations. View them at your configured endpoints.
+- `kafka.producer.user-created-topic.topic`
+- `kafka.consumer.user-created.topics`
+- `KAFKA_BOOTSTRAP`
 
-## Best Practices
+Both producer and consumer must point to the same broker and the same topic.
 
-### Event Design
-- Use descriptive event names (UserCreated, OrderPlaced)
-- Include all relevant data in events
-- Use event versioning for schema evolution
-- Keep events immutable
+**Deserialization errors in the consumer:**
 
-### Consumer Patterns
-- Make consumers idempotent (handle duplicate events)
-- Use dead letter topics for failed messages
-- Implement proper error handling and logging
-- Monitor consumer lag and throughput
+If JSON cannot be read correctly, the listener may receive `exception != null`.
 
-### Testing Strategies
-- Test publishers and consumers separately
-- Use Testcontainers for integration tests
-- Test error scenarios and edge cases
-- Verify event data integrity
+That is why the final consumer signature in this guide accepts both:
 
-## Summary
+- `@Json @Nullable UserCreatedEvent event`
+- `@Nullable Exception exception`
 
-You've successfully implemented event-driven architecture with Kafka:
+This gives you a place to log or react to mapping failures explicitly.
 
-- **Event Publishing**: Send domain events when data changes
-- **Asynchronous Processing**: Handle events in the background
-- **Loose Coupling**: Services communicate through events
-- **Scalability**: Process events at your own pace
-- **Comprehensive Testing**: Test all components with Testcontainers
+## What's Next? { #whats-next }
 
-## Key Concepts Learned
+- [Resilient Patterns](resilient.md) to add retries, circuit breakers, and fallbacks around operations that publish or consume events.
+- [Observability](observability.md) to monitor producers, consumers, lag-sensitive behavior, and asynchronous failures.
+- [Caching](cache.md) when event-driven writes need fast read paths.
+- [Database JDBC](database-jdbc.md) before black-box testing if you want the JDBC-backed end-to-end test path.
 
-### Event-Driven Architecture
-- **Domain Events**: Represent business facts as immutable events
-- **Publish-Subscribe**: Decouple producers and consumers
-- **Asynchronous Processing**: Handle operations without blocking
+## Help { #help }
 
-### Kafka Integration
-- **Publishers**: Send messages with type-safe interfaces
-- **Consumers**: Process messages with automatic serialization
-- **Configuration**: Flexible setup for different environments
+If you encounter issues:
 
-### Testing Strategies
-- **Testcontainers**: Realistic testing with Docker containers
-- **Publisher Tests**: Verify events are sent correctly
-- **Consumer Tests**: Ensure events are processed properly
-
-## Next Steps
-
-Continue your event-driven journey:
-
-- **Advanced Kafka**: Explore transactional messaging and exactly-once delivery
-- **Event Sourcing**: Build applications around event streams
-- **CQRS**: Separate read and write models with events
-- **Microservices**: Use events for service communication
-
-## Troubleshooting
-
-### Connection Issues
-- Verify Kafka is running: `docker-compose ps`
-- Check bootstrap servers configuration
-- Ensure network connectivity between containers
-
-### Serialization Errors
-- Verify `@Json` annotations on event classes
-- Check JSON field mappings
-- Validate event data types
-
-### Consumer Not Processing
-- Check topic names match between producer and consumer
-- Verify consumer group configuration
-- Check logs for deserialization errors
-
-### Testcontainers Issues
-- Ensure Docker is running and accessible
-- Check Testcontainers version compatibility
-- Verify network configuration for container communication
+- compare with [Kora Java Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-messaging-kafka-app) and [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-messaging-kafka-app)
+- revisit [HTTP Server](http-server.md) for the synchronous API baseline
+- check the [Kafka documentation](../documentation/kafka.md)
+- check the [JSON documentation](../documentation/json.md) for event payload mapping

@@ -6,6 +6,8 @@ agent:
 
 Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/languages/java/basics/) functionality.
 
+For a step-by-step walkthrough before the reference details, see [gRPC Client](../guides/grpc-client.md) and [Advanced gRPC Client](../guides/grpc-client-advanced.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

@@ -59,7 +59,7 @@ how to work with the development tool, which allows them to use it effectively a
 and memorizing tricky techniques for working with the framework.
 Source code creation approach allows for dependency container checking at compile time 
 and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
-
+gent
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
 makes it easy to learn framework without the need for developers to spend years memorizing the "guts of the framework".
 Kora aims to do all framework optimizations in-house, 
@@ -89,3 +89,7 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 - Observability, tracing and metrics according to `OpenTelemetry` standard and logging for all modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)
 - Simple and detailed documentation supported by [examples of working services](examples/kora-examples.md)
+
+## Start with a guide
+
+Continue with [Creating Your First Kora Application](guides/getting-started.md) to build a minimal HTTP service and see how `@KoraApp`, `@Component`, `@HttpController`, and `@HttpRoute` work together in a real project.

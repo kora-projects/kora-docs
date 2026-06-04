@@ -11,6 +11,8 @@ Other tools often have limitations on using specific functions of a particular d
 or a complex program language for building queries that requires additional and considerable time to learn and master,
 carries a lot of non-obviousness and potential errors on the part of the developer, and also sometimes has low performance.
 
+For a step-by-step walkthrough before the reference details, see [JDBC Database](../guides/database-jdbc.md) and [Advanced JDBC Database](../guides/database-jdbc-advanced.md).
+
 ## Entity { #entity }
 
 An entity is a representation of data from a database in the form of a class with fields.

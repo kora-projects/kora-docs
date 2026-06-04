@@ -7,6 +7,8 @@ agent:
 Module for creating declarative HTTP handlers [HTTP server](http-server.md)
 or create declarative [HTTP clients](http-client.md) from OpenAPI contracts using [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle).
 
+For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI HTTP Server](../guides/openapi-http-server-advanced.md) and [OpenAPI HTTP Client](../guides/openapi-http-client.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

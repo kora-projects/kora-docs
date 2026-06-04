@@ -7,6 +7,8 @@ agent:
 A module to provide an OpenAPI file from an application,
 as well as [Swagger UI](https://swagger.io/tools/swagger-ui/) and [Rapidoc](https://rapidocweb.com/) for displaying OpenAPI.
 
+For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP Server](../guides/openapi-http-server.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

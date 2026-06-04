@@ -7,6 +7,8 @@ agent:
 Module provides a repository implementation based on the [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) database protocol
 and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection set management.
 
+For a step-by-step walkthrough before the reference details, see [JDBC Database](../guides/database-jdbc.md) and [Advanced JDBC Database](../guides/database-jdbc-advanced.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"

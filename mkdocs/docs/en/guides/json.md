@@ -1,42 +1,92 @@
 ---
+search:
+  exclude: true
 title: JSON Processing with Kora
-summary: Learn how to handle JSON requests/responses in your Kora HTTP APIs
+summary: Learn how to handle JSON requests and responses in a Kora HTTP API with type-safe DTOs and sealed polymorphic responses
 tags: json, http, api, serialization
 ---
 
-# JSON Processing with Kora
+# Working with JSON in Kora { #working-json-kora }
 
-This guide shows you how to handle JSON request and response data in your Kora HTTP APIs with automatic serialization and deserialization.
-
-## What You'll Build
-
-You'll build a simple HTTP API that handles JSON requests and responses:
-
-- JSON request body parsing
-- JSON response serialization
-- Type-safe request/response objects
-- Automatic content-type handling
-
-## What You'll Need
-
-- JDK 17 or later
-- Gradle 7.0+
-- A text editor or IDE
-- Completed [Creating Your First Kora App](../getting-started.md) guide
-
-## Prerequisites
-
-!!! note "Required: Complete Basic Kora Setup"
-
-    This guide assumes you have completed the **[Create Your First Kora App](../getting-started.md)** guide and have a working Kora project with basic setup.
-
-    If you haven't completed the basic guide yet, please do so first as this guide builds upon that foundation.
-
-## Add Dependencies
+This guide introduces JSON request and response mapping in Kora. It covers how `@Json` selects JSON mappers for HTTP bodies, how request and response DTOs become the typed boundary of an API, and how
+Kora generates serialization code through annotation processing. You will also see how JSON mapping fits into the compile-time dependency graph that powers the application.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Add to the `dependencies` block in `build.gradle`:
+    If you want to check your progress along the way, use the finished working example: [Kora Java JSON App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-json-app).
+
+=== ":simple-kotlin: `Kotlin`"
+
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin JSON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-json-app).
+
+## What You'll Build { #youll-build }
+
+You will build a JSON-first HTTP API with:
+
+- JSON request parsing for `POST /users`
+- JSON response serialization for `GET /users`
+- Polymorphic JSON response for `GET /users/{id}` using sealed types
+- Type-safe DTO contracts for request and response models
+
+## What You'll Need { #youll-need }
+
+- JDK 17 or later
+- Gradle 7+
+- A text editor or IDE
+- Completed [Creating Your First Kora App](getting-started.md)
+
+## Prerequisites { #prerequisites }
+
+!!! note "Required: Complete Basic Kora Setup"
+
+    This guide assumes you have completed **[Creating Your First Kora App](getting-started.md)** and have a working Kora application graph with the HTTP server baseline in place.
+
+    If you haven't completed the getting started guide yet, do that first, because this guide adds JSON request and response mapping on top of that baseline.
+
+## Overview { #overview }
+
+[JSON](https://www.json.org/json-en.html) is usually the first real data boundary in an HTTP API. A plain string response is enough to prove the server works, but real endpoints exchange structured
+request and response objects. This guide shows how Kora turns those objects into JSON without making controller code manually parse or build JSON strings.
+
+The important shift is that JSON becomes a transport representation, not the application model itself. Application code should work with typed objects, while the framework handles how those objects
+are encoded on the wire.
+
+### JSON Mapping in Kora { #json-mapping-kora }
+
+Kora JSON support is based on generated mappers. When you add the JSON module and annotate HTTP bodies with `@Json`, Kora knows that the request body should be deserialized into a Java or Kotlin type
+and the response value should be serialized back to JSON. The mapper code is generated at compile time, so missing or unsupported mappings are caught early.
+
+That means the controller can work with typed DTOs:
+
+- request DTOs describe what the API accepts
+- response DTOs describe what the API returns
+- generated JSON mappers handle the transport representation
+
+### DTOs as API Contracts { #dtos-api-contracts }
+
+DTOs are not just convenience classes. They are the public shape of your API. A `UserRequest` says which fields a client must send, while `UserResponse` says which fields the service returns. Keeping
+that boundary explicit makes later guides easier: validation can attach rules to DTOs, HTTP routes can reuse them, and tests can assert stable response shapes.
+
+### Type-Safe Results { #type-safe-results }
+
+This guide also introduces a sealed result model. A sealed result is useful when one operation can produce several known outcomes, such as success or an error state. Instead of returning loose maps or
+throwing exceptions for every branch, the code can express those outcomes as a closed set of types.
+
+The important idea is that JSON mapping should support your application model, not replace it. Application code works with typed request, response, and result objects; Kora handles the JSON boundary.
+
+The practical flow is:
+
+1. add the JSON module and annotation processor support
+2. create request and response DTOs
+3. annotate controller inputs and outputs with `@Json`
+4. let Kora generate JSON mappers at compile time
+5. use a sealed result model to keep success and error outcomes typed
+
+## Dependencies { #dependencies }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Add to `build.gradle`:
 
     ```groovy
     dependencies {
@@ -48,7 +98,7 @@ You'll build a simple HTTP API that handles JSON requests and responses:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Add to the `dependencies` block in `build.gradle.kts`:
+    Add to `build.gradle.kts`:
 
     ```kotlin
     dependencies {
@@ -58,102 +108,115 @@ You'll build a simple HTTP API that handles JSON requests and responses:
     }
     ```
 
-## Add Modules
+## Modules { #modules }
 
-Update your existing `Application.java` or `Application.kt` to include the `JsonModule`:
+Update your application graph to include JSON support.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/example/Application.java`:
+    Update `src/main/java/ru/tinkoff/kora/guide/json/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.example;
+    package ru.tinkoff.kora.guide.json;
 
+    import ru.tinkoff.kora.application.graph.KoraApplication;
     import ru.tinkoff.kora.common.KoraApp;
+    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
     import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
     import ru.tinkoff.kora.json.module.JsonModule;
     import ru.tinkoff.kora.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            UndertowHttpServerModule,
-            JsonModule,
-            LogbackModule {  // Add this line
+            HoconConfigModule,
+            JsonModule,  // <----- Connected module
+            LogbackModule,
+            UndertowHttpServerModule {
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/example/Application.kt`:
+    Update `src/main/kotlin/ru/tinkoff/kora/guide/json/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.example
+    package ru.tinkoff.kora.guide.json
 
+    import ru.tinkoff.kora.application.graph.KoraApplication
     import ru.tinkoff.kora.common.KoraApp
+    import ru.tinkoff.kora.config.hocon.HoconConfigModule
     import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
     import ru.tinkoff.kora.json.module.JsonModule
     import ru.tinkoff.kora.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        UndertowHttpServerModule,
-        JsonModule,
-        LogbackModule  // Add this line
+        HoconConfigModule,
+        JsonModule,  // <----- Connected module
+        LogbackModule,
+        UndertowHttpServerModule
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
-## Creating Request/Response DTOs
 
-**Data Transfer Objects (DTOs)** are simple objects that carry data between processes. In REST APIs, DTOs define the structure of request and response data, providing a clear contract between your API and its clients. They ensure type safety, make your API self-documenting, and handle JSON serialization automatically.
-
-Create data transfer objects for your API:
+## DTO { #dto }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/example/dto/UserRequest.java`:
+    Create `src/main/java/ru/tinkoff/kora/guide/json/dto/UserRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.example.dto;
+    package ru.tinkoff.kora.guide.json.dto;
 
-    public record UserRequest(
-        String name,
-        String email
-    ) {}
+    import ru.tinkoff.kora.json.common.annotation.Json;
+
+    @Json
+    public record UserRequest(String name, String email) {}
     ```
 
-    Create `src/main/java/ru/tinkoff/kora/example/dto/UserResponse.java`:
+    Create `src/main/java/ru/tinkoff/kora/guide/json/dto/UserResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.example.dto;
+    package ru.tinkoff.kora.guide.json.dto;
 
     import java.time.LocalDateTime;
+    import ru.tinkoff.kora.json.common.annotation.Json;
 
-    public record UserResponse(
-        String id,
-        String name,
-        String email,
-        LocalDateTime createdAt
-    ) {}
+    @Json
+    public record UserResponse(String id, String name, String email, LocalDateTime createdAt) {}
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/dto/UserRequest.kt`:
+    Create `src/main/kotlin/ru/tinkoff/kora/guide/json/dto/UserRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.example.dto
+    package ru.tinkoff.kora.guide.json.dto
 
+    import ru.tinkoff.kora.json.common.annotation.Json
+
+    @Json
     data class UserRequest(
         val name: String,
         val email: String
     )
     ```
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/dto/UserResponse.kt`:
+    Create `src/main/kotlin/ru/tinkoff/kora/guide/json/dto/UserResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.example.dto
+    package ru.tinkoff.kora.guide.json.dto
 
     import java.time.LocalDateTime
+    import ru.tinkoff.kora.json.common.annotation.Json
 
+    @Json
     data class UserResponse(
         val id: String,
         val name: String,
@@ -162,23 +225,110 @@ Create data transfer objects for your API:
     )
     ```
 
-## Create User Service
+Annotating the DTO classes themselves is intentional. It tells Kora to generate the JSON reader and writer for the DTO during normal annotation processing, which avoids late-phase mapper generation
+warnings when the same type is later used through an HTTP body, cache value, Kafka payload, or another JSON boundary.
 
-Create a service layer to handle user operations:
+After compilation, Kora generates JSON readers and writers for these DTOs:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/example/service/UserService.java`:
+    ```text
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserRequest_JsonReader.java
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResponse_JsonWriter.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserRequest_JsonReader.kt
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResponse_JsonWriter.kt
+    ```
+
+The generated request reader checks JSON tokens and required fields before constructing the record:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.example.service;
+    private static String read_name(JsonParser __parser, int[] __receivedFields) throws IOException {
+        var __token = __parser.nextToken();
+        __receivedFields[0] = __receivedFields[0] | (1 << 0);
+        if (__token == JsonToken.VALUE_STRING) {
+            return __parser.getText();
+        } else {
+            throw new JsonParseException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token);
+        }
+    }
+
+    return new UserRequest(name, email);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    private fun read_name(__parser: JsonParser, __receivedFields: IntArray): String {
+      val __token = __parser.nextToken()
+      __receivedFields[0] = __receivedFields[0] or (1 shl 0)
+      if (__token == JsonToken.VALUE_STRING) {
+        return __parser.text
+      }
+      throw JsonParseException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token)
+    }
+
+    return UserRequest(name!!, email!!)
+    ```
+
+The generated response writer writes exactly the DTO fields that form the HTTP response contract:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    _gen.writeStartObject(_object);
+    if (_object.id() != null) {
+        _gen.writeFieldName(_id_optimized_field_name);
+        _gen.writeString(_object.id());
+    }
+    if (_object.createdAt() != null) {
+        _gen.writeFieldName(_createdAt_optimized_field_name);
+        createdAtWriter.write(_gen, _object.createdAt());
+    }
+    _gen.writeEndObject();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    _gen.writeStartObject(_object)
+    _object.id.let {
+      _gen.writeFieldName(_id_optimized_field_name)
+      _gen.writeString(it)
+    }
+    _object.createdAt.let {
+      _gen.writeFieldName(_createdAt_optimized_field_name)
+      createdAtWriter.write(_gen, it)
+    }
+    _gen.writeEndObject()
+    ```
+
+This is the first place where `@Json` becomes concrete: request DTOs get generated readers, response DTOs get generated writers, and unsupported shapes fail at compile time instead of being discovered
+through runtime reflection.
+
+## Service { #service }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Create `src/main/java/ru/tinkoff/kora/guide/json/service/UserService.java`:
+
+    ```java
+    package ru.tinkoff.kora.guide.json.service;
 
     import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.example.dto.UserRequest;
-    import ru.tinkoff.kora.example.dto.UserResponse;
+    import ru.tinkoff.kora.guide.json.dto.UserRequest;
+    import ru.tinkoff.kora.guide.json.dto.UserResponse;
+    import ru.tinkoff.kora.guide.json.dto.UserResult;
 
     import java.time.LocalDateTime;
-    import java.util.*;
+    import java.util.List;
+    import java.util.Map;
     import java.util.concurrent.ConcurrentHashMap;
     import java.util.concurrent.atomic.AtomicLong;
 
@@ -190,35 +340,36 @@ Create a service layer to handle user operations:
 
         public UserResponse createUser(UserRequest request) {
             String id = String.valueOf(idGenerator.getAndIncrement());
-            UserResponse user = new UserResponse(
-                id,
-                request.name(),
-                request.email(),
-                LocalDateTime.now()
-            );
+            UserResponse user = new UserResponse(id, request.name(), request.email(), LocalDateTime.now());
             users.put(id, user);
             return user;
         }
 
         public List<UserResponse> getAllUsers() {
-            return new ArrayList<>(users.values());
+            return users.values().stream().toList();
+        }
+
+        public UserResult getUser(String id) {
+            UserResponse user = users.get(id);
+            if (user != null) {
+                return new UserResult.UserSuccess(UserResult.Status.OK, user);
+            }
+            return new UserResult.UserError(UserResult.Status.ERROR, "User not found with id: " + id);
         }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/service/UserService.kt`:
+    Create `src/main/kotlin/ru/tinkoff/kora/guide/json/service/UserService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.example.service
+    package ru.tinkoff.kora.guide.json.service
 
     import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.example.dto.UserRequest
-    import ru.tinkoff.kora.example.dto.UserResponse
-    import ru.tinkoff.kora.example.dto.UserResult
-    import ru.tinkoff.kora.example.dto.UserSuccess
-    import ru.tinkoff.kora.example.dto.UserError
+    import ru.tinkoff.kora.guide.json.dto.UserRequest
+    import ru.tinkoff.kora.guide.json.dto.UserResponse
+    import ru.tinkoff.kora.guide.json.dto.UserResult
     import java.time.LocalDateTime
     import java.util.concurrent.ConcurrentHashMap
     import java.util.concurrent.atomic.AtomicLong
@@ -241,92 +392,187 @@ Create a service layer to handle user operations:
             return user
         }
 
-        fun getAllUsers(): List<UserResponse> {
-            return users.values.toList()
+        fun getAllUsers(): List<UserResponse> = users.values.toList()
+
+        fun getUser(id: String): UserResult {
+            val user = users[id]
+            return if (user != null) {
+                UserResult.UserSuccess(UserResult.Status.OK, user)
+            } else {
+                UserResult.UserError(UserResult.Status.ERROR, "User not found with id: $id")
+            }
         }
     }
     ```
 
-## Create User Controller
-
-This section demonstrates how Kora handles JSON request and response processing automatically. The `@Json` annotation enables seamless JSON serialization and deserialization, while the JsonModule provides the underlying JSON processing capabilities.
-
-### How JSON Processing Works in Kora
-
-**Request Body Parsing with Compile-Time Code Generation**:
-- When a method parameter is annotated with `@Json` and has a custom type (not a primitive), Kora generates a type-safe JSON reader at compile time
-- This generated reader is injected into your controller through dependency injection
-- At runtime, the injected reader parses the incoming JSON request body into your DTO objects
-- Content-Type validation ensures the request contains valid JSON before parsing
-
-**Response Body Serialization with Compile-Time Code Generation**:
-- When a method is annotated with `@Json`, Kora generates a type-safe JSON writer at compile time
-- This generated writer is injected into your controller through dependency injection
-- At runtime, the injected writer serializes your return value to JSON format
-- The response Content-Type is set to `application/json` and complex objects are handled seamlessly
-
-**Type Safety Throughout**:
-- Compile-time guarantees that your DTOs match the expected JSON structure
-- Runtime validation ensures data integrity
-- No manual JSON parsing or serialization code needed
-
-### Key Annotations and Their Roles
-
-**`@Json` on Method Parameters**:
-- Enables JSON deserialization for request bodies
-- Works with custom DTO classes (records/data classes)
-- Automatically validates JSON structure against your type
-
-**`@Json` on Methods**:
-- Enables JSON serialization for response bodies
-- Sets appropriate Content-Type headers
-- Handles complex object graphs and collections
-
-**`@HttpController` and `@HttpRoute`**:
-- Define REST endpoints that can handle JSON
-- Route HTTP requests to your handler methods
-- Support standard HTTP methods (GET, POST, PUT, DELETE)
-
-### JsonModule Integration
-
-The JsonModule provides the foundational components for JSON processing:
-
-**JsonReader<T> Components**:
-- Basic and primitive JSON readers (String, Integer, Boolean, etc.) provided by JsonModule
-- Used as building blocks by compile-time generated mappers for complex DTOs
-- Handle fundamental JSON parsing operations for primitive types
-- Include validation and error handling for malformed JSON
-
-**JsonWriter<T> Components**:
-- Basic and primitive JSON writers (String, Integer, Boolean, etc.) provided by JsonModule
-- Used as building blocks by compile-time generated mappers for complex DTOs
-- Handle fundamental JSON writing operations for primitive types
-- Support complex object graphs, collections, and nested structures through generated mappers
-
-**Content Negotiation & Error Handling**:
-- Automatic handling of Accept/Content-Type headers
-- Proper error responses for malformed JSON with detailed validation messages
-- Integration with Kora's HTTP server for seamless request/response processing
-
-Create a REST controller with JSON endpoints:
+## Sealed Response Model { #sealed-response-model }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/example/controller/UserController.java`:
+    Create `src/main/java/ru/tinkoff/kora/guide/json/dto/UserResult.java`:
 
     ```java
-    package ru.tinkoff.kora.example.controller;
+    package ru.tinkoff.kora.guide.json.dto;
 
-    import ru.tinkoff.kora.example.dto.UserRequest;
-    import ru.tinkoff.kora.example.dto.UserResponse;
-    import ru.tinkoff.kora.example.service.UserService;
-    import ru.tinkoff.kora.http.common.annotation.HttpController;
+    import ru.tinkoff.kora.json.common.annotation.Json;
+    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorField;
+    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorValue;
+
+    @Json
+    @JsonDiscriminatorField("status")
+    public sealed interface UserResult permits UserResult.UserSuccess, UserResult.UserError {
+
+        @Json
+        enum Status {
+            OK,
+            ERROR
+        }
+
+        Status status();
+
+        @Json
+        @JsonDiscriminatorValue("OK")
+        record UserSuccess(Status status, UserResponse user) implements UserResult {}
+
+        @Json
+        @JsonDiscriminatorValue("ERROR")
+        record UserError(Status status, String message) implements UserResult {}
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Create `src/main/kotlin/ru/tinkoff/kora/guide/json/dto/UserResult.kt`:
+
+    ```kotlin
+    package ru.tinkoff.kora.guide.json.dto
+
+    import ru.tinkoff.kora.json.common.annotation.Json
+    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorField
+    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorValue
+
+    @Json
+    @JsonDiscriminatorField("status")
+    sealed interface UserResult {
+
+        @Json
+        enum class Status {
+            OK,
+            ERROR
+        }
+
+        val status: Status
+
+        @Json
+        @JsonDiscriminatorValue("OK")
+        data class UserSuccess(
+            override val status: Status,
+            val user: UserResponse
+        ) : UserResult
+
+        @Json
+        @JsonDiscriminatorValue("ERROR")
+        data class UserError(
+            override val status: Status,
+            val message: String
+        ) : UserResult
+    }
+    ```
+
+After compilation, the generated sealed reader and writer show how Kora uses the discriminator field:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```text
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonReader.java
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonWriter.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonReader.kt
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonWriter.kt
+    ```
+
+The writer chooses the concrete subtype by Java type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    if (_object == null) {
+        _gen.writeNull();
+    } else if (_object instanceof UserResult.UserSuccess _o) {
+        userSuccessWriter.write(_gen, _o);
+    } else if (_object instanceof UserResult.UserError _o) {
+        userErrorWriter.write(_gen, _o);
+    } else {
+        throw new IllegalStateException("Unsupported class");
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    when (_object) {
+      null -> _gen.writeNull()
+      is UserResult.UserError -> userErrorWriter.write(_gen, _object)
+      is UserResult.UserSuccess -> userSuccessWriter.write(_gen, _object)
+    }
+    ```
+
+The reader performs the opposite operation by reading the `status` discriminator:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status");
+    if (discriminator == null) {
+        throw new JsonParseException(__parser, "Discriminator required, but not provided");
+    }
+    return switch(discriminator) {
+        case "OK" -> userSuccessReader.read(bufferedParser);
+        case "ERROR" -> userErrorReader.read(bufferedParser);
+        default -> throw new JsonParseException(__parser, "Unknown discriminator: '" + discriminator + "'");
+    };
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status")
+    if (discriminator == null) throw JsonParseException(__parser, "Discriminator required, but not provided")
+    return when(discriminator) {
+      "ERROR" -> userErrorReader.read(bufferedParser)
+      "OK" -> userSuccessReader.read(bufferedParser)
+      else -> throw JsonParseException(__parser, "Unknown discriminator")
+    }
+    ```
+
+This generated code explains polymorphic JSON without guessing: `@JsonDiscriminatorField("status")` becomes an actual discriminator lookup, and each subtype has its own generated reader and writer.
+
+## Controller { #controller }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Create `src/main/java/ru/tinkoff/kora/guide/json/controller/UserController.java`:
+
+    ```java
+    package ru.tinkoff.kora.guide.json.controller;
+
+    import java.util.List;
+    import ru.tinkoff.kora.common.Component;
+    import ru.tinkoff.kora.guide.json.dto.UserRequest;
+    import ru.tinkoff.kora.guide.json.dto.UserResponse;
+    import ru.tinkoff.kora.guide.json.dto.UserResult;
+    import ru.tinkoff.kora.guide.json.service.UserService;
+    import ru.tinkoff.kora.http.common.HttpMethod;
     import ru.tinkoff.kora.http.common.annotation.HttpRoute;
     import ru.tinkoff.kora.http.common.annotation.Path;
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
     import ru.tinkoff.kora.json.common.annotation.Json;
 
-    import java.util.Optional;
-
+    @Component
     @HttpController
     public final class UserController {
 
@@ -338,7 +584,7 @@ Create a REST controller with JSON endpoints:
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
         @Json
-        public UserResponse createUser(UserRequest request) {
+        public UserResponse createUser(@Json UserRequest request) {
             return userService.createUser(request);
         }
 
@@ -347,24 +593,34 @@ Create a REST controller with JSON endpoints:
         public List<UserResponse> getAllUsers() {
             return userService.getAllUsers();
         }
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        @Json
+        public UserResult getUser(@Path String id) {
+            return userService.getUser(id);
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/controller/UserController.kt`:
+    Create `src/main/kotlin/ru/tinkoff/kora/guide/json/controller/UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.example.controller
+    package ru.tinkoff.kora.guide.json.controller
 
-    import ru.tinkoff.kora.example.dto.UserRequest
-    import ru.tinkoff.kora.example.dto.UserResponse
-    import ru.tinkoff.kora.example.service.UserService
-    import ru.tinkoff.kora.http.common.annotation.HttpController
+    import ru.tinkoff.kora.common.Component
+    import ru.tinkoff.kora.guide.json.dto.UserRequest
+    import ru.tinkoff.kora.guide.json.dto.UserResponse
+    import ru.tinkoff.kora.guide.json.dto.UserResult
+    import ru.tinkoff.kora.guide.json.service.UserService
+    import ru.tinkoff.kora.http.common.HttpMethod
     import ru.tinkoff.kora.http.common.annotation.HttpRoute
     import ru.tinkoff.kora.http.common.annotation.Path
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController
     import ru.tinkoff.kora.json.common.annotation.Json
 
+    @Component
     @HttpController
     class UserController(
         private val userService: UserService
@@ -372,7 +628,7 @@ Create a REST controller with JSON endpoints:
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
         @Json
-        fun createUser(request: UserRequest): UserResponse {
+        fun createUser(@Json request: UserRequest): UserResponse {
             return userService.createUser(request)
         }
 
@@ -381,366 +637,145 @@ Create a REST controller with JSON endpoints:
         fun getAllUsers(): List<UserResponse> {
             return userService.getAllUsers()
         }
-    }
-    ```
 
-## Creating Sealed Classes for Responses
-
-Now that you have a basic API working, let's enhance it with type-safe discriminated unions using sealed classes. This pattern is useful when an endpoint can return different types of responses based on the outcome, providing better type safety and cleaner error handling.
-
-### Why Use Sealed Classes for API Responses?
-
-Sealed classes allow you to:
-- **Type-safe responses**: The compiler ensures you handle all possible response types
-- **Discriminated unions**: Different response structures based on a discriminator field
-- **Clean error handling**: No more null checks or Optional unwrapping
-- **Better API contracts**: Clear documentation of possible response variants
-
-### How JSON Processing Works with Sealed Classes
-
-Kora's JSON module provides sophisticated support for polymorphic JSON serialization and deserialization using sealed classes and discriminator fields:
-
-**Automatic Type Resolution**: When deserializing JSON, Kora automatically reads the discriminator field (specified by `@JsonDiscriminatorField`) to determine which concrete class to instantiate. For example, if the JSON contains `"status": "OK"`, Kora will create a `UserSuccess` instance.
-
-**Type-Safe Serialization**: During serialization, Kora automatically includes the discriminator field in the JSON output, ensuring that deserialization will correctly identify the response type.
-
-**Compile-Time Safety**: The `sealed interface` ensures that only the permitted classes (`UserSuccess`, `UserError`) can implement `UserResult`, providing exhaustive pattern matching in your code.
-
-**Discriminator Field Management**: The `@JsonDiscriminatorValue` annotation tells Kora which value to use for each concrete class, creating a clear mapping between JSON values and Java/Kotlin types.
-
-### Understanding the Annotations
-
-- **`@JsonDiscriminatorField("status")`**: Specifies which JSON field determines the response type
-- **`@JsonDiscriminatorValue("OK")`**: Marks classes with their discriminator values
-- **`sealed interface`**: Ensures only permitted classes can implement the interface
-
-### Create Sealed Response Types
-
-First, create the sealed interface and implementing classes:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/ru/tinkoff/kora/example/dto/UserResult.java`:
-
-    ```java
-    package ru.tinkoff.kora.example.dto;
-
-    import ru.tinkoff.kora.json.common.annotation.Json;
-    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorField;
-    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorValue;
-
-    public enum Status {
-        OK, ERROR
-    }
-
-    @Json
-    @JsonDiscriminatorField("status")
-    public sealed interface UserResult permits UserSuccess, UserError {
-    }
-
-    @JsonDiscriminatorValue("OK")
-    public record UserSuccess(Status status, UserResponse user) implements UserResult {
-    }
-
-    @JsonDiscriminatorValue("ERROR")
-    public record UserError(Status status, String message) implements UserResult {
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/ru/tinkoff/kora/example/dto/UserResult.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.example.dto
-
-    import ru.tinkoff.kora.json.common.annotation.Json
-    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorField
-    import ru.tinkoff.kora.json.common.annotation.JsonDiscriminatorValue
-
-    enum class Status {
-        OK, ERROR
-    }
-
-    @Json
-    @JsonDiscriminatorField("status")
-    sealed interface UserResult
-
-    @JsonDiscriminatorValue("OK")
-    data class UserSuccess(val status: Status, val user: UserResponse) : UserResult
-
-    @JsonDiscriminatorValue("ERROR")
-    data class UserError(val status: Status, val message: String) : UserResult
-    ```
-
-### Add getUser Method to Service with Sealed Classes
-
-Add a new `getUser` method to your UserService that returns UserResult:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update `src/main/java/ru/tinkoff/kora/example/service/UserService.java`:
-
-    ```java
-    // ... existing imports ...
-    import ru.tinkoff.kora.example.dto.UserResult;
-    import ru.tinkoff.kora.example.dto.UserSuccess;
-    import ru.tinkoff.kora.example.dto.UserError;
-
-    @Component
-    public final class UserService {
-        // ... existing fields and createUser method ...
-
-        // NEW: Add getUser method with sealed classes
-        public UserResult getUser(String id) {
-            UserResponse user = users.get(id);
-            if (user != null) {
-                return new UserSuccess(Status.OK, user);
-            } else {
-                return new UserError(Status.ERROR, "User not found with id: " + id);
-            }
-        }
-
-        // ... existing getAllUsers method ...
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Update `src/main/kotlin/ru/tinkoff/kora/example/service/UserService.kt`:
-
-    ```kotlin
-    // ... existing imports ...
-    import ru.tinkoff.kora.example.dto.UserResult
-    import ru.tinkoff.kora.example.dto.UserSuccess
-    import ru.tinkoff.kora.example.dto.UserError
-
-    @Component
-    class UserService {
-        // ... existing fields and createUser method ...
-
-        // NEW: Add getUser method with sealed classes
-        fun getUser(id: String): UserResult {
-            val user = users[id]
-            return if (user != null) {
-                UserSuccess(Status.OK, user)
-            } else {
-                UserError(Status.ERROR, "User not found with id: $id")
-            }
-        }
-
-        // ... existing getAllUsers method ...
-    }
-    ```
-
-### Add getUser Endpoint to Controller
-
-Now let's add a new endpoint that demonstrates how Kora handles polymorphic JSON responses using our sealed classes.
-
-### How JSON Processing Works in Controllers with Sealed Classes
-
-When you return a sealed interface from a controller method, Kora's JSON module automatically handles the polymorphic serialization:
-
-**Runtime Type Detection**: Kora inspects the actual runtime type of the returned object (`UserSuccess` or `UserError`) to determine which serialization strategy to use.
-
-**Discriminator Field Injection**: The `@JsonDiscriminatorField("status")` annotation ensures that the appropriate discriminator value is included in the JSON output, allowing clients to distinguish between different response types.
-
-**Type-Safe Deserialization**: When clients send requests that expect these responses, Kora can automatically deserialize the JSON back into the correct concrete type based on the discriminator field.
-
-**No Manual Type Checking**: Unlike traditional approaches that might use enums or flags, sealed classes provide compile-time guarantees that all possible response types are handled.
-
-Add a new `getUser` endpoint to your UserController:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update `src/main/java/ru/tinkoff/kora/example/controller/UserController.java`:
-
-    ```java
-    // ... existing imports ...
-    import ru.tinkoff.kora.example.dto.UserResult;
-
-    @HttpController
-    public final class UserController {
-        // ... existing constructor and createUser method ...
-
-        // NEW: Add getUser endpoint with sealed classes
         @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
         @Json
-        public UserResult getUser(@Path("id") String id) {
-            return userService.getUser(id);
-        }
-
-        // ... existing getAllUsers method ...
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Update `src/main/kotlin/ru/tinkoff/kora/example/controller/UserController.kt`:
-
-    ```kotlin
-    // ... existing imports ...
-    import ru.tinkoff.kora.example.dto.UserResult
-
-    @HttpController
-    class UserController(
-        private val userService: UserService
-    ) {
-        // ... existing constructor and createUser method ...
-
-        // NEW: Add getUser endpoint with sealed classes
-        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
-        @Json
-        fun getUser(@Path("id") id: String): UserResult {
+        fun getUser(@Path id: String): UserResult {
             return userService.getUser(id)
         }
-
-        // ... existing getAllUsers method ...
     }
     ```
 
-## Test the JSON API
+## Generated JSON Code { #json-code }
 
-Build and run your application:
+`@Json` is compile-time code generation, not runtime reflection.
+
+After you run:
 
 ```bash
-./gradlew build
+./gradlew clean classes
+```
+
+inspect the generated JSON readers and writers:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```text
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserRequest_JsonReader.java
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResponse_JsonWriter.java
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonReader.java
+    guides/guide-json-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonWriter.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserRequest_JsonReader.kt
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResponse_JsonWriter.kt
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonReader.kt
+    guides/kotlin/guide-kotlin-json-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/json/dto/$UserResult_JsonWriter.kt
+    ```
+
+The DTO and sealed-response chapters showed the generated fragments next to the model that produced them. Generated JSON classes are also excellent context for AI assistants: they show the exact field
+names, discriminator values, null handling, and subtype mapping Kora compiled from your DTOs.
+
+## Run Application { #run-app }
+
+First verify compilation and tests:
+
+```bash
+./gradlew clean classes
+./gradlew test
+```
+
+Then run the app:
+
+```bash
 ./gradlew run
 ```
 
-Test creating a user with valid data:
+## Check Application { #check-app }
+
+Create user:
 
 ```bash
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
+  -d '{"name":"John Doe","email":"john@example.com"}'
 ```
 
-You should see a response like:
-```json
-{
-  "id": "1",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "createdAt": "2025-09-27T10:30:00"
-}
-```
-
-Test getting all users:
+Get all users:
 
 ```bash
 curl http://localhost:8080/users
 ```
 
-You should see a response like:
-```json
-[
-  {
-    "id": "1",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "createdAt": "2025-09-27T10:30:00"
-  }
-]
-```
-
-### Test the Enhanced API with Sealed Classes
-
-Build and test your enhanced API with the new getUser endpoint:
+Get user by id (success):
 
 ```bash
-./gradlew build
-./gradlew run
-```
-
-Test the new getUser endpoint:
-
-```bash
-# Test successful user lookup
 curl http://localhost:8080/users/1
 ```
 
-You should see a response like:
-```json
-{
-  "status": "OK",
-  "user": {
-    "id": "1",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "createdAt": "2025-09-27T10:30:00"
-  }
-}
-```
+Get user by id (not found):
 
 ```bash
-# Test user not found
 curl http://localhost:8080/users/999
 ```
 
-You should see a response like:
-```json
-{
-  "status": "ERROR",
-  "message": "User not found with id: 999"
-}
-```
+## Best Practices { #best-practices }
 
-### Benefits of This Approach
+- Keep request/response DTOs simple and immutable.
+- Use sealed responses when endpoint outcomes have different payload shapes.
+- Keep business logic in service layer, not in controller methods.
+- Use compile-time generated JSON mapping (`@Json`) instead of manual parsing.
+- Put `@Json` on request/response DTO classes that are serialized or deserialized as JSON, not only on controller parameters and return values.
+- Inspect generated readers and writers when JSON shape or polymorphic decoding is unclear.
 
-**Type Safety**: The compiler ensures you handle both success and error cases when processing UserResult.
+## Summary { #summary }
 
-**No Null Checks**: Instead of checking for null or Optional, you use pattern matching or when expressions.
+You implemented JSON request/response handling in Kora with:
 
-**Clear API Contracts**: The JSON schema clearly shows possible response variants.
+- DTO-based API contracts
+- automatic JSON mapping
+- polymorphic sealed JSON responses with discriminator field
+- generated JSON readers and writers for DTO and sealed response contracts
 
-**Better Error Handling**: Structured error responses instead of HTTP status codes alone.
+## Key Concepts { #key-concepts }
 
-**Client-Side Benefits**: API clients can generate type-safe code that handles all response variants.
+- `json-module` enables JSON processing in Kora HTTP apps.
+- `@Json` handles request deserialization and response serialization.
+- Sealed types with `@JsonDiscriminatorField` and `@JsonDiscriminatorValue` provide type-safe polymorphic API responses.
+- Generated JSON source shows the exact serialization and deserialization behavior.
 
-## Key Concepts Learned
+## Troubleshooting { #troubleshooting }
 
-### JSON Processing in Kora
+**Request body is not deserialized**
 
-**Automatic Request Body Parsing**: When a controller method parameter is annotated with `@Json` or the method itself returns a type that needs JSON processing, Kora uses compile-time generated mappers that leverage JsonModule's basic readers to deserialize incoming JSON request bodies into your Java/Kotlin objects.
+- Ensure `json-module` is added to dependencies.
+- Ensure controller request parameter is annotated with `@Json`.
 
-**Response Serialization**: Return objects from controller methods annotated with `@Json`, and Kora automatically serializes them to JSON responses. The framework handles content-type negotiation and proper HTTP headers.
+**Polymorphic response does not serialize as expected**
 
-**Type Safety Throughout**: Kora's JSON processing maintains full type safety - if your Java/Kotlin types don't match the JSON structure, you'll get clear compilation errors rather than runtime failures.
+- Check `@JsonDiscriminatorField` on sealed type.
+- Check every subtype has `@JsonDiscriminatorValue`.
 
-**JsonModule Integration**: The JsonModule provides basic JsonReader<T> and JsonWriter<T> components for primitive types and fundamental JSON operations, which are used by compile-time generated mappers for complex DTOs. These components are automatically configured through Kora's dependency injection system.
+**HTTP routes are not found**
 
-### JSON Processing
-- **@Json annotation**: Triggers compile-time generation of type-safe JSON readers and writers
-- **JsonModule**: Provides primitive and other basic JsonReader<T> and JsonWriter<T> to use them when building type generated mappers
-- **Content-Type handling**: Automatic JSON content negotiation and proper HTTP headers
-- **Type-safe mapping**: Compile-time generated mappers ensure JSON structure matches your types
+- Verify `@HttpController` and `@HttpRoute` annotations.
+- Verify path patterns (`/users`, `/users/{id}`) and HTTP methods.
 
-### Type Safety
-- **Record classes**: Immutable data structures for DTOs with built-in validation
-- **Type-safe APIs**: Compile-time guarantees for data structures and API contracts
-- **Null safety**: Proper handling of optional vs required fields with clear type distinctions
+## What's Next? { #whats-next }
 
-### Sealed Classes & Discriminated Unions
-- **@JsonDiscriminatorField**: Specifies the discriminator field for polymorphic JSON serialization
-- **@JsonDiscriminatorValue**: Marks implementing classes with their discriminator values for automatic type resolution
-- **Type-safe responses**: Compile-time guarantees that all possible response types are handled
-- **Polymorphic deserialization**: Automatic type detection based on discriminator fields in JSON
-- **Clean error handling**: Structured error responses without null checks or Optional unwrapping
+- [Build an HTTP Server](http-server.md) to use these JSON DTO patterns in a full CRUD API.
+- [Validation](validation.md) after HTTP Server, because validation assumes the finished CRUD controller/service/repository flow.
+- [Database JDBC](database-jdbc.md) or [Cassandra Database](database-cassandra.md) after HTTP Server, when you are ready to replace the in-memory repository.
+- [OpenAPI HTTP Server](openapi-http-server.md) after HTTP Server, to compare handwritten JSON DTOs with contract-generated transport models.
 
-## What's Next?
-
-- [Add Database Integration](../database-jdbc.md)
-- [Add Validation](../validation.md)
-- [Add Caching](../cache.md)
-- [Add Observability & Monitoring](../observability.md)
-- [Explore More Examples](../examples/kora-examples.md)
-
-## Help
+## Help { #help }
 
 If you encounter issues:
 
-- Check the [JSON Module Documentation](../../documentation/json.md)
-- Check the [HTTP Server Documentation](../../documentation/http-server.md)
-- Check the [HTTP Server Example](https://github.com/kora-projects/kora-examples/tree/master/kora-java-http-server)
-- Ask questions on [GitHub Discussions](https://github.com/kora-projects/kora/discussions)
+- compare with [Kora Java JSON App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-json-app) and [Kora Kotlin JSON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-json-app)
+- check the [JSON documentation](../documentation/json.md)
+- check the [HTTP Server documentation](../documentation/http-server.md)
+- check the [HTTP Server example](https://github.com/kora-projects/kora-examples/tree/master/kora-java-http-server)

@@ -1,14 +1,26 @@
----
+﻿---
+search:
+  exclude: true
 title: JUnit Testing with Kora
 summary: Learn comprehensive component and integration testing strategies for Kora applications including dependency injection testing and database integration with Testcontainers
 tags: testing, junit, testcontainers, integration-tests, component-tests
 ---
 
-# JUnit Testing with Kora
+# Component Testing with Kora { #component-testing-kora }
 
-This guide covers comprehensive testing strategies for Kora applications, including component tests, integration tests, and black box tests using Testcontainers. You'll learn how to test services, controllers, and full application behavior with proper isolation and realistic test environments.
+This guide introduces the main testing workflow for Kora applications with JUnit. It covers how Kora test annotations build controlled application graphs, how mocks and graph modifications isolate
+components, and how Testcontainers-backed tests validate behavior against realistic infrastructure. You will also see how service, controller, integration, and black-box tests fit into one practical
+testing strategy.
 
-## What You'll Build
+===! ":fontawesome-brands-java: `Java`"
+
+    If you want to check your progress along the way, use the finished working example: [Kora Java Testing JUnit App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-testing-junit-app).
+
+=== ":simple-kotlin: `Kotlin`"
+
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Testing JUnit App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-testing-junit-app).
+
+## What You'll Build { #youll-build }
 
 You'll create a complete test suite that covers:
 
@@ -16,50 +28,95 @@ You'll create a complete test suite that covers:
 - **Integration Tests**: Testing with real databases using Testcontainers
 - **Test Utilities**: Reusable test infrastructure and helpers
 
-!!! note "Black Box Testing"
-
-    For end-to-end testing of complete applications through HTTP APIs, see the **[Black Box Testing](../testing-black-box.md)** guide, which builds upon the foundation established in this guide.
-
-## What You'll Need
+## What You'll Need { #youll-need }
 
 - JDK 17 or later
-- Gradle 7.0+
+- Gradle 7+
 - A text editor or IDE
-- Completed [HTTP Server](../http-server.md) guide
+- Completed [HTTP Server](http-server.md) guide
 
-## Prerequisites
+## Prerequisites { #prerequisites }
 
-!!! note "Required: Complete Advanced HTTP Server Guide"
+!!! note "Required: Complete HTTP Server Guide"
 
-    This guide assumes you have completed the **[HTTP Server](../http-server.md)** guide and have a working Kora project with the UserService and UserController.
+    This guide assumes you have completed **[HTTP Server](http-server.md)** and have a working Kora project with `UserService`, `UserController`, DTOs, and the in-memory repository flow.
 
-    If you haven't completed the advanced HTTP server guide yet, please do so first as this guide builds upon that foundation.
+    If you haven't completed the HTTP server guide yet, do that first, because this guide tests the existing service and controller behavior rather than creating the application from scratch.
 
-## Add Testing Dependencies
+## Overview { #overview }
+
+[JUnit](https://junit.org/junit5/docs/current/user-guide/) testing for a Kora application is about choosing the right boundary for the question you want to answer. A service test can answer whether
+business logic behaves correctly. An integration test can answer whether the service works with real infrastructure. A black-box test can answer whether the complete application behaves correctly
+through its public API.
+
+The important shift from isolated class testing is that Kora code is often shaped by the application graph. Constructors, generated components, configuration, and framework modules all influence
+behavior, so tests should be explicit about which part of the graph they are exercising.
+
+### Testing Levels { #testing-levels }
+
+This guide introduces the main testing levels used across the Kora guides:
+
+- component tests build part of the Kora graph and replace selected dependencies with mocks
+- integration tests keep more real components and add infrastructure such as [PostgreSQL](https://www.postgresql.org/docs/) through [Testcontainers](https://java.testcontainers.org/)
+- black-box tests run the complete application and interact with it only through public HTTP APIs
+
+These levels are not competitors. They trade speed, isolation, and confidence. Component tests are useful for fast feedback and focused behavior. Integration tests are useful when SQL, configuration,
+migrations, or real clients matter. Black-box tests provide the strongest user-facing confidence because they include routing, serialization, configuration, framework wiring, and infrastructure.
+
+### Kora Test Graphs { #kora-test-graphs }
+
+Kora's compile-time graph is a major testing tool. `@KoraAppTest` can start an application graph for a test, and graph modification annotations can replace components, inject mocks, or add test-only
+components. This keeps tests close to the real application wiring without forcing every test to start the entire runtime.
+
+The important concept is that a Kora test is often testing a graph shape, not just a class. That is useful when behavior depends on dependency injection, generated components, configuration, or
+framework modules.
+
+### Testcontainers and Realism { #testcontainers-realism }
+
+Mocks are fast, but they cannot prove that SQL runs, migrations match code, or external protocols are configured correctly. Testcontainers gives tests isolated real infrastructure, such as PostgreSQL,
+while still keeping the environment disposable and repeatable.
+
+This guide sets the foundation for the later dedicated testing guides: use component tests for focused feedback, integration tests for infrastructure boundaries, and black-box tests as the strongest
+check of complete application behavior.
+
+The practical flow is:
+
+1. add JUnit, Mockito for Java, MockK for Kotlin, Kora test, and Testcontainers dependencies
+2. declare a Kora test graph
+3. replace selected dependencies with mocks
+4. test service behavior through graph-managed components
+5. add configuration overrides for test scenarios
+6. prepare the project for deeper integration and black-box testing
+
+## Dependencies { #dependencies }
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Add the following test dependencies to your `build.gradle`:
 
-    ```gradle title="build.gradle"
+    ```groovy title="build.gradle"
     dependencies {
         // ... existing dependencies ...
+
+        testImplementation(platform("org.junit:junit-bom:5.14.3"))
+        testImplementation(project(":guide-http-server-app"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("ru.tinkoff.kora:http-server-undertow")
 
         // Kora testing framework with JUnit 5 integration
         testImplementation("ru.tinkoff.kora:test-junit5")
 
         // Mocking framework for component testing
-        testImplementation("org.mockito:mockito-core:5.18.0")
+        testImplementation("org.mockito:mockito-core:5.23.0")
+    }
 
-        // JSON processing for HTTP API testing
-        testImplementation("org.json:json:20231013")
-        testImplementation("org.skyscreamer:jsonassert:1.5.1")
-
-        // Testcontainers for integration and black box testing
-        testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-
-        // PostgreSQL Testcontainers extension (if using PostgreSQL)
-        testImplementation("io.goodforgod:testcontainers-extensions-postgres:0.12.2")
+    test {
+        useJUnitPlatform()
+        testLogging {
+            showStandardStreams(true)
+            events("passed", "skipped", "failed")
+            exceptionFormat("full")
+        }
     }
     ```
 
@@ -71,179 +128,214 @@ You'll create a complete test suite that covers:
     dependencies {
         // ... existing dependencies ...
 
+        testImplementation(platform("org.junit:junit-bom:5.14.3"))
+        testImplementation(project(":guide-http-server-app"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("ru.tinkoff.kora:http-server-undertow")
+
         // Kora testing framework with JUnit 5 integration
         testImplementation("ru.tinkoff.kora:test-junit5")
 
-        // Mocking framework for component testing
-        testImplementation("org.mockito:mockito-core:5.18.0")
+        // Mocking framework for Kotlin component testing
+        testImplementation("io.mockk:mockk:1.13.11")
+    }
 
-        // JSON processing for HTTP API testing
-        testImplementation("org.json:json:20231013")
-        testImplementation("org.skyscreamer:jsonassert:1.5.1")
-
-        // Testcontainers for integration and black box testing
-        testImplementation("org.testcontainers:junit-jupiter:1.19.8")
-
-        // PostgreSQL Testcontainers extension (if using PostgreSQL)
-        testImplementation("io.goodforgod:testcontainers-extensions-postgres:0.12.2")
+    tasks.test {
+        useJUnitPlatform()
+        testLogging {
+            showStandardStreams = true
+            events("passed", "skipped", "failed")
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
     }
     ```
 
-!!! note "Testcontainers Extensions"
+## Component Tests { #kora-di-component-tests }
 
-    Kora examples use `io.goodforgod:testcontainers-extensions` for enhanced Testcontainers integration. These extensions provide:
+A Kora component test sits between an isolated class test and a full application run. You do not create `UserService` by hand with `new`, and you do not manually assemble its dependencies. Instead, the
+test asks Kora to build a small test graph, take the required component from that graph, and inject it into the test class.
 
-    - Automatic database migration support (Flyway)
-    - Simplified connection management
-    - Network sharing between containers
-    - Per-method container lifecycle management
+That matters for two reasons:
 
-    Choose the appropriate extension based on your database:
-    - `testcontainers-extensions-postgres` for PostgreSQL
-    - `testcontainers-extensions-mysql` for MySQL
-    - `testcontainers-extensions-mongodb` for MongoDB
+- the test exercises the same dependency wiring style used by the application
+- the graph can be limited to only the components required by this particular test
+- this trimmed graph is built very quickly because `@KoraAppTest` does not initialize unrelated application branches
+- by default, the test graph is initialized again for every test method unless you explicitly choose another JUnit lifecycle
 
-## Testing Strategy Overview
+In this guide, we first connect a real `UserService` as a test component. Then we replace its `UserRepository` dependency with a mock and look at how that replacement enters the graph.
 
-Kora follows a testing pyramid approach with an emphasis on **black box testing** as the primary testing strategy. This approach ensures your application works correctly end-to-end while maintaining fast feedback through component and integration tests.
+### Test Component { #test-component }
 
-### Testing Levels
+Start with the simplest version: ask Kora to give the test a real `UserService` component.
 
-1. **Black Box Tests** ⭐ **(Recommended Primary Approach)**
-   - Test the complete application through its public APIs
-   - Use real infrastructure (databases, external services)
-   - Highest confidence level, tests actual user behavior
-   - Slower but most realistic
+`@KoraAppTest(Application.class)` tells the Kora JUnit extension which `@KoraApp` should be used as the graph source. This does not mean the test must start the whole application. The test graph is
+limited to the components explicitly requested with `@TestComponent` and the dependencies required by those components.
 
-   Despite being slower than component tests, Kora strongly recommends black box testing as the primary approach because Kora applications have extremely fast startup times. This makes black box tests practical and not prohibitively slow, while providing the highest confidence that your application works correctly end-to-end.
+`@TestComponent` on the `userService` field means two things at once:
 
-2. **Component Tests**
-   - Test component interactions using Kora's dependency injection
-   - Mock external dependencies, use real internal components
-   - Fast feedback with good coverage of business logic
-   - Use `@KoraAppTest` with `@TestComponent` and `@Mock`
+- this component should be found in the application graph and injected into the test field
+- this component becomes one of the root points of the test graph
 
-3. **Integration Tests**
-   - Test with real databases and infrastructure
-   - Use Testcontainers for isolated, realistic environments
-   - Validate data persistence and complex interactions
-   - Use `@KoraAppTest` with Testcontainers extensions
-
-### Kora Testing Principles
-
-- **Black Box First**: Kora strongly recommends black box testing as the primary testing approach
-- **Realistic Environments**: Use Testcontainers to test with real infrastructure
-- **Dependency Injection**: Leverage Kora's DI framework for component testing
-- **Configuration Overrides**: Easily override configuration for different test scenarios
-- **Test Applications**: Extend your main application with test-specific components
-
-!!! tip "Kora's Recommendation"
-
-    While all testing levels are valuable, Kora examples and documentation emphasize **black box testing** as the most reliable approach for ensuring application correctness. Component and integration tests provide fast feedback during development, but black box tests validate the complete user experience.
-
-## Component Tests: Testing with Kora DI
-
-Component testing is a sophisticated testing approach that validates the interactions between multiple components within your application while maintaining controlled isolation. Unlike traditional unit tests that focus on individual methods or classes in isolation, component tests verify that groups of related components work together correctly, catching integration issues early while providing faster feedback than full integration tests.
-
-### What Makes Component Testing Special?
-
-**Component testing bridges the gap between unit testing and integration testing:**
-
-- **Real Component Interactions**: Tests use actual implementations of your business logic components
-- **Controlled Isolation**: External dependencies (databases, external APIs, file systems) are mocked or stubbed
-- **Dependency Injection Validation**: Ensures your DI configuration works correctly
-- **Business Logic Focus**: Validates the core application logic without infrastructure concerns
-- **Fast Execution**: Much faster than integration tests while providing better coverage than unit tests
-
-### How Component Testing Works in Kora
-
-Kora's component testing leverages its powerful dependency injection framework to create a "mini-application" for testing. Instead of manually creating and wiring mock objects, Kora automatically:
-
-1. **Bootstraps a DI Container**: Creates a complete dependency injection context for your test
-2. **Injects Real Components**: Uses actual implementations for your business logic components
-3. **Provides Mock Injection Points**: Allows you to inject mocks for external dependencies
-4. **Manages Component Lifecycle**: Handles component creation, initialization, and cleanup
-5. **Supports Configuration Overrides**: Enables test-specific configuration without code changes
-
-### Component Testing vs Other Testing Approaches
-
-| Testing Type | Scope | Speed | Confidence | Use Case |
-|-------------|-------|-------|------------|----------|
-| **Unit Tests** | Single method/class | ⚡ Very Fast | 🔧 Low | Algorithm testing, edge cases |
-| **Component Tests** | Component interactions | ⚡ Fast | 🔧 Medium-High | Business logic validation |
-| **Integration Tests** | Full infrastructure | 🐌 Slow | 🔧 High | Data persistence, real DB |
-| **Black Box Tests** | Complete application | 🐌 Slowest | 🔧 Highest | End-to-end user scenarios |
-
-### When to Use Component Testing
-
-**Component tests are ideal for:**
-
-- **Business Logic Validation**: Testing complex interactions between services, repositories, and utilities
-- **Dependency Injection Verification**: Ensuring your DI configuration works correctly
-- **Fast Feedback Development**: Quick validation during development without database setup
-- **Component Integration**: Catching issues where components don't work together properly
-- **Configuration Testing**: Validating different configuration scenarios
-- **Error Handling**: Testing exception scenarios and error propagation
-
-**Component tests are NOT ideal for:**
-
-- **Algorithm Testing**: Use unit tests for complex mathematical or algorithmic logic
-- **Infrastructure Validation**: Use integration tests for database operations, file I/O, etc.
-- **End-to-End Scenarios**: Use black box tests for complete user workflows
-- **Performance Testing**: Requires specialized performance testing tools
-
-### Kora's Component Testing Advantages
-
-**Automatic Dependency Management:**
-- No manual mock creation and wiring
-- DI container handles component instantiation
-- Automatic cleanup and lifecycle management
-
-**Real Implementation Testing:**
-- Tests actual component implementations, not interfaces
-- Catches implementation bugs missed by interface-only testing
-- Validates component interactions as they occur in production
-
-**Configuration Flexibility:**
-- Easy configuration overrides for different test scenarios
-- Environment-specific behavior testing
-- Feature flag validation
-
-**Test Isolation with Realism:**
-- External dependencies mocked for speed
-- Internal components tested with real implementations
-- Balances isolation with realistic testing
-
-!!! note "Kora Component Testing"
-
-    Kora's `@KoraAppTest` provides a powerful testing approach that combines the benefits of integration testing with the isolation of unit testing. Instead of manually wiring dependencies, you let Kora's DI container manage component creation while using `@TestComponent` and `@Mock` for precise test control.
+So Kora starts from `UserService`, looks at its constructor, finds the required dependencies, and adds only the necessary part of the graph. If `UserService` depends on `UserRepository`, the repository
+also enters the test graph. If the HTTP server, controllers, or other components are not required to create `UserService`, they do not have to be initialized in this component test.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/test/java/ru/tinkoff/kora/example/UserServiceComponentTest.java`:
+    Create `src/test/java/ru/tinkoff/kora/guide/testingjunit/UserServiceComponentTest.java`:
 
     ```java
-    package ru.tinkoff.kora.example;
+    package ru.tinkoff.kora.guide.testingjunit;
 
-    import static org.junit.jupiter.api.Assertions.*;
-    import static org.mockito.ArgumentMatchers.*;
-    import static org.mockito.Mockito.*;
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-    import java.util.List;
-    import java.util.Optional;
-    import org.jetbrains.annotations.NotNull;
     import org.junit.jupiter.api.Test;
-    import org.mockito.Mock;
-    import ru.tinkoff.kora.example.dto.UserRequest;
-    import ru.tinkoff.kora.example.dto.UserResponse;
-    import ru.tinkoff.kora.example.repository.UserRepository;
+    import ru.tinkoff.kora.guide.httpserver.Application;
+    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
+    import ru.tinkoff.kora.guide.httpserver.service.UserService;
     import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
     import ru.tinkoff.kora.test.extension.junit5.TestComponent;
 
     @KoraAppTest(Application.class)
-    class UserServiceComponentTest implements KoraAppTestConfigModifier {
+    class UserServiceComponentTest {
+
+        @TestComponent
+        private UserService userService;
+
+        @Test
+        void createUserWithRealGraph() {
+            var request = new UserRequest("John", "john@example.com");
+
+            var result = userService.createUser(request);
+
+            assertNotNull(result);
+            assertEquals("John", result.name());
+            assertEquals("john@example.com", result.email());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Create `src/test/kotlin/ru/tinkoff/kora/guide/testingjunit/UserServiceComponentTest.kt`:
+
+    ```kotlin
+    package ru.tinkoff.kora.guide.testingjunit
+
+    import org.junit.jupiter.api.Assertions.assertEquals
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Test
+    import ru.tinkoff.kora.guide.httpserver.Application
+    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
+    import ru.tinkoff.kora.guide.httpserver.service.UserService
+    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
+    import ru.tinkoff.kora.test.extension.junit5.TestComponent
+
+    @KoraAppTest(Application::class)
+    class UserServiceComponentTest {
+
+        @TestComponent
+        lateinit var userService: UserService
+
+        @Test
+        fun createUserWithRealGraph() {
+            val request = UserRequest("John", "john@example.com")
+
+            val result = userService.createUser(request)
+
+            assertNotNull(result)
+            assertEquals("John", result.name())
+            assertEquals("john@example.com", result.email())
+        }
+    }
+    ```
+
+There is no mock at this step. `UserService` is real, and its dependencies are real too if Kora can build them from the application. This kind of test is useful when the dependency is cheap and fully
+local: for example, the repository from the HTTP guide stores data in memory and does not require an external database.
+
+### Test Graph Lifecycle { #test-graph-lifecycle }
+
+When JUnit runs a test class annotated with `@KoraAppTest`, the Kora extension does several things before the test method is executed:
+
+1. reads `Application` from `@KoraAppTest`
+2. builds a test version of the application graph
+3. keeps the components requested with `@TestComponent` and their dependencies
+4. applies test replacements if they are declared
+5. initializes the required graph components
+6. injects ready components into test fields, constructor parameters, or test method parameters
+
+After that, the ordinary JUnit test method runs. For the test method, `userService` is already not `null`; it is a ready component from the Kora graph.
+
+In practice, this means:
+
+- the `UserService` constructor is called by Kora, not by the test
+- `UserService` dependencies come from the same application description used by the production graph
+- components that are not required by the requested graph slice are not created just because the test exists
+- if a component has lifecycle logic, it runs as part of test graph initialization
+- when the test context finishes, Kora closes the graph-managed components it created
+- by default, the container is initialized from scratch for every test method; if you need one container for the whole class, Kora documentation uses `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`
+
+This test answers the question: "Can Kora build the needed part of the application, and does the real component behave correctly?" But sometimes a real dependency gets in the way of a focused check.
+For example, you may want to test sorting, `404` handling, or a repository call without depending on repository state. That is where a replacement is useful.
+
+### Mock Component { #mock-component }
+
+A mock is a test replacement for a real component. To the graph, it looks like an ordinary component of the required type, but its behavior is controlled by the test.
+
+The concrete mocking framework depends on the language, but the replacement has the same role:
+
+- the mocking framework annotation creates a mock of the required type
+- `@TestComponent` tells Kora that this mock is a component of the test graph
+- the field type `UserRepository` tells Kora which application component should be replaced
+
+The key point: the mock is not only injected into the test class field. Kora also injects the same mock into every graph component that needs `UserRepository`. So `UserService` remains real, but its
+constructor receives a test replacement instead of the real in-memory repository.
+
+The graph for this test can be pictured like this:
+
+```text
+test field userRepository
+        |
+        | same mock instance
+        v
+UserService ---depends on--- UserRepository
+   ^                         ^
+   |                         |
+@TestComponent          mock @TestComponent
+real component          replacement component
+```
+
+As a result, the test gets two control points:
+
+- through `userRepository`, it can define dependency responses
+- through `userService`, it can call real service code and assert the result
+
+===! ":fontawesome-brands-java: `Java`"
+
+    In Java, use Mockito: `@Mock` creates the `UserRepository` mock, and `when(...).thenReturn(...)` defines a response for a specific dependency call.
+
+    Update the test class:
+
+    ```java
+    package ru.tinkoff.kora.guide.testingjunit;
+
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.mockito.Mockito.verify;
+    import static org.mockito.Mockito.when;
+
+    import java.time.LocalDateTime;
+    import java.util.Optional;
+    import org.junit.jupiter.api.Test;
+    import org.mockito.Mock;
+    import ru.tinkoff.kora.guide.httpserver.Application;
+    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
+    import ru.tinkoff.kora.guide.httpserver.service.UserService;
+    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
+    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
+
+    @KoraAppTest(Application.class)
+    class UserServiceComponentTest {
 
         @Mock
         @TestComponent
@@ -252,688 +344,297 @@ Kora's component testing leverages its powerful dependency injection framework t
         @TestComponent
         private UserService userService;
 
-        @NotNull
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofString("""
-                # Disable external dependencies for component testing if needed for components inside test
-                some.dependency.enabled = false
-                """);
-        }
-
         @Test
-        void createUser_ShouldCreateAndReturnUser() {
-            // Given
-            var request = new UserRequest("John", "john@example.com");
-            var expectedResponse = new UserResponse("1", "John", "john@example.com");
+        void getUserUsesRepositoryMock() {
+            var expected = new UserResponse("1", "John", "john@example.com", LocalDateTime.now());
+            when(userRepository.findById("1")).thenReturn(Optional.of(expected));
 
-            when(userRepository.save(any(UserRequest.class))).thenReturn(expectedResponse);
+            var result = userService.getUser("1");
 
-            // When
-            var result = userService.createUser(request);
-
-            // Then
-            assertNotNull(result);
-            assertEquals("John", result.name());
-            assertEquals("john@example.com", result.email());
-            verify(userRepository).save(request);
-        }
-
-        @Test
-        void getUser_ShouldReturnUserWhenExists() {
-            // Given
-            var userId = "1";
-            var expectedUser = new UserResponse(userId, "John", "john@example.com");
-
-            when(userRepository.findById(userId)).thenReturn(Optional.of(expectedUser));
-
-            // When
-            var result = userService.getUser(userId);
-
-            // Then
-            assertTrue(result.isPresent());
-            assertEquals(expectedUser, result.get());
-            verify(userRepository).findById(userId);
-        }
-
-        @Test
-        void getAllUsers_ShouldReturnAllUsers() {
-            // Given
-            var users = List.of(
-                new UserResponse("1", "John", "john@example.com"),
-                new UserResponse("2", "Jane", "jane@example.com")
-            );
-
-            when(userRepository.findAll()).thenReturn(users);
-
-            // When
-            var result = userService.getAllUsers();
-
-            // Then
-            assertEquals(2, result.size());
-            assertEquals(users, result);
-            verify(userRepository).findAll();
-        }
-
-        @Test
-        void updateUser_ShouldUpdateAndReturnUserWhenExists() {
-            // Given
-            var userId = "1";
-            var existingUser = new UserResponse(userId, "John", "john@example.com");
-            var updateRequest = new UserRequest("John Updated", "john.updated@example.com");
-            var updatedUser = new UserResponse(userId, "John Updated", "john.updated@example.com");
-
-            when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-            when(userRepository.save(any(UserRequest.class))).thenReturn(updatedUser);
-
-            // When
-            var result = userService.updateUser(userId, updateRequest);
-
-            // Then
-            assertTrue(result.isPresent());
-            assertEquals("John Updated", result.get().name());
-            assertEquals("john.updated@example.com", result.get().email());
-            verify(userRepository).findById(userId);
-            verify(userRepository).save(updateRequest);
-        }
-
-        @Test
-        void deleteUser_ShouldReturnTrueWhenUserExists() {
-            // Given
-            var userId = "1";
-            when(userRepository.existsById(userId)).thenReturn(true);
-
-            // When
-            var result = userService.deleteUser(userId);
-
-            // Then
-            assertTrue(result);
-            verify(userRepository).existsById(userId);
-            verify(userRepository).deleteById(userId);
+            assertEquals(Optional.of(expected), result);
+            verify(userRepository).findById("1");
         }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/test/kotlin/ru/tinkoff/kora/example/UserServiceComponentTest.kt`:
+    In Kotlin, use MockK: `@MockK` creates the `UserRepository` mock, and `every { ... } returns ...` defines a response for a specific dependency call without escaping Kotlin keywords.
+
+    Update the test class:
 
     ```kotlin
-    package ru.tinkoff.kora.example
+    package ru.tinkoff.kora.guide.testingjunit
 
-    import org.junit.jupiter.api.Assertions.*
+    import org.junit.jupiter.api.Assertions.assertEquals
     import org.junit.jupiter.api.Test
-    import org.mockito.Mockito.*
-    import ru.tinkoff.kora.example.dto.UserRequest
-    import ru.tinkoff.kora.example.dto.UserResponse
-    import ru.tinkoff.kora.example.repository.UserRepository
+    import io.mockk.every
+    import io.mockk.impl.annotations.MockK
+    import io.mockk.verify
+    import ru.tinkoff.kora.guide.httpserver.Application
+    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
+    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
+    import ru.tinkoff.kora.guide.httpserver.service.UserService
     import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
     import ru.tinkoff.kora.test.extension.junit5.TestComponent
+    import java.time.LocalDateTime
 
     @KoraAppTest(Application::class)
-    class UserServiceComponentTest : KoraAppTestConfigModifier {
+    class UserServiceComponentTest {
 
-        @org.mockito.Mock
+        @MockK
         @TestComponent
-        private lateinit var userRepository: UserRepository
+        lateinit var userRepository: UserRepository
 
         @TestComponent
-        private lateinit var userService: UserService
-
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification.ofString("""
-                # Disable external dependencies for component testing
-                http-server.enabled = false
-                db.enabled = false
-                """)
-        }
+        lateinit var userService: UserService
 
         @Test
-        fun `createUser should create and return user`() {
-            // Given
-            val request = UserRequest("John", "john@example.com")
-            val expectedResponse = UserResponse("1", "John", "john@example.com")
+        fun getUserUsesRepositoryMock() {
+            val expected = UserResponse("1", "John", "john@example.com", LocalDateTime.now())
+            every { userRepository.findById("1") } returns expected
 
-            `when`(userRepository.save(any(UserRequest::class.java))).thenReturn(expectedResponse)
+            val result = userService.getUser("1")
 
-            // When
-            val result = userService.createUser(request)
-
-            // Then
-            assertNotNull(result)
-            assertEquals("John", result.name)
-            assertEquals("john@example.com", result.email)
-            verify(userRepository).save(request)
-        }
-
-        @Test
-        fun `getUser should return user when exists`() {
-            // Given
-            val userId = "1"
-            val expectedUser = UserResponse(userId, "John", "john@example.com")
-
-            `when`(userRepository.findById(userId)).thenReturn(expectedUser)
-
-            // When
-            val result = userService.getUser(userId)
-
-            // Then
-            assertNotNull(result)
-            assertEquals(expectedUser, result)
-            verify(userRepository).findById(userId)
-        }
-
-        @Test
-        fun `getAllUsers should return all users`() {
-            // Given
-            val users = listOf(
-                UserResponse("1", "John", "john@example.com"),
-                UserResponse("2", "Jane", "jane@example.com")
-            )
-
-            `when`(userRepository.findAll()).thenReturn(users)
-
-            // When
-            val result = userService.getAllUsers()
-
-            // Then
-            assertEquals(2, result.size)
-            assertEquals(users, result)
-            verify(userRepository).findAll()
-        }
-
-        @Test
-        fun `updateUser should update and return user when exists`() {
-            // Given
-            val userId = "1"
-            val existingUser = UserResponse(userId, "John", "john@example.com")
-            val updateRequest = UserRequest("John Updated", "john.updated@example.com")
-            val updatedUser = UserResponse(userId, "John Updated", "john.updated@example.com")
-
-            `when`(userRepository.findById(userId)).thenReturn(existingUser)
-            `when`(userRepository.save(any(UserRequest::class.java))).thenReturn(updatedUser)
-
-            // When
-            val result = userService.updateUser(userId, updateRequest)
-
-            // Then
-            assertNotNull(result)
-            assertEquals("John Updated", result.name)
-            assertEquals("john.updated@example.com", result.email)
-            verify(userRepository).findById(userId)
-            verify(userRepository).save(updateRequest)
-        }
-
-        @Test
-        fun `deleteUser should return true when user exists`() {
-            // Given
-            val userId = "1"
-            `when`(userRepository.existsById(userId)).thenReturn(true)
-
-            // When
-            val result = userService.deleteUser(userId)
-
-            // Then
-            assertTrue(result)
-            verify(userRepository).existsById(userId)
-            verify(userRepository).deleteById(userId)
+            assertEquals(expected, result)
+            verify { userRepository.findById("1") }
         }
     }
     ```
 
-!!! tip "Benefits of Kora Component Testing"
+Now the test is not testing the repository. It is testing `UserService` behavior for a known repository response. That is the main value of a mock: you fix dependency behavior and check how the
+component above it reacts.
 
-    **Why use @KoraAppTest for component testing?**
+### What Gets Initialized { #what-is-initialized }
 
-    - **Real Dependencies**: Tests use actual component implementations, not mocks
-    - **DI Validation**: Ensures dependency injection works correctly
-    - **Configuration**: Easy configuration overrides for different test scenarios
-    - **Integration Ready**: Same pattern works for integration tests
-    - **Less Boilerplate**: No manual dependency wiring
+With a mocked `UserRepository`, the graph becomes smaller and easier to reason about:
 
-    For testing complex algorithms or edge cases with full isolation, traditional mocking approaches can still be useful, but for most Kora applications, component tests provide better coverage with less maintenance.
+- `UserService` is created as a real application component
+- `UserRepository` is replaced with a test mock
+- components needed only by the real `UserRepository` are no longer required and do not enter the test graph
+- the HTTP server and controllers are not created unless you request them as `@TestComponent`
+- the test class receives references to both components: the real `userService` and the mocked `userRepository`
 
-## Integration Tests: Testing with Testcontainers
+This differs from a regular hand-wired component test with mocks and without Kora. In such a test, you often write `new UserService(userRepository)` by hand. In a Kora test, the graph does that. So the
+test checks all of these at once:
 
-Integration testing is a critical testing approach that validates how your application components interact with real external infrastructure and services. Unlike component tests that mock external dependencies, integration tests use actual databases, message queues, and other infrastructure to ensure your application works correctly in realistic environments.
+- `UserService` really is a graph component
+- Kora can assemble it with the required dependency
+- the replacement is applied in the same place where the production graph would use the real component
+- the service business logic works for the dependency responses configured by the test
 
-### What Makes Integration Testing Essential?
+Do not use a separate JUnit extension from the mocking framework together with `@KoraAppTest`. `@KoraAppTest` manages the lifecycle of mocks and injects them into the graph. If a second JUnit extension
+is attached, it becomes unclear who creates the mock, who resets its state, and which instance enters the graph.
 
-**Integration testing fills the critical gap between isolated component testing and end-to-end black box testing:**
+### Write Tests { #write-tests }
 
-- **Real Infrastructure Validation**: Tests use actual databases, caches, and external services
-- **Data Persistence Verification**: Ensures data is correctly stored, retrieved, and manipulated
-- **Infrastructure Integration**: Validates connection pooling, transaction management, and error handling
-- **Complex Interactions**: Tests multi-component workflows and data flow between systems
-- **Production Readiness**: Catches issues that only appear with real infrastructure
+Now add assertions for core service behavior using the mocked repository. Each test has three parts: first you define dependency behavior, then you call the real `UserService`, and after that you check
+the result and the repository interaction.
 
-### How Integration Testing Works with Testcontainers
+Take the first test as an example. `assertNotNull(result)` checks that the service returned a response instead of `null`. `assertEquals("1", result.id())`, `assertEquals("John", result.name())`, and
+the email assertion lock down the response contract: the id comes from the repository, while the name and email are copied from the request without distortion. Repository call verification complements
+the assertions: it checks the interaction with a dependency rather than the returned data.
 
-Testcontainers revolutionizes integration testing by providing lightweight, disposable containers for each test:
-
-1. **Automatic Container Lifecycle**: Containers start automatically before tests and stop after
-2. **Fresh Environment Per Test**: Each test gets a clean, isolated infrastructure instance
-3. **Real Implementations**: Uses actual PostgreSQL, Redis, Kafka, etc., not in-memory fakes
-4. **Network Configuration**: Automatic connection string injection and network setup
-5. **Migration Support**: Applies database schema migrations automatically
-
-### Integration Testing vs Other Testing Approaches
-
-| Testing Type | Infrastructure | Speed | Confidence | Use Case |
-|-------------|----------------|-------|------------|----------|
-| **Component Tests** | Mocked | ⚡ Fast | 🔧 Medium | Business logic validation |
-| **Integration Tests** | Real (Testcontainers) | 🐌 Slow | 🔧 High | Infrastructure integration |
-| **Black Box Tests** | Real (Production-like) | 🐌 Slowest | 🔧 Highest | End-to-end workflows |
-
-### When to Use Integration Testing
-
-**Integration tests are crucial for:**
-
-- **Database Operations**: Validating CRUD operations, transactions, and data integrity
-- **Infrastructure Integration**: Testing connections to databases, caches, message queues
-- **Data Migrations**: Ensuring schema changes work correctly
-- **Complex Queries**: Testing advanced SQL queries, joins, and aggregations
-- **Connection Pooling**: Validating connection management and error recovery
-- **Cross-Service Communication**: Testing interactions between microservices
-
-!!! note "TestApplication Pattern"
-
-    For integration testing, create a `TestApplication` that extends your main application and adds test-specific components like repositories with additional helper methods.
+The examples below use standard JUnit Jupiter assertions: `assertEquals`, `assertNotNull`, `assertTrue`, and `assertThrows`. In real projects, you can also use AssertJ for more expressive checks such
+as `assertThat(result.name()).isEqualTo("John")`, `assertThat(result).isNotNull()`, or `assertThatThrownBy { ... }`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    First, create a test application with test-specific repositories that do not exist in our application but will help us to test it:
+    In the Java version, Mockito defines mock behavior with `when(...).thenReturn(...)`: it tells the repository mock what to return for a specific call. `verify(userRepository).save(...)` checks that
+    the real `UserService` actually called the repository with the expected arguments. This is useful when the method result matters, but you also want to prove that the service used the right
+    dependency and did not skip the required action.
 
-    Create `src/test/java/ru/tinkoff/kora/example/TestApplication.java`:
+    Add imports:
 
     ```java
-    package ru.tinkoff.kora.example;
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
+    import static org.junit.jupiter.api.Assertions.assertThrows;
+    import static org.junit.jupiter.api.Assertions.assertTrue;
 
     import java.util.List;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
-    import ru.tinkoff.kora.example.model.dao.User;
-
-    /**
-     * Test application that extends the main application and adds test-specific components.
-     * This allows adding helper repositories for testing without modifying the main application.
-     */
-    @KoraApp
-    public interface TestApplication extends Application {
-
-        @Root
-        @Repository
-        interface TestUserRepository extends JdbcRepository {
-
-            @Query("SELECT %{return#selects} FROM %{return#table}")
-            List<User> findAll();
-
-            @Query("DELETE FROM users")
-            void deleteAll();
-        }
-    }
+    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
+    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
     ```
 
-    Then create the integration test:
-
-    Create `src/test/java/ru/tinkoff/kora/example/UserServiceIntegrationTest.java`:
+    Add test methods:
 
     ```java
-    package ru.tinkoff.kora.example;
+    @Test
+    void createUser_ShouldCreateAndReturnUser() {
+        var request = new UserRequest("John", "john@example.com");
 
-    import static org.junit.jupiter.api.Assertions.*;
+        when(userRepository.save("John", "john@example.com")).thenReturn("1");
 
-    import io.goodforgod.testcontainers.extensions.ContainerMode;
-    import io.goodforgod.testcontainers.extensions.Network;
-    import io.goodforgod.testcontainers.extensions.jdbc.ConnectionPostgreSQL;
-    import io.goodforgod.testcontainers.extensions.jdbc.JdbcConnection;
-    import io.goodforgod.testcontainers.extensions.jdbc.Migration;
-    import io.goodforgod.testcontainers.extensions.jdbc.TestcontainersPostgreSQL;
-    import java.util.List;
-    import org.jetbrains.annotations.NotNull;
-    import org.junit.jupiter.api.Test;
-    import ru.tinkoff.kora.example.TestApplication.TestUserRepository;
-    import ru.tinkoff.kora.example.dto.UserRequest;
-    import ru.tinkoff.kora.example.dto.UserResponse;
-    import ru.tinkoff.kora.example.service.UserService;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
+        var result = userService.createUser(request);
 
-    @TestcontainersPostgreSQL(
-            network = @Network(shared = true),
-            mode = ContainerMode.PER_RUN,
-            migration = @Migration(
-                    engine = Migration.Engines.FLYWAY,
-                    apply = Migration.Mode.PER_METHOD,
-                    drop = Migration.Mode.PER_METHOD))
-    @KoraAppTest(TestApplication.class)
-    class UserServiceIntegrationTest implements KoraAppTestConfigModifier {
+        assertNotNull(result);
+        assertEquals("1", result.id());
+        assertEquals("John", result.name());
+        assertEquals("john@example.com", result.email());
+        verify(userRepository).save("John", "john@example.com");
+    }
 
-        @ConnectionPostgreSQL
-        private JdbcConnection connection;
+    @Test
+    void getUser_ShouldReturnUserWhenExists() {
+        var expected = new UserResponse("1", "John", "john@example.com", LocalDateTime.now());
+        when(userRepository.findById("1")).thenReturn(Optional.of(expected));
 
-        @TestComponent
-        private UserService userService;
+        var result = userService.getUser("1");
 
-        @TestComponent
-        private TestUserRepository testUserRepository;
+        assertTrue(result.isPresent());
+        assertEquals(expected, result.get());
+        verify(userRepository).findById("1");
+    }
 
-        @NotNull
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofString("""
-                db {
-                  jdbcUrl = ${POSTGRES_JDBC_URL}
-                  username = ${POSTGRES_USER}
-                  password = ${POSTGRES_PASS}
-                  poolName = "kora-test"
-                }
-                """)
-                .withSystemProperty("POSTGRES_JDBC_URL", connection.params().jdbcUrl())
-                .withSystemProperty("POSTGRES_USER", connection.params().username())
-                .withSystemProperty("POSTGRES_PASS", connection.params().password());
-        }
+    @Test
+    void getUsers_ShouldReturnPagedUsers() {
+        var users = List.of(
+                new UserResponse("2", "Jane", "jane@example.com", LocalDateTime.now()),
+                new UserResponse("1", "John", "john@example.com", LocalDateTime.now()));
+        when(userRepository.findAll()).thenReturn(users);
 
-        @Test
-        void createUser_ShouldPersistUserInDatabase() {
-            // Given
-            var request = new UserRequest("John", "john@example.com");
+        var result = userService.getUsers(0, 10, "name");
 
-            // When
-            var result = userService.createUser(request);
+        assertEquals(2, result.size());
+        assertEquals("Jane", result.get(0).name());
+        assertEquals("John", result.get(1).name());
+        verify(userRepository).findAll();
+    }
 
-            // Then
-            assertNotNull(result);
-            assertNotNull(result.id());
-            assertEquals("John", result.name());
-            assertEquals("john@example.com", result.email());
+    @Test
+    void updateUser_ShouldUpdateAndReturnUserWhenExists() {
+        var request = new UserRequest("John Updated", "john.updated@example.com");
+        when(userRepository.update("1", request.name(), request.email())).thenReturn(true);
 
-            // Verify data was persisted
-            var allUsers = testUserRepository.findAll();
-            assertEquals(1, allUsers.size());
-            assertEquals("John", allUsers.get(0).name());
-        }
+        var result = userService.updateUser("1", request);
 
-        @Test
-        void getUsers_WithPagination_ShouldReturnCorrectPage() {
-            // Given - Create multiple users
-            var users = List.of(
-                new UserRequest("Alice", "alice@example.com"),
-                new UserRequest("Bob", "bob@example.com"),
-                new UserRequest("Charlie", "charlie@example.com"),
-                new UserRequest("David", "david@example.com")
-            );
+        assertEquals("1", result.id());
+        assertEquals("John Updated", result.name());
+        verify(userRepository).update("1", request.name(), request.email());
+    }
 
-            users.forEach(userService::createUser);
-            assertEquals(4, testUserRepository.findAll().size());
+    @Test
+    void deleteUser_ShouldCallRepositoryWhenUserExists() {
+        when(userRepository.deleteById("1")).thenReturn(true);
 
-            // When - Get second page with size 2
-            var result = userService.getUsers(1, 2, "name");
+        userService.deleteUser("1");
+        verify(userRepository).deleteById("1");
+    }
 
-            // Then
-            assertEquals(2, result.size());
-            // Should be sorted alphabetically: Alice, Bob, Charlie, David
-            // Page 1 (0-indexed) with size 2 should return Charlie, David
-            assertEquals("Charlie", result.get(0).name());
-            assertEquals("David", result.get(1).name());
-        }
+    @Test
+    void deleteUser_ShouldThrow404WhenUserMissing() {
+        when(userRepository.deleteById("missing")).thenReturn(false);
 
-        @Test
-        void updateUser_ShouldUpdateUserInDatabase() {
-            // Given
-            var originalRequest = new UserRequest("John", "john@example.com");
-            var createdUser = userService.createUser(originalRequest);
-            var updateRequest = new UserRequest("John Updated", "john.updated@example.com");
+        var exception = assertThrows(HttpServerResponseException.class, () -> userService.deleteUser("missing"));
 
-            // When
-            var updatedUser = userService.updateUser(createdUser.id(), updateRequest);
-
-            // Then
-            assertTrue(updatedUser.isPresent());
-            assertEquals("John Updated", updatedUser.get().name());
-            assertEquals("john.updated@example.com", updatedUser.get().email());
-
-            // Verify in database
-            var allUsers = testUserRepository.findAll();
-            assertEquals(1, allUsers.size());
-            assertEquals("John Updated", allUsers.get(0).name());
-        }
-
-        @Test
-        void deleteUser_ShouldRemoveUserFromDatabase() {
-            // Given
-            var request = new UserRequest("John", "john@example.com");
-            var createdUser = userService.createUser(request);
-            assertEquals(1, testUserRepository.findAll().size());
-
-            // When
-            var result = userService.deleteUser(createdUser.id());
-
-            // Then
-            assertTrue(result);
-            assertEquals(0, testUserRepository.findAll().size());
-        }
+        assertEquals(404, exception.code());
+        verify(userRepository).deleteById("missing");
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    First, create a test application:
+    In the Kotlin version, MockK is used. Mock behavior is defined with the `every { ... } returns ...` DSL: the block describes the dependency call, and `returns` defines the response for that call.
+    Interaction verification is written as `verify { userRepository.save(...) }`. This syntax fits Kotlin well: there is no need for escaped calls such as `` `when` ``, and the checked call remains
+    ordinary Kotlin code inside the block.
 
-    Create `src/test/kotlin/ru/tinkoff/kora/example/TestApplication.kt`:
+    Add imports:
 
     ```kotlin
-    package ru.tinkoff.kora.example
-
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
-    import ru.tinkoff.kora.example.model.dao.User
-
-    /**
-     * Test application that extends the main application and adds test-specific components.
-     */
-    @KoraApp
-    interface TestApplication : Application {
-
-        @Repository
-        interface TestUserRepository : JdbcRepository {
-
-            @Query("SELECT %{return#selects} FROM %{return#table}")
-            fun findAll(): List<User>
-
-            @Query("DELETE FROM users")
-            fun deleteAll()
-        }
-
-        // Need any fake root to require components to include them in graph
-        @Tag(TestApplication::class)
-        @Root
-        fun testRoot(testUserRepository: TestUserRepository): String = "test-root"
-    }
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Assertions.assertThrows
+    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
+    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
     ```
 
-    Then create the integration test:
-
-    Create `src/test/kotlin/ru/tinkoff/kora/example/UserServiceIntegrationTest.kt`:
+    Add test methods:
 
     ```kotlin
-    package ru.tinkoff.kora.example
+    @Test
+    fun createUserShouldCreateAndReturnUser() {
+        val request = UserRequest("John", "john@example.com")
 
-    import io.goodforgod.testcontainers.extensions.ContainerMode
-    import io.goodforgod.testcontainers.extensions.Network
-    import io.goodforgod.testcontainers.extensions.jdbc.ConnectionPostgreSQL
-    import io.goodforgod.testcontainers.extensions.jdbc.JdbcConnection
-    import io.goodforgod.testcontainers.extensions.jdbc.Migration
-    import io.goodforgod.testcontainers.extensions.jdbc.TestcontainersPostgreSQL
-    import org.junit.jupiter.api.Assertions.*
-    import org.junit.jupiter.api.Test
-    import ru.tinkoff.kora.example.TestApplication.TestUserRepository
-    import ru.tinkoff.kora.example.dto.UserRequest
-    import ru.tinkoff.kora.example.dto.UserResponse
-    import ru.tinkoff.kora.example.service.UserService
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
+        every { userRepository.save("John", "john@example.com") } returns "1"
 
-    @TestcontainersPostgreSQL(
-        network = Network(shared = true),
-        mode = ContainerMode.PER_RUN,
-        migration = Migration(
-            engine = Migration.Engines.FLYWAY,
-            apply = Migration.Mode.PER_METHOD,
-            drop = Migration.Mode.PER_METHOD
+        val result = userService.createUser(request)
+
+        assertNotNull(result)
+        assertEquals("1", result.id())
+        assertEquals("John", result.name())
+        assertEquals("john@example.com", result.email())
+        verify { userRepository.save("John", "john@example.com") }
+    }
+
+    @Test
+    fun getUserShouldReturnUserWhenExists() {
+        val expected = UserResponse("1", "John", "john@example.com", LocalDateTime.now())
+        every { userRepository.findById("1") } returns expected
+
+        val result = userService.getUser("1")
+
+        assertEquals(expected, result)
+        verify { userRepository.findById("1") }
+    }
+
+    @Test
+    fun getUsersShouldReturnPagedUsers() {
+        val users = listOf(
+            UserResponse("2", "Jane", "jane@example.com", LocalDateTime.now()),
+            UserResponse("1", "John", "john@example.com", LocalDateTime.now())
         )
-    )
-    @KoraAppTest(TestApplication::class)
-    class UserServiceIntegrationTest : KoraAppTestConfigModifier {
+        every { userRepository.findAll() } returns users
 
-        @ConnectionPostgreSQL
-        private lateinit var connection: JdbcConnection
+        val result = userService.getUsers(0, 10, "name")
 
-        @TestComponent
-        private lateinit var userService: UserService
+        assertEquals(2, result.size)
+        assertEquals("Jane", result[0].name())
+        assertEquals("John", result[1].name())
+        verify { userRepository.findAll() }
+    }
 
-        @TestComponent
-        private lateinit var testUserRepository: TestUserRepository
+    @Test
+    fun updateUserShouldUpdateAndReturnUserWhenExists() {
+        val request = UserRequest("John Updated", "john.updated@example.com")
+        every { userRepository.update("1", request.name(), request.email()) } returns true
 
-        override fun config(): KoraConfigModification {
-            return KoraConfigModification.ofString("""
-                db {
-                  jdbcUrl = \${POSTGRES_JDBC_URL}
-                  username = \${POSTGRES_USER}
-                  password = \${POSTGRES_PASS}
-                  poolName = "kora-test"
-                }
-                http-server.enabled = false
-                """)
-                .withSystemProperty("POSTGRES_JDBC_URL", connection.params().jdbcUrl())
-                .withSystemProperty("POSTGRES_USER", connection.params().username())
-                .withSystemProperty("POSTGRES_PASS", connection.params().password())
+        val result = userService.updateUser("1", request)
+
+        assertEquals("1", result.id())
+        assertEquals("John Updated", result.name())
+        verify { userRepository.update("1", request.name(), request.email()) }
+    }
+
+    @Test
+    fun deleteUserShouldCallRepositoryWhenUserExists() {
+        every { userRepository.deleteById("1") } returns true
+
+        userService.deleteUser("1")
+        verify { userRepository.deleteById("1") }
+    }
+
+    @Test
+    fun deleteUserShouldThrow404WhenUserMissing() {
+        every { userRepository.deleteById("missing") } returns false
+
+        val exception = assertThrows(HttpServerResponseException::class.java) {
+            userService.deleteUser("missing")
         }
 
-        @Test
-        fun `createUser should persist user in database`() {
-            // Given
-            val request = UserRequest("John", "john@example.com")
-
-            // When
-            val result = userService.createUser(request)
-
-            // Then
-            assertNotNull(result)
-            assertNotNull(result.id)
-            assertEquals("John", result.name)
-            assertEquals("john@example.com", result.email)
-
-            // Verify data was persisted
-            val allUsers = testUserRepository.findAll()
-            assertEquals(1, allUsers.size)
-            assertEquals("John", allUsers[0].name)
-        }
-
-        @Test
-        fun `getUsers with pagination should return correct page`() {
-            // Given - Create multiple users
-            val users = listOf(
-                UserRequest("Alice", "alice@example.com"),
-                UserRequest("Bob", "bob@example.com"),
-                UserRequest("Charlie", "charlie@example.com"),
-                UserRequest("David", "david@example.com")
-            )
-
-            users.forEach { userService.createUser(it) }
-            assertEquals(4, testUserRepository.findAll().size)
-
-            // When - Get second page with size 2
-            val result = userService.getUsers(1, 2, "name")
-
-            // Then
-            assertEquals(2, result.size)
-            // Should be sorted alphabetically: Alice, Bob, Charlie, David
-            // Page 1 (0-indexed) with size 2 should return Charlie, David
-            assertEquals("Charlie", result[0].name)
-            assertEquals("David", result[1].name)
-        }
-
-        @Test
-        fun `updateUser should update user in database`() {
-            // Given
-            val originalRequest = UserRequest("John", "john@example.com")
-            val createdUser = userService.createUser(originalRequest)
-            val updateRequest = UserRequest("John Updated", "john.updated@example.com")
-
-            // When
-            val updatedUser = userService.updateUser(createdUser.id, updateRequest)
-
-            // Then
-            assertNotNull(updatedUser)
-            assertEquals("John Updated", updatedUser.name)
-            assertEquals("john.updated@example.com", updatedUser.email)
-
-            // Verify in database
-            val allUsers = testUserRepository.findAll()
-            assertEquals(1, allUsers.size)
-            assertEquals("John Updated", allUsers[0].name)
-        }
-
-        @Test
-        fun `deleteUser should remove user from database`() {
-            // Given
-            val request = UserRequest("John", "john@example.com")
-            val createdUser = userService.createUser(request)
-            assertEquals(1, testUserRepository.findAll().size)
-
-            // When
-            val result = userService.deleteUser(createdUser.id)
-
-            // Then
-            assertTrue(result)
-            assertEquals(0, testUserRepository.findAll().size)
-        }
+        assertEquals(404, exception.code())
+        verify { userRepository.deleteById("missing") }
     }
     ```
 
-!!! tip "Testcontainers Extensions Features"
+## Integration Tests { #integration-testing }
 
-    The `@TestcontainersPostgreSQL` annotation provides:
+Integration testing with real PostgreSQL, `TestApplication`, and `UserServiceIntegrationPostgresTest` is covered in a dedicated guide: [Integration Testing](testing-integration.md).
 
-    - **Automatic Container Management**: Starts PostgreSQL container per test method
-    - **Database Migration**: Applies Flyway migrations automatically
-    - **Network Sharing**: Containers can communicate with each other
-    - **Per-Method Lifecycle**: Fresh database for each test method
-    - **Connection Injection**: Provides ready-to-use database connections
+This JUnit guide focuses on component testing with `@KoraAppTest`, `@TestComponent`, `@Mock` for Java, and `@MockK` for Kotlin.
 
-!!! warning "Test Isolation"
+## Configuration Overrides { #config-overrides }
 
-    Each integration test gets a fresh database with migrations applied. This ensures test isolation but requires proper cleanup if tests share state.
-
-## TestApplication Pattern: Extending Applications for Testing
-
-The `TestApplication` pattern allows you to extend your main application with test-specific components without modifying the production code.
-
-!!! note "When to Use TestApplication"
-
-    Use `TestApplication` when you need:
-
-    - Additional repositories for test data verification
-    - Test-specific services or utilities
-    - Components that help with test assertions
-    - Helper methods for test data cleanup
-
-## Configuration Overrides for Testing
+The full rules for Kora test configuration are described in [Test configuration](../documentation/junit5.md#test-configuration).
 
 Kora provides powerful configuration override capabilities for different test scenarios.
 
@@ -947,16 +648,13 @@ Kora provides powerful configuration override capabilities for different test sc
     - Disable caching or background tasks during testing
     - Configure different ports or endpoints
 
-## Running Tests
+## Testing { #testing }
 
 Run your tests using Gradle:
 
 ```bash
 # Run all tests
 ./gradlew test
-
-# Run specific test class
-./gradlew test --tests "*UserServiceComponentTest*"
 
 # Run with detailed output
 ./gradlew test --info
@@ -965,7 +663,7 @@ Run your tests using Gradle:
 ./gradlew test --parallel
 ```
 
-## Test Reporting and Coverage
+## Test Coverage { #coverage }
 
 Kora projects include built-in test reporting and coverage:
 
@@ -980,115 +678,123 @@ Kora projects include built-in test reporting and coverage:
 open build/jacocoHtml/index.html
 ```
 
-## Best Practices
+## Best Practices { #best-practices }
 
-### Testing Strategy
+Testing Strategy:
 
-1. **Prioritize Black Box Tests**: They provide the highest confidence
-2. **Use Component Tests for Logic**: Fast feedback during development
-3. **Integration Tests for Infrastructure**: Validate real database interactions
-4. **Algorithm Testing**: Complex business logic with focused isolation when needed
+1. Prioritize Black Box Tests: They provide the highest confidence
+2. Use Component Tests for Logic: Fast feedback during development
+3. Integration Tests for Infrastructure: Validate real database interactions
+4. Algorithm Testing: Complex business logic with focused isolation when needed
 
-### Test Organization
+Test Organization:
 
-- **One Test Class per Production Class**: `UserService` → `UserServiceComponentTest`
-- **Descriptive Test Names**: `createUser_ShouldCreateAndReturnUser`
-- **Given-When-Then Structure**: Clear test phases
-- **Test Data Builders**: Consistent test data creation
+- One Test Class per Production Class: `UserService` → `UserServiceComponentTest`
+- Descriptive Test Names: `createUser_ShouldCreateAndReturnUser`
+- Given-When-Then Structure: Clear test phases
+- Test Data Builders: Consistent test data creation
 
-### Test Isolation
+Test Isolation:
 
-- **Fresh Database per Test**: Use Testcontainers with per-method lifecycle
-- **No Test Interdependencies**: Tests should run independently
-- **Clean State**: Reset state between tests
-- **Resource Cleanup**: Proper container and connection cleanup
+- Fresh Database per Test: Use Testcontainers with per-method lifecycle
+- No Test Interdependencies: Tests should run independently
+- Clean State: Reset state between tests
+- Resource Cleanup: Proper container and connection cleanup
 
-### Performance Considerations
+Performance Considerations:
 
-- **Parallel Execution**: Run tests in parallel when possible
-- **Shared Containers**: Use container sharing for faster startup
-- **Selective Testing**: Run only relevant tests during development
-- **Fast Feedback**: Component tests for quick validation
+- Parallel Execution: Run tests in parallel when possible
+- Shared Containers: Use container sharing for faster startup
+- Selective Testing: Run only relevant tests during development
+- Fast Feedback: Component tests for quick validation
 
-## Summary
+## Summary { #summary }
 
 You've learned comprehensive testing strategies for Kora applications:
 
-- **Component Tests**: Test component interactions using Kora's DI framework
-- **Integration Tests**: Test with real databases using Testcontainers
-- **Black Box Tests**: Test complete application behavior through HTTP APIs
+- Component Tests: Test component interactions using Kora's DI framework
+- Integration Tests: Test with real databases using Testcontainers
+- Black Box Tests: Test complete application behavior through HTTP APIs
 
-Each testing level provides different confidence and helps catch different types of bugs. Start with component tests for fast feedback, add integration tests for infrastructure validation, and rely on black box tests for end-to-end confidence.
+Each testing level provides different confidence and helps catch different types of bugs. Start with component tests for fast feedback, add integration tests for infrastructure validation, and rely on
+black box tests for end-to-end confidence.
 
-The testing framework leverages Kora's dependency injection for easy mocking and configuration, Testcontainers for realistic infrastructure testing, and standard JUnit 5 patterns for familiar test structure.
+The testing framework leverages Kora's dependency injection for easy mocking and configuration, Testcontainers for realistic infrastructure testing, and standard JUnit 5 patterns for familiar test
+structure.
 
-## Key Concepts Learned
+## Key Concepts { #key-concepts }
 
-### Testing Strategy Overview
-- **Component Tests**: Fast, isolated testing of individual components using Kora's dependency injection
-- **Integration Tests**: Realistic testing with actual infrastructure using Testcontainers
-- **Black Box Tests**: End-to-end testing of complete application behavior
+Testing Strategy Overview:
 
-### Kora Testing Framework
-- **@KoraAppTest**: Annotation that bootstraps Kora's dependency injection for testing
-- **TestApplication Pattern**: Custom application class for test-specific configuration
-- **Configuration Overrides**: Environment variables and system properties for test configuration
+- Component Tests: Fast, isolated testing of individual components using Kora's dependency injection
+- Integration Tests: Realistic testing with actual infrastructure using Testcontainers
+- Black Box Tests: End-to-end testing of complete application behavior
 
-### Testcontainers Integration
-- **Real Infrastructure**: PostgreSQL, Redis, and other services in Docker containers
-- **Automatic Lifecycle**: Containers start/stop automatically with test execution
-- **Network Configuration**: Automatic connection string injection
+Kora Testing Framework:
 
-### Best Practices
-- **Test Isolation**: Each test runs in complete isolation with fresh containers
-- **Fast Feedback**: Component tests for quick validation during development
-- **Resource Cleanup**: Automatic cleanup of containers and connections
-- **Parallel Execution**: Tests can run in parallel for faster execution
+- @KoraAppTest: Annotation that bootstraps Kora's dependency injection for testing
+- TestApplication Pattern: Custom application class for test-specific configuration
+- Configuration Overrides: Environment variables and system properties for test configuration
 
-## Next Steps
+Testcontainers Integration:
 
-Continue your learning journey:
+- Real Infrastructure: PostgreSQL, Redis, and other services in Docker containers
+- Automatic Lifecycle: Containers start/stop automatically with test execution
+- Network Configuration: Automatic connection string injection
 
-- **Next Guide**: [Black Box Testing](../testing-black-box.md) - Learn end-to-end testing of complete HTTP APIs
-- **Related Guides**:
-  - [HTTP Server](../http-server.md) - Build APIs to test with black box testing
-  - [Database JDBC](../database-jdbc.md) - Test database operations with integration tests
-  - [Observability](../observability.md) - Monitor and debug your applications
-- **Advanced Topics**:
-  - [Testcontainers Advanced Features](../../documentation/test.md#testcontainers)
-  - [Custom Test Annotations](../../documentation/test.md#custom-annotations)
-  - [Performance Testing](../../documentation/test.md#performance-testing)
+Best Practices:
 
-## Troubleshooting
+- Test Isolation: Each test runs in complete isolation with fresh containers
+- Fast Feedback: Component tests for quick validation during development
+- Resource Cleanup: Automatic cleanup of containers and connections
+- Parallel Execution: Tests can run in parallel for faster execution
 
-### Testcontainers Not Starting
+## Troubleshooting { #troubleshooting }
+
+**Testcontainers Not Starting:**
+
 - Ensure Docker is running and accessible
 - Check that Testcontainers dependencies are included
 - Verify Docker image names are correct and images are available
 
-### @KoraAppTest Not Working
+**@KoraAppTest Not Working:**
+
 - Ensure annotation processor is configured in build.gradle
 - Check that Application interface includes TestModule
 - Verify test class is properly annotated with @KoraAppTest
 
-### Database Connection Issues
+**Database Connection Issues:**
+
 - Ensure PostgreSQL container is started before test execution
 - Check database connection configuration in test properties
 - Verify database schema matches entity definitions
 
-### Configuration Overrides Not Applied
+**Configuration Overrides Not Applied:**
+
 - Ensure environment variables are set before test execution
 - Check that system properties are passed to test JVM
 - Verify configuration property names match application expectations
 
-### Test Execution Problems
+**Test Execution Problems:**
+
 - Check test logs for detailed error messages
 - Ensure all dependencies are properly injected
 - Verify test isolation (no shared state between tests)
+-
 
-## Help
+## What's Next? { #whats-next }
 
-- [Testing Documentation](../../documentation/test.md)
-- [Kora GitHub Repository](https://github.com/kora-projects/kora)
-- [GitHub Discussions](https://github.com/kora-projects/kora/discussions)
-- [Testcontainers Documentation](https://www.testcontainers.org/)
+- [Database JDBC](database-jdbc.md) if you want to continue into tests that require PostgreSQL, Flyway, and repository migrations.
+- [Integration Testing](testing-integration.md) after Database JDBC, to test repositories, migrations, and external dependencies with Testcontainers.
+- [Black Box Testing](testing-black-box.md) after Database JDBC, to validate the packaged HTTP application end to end.
+- [Observability](observability.md) to add metrics, traces, logs, and probes that can also be verified in tests.
+- [Resilient Patterns](resilient.md) to practice testing failure and fallback behavior.
+
+## Help { #help }
+
+If you encounter issues:
+
+- compare with the test classes in the relevant `guides/*` module
+- check the [JUnit5 documentation](../documentation/junit5.md)
+- revisit [HTTP Server](http-server.md) for the base graph shape
+- read the [Testcontainers documentation](https://www.testcontainers.org/) for container lifecycle issues

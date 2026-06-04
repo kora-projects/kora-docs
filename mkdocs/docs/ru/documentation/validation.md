@@ -6,6 +6,8 @@ agent:
 
 Модуль для валидации моделей и методов с помощью аннотаций аспектов.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Валидация](../guides/validation.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -33,7 +35,6 @@ agent:
     @KoraApp
     interface Application : ValidationModule
     ```
-
 
 ## Аннотации валидации { #validation-annotations }
 

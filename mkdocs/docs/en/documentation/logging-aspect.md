@@ -6,6 +6,8 @@ agent:
 
 Module for declarative logging of method arguments and result using annotations.
 
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
 ## Dependency { #dependency }
 
 Most likely already transitively connected from other dependencies or from [Logback](logging-slf4j.md#logback), otherwise it needs to be added:

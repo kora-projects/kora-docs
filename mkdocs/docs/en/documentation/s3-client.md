@@ -12,6 +12,8 @@ agent:
 Module provides a thin layer of abstraction for creating S3-clients
 using declarative-style annotations, or using imperative-style clients to work with [S3 storage](https://aws.amazon.com/s3/faqs/).
 
+For a step-by-step walkthrough before the reference details, see [S3](../guides/s3.md).
+
 ## AWS { #aws }
 
 S3 client implementation based on the [AWS library](https://github.com/aws/aws-sdk-java-v2).

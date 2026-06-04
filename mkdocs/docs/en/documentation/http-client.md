@@ -15,6 +15,8 @@ using declarative-style annotations or using client in imperative-style.
     and update API faster in case of new version by just updaing contract file. 
     For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
 
+For a step-by-step walkthrough before the reference details, see [HTTP Client](../guides/http-client.md) and [Advanced HTTP Client](../guides/http-client-advanced.md).
+
 ## OkHttp { #okhttp }
 
 HTTP client implementation based on [OkHttp](https://github.com/square/okhttp) library.

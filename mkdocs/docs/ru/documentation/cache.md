@@ -7,6 +7,8 @@ agent:
 Модуль для создания кешей на основе [Caffeine](https://github.com/ben-manes/caffeine) или [Redis](https://redis.io/docs/about/)
 с помощью аннотаций в декларативном стиле, так и использование их императивном стиле.
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Кеширование](../guides/cache.md) и [Многоуровневое кеширование](../guides/cache-multi-level.md).
+
 ## Caffeine { #caffeine }
 
 Реализация на основе библиотеки [Caffeine](https://github.com/ben-manes/caffeine) для кэша внутри памяти приложения.

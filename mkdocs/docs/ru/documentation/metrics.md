@@ -8,6 +8,8 @@ agent:
 
 Требует подключения [служебного HTTP сервера](http-server.md) для предоставления метрик в формате [prometheus](https://prometheus.io/docs/concepts/data_model/).
 
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
+
 ## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -143,7 +145,6 @@ agent:
 Тип метрики позволяет эффективно визуализировать данные по бакетам и рассчитывать персентиль.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — монотонно возрастающий счётчик
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — текущее значение метрики
-
 
 ### HTTP сервер { #http-server }
 

@@ -6,9 +6,47 @@ site_dir: "../../generated/ru"
 site_name: Kora фреймворк 1.2.15
 site_url: https://kora-projects.github.io/kora-docs/ru/
 nav:
-  - Примеры:
-      - Репозиторий примеров: examples/kora-examples.md
-      - Ознакомительный пример: examples/hello-world.md
+  - Руководства:
+      - Вступление: examples/kora-examples.md
+      - Основы:
+          - Ознакомительные приложение: guides/getting-started.md
+          - Введение в Kora: guides/dependency-injection-introduction.md
+          - Внедрение зависимостей: guides/dependency-injection.md
+          - Конфигурация HOCON: guides/config-hocon.md
+          - Конфигурация YAML: guides/config-yaml.md
+          - JSON: guides/json.md
+      - HTTP и API:
+          - HTTP сервер: guides/http-server.md
+          - HTTP сервер продвинутый: guides/http-server-advanced.md
+          - HTTP клиент: guides/http-client.md
+          - HTTP клиент продвинутый: guides/http-client-advanced.md
+          - OpenAPI HTTP сервер: guides/openapi-http-server.md
+          - OpenAPI HTTP сервер продвинутый: guides/openapi-http-server-advanced.md
+          - OpenAPI HTTP клиент: guides/openapi-http-client.md
+      - База данных:
+          - База данных JDBC: guides/database-jdbc.md
+          - База данных JDBC продвинутая: guides/database-jdbc-advanced.md
+          - База данных Cassandra: guides/database-cassandra.md
+      - Расширенные возможности:
+          - Кеширование: guides/cache.md
+          - Многоуровневое кеширование: guides/cache-multi-level.md
+          - Отказоустойчивость: guides/resilient.md
+          - Валидация: guides/validation.md
+      - Наблюдаемость:
+          - Метрики: guides/observability-metrics.md
+          - Трассировка: guides/observability-tracing.md
+          - Пробы: guides/observability-probes.md
+      - Интеграции:
+          - Kafka: guides/messaging-kafka.md
+          - gRPC сервер: guides/grpc-server.md
+          - gRPC сервер продвинутый: guides/grpc-server-advanced.md
+          - gRPC клиент: guides/grpc-client.md
+          - gRPC клиент продвинутый: guides/grpc-client-advanced.md
+          - S3: guides/s3.md
+      - Тестирование:
+          - Компонентное тестирование: guides/testing-junit.md
+          - Интеграционное тестирование: guides/testing-integration.md
+          - Тестирование черным ящиком: guides/testing-black-box.md
   - Документация:
       - Основное: documentation/general.md
       - Контейнер: documentation/container.md

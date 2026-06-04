@@ -32,6 +32,8 @@ In order to achieve high-performance and efficient code, Kora stands on these pr
 - Using the most efficient implementations for integrations
 - Encouraging and using effective programming practices and natural language constructs
 
+For a step-by-step walkthrough before the reference details, see [Creating Your First Kora Application](../guides/getting-started.md) and [Dependency Injection Introduction](../guides/dependency-injection-introduction.md).
+
 ## Annotation Handlers { #annotation-handlers }
 
 The main pillar on which the Kora framework is built is annotation processors.
@@ -136,7 +138,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
     ```
 
-    You can also check out [Hello World example](../examples/hello-world.md) for a more detailed description.
+    You can also check out [Creating Your First Kora Application](../guides/getting-started.md) for a more detailed guided example.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -175,7 +177,7 @@ dependency `ru.tinkoff.kora:kora-parent` which requires to specify the version o
     }
     ```
 
-    You can also check out [Hello World example](../examples/hello-world.md) for a more detailed description.
+    You can also check out [Creating Your First Kora Application](../guides/getting-started.md) for a more detailed guided example.
 
 ## Dependencies { #dependencies }
 
@@ -330,3 +332,7 @@ This section describes the basic terms found throughout the documentation and wi
 - Module - [module](container.md#external-module-factory) is a pluggable dependency, often external, that provides some factory methods and new functionality to the application.
 - Component - [component](container.md#components) is a singleton class that implements some logic and is a dependency in a dependency container.
 - Aspect - is aspect logic that will extend the standard behavior of a method by via annotation before and/or after its execution.
+
+## First guide
+
+After reading the general overview, continue with [Creating Your First Kora Application](../guides/getting-started.md). It turns the framework basics into a small runnable HTTP service and gives the rest of the documentation a concrete shape.

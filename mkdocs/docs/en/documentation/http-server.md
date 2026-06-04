@@ -15,6 +15,8 @@ using both declarative-style annotations and imperative-style annotations.
     and allows you to share this contract to create clients for it using the same approach. 
     For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
 
+For a step-by-step walkthrough before the reference details, see [HTTP Server](../guides/http-server.md) and [Advanced HTTP Server](../guides/http-server-advanced.md).
+
 ## Dependency { #dependency }
 
 Implementation based on [Undertow](https://undertow.io/).

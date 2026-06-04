@@ -1,174 +1,261 @@
----
+﻿---
+search:
+  exclude: true
 title: gRPC Client with Kora
-summary: Build gRPC clients to communicate with gRPC servers using protocol buffers and unary RPC methods
+summary: Build a Kora gRPC client that consumes a unary CRUD service through generated stubs
 tags: grpc-client, protobuf, rpc, microservices
 ---
 
-# gRPC Client with Kora
+# gRPC Client with Kora { #grpc-client-kora }
 
-This guide shows you how to build gRPC clients using Kora's gRPC client module. You'll learn how to connect to gRPC servers, make unary RPC calls, handle responses, and implement robust client-side error handling for microservices communication.
+This guide introduces unary gRPC clients with Kora. It covers how the same `.proto` contract generates client stubs and message types, how Kora injects configured gRPC clients into the application
+graph, and how a small service wrapper turns stub calls into application-level operations. You will also see how gRPC statuses and generated request builders shape client code differently from
+declarative HTTP clients.
 
-## Understanding gRPC Clients
+===! ":fontawesome-brands-java: `Java`"
 
-### What is a gRPC Client?
+    If you want to check your progress along the way, use the finished working example: [Kora Java gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-grpc-client-app).
 
-A gRPC client is an application that connects to and communicates with gRPC servers using the gRPC protocol. Clients use generated stub code to make remote procedure calls, sending requests and receiving responses in a type-safe manner.
+=== ":simple-kotlin: `Kotlin`"
 
-#### Key Features of gRPC Clients:
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-grpc-client-app).
 
-- **Type-Safe Communication**: Generated client stubs ensure compile-time type safety
-- **Multiple Languages**: Clients can be written in any language supported by gRPC
-- **Efficient Transport**: Uses HTTP/2 for high-performance communication
-- **Unary and Streaming**: Support for all gRPC communication patterns
-- **Built-in Features**: Automatic retries, load balancing, and connection management
+## What You'll Build { #youll-build }
 
-#### Why Use gRPC Clients?
+You will build a separate unary gRPC client application with:
 
-- **Service Integration**: Connect microservices in distributed systems
-- **High Performance**: Binary serialization and HTTP/2 provide excellent performance
-- **Type Safety**: Compile-time guarantees prevent runtime errors
-- **Code Generation**: Automatic generation of client code reduces boilerplate
-- **Interoperability**: Works seamlessly across different programming languages
+- the same `user_service.proto` contract used by the server
+- generated protobuf request and response types
+- an injected Kora gRPC client stub for `UserService`
+- a small application service that wraps `CreateUser`, `GetUser`, `GetUsers`, `UpdateUser`, and `DeleteUser`
+- HTTP trigger routes that make the client easy to exercise locally
+- runtime checks against a running gRPC server
 
-### Client-Server Architecture
-
-```
-┌─────────────────┐          ┌─────────────────┐
-│     Client      │          │     Server      │
-│                 │          │                 │
-│ ┌─────────────┐ │          │ ┌─────────────┐ │
-│ │  Service    │◄┼─────────►│ │   Handler   │ │
-│ │  (Your      │ │   gRPC   │ │  (Server    │ │
-│ │   Code)     │ │          │ │   Impl)     │ │
-│ └─────────────┘ │          │ └─────────────┘ │
-└─────────────────┘          └─────────────────┘
-         ▲                           ▲
-         │                           │
-┌─────────────────┐          ┌─────────────────┐
-│   Generated     │          │   Generated     │
-│   Client        │          │   Server        │
-│   Stubs         │          │   Stubs         │
-│  (Auto-gen'd)   │          │  (Auto-gen'd)   │
-└─────────────────┘          └─────────────────┘
-```
-
-This architecture enables seamless communication between client and server applications.
-
-## What You'll Build
-
-You'll build a UserService gRPC client that connects to the server created in the [gRPC Server guide](grpc-server.md):
-
-- **Protocol Buffer Integration**: Use the same .proto files as the server
-- **Unary RPC Calls**: Make simple request-response calls to create and retrieve users
-- **Client Service Layer**: Clean abstraction layer for gRPC communication
-- **Error Handling**: Proper handling of gRPC status codes and network errors
-- **Configuration**: Connection management and client-side configuration
-
-## What You'll Need
+## What You'll Need { #youll-need }
 
 - JDK 17 or later
-- Gradle 7.0+
+- Gradle 7+
 - A text editor or IDE
-- Completed [Creating Your First Kora App](../getting-started.md) guide
-- Running gRPC server from the [gRPC Server guide](grpc-server.md)
-- Basic understanding of [Protocol Buffers](https://developers.google.com/protocol-buffers)
+- A running gRPC server from the previous guide for runtime checks
 
-## Prerequisites
+## Prerequisites { #prerequisites }
 
-!!! note "Required: Complete gRPC Server Guide First"
+!!! note "Required: Complete gRPC Server Guide"
 
-    This guide assumes you have completed the **[gRPC Server guide](grpc-server.md)** and have a running gRPC server. The client will connect to the UserService server you built in that guide.
+    This guide assumes you have completed **[gRPC Server with Kora](grpc-server.md)** and **[HTTP Client with Kora](http-client.md)**, and already understand protobuf code generation, unary RPC methods, and the repository/service layering from the earlier server guides.
 
-    If you haven't completed the server guide yet, please do so first as this client guide depends on having a running server to connect to.
+    If you haven't completed the gRPC server guide yet, do that first, because this guide reuses the same protobuf contract and shows how a client calls that server.
 
-## Add Dependencies
+## Overview { #overview }
 
-To build gRPC clients with Kora, you need to add several key dependencies to your project. Each dependency serves a specific purpose in the gRPC client ecosystem:
+In the server guide, the generated contract was used to implement a service.
 
-===! ":fontawesome-brands-java: `Java`"
+In the client guide, the same generated contract is used to call that service.
 
-    ```gradle title="build.gradle"
-    dependencies {
-        // ... existing dependencies ...
+This is one of the biggest strengths of gRPC:
 
-        // Kora gRPC Client Module - Core gRPC client implementation with dependency injection
-        implementation("ru.tinkoff.kora:grpc-client")
+- one shared contract
+- generated code on both sides
+- less risk of transport mismatch
 
-        // gRPC Protobuf Support - Runtime support for Protocol Buffer serialization
-        implementation("io.grpc:grpc-protobuf:1.62.2")
+The client-side architecture has three layers:
 
-        // gRPC Netty Transport - High-performance transport layer for clients
-        implementation("io.grpc:grpc-netty:1.62.2")
+- the protobuf contract describes the remote API
+- the generated gRPC stub performs the transport call
+- your Kora component wraps the stub in application-friendly methods
 
-        // Java Annotations API - Required for annotation processing and runtime reflection
-        implementation("javax.annotation:javax.annotation-api:1.3.2")
+That wrapper is important. Generated stubs are transport-oriented: they speak protobuf request and response types, deadlines, channels, and gRPC statuses. Application code usually wants clearer
+methods such as `createUser(...)` or `getUsers(...)`, plus domain-level error handling. This guide keeps that boundary visible so the generated client does not leak everywhere in your codebase.
+
+### How a gRPC Client Differs from HTTP { #grpc-client-differs-http }
+
+A handwritten HTTP client usually starts from a URL and an HTTP exchange. The client code decides which path to call, which method to use, which headers to send, how to serialize JSON, and how to
+interpret the response.
+
+- URL paths
+- JSON payload shapes
+- response parsing
+- error mapping
+
+A gRPC client starts from a compiled service contract instead. The `.proto` file defines the available RPC methods and message types, and the generated stub exposes those methods as code. The client
+does not need to remember that `GetUser` maps to a particular URL shape, because there is no resource path to assemble in application code. The generated stub already knows the RPC method name, the
+service name, the message encoder, and the expected response type.
+
+Instead of manually assembling requests, you typically:
+
+- build a protobuf request object
+- call a generated stub method
+- receive a typed protobuf response
+
+The strongest difference is not only binary encoding versus JSON. The stronger difference is that gRPC moves the client/server agreement into generated code:
+
+- method names are part of the protobuf service definition
+- request and response fields are part of protobuf messages
+- missing or renamed fields are caught earlier by compilation and schema evolution rules
+- client code calls a generated API instead of a hand-written path
+- server code implements generated service methods instead of matching route annotations
+
+HTTP clients often model failure around response status codes such as `404`, `409`, or `500`. gRPC clients usually model failure around gRPC statuses such
+as `NOT_FOUND`, `INVALID_ARGUMENT`, `UNAVAILABLE`, or `DEADLINE_EXCEEDED`. That changes error handling: application code usually catches gRPC status exceptions or maps them at the wrapper boundary,
+then exposes domain-friendly behavior to the rest of the service.
+
+Connection behavior also feels different. HTTP/JSON clients often treat each request as an independent resource call. gRPC clients are built around channels and stubs. A channel represents the
+connection target and transport configuration, while a stub is the generated client facade used to make calls. This is why the guide wraps the generated stub inside `UserGrpcClient`: the rest of the
+application should not need to know about channels, protobuf builders, or gRPC status details.
+
+That does not remove the need for client-side application code. It changes what that code is responsible for. Instead of manually handling low-level transport details, your client service becomes an
+adapter between generated transport types and the application model.
+
+## Protobuf API { #protobuf-api }
+
+The first key idea is that the client does **not** invent a new contract.
+
+It uses the same `user_service.proto` as the server:
+
+??? example "Protobuf contract"
+
+    ```protobuf title="src/main/proto/user_service.proto"
+    syntax = "proto3";
+    
+    package ru.tinkoff.kora.guide.grpcserver;
+    option java_multiple_files = true;
+    
+    import "google/protobuf/empty.proto";
+    import "google/protobuf/timestamp.proto";
+    
+    service UserService {
+      rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
+      rpc GetUser(GetUserRequest) returns (UserResponse) {}
+      rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
+      rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
+      rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {}
+    }
+    
+    message CreateUserRequest {
+      string name = 1;
+      string email = 2;
+    }
+    
+    message GetUserRequest {
+      string user_id = 1;
+    }
+    
+    message GetUsersRequest {
+      int32 page = 1;
+      int32 size = 2;
+      string sort = 3;
+    }
+    
+    message GetUsersResponse {
+      repeated UserResponse users = 1;
+    }
+    
+    message UpdateUserRequest {
+      string user_id = 1;
+      string name = 2;
+      string email = 3;
+    }
+    
+    message DeleteUserRequest {
+      string user_id = 1;
+    }
+    
+    message UserResponse {
+      string id = 1;
+      string name = 2;
+      string email = 3;
+      google.protobuf.Timestamp created_at = 4;
     }
     ```
 
-===! ":simple-kotlin: `Kotlin`"
+That shared contract is the whole point:
 
-    ```kotlin title="build.gradle.kts"
-    dependencies {
-        // ... existing dependencies ...
+- the server and the client are compiled against the same transport model
+- you do not hand-maintain duplicate request and response schemas
 
-        // Kora gRPC Client Module - Core gRPC client implementation with dependency injection
-        implementation("ru.tinkoff.kora:grpc-client")
+## Dependencies { #dependencies }
 
-        // gRPC Protobuf Support - Runtime support for Protocol Buffer serialization
-        implementation("io.grpc:grpc-protobuf:1.62.2")
-
-        // gRPC Netty Transport - High-performance transport layer for clients
-        implementation("io.grpc:grpc-netty:1.62.2")
-
-        // Java Annotations API - Required for annotation processing and runtime reflection
-        implementation("javax.annotation:javax.annotation-api:1.3.2")
-    }
-    ```
-
-### Dependency Breakdown:
-
-- **`ru.tinkoff.kora:grpc-client`**: The core Kora module that provides gRPC client functionality. This includes:
-  - Client lifecycle management
-  - Integration with Kora's dependency injection system
-  - Automatic stub creation and management
-  - Configuration binding
-  - Telemetry integration (metrics, tracing, logging)
-
-- **`io.grpc:grpc-protobuf:1.62.2`**: The official gRPC Java library that provides:
-  - Protocol Buffer message serialization/deserialization
-  - gRPC stub generation and communication
-  - HTTP/2 transport layer
-  - Built-in interceptors and middleware support
-
-- **`io.grpc:grpc-netty:1.62.2`**: Netty-based transport implementation that provides:
-  - High-performance HTTP/2 transport
-  - Connection pooling and management
-  - TLS/SSL support
-  - Advanced networking features
-
-- **`javax.annotation:javax.annotation-api:1.3.2`**: Provides standard Java annotations that are used by:
-  - gRPC's annotation processing
-  - Kora's component scanning
-  - Runtime reflection operations
-
-These dependencies work together to provide a complete gRPC client implementation that integrates seamlessly with Kora's application framework.
-
-## Configure Protocol Buffers Plugin
-
-The Protocol Buffers plugin for Gradle is essential for generating Java/Kotlin client code from your `.proto` files. This plugin automates the code generation process and integrates it into your build lifecycle.
+Now add the client-side Kora module and protobuf support.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```gradle title="build.gradle"
+    Update `build.gradle`:
+
+    ```groovy title="build.gradle"
     plugins {
-        // ... existing plugins ...
+        id "application"
         id "com.google.protobuf" version "0.9.4"
     }
 
+    dependencies {
+        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
+        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+
+        implementation "ru.tinkoff.kora:config-hocon"
+        implementation "ru.tinkoff.kora:grpc-client"
+        implementation "ru.tinkoff.kora:http-server-undertow"
+        implementation "ru.tinkoff.kora:json-module"
+        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.grpc:grpc-protobuf:1.74.0"
+
+        testRuntimeOnly platform("org.junit:junit-bom:$junitVersion")
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+        testImplementation platform("org.junit:junit-bom:$junitVersion")
+        testImplementation "io.grpc:grpc-inprocess:1.74.0"
+        testImplementation "org.junit.jupiter:junit-jupiter"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Update `build.gradle.kts`:
+
+    ```kotlin title="build.gradle.kts"
+    import com.google.protobuf.gradle.id
+
+    plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("application")
+        id("com.google.protobuf") version "0.9.4"
+    }
+
+    dependencies {
+        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+        ksp("ru.tinkoff.kora:symbol-processors")
+
+        implementation("ru.tinkoff.kora:config-hocon")
+        implementation("ru.tinkoff.kora:grpc-client")
+        implementation("ru.tinkoff.kora:http-server-undertow")
+        implementation("ru.tinkoff.kora:json-module")
+        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.grpc:grpc-protobuf:1.74.0")
+
+        testRuntimeOnly(platform("org.junit:junit-bom:${property("junitVersion")}"))
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
+        testImplementation("io.grpc:grpc-inprocess:1.74.0")
+        testImplementation("org.junit.jupiter:junit-jupiter")
+    }
+    ```
+
+The important difference from the server module is:
+
+- `ru.tinkoff.kora:grpc-client` instead of `ru.tinkoff.kora:grpc-server`
+
+## Code Generation { #code-generation }
+
+Just like on the server side, Gradle must generate protobuf messages and gRPC types.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Add to `build.gradle`:
+
+    ```groovy title="build.gradle"
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -176,716 +263,575 @@ The Protocol Buffers plugin for Gradle is essential for generating Java/Kotlin c
     }
 
     sourceSets {
-        main.java {
-            srcDirs "build/generated/source/proto/main/grpc"
-            srcDirs "build/generated/source/proto/main/java"
+        main {
+            java {
+                srcDirs "build/generated/source/proto/main/grpc"
+                srcDirs "build/generated/source/proto/main/java"
+            }
         }
     }
     ```
 
-===! ":simple-kotlin: `Kotlin`"
+=== ":simple-kotlin: `Kotlin`"
+
+    Add to `build.gradle.kts`:
 
     ```kotlin title="build.gradle.kts"
-    import com.google.protobuf.gradle.id
-
-    plugins {
-        // ... existing plugins ...
-        id("com.google.protobuf") version ("0.9.4")
-    }
-
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
-            ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
+            all().forEach { task ->
+                task.plugins { id("grpc") }
+            }
         }
     }
 
-    kotlin {
-        sourceSets.main {
-            kotlin.srcDir("build/generated/source/proto/main/grpc")
-            kotlin.srcDir("build/generated/source/proto/main/java")
+    sourceSets {
+        main {
+            java {
+                srcDirs("build/generated/source/proto/main/grpc", "build/generated/source/proto/main/java")
+            }
         }
     }
     ```
 
-### Plugin Configuration Details:
+This generates:
 
-#### Protobuf Plugin (`com.google.protobuf`)
-- **Purpose**: Automates the compilation of `.proto` files into target language code
-- **Version**: `0.9.4` - Latest stable version compatible with Gradle 7+
-- **Functionality**: Downloads protoc compiler and plugins, manages code generation tasks
+- protobuf messages such as `CreateUserRequest`
+- client stub types such as `UserServiceGrpc.UserServiceBlockingStub`
 
-#### Protoc Compiler Configuration
-- **`protoc.artifact`**: Specifies the Protocol Buffer compiler version (`3.25.3`)
-- **Role**: The protoc compiler reads `.proto` files and generates language-specific code
-- **Version Compatibility**: Must match the runtime gRPC version for optimal compatibility
+## Modules { #modules }
 
-#### gRPC Plugin Configuration
-- **`grpc.artifact`**: Specifies the gRPC Java code generator version (`1.62.2`)
-- **Generated Code**: Creates service base classes, client stubs, and server implementations
-- **Integration**: Works with the protoc compiler to extend basic protobuf generation
+For more on gRPC client services, configuration, and stubs, see [gRPC Client: Service](../documentation/grpc-client.md#service).
 
-#### Source Set Configuration
-- **Java**: Adds generated directories to `main.java.srcDirs`
-- **Kotlin**: Adds generated directories to `kotlin.srcDirs.main`
-- **Purpose**: Makes generated code available for compilation and IDE recognition
-
-#### Generated Code Locations:
-- **`build/generated/source/proto/main/java`**: Protocol Buffer message classes
-- **`build/generated/source/proto/main/grpc`**: gRPC service stubs and client classes
-
-This configuration ensures that your `.proto` files are automatically compiled whenever you build your project, and the generated code is properly integrated into your source tree.
-
-## Add Modules
-
-Update your Application interface to include the GrpcClientModule:
+Now enable the Kora gRPC client runtime in the application graph.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/example/Application.java`:
+    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/Application.java"
+    package ru.tinkoff.kora.guide.grpcclient;
 
-    ```java
-    package ru.tinkoff.kora.example;
-
+    import ru.tinkoff.grpc.client.GrpcClientModule;
+    import ru.tinkoff.kora.application.graph.KoraApplication;
     import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.grpc.client.GrpcClientModule;
+    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
+    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
+    import ru.tinkoff.kora.json.module.JsonModule;
     import ru.tinkoff.kora.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            GrpcClientModule,
-            LogbackModule {
+        HoconConfigModule,
+        JsonModule,
+        LogbackModule,
+        GrpcClientModule,  // <----- Connected module
+        UndertowHttpServerModule {
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
-===! ":simple-kotlin: `Kotlin`"
+=== ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/example/Application.kt`:
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/Application.kt"
+    package ru.tinkoff.kora.guide.grpcclient
 
-    ```kotlin
-    package ru.tinkoff.kora.example
-
+    import ru.tinkoff.grpc.client.GrpcClientModule
+    import ru.tinkoff.kora.application.graph.KoraApplication
     import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.grpc.client.GrpcClientModule
+    import ru.tinkoff.kora.config.hocon.HoconConfigModule
+    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
+    import ru.tinkoff.kora.json.module.JsonModule
     import ru.tinkoff.kora.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        GrpcClientModule,
-        LogbackModule
+        HoconConfigModule,
+        JsonModule,
+        LogbackModule,
+        GrpcClientModule,  // <----- Connected module
+        UndertowHttpServerModule
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
 
-## Define Protocol Buffers
+Notice that this app also includes a small HTTP server module. That is not because this is an HTTP tutorial. It is there so the companion app can expose a simple HTTP endpoint that exercises all gRPC
+client operations in one place.
 
-Protocol Buffers are the core of gRPC communication - they define your service interfaces, message structures, and data types. For the client, you'll use the same `.proto` file that defines the server interface.
+## Configuration { #config }
 
-### Key Concepts in Protocol Buffers:
+Add the gRPC client configuration:
 
-#### Service Definition
-- **`service`**: Defines a gRPC service containing one or more RPC methods
-- **`rpc`**: Defines a remote procedure call with request/response types
+For the full configuration reference, see [HTTP Server](../documentation/http-server.md), [gRPC Client](../documentation/grpc-client.md) and [Logging SLF4J](../documentation/logging-slf4j.md).
 
-#### Message Types
-- **`message`**: Defines structured data with typed fields
-- **Field Numbers**: Unique identifiers for each field (1-536,870,911)
-- **Field Types**: Primitive types (string, int32, bool) or custom messages
-- **`repeated`**: Indicates an array/list of values
-- **`enum`**: Defines enumerated types with integer values
+===! ":material-code-json: `Hocon`"
 
-#### Unary RPC Pattern
-- **Unary**: `rpc Method(Request) returns (Response)` - Single request, single response
-- **Simple and Reliable**: Most common pattern for basic CRUD operations
-- **Synchronous**: Client waits for server response before continuing
+    ```javascript title="src/main/resources/application.conf"
+    httpServer {
+      publicApiHttpPort = 8081 //(1)!
+      privateApiHttpPort = 8086 //(2)!
+      telemetry.logging.enabled = true //(3)!
+    }
 
-#### Standard Imports
-- **`google/protobuf/timestamp.proto`**: For timestamp fields
-- **`google/protobuf/empty.proto`**: For methods that don't need request/response data
+    grpcClient {
+      UserService {
+        url = "http://localhost:8090" //(4)!
+        url = ${?GRPC_SERVER_URL} //(5)!
+        telemetry.logging.enabled = true //(6)!
+      }
+    }
 
-### Proto File Structure:
+    logging {
+      levels {
+        "ROOT": "INFO" //(7)!
+        "ru.tinkoff.kora": "INFO" //(8)!
+        "ru.tinkoff.kora.guide.grpcclient": "INFO" //(9)!
+      }
+    }
+    ```
 
-!!! note "Shared Protocol Buffers"
+    1. Default public HTTP port used by application endpoints.
+    2. Default private HTTP port used by probes, metrics, and management endpoints.
+    3. Enables the feature for this configuration section.
+    4. Base URL used by the configured client.
+    5. Base URL used by the configured client. Optional override from `GRPC_SERVER_URL`.
+    6. Enables the feature for this configuration section.
+    7. Log level for `ROOT`.
+    8. Log level for `ru.tinkoff.kora`.
+    9. Log level for `ru.tinkoff.kora.guide.grpcclient`.
 
-    Since you're building a client to connect to the server from the [gRPC Server guide](grpc-server.md), you'll use the same `user_service.proto` file that defines the server interface. This ensures type-safe communication between client and server.
+=== ":simple-yaml: `YAML`"
+
+    ```yaml title="src/main/resources/application.yaml"
+    httpServer:
+      publicApiHttpPort: 8081 #(1)!
+      privateApiHttpPort: 8086 #(2)!
+      telemetry:
+        logging:
+          enabled: true #(3)!
+    grpcClient:
+      UserService:
+        url: ${?GRPC_SERVER_URL:"http://localhost:8090"} #(4)!
+        telemetry:
+          logging:
+            enabled: true #(5)!
+    logging:
+      levels:
+        ROOT: "INFO" #(6)!
+        "ru.tinkoff.kora": "INFO" #(7)!
+        "ru.tinkoff.kora.guide.grpcclient": "INFO" #(8)!
+    ```
+
+    1. Default public HTTP port used by application endpoints.
+    2. Default private HTTP port used by probes, metrics, and management endpoints.
+    3. Enables the feature for this configuration section.
+    4. Base URL used by the configured client. Uses the shown default and allows `GRPC_SERVER_URL` to override it.
+    5. Enables the feature for this configuration section.
+    6. Log level for `ROOT`.
+    7. Log level for `ru.tinkoff.kora`.
+    8. Log level for `ru.tinkoff.kora.guide.grpcclient`.
+
+Two details matter here:
+
+- the client is configured under `grpcClient.UserService`
+- the URL uses `http://...` so the Kora gRPC client runs in plaintext mode for this local guide setup
+
+## Wrap the Stub in a Service { #wrap-stub-service }
+
+Generated stubs are useful, but your application usually still wants a small client-side service layer.
+
+That layer can:
+
+- hide protobuf request construction
+- map protobuf transport objects into app DTOs
+- centralize client-side transport usage
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Copy `src/main/proto/user_service.proto` from your server project:
+    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/service/UserClientService.java"
+    package ru.tinkoff.kora.guide.grpcclient.service;
 
-    ```protobuf
-    // Protocol Buffer syntax version (proto3 is recommended for new services)
-    syntax = "proto3";
+    import java.time.LocalDateTime;
+    import java.time.ZoneOffset;
+    import java.util.List;
 
-    // Package declaration - maps to Java/Kotlin package
-    package ru.tinkoff.kora.example;
-
-    // Import standard Google protobuf types
-    import "google/protobuf/timestamp.proto";
-    import "google/protobuf/empty.proto";
-
-    // Service definition - contains all RPC methods
-    service UserService {
-      // Unary RPC: Simple request-response pattern
-      rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
-
-      // Unary RPC: Retrieve single user by ID
-      rpc GetUser(GetUserRequest) returns (UserResponse) {}
-    }
-
-    // Message definitions - data structures for requests and responses
-
-    // Request message for creating a user
-    message CreateUserRequest {
-      string name = 1;   // Field number 1
-      string email = 2;  // Field number 2
-    }
-
-    // Request message for retrieving a user
-    message GetUserRequest {
-      string user_id = 1;
-    }
-
-    // Response message containing user data
-    message UserResponse {
-      string id = 1;
-      string name = 2;
-      string email = 3;
-      google.protobuf.Timestamp created_at = 4;  // Uses imported timestamp type
-      UserStatus status = 5;  // Uses custom enum
-    }
-
-    // Enumeration for user status values
-    enum UserStatus {
-      ACTIVE = 0;     // Default value (first enum value should be 0)
-      INACTIVE = 1;
-      SUSPENDED = 2;
-    }
-    ```
-
-===! ":simple-kotlin: `Kotlin`"
-
-    Copy `src/main/proto/user_service.proto` from your server project:
-
-    ```protobuf
-    // Protocol Buffer syntax version (proto3 is recommended for new services)
-    syntax = "proto3";
-
-    // Package declaration - maps to Java/Kotlin package
-    package ru.tinkoff.kora.example;
-
-    // Import standard Google protobuf types
-    import "google/protobuf/timestamp.proto";
-    import "google/protobuf/empty.proto";
-
-    // Service definition - contains all RPC methods
-    service UserService {
-      // Unary RPC: Simple request-response pattern
-      rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
-
-      // Unary RPC: Retrieve single user by ID
-      rpc GetUser(GetUserRequest) returns (UserResponse) {}
-    }
-
-    // Message definitions - data structures for requests and responses
-
-    // Request message for creating a user
-    message CreateUserRequest {
-      string name = 1;   // Field number 1
-      string email = 2;  // Field number 2
-    }
-
-    // Request message for retrieving a user
-    message GetUserRequest {
-      string user_id = 1;
-    }
-
-    // Response message containing user data
-    message UserResponse {
-      string id = 1;
-      string name = 2;
-      string email = 3;
-      google.protobuf.Timestamp created_at = 4;  // Uses imported timestamp type
-      UserStatus status = 5;  // Uses custom enum
-    }
-
-    // Enumeration for user status values
-    enum UserStatus {
-      ACTIVE = 0;     // Default value (first enum value should be 0)
-      INACTIVE = 1;
-      SUSPENDED = 2;
-    }
-    ```
-
-### Generated Code Structure:
-
-When you run `./gradlew generateProto`, the following classes are generated:
-
-#### Message Classes (in `build/generated/source/proto/main/java`):
-- **`UserServiceOuterClass.java`**: Contains all message builders and parsers
-- **`CreateUserRequest`**: Builder pattern for creating request messages
-- **`UserResponse`**: Strongly-typed user data structure
-- **`UserStatus`**: Enum with proper constants
-
-#### Service Classes (in `build/generated/source/proto/main/grpc`):
-- **`UserServiceGrpc.java`**: Contains service base classes and client stubs
-- **`UserServiceGrpc.UserServiceBlockingStub`**: Synchronous client for unary calls
-- **`UserServiceGrpc.UserServiceStub`**: Asynchronous client for streaming calls
-- **`UserServiceGrpc.UserServiceFutureStub`**: Future-based client for unary calls
-
-### Best Practices for Protocol Buffers:
-
-1. **Field Numbers**: Never change field numbers once assigned (breaks compatibility)
-2. **Package Naming**: Use reverse domain notation (e.g., `com.example.service`)
-3. **Message Naming**: Use PascalCase for message names
-4. **Field Naming**: Use snake_case for field names (converts to camelCase in generated code)
-5. **Versioning**: Use package names or service names for versioning, not field changes
-6. **Documentation**: Add comments to services and messages for API documentation
-
-This `.proto` file serves as your API contract and ensures type-safe communication between client and server.
-
-## Configure gRPC Client
-
-Configure your gRPC client connection in `application.conf`:
-
-```hocon
-grpcClient {
-  userService {
-    host = "localhost"
-    port = 9090
-    maxMessageSize = "4MiB"
-    enableRetry = true
-    telemetry {
-      logging.enabled = true
-    }
-  }
-}
-```
-
-### Client Configuration Options:
-
-- **`host`**: The hostname or IP address of the gRPC server
-- **`port`**: The port number the gRPC server is listening on
-- **`maxMessageSize`**: Maximum size of individual messages (default: "4MiB")
-- **`enableRetry`**: Enables automatic retry logic for failed requests
-- **`telemetry.logging.enabled`**: Enables structured logging for gRPC calls
-
-## Create User Client Service
-
-The UserClientService is your client-side service layer that handles communication with the gRPC server. This service is annotated with `@Component` to be automatically registered with Kora's dependency injection system. It provides a clean abstraction over the raw gRPC calls.
-
-### Key Design Patterns:
-
-- **@Component Annotation**: Registers the service as a managed bean in Kora's DI container
-- **Blocking Stub Usage**: Uses synchronous client stubs for unary RPC calls
-- **Exception Handling**: Proper handling of gRPC status codes and network errors
-- **Resource Management**: Automatic connection management through Kora
-- **Builder Pattern**: Uses generated builders for constructing complex messages
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/ru/tinkoff/kora/example/client/UserClientService.java`:
-
-    ```java
-    package ru.tinkoff.kora.example.client;
-
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
     import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.example.*;
-    import ru.tinkoff.kora.grpc.client.GrpcClient;
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest;
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserResponse;
+    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest;
+    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest;
+    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest;
+    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest;
+    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest;
+    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc;
 
     @Component
     public final class UserClientService {
 
-        private static final Logger logger = LoggerFactory.getLogger(UserClientService.class);
-        private final UserServiceGrpc.UserServiceBlockingStub userServiceStub;
+        private final UserServiceGrpc.UserServiceBlockingStub userService;
 
-        public UserClientService(@GrpcClient("userService") UserServiceGrpc.UserServiceBlockingStub userServiceStub) {
-            this.userServiceStub = userServiceStub;
+        public UserClientService(UserServiceGrpc.UserServiceBlockingStub userService) {
+            this.userService = userService;
         }
 
-        /**
-         * Creates a new user by calling the gRPC server.
-         * Returns the created user information.
-         */
-        public UserResponse createUser(String name, String email) {
-            logger.info("Creating user via gRPC: name={}, email={}", name, email);
-
-            // Build the request message
-            CreateUserRequest request = CreateUserRequest.newBuilder()
-                .setName(name)
-                .setEmail(email)
-                .build();
-
-            try {
-                // Make the gRPC call
-                UserResponse response = userServiceStub.createUser(request);
-                logger.info("User created successfully: id={}", response.getId());
-                return response;
-
-            } catch (Exception e) {
-                logger.error("Failed to create user via gRPC", e);
-                throw new RuntimeException("Failed to create user", e);
-            }
+        public UserResponse createUser(UserRequest request) {
+            return toDto(this.userService.createUser(CreateUserRequest.newBuilder()
+                .setName(request.name())
+                .setEmail(request.email())
+                .build()));
         }
 
-        /**
-         * Retrieves a user by ID by calling the gRPC server.
-         * Returns the user information or null if not found.
-         */
         public UserResponse getUser(String userId) {
-            logger.info("Getting user via gRPC: id={}", userId);
-
-            // Build the request message
-            GetUserRequest request = GetUserRequest.newBuilder()
+            return toDto(this.userService.getUser(GetUserRequest.newBuilder()
                 .setUserId(userId)
-                .build();
+                .build()));
+        }
 
-            try {
-                // Make the gRPC call
-                UserResponse response = userServiceStub.getUser(request);
-                logger.info("User retrieved successfully: id={}", response.getId());
-                return response;
+        public List<UserResponse> getUsers(int page, int size, String sort) {
+            return this.userService.getUsers(GetUsersRequest.newBuilder()
+                    .setPage(page)
+                    .setSize(size)
+                    .setSort(sort)
+                    .build())
+                .getUsersList().stream()
+                .map(this::toDto)
+                .toList();
+        }
 
-            } catch (io.grpc.StatusRuntimeException e) {
-                if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
-                    logger.info("User not found: id={}", userId);
-                    return null;
-                }
-                logger.error("Failed to get user via gRPC", e);
-                throw new RuntimeException("Failed to get user", e);
-            } catch (Exception e) {
-                logger.error("Failed to get user via gRPC", e);
-                throw new RuntimeException("Failed to get user", e);
-            }
+        public UserResponse updateUser(String userId, UserRequest request) {
+            return toDto(this.userService.updateUser(UpdateUserRequest.newBuilder()
+                .setUserId(userId)
+                .setName(request.name())
+                .setEmail(request.email())
+                .build()));
+        }
+
+        public void deleteUser(String userId) {
+            this.userService.deleteUser(DeleteUserRequest.newBuilder()
+                .setUserId(userId)
+                .build());
+        }
+
+        private UserResponse toDto(ru.tinkoff.kora.guide.grpcserver.UserResponse response) {
+            return new UserResponse(
+                response.getId(),
+                response.getName(),
+                response.getEmail(),
+                LocalDateTime.ofEpochSecond(
+                    response.getCreatedAt().getSeconds(),
+                    response.getCreatedAt().getNanos(),
+                    ZoneOffset.UTC));
         }
     }
     ```
 
-===! ":simple-kotlin: `Kotlin`"
+=== ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/client/UserClientService.kt`:
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/service/UserClientService.kt"
+    package ru.tinkoff.kora.guide.grpcclient.service
 
-    ```kotlin
-    package ru.tinkoff.kora.example.client
-
-    import org.slf4j.LoggerFactory
+    import java.time.LocalDateTime
+    import java.time.ZoneOffset
     import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.example.*
-    import ru.tinkoff.kora.grpc.client.GrpcClient
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserResponse
+    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest
+    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest
+    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest
+    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest
+    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest
+    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc
 
     @Component
     class UserClientService(
-        @GrpcClient("userService")
-        private val userServiceStub: UserServiceGrpc.UserServiceBlockingStub
+        private val userService: UserServiceGrpc.UserServiceBlockingStub
     ) {
 
-        private val logger = LoggerFactory.getLogger(UserClientService::class.java)
-
-        /**
-         * Creates a new user by calling the gRPC server.
-         * Returns the created user information.
-         */
-        fun createUser(name: String, email: String): UserResponse {
-            logger.info("Creating user via gRPC: name={}, email={}", name, email)
-
-            // Build the request message
-            val request = CreateUserRequest.newBuilder()
-                .setName(name)
-                .setEmail(email)
-                .build()
-
-            try {
-                // Make the gRPC call
-                val response = userServiceStub.createUser(request)
-                logger.info("User created successfully: id={}", response.id)
-                return response
-
-            } catch (e: Exception) {
-                logger.error("Failed to create user via gRPC", e)
-                throw RuntimeException("Failed to create user", e)
-            }
+        fun createUser(request: UserRequest): UserResponse {
+            return toDto(
+                userService.createUser(
+                    CreateUserRequest.newBuilder()
+                        .setName(request.name)
+                        .setEmail(request.email)
+                        .build()
+                )
+            )
         }
 
-        /**
-         * Retrieves a user by ID by calling the gRPC server.
-         * Returns the user information or null if not found.
-         */
-        fun getUser(userId: String): UserResponse? {
-            logger.info("Getting user via gRPC: id={}", userId)
+        fun getUser(userId: String): UserResponse {
+            return toDto(userService.getUser(GetUserRequest.newBuilder().setUserId(userId).build()))
+        }
 
-            // Build the request message
-            val request = GetUserRequest.newBuilder()
-                .setUserId(userId)
-                .build()
+        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> {
+            return userService.getUsers(
+                GetUsersRequest.newBuilder()
+                    .setPage(page)
+                    .setSize(size)
+                    .setSort(sort)
+                    .build()
+            ).usersList.map(::toDto)
+        }
 
-            try {
-                // Make the gRPC call
-                val response = userServiceStub.getUser(request)
-                logger.info("User retrieved successfully: id={}", response.id)
-                return response
+        fun updateUser(userId: String, request: UserRequest): UserResponse {
+            return toDto(
+                userService.updateUser(
+                    UpdateUserRequest.newBuilder()
+                        .setUserId(userId)
+                        .setName(request.name)
+                        .setEmail(request.email)
+                        .build()
+                )
+            )
+        }
 
-            } catch (e: io.grpc.StatusRuntimeException) {
-                if (e.status.code == io.grpc.Status.Code.NOT_FOUND) {
-                    logger.info("User not found: id={}", userId)
-                    return null
-                }
-                logger.error("Failed to get user via gRPC", e)
-                throw RuntimeException("Failed to get user", e)
-            } catch (e: Exception) {
-                logger.error("Failed to get user via gRPC", e)
-                throw RuntimeException("Failed to get user", e)
-            }
+        fun deleteUser(userId: String) {
+            userService.deleteUser(DeleteUserRequest.newBuilder().setUserId(userId).build())
+        }
+
+        private fun toDto(response: ru.tinkoff.kora.guide.grpcserver.UserResponse): UserResponse {
+            return UserResponse(
+                response.id,
+                response.name,
+                response.email,
+                LocalDateTime.ofEpochSecond(response.createdAt.seconds, response.createdAt.nanos, ZoneOffset.UTC)
+            )
         }
     }
     ```
 
-### Service Implementation Details:
+The important idea here is the same one we use in many other guides: generated transport code is useful, but the rest of your application should still consume a small, readable abstraction.
 
-#### @GrpcClient Annotation
-- **`@GrpcClient("userService")`**: Injects a configured gRPC client stub
-- **Configuration Reference**: Refers to the `grpcClient.userService` configuration block
-- **Type Safety**: Ensures the correct stub type is injected
+## Check Controller { #check-controller }
 
-#### Blocking Stub Usage
-- **`UserServiceBlockingStub`**: Synchronous client for unary RPC calls
-- **Simple API**: Direct method calls that block until response
-- **Exception Handling**: Throws `StatusRuntimeException` for gRPC errors
-
-#### Error Handling
-- **StatusRuntimeException**: Specific exception type for gRPC status codes
-- **NOT_FOUND Handling**: Graceful handling of missing resources
-- **Generic Exceptions**: Catch-all for network and other errors
-
-#### Protocol Buffer Integration
-- **Generated Builders**: Uses `CreateUserRequest.newBuilder()` for requests
-- **Type Safety**: Compile-time guarantees for message structures
-- **Null Safety**: Proper handling of optional fields
-
-This client service provides a clean, testable abstraction over the raw gRPC communication, making it easy to integrate gRPC calls into your application logic.
-
-## Create Client Application
-
-Create a simple application that demonstrates using the UserClientService to interact with the gRPC server:
+The companion app includes a tiny HTTP controller that calls the gRPC client and returns a summary.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/example/client/UserClientApplication.java`:
+    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/controller/ClientTestController.java"
+    package ru.tinkoff.kora.guide.grpcclient.controller;
 
-    ```java
-    package ru.tinkoff.kora.example.client;
-
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
     import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Root;
-    import ru.tinkoff.kora.example.UserResponse;
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest;
+    import ru.tinkoff.kora.guide.grpcclient.service.UserClientService;
+    import ru.tinkoff.kora.http.common.HttpMethod;
+    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
+    import ru.tinkoff.kora.json.common.annotation.Json;
 
-    @Root
-    public final class UserClientApplication {
+    @Component
+    @HttpController
+    public final class ClientTestController {
 
-        private static final Logger logger = LoggerFactory.getLogger(UserClientApplication.class);
         private final UserClientService userClientService;
 
-        public UserClientApplication(UserClientService userClientService) {
+        public ClientTestController(UserClientService userClientService) {
             this.userClientService = userClientService;
         }
 
-        /**
-         * Demonstrates gRPC client operations.
-         * This method can be called to test the client functionality.
-         */
-        public void runClientDemo() {
-            logger.info("Starting gRPC client demo...");
-
+        @HttpRoute(method = HttpMethod.POST, path = "/client/test-all-user-endpoints")
+        @Json
+        public TestResults testAllUserEndpoints() {
             try {
-                // Create a new user
-                logger.info("Creating a new user...");
-                UserResponse createdUser = userClientService.createUser("John Doe", "john.doe@example.com");
-                logger.info("Created user: {} (ID: {})", createdUser.getName(), createdUser.getId());
+                var created = this.userClientService.createUser(new UserRequest("Client Demo User", "client-demo@example.com"));
+                boolean userCreated = created != null;
 
-                // Retrieve the user
-                logger.info("Retrieving the user...");
-                UserResponse retrievedUser = userClientService.getUser(createdUser.getId());
-                if (retrievedUser != null) {
-                    logger.info("Retrieved user: {} (ID: {})", retrievedUser.getName(), retrievedUser.getId());
-                } else {
-                    logger.warn("User not found!");
-                }
+                var fetched = this.userClientService.getUser(created.id());
+                boolean userFetched = created.id().equals(fetched.id());
 
-                // Try to get a non-existent user
-                logger.info("Trying to retrieve non-existent user...");
-                UserResponse notFoundUser = userClientService.getUser("non-existent-id");
-                if (notFoundUser == null) {
-                    logger.info("Correctly returned null for non-existent user");
-                }
+                var users = this.userClientService.getUsers(0, 10, "name");
+                boolean usersListed = users.stream().anyMatch(user -> user.id().equals(created.id()));
 
-                logger.info("gRPC client demo completed successfully!");
+                var updated = this.userClientService.updateUser(created.id(),
+                    new UserRequest("Updated Client Demo User", "updated-client-demo@example.com"));
+                boolean userUpdated = "Updated Client Demo User".equals(updated.name());
 
-            } catch (Exception e) {
-                logger.error("Error during client demo", e);
+                this.userClientService.deleteUser(created.id());
+                boolean userDeleted = true;
+
+                boolean allTestsPassed = userCreated && userFetched && usersListed && userUpdated && userDeleted;
+                return new TestResults(userCreated, userFetched, usersListed, userUpdated, userDeleted, allTestsPassed, null);
+            } catch (Exception exception) {
+                return new TestResults(false, false, false, false, false, false, exception.getMessage());
             }
+        }
+
+        @Json
+        public record TestResults(
+            boolean userCreated,
+            boolean userFetched,
+            boolean usersListed,
+            boolean userUpdated,
+            boolean userDeleted,
+            boolean allTestsPassed,
+            String error) {
         }
     }
     ```
 
-===! ":simple-kotlin: `Kotlin`"
+=== ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/example/client/UserClientApplication.kt`:
+    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/controller/ClientTestController.kt"
+    package ru.tinkoff.kora.guide.grpcclient.controller
 
-    ```kotlin
-    package ru.tinkoff.kora.example.client
-
-    import org.slf4j.LoggerFactory
     import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Root
-    import ru.tinkoff.kora.example.UserResponse
+    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest
+    import ru.tinkoff.kora.guide.grpcclient.service.UserClientService
+    import ru.tinkoff.kora.http.common.HttpMethod
+    import ru.tinkoff.kora.http.common.annotation.HttpRoute
+    import ru.tinkoff.kora.http.server.common.annotation.HttpController
+    import ru.tinkoff.kora.json.common.annotation.Json
 
-    @Root
-    class UserClientApplication(
+    @Component
+    @HttpController
+    class ClientTestController(
         private val userClientService: UserClientService
     ) {
 
-        private val logger = LoggerFactory.getLogger(UserClientApplication::class.java)
+        @HttpRoute(method = HttpMethod.POST, path = "/client/test-all-user-endpoints")
+        @Json
+        fun testAllUserEndpoints(): TestResults {
+            return try {
+                val created = userClientService.createUser(UserRequest("Client Demo User", "client-demo@example.com"))
+                val fetched = userClientService.getUser(created.id)
+                val users = userClientService.getUsers(0, 10, "name")
+                val updated = userClientService.updateUser(
+                    created.id,
+                    UserRequest("Updated Client Demo User", "updated-client-demo@example.com")
+                )
+                userClientService.deleteUser(created.id)
 
-        /**
-         * Demonstrates gRPC client operations.
-         * This method can be called to test the client functionality.
-         */
-        fun runClientDemo() {
-            logger.info("Starting gRPC client demo...")
-
-            try {
-                // Create a new user
-                logger.info("Creating a new user...")
-                val createdUser = userClientService.createUser("John Doe", "john.doe@example.com")
-                logger.info("Created user: {} (ID: {})", createdUser.name, createdUser.id)
-
-                // Retrieve the user
-                logger.info("Retrieving the user...")
-                val retrievedUser = userClientService.getUser(createdUser.id)
-                if (retrievedUser != null) {
-                    logger.info("Retrieved user: {} (ID: {})", retrievedUser.name, retrievedUser.id)
-                } else {
-                    logger.warn("User not found!")
-                }
-
-                // Try to get a non-existent user
-                logger.info("Trying to retrieve non-existent user...")
-                val notFoundUser = userClientService.getUser("non-existent-id")
-                if (notFoundUser == null) {
-                    logger.info("Correctly returned null for non-existent user")
-                }
-
-                logger.info("gRPC client demo completed successfully!")
-
-            } catch (e: Exception) {
-                logger.error("Error during client demo", e)
+                val userCreated = true
+                val userFetched = created.id == fetched.id
+                val usersListed = users.any { it.id == created.id }
+                val userUpdated = updated.name == "Updated Client Demo User"
+                val userDeleted = true
+                val allTestsPassed = userCreated && userFetched && usersListed && userUpdated && userDeleted
+                TestResults(userCreated, userFetched, usersListed, userUpdated, userDeleted, allTestsPassed, null)
+            } catch (exception: Exception) {
+                TestResults(false, false, false, false, false, false, exception.message)
             }
         }
+
+        @Json
+        data class TestResults(
+            val userCreated: Boolean,
+            val userFetched: Boolean,
+            val usersListed: Boolean,
+            val userUpdated: Boolean,
+            val userDeleted: Boolean,
+            val allTestsPassed: Boolean,
+            val error: String?
+        )
     }
     ```
 
-## Build and Run
+This controller is not the “real” point of the guide. It is just a convenient harness that makes it easy to verify the client end-to-end.
 
-Generate protobuf classes and run the client application:
+## Run Application { #run-app }
+
+Start the server app from the previous guide first:
 
 ```bash
-# Generate protobuf classes
-./gradlew generateProto
-
-# Build the client application
-./gradlew build
-
-# Run the client application
 ./gradlew run
 ```
 
-## Test the gRPC Client
-
-Test your gRPC client by ensuring the server is running and then running the client demo:
-
-### Prerequisites for Testing
-
-1. **Start the gRPC Server**: Make sure the server from the [gRPC Server guide](grpc-server.md) is running on `localhost:9090`
-2. **Verify Server Health**: Test that the server is responding using grpcurl:
+Then start the client app:
 
 ```bash
-# Test server connectivity
-grpcurl -plaintext localhost:9090 ru.tinkoff.kora.example.UserService/CreateUser \
-  -d '{"name": "Test User", "email": "test@example.com"}'
-```
-
-### Run Client Demo
-
-Once the server is running, you can run the client demo:
-
-```bash
-# Run the client application
 ./gradlew run
 ```
 
-The client will:
-1. Create a new user via gRPC
-2. Retrieve the created user
-3. Attempt to retrieve a non-existent user (should return null)
+Now call the local HTTP helper endpoint:
 
-### Expected Output
-
-```
-INFO  UserClientApplication - Starting gRPC client demo...
-INFO  UserClientApplication - Creating a new user...
-INFO  UserClientService - Creating user via gRPC: name=John Doe, email=john.doe@example.com
-INFO  UserClientService - User created successfully: id=550e8400-e29b-41d4-a716-446655440000
-INFO  UserClientApplication - Created user: John Doe (ID: 550e8400-e29b-41d4-a716-446655440000)
-INFO  UserClientApplication - Retrieving the user...
-INFO  UserClientService - Getting user via gRPC: id=550e8400-e29b-41d4-a716-446655440000
-INFO  UserClientService - User retrieved successfully: id=550e8400-e29b-41d4-a716-446655440000
-INFO  UserClientApplication - Retrieved user: John Doe (ID: 550e8400-e29b-41d4-a716-446655440000)
-INFO  UserClientApplication - Trying to retrieve non-existent user...
-INFO  UserClientService - User not found: id=non-existent-id
-INFO  UserClientApplication - Correctly returned null for non-existent user
-INFO  UserClientApplication - gRPC client demo completed successfully!
+```bash
+curl -X POST http://localhost:8081/client/test-all-user-endpoints
 ```
 
-## Key Concepts Learned
+That HTTP call is only a trigger. Inside the app, the real work is being done through the generated gRPC client stub.
 
-### gRPC Client Architecture
-- **Client Stubs**: Generated code for type-safe RPC communication
-- **Blocking vs Async**: Different stub types for various use cases
-- **Connection Management**: Automatic connection pooling and lifecycle management
+## Testing { #testing }
 
-### Protocol Buffers in Clients
-- **Shared Schema**: Same .proto files used by both client and server
-- **Type Safety**: Compile-time guarantees across service boundaries
-- **Version Compatibility**: Forward and backward compatibility support
+The client module tests do not need Docker or a full external server process.
 
-### Error Handling
-- **Status Codes**: gRPC status codes for different error conditions
-- **Network Errors**: Handling connection failures and timeouts
-- **Business Logic Errors**: Translating gRPC errors to application exceptions
+Instead, they use:
 
-### Configuration
-- **Client Configuration**: Connection parameters and behavior settings
-- **Service Discovery**: How clients locate and connect to servers
-- **Load Balancing**: Distributing requests across multiple server instances
+- `InProcessServerBuilder`
+- `InProcessChannelBuilder`
 
-## What's Next?
+That approach is especially good for gRPC client tests because it lets you:
 
-- [Advanced gRPC Client Patterns](grpc-client-advanced.md)
-- [gRPC Streaming Clients](grpc-client-streaming.md)
-- [Service Discovery and Load Balancing](service-discovery.md)
-- [Circuit Breaker Pattern](resilience.md)
-- [Distributed Tracing](observability-tracing.md)
+- simulate exact server responses
+- keep the tests fast
+- focus on client behavior instead of external infrastructure
 
-## Help
+Run the tests with:
 
-If you encounter issues:
+```bash
+./gradlew test
+```
 
-- Check the [gRPC Client Documentation](../../documentation/grpc-client.md)
-- Verify the server from [gRPC Server guide](grpc-server.md) is running
-- Check client configuration in `application.conf`
-- Test server connectivity with grpcurl
-- Ask questions on [GitHub Discussions](https://github.com/kora-projects/kora/discussions)
+## Best Practices { #best-practices }
+
+- Reuse the exact same `.proto` contract between client and server.
+- Wrap generated stubs in a small application service instead of leaking them everywhere.
+- Keep protobuf message construction close to the gRPC client boundary.
+- Use `InProcessServer` for focused client tests when you want fast and deterministic feedback.
+- Treat gRPC transport models as transport models, even if they look similar to your app DTOs.
+- Annotate handwritten DTOs with `@Json` only when they cross an HTTP/JSON boundary; generated protobuf messages do not need JSON annotations.
+
+## Summary { #summary }
+
+In this guide you built a unary gRPC client that mirrors the server from the previous guide.
+
+The key ideas were:
+
+- reuse the shared protobuf contract
+- inject generated gRPC stubs through Kora
+- wrap them in a `UserClientService`
+- test the client with in-process gRPC infrastructure
+
+## Key Concepts { #key-concepts }
+
+- how a Kora gRPC client is wired into the application graph
+- how generated blocking stubs are used for unary RPC calls
+- why a small client-side service layer is still useful
+- how the same protobuf contract can power both sides of the system
+- why `InProcessServer` is a strong fit for gRPC client tests
+
+## Troubleshooting { #troubleshooting }
+
+**Client cannot connect:**
+
+Verify that the server app is running and that the client `application.conf` points to the correct host and gRPC port.
+
+**Generated stub is missing:**
+
+Run `./gradlew clean classes` after changing `user_service.proto` and check the protobuf source set configuration.
+
+**Request succeeds in tests but not at runtime:**
+
+Compare the in-process test setup with the real client configuration, especially host, port, and service package names.
+
+## What's Next? { #whats-next }
+
+- [HTTP Server Advanced](http-server-advanced.md) if you have not completed it yet.
+- [Advanced gRPC Server](grpc-server-advanced.md) after HTTP Server Advanced, to add streaming endpoints that a richer client can consume.
+- [Advanced gRPC Client](grpc-client-advanced.md) after Advanced gRPC Server, to work with streaming, metadata auth, and client interceptors.
+- [Resilient Patterns](resilient.md) to protect RPC calls with retry, timeout, circuit breaker, and fallback.
+- [Observability](observability.md) to trace gRPC calls and measure client behavior.
+
+## Help { #help }
+
+If something does not work:
+
+- compare with [Kora Java gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-grpc-client-app) and [Kora Kotlin gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-grpc-client-app)
+- check the [gRPC Client documentation](../documentation/grpc-client.md)
+- verify the server from [gRPC Server](grpc-server.md) is running on port `8090`
+- make sure client and server use the same `.proto` contract

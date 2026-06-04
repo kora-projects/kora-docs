@@ -6,6 +6,8 @@ agent:
 
 Module provides a repository implementation for the [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) database using the [DataStax](https://docs.datastax.com/en/developer/java-driver/4.17/) driver.
 
+For a step-by-step walkthrough before the reference details, see [Cassandra Database](../guides/database-cassandra.md).
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
