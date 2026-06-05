@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry. Use when working with CamundaEngineBpmnModule, CamundaEngineConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry; key triggers include CamundaEngineBpmnModule, CamundaEngineConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+---
+
 ??? warning "Experimental module"
 
     **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
@@ -5,7 +11,7 @@
 
 Module for connecting a BPMN process workflow engine based on [Camunda 7](https://docs.camunda.org/manual/7.21/)
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -35,7 +41,7 @@ Module for connecting a BPMN process workflow engine based on [Camunda 7](https:
 
 Requires [JDBC module](database-jdbc.md) connection.
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `CamundaEngineBpmnConfig` class (example values or default values are specified):
 
@@ -178,7 +184,7 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-7-bpmn) section.
 
-## Applications
+## Applications { #applications }
 
 You can register in Camunda user [JavaDelegate](https://docs.camunda.org/manual/7.21/user-guide/process-engine/delegation-code/)
 which will be registered in the context by their full class name (`canonicalName`) and by their simplified class name (`simpleName`):
@@ -241,7 +247,7 @@ You can also register specialized `KoraDelegate`, which allow, in addition to st
     }
     ```
 
-## Engine configuration
+## Engine configuration { #engine-configuration }
 
 It is possible to register user `ProcessEngineConfigurator` that allow configuring [ProcessEngine](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-bootstrapping/):
 
@@ -270,6 +276,6 @@ It is possible to register user `ProcessEngineConfigurator` that allow configuri
     }
     ```
 
-## Plugins
+## Plugins { #plugins }
 
 You can register arbitrary [Plugin](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-plugins/) by providing them as components in a dependency container.

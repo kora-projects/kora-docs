@@ -1,6 +1,14 @@
+---
+description: "Explains Kora resilience aspects for circuit breakers, retries, timeouts, fallback methods, telemetry, configuration, and supported signatures. Use when working with @CircuitBreaker, @Retry, @Timeout, @Fallback, CircuitBreakerConfig, RetryConfig, TimeoutConfig, ResilientModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora resilience aspects for circuit breakers, retries, timeouts, fallback methods, telemetry, configuration, and supported signatures; key triggers include @CircuitBreaker, @Retry, @Timeout, @Fallback, CircuitBreakerConfig, RetryConfig, TimeoutConfig, ResilientModule."
+---
+
 Module for creating a fault-tolerant application using approaches such as *CircuitBreaker, Fallback, Timeout, Retry* using aspect annotations.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [Resilience](../guides/resilient.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -28,7 +36,7 @@ Module for creating a fault-tolerant application using approaches such as *Circu
     interface Application : ResilientModule
     ```
 
-## CircuitBreaker
+## CircuitBreaker { #circuitbreaker }
 
 CircuitBreaker is a proxy that controls the flow to requests of a particular method
 and can temporarily stop execution of this method if the method throws many exceptions that meet the specified filter requirements (`CircuitBreakerPredicate`).
@@ -48,7 +56,7 @@ The `Half-Open` state helps prevent requests to the service from growing rapidly
 
 Initially it has the `CLOSED` state.
 
-### Declarative usage
+### Declarative usage { #declarative-usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -74,7 +82,7 @@ Initially it has the `CLOSED` state.
     }
     ```
 
-### Configuration
+### Configuration { #configuration }
 
 There is a default configuration that is applied to a CircuitBreaker when it is created
 and then the named settings of a particular CircuitBreaker are applied to override the default settings.
@@ -154,7 +162,7 @@ An example of overriding named settings for a particular CircuitBreaker:
 
 Module metrics are described in the [Metrics Reference](metrics.md#resilience) section.
 
-### Exception filtering
+### Exception filtering { #exception-filtering }
 
 In order to register which errors should be recorded as CircuitBreaker errors, you can override the default filter,
 you need to implement `CircuitBreakerPredicate` and register your component in the context and specify in the CircuitBreaker configuration its name returned in the `name()` method.
@@ -218,8 +226,7 @@ Configuration:
 
     1. Name of the predicate from the `name()` method
 
-
-### Imperative usage
+### Imperative usage { #imperative-usage }
 
 You can use a breaker in imperative code, for this you need to implement `CircuitBreakerManager` as a dependency and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation.
 and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation:
@@ -264,12 +271,12 @@ and take `CircuitBreaker` from it by the name of the configuration that would be
     }
     ```
 
-## Retry
+## Retry { #retry }
 
 Retry - provides the ability to customize the policy of repeated invocation of annotated methods.
 It allows you to specify when you want to retry a method, customize retry parameters in case the method threw an exception that meets the specified filter requirements (*RetryPredicate*).
 
-### Declarative usage
+### Declarative usage { #declarative-usage-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -295,7 +302,7 @@ It allows you to specify when you want to retry a method, customize retry parame
     }
     ```
 
-### Configuration
+### Configuration { #configuration-2 }
 
 There is a `default` configuration that is applied to `Retry` at creation
 and then the named settings of a particular `Retry` are applied to override the default settings.
@@ -341,7 +348,7 @@ Example of the complete configuration described in the `RetryConfig` class (defa
     3. Delay step which is accumulated in consequence of subsequent Retry attempts
     4.  Enable or disable retrier (default `true`)
 
-### Exception filtering
+### Exception filtering { #exception-filtering-2 }
 
 In order to register which errors should be recorded as errors on the Retry side, you can override the default filter,
 it is required to implement `RetryPredicate` and register its component in the context and specify in the Retry configuration its name returned in the `name()` method.
@@ -403,7 +410,7 @@ Configuration:
 
     1. Name of the predicate from the `name()` method
 
-### Imperative usage
+### Imperative usage { #imperative-usage-2 }
 
 It is possible to use a repeater in imperative code, for this you need to implement `RetryManager` as a dependency and take `Retry` from it by the name of the configuration that would be specified in the annotation.
 and take `Retry` from it by the name of the configuration that would be specified in the annotation:
@@ -448,11 +455,11 @@ and take `Retry` from it by the name of the configuration that would be specifie
     }
     ```
 
-## Timeout
+## Timeout { #timeout }
 
 Timeout - provides the ability to set the maximum time of operation of the annotated method.
 
-### Declarative usage
+### Declarative usage { #declarative-usage-3 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -488,7 +495,7 @@ Timeout - provides the ability to set the maximum time of operation of the annot
     }
     ```
 
-### Configuration
+### Configuration { #configuration-3 }
 
 There is a `default` configuration that is applied to the Timeout when it is created
 and then the named settings of a particular Timeout are applied to override the default settings.
@@ -526,7 +533,7 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
     1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
     2.  Enable or disable timeouter (default `true`)
 
-### Imperative usage
+### Imperative usage { #imperative-usage-3 }
 
 You can use a time limiter in imperative code, for this you need to implement `TimeoutManager` as a dependency and take `Timeout` from it by the name of the configuration that would be specified in the annotation.
 and take `Timeout` from it by the name of the configuration that would be specified in the annotation:
@@ -571,12 +578,12 @@ and take `Timeout` from it by the name of the configuration that would be specif
     }
     ```
 
-## Fallback
+## Fallback { #fallback }
 
 Fallback - provides an opportunity to specify a method that will be called in the case of
 if the exception thrown by the annotated method is satisfied by filters (*FallbackPredicate*).
 
-### Declarative usage
+### Declarative usage { #declarative-usage-4 }
 
 An example of a backup method with no arguments:
 
@@ -643,7 +650,7 @@ Example for *Fallback* with arguments:
     }
     ```
 
-### Configuration
+### Configuration { #configuration-4 }
 
 There is a `default` configuration that is applied to the Fallback at creation
 and then the named settings of a particular Fallback are applied to override the defaults.
@@ -681,7 +688,7 @@ Example of the complete configuration described in the `FallbackConfig` class (d
     1. Name of the predicate from the `name()` method
     2.  Enable or disable fallback (default `true`)
 
-### Exception filtering
+### Exception filtering { #exception-filtering-3 }
 
 In order to register which errors should be recorded as Fallback errors, you can override the default filter,
 you need to implement `FallbackPredicate` and register your component in the context and specify in the Fallback configuration its name returned in the `name()` method.
@@ -716,7 +723,7 @@ you need to implement `FallbackPredicate` and register your component in the con
     }
     ```
 
-### Imperative usage
+### Imperative usage { #imperative-usage-4 }
 
 You can use the fallback method in imperative code, for this you need to implement as a dependency `FallbackManager`
 and take `Fallback` from it by the name of the configuration that would be specified in the annotation:
@@ -761,7 +768,7 @@ and take `Fallback` from it by the name of the configuration that would be speci
     }
     ```
 
-## Combination
+## Combination { #combination }
 
 It is possible to combine all of the above annotations simultaneously over a single method.
 
@@ -860,7 +867,7 @@ Example configuration for all aspects:
           attempts: 2
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

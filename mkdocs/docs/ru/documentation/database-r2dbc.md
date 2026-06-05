@@ -1,11 +1,17 @@
+---
+description: "Explains Kora R2DBC repositories, reactive database configuration, result and parameter mapping, transactions, generated identifiers, and signatures. Use when working with @Repository, @Query, @EntityR2dbc, @Table, @Id, @Column, R2dbcDatabaseModule, R2dbcConnectionFactory."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora R2DBC repositories, reactive database configuration, result and parameter mapping, transactions, generated identifiers, and signatures; key triggers include @Repository, @Query, @EntityR2dbc, @Table, @Id, @Column, R2dbcDatabaseModule, R2dbcConnectionFactory, R2dbcRepository."
+---
+
 Модуль предоставляет реализацию репозиториев на основе [R2DBC](https://r2dbc.io/) реактивного протокола работы с базами данных, 
 реализацией как пример является [Postgres R2DBC](https://github.com/pgjdbc/r2dbc-postgresql).
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-r2dbc"
     ```
@@ -18,7 +24,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-r2dbc")
     ```
@@ -31,7 +37,7 @@
 
 Также **требуется предоставить** реализацию драйвера базы данных как зависимость.
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `R2dbcDatabaseConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -82,7 +88,7 @@
     10.  Максимальное время на простой соединения
     11.  Максимальное время жизни соединения (по умолчанию отсутвует)
     12.  Максимальное время на выполнение запроса в базу данных (по умолчанию отсутвует)
-    13.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    13.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     14.  Дополнительные атрибуты R2DBC соединения (по умолчанию отсутвует)
     15.  Включает логгирование модуля (по умолчанию `false`)
     16.  Включает метрики модуля (по умолчанию `true`)
@@ -130,14 +136,14 @@
     10.  Максимальное время на простой соединения
     11.  Максимальное время жизни соединения (по умолчанию отсутвует)
     12.  Максимальное время на выполнение запроса в базу данных (по умолчанию отсутвует)
-    13.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    13.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     14.  Дополнительные атрибуты R2DBC соединения (по умолчанию отсутвует)
     15.  Включает логгирование модуля (по умолчанию `false`)
     16.  Включает метрики модуля (по умолчанию `true`)
     17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     18.  Включает трассировку модуля (по умолчанию `true`)
 
-## Использование
+## Использование { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -153,11 +159,11 @@
     interface EntityRepository : R2dbcRepository
     ```
 
-## Конвертация
+## Конвертация { #mapping }
 
 Возможно переопределять преобразование различных частей [сущности](database-common.md) и параметров запроса, для этого Kora предоставляет специальные интерфейсы.
 
-### Результат
+### Результат { #result }
 
 Если требуется преобразовать результат вручную, предлагается использовать `R2dbcResultFluxMapper`:
 
@@ -201,7 +207,7 @@
     }
     ```
 
-### Строка
+### Строка { #row }
 
 Если требуется преобразовать строку вручную, предлагается использовать `R2dbcRowMapper`:
 
@@ -246,7 +252,7 @@
     }
     ```
 
-### Колонка
+### Колонка { #column }
 
 Если требуется преобразовать значение колонки вручную, предлагается использовать `R2dbcResultColumnMapper`:
 
@@ -298,7 +304,7 @@
     }
     ```
 
-### Параметр
+### Параметр { #parameter }
 
 Если требуется преобразовать значение параметра запроса вручную, предлагается использовать `R2dbcParameterColumnMapper`:
 
@@ -345,7 +351,7 @@
     }
     ```
 
-### Поддерживаемые типы
+### Поддерживаемые типы { #supported-types }
 
 ??? abstract "Список поддерживаемых типов для аргументов/возвращаемых значений из коробки"
 
@@ -369,7 +375,7 @@
     * OffsetTime
     * OffsetDateTime
 
-## Созданный идентификатор
+## Созданный идентификатор { #generated-identifier }
 
 Если необходимо получить в качестве результата созданные базой данных первичные ключи сущности,
 предлагается использовать аннотацию `@Id` над методом, где тип возвращаемого значения является идентификаторами.
@@ -403,7 +409,7 @@
     }
     ```
 
-## Транзакции
+## Транзакции { #transactions }
 
 Для выполнения ручных запросов в Kora есть интерфейс `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,
 который предоставляется в методе в рамках контракта `R2dbcRepository`.
@@ -457,7 +463,7 @@
 
     1. Будет выполнено в рамках транзакции либо откатится если вся лямбра выкинет исключение
 
-### Ручное управление
+### Ручное управление { #connection }
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `io.r2dbc.spi.Connection`:
 
@@ -498,7 +504,7 @@
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Под `T` подразумевается тип возвращаемого значения, либо `Void`, либо `UpdateCount`.
 

@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry. Use when working with CamundaEngineBpmnModule, CamundaEngineConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry; key triggers include CamundaEngineBpmnModule, CamundaEngineConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+---
+
 ??? warning "Экспериментальный модуль"
 
     **Эксперементальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию, 
@@ -5,11 +11,11 @@
 
 Модуль для подключения оркестратора BPMN процессов на основе [Camunda 7](https://docs.camunda.org/manual/7.21/)
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora.experimental:camunda-engine-bpmn"
     ```
@@ -22,7 +28,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora.experimental:camunda-engine-bpmn")
     ```
@@ -35,7 +41,7 @@
 
 Требует подключения [JDBC модуля](database-jdbc.md).
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `CamundaEngineBpmnConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -178,7 +184,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-7-bpmn).
 
-## Исполнители
+## Исполнители { #applications }
 
 Регистрировать в Camunda можно как свои [JavaDelegate](https://docs.camunda.org/manual/7.21/user-guide/process-engine/delegation-code/),
 которые будут зарегистрированы в контексте по своему полному имени класса (`canonicalName`) так и по упрощенному имени класса (`simpleName`):
@@ -241,7 +247,7 @@
     }
     ```
 
-## Донастройка
+## Донастройка { #engine-configuration }
 
 Можно регистрировать произвольные `ProcessEngineConfigurator` которые позволяют донастраивать [ProcessEngine](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-bootstrapping/):
 
@@ -270,6 +276,6 @@
     }
     ```
 
-## Плагины
+## Плагины { #plugins }
 
 Можно регистрировать произвольные [Plugin](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-plugins/) предоставляя их как компоненты в контейнер зависимостей.

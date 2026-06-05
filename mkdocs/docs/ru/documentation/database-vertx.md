@@ -1,10 +1,16 @@
+---
+description: "Explains Kora Vert.x database repositories, Vert.x SQL client configuration, mapping, transactions, and repository signatures. Use when working with @Repository, @Query, @EntityVertx, @Table, @Id, @Column, VertxDatabaseModule, VertxConnectionFactory."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Vert.x database repositories, Vert.x SQL client configuration, mapping, transactions, and repository signatures; key triggers include @Repository, @Query, @EntityVertx, @Table, @Id, @Column, VertxDatabaseModule, VertxConnectionFactory, VertxRepository."
+---
+
 Модуль предоставляет реализацию репозиториев на основе [Vertx](https://vertx.io/docs/#databases) реактивного протокола работы с базой данных.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-vertx"
     ```
@@ -17,7 +23,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-vertx")
     ```
@@ -32,7 +38,7 @@
 
 В отдельных случаях как например с [PostgreSQL](https://postgrespro.ru/docs/postgresql), требуется также добавить [зависимость](https://mvnrepository.com/artifact/com.ongres.scram/client/2.1)
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `VertxDatabaseConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -76,7 +82,7 @@
     7.  Максимальное время на простой соединения
     9.  Кэшировать ли подготовленные запросы
     10.  Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию отсутвует)
-    11.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    11.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     12.  Включает логгирование модуля (по умолчанию `false`)
     13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -117,7 +123,7 @@
     7.  Максимальное время на простой соединения
     9.  Кэшировать ли подготовленные запросы
     10.  Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию отсутвует)
-    11.  Включить ли [пробу готовности](probes.md#_2) для соединения базы данных
+    11.  Включить ли [пробу готовности](probes.md#readiness) для соединения базы данных
     12.  Включает логгирование модуля (по умолчанию `false`)
     13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -125,7 +131,7 @@
 
 Можно также настроить [Netty транспорт](netty.md).
 
-## Использование
+## Использование { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -141,11 +147,11 @@
     interface EntityRepository : VertxRepository
     ```
 
-## Конвертация
+## Конвертация { #mapping }
 
 Возможно переопределять преобразование различных частей [сущности](database-common.md) и параметров запроса, для этого Kora предоставляет специальные интерфейсы.
 
-### Результат
+### Результат { #result }
 
 Если требуется преобразовать результат вручную, предлагается использовать `VertxRowSetMapper`:
 
@@ -189,7 +195,7 @@
     }
     ```
 
-### Строка
+### Строка { #row }
 
 Если требуется преобразовать строку вручную, предлагается использовать `VertxRowMapper`:
 
@@ -234,7 +240,7 @@
     }
     ```
 
-### Колонка
+### Колонка { #column }
 
 Если требуется преобразовать значение колонки вручную, предлагается использовать `VertxResultColumnMapper`:
 
@@ -286,7 +292,7 @@
     }
     ```
 
-### Параметр
+### Параметр { #parameter }
 
 Если требуется преобразовать значение параметра запроса вручную, предлагается использовать `VertxParameterColumnMapper`:
 
@@ -328,7 +334,7 @@
     }
     ```
 
-### Поддерживаемые типы
+### Поддерживаемые типы { #supported-types }
 
 ??? abstract "Список поддерживаемых типов для аргументов/возвращаемых значений из коробки"
 
@@ -349,7 +355,7 @@
     * LocalTime
     * LocalDateTime
 
-## Транзакции
+## Транзакции { #transactions }
 
 Для выполнения ручных запросов в Kora есть интерфейс `ru.tinkoff.kora.database.vertx.VertxConnectionFactory`,
 который предоставляется в методе в рамках контракта `VertxRepository`.
@@ -403,7 +409,7 @@
 
     1. Будет выполнено в рамках транзакции либо откатится если вся лямбра выкинет исключение
 
-### Ручное управление
+### Ручное управление { #connection }
 
 Если для запроса нужна какая-то более сложная логика, либо запросы вне репозитория, можно использовать `io.r2dbc.spi.Connection`:
 
@@ -444,7 +450,7 @@
     }
     ```
 
-## Сигнатуры
+## Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов репозитория из коробки:
 

@@ -1,6 +1,12 @@
+---
+description: "Explains Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration. Use when working with SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration; key triggers include SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
+---
+
 A module for creating and registering SOAP services by classes annotated `javax.jws.WebService`/`jakarta.jws.WebService`.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -30,16 +36,16 @@ A module for creating and registering SOAP services by classes annotated `javax.
 
 **Requires** the [HTTP client](http-client.md) implementation to be connected.
 
-## Description
+## Description { #description }
 
 It is understood that we have classes annotated with `javax.jws.WebService`/`jakarta.jws.WebService` that can be created by other means,
-such as [Gradle Plugin](#plugin-wsdl2java).
+such as [Gradle Plugin](#wsdl2java-plugin).
 
 Based on such classes, Kora is used to create SOAP client implementations with the Impl suffix in the same package and register them as a module with config.
 
 Then the configuration and the SOAP service itself become available for dependency injection automatically.
 
-## Configuration
+## Configuration { #configuration }
 
 All configurations for SOAP clients are created with the prefix `soapClient`,
 and the bulk of the client configuration is under the client name from the WSDL annotation `@WebService`,
@@ -105,7 +111,7 @@ Example of the complete configuration described in the `SoapServiceConfig` class
 
 Module metrics are described in the [Metrics Reference](metrics.md#soap-client) section.
 
-## Usage
+## Usage { #usage }
 
 Once all components have been created the created SOAP service is available for deployment, an example for a `SimpleService` service is shown below:
 
@@ -132,12 +138,12 @@ Once all components have been created the created SOAP service is available for 
     }
     ```
 
-## Wsdl2java plugin
+## Wsdl2java plugin { #wsdl2java-plugin }
 
 [Gradle Plugin](https://github.com/bjornvester/wsdl2java-gradle-plugin) can be used as one option to create classes annotated `javax.jws.WebService`/`jakarta.jws.WebService`
 based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/wsdl-kratkoe-rukovodstvo).
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -157,7 +163,7 @@ based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/
     }
     ```
 
-### Usage
+### Usage { #usage-2 }
 
 Suppose we have a WSDL where `SimpleService` is declared, then configuring the plugin for `jakarta` annotation will look like this:
 

@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+---
+
 ??? warning "Experimental module"
 
     **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
@@ -5,7 +11,7 @@
 
 Module for connecting a client and creating workers for an external process orchestrator [Camunda 8 (Zeebe)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -33,7 +39,7 @@ Module for connecting a client and creating workers for an external process orch
     interface Application : ZeebeWorkerModule
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Example of a complete client configuration described in the `ZeebeClientConfig` class (example values or default values are specified):
 
@@ -161,12 +167,12 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-8-worker) section.
 
-## Worker
+## Worker { #worker }
 
 Worker is a handler that can perform a specific job in a process.
 Each time such a job needs to be performed, it is polled by worker.
 
-### Configuration
+### Configuration { #configuration-2 }
 
 There is a default configuration that is applied to all workers at creation
 and then the named worker-specific settings ([by `Type`](https://docs.camunda.io/docs/components/concepts/job-workers/)) are then applied overriding the default settings.
@@ -253,7 +259,7 @@ Example of a complete worker configuration is described in the `ZeebebeWorkerCon
     13. Sets the jitter coefficient. The next delay is varied randomly within the range +/- of this coefficient. 
         For example, if the next delay is calculated as 1s and `jitter` is 0.1, the actual next delay may be somewhere between 0.9 and 1.1s
 
-### Declarative
+### Declarative { #declarative }
 
 You can create declaratively [JobWorkers](https://docs.camunda.io/docs/components/concepts/job-workers/) that will perform work within the Zeebe orchestrator.
 
@@ -285,7 +291,7 @@ You can create declaratively [JobWorkers](https://docs.camunda.io/docs/component
     }
     ```
 
-#### Parameter context
+#### Parameter context { #parameter-context }
 
 You can embed the job context as a method argument.
 Job Context has task, worker and process metadata available for the current task being executed.
@@ -316,7 +322,7 @@ Job Context has task, worker and process metadata available for the current task
     }
     ```
 
-#### Parameter variable
+#### Parameter variable { #parameter-variable }
 
 You can embed [process variables](https://docs.camunda.io/docs/components/concepts/variables/) as method arguments,
 a process variable is part of the process state and can be set on start or as part of the worker result.
@@ -385,7 +391,7 @@ the method argument can also be any mapping of a JSON object.
     }
     ```
 
-#### Parameter variables
+#### Parameter variables { #parameter-variables }
 
 You can embed multiple [process variables](https://docs.camunda.io/docs/components/concepts/variables/) at once as a method argument,
 as a single object that represents JSON objects in the process state.
@@ -426,7 +432,7 @@ as a single object that represents JSON objects in the process state.
     }
     ```
 
-#### Result
+#### Result { #result }
 
 You can also execute a job with some result of the job execution and pass it as a variable to process context.
 
@@ -496,7 +502,7 @@ In this case, it is obligatory to specify the name of the variable in the `@JobV
     }
     ```
 
-#### Errors
+#### Errors { #errors }
 
 In case you need to terminate execution with an error, you can throw a `JobWorkerException` exception where you can specify,
 both the error code and the message and process variables if required.
@@ -527,7 +533,7 @@ both the error code and the message and process variables if required.
     }
     ```
 
-### Imperative.
+### Imperative. { #imperative }
 
 You can also create more low-level workers and work directly with `ZeebeClient` contracts and its interface.
 
@@ -563,7 +569,7 @@ You can also create more low-level workers and work directly with `ZeebeClient` 
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

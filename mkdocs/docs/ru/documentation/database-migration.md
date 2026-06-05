@@ -1,14 +1,20 @@
+---
+description: "Explains Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration. Use when working with FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration; key triggers include FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+---
+
 Модуль для миграции базы данных вместе с запуском сервиса.
 
-## Flyway
+## Flyway { #flyway }
 
 Модуль для миграции базы данных с помощью инструмента [Flyway](https://documentation.red-gate.com/fd).
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-flyway"
     ```
@@ -21,7 +27,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-flyway")
     ```
@@ -34,7 +40,7 @@
 
 Требует подключения [JDBC модуля](database-jdbc.md).
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `FlywayConfig` (указаны значения по умолчанию):
 
@@ -85,15 +91,15 @@
        PostgreSQL, Aurora PostgreSQL, SQL Server и SQLite.
     6. Дополнительные свойства конфигурации в формате ключ-значение для `Flyway#configurationProperties`
 
-## Liquibase
+## Liquibase { #liquibase }
 
 Модуль для миграции базы данных с помощью инструмента [Liquibase](https://www.liquibase.com/supported-databases).
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:database-liquibase"
     ```
@@ -106,7 +112,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:database-liquibase")
     ```
@@ -119,7 +125,7 @@
 
 Требует подключения [JDBC модуля](database-jdbc.md).
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Пример полной конфигурации, описанной в классе `LiquibaseConfig` (указаны значения по умолчанию):
 
@@ -142,7 +148,7 @@
 
     1.  Путь до [мастер файла](https://docs.liquibase.com/concepts/changelogs/home.html) конфигурации миграций
 
-## Совет
+## Совет { #recommendations }
 
 ???+ warning "Совет"
 

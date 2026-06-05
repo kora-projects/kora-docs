@@ -1,3 +1,9 @@
+---
+description: "Explains Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization. Use when working with @KoraAppTest, @TestComponent, @MockComponent, @Tag, @TestConfig, @TestConfigSource, Graph, Mockito."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @MockComponent, @Tag, @TestConfig, @TestConfigSource, Graph, Mockito."
+---
+
 Module provides an `Extension` for [JUnit5](https://junit.org/junit5/docs/current/user-guide/) that allows you to easily test your application.
 
 The concept of the JUnit 5 Kora extension is to test the source code that will eventually be used in production.
@@ -13,7 +19,9 @@ Module allows you to conduct:
 It is recommended to additionally test the service artifact packaged in the final image,
 as black box using [TestContainers library](https://java.testcontainers.org/).
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [Component Testing](../guides/testing-junit.md), [Integration Testing](../guides/testing-integration.md) and [Black-Box Testing](../guides/testing-black-box.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -53,7 +61,7 @@ as black box using [TestContainers library](https://java.testcontainers.org/).
     }
     ```
 
-## Usage
+## Usage { #usage }
 
 Examples will be shown relative to such an application:
 
@@ -94,7 +102,7 @@ Examples will be shown relative to such an application:
     }
     ```
 
-### Test
+### Test { #test }
 
 The `@KoraAppTest` annotation is supposed to be used to annotate the test class.
 
@@ -127,7 +135,7 @@ Parameters of the `@KoraAppTest` annotation:
     }
     ```
 
-### Component
+### Component { #component }
 
 In order to use components within a test, it is suggested to use the `@TestComponent` annotation
 which allows injecting component dependencies into arguments and/or fields of the test class.
@@ -232,7 +240,7 @@ Example of a test where components are injected in method arguments:
     }
     ```
 
-### Tag
+### Tag { #tag }
 
 In order to inject a dependency/mock that has an `@Tag`, you must specify the appropriate `@Tag` annotation next to the argument for injection:
 
@@ -262,7 +270,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     }
     ```
 
-### Mock
+### Mock { #mock }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -437,7 +445,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     }
     ```
 
-#### Mock strictness
+#### Mock strictness { #mock-strictness }
 
 You can check usage of `Mockito` mocks in tests by setting the verification level using the `@MockitoStrictness` annotation.
 
@@ -491,7 +499,7 @@ or write a warning to the log.
     }
     ```
 
-### Test graph
+### Test graph { #test-graph }
 
 Sometimes you may need to use an extended dependency container as part of your tests.
 For example, a test container is an application that extends the main application and adds
@@ -670,7 +678,7 @@ You can now use the extended application graph in your tests:
     }
     ```
 
-## Test configuration
+## Test configuration { #test-configuration }
 
 By default, the basic configuration will be used, as in the case of running a real application.
 
@@ -679,9 +687,9 @@ where it is required to implement the `KoraConfigModification` method of providi
 
 It is forbidden to use `KoraAppTestConfigModifier` and implementation in the constructor, because in this case it is impossible to get the configuration before implementation.
 
-#### Environment variables
+#### Environment variables { #environment-variables }
 
-In case the test needs to use the [default configuration](config.md#_3) that would be used when the application is running,
+In case the test needs to use the [default configuration](config.md#file) that would be used when the application is running,
 and you only need to substitute environment variables, you can use the `SystemProperty` mechanism in `KoraConfigModification`:
 
 ===! ":material-code-json: `Hocon`"
@@ -745,7 +753,7 @@ In order to use such a config and pass only environment variables, you need to r
     }
     ```
 
-### Configuration file
+### Configuration file { #configuration-file }
 
 An example of providing a configuration as a file:
 
@@ -774,7 +782,7 @@ An example of providing a configuration as a file:
     }
     ```
 
-### Configuration text
+### Configuration text { #configuration-text }
 
 An example of adding a configuration as a string would look like this,
 in this case only this configuration will be used without any configuration files:
@@ -814,14 +822,14 @@ in this case only this configuration will be used without any configuration file
     }
     ```
 
-## Container modification
+## Container modification { #container-modification }
 
 In order to add/replace/mock components within an unannotated application dependency container requires implementing the `KoraAppTestGraphModifier` interface and
 Implement a method to provide a dependency container modifier.
 
 It is forbidden to use `KoraAppTestGraphModifier` and embedding in the constructor because then you can't get the graph before embedding.
 
-### Adding
+### Adding { #adding }
 
 An example of adding a component to a graph:
 
@@ -911,7 +919,7 @@ In case it is required to add components using a real component from the graph, 
     }
     ```
 
-### Replacement
+### Replacement { #replacement }
 
 An example of replacing a component in a dependency container:
 
@@ -1001,7 +1009,7 @@ In case it is required to add components using a real component from the graph, 
     }
     ```
 
-## Initialization
+## Initialization { #initialization }
 
 In case you want to initialize the dependency container once within the entire test class, you should annotate the test class with `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`:
 

@@ -1,7 +1,13 @@
+---
+description: "Explains Kora R2DBC repositories, reactive database configuration, result and parameter mapping, transactions, generated identifiers, and signatures. Use when working with @Repository, @Query, @EntityR2dbc, @Table, @Id, @Column, R2dbcDatabaseModule, R2dbcConnectionFactory."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora R2DBC repositories, reactive database configuration, result and parameter mapping, transactions, generated identifiers, and signatures; key triggers include @Repository, @Query, @EntityR2dbc, @Table, @Id, @Column, R2dbcDatabaseModule, R2dbcConnectionFactory, R2dbcRepository."
+---
+
 Module provides a repository implementation based on [R2DBC](https://r2dbc.io/) reactive database protocol,
 the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r2dbc-postgresql).
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -31,7 +37,7 @@ the implementation as an example is [Postgres R2DBC](https://github.com/pgjdbc/r
 
 Also **required to provide** the database driver implementation as a dependency.
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `R2dbcDatabaseConfig` class (default or example values are specified):
 
@@ -82,7 +88,7 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
     10. Maximum time for connection downtime
     11. Maximum connection lifetime (optional)
     12. Maximum time to execute a query to the database (optional)
-    13. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    13. Whether to enable [readiness probe](probes.md#readiness) for database connection
     14. Additional attributes of R2DBC connection (optional)
     15. Enables module logging (default `false`)
     16. Enables module metrics (default `true`)
@@ -130,14 +136,14 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
     10. Maximum time for connection downtime
     11. Maximum connection lifetime (optional)
     12. Maximum time to execute a query to the database (optional)
-    13. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    13. Whether to enable [readiness probe](probes.md#readiness) for database connection
     14. Additional attributes of R2DBC connection (optional)
     15. Enables module logging (default `false`)
     16. Enables module metrics (default `true`)
     17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     18. Enables module tracing (default `true`)
 
-## Usage
+## Usage { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -153,11 +159,11 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
     interface EntityRepository : R2dbcRepository
     ```
 
-## Mapping
+## Mapping { #mapping }
 
 It is possible to override the conversion of different parts of [entity](database-common.md) and query parameters, Kora provides special interfaces for this.
 
-### Result
+### Result { #result }
 
 If you need to convert the result manually, it is suggested to use `R2dbcResultFluxMapper`:
 
@@ -201,7 +207,7 @@ If you need to convert the result manually, it is suggested to use `R2dbcResultF
     }
     ```
 
-### Row
+### Row { #row }
 
 If you need to convert the string manually, it is suggested to use `R2dbcRowMapper`:
 
@@ -246,7 +252,7 @@ If you need to convert the string manually, it is suggested to use `R2dbcRowMapp
     }
     ```
 
-### Column
+### Column { #column }
 
 If you need to convert the column value manually, it is suggested to use the `R2dbcResultColumnMapper`:
 
@@ -298,7 +304,7 @@ If you need to convert the column value manually, it is suggested to use the `R2
     }
     ```
 
-### Parameter
+### Parameter { #parameter }
 
 If you want to convert the value of a query parameter manually, it is suggested to use `R2dbcParameterColumnMapper`:
 
@@ -345,7 +351,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
-### Supported types
+### Supported types { #supported-types }
 
 ??? abstract "List of supported types for arguments/return values out of the box"
 
@@ -369,7 +375,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     * OffsetTime
     * OffsetDateTime
 
-## Generated identifier
+## Generated identifier { #generated-identifier }
 
 If you want to get the primary keys of an entity created by the database as the result,
 it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
@@ -403,7 +409,7 @@ This approach works for `@Batch` queries as well.
     }
     ```
 
-## Transactions
+## Transactions { #transactions }
 
 In order to perform manual queries in Kora, there is an interface `ru.tinkoff.kora.database.r2dbc.R2dbcConnectionFactory`,
 which is provided in a method within the `R2dbcRepository` contract.
@@ -457,7 +463,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
     1. will be executed within the transaction or will be rolled back if the entire lambda throws an exception
 
-### Connection
+### Connection { #connection }
 
 If you need some more complex logic for the query and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
@@ -498,7 +504,7 @@ If you need some more complex logic for the query and `@Query` is not enough, yo
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

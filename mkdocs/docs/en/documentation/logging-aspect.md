@@ -1,6 +1,14 @@
+---
+description: "Explains Kora logging aspects for argument and result logging, selective logging, MDC enrichment, structured parameters, conversion, and signatures. Use when working with @Log, @Log.in, @Log.out, @Log.off, @Mdc, @StructuredArgument, MDC, LogAspect."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, MDC enrichment, structured parameters, conversion, and signatures; key triggers include @Log, @Log.in, @Log.out, @Log.off, @Mdc, @StructuredArgument, MDC, LogAspect."
+---
+
 Module for declarative logging of method arguments and result using annotations.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
+## Dependency { #dependency }
 
 Most likely already transitively connected from other dependencies or from [Logback](logging-slf4j.md#logback), otherwise it needs to be added:
 
@@ -30,11 +38,11 @@ Most likely already transitively connected from other dependencies or from [Logb
     interface Application : LoggingModule
     ```
 
-## Logging
+## Logging { #logging }
 
 It is expected to use special combinations of annotations to customize method logging.
 
-### Argument
+### Argument { #argument }
 
 ```java 
 @Log.in
@@ -62,7 +70,7 @@ public String methodWithReturnAndOnlyLogArgs(@Log.off String strParam,int numPar
     </tr>
 </table>
 
-### Result
+### Result { #result }
 
 ```java 
 @Log.out
@@ -90,7 +98,7 @@ public String methodWithOnlyLogReturnAndArgs(String strParam, int numParam) {
     </tr>
 </table>
 
-### Argument and result
+### Argument and result { #argument-and-result }
 
 ```java 
 @Log
@@ -120,7 +128,7 @@ public String methodWithArgs(String strParam, int numParam) {
     </tr>
 </table>
 
-### Selective logging
+### Selective logging { #selective-logging }
 
 ```java 
 @Log.out
@@ -149,7 +157,7 @@ public String methodWithOnlyLogReturnAndArgs(String strParam,int numParam) {
     </tr>
 </table>
 
-### MDC (Mapped Diagnostic Context)
+### MDC (Mapped Diagnostic Context) { #mdc-mapped-diagnostic-context }
 
 The `@Mdc` annotation allows adding key-value pairs to MDC (Mapped Diagnostic Context) for structured logging.
 MDC allows adding contextual information to each log message.
@@ -162,7 +170,7 @@ The annotation can be applied to methods and method parameters. Multiple applica
 - `value()` - Value for the MDC entry. If not specified, the value of the annotated parameter is used.
 - `global()` - If true, the MDC value will be available globally within the thread, not just during method execution.
 
-#### Parameter annotation
+#### Parameter annotation { #parameter-annotation }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -182,7 +190,7 @@ The annotation can be applied to methods and method parameters. Multiple applica
 
 In this case, the MDC key will match the parameter name ("s"), and the value will be the parameter value.
 
-#### Parameter annotation with key
+#### Parameter annotation with key { #parameter-annotation-with-key }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -202,7 +210,7 @@ In this case, the MDC key will match the parameter name ("s"), and the value wil
 
 Here, the MDC key will be "123", and the value will be the value of parameter "s".
 
-#### Method use
+#### Method use { #method-use }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -225,7 +233,7 @@ Here, the MDC key will be "123", and the value will be the value of parameter "s
 This example demonstrates:
 - Method annotation with local MDC value
 
-#### Combined
+#### Combined { #combined }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -249,7 +257,7 @@ This example demonstrates:
 
 In this example, two MDC annotations are applied to the method, and one annotation is applied to the parameter.
 
-#### Generated value for MDC value
+#### Generated value for MDC value { #generated-value-for-mdc-value }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -276,7 +284,7 @@ When calling the method, an MDC entry will be added with the key "key" and a val
 INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value key1=value2 123=testValue
 ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

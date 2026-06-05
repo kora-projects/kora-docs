@@ -1,10 +1,16 @@
+---
+description: "Explains Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration. Use when working with SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration; key triggers include SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
+---
+
 Модуль для создания и регистрации SOAP сервисов по классам аннотированным `javax.jws.WebService`/`jakarta.jws.WebService`.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:soap-client"
     ```
@@ -17,7 +23,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:soap-client")
     ```
@@ -30,16 +36,16 @@
 
 **Требуется** подключить реализацию [HTTP клиента](http-client.md).
 
-## Описание
+## Описание { #description }
 
 Подразумевается что у нас есть классы аннотированные `javax.jws.WebService`/`jakarta.jws.WebService`, которые могут быть созданы другими средствами, 
-такими как [Gradle Plugin](#плагин-wsdl2java).
+такими как [Gradle Plugin](#wsdl2java-plugin).
 
 На основании таких классов с помощью Kora создаются реализации SOAP клиента с суффиксом Impl в том же пакете и регистрирует их как модуль с конфигурацей.
 
 Затем конфигурация и сам SOAP сервис становятся доступны для внедрения зависимостей автоматически.
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Все конфигурации для SOAP клиентов создаются с префиксом `soapClient`, 
 а основная часть конфигурации клиента находится под именем клиента из WSDL аннотации `@WebService`, 
@@ -105,7 +111,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#soap-client).
 
-## Использование
+## Использование { #usage }
 
 После создания всех компонент созданный SOAP сервис становится доступен для внедрения, ниже показан пример для `SimpleService` сервиса:
 
@@ -132,12 +138,12 @@
     }
     ```
 
-## Плагин wsdl2java
+## Плагин wsdl2java { #wsdl2java-plugin }
 
 [Gradle Plugin](https://github.com/bjornvester/wsdl2java-gradle-plugin) может использоваться как один из вариантов для создания классов аннотированных `javax.jws.WebService`/`jakarta.jws.WebService`
 на основании [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/wsdl-kratkoe-rukovodstvo).
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -157,7 +163,7 @@
     }
     ```
 
-### Использование
+### Использование { #usage-2 }
 
 Предположим что у нас есть WSDL, где объявлен сервис `SimpleService` то настройка плагина для `jakarta` аннотацией будет выглядить так:
 

@@ -1,15 +1,18 @@
 ---
 search:
   exclude: true
+description: "Explains Create project in Kora documentation, covering Gradle configuration, Application configuration, Controller. Use when working with @KoraApp, @Component, @HttpController, @HttpRoute, @Json, kora-parent, annotation-processors."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Create project; key triggers include @KoraApp, @Component, @HttpController, @HttpRoute, @Json, kora-parent, annotation-processors, http-server-undertow, UndertowHttpServerModule, HoconConfigModule."
 ---
 
 Данный пример разбирает как создать простой сервис на Kora, с HTTP сервером, настроенными метриками, логгированием и пробами, который умеет отвечать на запрос `GET /hello/world`.
 
-## Создание проекта
+## Создание проекта { #create-project }
 
 Создаем новый Gradle-проект (через IDEA или `gradle init`).
 
-Для работы нам потребуется `gradlew` с настроенной версией [Gradle](../documentation/general.md#_3) выше `7.*`.
+Для работы нам потребуется `gradlew` с настроенной версией [Gradle](../documentation/general.md#build-system) выше `7.*`.
 
 Проверим конфигурацию в `gradle/wrapper/gradle-wrapper.properties`:
 
@@ -17,7 +20,7 @@ search:
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 ```
 
-## Настройка Gradle
+## Настройка Gradle { #gradle-configuration }
 
 Основные концепции и описание фреймворка можно прочесть на [основной странице](../documentation/general.md).
 
@@ -110,7 +113,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     }
     ```
 
-## Настройка приложения
+## Настройка приложения { #application-configuration }
 
 Для запуска приложения нам нужно сформировать точку входа в приложение и контейнер зависимостей. 
 Для этого создадим интерфейс `Application` с таким кодом:
@@ -178,7 +181,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 и блокирует основной поток до получения сигнала `SIGTERM`, после этого приложение начинает штатное завершение.
 Теперь, если мы запустим это приложение, то нам будут доступны маршруты по ссылкам выше.
 
-## Контроллер
+## Контроллер { #controller }
 
 Теперь давайте напишем контроллер, который будет обрабатывать запрос `GET /hello/world` на публичном порту.
 
@@ -250,7 +253,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     ./gradlew run
     ```
 
-## Контроллер Json
+## Контроллер Json { #json-controller }
 
 В обычной жизни мы зачастую отдаём данные в формате `Json`, для этого добавим модуль `JsonModule`:
 

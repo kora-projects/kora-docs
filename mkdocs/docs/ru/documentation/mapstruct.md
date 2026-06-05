@@ -1,10 +1,16 @@
+---
+description: "Explains Kora MapStruct integration for generated mappers and dependency injection of mapper components. Use when working with @Mapper, MapStruct, MapStructModule, @Component, annotation processor."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora MapStruct integration for generated mappers and dependency injection of mapper components; key triggers include @Mapper, MapStruct, MapStructModule, @Component, annotation processor."
+---
+
 Модуль позволяет интегрировать библиотеку [MapStruct](https://mapstruct.org/) для преобразования классов между собой.
 
-## Подключение
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     annotationProcessor "org.mapstruct:mapstruct-processor:1.5.5.Final"
     implementation "org.mapstruct:mapstruct:1.5.5.Final"
@@ -34,13 +40,13 @@
 
     Успешная сборка приложения может быть только со второго раза, это особенности KSP.
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     ```
 
-## Использование
+## Использование { #usage }
 
 Создание самих преобразователей ложится на библиотеку [MapStruct](https://mapstruct.org/),
 Kora в данном случае лишь предоставляет созданные библиотекой классы как зависимости в контейнер зависимостей.

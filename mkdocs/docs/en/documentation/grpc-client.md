@@ -1,6 +1,14 @@
+---
+description: "Explains Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping. Use when working with GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping; key triggers include GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+---
+
 Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/languages/java/basics/) functionality.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [gRPC Client](../guides/grpc-client.md) and [Advanced gRPC Client](../guides/grpc-client-advanced.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -32,7 +40,7 @@ Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/l
     interface Application : GrpcClientModule
     ```
 
-### Plugin
+### Plugin { #plugin }
 
 The code for the gRPC client is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
@@ -90,7 +98,7 @@ The code for the gRPC client is created with [protobuf gradle plugin](https://gi
     }
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 gRPC service named `SimpleService`, will have configuration with path of `grpcClient.SimpleService`.
 
@@ -166,7 +174,7 @@ You can also configure [Netty transport](netty.md).
 
 Module metrics are described in the [Metrics Reference](metrics.md#grpc-client) section.
 
-## Service
+## Service { #service }
 
 Created gRPC services can be injected as dependency:
 
@@ -193,17 +201,17 @@ Created gRPC services can be injected as dependency:
     }
     ```
 
-## Interceptors
+## Interceptors { #interceptors }
 
 [Interceptors](https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html) allow you to intercept requests before they are passed to services.
 
-### Default
+### Default { #default }
 
 The following interceptors are used at client startup by default:
 
 - `GrpcClientConfigInterceptor`.
 
-### Custom
+### Custom { #custom }
 
 In order to add your custom interceptor, you need to register the interceptor as a component with the service tag:
 

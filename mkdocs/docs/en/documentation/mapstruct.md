@@ -1,6 +1,12 @@
+---
+description: "Explains Kora MapStruct integration for generated mappers and dependency injection of mapper components. Use when working with @Mapper, MapStruct, MapStructModule, @Component, annotation processor."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora MapStruct integration for generated mappers and dependency injection of mapper components; key triggers include @Mapper, MapStruct, MapStructModule, @Component, annotation processor."
+---
+
 Module allows you to integrate the [MapStruct](https://mapstruct.org/) library to convert classes between each other.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 

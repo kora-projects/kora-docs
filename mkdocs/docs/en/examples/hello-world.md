@@ -1,11 +1,14 @@
 ---
 search:
   exclude: true
+description: "Explains Create project in Kora documentation, covering Gradle configuration, Application configuration, Controller. Use when working with @KoraApp, @Component, @HttpController, @HttpRoute, @Json, kora-parent, annotation-processors."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Create project; key triggers include @KoraApp, @Component, @HttpController, @HttpRoute, @Json, kora-parent, annotation-processors, http-server-undertow, UndertowHttpServerModule, HoconConfigModule."
 ---
 
 This example shows how to create a simple service in Kora, with an HTTP server, metrics, logging and samples, that can respond to a `GET /hello/world` request.
 
-## Create project
+## Create project { #create-project }
 
 Create a new Gradle project (via IDEA or `gradle init`).
 
@@ -17,7 +20,7 @@ Let's check the configuration in `gradle/wrapper/gradle-wrapper.properties`:
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
 ```
 
-## Gradle configuration
+## Gradle configuration { #gradle-configuration }
 
 Basic concepts and description of the framework can be read on the [main page](../documentation/general.md).
 
@@ -110,7 +113,7 @@ Basic concepts and description of the framework can be read on the [main page](.
     }
     ```
 
-## Application configuration
+## Application configuration { #application-configuration }
 
 In order to run application, we need to create entrypoint and dependency container. Let's create the `Application` interface with this code:
 
@@ -178,7 +181,7 @@ Next we need to create an entry point, let's create an `Application` class with 
 after which the application initiates graceful shutdown.
 Now, if we run this application, we will have access to the routers in the links above.
 
-## Controller
+## Controller { #controller }
 
 Now let's write a controller that will handle the `GET /hello/world` request on the public port.
 
@@ -250,7 +253,7 @@ Use command below to start application:
     ./gradlew run
     ```
 
-## Json Controller
+## Json Controller { #json-controller }
 
 In normal life we want to return `Json` format more often, for this we will add a `JsonModule` module:
 

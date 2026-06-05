@@ -1,3 +1,9 @@
+---
+description: "Explains Kora Camunda 7 REST API exposure, OpenAPI management, REST configuration, CORS, telemetry, and graceful shutdown settings. Use when working with CamundaRestModule, OpenAPI, HttpServerConfig, CamundaRestConfig, CORS, telemetry."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 7 REST API exposure, OpenAPI management, REST configuration, CORS, telemetry, and graceful shutdown settings; key triggers include CamundaRestModule, OpenAPI, HttpServerConfig, CamundaRestConfig, CORS, telemetry."
+---
+
 ??? warning "Experimental module"
 
     **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
@@ -5,7 +11,7 @@
 
 Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) for [Camunda 7 BPMN module](camunda7-bpmn.md)
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -35,7 +41,7 @@ Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/ove
 
 Requires [Camunda BPMN module](camunda7-bpmn.md) to be added.
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `CamundaRestConfig` class (example values or default values are specified):
 
@@ -193,6 +199,6 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     27.  Enables module tracing (default is `true`)
 
-## Applications
+## Applications { #applications }
 
 You can register custom `jakarta.ws.rs.core.Application` with resources for APIs (e.g. for other [webapp](https://docs.camunda.org/manual/7.21/webapps/)) by providing them as components in a dependency container.

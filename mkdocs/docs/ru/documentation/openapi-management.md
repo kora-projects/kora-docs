@@ -1,11 +1,19 @@
+---
+description: "Explains Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server. Use when working with OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server; key triggers include OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+---
+
 Модуль для предоставления OpenAPI файла из приложения, 
 а также [Swagger UI](https://swagger.io/tools/swagger-ui/) и [Rapidoc](https://rapidocweb.com/) для отображения OpenAPI.
 
-## Подключение
+Если нужен пошаговый разбор перед справочным описанием, смотрите [OpenAPI HTTP сервер](../guides/openapi-http-server.md).
+
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:openapi-management"
     ```
@@ -18,7 +26,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:openapi-management")
     ```
@@ -31,7 +39,7 @@
 
 Требует подключения [HTTP сервера](http-server.md).
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример конфигурации описанной в классе `OpenApiManagementConfig`:
 
@@ -91,7 +99,7 @@
     6.  Вкл/Выкл контроллера который отдает Rapidoc
     7.  Путь по которому будет доступен Rapidoc
 
-## Совет
+## Совет { #recommendations }
 
 ???+ warning "Совет"
 

@@ -1,6 +1,12 @@
+---
+description: "Explains Kora Vert.x database repositories, Vert.x SQL client configuration, mapping, transactions, and repository signatures. Use when working with @Repository, @Query, @EntityVertx, @Table, @Id, @Column, VertxDatabaseModule, VertxConnectionFactory."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Vert.x database repositories, Vert.x SQL client configuration, mapping, transactions, and repository signatures; key triggers include @Repository, @Query, @EntityVertx, @Table, @Id, @Column, VertxDatabaseModule, VertxConnectionFactory, VertxRepository."
+---
+
 Module provides a repository implementation based on the [Vertx](https://vertx.io/docs/#databases) reactive protocol.
 
-## Dependency
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -32,7 +38,7 @@ It is also **required to provide** a driver implementation as a dependency of a 
 
 In some cases, such as with a [PostgreSQL](https://postgrespro.ru/docs/postgresql) database, it is also required to add [dependency](https://mvnrepository.com/artifact/com.ongres.scram/client/2.1).
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `VertxDatabaseConfig` class (default or example values are specified):
 
@@ -76,7 +82,7 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
     10. Maximum time to wait for connection initialization at service startup (optional)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    11. Whether to enable [readiness probe](probes.md#readiness) for database connection
     12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -117,7 +123,7 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
     8. Maximum time for connection downtime
     9. Whether to cache prepared requests
     10. Maximum time to wait for connection initialization at service startup (optional)
-    11. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    11. Whether to enable [readiness probe](probes.md#readiness) for database connection
     12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
@@ -125,7 +131,7 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
 
 You can also configure [Netty transport](netty.md).
 
-## Usage
+## Usage { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -141,11 +147,11 @@ You can also configure [Netty transport](netty.md).
     interface EntityRepository : VertxRepository
     ```
 
-## Mapping
+## Mapping { #mapping }
 
 It is possible to override the conversion of different parts of [entity](database-common.md) and query parameters, Kora provides special interfaces for this.
 
-### Result
+### Result { #result }
 
 If you need to convert the result manually, it is suggested to use `VertxRowSetMapper`:
 
@@ -189,7 +195,7 @@ If you need to convert the result manually, it is suggested to use `VertxRowSetM
     }
     ```
 
-### Row
+### Row { #row }
 
 If you need to convert the string manually, it is suggested to use `VertxRowMapper`:
 
@@ -234,7 +240,7 @@ If you need to convert the string manually, it is suggested to use `VertxRowMapp
     }
     ```
 
-### Column
+### Column { #column }
 
 If you need to convert the column value manually, it is suggested to use the `VertxResultColumnMapper`:
 
@@ -286,7 +292,7 @@ If you need to convert the column value manually, it is suggested to use the `Ve
     }
     ```
 
-### Parameter
+### Parameter { #parameter }
 
 If you want to convert the value of a query parameter manually, it is suggested to use `VertxParameterColumnMapper`:
 
@@ -328,7 +334,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
-### Supported types
+### Supported types { #supported-types }
 
 ??? abstract "List of supported types for arguments/return values out of the box"
 
@@ -349,7 +355,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     * LocalTime
     * LocalDateTime
 
-## Transactions
+## Transactions { #transactions }
 
 In order to perform manual queries, Kora has an interface `ru.tinkoff.kora.database.vertx.VertxConnectionFactory`,
 which is provided in a method within the `VertxRepository` contract.
@@ -403,7 +409,7 @@ In order to perform queries transactionally, the `inTx` contract can be used:
 
     1. will be executed within the transaction or will be rolled back if the entire lambda throws an exception
 
-### Connection
+### Connection { #connection }
 
 If some more complex logic is needed for the query, and `@Query` is not enough, you can use `io.r2dbc.spi.Connection`:
 
@@ -444,7 +450,7 @@ If some more complex logic is needed for the query, and `@Query` is not enough, 
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

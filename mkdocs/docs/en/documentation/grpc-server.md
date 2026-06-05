@@ -1,6 +1,14 @@
+---
+description: "Explains Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging. Use when working with GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging; key triggers include GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
+---
+
 Module for gRPC server handlers support based on [grpc.io](https://grpc.io/docs/languages/java/basics/) functionality.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [gRPC Server](../guides/grpc-server.md) and [Advanced gRPC Server](../guides/grpc-server-advanced.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -32,7 +40,7 @@ Module for gRPC server handlers support based on [grpc.io](https://grpc.io/docs/
     interface Application : GrpcServerModule
     ```
 
-### Plugin
+### Plugin { #plugin }
 
 The code for the gRPC server is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
@@ -90,7 +98,7 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
     }
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Example of a complete configuration described in the `GrpcServerConfig` class (example values or default values are indicated):
 
@@ -173,7 +181,7 @@ You can also configure [Netty transport](netty.md).
 
 Module metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
 
-## Handlers
+## Handlers { #handlers }
 
 Created gRPC service handlers are required to be tagged with the `@Component` annotation:
 
@@ -191,11 +199,11 @@ Created gRPC service handlers are required to be tagged with the `@Component` an
     class ExampleService : ExampleGrpc.ExampleImplBase {}
     ```
 
-## Interceptors
+## Interceptors { #interceptors }
 
 [Interceptors](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) allow you to intercept requests before they are passed to handlers.
 
-### Default
+### Default { #default }
 
 The following interceptors are used at server startup by default:
 
@@ -206,7 +214,7 @@ The following interceptors are used at server startup by default:
 
 To override the default interceptor list, you can override the `serverBuilder` method from the `GrpcModule` class
 
-### Custom
+### Custom { #custom }
 
 Adding your custom interceptor requires creating an inheritor of `ServerInterceptor` with the `@Component` annotation:
 
@@ -245,7 +253,7 @@ Adding your custom interceptor requires creating an inheritor of `ServerIntercep
     }
     ```
 
-## Reflection
+## Reflection { #reflection }
 
 Supported by [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
 which provides information about publicly available gRPC services on the server
@@ -255,7 +263,7 @@ Reflection is only supported for proto-based services.
 
 You can learn more about working with gRPC Server Reflection [here](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
 
-### Dependency
+### Dependency { #dependency-2 }
 
 An optional gRPC Server Reflection dependency is required.
 
@@ -273,7 +281,7 @@ An optional gRPC Server Reflection dependency is required.
     implementation("io.grpc:grpc-services:1.62.2")
     ```
 
-### Configuration
+### Configuration { #configuration-2 }
 
 You must also enable the gRPC Server Reflection service in the configuration:
 
