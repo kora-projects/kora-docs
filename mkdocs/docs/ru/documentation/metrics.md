@@ -1,12 +1,20 @@
+---
+description: "Explains Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references. Use when working with MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references; key triggers include MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+---
+
 Модуль для сбора метрик приложения с использованием [Micrometer](https://micrometer.io/docs/concepts#_purpose).
 
 Требует подключения [служебного HTTP сервера](http-server.md) для предоставления метрик в формате [prometheus](https://prometheus.io/docs/concepts/data_model/).
 
-## Подключение
+Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
+
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:micrometer-module"
     ```
@@ -19,7 +27,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:micrometer-module")
     ```
@@ -30,7 +38,7 @@
     interface Application : MetricsModule
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример конфигурации пути HTTP сервера для получения метрик, описанной в классе `HttpServerConfig` (указаны значения по умолчанию):
 
@@ -76,13 +84,13 @@
 
 Параметры конфигурации сбора метрик описываются в модулях в которых присутствует сбор метрик, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md) и т.д.
 
-## Использование
+## Использование { #usage }
 
 Мы следуем и вам советуем использовать нотацию, описанную в [спецификации](https://prometheus.io/docs/concepts/data_model/).
 
 После подключения модуля `Metrics.globalRegistry` будет зарегистрирован `PrometheusMeterRegistry`, который будет использоваться во всех компонентах, собирающих метрики.
 
-## Персонализация
+## Персонализация { #personalization }
 
 Для внесения изменений в конфигурацию `PrometheusMeterRegistry` нужно добавить в контейнер `PrometheusMeterRegistryInitializer`.
 
@@ -127,7 +135,7 @@
 в стандарте OpenTelemetry `V123`, частичный список изменений можно посмотреть [в документации OpenTelemetry](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
 и [рекомендациях миграции OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)
 
-## Справочник метрик
+## Справочник метрик { #metrics-reference }
 
 Все метрики Kora используют [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) для именования и тегов.
 
@@ -137,7 +145,6 @@
 Тип метрики позволяет эффективно визуализировать данные по бакетам и рассчитывать персентиль.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — монотонно возрастающий счётчик
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — текущее значение метрики
-
 
 ### HTTP сервер { #http-server }
 
@@ -164,7 +171,7 @@
 
 Подробнее о модуле в документации [Базы данных](database-common.md).
 
-### Kafka
+### Kafka { #kafka }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |---------|------------|-----|----------|------|
@@ -250,7 +257,7 @@
 
 Подробнее о модуле в документации [Отказоустойчивость](resilient.md).
 
-### JMS
+### JMS { #jms }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |---------|------------|-----|----------|------|
@@ -265,7 +272,7 @@
 
 Подробнее о модуле в документации [S3 клиент](s3-client.md).
 
-### Camunda 7 BPMN
+### Camunda 7 BPMN { #camunda-7-bpmn }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |---------|------------|-----|----------|------|
@@ -274,7 +281,7 @@
 
 Подробнее о модуле в документации [Camunda 7 BPMN](camunda7-bpmn.md).
 
-### Camunda REST
+### Camunda REST { #camunda-rest }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |---------|------------|-----|----------|------|
@@ -283,7 +290,7 @@
 
 Подробнее о модуле в документации [Camunda 7 REST](camunda7-rest.md).
 
-### Camunda 8 Worker
+### Camunda 8 Worker { #camunda-8-worker }
 
 | Метрика | Prometheus | Тип | Описание | Теги |
 |---------|------------|-----|----------|------|
@@ -299,7 +306,7 @@
 |---------|------------|-----|----------|------|
 | `kora.up` | `kora_up` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Индикатор статуса фреймворка (значение = 1) | `version` |
 
-### JVM
+### JVM { #jvm }
 
 Стандартные JVM-метрики собираются автоматически через [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
 

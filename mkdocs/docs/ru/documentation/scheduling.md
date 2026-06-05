@@ -1,6 +1,12 @@
+---
+description: "Explains Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+---
+
 Модуль для создания планировщиков в декларативном стиле с помощью аннотаций.
 
-## Встроенный
+## Встроенный { #native }
 
 Создание планировщика с использованием стандартного [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) который
 поставляется с JVM.
@@ -10,11 +16,11 @@
 
 Так же все аннотации имеют аргумент `config` при наличии которого значения параметра возьмутся из конфигурации по указанному пути.
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:scheduling-jdk"
     ```
@@ -27,7 +33,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:scheduling-jdk")
     ```
@@ -38,7 +44,7 @@
     interface Application : SchedulingJdkModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `ScheduledExecutorServiceConfig` (указаны значения по умолчанию):
 
@@ -64,7 +70,7 @@
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#component-lifecycle)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -87,7 +93,7 @@
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    2.  Время ожидания выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#component-lifecycle)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -95,7 +101,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#scheduling).
 
-### Фиксированный интервал
+### Фиксированный интервал { #fixed-rate }
 
 Планирование с запуском задач с фиксированными промежутками времени, независимо от того, завершилась ли предыдущая или нет
 Такой подход может привести к одновременному выполнению нескольких задач.
@@ -129,7 +135,7 @@
     }
     ```
 
-#### Конфигурация
+#### Конфигурация { #configuration-2 }
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
@@ -184,7 +190,7 @@
     1.  Начальный интервал задержки перед первой задачей
     2.  Переодический интервал между задачами
 
-### Фиксированная задержка
+### Фиксированная задержка { #fixed-delay }
 
 Планировщик ожидает фиксированный промежуток времени от окончания предыдущего исполнения задачи.
 Выполнения нескольких задач не будет происходить одновременно.
@@ -218,7 +224,7 @@
     }
     ```
 
-#### Конфигурация
+#### Конфигурация { #configuration-3 }
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
@@ -273,7 +279,7 @@
     1.  Начальный интервал задержки перед первой задачей
     2.  Переодический интервал задержки между задачами
 
-### Одноразовый
+### Одноразовый { #once }
 
 Запускает одиножды задачу через определенный фиксированный интервал времени.
 
@@ -303,7 +309,7 @@
     }
     ```
 
-#### Конфигурация
+#### Конфигурация { #configuration-4 }
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
@@ -354,20 +360,20 @@
 
     1.  Начальный интервал задержки перед задачей
 
-### Штатное завершение
+### Штатное завершение { #graceful-shutdown }
 
-Если вы хотите предварительно завершить обработку при [штатном завершении](container.md#_24) сервиса не дожидаясь ее окончания,
+Если вы хотите предварительно завершить обработку при [штатном завершении](container.md#component-lifecycle) сервиса не дожидаясь ее окончания,
 требуется проверять [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) статус и прекращать работу самостоятельно.
 
-## Quartz
+## Quartz { #quartz }
 
 Реализация на основе библиотеки [Quartz](https://www.baeldung.com/quartz) как планировщика для создания аспектов.
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:scheduling-quartz"
     ```
@@ -380,7 +386,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:scheduling-quartz")
     ```
@@ -391,7 +397,7 @@
     interface Application : QuartzModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration-5 }
 
 Конфигурация указывается как значения [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) в формате ключ и значение:
 
@@ -419,7 +425,7 @@
     ```
 
     1.  Параметры настройки Quartz планировщика
-    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#component-lifecycle)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -443,7 +449,7 @@
     ```
 
     1.  Параметры настройки Quartz планировщика
-    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#_24)
+    2.  Ожидать ли выполнения задач перед выключением планировщика в случае [штатного завершения](container.md#component-lifecycle)
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
@@ -469,7 +475,7 @@
     org.quartz.jobStore.class: org.quartz.simpl.RAMJobStore
     ```
 
-### Крон
+### Крон { #cron }
 
 Использование [Cron](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) выражений для запуска запланированных задач.
 
@@ -505,7 +511,7 @@
 
     1. Cron выражение говорящее запускать задачу каждый час и каждый день
 
-#### Конфигурация
+#### Конфигурация { #configuration-6 }
 
 Возможно передача параметров через конфигурацию, она имеет приоритет перед указанными в аннотации параметрами:
 
@@ -556,7 +562,7 @@
 
     1. Cron выражение говорящее запускать задачу каждый час и каждый день
 
-### Триггер
+### Триггер { #trigger }
 
 Предполагает создание собственного `триггера` на основе библиотеки Quartz и регистрация его в контейнере приложения с определенным тегом и последующее его использование через аннотацию.
 
@@ -624,7 +630,7 @@
     1. Тег триггера
     2. Тег триггера
 
-### Неконкурентный запуск
+### Неконкурентный запуск { #non-concurrent-execution }
 
 Аннотация, которая говорит что метод с аннотацией не должен выполняться параллельно.
 
@@ -656,7 +662,7 @@
     }
     ```
 
-### Неизменное выполнение
+### Неизменное выполнение { #persistent-execution }
 
 Аннотация, которая говорит обновить принудительно `org.quartz.JobDataMap` обновить во время выполнения и требует,
 чтобы планировщик повторно сохранил `org.quartz.JobDataMap` по завершении выполнения.

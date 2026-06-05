@@ -1,14 +1,22 @@
+---
+description: "Explains Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf, All, PromiseOf."
+---
+
 The dependency container is the core of the Kora framework and is responsible for building the dependency container, validating them,
 injecting and then parallel initialization.
 
 The work of the container in Kora is divided into two parts: what is done at runtime and what is done at compile time.
 
-## Compile Time
+For a step-by-step walkthrough before the reference details, see [Dependency Injection Introduction](../guides/dependency-injection-introduction.md) and [Dependency Injection](../guides/dependency-injection.md).
+
+## Compile Time { #compile-time }
 
 At compile time, components are searched building the dependency container of the entire application.
 This allows validation of the dependency container at compile time, before the application actually starts.
 
-### Container
+### Container { #container }
 
 The core of the dependency container is the interface labeled with the `@KoraApp` annotation.
 This annotation should be used to label the interface within which the factory methods for creating components and [modules](#module-factory) dependencies are attached.
@@ -28,7 +36,7 @@ There can be only one such interface within an application.
     interface Application { }
     ```
 
-### Components
+### Components { #components }
 
 A component is a dependency in a dependency container.
 All components in Kora are Singletons. A Singleton is a class that has an instance created only once.
@@ -36,7 +44,7 @@ Components are injected only if they are [root component](#root-component), or i
 
 Components that do not meet these requirements are not included in the dependency container.
 
-#### Auto factory
+#### Auto factory { #auto-factory }
 
 The `@Component` annotation marks the class as accessible via the container. The class has the following requirements:
 
@@ -69,7 +77,7 @@ The `@Component` annotation marks the class as accessible via the container. The
     class SomeService(val otherService: OtherService) { }
     ```
 
-#### Basic factory
+#### Basic factory { #basic-factory }
 
 A factory method is a method with the `default` modifier that returns a component, the method can take
 arguments to other components as dependencies.
@@ -109,7 +117,7 @@ This is the most basic way in which components can be registered in a container:
 
 The factory method **should not provide** a `null` value as a component.
 
-#### Module factory
+#### Module factory { #module-factory }
 
 Components for a dependency container can also be searched for in modules in an application project.
 A module refers to an interface that contains the factory methods.
@@ -140,7 +148,7 @@ All factory methods within module become available to the dependency container:
     }
     ```
 
-#### External module factory
+#### External module factory { #external-module-factory }
 
 Components for a dependency container can also be looked up in external modules from third-party dependencies.
 A module refers to the interface that contains the factory methods.
@@ -164,7 +172,7 @@ All required external modules from dependencies must be connected explicitly in 
     interface Application : LogbackModule, JsonModule
     ```
 
-#### Submodule factory
+#### Submodule factory { #submodule-factory }
 
 The `@KoraSubmodule` annotation marks the interface for which to build a module for the current compilation module,
 it will contain all components marked with the `@Module` and `@Component` annotations.
@@ -232,7 +240,7 @@ And there's core application build module with application entrypoint:
 
 This will plug both `SomeSubModule` and `SomeModule` modules.
 
-#### Generic factory
+#### Generic factory { #generic-factory }
 
 If the dependency container could not find a generic factory for a particular type, the Kora container at compile time can try looking for
 methods with [Generic](https://docs.oracle.com/javase/tutorial/java/generics/types.html) parameters, and use that method to create an instance of the desired class.
@@ -263,7 +271,7 @@ methods with [Generic](https://docs.oracle.com/javase/tutorial/java/generics/typ
 
 Now if some component needs GenericValidator as a dependency, this factory will be used to create it.
 
-#### Extension mechanism
+#### Extension mechanism { #extension-mechanism }
 
 In case none of the factories were able to provide a component, Kora can try to create that dependency at compile time itself.
 The extensions mechanism is provided for this purpose. Each extension is able to tell if it can create a component of the desired type.
@@ -274,7 +282,7 @@ The available extensions are searched thanks to the `ServiceLocator` mechanism f
 
 The mechanism is rather system specific and is often used by internal Kora modules.
 
-#### Standard factory
+#### Standard factory { #standard-factory }
 
 In order to provide default components by factory methods, which it is assumed that the user can override,
 it is required to use the `@DefaultComponent` annotation.
@@ -305,7 +313,7 @@ it will be given preference during injection.
     }
     ```
 
-#### Auto creation
+#### Auto creation { #auto-creation }
 
 If none of the methods above were able to provide a component,
 then Kora can try to create a component on its own if it meets the requirements similar to [auto factory](#auto-factory):
@@ -359,7 +367,7 @@ then Kora can try to create a component on its own if it meets the requirements 
     }
     ```
 
-### Component override
+### Component override { #component-override }
 
 In case a component is provided by the library as a default dependency,
 it is possible to create a factory in an application without the `@DefaultComponent` annotation and such a dependency will override it.
@@ -367,7 +375,7 @@ it is possible to create a factory in an application without the `@DefaultCompon
 Since all external modules are plugged as interfaces into the core `@KoraApp` container and their factories are available,
 you can simply override them as a method and provide your custom implementation.
 
-### Root component
+### Root component { #root-component }
 
 When a component is required to always be initialized with application startup, even if it is not a dependency of other components,
 it is expected to use the `@Root` annotation over a factory method or class annotated with `@Component`.
@@ -398,7 +406,7 @@ An example of such a component might be HTTP server, Kafka consumer, cache warmi
     }
     ```
 
-### Optional dependencies
+### Optional dependencies { #optional-dependencies }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -431,7 +439,7 @@ An example of such a component might be HTTP server, Kafka consumer, cache warmi
     class SomeService(val otherService: OtherService?) { }
     ```
 
-### List of components
+### List of components { #list-of-components }
 
 There can be many instances of the same type in a container, and if you want to collect them all in one place, you should use the special type `All`.
 
@@ -480,7 +488,7 @@ public interface All<T> extends List<T> {}
 
 This is a token type that extends `List` and can be given to constructors that expect `List`.
 
-### Tags
+### Tags { #tags }
 
 Sometimes there is a need to provide different instances of the same type to different components. For this purpose, they can be differentiated by tags.
 In order to do this, there is an `@Tag` annotation that takes a tag class as input.
@@ -587,7 +595,7 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
     class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
     ```
 
-#### Tag custom
+#### Tag custom { #tag-custom }
 
 You can also create your own tag annotations and work with them, such an example is [@Json annotation](json.md)
 
@@ -627,7 +635,7 @@ You can also create your own tag annotations and work with them, such an example
     }
     ```
 
-#### Tag all
+#### Tag all { #tag-all }
 
 You can also use a tag to get a list of all components by a specific tag:
 
@@ -669,7 +677,7 @@ You can also use a tag to get a list of all components by a specific tag:
     }
     ```
 
-#### Tag any
+#### Tag any { #tag-any }
 
 To get a list of all components with and without a tag, you need to use a special tag type `@Tag.Any`:
 
@@ -709,7 +717,7 @@ To get a list of all components with and without a tag, you need to use a specia
     }
     ```
 
-## Runtime
+## Runtime { #runtime }
 
 The dependency container is initialized as parallel as possible within the dependency container that has been constructed.
 
@@ -722,7 +730,7 @@ During the execution phase of the application, the following things are done:
 
 All components use eager initialization, which means they are initialized immediately upon application startup.
 
-### Entrypoint
+### Entrypoint { #entrypoint }
 
 The application entry point should cause `KoraApplication.run` to run using the dependency container created at compile time.
 
@@ -753,7 +761,7 @@ within the same package will look like this:
     }
     ```
 
-### Container lifecycle
+### Container lifecycle { #container-lifecycle }
 
 The dependency container knows how to initialize all components in the correct order, and it does so in as much parallel as possible, in order to achieve the fastest possible startup time.
 
@@ -763,7 +771,7 @@ In the middle of the lifecycle, a component may be updated and then the containe
 that depend on the changed component. This happens atomically: at the beginning of the process, a transaction is opened,
 which closes only if all components are successfully initialized and rolls back if at least one error occurs.
 
-### Component lifecycle
+### Component lifecycle { #component-lifecycle }
 
 By default, all components are singletons through the constructor.
 If you need to do some actions when the component is initialized, or before it is released, you must implement `Lifecycle` interface:
@@ -817,13 +825,13 @@ If you need to provide a component in a factory method with a lifecycle, you can
     }
     ```
 
-### Graceful shutdown
+### Graceful shutdown { #graceful-shutdown }
 
 All integrations that Kora provides such as [HTTP server](http-server.md), [Kafka-consumer](kafka.md),
 etc., support [graceful shutdown](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) out of the box using
 [component lifecycle](#component-lifecycle).
 
-### Indirect dependency
+### Indirect dependency { #indirect-dependency }
 
 Consider the following example:
 
@@ -865,7 +873,7 @@ If we take the type as a dependency directly, then we tell the container that wh
 But when we use the type wrapper `ValueOf`, we tell the container,
 that `ServiceC` is in no way related to the life cycle of `ServiceB` and if `ServiceB` changes, we don't need to update `ServiceC`.
 
-#### Updating components
+#### Updating components { #updating-components }
 
 Updating of components is possible if the `ValueOf` wrapper is used to inject dependencies:
 
@@ -885,7 +893,7 @@ For example, this is the case for various servers that listen to sockets (http, 
 With the `refresh` function we can initiate a component refresh. This mechanism is for example used in a component that tracks changes to a configuration file on disk.
 When the content of the file changes, it initiates a refresh of the configuration component, and further all changes are propagated through the chain of components linked by a direct link.
 
-### Component inspection
+### Component inspection { #component-inspection }
 
 There are situations where there is some component in a dependency container that needs to be further modified or initialized,
 but we need to make sure that nobody starts working with this component before we do these actions.  

@@ -1,6 +1,14 @@
+---
+description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+---
+
 Module allows you to create productive and reflection-free JSON readers and writers for application classes using annotations.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [JSON](../guides/json.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -28,7 +36,7 @@ Module allows you to create productive and reflection-free JSON readers and writ
     interface Application : JsonModule
     ```
 
-## Writer
+## Writer { #writer }
 
 You can use `@JsonWriter` to create a writer only:
 
@@ -46,7 +54,7 @@ You can use `@JsonWriter` to create a writer only:
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Reader
+## Reader { #reader }
 
 You can use `@JsonReader` to create a reader only:
 
@@ -64,7 +72,7 @@ You can use `@JsonReader` to create a reader only:
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Reader & Writer
+## Reader & Writer { #reader-and-writer }
 
 You can use `@Json` to create a reader and a writer at once.
 In most cases, it is the `@Json` annotation that is preferred:
@@ -83,7 +91,7 @@ In most cases, it is the `@Json` annotation that is preferred:
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Required fields
+## Required fields { #required-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -103,7 +111,7 @@ In most cases, it is the `@Json` annotation that is preferred:
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Optional fields
+## Optional fields { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -130,7 +138,7 @@ In most cases, it is the `@Json` annotation that is preferred:
     )
     ```
 
-## Field naming 
+## Field naming { #field-naming }
 
 In case a field in Json is named differently from what you want to use in a class,
 you can use the `@JsonField` annotation to match the field in Json and the DTO.
@@ -153,7 +161,7 @@ you can use the `@JsonField` annotation to match the field in Json and the DTO.
     )
     ```
 
-## Field ignore
+## Field ignore { #field-ignore }
 
 In case you don't want to read/write a field in DTO,
 you can use the `@JsonSkip` annotation and ignore such a field.
@@ -176,7 +184,7 @@ you can use the `@JsonSkip` annotation and ignore such a field.
     )
     ```
 
-## Serialization levels
+## Serialization levels { #serialization-levels }
 
 The default behavior is not to write fields with `null` values. (1)
 { .annotate }
@@ -213,7 +221,7 @@ Example of annotation usage:
     )
     ```
 
-## Serialization constructor
+## Serialization constructor { #serialization-constructor }
 
 If you want to use a specific constructor for serialization,
 it can be done by specifying the `@JsonReader` annotation above the constructor or the lower-priority `@Json` annotation:
@@ -242,7 +250,7 @@ it can be done by specifying the `@JsonReader` annotation above the constructor 
     }
     ```
 
-## JsonNullable wrapper
+## JsonNullable wrapper { #jsonnullable-wrapper }
 
 In case you want to distinguish a missing field from a specified `null` value during deserialization,
 it is supposed to use a special type `JsonNullable`, which allows interpreting all states of the field.
@@ -261,7 +269,7 @@ it is supposed to use a special type `JsonNullable`, which allows interpreting a
     data class Dto(val field1: String, val field2: JsonNullable<Int>)
     ```
 
-## Sealed classes and interfaces
+## Sealed classes and interfaces { #sealed-classes-and-interfaces }
 
 In case you need to write different Json objects depending on the value in a particular field, you are supposed to use an
 [isolated class/interface](https://habr.com/ru/companies/otus/articles/720044/) to represent such objects.
@@ -320,7 +328,7 @@ The Json object below will be written to the `FirstTypeEvent` class:
 }
 ```
 
-## Supported types
+## Supported types { #supported-types }
 
 Module provides an extensive list of supported out-of-the-box types that cover most of what you might need.
 
@@ -359,7 +367,7 @@ Module provides an extensive list of supported out-of-the-box types that cover m
     * ZoneId
     * Duration
 
-### Custom types
+### Custom types { #custom-types }
 
 In case you need to write/read your custom type, it is suggested to register your custom [factory](container.md) for `JsonReader` / `JsonWriter`:
 
@@ -397,7 +405,7 @@ Example of registering a `JsonWriter`:
     }
     ```
 
-## Jackson
+## Jackson { #jackson }
 
 In case one wants to use `Jackson` for writing/reading, one can register [factory](container.md) that
 provide `ObjectMapper` and the corresponding `Mappers` that are required in other Kora modules will be provided by the dependency below:

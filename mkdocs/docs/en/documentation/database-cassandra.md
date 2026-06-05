@@ -1,6 +1,14 @@
+---
+description: "Explains Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures. Use when working with @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures; key triggers include @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule, CassandraRepository."
+---
+
 Module provides a repository implementation for the [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) database using the [DataStax](https://docs.datastax.com/en/developer/java-driver/4.17/) driver.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [Cassandra Database](../guides/database-cassandra.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -28,7 +36,7 @@ Module provides a repository implementation for the [Cassandra](https://cassandr
     interface Application : CassandraDatabaseModule
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Example of a simple configuration described in `CassandraConfig` class (example values are indicated):
 
@@ -438,7 +446,7 @@ Example of a simple configuration described in `CassandraConfig` class (example 
               enabled: true
         ```
 
-### Code configuration
+### Code configuration { #code-configuration }
 
 You can configure the driver manually in your code using `CassandraConfigurer` to modify the `CqlSession` builder:
 
@@ -466,7 +474,7 @@ You can configure the driver manually in your code using `CassandraConfigurer` t
     }
     ```
 
-## Usage
+## Usage { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -482,7 +490,7 @@ You can configure the driver manually in your code using `CassandraConfigurer` t
     interface EntityRepository : CassandraRepository
     ```
 
-### Profile
+### Profile { #profile }
 
 It is possible to override common settings with private settings from a profile, suppose there is such a profile configuration `someProfile`:
 
@@ -538,11 +546,11 @@ In order to apply the settings from the `someProfile` profile, just do the follo
 
 The settings specified in the profile will be applied to each request, specifically in this case - a timeout of 10s will be set.
 
-## Mapping
+## Mapping { #mapping }
 
 It is possible to override the mapping of different parts of [entity](database-common.md) and query parameters, Kora provides special interfaces for this.
 
-### Result
+### Result { #result }
 
 If you need to convert the result manually, it is suggested to use `CassandraResultSetMapper`:
 
@@ -586,7 +594,7 @@ If you need to convert the result manually, it is suggested to use `CassandraRes
     }
     ```
 
-### Row
+### Row { #row }
 
 If you need to convert the string manually, it is suggested to use `CassandraRowMapper`:
 
@@ -631,7 +639,7 @@ If you need to convert the string manually, it is suggested to use `CassandraRow
     }
     ```
 
-### Column
+### Column { #column }
 
 If you need to convert the column value manually, it is suggested to use the `CassandraRowColumnMapper`:
 
@@ -683,7 +691,7 @@ If you need to convert the column value manually, it is suggested to use the `Ca
     }
     ```
 
-### Parameter
+### Parameter { #parameter }
 
 If you want to convert the value of a query parameter manually, it is suggested to use `CassandraParameterColumnMapper`:
 
@@ -730,7 +738,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
-### Async
+### Async { #async }
 
 Due to the nature of the helper class for extracting data from `AsyncResultSet` for asynchronous queries (Mono or Suspend), only `CassandraReactiveResultSetMapper` can be used:
 
@@ -772,7 +780,7 @@ Due to the nature of the helper class for extracting data from `AsyncResultSet` 
     }
     ```
 
-## UDT
+## UDT { #udt }
 
 There is support for [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html)
 types using the `@UDT` annotation:
@@ -799,7 +807,7 @@ types using the `@UDT` annotation:
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

@@ -1,10 +1,16 @@
+---
+description: "Explains Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration. Use when working with FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration; key triggers include FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+---
+
 Modules to migrate the database along with the service launch.
 
-## Flyway
+## Flyway { #flyway }
 
 Module for database migration using the [Flyway](https://documentation.red-gate.com/fd) tool.
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -34,7 +40,7 @@ Module for database migration using the [Flyway](https://documentation.red-gate.
 
 Requires [JDBC module](database-jdbc.md) dependency.
 
-### Configuration
+### Configuration { #configuration }
 
 Example of the complete configuration described in the `FlywayConfig` class (default values are specified):
 
@@ -79,11 +85,11 @@ Example of the complete configuration described in the `FlywayConfig` class (def
        This setting is only relevant for databases that do not support executing certain operations within a transaction: PostgreSQL, Aurora PostgreSQL, SQL Server, and SQLite.
     6. Additional key-value configuration properties for `Flyway#configurationProperties`.
 
-## Liquibase
+## Liquibase { #liquibase }
 
 Module for database migration using the [Liquibase](https://www.liquibase.com/supported-databases) tool.
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -113,7 +119,7 @@ Module for database migration using the [Liquibase](https://www.liquibase.com/su
 
 Requires [JDBC module](database-jdbc.md) dependency.
 
-### Configuration
+### Configuration { #configuration-2 }
 
 Example of the complete configuration described in the `LiquibaseConfig` class (default values are specified):
 
@@ -136,7 +142,7 @@ Example of the complete configuration described in the `LiquibaseConfig` class (
 
     1.  Path to [master file](https://docs.liquibase.com/concepts/changelogs/home.html) migration configuration
 
-## Recommendations
+## Recommendations { #recommendations }
 
 ???+ warning "Recommendation"
 

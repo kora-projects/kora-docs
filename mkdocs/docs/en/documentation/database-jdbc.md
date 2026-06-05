@@ -1,7 +1,15 @@
+---
+description: "Explains Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures. Use when working with @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcConnectionFactory, JdbcRepository."
+---
+
 Module provides a repository implementation based on the [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) database protocol
 and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection set management.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [JDBC Database](../guides/database-jdbc.md) and [Advanced JDBC Database](../guides/database-jdbc-advanced.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -31,7 +39,7 @@ and using [Hikari](https://github.com/brettwooldridge/HikariCP) for connection s
 
 Also **required to provide** the database driver implementation as a dependency.
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `JdbcDatabaseConfig` class (default or example values are specified):
 
@@ -84,7 +92,7 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
     11. Maximum lifetime of a connection in Hikari
     12. Maximum time a connection can be idle in Hikari before it is considered a leak (optional)
     13. Maximum time to wait for connection initialization at service startup (optional)
-    14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    14. Whether to enable [readiness probe](probes.md#readiness) for database connection
     15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters) (optional)
     16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
@@ -135,14 +143,14 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
     11. Maximum lifetime of a connection in Hikari
     12. Maximum time a connection can be idle in Hikari before it is considered a leak (optional)
     13. Maximum time to wait for connection initialization at service startup (optional)
-    14. Whether to enable [probes.md#_2](probes.md#_2) for database connection
+    14. Whether to enable [readiness probe](probes.md#readiness) for database connection
     15. Additional JDBC connection attributes `dataSourceProperties` (below example `hostRecheckSeconds` parameters) (optional)
     16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
     19. Enables module tracing (default `true`)
 
-## Usage
+## Usage { #usage }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -158,11 +166,11 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
     interface EntityRepository : JdbcRepository
     ```
 
-## Mapping
+## Mapping { #mapping }
 
 It is possible to override the conversion of different parts of [entity](database-common.md) and query parameters, Kora provides special interfaces for this.
 
-### Result
+### Result { #result }
 
 If you need to convert the result manually, it is suggested to use `JdbcResultSetMapper`:
 
@@ -208,7 +216,7 @@ If you need to convert the result manually, it is suggested to use `JdbcResultSe
     }
     ```
 
-#### Entity
+#### Entity { #entity }
 
 Optimal entity mapping intend to use with `@EntityJdbc` annotation for result converter generation.
 
@@ -228,7 +236,7 @@ All embedded entities also should use this annotation:
     Data class Entity(val id: String, val name: String)
     ```
 
-### Row
+### Row { #row }
 
 If you need to convert the string manually, it is suggested to use `JdbcRowMapper`, 
 keep in mind that the order of the columns starts from `1`:
@@ -275,7 +283,7 @@ keep in mind that the order of the columns starts from `1`:
     }
     ```
 
-### Column
+### Column { #column }
 
 If you need to convert the column value manually, it is suggested to use the `JdbcResultColumnMapper`:
 
@@ -330,7 +338,7 @@ If you need to convert the column value manually, it is suggested to use the `Jd
     }
     ```
 
-### Parameter
+### Parameter { #parameter }
 
 If you want to convert the value of a query parameter manually, it is suggested to use `JdbcParameterColumnMapper`:
 
@@ -378,7 +386,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     }
     ```
 
-### Supported types
+### Supported types { #supported-types }
 
 ??? abstract "List of supported types for arguments/return values out of the box"
 
@@ -401,7 +409,7 @@ If you want to convert the value of a query parameter manually, it is suggested 
     * OffsetTime
     * OffsetDateTime
 
-## Select by list
+## Select by list { #select-by-list }
 
 Sometimes a list of values from the database needs to be fetched, all these parameters must be set separately at the driver level, as the length of the list is not known
 this is not the most obvious task as Kora tries to do all conversions at compile time and remove any string conversions especially in SQL at runtime,
@@ -454,7 +462,7 @@ Out of the box Kora does not provide conversion of such parameters, but it is ea
     }
     ```
 
-### Generated identifier
+### Generated identifier { #generated-identifier }
 
 If you want to get the primary keys of an entity created by the database as the result,
 it is suggested to use the `@Id` annotation over a method where the return value type is identifiers.
@@ -490,7 +498,7 @@ This approach works for `@Batch` queries as well.
     }
     ```
 
-## Transaction
+## Transaction { #transaction }
 
 In order to execute blocking queries, Kora has a `JdbcConnectionFactory` interface, which is provided in a method within the `JdbcRepository` contract.
 All repository methods called within a transaction lambda will be executed in that transaction.
@@ -550,7 +558,7 @@ or you can change it yourself via `java.sql.Connection` before executing queries
 connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 ```
 
-### Connection
+### Connection { #connection }
 
 If you need some more complex logic for a query and `@Query` is not enough, you can use `java.sql.Connection`:
 
@@ -590,7 +598,7 @@ If you need some more complex logic for a query and `@Query` is not enough, you 
     }
     ```
 
-### Post-commit actions
+### Post-commit actions { #post-commit-actions }
 
 If you need to perform any actions after committing a transaction,
 you can add the appropriate actions using `addPostCommitAction`.
@@ -641,7 +649,7 @@ you can add the appropriate actions using `addPostCommitAction`.
     }
     ```
 
-### Post-rollback actions
+### Post-rollback actions { #post-rollback-actions }
 
 If you need to perform any actions after rolling back a transaction,
 you can add the appropriate actions using `addPostRollbackAction`.
@@ -692,7 +700,7 @@ you can add the appropriate actions using `addPostRollbackAction`.
     }
     ```
 
-## Signatures
+## Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 

@@ -1,26 +1,34 @@
+---
+description: "Explains Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpClientModule, OkHttp."
+---
+
 Модуль предоставляет тонкий слой абстракции для создания HTTP-клиентов
 с помощью аннотаций в декларативном стиле, либо использование клиентов в императивном стиле.
 
 ???+ tip "Совет"
 
     **Мы советуем** использовать подход когда первичен контракт в формате OpenAPI
-    и из него создаются клиенты по средствам генератора. 
+    и из него создаются клиенты по средствам генератора.
     Такой подход позволяет достигнуть консистентности контракта между потребителем и собственником контракта
-    и быстро обновляться в случае нового контракта по средствам замены файла контракта. 
+    и быстро обновляться в случае нового контракта по средствам замены файла контракта.
     Подробнее про генератор в [секции про генерации из OpenAPI](openapi-codegen.md).
 
-## OkHttp
+Если нужен пошаговый разбор перед справочным описанием, смотрите [HTTP клиент](../guides/http-client.md) и [HTTP клиент продвинутый](../guides/http-client-advanced.md).
+
+## OkHttp { #okhttp }
 
 Реализация HTTP клиента основанная на библиотеке [OkHttp](https://github.com/square/okhttp).
 Учитывайте что реализация написана на Kotlin и использует соответствующие зависимости.
-Лучше всего подходит для Kotlin сервисов, либо Java сервисов где нужна высокая производительность, 
+Лучше всего подходит для Kotlin сервисов, либо Java сервисов где нужна высокая производительность,
 либо требуется поддержка HTTP 3, либо поддержка GZip сжатия, либо другие специфичные HTTP опции.
 
-### Подключение
+### Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:http-client-ok"
     ```
@@ -33,7 +41,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:http-client-ok")
     ```
@@ -44,7 +52,7 @@
     interface Application : OkHttpClientModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `OkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -159,7 +167,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-client).
 
-#### Конфигуратор
+#### Конфигуратор { #configurer }
 
 Пример настройки построителя OkHttp клиента, `OkHttpConfigurer` должен быть доступен как компонент:
 
@@ -187,16 +195,16 @@
     }
     ```
 
-## AsyncHttpClient
+## AsyncHttpClient { #asynchttpclient }
 
 Реализация HTTP клиента основанная на библиотеке [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client).
 Подходит для Java сервисов, где преобладают асинхронные вызовы.
 
-### Подключение
+### Подключение { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:http-client-async"
     ```
@@ -209,7 +217,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:http-client-async")
     ```
@@ -220,7 +228,7 @@
     interface Application : AsyncHttpClientModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Пример полной конфигурации, описанной в классе `AsyncHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -327,17 +335,17 @@
 
 Можно также настроить [Netty транспорт](netty.md).
 
-## Java клиент
+## Java клиент { #native-client }
 
 Реализация HTTP клиента на основании встроенного Java клиента поставляемого в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
-Лучше всего подходит для Java сервисов где не требуется производительность так как работает прилично медленнее, 
+Лучше всего подходит для Java сервисов где не требуется производительность так как работает прилично медленнее,
 и хочется минимизировать количество внешних библиотек.
 
-### Подключение
+### Подключение { #dependency-3 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:http-client-jdk"
     ```
@@ -350,7 +358,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:http-client-jdk")
     ```
@@ -361,7 +369,7 @@
     interface Application : JdkHttpClientModule
     ```
 
-### Конфигурация
+### Конфигурация { #configuration-3 }
 
 Пример полной конфигурации, описанной в классе `JdkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -466,7 +474,7 @@
     16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     17.  Включает трассировку модуля (по умолчанию `true`)
 
-## Клиент декларативный
+## Клиент декларативный { #client-declarative }
 
 Предлагается использовать специальные аннотации для создания декларативного клиента:
 
@@ -479,8 +487,8 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
     }
     ```
 
@@ -495,7 +503,7 @@
     }
     ```
 
-### Конфигурация клиента
+### Конфигурация клиента { #client-configuration }
 
 Конфигурация конкретной реализации `@HttpClient` по умолчанию для поиска конфигурации использует следующий путь `httpClient.{имя класса в нижнем регистре}`,
 либо указывается в параметре `configPath` в аннотации:
@@ -598,10 +606,10 @@
     9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     10.  Включает трассировку модуля (по умолчанию `true`)
 
-### Конфигурация метода
+### Конфигурация метода { #method-configuration }
 
-На примере выше рассмотренного HTTP клиента, можно настроить отдельно часть параметров для определенного метода, путь к конфигурации 
-определяется путем к клиенту и именем метода, в примере выше конфигурация `httpClient.someClient` 
+На примере выше рассмотренного HTTP клиента, можно настроить отдельно часть параметров для определенного метода, путь к конфигурации
+определяется путем к клиенту и именем метода, в примере выше конфигурация `httpClient.someClient`
 и метода `hello` финальный путь будет `httpClient.someClient.hello`
 
 ===! ":material-code-json: `Hocon`"
@@ -647,7 +655,7 @@
     ```yaml
     httpClient:
       someClient:
-        hello:  
+        hello:
           requestTimeout: "10s" #(1)!
           telemetry:
             logging:
@@ -673,14 +681,14 @@
     8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
     9.  Включает трассировку модуля (по умолчанию `true`)
 
-### Запрос
+### Запрос { #request }
 
 Секция описывает преобразования HTTP запроса у декларативного HTTP клиента.
 Предлагается использовать специальные аннотации для указания параметров запроса.
 
-#### Параметр пути
+#### Параметр пути { #path-parameter }
 
-`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути 
+`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути
 и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -689,8 +697,8 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/{pathName}") 
-        void hello(@Path("pathName") String pathValue); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/{pathName}")
+        void hello(@Path("pathName") String pathValue);
     }
     ```
 
@@ -705,7 +713,7 @@
     }
     ```
 
-#### Параметр запроса
+#### Параметр запроса { #query-parameter }
 
 `@Query` — значение параметра запроса, имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
@@ -715,9 +723,9 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         void hello(@Query("queryName") String queryValue,
-                   @Query("queryNameList") List<String> queryValues); 
+                   @Query("queryNameList") List<String> queryValues);
     }
     ```
 
@@ -728,7 +736,7 @@
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello(@Query("queryName") queryValue: String, 
+        fun hello(@Query("queryName") queryValue: String,
                   @Query("queryNameList") queryValues: List<String>)
     }
     ```
@@ -742,8 +750,8 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Query Map<String, String> queryValues); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Query Map<String, String> queryValues);
     }
     ```
 
@@ -758,7 +766,7 @@
     }
     ```
 
-#### Заголовок
+#### Заголовок { #header }
 
 `@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
@@ -768,9 +776,9 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Header("headerName") String headerValue, 
-                   @Header("headerNameList") List<String> headerValues); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Header("headerName") String headerValue,
+                   @Header("headerNameList") List<String> headerValues);
     }
     ```
 
@@ -781,7 +789,7 @@
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello(@Header("headerName") headerValue: String, 
+        fun hello(@Header("headerName") headerValue: String,
                   @Header("headerNameList") headerValues: List<String>)
     }
     ```
@@ -795,8 +803,8 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Header HttpHeaders headers); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Header HttpHeaders headers);
     }
     ```
 
@@ -811,12 +819,12 @@
     }
     ```
 
-#### Тело запроса
+#### Тело запроса { #request-body }
 
-Для указания тела запроса требуется использовать аргумент метода без специальных аннотации, 
+Для указания тела запроса требуется использовать аргумент метода без специальных аннотации,
 по умолчанию поддерживаются такие типы как `byte[]`, `ByteBuffer` или `String`.
 
-##### Json 
+##### Json { #json }
 
 Для указания, что тело является Json и ему требуется автоматически создать такого писателя и внедрить его,
 требуется использовать специальную тег аннотацию `@Json`:
@@ -853,7 +861,7 @@
 
 Требуется подключить модуль [Json](json.md).
 
-##### Текстовая форма
+##### Текстовая форма { #text-form }
 
 Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
@@ -875,7 +883,7 @@
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormUrlEncoded): 
+        fun hello(body: FormUrlEncoded):
     }
     ```
 
@@ -901,7 +909,7 @@
     )
     ```
 
-##### Бинарная форма
+##### Бинарная форма { #binary-form }
 
 Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
@@ -923,7 +931,7 @@
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormMultipart): 
+        fun hello(body: FormMultipart):
     }
     ```
 
@@ -956,7 +964,7 @@
     )
     ```
 
-##### Самописное
+##### Самописное { #custom-body }
 
 Если тело требуется записывать отличным от стандартных механизмов способом,
 то можно использовать специальный интерфейс `HttpClientRequestMapper` для реализации собственной логики:
@@ -1001,7 +1009,7 @@
     }
     ```
 
-#### Куки
+#### Куки { #cookie }
 
 `@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 
@@ -1011,8 +1019,8 @@
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Cookie("cookieName") String cookieValue); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Cookie("cookieName") String cookieValue);
     }
     ```
 
@@ -1027,7 +1035,7 @@
     }
     ```
 
-#### Обязательные параметры
+#### Обязательные параметры { #required-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1037,7 +1045,7 @@
 
     По умолчанию все аргументы объявленные в методе которые не используют [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) синтаксис считаются **обязательными** (*NotNull*).
 
-#### Необязательные параметры
+#### Необязательные параметры { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1068,15 +1076,15 @@
     }
     ```
 
-### Ответ
+### Ответ { #response }
 
 Секция описывает преобразование HTTP ответа от декларативного HTTP клиента.
 
-#### Тело ответа
+#### Тело ответа { #response-body }
 
 По умолчанию можно использовать стандартные типы возвращаемых значений тела ответа, такие как `void`, `byte[]`, `ByteBuffer` либо `String`.
 
-##### Json
+##### Json { #json-2 }
 
 Если предполагается читать тело как Json, то требуется использовать аннотацию `@Json` над методом.
 
@@ -1087,7 +1095,7 @@
     public interface SomeClient {
 
         record MyResponse(String name) { }
-        
+
         @Json //(1)!
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         MyResponse hello();
@@ -1114,9 +1122,9 @@
 
 Требуется подключить модуль [Json](json.md).
 
-##### Сущность ответа
+##### Сущность ответа { #response-entity }
 
-Если предполагается читать тело и получить также заголовки и статус код ответа, 
+Если предполагается читать тело и получить также заголовки и статус код ответа,
 то предполагается использовать `HttpResponseEntity`, это обертка над телом ответа.
 
 Ниже показан пример аналогичный примеру Json вместе с оберткой `HttpResponseEntity`:
@@ -1128,7 +1136,7 @@
     public interface SomeClient {
 
         record MyResponse(String name) { }
-        
+
         @Json
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         HttpResponseEntity<MyResponse> hello();
@@ -1149,7 +1157,7 @@
     }
     ```
 
-##### Самописное
+##### Самописное { #custom-response }
 
 Если требуется чтение ответа отличным способом, то можно использовать специальный интерфейс `HttpClientResponseMapper`:
 
@@ -1188,7 +1196,7 @@
         data class MyResponse(val name: String)
 
         class ResponseMapper : HttpClientResponseMapper<MyResponse> {
-            
+
             @Throws(IOException::class, HttpClientDecoderException::class)
             override fun apply(response: HttpClientResponse): MyResponse {
                 response.body().asInputStream().use {
@@ -1205,12 +1213,12 @@
     }
     ```
 
-#### Ошибка ответа
+#### Ошибка ответа { #response-error }
 
 По умолчанию когда не указан ни какой тег преобразователя ни сам преобразователь, то преобразование будет применяться только для `2хх` HTTP статусов кодов,
 для всех остальных будет выбрасываться исключение `HttpClientResponseException`, которое содержит [HTTP статус код](https://developer.mozilla.org/ru/docs/Web/HTTP/Status), тело ответа и заголовки ответа.
 
-#### Преобразование по коду
+#### Преобразование по коду { #conversion-by-code }
 
 Если требуются специфичные преобразование в зависимости от [HTTP статус кода](https://developer.mozilla.org/ru/docs/Web/HTTP/Status) ответа, можно использовать аннотацию `@ResponseCodeMapper` для указания
 соответствия HTTP статус кода и преобразователя `HttpClientResponseMapper`.
@@ -1244,9 +1252,9 @@
     interface SomeClient {
 
         data class UserResponse(val payload: Payload, val error: Error) {
-            
+
             data class Error(val code: Int, val message: String)
-            
+
             data class Payload(val message: String)
         }
 
@@ -1257,10 +1265,10 @@
     }
     ```
 
-В примере выше для статуса кода `200` будет использовать `ResponseSuccessMapper`, 
+В примере выше для статуса кода `200` будет использовать `ResponseSuccessMapper`,
 а для всех остальных статус кодов будет использован `ResponseErrorMapper`.
 
-### Сигнатуры
+### Сигнатуры { #signatures }
 
 Доступные сигнатуры для методов декларативного HTTP клиента из коробки:
 
@@ -1279,7 +1287,7 @@
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
 
-## Перехватчики
+## Перехватчики { #interceptors }
 
 Можно создавать перехватчики для изменения поведения либо создания дополнительного поведения используя класс `HttpClientInterceptor`.
 Перехватчики можно подключить на определенные методы либо весь `@HttpClient` класс целиком:
@@ -1291,13 +1299,13 @@
     public interface SomeClient {
 
         final class MethodInterceptor implements HttpClientInterceptor {
-            
+
             private final Component1 component1;
 
             private MethodInterceptor(Component1 component1) {
                 this.component1 = component1;
             }
-    
+
             @Override
             public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
                 component1.doSomething();
@@ -1336,11 +1344,11 @@
     }
     ```
 
-### Авторизация
+### Авторизация { #authorization }
 
 Kora предоставляет готовые перехватчики которые можно использовать для авторизации посредствам [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
 
-#### Basic
+#### Basic { #basic }
 
 Требуется сконфигурировать перехватчик и конфигурацию для авторизации [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/):
 
@@ -1349,7 +1357,7 @@ Kora предоставляет готовые перехватчики кото
     ```java
     @Module
     public interface BasicAuthModule {
-    
+
         @ConfigSource("openapiAuth.basicAuth")
         public interface BasicAuthConfig {
 
@@ -1369,7 +1377,7 @@ Kora предоставляет готовые перехватчики кото
     ```kotlin
     @Module
     interface BasicAuthModule {
-        
+
         @ConfigSource("openapiAuth.basicAuth")
         interface BasicAuthConfig {
 
@@ -1412,7 +1420,7 @@ Kora предоставляет готовые перехватчики кото
     }
     ```
 
-#### ApiKey
+#### ApiKey { #apikey }
 
 Требуется сконфигурировать перехватчик и конфигурацию для авторизации [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/):
 
@@ -1421,7 +1429,7 @@ Kora предоставляет готовые перехватчики кото
     ```java
     @Module
     public interface ApiKeyAuthModule {
-    
+
         @ConfigSource("openapiAuth.apiKeyAuth")
         interface ApiKeyAuthConfig {
 
@@ -1439,7 +1447,7 @@ Kora предоставляет готовые перехватчики кото
     ```kotlin
     @Module
     interface ApiKeyAuthModule {
-    
+
         @ConfigSource("openapiAuth.apiKeyAuth")
         interface ApiKeyAuthConfig {
 
@@ -1478,7 +1486,7 @@ Kora предоставляет готовые перехватчики кото
     }
     ```
 
-#### Bearer
+#### Bearer { #bearer }
 
 Требуется сконфигурировать перехватчик для авторизации [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/):
 
@@ -1487,7 +1495,7 @@ Kora предоставляет готовые перехватчики кото
     ```java
     @Module
     public interface BearerAuthModule {
-        
+
         default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
             return new BearerAuthHttpClientInterceptor(tokenProvider);
         }
@@ -1499,7 +1507,7 @@ Kora предоставляет готовые перехватчики кото
     ```kotlin
     @Module
     interface BasicAuthModule {
-            
+
         fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
             return BearerAuthHttpClientInterceptor(tokenProvider)
         }
@@ -1511,7 +1519,7 @@ Kora предоставляет готовые перехватчики кото
 
 ```java
 public interface HttpClientTokenProvider {
-    
+
     CompletionStage<String> getToken(HttpClientRequest request);
 }
 ```
@@ -1542,18 +1550,18 @@ public interface HttpClientTokenProvider {
     }
     ```
 
-#### OAuth
+#### OAuth { #oauth }
 
-Авторизация посредствам [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогично [Bearer](#bearer), 
+Авторизация посредствам [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогично [Bearer](#bearer),
 требуется самостоятельно реализовать `HttpClientTokenProvider` и подложить его в контейнер зависимостей.
 
-## Клиент императивный
+## Клиент императивный { #client-imperative }
 
 Базовый клиент представляет собой интерфейс `HttpClient` и доступен для внедрения:
 
 ```java
 public interface HttpClient {
-    
+
     CompletionStage<HttpClientResponse> execute(HttpClientRequest request); //(1)!
 
     HttpClient with(HttpClientInterceptor interceptor); //(2)!

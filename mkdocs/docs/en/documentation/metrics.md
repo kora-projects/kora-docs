@@ -1,8 +1,16 @@
+---
+description: "Explains Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references. Use when working with MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references; key triggers include MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+---
+
 Module for collecting application metrics using [Micrometer](https://micrometer.io/docs/concepts#_purpose).
 
 Requires [private HTTP server](http-server.md) module added to provide metrics in [prometheus](https://prometheus.io/docs/concepts/data_model/) format.
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
+
+## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -30,7 +38,7 @@ Requires [private HTTP server](http-server.md) module added to provide metrics i
     interface Application : MetricsModule
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Example of HTTP server path configuration for retrieving metrics described in the `HttpServerConfig` class (default values are specified):
 
@@ -76,13 +84,13 @@ Example of the complete configuration described in the `MetricsConfig` class (de
 
 Metrics collection configuration parameters are described in modules where metrics collection is present, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
 
-## Usage
+## Usage { #usage }
 
 We follow and encourage to use the notation described in the [specification](https://prometheus.io/docs/concepts/data_model/).
 
 Once the `Metrics.globalRegistry` module is connected, the `PrometheusMeterRegistry` will be registered and used in all components that collect metrics.
 
-## Personalization
+## Personalization { #personalization }
 
 In order to make changes to the `PrometheusMeterRegistry` configuration, you need to add to the `PrometheusMeterRegistryInitializer` container.
 
@@ -121,13 +129,13 @@ For example, we want to add a common tag for all metrics:
 Standard metrics have some configurations such as `ServiceLayerObjectives` for Distribution summary metrics.
 The configuration field names can be viewed in `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
 
-## Standard
+## Standard { #standard }
 
 The original metrics format used the OpenTelemetry `V120` standard, after Kora `1.1.0` it became possible to provide metrics
 in the OpenTelemetry `V123` standard, a partial list of changes can be seen [in the OpenTelemetry documentation](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
 and [OpenTelemetry migration guidelines](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)
 
-## Metrics Reference
+## Metrics Reference { #metrics-reference }
 
 All Kora metrics use [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for naming and tags.
 
@@ -138,8 +146,7 @@ This metric type enables efficient data visualization across buckets and percent
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
 
-
-### HTTP Server
+### HTTP Server { #http-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -148,7 +155,7 @@ This metric type enables efficient data visualization across buckets and percent
 
 See [HTTP Server](http-server.md) module documentation for more details.
 
-### HTTP Client
+### HTTP Client { #http-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -156,7 +163,7 @@ See [HTTP Server](http-server.md) module documentation for more details.
 
 See [HTTP Client](http-client.md) module documentation for more details.
 
-### Database
+### Database { #database }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -164,7 +171,7 @@ See [HTTP Client](http-client.md) module documentation for more details.
 
 See [Database](database-common.md) module documentation for more details.
 
-### Kafka
+### Kafka { #kafka }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -175,7 +182,7 @@ See [Database](database-common.md) module documentation for more details.
 
 See [Kafka](kafka.md) module documentation for more details.
 
-### gRPC Server
+### gRPC Server { #grpc-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -185,7 +192,7 @@ See [Kafka](kafka.md) module documentation for more details.
 
 See [gRPC Server](grpc-server.md) module documentation for more details.
 
-### gRPC Client
+### gRPC Client { #grpc-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -195,7 +202,7 @@ See [gRPC Server](grpc-server.md) module documentation for more details.
 
 See [gRPC Client](grpc-client.md) module documentation for more details.
 
-### SOAP Client
+### SOAP Client { #soap-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -203,7 +210,7 @@ See [gRPC Client](grpc-client.md) module documentation for more details.
 
 See [SOAP Client](soap-client.md) module documentation for more details.
 
-### Scheduling
+### Scheduling { #scheduling }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -211,7 +218,7 @@ See [SOAP Client](soap-client.md) module documentation for more details.
 
 See [Scheduling](scheduling.md) module documentation for more details.
 
-### Cache
+### Cache { #cache }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -229,14 +236,14 @@ Standard Micrometer metrics are automatically registered when using Caffeine:
 
 See [Cache](cache.md) module documentation for more details.
 
-### Redis / Lettuce
+### Redis / Lettuce { #redis-lettuce }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
 | `lettuce.command.completion.duration` | `lettuce_command_completion_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Redis command completion duration | `type`, `remote`, `local`, `command`, `error.type` |
 | `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Redis command first response duration | `type`, `remote`, `local`, `command`, `error.type` |
 
-### Resilience
+### Resilience { #resilience }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -250,13 +257,13 @@ See [Cache](cache.md) module documentation for more details.
 
 See [Resilience](resilient.md) module documentation for more details.
 
-### JMS
+### JMS { #jms }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
 | `messaging.receive.duration` | `messaging_receive_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | JMS message receive duration | `messaging.system`, `messaging.destination.name`, `error.type` |
 
-### S3 Client
+### S3 Client { #s3-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -265,7 +272,7 @@ See [Resilience](resilient.md) module documentation for more details.
 
 See [S3 Client](s3-client.md) module documentation for more details.
 
-### Camunda 7 BPMN
+### Camunda 7 BPMN { #camunda-7-bpmn }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -274,7 +281,7 @@ See [S3 Client](s3-client.md) module documentation for more details.
 
 See [Camunda 7 BPMN](camunda7-bpmn.md) module documentation for more details.
 
-### Camunda REST
+### Camunda REST { #camunda-rest }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -283,7 +290,7 @@ See [Camunda 7 BPMN](camunda7-bpmn.md) module documentation for more details.
 
 See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
 
-### Camunda 8 Worker
+### Camunda 8 Worker { #camunda-8-worker }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
@@ -293,13 +300,13 @@ See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
 
 See [Camunda 8 Worker](camunda8-worker.md) module documentation for more details.
 
-### System
+### System { #system }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
 | `kora.up` | `kora_up` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Framework status indicator (value = 1) | `version` |
 
-### JVM
+### JVM { #jvm }
 
 Standard JVM metrics are collected automatically via [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
 

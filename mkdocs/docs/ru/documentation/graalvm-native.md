@@ -1,3 +1,9 @@
+---
+description: "Explains Kora GraalVM Native Image notes and native build considerations for Kora applications. Use when working with GraalVM, native-image, reflection config, AOT, native build."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora GraalVM Native Image notes and native build considerations for Kora applications; key triggers include GraalVM, native-image, reflection config, AOT, native build."
+---
+
 Kora создает свои вспомогательные классы во время компиляции, 
 не использует Reflection API во время работы, 
 не использует динамических прокси,

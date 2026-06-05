@@ -1,3 +1,9 @@
+---
+description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerModule, UndertowHttpServerModule."
+---
+
 Module provides a thin layer of abstraction over HTTP server libraries to create HTTP request handlers
 using both declarative-style annotations and imperative-style annotations.
 
@@ -9,7 +15,9 @@ using both declarative-style annotations and imperative-style annotations.
     and allows you to share this contract to create clients for it using the same approach. 
     For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
 
-## Dependency
+For a step-by-step walkthrough before the reference details, see [HTTP Server](../guides/http-server.md) and [Advanced HTTP Server](../guides/http-server-advanced.md).
+
+## Dependency { #dependency }
 
 Implementation based on [Undertow](https://undertow.io/).
 Undertow is a lightweight open-source web server for Java applications.
@@ -42,7 +50,7 @@ which ensures high performance and low resource consumption.
     interface Application : UndertowHttpServerModule
     ```
 
-## Configuration
+## Configuration { #configuration }
 
 Example of the complete configuration described in the `HttpServerConfig` class (default or example values are specified):
 
@@ -174,7 +182,7 @@ Module metrics are described in the [Metrics Reference](metrics.md#http-server) 
 Kora provides fine-grained control over the Undertow HTTP server through two dedicated configuration interfaces: `UndertowConfigurer` and `HttpHandlerConfigurer`. 
 These allow you to customize server behavior and request processing pipeline without sacrificing integration with Kora’s modular architecture.
 
-## SomeController declarative
+## SomeController declarative { #somecontroller-declarative }
 
 The `@HttpController` annotation should be used to create a controller, and the `@Component` annotation should be used to register it as a dependency.
 The `@HttpRoute` annotation is responsible for specifying the HTTP path and method for a particular handler method.
@@ -223,12 +231,12 @@ The `@HttpRoute` annotation is responsible for specifying the HTTP path and meth
     4. Indicates the type of HTTP method handler
     5. Indicates the path of the handler method
 
-### Request
+### Request { #request }
 
 The section describes HTTP request transformations at the controller.
 It is suggested to use special annotations to specify the request parameters.
 
-#### Path parameter
+#### Path parameter { #path-parameter }
 
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{path}` in the path
 and the name of the parameter is specified in `value` or defaults to the name of the method argument.
@@ -263,7 +271,7 @@ and the name of the parameter is specified in `value` or defaults to the name of
     }
     ```
 
-#### Query parameter
+#### Query parameter { #query-parameter }
 
 `@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
 
@@ -299,7 +307,7 @@ and the name of the parameter is specified in `value` or defaults to the name of
     }
     ```
 
-#### Request header
+#### Request header { #request-header }
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), the parameter name is specified in `value` or defaults to the method argument name.
 
@@ -335,12 +343,12 @@ and the name of the parameter is specified in `value` or defaults to the name of
     }
     ```
 
-#### Request body
+#### Request body { #request-body }
 
 Specifying the body of a request requires using a method argument without special annotations,
 default supported types are `byte[]`, `ByteBuffer`, `String`.
 
-##### Json
+##### Json { #json }
 
 In order to indicate that the body is Json and needs to automatically create such a reader and embed it,
 is required to use the `@Json` annotation:
@@ -383,7 +391,7 @@ is required to use the `@Json` annotation:
 
 Need to connect [Json](json.md) module.
 
-##### Form UrlEncoded
+##### Form UrlEncoded { #form-urlencoded }
 
 You can use `FormUrlEncoded` as the body argument type and it will be processed as [form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
@@ -415,7 +423,7 @@ You can use `FormUrlEncoded` as the body argument type and it will be processed 
     }
     ```
 
-##### Form Multipart
+##### Form Multipart { #form-multipart }
 
 You can use `FormMultipart` as the body argument type and it will be treated as a [binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
@@ -447,7 +455,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
     }
     ```
 
-#### Cookie
+#### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
 
@@ -481,7 +489,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
     }
     ```
 
-#### Custom parameter
+#### Custom parameter { #custom-parameter }
 
 In case you need to handle the request in a different way, you can use a special `HttpServerRequestMapper` interface:
 
@@ -535,7 +543,7 @@ In case you need to handle the request in a different way, you can use a special
     }
     ```
 
-#### Required parameters
+#### Required parameters { #required-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -545,7 +553,7 @@ In case you need to handle the request in a different way, you can use a special
 
     By default, all arguments declared in a method that do not use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax are **required** (*NotNull*).
 
-#### Optional parameters
+#### Optional parameters { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -582,7 +590,7 @@ In case you need to handle the request in a different way, you can use a special
     }
     ```
 
-### Response
+### Response { #response }
 
 By default, you can use standard return value types,
 such as `byte[]`, `ByteBuffer`, `String` which will be processed with status code `200` and corresponding response type header
@@ -632,7 +640,7 @@ or `HttpServerResponse` where you will have to fill in all information about HTT
     2. Response headers
     3. Response body
 
-#### Json
+#### Json { #json-2 }
 
 If you intend to respond in Json format, you are required to use the `@Json` annotation over the method:
 
@@ -676,7 +684,7 @@ If you intend to respond in Json format, you are required to use the `@Json` ann
 
 [Json](json.md) module is required.
 
-#### Response entity
+#### Response entity { #response-entity }
 
 If the intention is to read the body and also get the headers and status code of the response,
 then the `HttpResponseEntity` is supposed to be used, it is a wrapper over the response body.
@@ -717,7 +725,7 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
     }
     ```
 
-#### Respond exception
+#### Respond exception { #respond-exception }
 
 If you need to respond with an error, you can use `HttpServerResponseException` to throw an exception.
 
@@ -755,7 +763,7 @@ If you need to respond with an error, you can use `HttpServerResponseException` 
     }
     ```
 
-#### Custom response
+#### Custom response { #custom-response }
 
 In case you need to read the response in a different way, you can use the special `HttpServerResponseMapper` interface:
 
@@ -807,7 +815,7 @@ In case you need to read the response in a different way, you can use the specia
     }
     ```
 
-### Signatures
+### Signatures { #signatures }
 
 Available signatures for repository methods out of the box:
 
@@ -826,7 +834,7 @@ Available signatures for repository methods out of the box:
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
-## Interceptors
+## Interceptors { #interceptors }
 
 You can create interceptors to change behavior or create additional behavior using the `HttpServerInterceptor` class.
 
@@ -887,7 +895,7 @@ Interceptors can be used on:
     }
     ```
 
-### Error handling
+### Error handling { #error-handling }
 
 Error handling at the level of all HTTP responses can also be realized by means of an interceptor,
 below is a simple example of such an interceptor.
@@ -953,7 +961,7 @@ below is a simple example of such an interceptor.
     }
     ```
 
-## SomeController imperative
+## SomeController imperative { #somecontroller-imperative }
 
 In order to create a controller, implement the `HttpServerRequestHandler.HandlerFunction` interface,
 and then register it in the `HttpServerRequestHandler` handler.

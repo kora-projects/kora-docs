@@ -1,3 +1,9 @@
+---
+description: "Explains Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+---
+
 A module for creating declarative-style planners using annotations.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -8,7 +14,7 @@ A module for creating declarative-style planners using annotations.
 
     When applying aspects, class must be `open`
 
-## Native
+## Native { #native }
 
 Creating a scheduler using the standard [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) that comes with the JVM.
 
@@ -17,7 +23,7 @@ The parameters of the annotations correspond to the parameters of the methods `s
 
 Also all annotations have the `config` argument, if it is present, the parameter values will be taken from the configuration on the specified path.
 
-### Dependency
+### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -45,7 +51,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
     interface Application : SchedulingJdkModule
     ```
 
-### Configuration
+### Configuration { #configuration }
 
 Example of the complete configuration described in the `ScheduledExecutorServiceConfig` class (default values are specified):
 
@@ -102,7 +108,7 @@ Example of the complete configuration described in the `ScheduledExecutorService
 
 Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
 
-### Fixed rate
+### Fixed rate { #fixed-rate }
 
 Scheduling with tasks running at fixed time intervals, regardless of whether the previous task has completed or not
 This can lead to simultaneous execution of several tasks.
@@ -136,7 +142,7 @@ next task execution will start 5 seconds after the previous one completed.
     }
     ```
 
-#### Configuration
+#### Configuration { #configuration-2 }
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
@@ -191,7 +197,7 @@ SomeService of configuration via a config file:
     1.  Initial delay interval before the first task
     2.  Intermittent interval between tasks
 
-### Fixed delay
+### Fixed delay { #fixed-delay }
 
 The scheduler waits for a fixed period of time from the end of the previous task execution.
 Multiple tasks will not be executed simultaneously.
@@ -225,7 +231,7 @@ the next task will start after the previous task is finished and the specified w
     }
     ```
 
-#### Configuration
+#### Configuration { #configuration-3 }
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
@@ -280,7 +286,7 @@ SomeService of configuration via a config file:
     1.  Initial delay interval before the first task
     2.  Intermittent delay interval between tasks
 
-### Once
+### Once { #once }
 
 Runs a single task at a certain fixed time interval.
 
@@ -310,7 +316,7 @@ Runs a single task at a certain fixed time interval.
     }
     ```
 
-#### Configuration
+#### Configuration { #configuration-4 }
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
@@ -361,16 +367,16 @@ SomeService of configuration via a config file:
 
     1.  Initial delay interval before the task
 
-### Graceful Shutdown
+### Graceful Shutdown { #graceful-shutdown }
 
 If you want to pre-terminate processing on a scheduled service termination without waiting for the service to end,
 you need to check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) status and terminate the service yourself.
 
-## Quartz
+## Quartz { #quartz }
 
 A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a scheduler for creating aspects.
 
-### Dependency
+### Dependency { #dependency-2 }
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -398,7 +404,7 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
     interface Application : QuartzModule
     ```
 
-### Configuration
+### Configuration { #configuration-5 }
 
 Configuration is specified as [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) values in key and value format:
 
@@ -476,7 +482,7 @@ Default settings are used from:
     org.quartz.jobStore.class: org.quartz.simpl.RAMJobStore
     ```
 
-### Cron
+### Cron { #cron }
 
 Usage [Cron](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) expressions to run scheduled tasks.
 
@@ -512,7 +518,7 @@ Starts a single task at a certain fixed time interval.
 
     1. Cron expression saying to run a task every hour and every day
 
-#### Configuration
+#### Configuration { #configuration-6 }
 
 It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
 
@@ -563,7 +569,7 @@ Configuration example:
 
     1. Cron expression saying to run a task every hour and every day
 
-### Trigger
+### Trigger { #trigger }
 
 This involves creating your custom `trigger` based on the Quartz library and registering it in the application dependency container with a specific tag and then using it via annotation.
 
@@ -631,7 +637,7 @@ This involves creating your custom `trigger` based on the Quartz library and reg
     1. Trigger tag
     2. Trigger tag
 
-### Non-concurrent execution
+### Non-concurrent execution { #non-concurrent-execution }
 
 Annotation that says that a method with an annotation should not be executed in parallel.
 
@@ -663,7 +669,7 @@ Annotation that says that a method with an annotation should not be executed in 
     }
     ```
 
-### Persistent execution
+### Persistent execution { #persistent-execution }
 
 Annotation that says to forcefully update `org.quartz.JobDataMap` during execution and requires
 the scheduler to resave `org.quartz.JobDataMap` upon completion of execution.

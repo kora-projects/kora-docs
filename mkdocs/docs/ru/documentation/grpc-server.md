@@ -1,10 +1,18 @@
+---
+description: "Explains Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging. Use when working with GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
+agent:
+  use_when: "Use this file for Kora docs or implementation questions about Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging; key triggers include GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
+---
+
 Модуль для подключения gRPC серверных обработчиков на основе функционала [grpc.io](https://grpc.io/docs/languages/java/basics/)
 
-## Подключение
+Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC сервер](../guides/grpc-server.md) и [gRPC сервер продвинутый](../guides/grpc-server-advanced.md).
+
+## Подключение { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-server"
     implementation "io.grpc:grpc-protobuf:1.62.2"
@@ -19,7 +27,7 @@
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-server")
     implementation("io.grpc:grpc-protobuf:1.62.2")
@@ -32,7 +40,7 @@
     interface Application : GrpcServerModule
     ```
 
-### Плагин
+### Плагин { #plugin }
 
 Код для gRPC-сервера создается с помощью [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
@@ -90,7 +98,7 @@
     }
     ```
 
-## Конфигурация
+## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `GrpcServerConfig` (указаны примеры значений или значения по умолчанию):
 
@@ -123,8 +131,8 @@
 
     1.  Порт gRPC сервера
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
-    3.  Включает сервис [gRPC Server Reflection](#_8)
-    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
+    3.  Включает сервис [gRPC Server Reflection](#reflection)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle)
     5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
     6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
     7.  Устанавливает интервал времени между PING фреймами
@@ -158,8 +166,8 @@
 
     1.  Порт gRPC сервера
     2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
-    3.  Включает сервис [gRPC Server Reflection](#_8)
-    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#_24)
+    3.  Включает сервис [gRPC Server Reflection](#reflection)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle)
     5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
     6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
     7.  Устанавливает интервал времени между PING фреймами
@@ -173,7 +181,7 @@
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-server).
 
-## Обработчики
+## Обработчики { #handlers }
 
 Созданные gRPC сервисы требуется пометить аннотацией `@Component`:
 
@@ -191,11 +199,11 @@
     class ExampleService : ExampleGrpc.ExampleImplBase {}
     ```
 
-## Перехватчики
+## Перехватчики { #interceptors }
 
 [Перехватчики](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) позволяют перехватывать запросы перед тем, как они будут переданы обработчикам.
 
-### Стандартные
+### Стандартные { #default }
 
 При запуске сервера по-умолчанию используются следующие перехватчики:
 
@@ -206,7 +214,7 @@
 
 Для переопределения списка перехватчиков по умолчанию можно переопределить метод `serverBuilder` из класса `GrpcModule`
 
-### Собственные
+### Собственные { #custom }
 
 Для добавления собственного перехватчика требуется создать наследника `ServerInterceptor` с аннотацией `@Component`:
 
@@ -245,7 +253,7 @@
     }
     ```
 
-## Отладка
+## Отладка { #reflection }
 
 Поддерживается [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
 который предоставляет информацию об общедоступных gRPC-сервисах на сервере
@@ -255,25 +263,25 @@ Reflection поддерживается только для сервисов, о
 
 Подробнее о работе с gRPC Server Reflection можно ознакомится [тут](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
 
-### Подключение
+### Подключение { #dependency-2 }
 
 Требуется дополнительно подключить зависимость [gRPC Server Reflection](https://mvnrepository.com/artifact/io.grpc/grpc-services).
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Зависимость](general.md#_4) `build.gradle`:
+    [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "io.grpc:grpc-services:1.62.2"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Зависимость](general.md#_4) `build.gradle.kts`:
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("io.grpc:grpc-services:1.62.2")
     ```
 
-### Конфигурация
+### Конфигурация { #configuration-2 }
 
 Требуется также включить сервис gRPC Server Reflection в конфигурации:
 
