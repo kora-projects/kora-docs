@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.2.15
+## 1.2.16
+
+Added:
+
+- Added telemetry config tracing `attributes` and metrics `tags` options 
+- Added `ConfigWatcher` tracks `HOCON` include files
+  
+Fixed:
+
+- Fixed OpenAPI generator `FormMultipart` request mappers for multiple parts same name for server & client
+- Fixed OpenAPI generator Kotlin reserved words reliefs
+- Fixed `OpenApiManagementModule` oauth path construction for oauth page redirect
+- Fixed database repository `SQL` trim expression
+
+### 1.2.15
 
 Added:
 

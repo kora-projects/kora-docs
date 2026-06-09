@@ -141,10 +141,18 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
                 }
                 metrics {
                     enabled = true //(12)!
-                    slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(12)!
+                    slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(13)!
+                    tags = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(14)!
+                    enabled = true //(15)!
+                    attributes = { // (16)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -167,7 +175,9 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     11. Enables module logging (default `false`)
     12. Enables module metrics (default `true`)
     13. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14. Enables module tracing (default `true`)
+    14. Configures tags for metrics (optional)
+    15. Enables module tracing (default `true`)
+    16. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -193,9 +203,15 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
             enabled: false #(11)!
           metrics:
             enabled: true #(12)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
-          telemetry:
-            enabled: true #(14)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+            tags: #(14)!
+              key1: value1
+              key2: value2
+          tracing:
+            enabled: true #(15)!
+            attributes: #(16)!
+              key1: value1
+              key2: value2
     ```
 
     1. Specifies the topics to which Consumer will subscribe (**required** or specify `topicsPattern`)
@@ -214,7 +230,9 @@ Example of the complete configuration described in the `KafkaListenerConfig` cla
     11. Enables module logging (default `false`)
     12. Enables module metrics (default `true`)
     13. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14. Enables module tracing (default `true`)
+    14. Configures tags for metrics (optional)
+    15. Enables module tracing (default `true`)
+    16. Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
 

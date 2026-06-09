@@ -121,9 +121,17 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
             metrics {
                 enabled = true //(10)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                tags = { // (12)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(12)!
+                enabled = true //(13)!
+                attributes = { // (14)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -140,7 +148,9 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     9. Enables module logging (default `false`)
     10. Enables module metrics (default `true`)
     11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    12. Enables module tracing (default `true`)
+    12. Configures tags for metrics (optional)
+    13. Enables module tracing (default `true`)
+    14. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -160,8 +170,14 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
         metrics:
           enabled: true #(10)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-        telemetry:
-          enabled: true #(12)!
+          tags: #(12)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(13)!
+          attributes: #(14)!
+            key1: value1
+            key2: value2
     ```
 
     1. gRPC server port
@@ -175,7 +191,9 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     9. Enables module logging (default `false`)
     10. Enables module metrics (default `true`)
     11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    12. Enables module tracing (default `true`)
+    12. Configures tags for metrics (optional)
+    13. Enables module tracing (default `true`)
+    14. Configures attributes for tracing (optional)
 
 You can also configure [Netty transport](netty.md).
 

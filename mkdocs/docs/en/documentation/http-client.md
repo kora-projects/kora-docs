@@ -84,9 +84,17 @@ and `HttpClientConfig` classes (default or example values are specified):
             metrics {
                 enabled = true //(16)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                tags = { // (18)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(18)!
+                enabled = true //(19)!
+                attributes = { // (20)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -109,7 +117,9 @@ and `HttpClientConfig` classes (default or example values are specified):
     15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     16. Enables module metrics (default `true`)
     17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Enables module tracing (default `true`)
+    18. Configures tags for metrics (optional)
+    19. Enables module tracing (default `true`)
+    20. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -137,8 +147,14 @@ and `HttpClientConfig` classes (default or example values are specified):
         metrics:
           enabled: true #(16)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-        telemetry:
-          enabled: true #(18)!
+          tags: #(18)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(19)!
+          attributes: #(20)!
+            key1: value1
+            key2: value2
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
@@ -158,7 +174,9 @@ and `HttpClientConfig` classes (default or example values are specified):
     15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     16. Enables module metrics (default `true`)
     17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Enables module tracing (default `true`)
+    18. Configures tags for metrics (optional)
+    19. Enables module tracing (default `true`)
+    20. Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
 
@@ -257,9 +275,17 @@ and `HttpClientConfig` classes (default or example values are specified):
             metrics {
                 enabled = true //(15)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+                tags = { // (17)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(17)!
+                enabled = true //(18)!
+                attributes = { // (19)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -281,7 +307,9 @@ and `HttpClientConfig` classes (default or example values are specified):
     14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     15. Enables module metrics (default `true`)
     16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
+    17. Configures tags for metrics (optional)
+    18. Enables module tracing (default `true`)
+    19. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -308,8 +336,14 @@ and `HttpClientConfig` classes (default or example values are specified):
         metrics:
           enabled: true #(15)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-        telemetry:
-          enabled: true #(17)!
+          tags: #(17)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(18)!
+          attributes: #(19)!
+            key1: value1
+            key2: value2
     ```
 
     1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
@@ -328,7 +362,9 @@ and `HttpClientConfig` classes (default or example values are specified):
     14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     15. Enables module metrics (default `true`)
     16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
+    17. Configures tags for metrics (optional)
+    18. Enables module tracing (default `true`)
+    19. Configures attributes for tracing (optional)
 
 You can also configure [Netty transport](netty.md).
 
