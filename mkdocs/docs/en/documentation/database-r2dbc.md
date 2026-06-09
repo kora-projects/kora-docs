@@ -68,9 +68,17 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
             metrics {
                 enabled = true //(16)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                tags = { // (18)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(18)!
+                enabled = true //(19)!
+                attributes = { // (20)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -93,7 +101,9 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
     15. Enables module logging (default `false`)
     16. Enables module metrics (default `true`)
     17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Enables module tracing (default `true`)
+    18. Configures tags for metrics (optional)
+    19. Enables module tracing (default `true`)
+    20. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -120,8 +130,14 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
         metrics:
           enabled: true #(16)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+          tags: #(18)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(18)!
+          enabled: true #(19)!
+          attributes: #(20)!
+            key1: value1
+            key2: value2
     ```
 
     1. R2DBC database connection URL (**required**)
@@ -141,7 +157,9 @@ Example of the complete configuration described in the `R2dbcDatabaseConfig` cla
     15. Enables module logging (default `false`)
     16. Enables module metrics (default `true`)
     17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Enables module tracing (default `true`)
+    18. Configures tags for metrics (optional)
+    19. Enables module tracing (default `true`)
+    20. Configures attributes for tracing (optional)
 
 ## Usage { #usage }
 

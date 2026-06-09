@@ -71,9 +71,17 @@ agent:
             metrics {
                 enabled = true //(17)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                tags = { // (19)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(19)!
+                enabled = true //(20)!
+                attributes = { // (21)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -97,7 +105,9 @@ agent:
     16.  Включает логгирование модуля (по умолчанию `false`)
     17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля (по умолчанию `true`)
+    19.  Настройка тегов для метрик (опционально)
+    20.  Включает трассировку модуля (по умолчанию `true`)
+    21.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -125,8 +135,14 @@ agent:
         metrics:
           enabled: true #(17)!
           slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+          tags: #(19)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(19)!
+          enabled: true #(20)!
+          attributes: #(21)!
+            key1: value1
+            key2: value2
     }
     ```
 
@@ -148,7 +164,9 @@ agent:
     16.  Включает логгирование модуля (по умолчанию `false`)
     17.  Включает метрики модуля (по умолчанию `true`)
     18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    19.  Включает трассировку модуля (по умолчанию `true`)
+    19.  Настройка тегов для метрик (опционально)
+    20.  Включает трассировку модуля (по умолчанию `true`)
+    21.  Настройка атрибутов для трассировки (опционально)
 
 ## Использование { #usage }
 

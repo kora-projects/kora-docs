@@ -71,9 +71,17 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
             metrics {
                 enabled = true //(17)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                tags = { // (19)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(19)!
+                enabled = true //(20)!
+                attributes = { // (21)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -97,7 +105,9 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
     16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing (default `true`)
+    19. Configures tags for metrics (optional)
+    20. Enables module tracing (default `true`)
+    21. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -125,8 +135,14 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
         metrics:
           enabled: true #(17)!
           slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+          tags: #(19)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(19)!
+          enabled: true #(20)!
+          attributes: #(21)!
+            key1: value1
+            key2: value2
     }
     ```
 
@@ -148,7 +164,9 @@ Example of the complete configuration described in the `JdbcDatabaseConfig` clas
     16. Enables module logging (default `false`)
     17. Enables module metrics (default `true`)
     18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    19. Enables module tracing (default `true`)
+    19. Configures tags for metrics (optional)
+    20. Enables module tracing (default `true`)
+    21. Configures attributes for tracing (optional)
 
 ## Usage { #usage }
 

@@ -61,9 +61,17 @@ agent:
             metrics {
                 enabled = true //(4)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                tags = { // (6)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(6)!
+                enabled = true //(7)!
+                attributes = { // (8)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -74,7 +82,9 @@ agent:
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    6.  Настройка тегов для метрик (опционально)
+    7.  Включает трассировку модуля (по умолчанию `true`)
+    8.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -88,8 +98,14 @@ agent:
         metrics:
           enabled: true #(4)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-        telemetry:
-          enabled: true #(6)!
+          tags: #(6)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(7)!
+          attributes: #(8)!
+            key1: value1
+            key2: value2
     ```
 
     1.  Максимальное кол-во потоков у [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
@@ -97,7 +113,9 @@ agent:
     3.  Включает логгирование модуля (по умолчанию `false`)
     4.  Включает метрики модуля (по умолчанию `true`)
     5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Включает трассировку модуля (по умолчанию `true`)
+    6.  Настройка тегов для метрик (опционально)
+    7.  Включает трассировку модуля (по умолчанию `true`)
+    8.  Настройка атрибутов для трассировки (опционально)
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#scheduling).
 

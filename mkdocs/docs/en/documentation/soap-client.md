@@ -69,9 +69,17 @@ Example of the complete configuration described in the `SoapServiceConfig` class
                 metrics {
                     enabled = true //(4)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                    tags = { // (6)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(6)!
+                    enabled = true //(7)!
+                    attributes = { // (8)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -83,7 +91,9 @@ Example of the complete configuration described in the `SoapServiceConfig` class
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    6. Configures tags for metrics (optional)
+    7. Enables module tracing (default `true`)
+    8. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -93,13 +103,19 @@ Example of the complete configuration described in the `SoapServiceConfig` class
         url: "https://localhost:8090" #(1)!
         timeout: "60s" #(2)!
         telemetry:
-        logging:
+          logging:
             enabled: false #(3)!
           metrics:
             enabled: true #(4)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-          telemetry:
-            enabled: true #(6)!
+            tags: #(6)!
+              key1: value1
+              key2: value2
+        tracing:
+          enabled: true #(7)!
+          attributes: #(8)!
+            key1: value1
+            key2: value2
     ```
 
     1. URL of the service where requests will be sent (**required**)
@@ -107,7 +123,9 @@ Example of the complete configuration described in the `SoapServiceConfig` class
     3. Enables module logging (default `false`)
     4. Enables module metrics (default `true`)
     5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    6. Configures tags for metrics (optional)
+    7. Enables module tracing (default `true`)
+    8. Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#soap-client) section.
 
