@@ -85,9 +85,17 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
             metrics {
                 enabled = true //(12)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                tags = { // (14)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(14)!
+                enabled = true //(15)!
+                attributes = { // (16)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -106,7 +114,9 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
     11.  Enables module logging (default is `false`)
     12.  Enables module metrics (default is `true`)
     13.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing (default is `true`)
+    14.  Configures tags for metrics (optional)
+    15.  Enables module tracing (default is `true`)
+    16.  Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -131,8 +141,14 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
         metrics:
           enabled: true #(12)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
-        telemetry:
-          enabled: true #(14)!
+          tags: #(14)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(15)!
+          attributes: #(16)!
+            key1: value1
+            key2: value2
     ```
 
     1.  Which type of [file access to use](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#pathStyleAccessEnabled(java.lang.Boolean)), can have values `PATH` or `VIRTUAL_HOSTED`
@@ -148,7 +164,9 @@ Complete configuration described in the `AwsS3ClientConfig` and `S3Config` class
     11.  Enables module logging (default is `false`)
     12.  Enables module metrics (default is `true`)
     13.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    14.  Enables module tracing (default is `true`)
+    14.  Configures tags for metrics (optional)
+    15.  Enables module tracing (default is `true`)
+    16.  Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#s3-client) section.
 
@@ -232,9 +250,17 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
             metrics {
                 enabled = true //(9)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                tags = { // (11)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(11)!
+                enabled = true //(12)!
+                attributes = { // (13)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -250,7 +276,9 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
     8. Enables module logging (default is `false`)
     9. Enables module metrics (default is `true`)
     10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    11. Enables module tracing (default is `true`)
+    11. Configures tags for metrics (optional)
+    12. Enables module tracing (default is `true`)
+    13. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -272,8 +300,14 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
         metrics:
           enabled: true #(8)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-        telemetry:
-          enabled: true #(10)!
+          tags: #(10)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(11)!
+          attributes: #(12)!
+            key1: value1
+            key2: value2
     ```
 
     1. Which type of [file access to use](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#pathStyleAccessEnabled(java.lang.Boolean)), can have values `PATH` or `VIRTUAL_HOSTED`
@@ -286,7 +320,9 @@ Complete configuration described in the `MinioS3ClientConfig` and `S3Config` cla
     8. Enables module logging (default is `false`)
     9. Enables module metrics (default is `true`)
     10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    11. Enables module tracing (default is `true`)
+    11. Configures tags for metrics (optional)
+    12. Enables module tracing (default is `true`)
+    13. Configures attributes for tracing (optional)
 
 ## Client declarative { #client-declarative }
 

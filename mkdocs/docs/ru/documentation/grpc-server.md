@@ -121,9 +121,17 @@ agent:
             metrics {
                 enabled = true //(10)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                tags = { // (12)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(12)!
+                enabled = true //(13)!
+                attributes = { // (14)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -140,7 +148,9 @@ agent:
     9.  Включает логгирование модуля (по умолчанию `false`)
     10.  Включает метрики модуля (по умолчанию `true`)
     11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    12.  Включает трассировку модуля (по умолчанию `true`)
+    12.  Настройка тегов для метрик (опционально)
+    13.  Включает трассировку модуля (по умолчанию `true`)
+    14.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 

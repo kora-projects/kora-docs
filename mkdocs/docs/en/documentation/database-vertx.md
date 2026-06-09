@@ -64,9 +64,17 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
             metrics {
                 enabled = true //(13)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(14)!
+                tags = { // (15)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(15)!
+                enabled = true //(16)!
+                attributes = { // (17)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -86,7 +94,9 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
     12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    15. Enables module tracing (default `true`)
+    15. Configures tags for metrics (optional)
+    16. Enables module tracing (default `true`)
+    17. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -109,8 +119,14 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
         metrics:
           enabled: true #(13)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
+          tags: #(15)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(15)!
+          enabled: true #(16)!
+          attributes: #(17)!
+            key1: value1
+            key2: value2
     ```
 
     1. [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) connection URI (**required**)
@@ -127,7 +143,9 @@ Example of the complete configuration described in the `VertxDatabaseConfig` cla
     12. Enables module logging (default `false`)
     13. Enables module metrics (default `true`)
     14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    15. Enables module tracing (default `true`)
+    15. Configures tags for metrics (optional)
+    16. Enables module tracing (default `true`)
+    17. Configures attributes for tracing (optional)
 
 You can also configure [Netty transport](netty.md).
 

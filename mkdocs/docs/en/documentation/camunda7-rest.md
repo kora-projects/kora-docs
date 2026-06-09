@@ -88,9 +88,17 @@ Example of the complete configuration described in the `CamundaRestConfig` class
                 metrics {
                     enabled = true //(25)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(26)!
+                    tags = { // (27)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(27)!
+                    enabled = true //(28)!
+                    attributes = { // (29)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -125,7 +133,9 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     25.  Enables module metrics (default `true`)
     26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    27.  Enables module tracing (default is `true`)
+    27.  Configures tags for metrics (optional)
+    28.  Enables module tracing (default is `true`)
+    29.  Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -165,8 +175,14 @@ Example of the complete configuration described in the `CamundaRestConfig` class
           metrics:
             enabled: true #(25)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(26)!
-          tracing:
-            enabled: true #(27)!
+            tags: #(27)!
+              key1: value1
+              key2: value2
+        tracing:
+          enabled: true #(28)!
+          attributes: #(29)!
+            key1: value1
+            key2: value2
     ```
 
     1. Enable/disable REST API
@@ -197,7 +213,9 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     25.  Enables module metrics (default `true`)
     26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    27.  Enables module tracing (default is `true`)
+    27.  Configures tags for metrics (optional)
+    28.  Enables module tracing (default is `true`)
+    29.  Configures attributes for tracing (optional)
 
 ## Applications { #applications }
 

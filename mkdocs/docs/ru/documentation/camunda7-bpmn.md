@@ -84,10 +84,18 @@ agent:
                     metrics {
                         enabled = true //(20)!
                         slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(21)!
+                        tags = { // (22)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
-                    engineTelemetryEnabled = false //(22)!
+                    engineTelemetryEnabled = false //(23)!
                     tracing {
-                        enabled = true //(23)!
+                        enabled = true //(24)!
+                        attributes = { // (25)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
                 }
             }
@@ -116,8 +124,10 @@ agent:
     19.  Включает логгирование стека ошибки (по умолчанию `true`)
     20.  Включает метрики модуля (по умолчанию `true`)
     21.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    22.  Включает сбор метрик/телеметрии оркестратора (по умолчанию `false`)
-    23.  Включает трассировку модуля (по умолчанию `true`)
+    22.  Настройка тегов для метрик (опционально)
+    23.  Включает сбор метрик/телеметрии оркестратора (по умолчанию `false`)
+    24.  Включает трассировку модуля (по умолчанию `true`)
+    25.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -153,9 +163,15 @@ agent:
             metrics:
               enabled: true #(20)!
               slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(21)!
-            engineTelemetryEnabled: false #(22)!
+              tags: #(22)!
+                key1: value1
+                key2: value2
+            engineTelemetryEnabled: false #(23)!
             tracing:
-              enabled: true #(23)!
+              enabled: true #(24)!
+              attributes: #(25)!
+                key1: value1
+                key2: value2
     ```
 
     1.  Минимальное количество живых потоков в [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
@@ -179,8 +195,10 @@ agent:
     19.  Включает логгирование стека ошибки (по умолчанию `true`)
     20.  Включает метрики модуля (по умолчанию `true`)
     21.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    22.  Включает сбор метрик/телеметрии оркестратора (по умолчанию `false`)
-    23.  Включает трассировку модуля (по умолчанию `true`)
+    22.  Настройка тегов для метрик (опционально)
+    23.  Включает сбор метрик/телеметрии оркестратора (по умолчанию `false`)
+    24.  Включает трассировку модуля (по умолчанию `true`)
+    25.  Настройка атрибутов для трассировки (опционально)
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-7-bpmn).
 

@@ -88,9 +88,17 @@ agent:
                 metrics {
                     enabled = true //(25)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(26)!
+                    tags = { // (27)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(27)!
+                    enabled = true //(28)!
+                    attributes = { // (29)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -125,7 +133,9 @@ agent:
     24. Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
     25. Включает метрики модуля (по умолчанию `true`)
     26. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    27. Включает трассировку модуля (по умолчанию `true`)
+    27. Настройка тегов для метрик (опционально)
+    28. Включает трассировку модуля (по умолчанию `true`)
+    29. Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -165,8 +175,14 @@ agent:
           metrics:
             enabled: true #(25)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(26)!
-          tracing:
-            enabled: true #(27)!
+            tags: #(27)!
+              key1: value1
+              key2: value2
+        tracing:
+          enabled: true #(28)!
+          attributes: #(29)!
+            key1: value1
+            key2: value2
     ```
 
     1.  Включить/выключить REST API
@@ -197,7 +213,9 @@ agent:
     24. Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
     25. Включает метрики модуля (по умолчанию `true`)
     26. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    27. Включает трассировку модуля (по умолчанию `true`)
+    27. Настройка тегов для метрик (опционально)
+    28. Включает трассировку модуля (по умолчанию `true`)
+    29. Настройка атрибутов для трассировки (опционально)
 
 ## Приложения { #applications }
 

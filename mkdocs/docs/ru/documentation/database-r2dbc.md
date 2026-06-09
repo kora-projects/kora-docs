@@ -68,9 +68,17 @@ agent:
             metrics {
                 enabled = true //(16)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                tags = { // (18)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(18)!
+                enabled = true //(19)!
+                attributes = { // (20)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -93,7 +101,9 @@ agent:
     15.  Включает логгирование модуля (по умолчанию `false`)
     16.  Включает метрики модуля (по умолчанию `true`)
     17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    18.  Включает трассировку модуля (по умолчанию `true`)
+    18.  Настройка тегов для метрик (опционально)
+    19.  Включает трассировку модуля (по умолчанию `true`)
+    20.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -120,8 +130,14 @@ agent:
         metrics:
           enabled: true #(16)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+          tags: #(18)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(18)!
+          enabled: true #(19)!
+          attributes: #(20)!
+            key1: value1
+            key2: value2
     ```
 
     1.  R2DBC URL подключения к базе данных (**обязательный**)
@@ -141,7 +157,9 @@ agent:
     15.  Включает логгирование модуля (по умолчанию `false`)
     16.  Включает метрики модуля (по умолчанию `true`)
     17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    18.  Включает трассировку модуля (по умолчанию `true`)
+    18.  Настройка тегов для метрик (опционально)
+    19.  Включает трассировку модуля (по умолчанию `true`)
+    20.  Настройка атрибутов для трассировки (опционально)
 
 ## Использование { #usage }
 

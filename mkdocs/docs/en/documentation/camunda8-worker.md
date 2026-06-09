@@ -79,9 +79,17 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
                 metrics {
                     enabled = true //(18)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(19)!
+                    tags = { // (20)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(20)!
+                    enabled = true //(21)!
+                    attributes = { // (22)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -107,7 +115,9 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
     17. Enables module logging (default is `false`)
     18. Enables module metrics (default `true`)
     19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    20. Enables module tracing (default `true`)
+    20. Configures tags for metrics (optional)
+    21. Enables module tracing (default `true`)
+    22. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -140,8 +150,14 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
           metrics:
             enabled: true #(18)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
+            tags: #(20)!
+              key1: value1
+              key2: value2
           tracing:
-            enabled: true #(20)!
+            enabled: true #(21)!
+            attributes: #(22)!
+              key1: value1
+              key2: value2
     ```
 
     1. Maximum number of threads for task workers, by default equal to the number of CPU cores or minimum `2`.
@@ -163,7 +179,9 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
     17. Enables module logging (default is `false`)
     18. Enables module metrics (default `true`)
     19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    20. Enables module tracing (default `true`)
+    20. Configures tags for metrics (optional)
+    21. Enables module tracing (default `true`)
+    22. Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-8-worker) section.
 

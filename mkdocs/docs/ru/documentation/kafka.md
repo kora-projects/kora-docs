@@ -193,9 +193,15 @@ agent:
             enabled: false #(11)!
           metrics:
             enabled: true #(12)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(12)!
-          telemetry:
-            enabled: true #(14)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+            tags: #(14)!
+              key1: value1
+              key2: value2
+        tracing:
+          enabled: true #(15)!
+          attributes: #(16)!
+            key1: value1
+            key2: value2
     ```
 
     1.  Указываются топики на которые будет подписан Consumer (**обязательный** либо указывается `topicsPattern`)
@@ -214,7 +220,9 @@ agent:
     11. Включает логгирование модуля (по умолчанию `false`)
     12. Включает метрики модуля (по умолчанию `true`)
     13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    14. Включает трассировку модуля (по умолчанию `true`)
+    14. Настройка тегов для метрик (опционально)
+    15. Включает трассировку модуля (по умолчанию `true`)
+    16. Настройка атрибутов для трассировки (опционально)
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#kafka).
 

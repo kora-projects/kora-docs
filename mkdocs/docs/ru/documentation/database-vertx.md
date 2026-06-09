@@ -64,9 +64,17 @@ agent:
             metrics {
                 enabled = true //(13)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(14)!
+                tags = { // (15)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(15)!
+                enabled = true //(16)!
+                attributes = { // (17)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -86,7 +94,9 @@ agent:
     12.  Включает логгирование модуля (по умолчанию `false`)
     13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    15.  Включает трассировку модуля (по умолчанию `true`)
+    15.  Настройка тегов для метрик (опционально)
+    16.  Включает трассировку модуля (по умолчанию `true`)
+    17.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 
@@ -109,8 +119,14 @@ agent:
         metrics:
           enabled: true #(13)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
+          tags: #(15)!
+            key1: value1
+            key2: value2
         tracing:
-          enabled: true #(15)!
+          enabled: true #(16)!
+          attributes: #(17)!
+            key1: value1
+            key2: value2
     ```
 
     1.  [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) подключения к базе данных (**обязательный**)
@@ -127,7 +143,9 @@ agent:
     12.  Включает логгирование модуля (по умолчанию `false`)
     13.  Включает метрики модуля (по умолчанию `true`)
     14.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    15.  Включает трассировку модуля (по умолчанию `true`)
+    15.  Настройка тегов для метрик (опционально)
+    16.  Включает трассировку модуля (по умолчанию `true`)
+    17.  Настройка атрибутов для трассировки (опционально)
 
 Можно также настроить [Netty транспорт](netty.md).
 

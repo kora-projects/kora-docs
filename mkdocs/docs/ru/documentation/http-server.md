@@ -85,9 +85,17 @@ Undertow — это легковесный веб-сервер с открыты
             metrics {
                 enabled = true //(22)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
+                tags = { // (24)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(24)!
+                enabled = true //(25)!
+                attributes = { // (26)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -116,7 +124,9 @@ Undertow — это легковесный веб-сервер с открыты
     21.  Использовать ли всегда шаблон пути запроса при логгировании. По умолчанию используется всегда шаблон пути, за исключением уровня логирования `TRACE` где использует полный путь.
     22.  Включает метрики модуля (по умолчанию `true`)
     23.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    24.  Включает трассировку модуля (по умолчанию `true`)
+    24.  Настройка тегов для метрик (опционально)
+    25.  Включает трассировку модуля (по умолчанию `true`)
+    26.  Настройка атрибутов для трассировки (опционально)
 
 === ":simple-yaml: `YAML`"
 

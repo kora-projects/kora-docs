@@ -272,9 +272,17 @@ Example of a simple configuration described in `CassandraConfig` class (example 
                 metrics {
                     enabled = true
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
+                    tags = { 
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
                     enabled = true
+                    attributes = { 
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
@@ -442,8 +450,14 @@ Example of a simple configuration described in `CassandraConfig` class (example 
             metrics:
               enabled: true
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ]
+              tags:
+                key1: value1
+                key2: value2
             tracing:
               enabled: true
+              attributes:
+                key1: value1
+                key2: value2
         ```
 
 ### Code configuration { #code-configuration }

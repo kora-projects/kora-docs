@@ -84,10 +84,18 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
                     metrics {
                         enabled = true //(20)!
                         slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(21)!
+                        tags = { // (22)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
-                    engineTelemetryEnabled = false //(22)!
+                    engineTelemetryEnabled = false //(23)!
                     tracing {
-                        enabled = true //(23)!
+                        enabled = true //(24)!
+                        attributes = { // (25)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
                 }
             }
@@ -116,8 +124,10 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
     19. Enables error stack logging (default is `true`)
     20. Enables module metrics (default `true`)
     21. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    22. Enables collection of engine metrics/telemetry (default is `false`)
-    23. Enables module tracing (default `true`)
+    22. Configures tags for metrics (optional)
+    23. Enables collection of engine metrics/telemetry (default is `false`)
+    24. Enables module tracing (default `true`)
+    25. Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -153,9 +163,15 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
             metrics:
               enabled: true #(20)!
               slo: [ 0, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(21)!
-            engineTelemetryEnabled: false #(22)!
+              tags: #(22)!
+                key1: value1
+                key2: value2
+            engineTelemetryEnabled: false #(23)!
             tracing:
-              enabled: true #(23)!
+              enabled: true #(24)!
+              attributes: #(25)!
+                key1: value1
+                key2: value2
     ```
 
     1. Minimum number of live threads in [JobExecutor](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/)
@@ -179,8 +195,10 @@ Example of the complete configuration described in the `CamundaEngineBpmnConfig`
     19. Enables error stack logging (default is `true`)
     20. Enables module metrics (default `true`)
     21. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    22. Enables collection of engine metrics/telemetry (default is `false`)
-    23. Enables module tracing (default `true`)
+    22. Configures tags for metrics (optional)
+    23. Enables collection of engine metrics/telemetry (default is `false`)
+    24. Enables module tracing (default `true`)
+    25. Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-7-bpmn) section.
 

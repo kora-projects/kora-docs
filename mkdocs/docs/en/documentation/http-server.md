@@ -85,9 +85,17 @@ Example of the complete configuration described in the `HttpServerConfig` class 
             metrics {
                 enabled = true //(22)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
+                tags = { // (24)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(24)!
+                enabled = true //(25)!
+                attributes = { // (26)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
@@ -116,7 +124,9 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     22.  Enables module metrics (default `true`)
     23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    24.  Enables module tracing (default is `true`)
+    24.  Configures tags for metrics (optional)
+    25.  Enables module tracing (default is `true`)
+    26.  Configures attributes for tracing (optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -148,8 +158,14 @@ Example of the complete configuration described in the `HttpServerConfig` class 
         metrics:
           enabled: true #(22)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
-        telemetry:
-          enabled: true #(24)!
+          tags: #(24)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(25)!
+          attributes: #(26)!
+            key1: value1
+            key2: value2
     ```
 
     1.  Public server port
@@ -175,7 +191,9 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
     22.  Enables module metrics (default `true`)
     23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    24.  Enables module tracing (default is `true`)
+    24.  Configures tags for metrics (optional)
+    25.  Enables module tracing (default is `true`)
+    26.  Configures attributes for tracing (optional)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
