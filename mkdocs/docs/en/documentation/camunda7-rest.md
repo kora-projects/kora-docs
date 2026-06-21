@@ -6,10 +6,14 @@ agent:
 
 ??? warning "Experimental module"
 
-    **Experimental** module is fully working and tested, but requires additional approbation and usage analytics, 
-    for this reason, API may potentially undergo minor changes before fully stable.
+    The **experimental** module is fully working and tested, but it requires additional validation and usage analysis.
+    For this reason, the `API` may undergo minor changes before it is considered fully stable.
 
-Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/overview/) for [Camunda 7 BPMN module](camunda7-bpmn.md)
+The module connects [`Camunda 7 REST API`](https://docs.camunda.org/manual/7.21/reference/rest/overview/) to a Kora application and exposes the standard `CamundaRestResources` through a separate `Undertow` HTTP server.
+It is used together with the [`Camunda 7 BPMN` module](camunda7-bpmn.md): the `BPMN` engine executes processes, while the REST module provides HTTP access to `Camunda 7` operations.
+
+The module can also serve the `OpenAPI` description of the `REST API`, as well as `Swagger UI` and `RapiDoc` pages.
+Requests to the `REST API` have separate settings for `CORS`, logging, metrics, tracing, and graceful server shutdown.
 
 ## Dependency { #dependency }
 
@@ -39,11 +43,11 @@ Module to add [REST API](https://docs.camunda.org/manual/7.21/reference/rest/ove
     interface Application : CamundaRestUndertowModule
     ```
 
-Requires [Camunda BPMN module](camunda7-bpmn.md) to be added.
+Requires the [`Camunda 7 BPMN` module](camunda7-bpmn.md).
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described in the `CamundaRestConfig` class (example values or default values are specified):
+Example of the complete configuration described by the `CamundaRestConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -82,7 +86,7 @@ Example of the complete configuration described in the `CamundaRestConfig` class
                     stacktrace = true //(20)!
                     mask = "***" //(21)!
                     maskQueries = [ ] //(22)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(23)!
+                    maskHeaders = [ "authorization" ] //(23)!
                     pathTemplate = true //(24)!
                 }
                 metrics {
@@ -105,37 +109,35 @@ Example of the complete configuration described in the `CamundaRestConfig` class
     }
     ```
 
-    1.  Enable/disable REST API
-    2.  Prefix path to REST API
-    3.  Port on which the REST API server will be started
-    4.  Maximum time to wait for the server to complete after receiving a floating termination signal
-    5. Relative path to OpenAPI files in the `resources` directory, default is the `openapi.json` OpenAPI file from [Camunda dependencies](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi)
-    6. The on/off switch of the controller that gives the OpenAPI
-    7. Path where OpenAPI will be available
-        5. If a single OpenAPI file is specified, then represent entire path where file is available
-        6. If multiple OpenAPI files are specified, is a path prefix to the file name `/openapi/{fileName}`, taking the specified path and appending the file name to it without the directories and its extension, example of the file `someDirectory/my-openapi-1.yaml` the file path will be `/openapi/my-openapi-1`.
-    8. On/Off of the controller that gives SwaggerUI
-    9. Path where the SwaggerUI will be accessed
-    10. On/Off of the controller that gives Rapidoc
-    11. Path where Rapidoc will be available
-    12.  Enables CORS filter (default `false`)
-    13.  Allowed origins for CORS (default `null`)
-    14.  Allowed headers for CORS requests (default `["*"]`)
-    15.  Allowed HTTP methods for CORS requests (default `["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]`)
-    16.  Allows transmission of credentials in CORS requests (default `true`)
-    17.  Headers that can be exposed to the client in CORS responses (default `["*"]`)
-    18.  Maximum caching time for CORS preflight requests (default `1 hour`)
-    19.  Enables module logging (default `false`)
-    20.  Enables call stack logging in case of exception
-    21.  Mask that is used to hide specified headers and request/response parameters
-    22.  List of request parameters to be hidden
-    23.  List of request/response headers that should be hidden
-    24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    25.  Enables module metrics (default `true`)
-    26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    27.  Configures tags for metrics (optional)
-    28.  Enables module tracing (default is `true`)
-    29.  Configures attributes for tracing (optional)
+    1. Enables `Camunda 7 REST API` (default: `false`).
+    2. Path prefix for `Camunda 7 REST API` (default: `/engine-rest`).
+    3. Port of the separate `Undertow` HTTP server for the `REST API` (default: `8081`).
+    4. Maximum time to wait for HTTP server [graceful shutdown](container.md#component-lifecycle) (default: `30s`).
+    5. Path to the `OpenAPI` file in `resources` (default: `[ "openapi.json" ]`). By default, the file from the [`camunda-engine-rest-openapi` dependency](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi) is used.
+    6. Enables the controller that serves the `OpenAPI` file (default: `false`).
+    7. Path where the `OpenAPI` file will be available (default: `/openapi`).
+    8. Enables the controller that serves `Swagger UI` (default: `false`).
+    9. Path where `Swagger UI` will be available (default: `/swagger-ui`).
+    10. Enables the controller that serves `RapiDoc` (default: `false`).
+    11. Path where `RapiDoc` will be available (default: `/rapidoc`).
+    12. Enables the `CORS` filter (default: `false`).
+    13. Allowed origin for `CORS` (default: not specified, optional). If the value is not specified, the filter uses the request `Origin` header, and if it is absent, returns `*`.
+    14. Allowed headers for `CORS` requests (default: `[ "*" ]`).
+    15. Allowed HTTP methods for `CORS` requests (default: `[ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ]`).
+    16. Allows credentials in `CORS` requests (default: `true`).
+    17. Headers exposed to the client in a `CORS` response (default: `[ "*" ]`).
+    18. Maximum caching time for `CORS` preflight requests (default: `1h`).
+    19. Enables module logging (default: `false`).
+    20. Enables stack trace logging when an exception occurs (default: `true`).
+    21. Mask used to hide specified request or response headers and parameters (default: `***`).
+    22. List of request parameters to hide in logs (default: `[ ]`).
+    23. List of request or response headers to hide in logs (default: `[ "authorization" ]`).
+    24. Defines whether the path template is used for logging (default: not specified, optional). If not specified, the full path is used only at the `TRACE` logging level; if `true`, the path template is used; if `false`, the full path is used.
+    25. Enables module metrics (default: `true`).
+    26. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    27. Additional tags for metrics (default: `{}`).
+    28. Enables module tracing (default: `true`).
+    29. Additional attributes for tracing (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -156,21 +158,21 @@ Example of the complete configuration described in the `CamundaRestConfig` class
           rapidoc:
             enabled: false #(10)!
             endpoint: "/rapidoc" #(11)!
-          cors:
-            enabled: false #(12)!
-            allowOrigin: "*" #(13)!
-            allowHeaders: [ "*" ] #(14)!
-            allowMethods: [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ] #(15)!
-            allowCredentials: true #(16)!
-            exposeHeaders: [ "*" ] #(17)!
-            maxAge: "1h" #(18)!
+        cors:
+          enabled: false #(12)!
+          allowOrigin: "*" #(13)!
+          allowHeaders: [ "*" ] #(14)!
+          allowMethods: [ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ] #(15)!
+          allowCredentials: true #(16)!
+          exposeHeaders: [ "*" ] #(17)!
+          maxAge: "1h" #(18)!
         telemetry:
           logging:
             enabled: false #(19)!
             stacktrace: true #(20)!
             mask: "***" #(21)!
             maskQueries: [ ] #(22)!
-            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(23)!
+            maskHeaders: [ "authorization" ] #(23)!
             pathTemplate: true #(24)!
           metrics:
             enabled: true #(25)!
@@ -178,45 +180,75 @@ Example of the complete configuration described in the `CamundaRestConfig` class
             tags: #(27)!
               key1: value1
               key2: value2
-        tracing:
-          enabled: true #(28)!
-          attributes: #(29)!
-            key1: value1
-            key2: value2
+          tracing:
+            enabled: true #(28)!
+            attributes: #(29)!
+              key1: value1
+              key2: value2
     ```
 
-    1. Enable/disable REST API
-    2. Prefix path to REST API
-    3. Port on which the REST API server will be started
-    4. Maximum time to wait for the server to complete after receiving a floating termination signal
-    5. Relative path to OpenAPI files in the `resources` directory, default is the `openapi.json` OpenAPI file from [Camunda dependencies](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi)
-    6. The on/off switch of the controller that gives the OpenAPI
-    7. Path where OpenAPI will be available
-        5. If a single OpenAPI file is specified, then represent entire path where file is available
-        6. If multiple OpenAPI files are specified, is a path prefix to the file name `/openapi/{fileName}`, taking the specified path and appending the file name to it without the directories and its extension, example of the file `someDirectory/my-openapi-1.yaml` the file path will be `/openapi/my-openapi-1`.
-    8. On/Off of the controller that gives SwaggerUI
-    9. Path where the SwaggerUI will be accessed
-    10. On/Off of the controller that gives Rapidoc
-    11. Path where Rapidoc will be available
-    12.  Enables CORS filter (default `false`)
-    13.  Allowed origins for CORS (default `null`)
-    14.  Allowed headers for CORS requests (default `["*"]`)
-    15.  Allowed HTTP methods for CORS requests (default `["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]`)
-    16.  Allows transmission of credentials in CORS requests (default `true`)
-    17.  Headers that can be exposed to the client in CORS responses (default `["*"]`)
-    18.  Maximum caching time for CORS preflight requests (default `1 hour`)
-    19.  Enables module logging (default `false`)
-    20.  Enables call stack logging in case of exception
-    21.  Mask that is used to hide specified headers and request/response parameters
-    22.  List of request parameters to be hidden
-    23.  List of request/response headers that should be hidden
-    24.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    25.  Enables module metrics (default `true`)
-    26.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    27.  Configures tags for metrics (optional)
-    28.  Enables module tracing (default is `true`)
-    29.  Configures attributes for tracing (optional)
+    1. Enables `Camunda 7 REST API` (default: `false`).
+    2. Path prefix for `Camunda 7 REST API` (default: `/engine-rest`).
+    3. Port of the separate `Undertow` HTTP server for the `REST API` (default: `8081`).
+    4. Maximum time to wait for HTTP server [graceful shutdown](container.md#component-lifecycle) (default: `30s`).
+    5. Path to the `OpenAPI` file in `resources` (default: `[ "openapi.json" ]`). By default, the file from the [`camunda-engine-rest-openapi` dependency](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi) is used.
+    6. Enables the controller that serves the `OpenAPI` file (default: `false`).
+    7. Path where the `OpenAPI` file will be available (default: `/openapi`).
+    8. Enables the controller that serves `Swagger UI` (default: `false`).
+    9. Path where `Swagger UI` will be available (default: `/swagger-ui`).
+    10. Enables the controller that serves `RapiDoc` (default: `false`).
+    11. Path where `RapiDoc` will be available (default: `/rapidoc`).
+    12. Enables the `CORS` filter (default: `false`).
+    13. Allowed origin for `CORS` (default: not specified, optional). If the value is not specified, the filter uses the request `Origin` header, and if it is absent, returns `*`.
+    14. Allowed headers for `CORS` requests (default: `[ "*" ]`).
+    15. Allowed HTTP methods for `CORS` requests (default: `[ "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD" ]`).
+    16. Allows credentials in `CORS` requests (default: `true`).
+    17. Headers exposed to the client in a `CORS` response (default: `[ "*" ]`).
+    18. Maximum caching time for `CORS` preflight requests (default: `1h`).
+    19. Enables module logging (default: `false`).
+    20. Enables stack trace logging when an exception occurs (default: `true`).
+    21. Mask used to hide specified request or response headers and parameters (default: `***`).
+    22. List of request parameters to hide in logs (default: `[ ]`).
+    23. List of request or response headers to hide in logs (default: `[ "authorization" ]`).
+    24. Defines whether the path template is used for logging (default: not specified, optional). If not specified, the full path is used only at the `TRACE` logging level; if `true`, the path template is used; if `false`, the full path is used.
+    25. Enables module metrics (default: `true`).
+    26. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    27. Additional tags for metrics (default: `{}`).
+    28. Enables module tracing (default: `true`).
+    29. Additional attributes for tracing (default: `{}`).
+
+If the standard `Camunda 7` `OpenAPI` file is used, the module substitutes the current `port` and `path` values when serving the file.
+This keeps `OpenAPI` aligned with the `REST API` address even when values other than `/engine-rest` or `8081` are configured.
 
 ## Applications { #applications }
 
-You can register custom `jakarta.ws.rs.core.Application` with resources for APIs (e.g. for other [webapp](https://docs.camunda.org/manual/7.21/webapps/)) by providing them as components in a dependency container.
+The module automatically registers the standard `Camunda 7 REST API` resources.
+To add custom `JAX-RS` resources, register a `jakarta.ws.rs.core.Application` component with the `CamundaRest` tag.
+All such applications will be merged with the standard Camunda resources.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(CamundaRest.class)
+    @Component
+    public final class CustomCamundaApplication extends Application {
+
+        @Override
+        public Set<Class<?>> getClasses() {
+            return Set.of(CustomResource.class);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(CamundaRest::class)
+    @Component
+    class CustomCamundaApplication : Application() {
+
+        override fun getClasses(): Set<Class<*>> {
+            return setOf(CustomResource::class.java)
+        }
+    }
+    ```

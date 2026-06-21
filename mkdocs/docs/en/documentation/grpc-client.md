@@ -4,7 +4,10 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping; key triggers include GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
 ---
 
-Module for gRPC client service support based on [grpc.io](https://grpc.io/docs/languages/java/basics/) functionality.
+The `gRPC client` calls remote services using a `protobuf` contract and the `HTTP/2` transport.
+In Kora, the client is built on top of generated `grpc-java` `stub` classes: the module creates a `ManagedChannel`, attaches interceptors, and registers ready-to-use `stub` instances in the application graph.
+
+The gRPC client transport uses Netty, so common `event loop` and transport settings can be configured in the [Netty](netty.md) section.
 
 For a step-by-step walkthrough before the reference details, see [gRPC Client](../guides/grpc-client.md) and [Advanced gRPC Client](../guides/grpc-client-advanced.md).
 
@@ -15,7 +18,7 @@ For a step-by-step walkthrough before the reference details, see [gRPC Client](.
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-client"
-    implementation "io.grpc:grpc-protobuf:1.62.2"
+    implementation "io.grpc:grpc-protobuf:1.74.0"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -30,7 +33,7 @@ For a step-by-step walkthrough before the reference details, see [gRPC Client](.
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-client")
-    implementation("io.grpc:grpc-protobuf:1.62.2")
+    implementation("io.grpc:grpc-protobuf:1.74.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -42,7 +45,8 @@ For a step-by-step walkthrough before the reference details, see [gRPC Client](.
 
 ### Plugin { #plugin }
 
-The code for the gRPC client is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
+The code for the `gRPC client` is created with the [protobuf Gradle plugin](https://github.com/google/protobuf-gradle-plugin).
+The plugin generates Java message classes from the `protobuf` contract and gRPC `stub` classes that are then used by Kora.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -55,7 +59,7 @@ The code for the gRPC client is created with [protobuf gradle plugin](https://gi
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -83,7 +87,7 @@ The code for the gRPC client is created with [protobuf gradle plugin](https://gi
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
@@ -100,35 +104,42 @@ The code for the gRPC client is created with [protobuf gradle plugin](https://gi
 
 ## Configuration { #configuration }
 
-gRPC service named `SimpleService`, will have configuration with path of `grpcClient.SimpleService`.
+A `gRPC client` for the `SimpleService` service will have the `grpcClient.SimpleService` configuration path.
 
-Example of the complete configuration described in the `GrpcClientConfig` class (default or example values are specified):
+Example of the complete configuration described by the `GrpcClientConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcClient {
         SimpleService {
-            url = "grpc://localhost:8090" //(1)!
+            url = "http://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
             keepAliveTime = "0s" //(3)!
             keepAliveTimeout = "0s" //(4)!
             loadBalancingPolicy = "pick_first" //(5)!
+            defaultServiceConfig { //(6)!
+                loadBalancingConfig = [
+                    {
+                        round_robin = {}
+                    }
+                ]
+            }
             telemetry {
                 logging {
-                    enabled = false //(6)!
+                    enabled = false //(7)!
                 }
                 metrics {
-                    enabled = true //(7)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                    tags = { // (9)!
+                    enabled = true //(8)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                    tags = { // (10)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(10)!
-                    attributes = { // (11)!
+                    enabled = true //(11)!
+                    attributes = { // (12)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -138,55 +149,90 @@ Example of the complete configuration described in the `GrpcClientConfig` class 
     }
     ```
 
-    1. URL of the server where to make requests (**required**)
-    2. Maximum request time (optional)
-    3. Sets the interval in milliseconds between PING frames
-    4. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
-    5. Sets the load balancing policy
-    6. Enables module logging (default `false`)
-    7. Enables module metrics (default `true`)
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9. Configures tags for metrics (optional)
-    10. Enables module tracing (default `true`)
-    11. Configures attributes for tracing (optional)
+    1. Server `URL` where requests will be sent (required, default: not specified).
+    2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
+    3. Interval between gRPC `PING` frames (default: not specified, optional).
+    4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
+    5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
+    6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
+    7. Enables module logging (default: `false`).
+    8. Enables module metrics (default: `true`).
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    10. Additional tags for metrics (default: `{}`).
+    11. Enables module tracing (default: `true`).
+    12. Additional attributes for tracing (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     grpcClient:
       SimpleService:
-        url: "grpc://localhost:8090" //(1)!
-        timeout: "10s" //(2)!
-        keepAliveTime: "0s" //(3)!
-        keepAliveTimeout: "0s" //(4)!
-        loadBalancingPolicy: "pick_first" //(5)!
+        url: "http://localhost:8090" #(1)!
+        timeout: "10s" #(2)!
+        keepAliveTime: "0s" #(3)!
+        keepAliveTimeout: "0s" #(4)!
+        loadBalancingPolicy: "pick_first" #(5)!
+        defaultServiceConfig: #(6)!
+          loadBalancingConfig:
+            - round_robin: {}
         telemetry:
           logging:
-            enabled: false #(6)!
+            enabled: false #(7)!
           metrics:
-            enabled: true #(7)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-            tags: #(9)!
+            enabled: true #(8)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+            tags: #(10)!
               key1: value1
               key2: value2
-        tracing:
-          enabled: true #(10)!
-          attributes: #(11)!
-            key1: value1
-            key2: value2
+          tracing:
+            enabled: true #(11)!
+            attributes: #(12)!
+              key1: value1
+              key2: value2
     ```
 
-    1. URL of the server where to make requests (**required**)
-    2. Maximum request time (optional)
-    3. Sets the interval in milliseconds between PING frames
-    4. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
-    5. Sets the load balancing policy
-    6. Enables module logging (default `false`)
-    7. Enables module metrics (default `true`)
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9. Configures tags for metrics (optional)
-    10. Enables module tracing (default `true`)
-    11. Configures attributes for tracing (optional)
+    1. Server `URL` where requests will be sent (required, default: not specified).
+    2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
+    3. Interval between gRPC `PING` frames (default: not specified, optional).
+    4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
+    5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
+    6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
+    7. Enables module logging (default: `false`).
+    8. Enables module metrics (default: `true`).
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    10. Additional tags for metrics (default: `{}`).
+    11. Enables module tracing (default: `true`).
+    12. Additional attributes for tracing (default: `{}`).
+
+When creating a channel, the `http` scheme enables plaintext mode through `usePlaintext()`.
+If the port is not specified explicitly, `http` uses port `80`, and `https` uses port `443`.
+
+If file-based configuration is not enough, you can register a `GrpcClientBuilderConfigurer` component.
+It receives an already prepared `ManagedChannelBuilder` and lets you configure the channel in code before it is created.
+Settings from `GrpcClientConfig` are applied first, then `GrpcClientBuilderConfigurer` is called.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class CustomGrpcClientBuilderConfigurer implements GrpcClientBuilderConfigurer {
+        @Override
+        public ManagedChannelBuilder<?> configure(ManagedChannelBuilder<?> builder) {
+            return builder.maxInboundMessageSize(8 * 1024 * 1024);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class CustomGrpcClientBuilderConfigurer : GrpcClientBuilderConfigurer {
+        override fun configure(builder: ManagedChannelBuilder<*>): ManagedChannelBuilder<*> {
+            return builder.maxInboundMessageSize(8 * 1024 * 1024)
+        }
+    }
+    ```
 
 You can also configure [Netty transport](netty.md).
 
@@ -194,7 +240,7 @@ Module metrics are described in the [Metrics Reference](metrics.md#grpc-client) 
 
 ## Service { #service }
 
-Created gRPC services can be injected as dependency:
+Created gRPC `stub` instances can be injected as dependencies:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -202,7 +248,7 @@ Created gRPC services can be injected as dependency:
     @KoraApp
     public interface Application extends HoconConfigModule, GrpcClientModule {
 
-        default SomeService(SimpleServiceGrpc.SimpleServiceBlockingStub grpcService) {
+        default SomeService someService(SimpleServiceGrpc.SimpleServiceBlockingStub grpcService) {
             return new SomeService(grpcService);
         }
     }
@@ -213,7 +259,7 @@ Created gRPC services can be injected as dependency:
     ```kotlin
     @KoraApp
     interface Application : HoconConfigModule, GrpcClientModule {
-        fun SomeService(grpcService: SimpleServiceGrpc.SimpleServiceBlockingStub?) {
+        fun someService(grpcService: SimpleServiceGrpc.SimpleServiceBlockingStub): SomeService {
             return SomeService(grpcService)
         }
     }
@@ -228,6 +274,7 @@ Created gRPC services can be injected as dependency:
 The following interceptors are used at client startup by default:
 
 - `GrpcClientConfigInterceptor`.
+- `GrpcClientTelemetryInterceptor`, if telemetry is available for the client.
 
 ### Custom { #custom }
 
@@ -263,4 +310,4 @@ In order to add your custom interceptor, you need to register the interceptor as
     }
     ```
 
-Alternatively you can modify the gRPC service with [GraphInterceptor](container.md#component-inspection).
+Alternatively, you can modify the `stub` with [GraphInterceptor](container.md#component-inspection).

@@ -4,7 +4,11 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora resilience aspects for circuit breakers, retries, timeouts, fallback methods, telemetry, configuration, and supported signatures; key triggers include @CircuitBreaker, @Retry, @Timeout, @Fallback, CircuitBreakerConfig, RetryConfig, TimeoutConfig, ResilientModule."
 ---
 
-Module for creating a fault-tolerant application using approaches such as *CircuitBreaker, Fallback, Timeout, Retry* using aspect annotations.
+Module for building a fault-tolerant application using mechanisms such as [CircuitBreaker](#circuitbreaker),
+[Fallback](#fallback), [Retry](#retry), and [Timeout](#timeout).
+These mechanisms can be applied declaratively through aspect annotations or directly through manager components when protection is needed in imperative code.
+
+`ResilientModule` combines `CircuitBreakerModule`, `RetryModule`, `TimeoutModule`, and `FallbackModule`.
 
 For a step-by-step walkthrough before the reference details, see [Resilience](../guides/resilient.md).
 
@@ -38,25 +42,28 @@ For a step-by-step walkthrough before the reference details, see [Resilience](..
 
 ## CircuitBreaker { #circuitbreaker }
 
-CircuitBreaker is a proxy that controls the flow to requests of a particular method
-and can temporarily stop execution of this method if the method throws many exceptions that meet the specified filter requirements (`CircuitBreakerPredicate`).
+`CircuitBreaker` is a proxy that controls the request flow to a particular method
+and can temporarily prohibit execution of this method if it throws many exceptions matching the configured filter (`CircuitBreakerPredicate`).
 
 The purpose of applying CircuitBreaker is to give the system time to correct the error that caused the failure before allowing the application to attempt the operation again.
-The CircuitBreaker pattern provides stability while the system recovers from the failure and reduces the impact on performance.
+The `CircuitBreaker` pattern provides stability while the system recovers from the failure and reduces the impact on performance.
+`CircuitBreaker` can be in one of several states: `CLOSED`, `OPEN`, `HALF_OPEN`.
 
-- `CLOSED`: An application request is redirected to an operation. The proxy keeps a count of the number of recent failures within a set number of operations (`slidingWindowSize`) coming through the proxy, and if the operation call did not complete successfully, the proxy increments this number.
-  If the number of requests exceeds the specified minimum ceiling required for counts (`minimumRequiredCalls`) and the number of recent failures exceeds the specified threshold (`failureRateThreshold`) for the specified period of time, the proxy is placed in the `OPEN` state.
+- `CLOSED`: an application request is passed to the protected operation. The proxy counts recent failures within the configured number of operations (`slidingWindowSize`) passing through it, and increments this count when the operation does not complete successfully.
+  If the number of requests exceeds the minimum amount required for calculation (`minimumRequiredCalls`) and the number of recent failures exceeds the configured threshold (`failureRateThreshold`), the proxy moves to `OPEN`.
 - `OPEN`: While in this status, the request from the application immediately terminates with an error and an exception is returned to the application.
-  At this point, the proxy starts a wait time timer (`waitDurationInOpenState`), and when the time of this timer expires, the proxy is placed in the `HALF-OPEN` state.
-- `HALF-OPEN`: A limited number of requests (`permittedCallsInHalfOpenState`) from the application are allowed to pass through and invoke the operation. If these requests are successful, it is assumed that the error that previously caused the
-  failure has been resolved, and the circuit breaker enters the `CLOSED` state (the failure counter is reset). If any request terminates with a fault, the circuit breaker assumes that the
+  At this point, the proxy starts a wait timer (`waitDurationInOpenState`), and when it expires, the proxy moves to `HALF_OPEN`.
+- `HALF_OPEN`: a limited number of requests (`permittedCallsInHalfOpenState`) from the application are allowed to pass through and invoke the operation. If these requests are successful, it is assumed that the error that previously caused the
+  failure has been resolved, and `CircuitBreaker` enters the `CLOSED` state (the failure counter is reset). If any request terminates with a failure, `CircuitBreaker` assumes that the
   fault is still present, so it returns to the `OPEN` state and restarts the wait time timer (`waitDurationInOpenState`) to give the system additional time to recover from the failure.
 
-The `Half-Open` state helps prevent requests to the service from growing rapidly. Because once a service is started, it may be able to handle a limited number of requests for some time before full recovery.
+The `HALF_OPEN` state helps prevent requests to the service from growing rapidly: after recovery starts, the service may be able to handle only a limited number of requests for some time.
 
 Initially it has the `CLOSED` state.
 
 ### Declarative usage { #declarative-usage }
+
+If `CircuitBreaker` is in the `OPEN` state, the call fails with `CallNotPermittedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -103,17 +110,19 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
                 waitDurationInOpenState = "25s" //(4)!
                 permittedCallsInHalfOpenState = 15 //(5)!
                 enabled = true //(6)!
+                failurePredicateName = "MyPredicate" //(7)!
             }
         }
     }
     ```
 
-    1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)
-    2.  Minimum number of queries required to start state calculation (**required**)
-    3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
-    4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
-    5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
-    6.  Enable or disable circuit breaker (default `true`)
+    1.  Maximum number of requests used to calculate `failureRateThreshold` and determine the state (`required`, default not specified).
+    2.  Minimum number of requests required to start state calculation (`required`, default not specified).
+    3.  Percentage of failed requests required to transition to `OPEN`; the value must be from `1` to `100` (`required`, default not specified).
+    4.  Waiting time in `OPEN`, after which the transition to `HALF_OPEN` is performed (`required`, default not specified).
+    5.  Number of requests in `HALF_OPEN` that must complete successfully to transition to `CLOSED` (`required`, default not specified).
+    6.  Enable or disable `CircuitBreaker` (default: `true`).
+    7.  Exception filter name from `CircuitBreakerPredicate#name()` (all errors are recorded by default).
 
 
 === ":simple-yaml: `YAML`"
@@ -128,14 +137,16 @@ Example of a complete configuration described in the `CircuitBreakerConfig` clas
           waitDurationInOpenState: "25s" #(4)!
           permittedCallsInHalfOpenState: 15 #(5)!
           enabled: true #(6)!
+          failurePredicateName: "MyPredicate" #(7)!
     ```
 
-    1.  Limit the number of requests within which `failureRateThreshold` is calculated to determine the state (**required**)
-    2.  Minimum number of queries required to start state calculation (**required**)
-    3.  Percentage of unsuccessful requests required to transition to `OPEN` states (has values from *1 to 100*) (**required**)
-    4.  Waiting time in `OPEN` status, after which the transition to `HALF-OPEN` status is realized (**required**)
-    5.  Required number of requests in `HALF-OPEN` status that must be successful for transition to `CLOSED` status (**required**)
-    6.  Enable or disable circuit breaker (default `true`)
+    1.  Maximum number of requests used to calculate `failureRateThreshold` and determine the state (`required`, default not specified).
+    2.  Minimum number of requests required to start state calculation (`required`, default not specified).
+    3.  Percentage of failed requests required to transition to `OPEN`; the value must be from `1` to `100` (`required`, default not specified).
+    4.  Waiting time in `OPEN`, after which the transition to `HALF_OPEN` is performed (`required`, default not specified).
+    5.  Number of requests in `HALF_OPEN` that must complete successfully to transition to `CLOSED` (`required`, default not specified).
+    6.  Enable or disable `CircuitBreaker` (default: `true`).
+    7.  Exception filter name from `CircuitBreakerPredicate#name()` (all errors are recorded by default).
 
 An example of overriding named settings for a particular CircuitBreaker:
 
@@ -167,7 +178,7 @@ Module metrics are described in the [Metrics Reference](metrics.md#resilience) s
 In order to register which errors should be recorded as CircuitBreaker errors, you can override the default filter,
 you need to implement `CircuitBreakerPredicate` and register your component in the context and specify in the CircuitBreaker configuration its name returned in the `name()` method.
 
-CircuitBreaker register all errors by default.
+`CircuitBreaker` records all errors by default.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -213,7 +224,7 @@ Configuration:
     }
     ```
 
-    1. Name of the predicate from the `name()` method
+    1. Exception filter name from `CircuitBreakerPredicate#name()` (all errors are recorded by default).
 
 === ":simple-yaml: `YAML`"
 
@@ -224,12 +235,12 @@ Configuration:
           failurePredicateName: "MyPredicate" #(1)!
     ```
 
-    1. Name of the predicate from the `name()` method
+    1. Exception filter name from `CircuitBreakerPredicate#name()` (all errors are recorded by default).
 
 ### Imperative usage { #imperative-usage }
 
-You can use a breaker in imperative code, for this you need to implement `CircuitBreakerManager` as a dependency and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation.
-and take `CircuitBreaker` from it by the name of the configuration that would be specified in the annotation:
+You can use a breaker in imperative code: inject `CircuitBreakerManager`
+and get `CircuitBreaker` from it by the configuration name that would be specified in the annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -273,10 +284,12 @@ and take `CircuitBreaker` from it by the name of the configuration that would be
 
 ## Retry { #retry }
 
-Retry - provides the ability to customize the policy of repeated invocation of annotated methods.
-It allows you to specify when you want to retry a method, customize retry parameters in case the method threw an exception that meets the specified filter requirements (*RetryPredicate*).
+`Retry` provides the ability to configure repeated invocation of annotated methods.
+It allows you to specify when a method should be retried and configure retry parameters when the method throws an exception matching the configured filter (`RetryPredicate`).
 
 ### Declarative usage { #declarative-usage-2 }
+
+If all attempts are exhausted, the call fails with `RetryExhaustedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -321,15 +334,17 @@ Example of the complete configuration described in the `RetryConfig` class (defa
                 attempts = 2 //(2)!
                 delayStep = "100ms" //(3)!
                 enabled = true //(4)!
+                failurePredicateName = "MyPredicate" //(5)!
             }
         }
     }
     ```
 
-    1. Initial delay time for the operation at Retry (**required**)
-    2. Number of Retry attempts for the operation (**required**)
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts
-    4.  Enable or disable retrier (default `true`)
+    1. Initial delay before a repeated call (`required`, default not specified).
+    2. Number of retry attempts (`required`, default not specified).
+    3. Delay increment for subsequent attempts (default: `0`).
+    4. Enable or disable `Retry` (default: `true`).
+    5. Exception filter name from `RetryPredicate#name()` (all errors are recorded by default).
 
 === ":simple-yaml: `YAML`"
 
@@ -341,17 +356,21 @@ Example of the complete configuration described in the `RetryConfig` class (defa
           attempts: 2 #(2)!
           delayStep: "100ms" #(3)!
           enabled: true #(4)!
+          failurePredicateName: "MyPredicate" #(5)!
     ```
 
-    1. Initial delay time for the operation at Retry (**required**)
-    2. Number of Retry attempts for the operation (**required**)
-    3. Delay step which is accumulated in consequence of subsequent Retry attempts
-    4.  Enable or disable retrier (default `true`)
+    1. Initial delay before a repeated call (`required`, default not specified).
+    2. Number of retry attempts (`required`, default not specified).
+    3. Delay increment for subsequent attempts (default: `0`).
+    4. Enable or disable `Retry` (default: `true`).
+    5. Exception filter name from `RetryPredicate#name()` (all errors are recorded by default).
 
 ### Exception filtering { #exception-filtering-2 }
 
 In order to register which errors should be recorded as errors on the Retry side, you can override the default filter,
 it is required to implement `RetryPredicate` and register its component in the context and specify in the Retry configuration its name returned in the `name()` method.
+
+`Retry` records all errors by default.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -397,7 +416,7 @@ Configuration:
     }
     ```
     
-    1. Name of the predicate from the `name()` method
+    1. Exception filter name from `RetryPredicate#name()` (all errors are recorded by default).
 
 === ":simple-yaml: `YAML`"
 
@@ -408,12 +427,12 @@ Configuration:
           failurePredicateName: "MyPredicate" #(1)!
     ```
 
-    1. Name of the predicate from the `name()` method
+    1. Exception filter name from `RetryPredicate#name()` (all errors are recorded by default).
 
 ### Imperative usage { #imperative-usage-2 }
 
-It is possible to use a repeater in imperative code, for this you need to implement `RetryManager` as a dependency and take `Retry` from it by the name of the configuration that would be specified in the annotation.
-and take `Retry` from it by the name of the configuration that would be specified in the annotation:
+You can use a retrier in imperative code: inject `RetryManager`
+and get `Retry` from it by the configuration name that would be specified in the annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -457,9 +476,11 @@ and take `Retry` from it by the name of the configuration that would be specifie
 
 ## Timeout { #timeout }
 
-Timeout - provides the ability to set the maximum time of operation of the annotated method.
+`Timeout` sets the maximum execution time of the annotated method.
 
 ### Declarative usage { #declarative-usage-3 }
+
+If the method does not complete within `duration`, the call fails with `TimeoutExhaustedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -517,8 +538,8 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
     }
     ```
 
-    1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
-    2.  Enable or disable timeouter (default `true`)
+    1.  Operation time limit after which `TimeoutExhaustedException` will be thrown (`required`, default not specified).
+    2.  Enable or disable `Timeout` (default: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -526,17 +547,17 @@ Example of the complete configuration described in the `TimeoutConfig` class (de
     resilient:
       timeout:
         default:
-          delay: "1s" #(1)!
+          duration: "1s" #(1)!
           enabled: true #(2)!
     ```
 
-    1.  The time limit of the operation after which a `TimeoutExhaustedException` will be thrown.
-    2.  Enable or disable timeouter (default `true`)
+    1.  Operation time limit after which `TimeoutExhaustedException` will be thrown (`required`, default not specified).
+    2.  Enable or disable `Timeout` (default: `true`).
 
 ### Imperative usage { #imperative-usage-3 }
 
-You can use a time limiter in imperative code, for this you need to implement `TimeoutManager` as a dependency and take `Timeout` from it by the name of the configuration that would be specified in the annotation.
-and take `Timeout` from it by the name of the configuration that would be specified in the annotation:
+You can use a time limiter in imperative code: inject `TimeoutManager`
+and get `Timeout` from it by the configuration name that would be specified in the annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -580,8 +601,9 @@ and take `Timeout` from it by the name of the configuration that would be specif
 
 ## Fallback { #fallback }
 
-Fallback - provides an opportunity to specify a method that will be called in the case of
-if the exception thrown by the annotated method is satisfied by filters (*FallbackPredicate*).
+`Fallback` allows you to specify a method that will be called when an exception thrown by the annotated method matches the configured filters (`FallbackPredicate`).
+
+The fallback method **must match** the return type of the annotated method.
 
 ### Declarative usage { #declarative-usage-4 }
 
@@ -613,7 +635,7 @@ An example of a backup method with no arguments:
         @Fallback(value = "custom", method = "getFallback()")
         fun value(): String = "value"
 
-        fun fallback(): String = "fallback"
+        fun getFallback(): String = "fallback"
     }
     ```
 
@@ -672,8 +694,8 @@ Example of the complete configuration described in the `FallbackConfig` class (d
     }
     ```
 
-    1. Name of the predicate from the `name()` method
-    2.  Enable or disable fallback (default `true`)
+    1. Exception filter name from `FallbackPredicate#name()` (all errors are recorded by default).
+    2. Enable or disable `Fallback` (default: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -685,13 +707,15 @@ Example of the complete configuration described in the `FallbackConfig` class (d
           enabled: true #(2)!
     ```
 
-    1. Name of the predicate from the `name()` method
-    2.  Enable or disable fallback (default `true`)
+    1. Exception filter name from `FallbackPredicate#name()` (all errors are recorded by default).
+    2. Enable or disable `Fallback` (default: `true`).
 
 ### Exception filtering { #exception-filtering-3 }
 
 In order to register which errors should be recorded as Fallback errors, you can override the default filter,
 you need to implement `FallbackPredicate` and register your component in the context and specify in the Fallback configuration its name returned in the `name()` method.
+
+`Fallback` records all errors by default.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -725,8 +749,8 @@ you need to implement `FallbackPredicate` and register your component in the con
 
 ### Imperative usage { #imperative-usage-4 }
 
-You can use the fallback method in imperative code, for this you need to implement as a dependency `FallbackManager`
-and take `Fallback` from it by the name of the configuration that would be specified in the annotation:
+You can use the fallback method in imperative code: inject `FallbackManager`
+and get `Fallback` from it by the configuration name that would be specified in the annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -813,10 +837,12 @@ You can change the order as you wish and combine it with other annotations that 
 
 In the example above:
 
-1. Applies `@Timeout` which says that the method should not run longer than the time specified in the configuration
-2. Applies `@Retry` which will attempt to retry the method the number of times specified in the configuration if the method throws an exception along the chain (including `@Timeout`).
-3. Applies `@CircuitBreaker` which will operate according to the configuration and [state](#circuitbreaker) depending on the successful result of the method or if the method threw a chain exception (including `@Timeout` & `@Retry`).
-4. Applies `@Fallback` which will call *getFallback* method with argument *arg1* in case the method threw an exception along the chain (including `@Timeout` & `@Retry` & `@CircuitBreaker`)
+1. `@Timeout` is applied and checks that the method does not run longer than the time specified in the configuration.
+2. `@Retry` is applied and attempts to repeat method execution the configured number of times if the method throws an exception in the chain, including an exception from `@Timeout`.
+3. `@CircuitBreaker` is applied and works according to its configuration and [state](#circuitbreaker), depending on the successful method result or an exception in the chain, including exceptions from `@Timeout` and `@Retry`.
+4. `@Fallback` is applied and calls the `getFallback` method with the `arg1` argument if the method throws an exception in the chain, including exceptions from `@Timeout`, `@Retry`, and `@CircuitBreaker`.
+
+Aspect invocation order follows the annotation order on the method: from top to bottom.
 
 Example configuration for all aspects:
 
@@ -869,18 +895,21 @@ Example configuration for all aspects:
 
 ## Signatures { #signatures }
 
-Available signatures for repository methods out of the box:
+Available method signatures supported by these annotations out of the box:
+All four annotations support regular synchronous methods, asynchronous types, and reactive types, but the actual set depends on the language and processor.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Class must be non `final` in order for aspects to work.
 
-    The `T` refers to the type of the return value, either `Void`.
+    `T` means the return value type.
 
+    - `void myMethod()`
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` / `CompletableFuture<T> myMethod()` ([CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html))
+    - `Mono<T> myMethod()` ([Project Reactor](https://projectreactor.io/docs/core/release/reference/), requires [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `Flux<T> myMethod()` ([Project Reactor](https://projectreactor.io/docs/core/release/reference/), requires [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -889,5 +918,5 @@ Available signatures for repository methods out of the box:
     By `T` we mean the type of the return value, either `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `suspend myMethod(): T` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), requires [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `myMethod(): Flow<T>` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), requires [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)

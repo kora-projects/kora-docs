@@ -4,7 +4,11 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora validation annotations, class and method validation, argument and result validation, custom validators, and supported validation signatures; key triggers include @Validate, @Valid, @NotNull, @NotEmpty, @Pattern, @Range, @Size, @Validator, ValidationModule."
 ---
 
-Module for validating classes/records and methods using annotations.
+The Kora validation module checks models, method arguments, and method results using annotations.
+For models, Kora generates a `Validator<T>` at compile time, and for methods it applies the `@Validate` aspect that calls the required checks before or after method execution.
+
+Validation works without using `Reflection` at application runtime: object structure, nested fields, method signatures, and available validators are checked by annotation processors during the build.
+Validation errors are returned as a list of `Violation` or thrown as `ViolationException`.
 
 For a step-by-step walkthrough before the reference details, see [Validation](../guides/validation.md).
 
@@ -26,7 +30,7 @@ For a step-by-step walkthrough before the reference details, see [Validation](..
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
-    ```groovy
+    ```kotlin
     implementation("ru.tinkoff.kora:validation-module")
     ```
 
@@ -36,23 +40,27 @@ For a step-by-step walkthrough before the reference details, see [Validation](..
     interface Application : ValidationModule
     ```
 
-## Validation annotations { #validation-annotations }
+## Validation Annotations { #validation-annotations }
 
-Special validation annotations are used by Kora to validate fields/arguments, they represent simple checks.
+Validation annotations are used by Kora to check field values, method arguments, and method results.
+Annotations can be applied directly or through nested `@Valid` validation if the type has a generated or manually provided `Validator`.
 
 Available validation annotations:
 
-- `@NotEmpty` - Checks that the string is not empty
-- `@NotBlank` - Checks that the string does not consist of empty characters
-- `@Pattern` - Checks if the string matches Regular Expression (RegEx)
-- `@Range` - Checks that the number is in the specified range
-- `@Size` - Checks that a collection (List, Set, Map) or `String` has a size in the specified range.
+- `@Valid` - marks a class for `Validator<T>` generation or marks a field, argument, or method result for nested validation through a `Validator` of the corresponding type.
+- `@Validate` - marks a method whose arguments and/or result should be validated; the `failFast` parameter controls stopping on the first error (default: `false`).
+- `@ValidatedBy` - connects a custom validation annotation with a `ValidatorFactory`.
+- `@NotNull` / `@Nonnull` - checks that the value is not `null`; any compatible annotation from `javax.annotation`, `jakarta.annotation`, or other common packages can be used.
+- `@NotEmpty` - checks that the value is not `null` and is not empty; supports `CharSequence`, `String`, `Iterable`, `Collection`, `List`, `Set`, and `Map`.
+- `@NotBlank` - checks that the string is not `null` and contains at least one non-whitespace character; supports `CharSequence` and `String`.
+- `@Pattern` - checks that `String` or `CharSequence` matches a regular expression; the `value` parameter sets the expression (`required`, no default), and the `flags` parameter sets `java.util.regex.Pattern` flags (default: `0`).
+- `@Range` - checks that a number is within the specified range; the `from` parameter sets the lower bound (`required`, no default), the `to` parameter sets the upper bound (`required`, no default), and the `boundary` parameter controls bound inclusion (default: `INCLUSIVE_INCLUSIVE`).
+- `@Size` - checks the size of `List`, `Collection`, `Map`, `String`, or `CharSequence`; the `min` parameter sets the minimum size (default: `0`), and the `max` parameter sets the maximum size (`required`, no default).
 
-## Class validation { #class-validation }
+## Class Validation { #class-validation }
 
-It is suggested to use the `@Valid` annotation to mark a class that needs a validator from the Kora framework.
-
-An example of a labeled class for validation looks like this:
+The `@Valid` annotation on a class or `record` tells Kora to create a `Validator<T>` for that type.
+The generated validator becomes a regular dependency graph component and can be injected by the `Validator<Type>` signature.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -68,7 +76,7 @@ An example of a labeled class for validation looks like this:
     data class Foo(val number: String)
     ```
 
-A validator of that class will then be available in the dependency container:
+A validator for this class will then be available in the dependency container:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -77,8 +85,8 @@ A validator of that class will then be available in the dependency container:
     public final class Example {
 
         private final Validator<Foo> fooValidator;
-        
-        public Example(Validator<Foo> fooValidator) { 
+
+        public Example(Validator<Foo> fooValidator) {
             this.fooValidator = fooValidator;
         }
     }
@@ -91,17 +99,17 @@ A validator of that class will then be available in the dependency container:
     class Example(val fooValidator: Validator<Foo>)
     ```
 
-Created validators can be implemented as dependencies in any component, in the examples above the validator for the `Foo` class,
-can be implemented by its signature `Validator<Foo>` as a component dependency and used manually for validation.
+Generated validators can be injected as dependencies into any component.
+In the example above, the validator for `Foo` is injected by the `Validator<Foo>` signature and can be used manually.
 
-The validator returns a list of violations after validation, they can be used to manually compose the error either
-you can use the `validateAndThrow` method which throws a `ViolationException` exception in case of a validation error.
+The `validate(...)` method returns a list of `Violation`.
+You can process this list yourself or call `validateAndThrow(...)`, which throws `ViolationException` if there are violations.
 
-### Field validation { #field-validation }
+### Field Validation { #field-validation }
 
-It is expected to use a special provided validation [annotation](#validation-annotations) validation set for field validation.
+Field validation uses the set of [annotations](#validation-annotations) provided by the module.
 
-An example of an object marked up for validation looks like this:
+An object marked for validation looks like this:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -110,51 +118,50 @@ An example of an object marked up for validation looks like this:
     public record Foo(@NotEmpty String number) { }
     ```
 
-    For Record classes, the syntax for accessing fields via Record-like getter contracts is used, 
-    in the case of `Foo` and the `code` field, *getter* `code()` will be used in the created `Validator`.
+    For a `record`, fields are accessed through the methods of the `record` itself.
+    For `Foo` and the `number` field, the generated `Validator` will use the `number()` method.
 
-    For a regular class it is expected that Java *Getters* syntax will be used, for example for the `id` field *getter* `getId()` will be used,
-    where *getter* should have at least *package-private* visibility.
+    For a regular class, the `JavaBeans` syntax is used: for example, the `getId()` method will be used for the `id` field.
+    This method must have at least `package-private` visibility.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Valid
-    Data class Foo(@field:NotEmpty val number: String)
+    data class Foo(@field:NotEmpty val number: String)
     ```
 
-#### Required fields { #required-fields }
+#### Required Fields { #required-fields }
 
-All fields are required (`NotNull`) by default, so `NotNull` checks will be created for all of them in the `Validator`.
+All fields are considered required by default, so `null` checks are created for them.
 
-#### Optional fields { #optional-fields }
+#### Optional Fields { #optional-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    In order to specify a field as not required, you need to mark it with any `@Nullable` annotation,
-    **will not** create a *null* check for such a field:
+    To mark a field as optional, annotate it with any `@Nullable` annotation.
+    For such a field, a `null` check **will not** be created:
 
     ```java
     @Valid
     public record Foo(@Nullable String number) { } //(1)!
     ```
 
-    1. Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+    1. Any `@Nullable` annotation is suitable, for example `javax.annotation.Nullable`, `jakarta.annotation.Nullable`, or `org.jetbrains.annotations.Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    It is expected to use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such a field as Nullable:
+    To mark a field as optional, use [`Kotlin Nullability`](https://kotlinlang.org/docs/null-safety.html) syntax and add `?` to the field type.
+    For such a field, a `null` check **will not** be created:
 
     ```kotlin
     @Valid
     data class Foo(val number: String?)
     ```
 
-#### Embedded fields { #embedded-fields }
+#### Nested Fields { #embedded-fields }
 
-In order to validate fields of complex objects for which validators are created (or provided independently),
-or fields that are not supported by standard validation tools,
-the `@Valid` annotation is supposed to be used:
+Use `@Valid` to validate nested objects that have generated or manually provided validators.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -176,30 +183,63 @@ the `@Valid` annotation is supposed to be used:
     data class Bar(val number: String)
     ```
 
-In the example above, a `Validator<Bar>` validator would be created for `Bar` and a `Validator<Foo>` would be created for `Foo`,
-where when the `Validator<Foo>` validator is called, the validator for `Validator<Bar>` will be called internally.
+In the example above, `Validator<Bar>` will be created for `Bar`, and `Validator<Foo>` will be created for `Foo`.
+When `Validator<Foo>` is called, it will call `Validator<Bar>` internally.
 
-### Validation options { #validation-options }
+#### `Sealed` Hierarchies { #sealed-validation }
 
-There are two types of validation:
+Kora can create a `Validator` for `sealed` hierarchies.
+If `@Valid` is placed on a `sealed` type, the generated validator determines the actual subtype and calls the validator for the matching final implementation.
 
-- `Full` - all fields that are just marked up are checked, all possible validation errors are collected
-  and only then an exception is thrown. (**Default behavior**)
-- `FailFast` - exception is thrown on the first validation error encountered.
+===! ":fontawesome-brands-java: `Java`"
 
-Example of FailFast validation:
+    ```java
+    @Valid
+    public sealed interface Command permits CreateCommand {
+
+        @Valid
+        record CreateCommand(@NotBlank String name) implements Command { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Valid
+    sealed interface Command {
+
+        @Valid
+        data class CreateCommand(@field:NotBlank val name: String) : Command
+    }
+    ```
+
+#### `JsonNullable` { #json-nullable }
+
+For `JsonNullable<T>`, Kora validates the `T` value inside the container.
+If `JsonNullable` is in the `undefined` state, regular value checks are not performed.
+Use `@NotNull` or `@Nonnull` to disallow `undefined` or `null`.
+
+#### Validation Options { #validation-options }
+
+There are two validation modes:
+
+- `Full` - all marked fields are checked, all possible validation errors are collected, and only then a list of violations is returned or an exception is thrown. This is the default behavior.
+- `FailFast` - validation stops on the first found error.
+
+Example of `FailFast` validation:
 ```java
-ValidatorContext context = ValidationContext.builder().failFast(true).build();
-List<Violation> violations = fooValidator.validate(value,context);
+ValidationContext context = ValidationContext.builder().failFast(true).build();
+List<Violation> violations = fooValidator.validate(value, context);
 ```
 
-## Method validation { #method-validation }
+## Method Validation { #method-validation }
 
-It is expected to use a special provided set of [annotations](#validation-annotations) validation for validating method arguments and result.
+Method argument and result validation uses the `@Validate` aspect and the set of [annotations](#validation-annotations) provided by the module.
+Kora generates aspect code at compile time, so a class with such methods must support aspect application.
 
-### Argument validation { #argument-validation }
+### Argument Validation { #argument-validation }
 
-It is required to use the `@Validate` annotation over the method to validate method arguments:
+To validate method arguments, use the `@Validate` annotation on the method:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -227,20 +267,20 @@ It is required to use the `@Validate` annotation over the method to validate met
     }
     ```
 
-#### Required arguments { #required-arguments }
+#### Required Arguments { #required-arguments }
 
-All arguments are required (`NotNull`) by default, so `NotNull` checks will be created for all of them.
+All arguments are considered required by default, so `null` checks are created for them.
 
-#### Optional arguments { #optional-arguments }
+#### Optional Arguments { #optional-arguments }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    In order to specify an argument as not required requires marking it with any `@Nullable` annotation,
-    **will not** create a *null* check for such an argument:
+    To mark an argument as optional, annotate it with any `@Nullable` annotation.
+    For such an argument, a `null` check **will not** be created:
 
     ```java
     @Component
-    Public class SomeService {
+    public class SomeService {
 
         @Validate
         public int validate(@Nullable String argument) { //(1)!
@@ -249,11 +289,12 @@ All arguments are required (`NotNull`) by default, so `NotNull` checks will be c
     }
     ```
 
-    1. Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+    1. Any `@Nullable` annotation is suitable, for example `javax.annotation.Nullable`, `jakarta.annotation.Nullable`, or `org.jetbrains.annotations.Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    It is expected to use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such an argument as Nullable:
+    To mark an argument as optional, use [`Kotlin Nullability`](https://kotlinlang.org/docs/null-safety.html) syntax and add `?` to the argument type.
+    For such an argument, a `null` check **will not** be created:
 
     ```kotlin
     @Component
@@ -266,11 +307,9 @@ All arguments are required (`NotNull`) by default, so `NotNull` checks will be c
     }
     ```
 
-#### Embedded arguments { #embedded-arguments }
+#### Nested Arguments { #embedded-arguments }
 
-In order to validate fields of complex objects for which validators are created (or provided independently),
-or fields that are not supported by standard validation tools,
-`@Valid` annotation is supposed to be used:
+Use `@Valid` to validate nested arguments that have generated or manually provided validators.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -304,13 +343,13 @@ or fields that are not supported by standard validation tools,
     }
     ```
 
-In the example above, a `Validator<Bar>` validator would be created for `Bar` and a `Validator<Foo>` would be created for `Foo`,
-where when the `Validator<Foo>` validator is called, the validator for `Validator<Bar>` will be called internally.
+In the example above, `Validator<Foo>` will be created for `Foo`.
+When the method is called, the `@Validate` aspect will call this validator for the `argument` argument.
 
-### Result validation { #result-validation }
+### Result Validation { #result-validation }
 
-In order to validate the result of a method, it is required to use the `@Validate` annotation over the method and mark it up with the appropriate [annotations](#validation-annotations).
-In order to check that the value is not `null`, you need to use any `@NotNull/@Nonnull` annotation:
+To validate a method result, use the `@Validate` annotation on the method and annotate the result with the corresponding [annotations](#validation-annotations).
+To check that the result is not `null`, use any `@NotNull` or `@Nonnull` annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -330,9 +369,9 @@ In order to check that the value is not `null`, you need to use any `@NotNull/@N
     }
     ```
 
-    1. Indicates that the method requires validation
-    2. Indicates that the result requires validation with a validator from the return value type
-    3. Standard validation annotation
+    1. Indicates that the method requires validation.
+    2. Indicates that the result should be validated through the `Validator` of the return type.
+    3. Standard validation annotation.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -349,19 +388,18 @@ In order to check that the value is not `null`, you need to use any `@NotNull/@N
     }
     ```
 
-    1. Indicates that the method requires validation
-    2. Indicates that the result requires validation with a validator from the return value type
-    3. Standard validation annotation
+    1. Indicates that the method requires validation.
+    2. Indicates that the result should be validated through the `Validator` of the return type.
+    3. Standard validation annotation.
 
-### Validation options { #validation-options-2 }
+### Validation Options { #validation-options-2 }
 
-There are two types of validation:
+There are two validation modes:
 
-- `Full` - all fields that are just marked up are validated, all possible validation errors are collected
-  and only then an exception is thrown. (**Default behavior**)
-- `FailFast` - exception is thrown on the first validation error encountered.
+- `Full` - all marked arguments and the result are checked, all possible validation errors are collected, and only then an exception is thrown. This is the default behavior.
+- `FailFast` - an exception is thrown on the first found error.
 
-Example of FailFast validation:
+Example of `FailFast` validation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -387,11 +425,14 @@ Example of FailFast validation:
     }
     ```
 
-## Custom validation annotations { #custom-validation-annotations }
+## Custom Validation Annotations { #custom-validation-annotations }
 
-Creating your custom annotation requires:
+A custom validation annotation is needed when the standard checks are not enough.
+It connects an annotation with a `ValidatorFactory`, and the factory creates a `Validator` for a specific value type.
 
-1) Create an inheritor of `Validator`:
+To create a custom annotation:
+
+1. Create a `Validator` implementation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -417,7 +458,7 @@ Creating your custom annotation requires:
     ```kotlin
     class MyValidStringValidator : Validator<String?> {
 
-        fun validate(value: String?, context: ValidationContext): List<Violation> {
+        override fun validate(value: String?, context: ValidationContext): List<Violation> {
             if (value == null) {
                 return listOf(context.violates("Should be not empty, but was null"))
             } else if (value.isEmpty()) {
@@ -428,7 +469,7 @@ Creating your custom annotation requires:
     }
     ```
 
-2) Create `ValidatorFactory` implementation:
+2. Create a `ValidatorFactory` subtype:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -442,7 +483,7 @@ Creating your custom annotation requires:
     interface MyValidValidatorFactory : ValidatorFactory<String?>
     ```
 
-3) Register the inheritor of `ValidatorFactory` as a component:
+3. Register the `ValidatorFactory` as a component:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -473,7 +514,7 @@ Creating your custom annotation requires:
     ```
 
 
-4) Create a validation annotation and annotate it `@ValidatedBy` with the previously created `ValidatorFactory` inheritor:
+4. Create a validation annotation and mark it with `@ValidatedBy` using the previously created `ValidatorFactory` subtype:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -493,7 +534,7 @@ Creating your custom annotation requires:
     annotation class MyValid
     ```
 
-5) Annotate field/argument/result:
+5. Mark a field, argument, or result with the new annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -511,25 +552,26 @@ Creating your custom annotation requires:
 
 ## Signatures { #signatures }
 
-Available signatures for repository methods out of the box:
+Method signatures supported by the `@Validate` aspect out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Class must be non `final` in order for aspects to work.
+    The class must not be `final` for aspects to work.
 
-    The `T` refers to the type of the return value.
+    `T` means the return value type.
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
-    Class must be `open` in order for aspects to work.
+    The class must be `open` for aspects to work.
 
-    By `T` we mean the type of the return value, either `T?`, or `Unit`.
+    `T` means the return value type, `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)

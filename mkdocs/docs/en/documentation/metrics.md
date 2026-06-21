@@ -5,8 +5,10 @@ agent:
 ---
 
 Module for collecting application metrics using [Micrometer](https://micrometer.io/docs/concepts#_purpose).
+It creates a `PrometheusMeterRegistry`, connects Kora component metrics to it, and exposes the result in the `Prometheus` format through the private `HTTP` server.
+This lets you collect application, `JVM`, process, and built-in integration metrics in one place and scrape them with an external observability system.
 
-Requires [private HTTP server](http-server.md) module added to provide metrics in [prometheus](https://prometheus.io/docs/concepts/data_model/) format.
+Publishing metrics requires the [private HTTP server](http-server.md), which exposes them in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) format.
 
 For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
 
@@ -40,7 +42,7 @@ For a step-by-step walkthrough before the reference details, see [Observability]
 
 ## Configuration { #configuration }
 
-Example of HTTP server path configuration for retrieving metrics described in the `HttpServerConfig` class (default values are specified):
+Example of private `HTTP` server path configuration for retrieving metrics described in the `HttpServerConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -50,7 +52,7 @@ Example of HTTP server path configuration for retrieving metrics described in th
     }
     ```
 
-    1. Path to get metrics in `prometheus` format (if [HTTP server](http-server.md) module is added):
+    1. Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
 
 === ":simple-yaml: `YAML`"
 
@@ -59,7 +61,7 @@ Example of HTTP server path configuration for retrieving metrics described in th
       privateApiHttpMetricsPath: "/metrics" #(1)!
     ```
 
-    1. Path to get metrics in `prometheus` format (if [HTTP server](http-server.md) module is added):
+    1. Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
 
 Example of the complete configuration described in the `MetricsConfig` class (default values are specified):
 
@@ -71,7 +73,7 @@ Example of the complete configuration described in the `MetricsConfig` class (de
     }
     ```
 
-    1. OpenTelemetry standard metrics format (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/))
+    1. Metrics format according to the `OpenTelemetry` standard (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/), default: `V120`).
 
 === ":simple-yaml: `YAML`"
 
@@ -80,19 +82,114 @@ Example of the complete configuration described in the `MetricsConfig` class (de
       opentelemetrySpec: "V120" #(1)!
     ```
 
-    1. OpenTelemetry standard metrics format (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/))
+    1. Metrics format according to the `OpenTelemetry` standard (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/), default: `V120`).
 
-Metrics collection configuration parameters are described in modules where metrics collection is present, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
+Metrics collection configuration parameters are described in modules that collect metrics: [HTTP Server](http-server.md), [HTTP Client](http-client.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), and other integrations.
 
 ## Usage { #usage }
 
-We follow and encourage to use the notation described in the [specification](https://prometheus.io/docs/concepts/data_model/).
+Kora follows the notation described in the [`Prometheus` specification](https://prometheus.io/docs/concepts/data_model/).
 
-Once the `Metrics.globalRegistry` module is connected, the `PrometheusMeterRegistry` will be registered and used in all components that collect metrics.
+After the module is connected, `PrometheusMeterRegistry` is registered in `Metrics.globalRegistry` and used by all components that collect metrics.
+When the application stops, this registry is removed from `Metrics.globalRegistry` and closed.
+
+The `PrometheusMeterRegistryWrapper` component is a `Root` component and implements `Wrapped<PrometheusMeterRegistry>`, so user code can inject either the generic `MeterRegistry` or the concrete `PrometheusMeterRegistry`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+        private final MeterRegistry meterRegistry;
+
+        public SomeService(MeterRegistry meterRegistry) {
+            this.meterRegistry = meterRegistry;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val meterRegistry: MeterRegistry
+    )
+    ```
+
+The registry automatically gets standard `Micrometer` binders: `ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `JvmThreadMetrics`, `ProcessorMetrics`, `FileDescriptorMetrics`, `UptimeMetrics`.
+Kora also registers the `kora.up` metric with value `1` and the `version` tag.
+
+### Custom Metric { #custom-metric }
+
+For a custom metric, it is better to create a separate component, inject `MeterRegistry`, and reuse created `Meter` instances.
+Do not create a new metric on every method call: if the tag set depends on the operation, use a key with limited cardinality and cache the metric in `ConcurrentHashMap`.
+The `register(...)` call is needed for initial metric registration in `MeterRegistry`; on the hot path, prefer using an already created `Timer` / `Counter` / `Gauge` and only call `record(...)` or `increment(...)`.
+Kora uses the same approach for its internal metrics.
+
+For example, a duration metric for an external operation:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ExternalOperationMetrics {
+        private record Key(String operation, String status) {}
+
+        private final MeterRegistry meterRegistry;
+        private final ConcurrentHashMap<Key, Timer> timers = new ConcurrentHashMap<>();
+
+        public ExternalOperationMetrics(MeterRegistry meterRegistry) {
+            this.meterRegistry = meterRegistry;
+        }
+
+        public void record(String operation, String status, long durationNanos) {
+            var key = new Key(operation, status);
+            var timer = this.timers.computeIfAbsent(key, k -> Timer.builder("external.operation.duration")
+                .tag("operation", k.operation())
+                .tag("status", k.status())
+                .register(this.meterRegistry));
+
+            timer.record(durationNanos, TimeUnit.NANOSECONDS);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ExternalOperationMetrics(
+        private val meterRegistry: MeterRegistry
+    ) {
+        private data class Key(
+            val operation: String,
+            val status: String
+        )
+
+        private val timers = ConcurrentHashMap<Key, Timer>()
+
+        fun record(operation: String, status: String, durationNanos: Long) {
+            val key = Key(operation, status)
+            val timer = timers.computeIfAbsent(key) {
+                Timer.builder("external.operation.duration")
+                    .tag("operation", it.operation)
+                    .tag("status", it.status)
+                    .register(meterRegistry)
+            }
+
+            timer.record(durationNanos, TimeUnit.NANOSECONDS)
+        }
+    }
+    ```
+
+Tag values must have a limited number of variants.
+Do not use user identifiers, request numbers, full error text, or other high-cardinality values as tags.
 
 ## Personalization { #personalization }
 
-In order to make changes to the `PrometheusMeterRegistry` configuration, you need to add to the `PrometheusMeterRegistryInitializer` container.
+To change `PrometheusMeterRegistry` configuration, add a `PrometheusMeterRegistryInitializer` to the container.
+The initializer receives the created registry before standard system metrics are registered, so it can add common tags, `MeterFilter`, renaming rules, or custom `PrometheusMeterRegistry` settings.
 
 **Important**, `PrometheusMeterRegistryInitializer` is applied only once when the application is initialized.
 
@@ -126,14 +223,17 @@ For example, we want to add a common tag for all metrics:
     }
     ```
 
-Standard metrics have some configurations such as `ServiceLayerObjectives` for Distribution summary metrics.
+Standard metrics also have their own settings, for example `slo` for `DistributionSummary` metrics.
 The configuration field names can be viewed in `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
 
 ## Standard { #standard }
 
-The original metrics format used the OpenTelemetry `V120` standard, after Kora `1.1.0` it became possible to provide metrics
-in the OpenTelemetry `V123` standard, a partial list of changes can be seen [in the OpenTelemetry documentation](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
-and [OpenTelemetry migration guidelines](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/)
+The original metrics format used the `OpenTelemetry` `V120` standard; after Kora `1.1.0`, metrics can also be provided
+in the `OpenTelemetry` `V123` standard. A partial list of changes is available in the [OpenTelemetry documentation](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
+and [OpenTelemetry migration guidelines](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/).
+
+The `metrics.opentelemetrySpec` parameter affects some metric names, units, and tag sets.
+The reference below lists both `V120` and `V123` variants for such metrics; if no variant is specified, the name is the same for both standards.
 
 ## Metrics Reference { #metrics-reference }
 
@@ -145,13 +245,14 @@ All Kora metrics use [OpenTelemetry semantic conventions](https://opentelemetry.
 This metric type enables efficient data visualization across buckets and percentile calculation.
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
+- [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) — operation duration with count, sum, max, and buckets support
 
 ### HTTP Server { #http-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.server.request.duration` | `http_server_request_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | HTTP server request processing duration | `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
-| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active HTTP requests | `http.request.method`, `http.route`, `server.address`, `url.scheme` |
+| `http.server.duration` (`V120`), `http.server.request.duration` (`V123`) | `http_server_duration_milliseconds` (`V120`) / `http_server_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `HTTP` server request processing duration | `V120`: `http.request.method`, `http.response.status_code`, `http.route`, `server.address`, `url.scheme`, `http.target`, `http.method`, `http.status_code`; `V123`: `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
+| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `V120`: `http.route`, `http.request.method`, `server.address`, `url.scheme`, `http.target`, `http.method`; `V123`: `http.route`, `http.request.method`, `server.address`, `url.scheme` |
 
 See [HTTP Server](http-server.md) module documentation for more details.
 
@@ -159,7 +260,7 @@ See [HTTP Server](http-server.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.client.request.duration` | `http_client_request_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | HTTP client request duration | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type` |
+| `http.client.duration` (`V120`), `http.client.request.duration` (`V123`) | `http_client_duration_milliseconds` (`V120`) / `http_client_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `HTTP` client request duration | `V120`: `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `http.status_code`, `http.method`, `http.target`, `error.type`; `V123`: `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `http.status_code`, `error.type` |
 
 See [HTTP Client](http-client.md) module documentation for more details.
 
@@ -167,7 +268,7 @@ See [HTTP Client](http-client.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `db.client.request.duration` | `db_client_request_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Database operation/query duration | `db.pool.name`, `db.statement`, `db.operation`, `error.type` |
+| `database.client.request.duration` (`V120`), `db.client.request.duration` (`V123`) | `database_client_request_duration_milliseconds` (`V120`) / `db_client_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Database operation/query duration | `V120`: `pool`, `query.id`, `query.operation`, `error`; `V123`: `db.pool.name`, `db.statement`, `db.operation`, `error.type` |
 
 See [Database](database-common.md) module documentation for more details.
 
@@ -222,10 +323,11 @@ See [Scheduling](scheduling.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `cache.duration` | `cache_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Cache operation duration (GET, SET, DELETE, etc.) | `cache`, `operation`, `origin`, `status` |
+| `cache.duration` | `cache_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache operation duration (`GET`, `SET`, `DELETE`, and others) | `cache`, `operation`, `origin`, `status` |
 | `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Cache hit/miss counter | `cache`, `origin`, `type` |
+| `cache.hit`, `cache.miss` | `cache_hit_total`, `cache_miss_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Deprecated hit/miss counters kept for compatibility | `cache`, `origin` |
 
-Standard Micrometer metrics are automatically registered when using Caffeine:
+Standard `Micrometer` metrics are automatically registered when using `Caffeine`:
 
 | Metric | Prometheus | Type | Description |
 |--------|------------|------|-------------|
@@ -285,7 +387,7 @@ See [Camunda 7 BPMN](camunda7-bpmn.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `camunda.rest.server.request.duration` | `camunda_rest_server_request_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Camunda REST request duration | `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
+| `camunda.rest.server.duration` (`V120`), `camunda.rest.server.request.duration` (`V123`) | `camunda_rest_server_duration_milliseconds` (`V120`) / `camunda_rest_server_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `Camunda REST` request duration | `V120`: `http.request.method`, `http.response.status_code`, `http.route`, `server.address`, `url.scheme`, `http.target`, `http.method`, `http.status_code`; `V123`: `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
 | `camunda.rest.server.active_requests` | `camunda_rest_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active Camunda REST requests | `http.route`, `http.request.method`, `server.address`, `url.scheme` |
 
 See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
@@ -294,9 +396,9 @@ See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Zeebe worker job handler duration | `job.name`, `job.type`, `status`, `error`, `error.code` |
-| `zeebe.worker.handler` | `zeebe_worker_handler_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Zeebe worker error counter | `job.name`, `job.type`, `status`, `error.code` |
-| `zeebe.client.worker.job` | `zeebe_client_worker_job_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of activated/handled Zeebe jobs | `action`, `type` |
+| `zeebe.worker.handler` (`V120`), `zeebe.worker.handler.duration` (`V123`) | `zeebe_worker_handler_seconds` (`V120`) / `zeebe_worker_handler_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `Zeebe Worker` job handler duration | `job.name`, `job.type`, `status`, `error`, `error.code` |
+| `zeebe.worker.handler` | `zeebe_worker_handler_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | `Zeebe Worker` error counter | `job.name`, `job.type`, `status`, `error.code` |
+| `zeebe.client.worker.job` | `zeebe_client_worker_job_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of activated and handled `Zeebe` jobs | `action`, `type` |
 
 See [Camunda 8 Worker](camunda8-worker.md) module documentation for more details.
 

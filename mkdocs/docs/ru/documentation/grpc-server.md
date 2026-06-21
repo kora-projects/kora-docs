@@ -4,9 +4,13 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging; key triggers include GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
 ---
 
-Модуль для подключения gRPC серверных обработчиков на основе функционала [grpc.io](https://grpc.io/docs/languages/java/basics/)
+Модуль поднимает `gRPC-сервер` на основе [`grpc-java`](https://grpc.io/docs/languages/java/basics/) и подключает к нему обработчики из графа приложения.
+Обработчик представляет собой `BindableService`, обычно это класс, наследующийся от сгенерированного `...ImplBase`.
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC сервер](../guides/grpc-server.md) и [gRPC сервер продвинутый](../guides/grpc-server-advanced.md).
+Kora создает `NettyServerBuilder`, добавляет серверные службы, пользовательские и стандартные `ServerInterceptor`, управляет жизненным циклом сервера и участвует в проверке готовности приложения.
+Если конфигурации недостаточно, итоговый `NettyServerBuilder` можно дополнительно настроить кодом через `GrpcServerBuilderConfigurer`.
+
+Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC-сервер](../guides/grpc-server.md) и [продвинутый gRPC-сервер](../guides/grpc-server-advanced.md).
 
 ## Подключение { #dependency }
 
@@ -15,7 +19,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.62.2"
+    implementation "io.grpc:grpc-protobuf:1.74.0"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -30,7 +34,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-server")
-    implementation("io.grpc:grpc-protobuf:1.62.2")
+    implementation("io.grpc:grpc-protobuf:1.74.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -55,7 +59,7 @@ agent:
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -83,7 +87,7 @@ agent:
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
@@ -100,7 +104,7 @@ agent:
 
 ## Конфигурация { #configuration }
 
-Пример полной конфигурации, описанной в классе `GrpcServerConfig` (указаны примеры значений или значения по умолчанию):
+Пример полной конфигурации, описанной в классе `GrpcServerConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -137,20 +141,20 @@ agent:
     }
     ```
 
-    1.  Порт gRPC сервера
-    2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
-    3.  Включает сервис [gRPC Server Reflection](#reflection)
-    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle)
-    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
-    6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
-    7.  Устанавливает интервал времени между PING фреймами
-    8.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
-    9.  Включает логгирование модуля (по умолчанию `false`)
-    10.  Включает метрики модуля (по умолчанию `true`)
-    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    12.  Настройка тегов для метрик (опционально)
-    13.  Включает трассировку модуля (по умолчанию `true`)
-    14.  Настройка атрибутов для трассировки (опционально)
+    1.  Порт `gRPC-сервера` (по умолчанию: `8090`)
+    2.  Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Указывается как число в байтах либо как `4MiB`, `4MB`, `1000Kb` и т.п.
+    3.  Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle) (по умолчанию: `30s`)
+    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет штатно прервано (по умолчанию не указано, необязательно). К значению будет добавлен случайный коэффициент +/-10%.
+    6.  Устанавливает дополнительное время для штатного завершения соединения после достижения максимального возраста соединения (по умолчанию не указано, необязательно). `RPC`, не завершившиеся вовремя, будут отменены, чтобы соединение могло завершиться.
+    7.  Устанавливает интервал времени между `PING`-кадрами (по умолчанию не указано, необязательно)
+    8.  Время ожидания подтверждения `PING`-кадра (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение будет закрыто.
+    9.  Включает логирование модуля (по умолчанию: `false`)
+    10.  Включает метрики модуля (по умолчанию: `true`)
+    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    12.  Теги метрик (по умолчанию: `{}`)
+    13.  Включает трассировку модуля (по умолчанию: `true`)
+    14.  Атрибуты трассировки (по умолчанию: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -170,30 +174,69 @@ agent:
         metrics:
           enabled: true #(10)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-        telemetry:
-          enabled: true #(12)!
+          tags: #(12)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(13)!
+          attributes: #(14)!
+            key1: value1
+            key2: value2
     ```
 
-    1.  Порт gRPC сервера
-    2.  Максимальный размер входящего сообщения (указывается как число в байтах / либо как `4MiB` / `4MB` / `1000Kb` и тп)
-    3.  Включает сервис [gRPC Server Reflection](#reflection)
-    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle)
-    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет изящно прервано. К нему будет добавлен случайный коэфициент +/-10%.
-    6.  Устанавливает пользовательское штатное время для штатного завершения соединения. После достижения максимального возраста соединения у RPC будет штатное время для завершения. RPC, не завершившиеся вовремя, будут отменены, что позволит завершить соединение.
-    7.  Устанавливает интервал времени между PING фреймами
-    8.  Таймаут времени для подтверждения PING фрейма. Если отправитель не получил подтверждение за данное время, соединение будет закрыто
-    9.  Включает логгирование модуля (по умолчанию `false`)
-    10.  Включает метрики модуля (по умолчанию `true`)
-    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    12.  Включает трассировку модуля (по умолчанию `true`)
+    1.  Порт `gRPC-сервера` (по умолчанию: `8090`)
+    2.  Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Указывается как число в байтах либо как `4MiB`, `4MB`, `1000Kb` и т.п.
+    3.  Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`)
+    4.  Время ожидания обработки перед выключением сервера в случае [штатного завершения](container.md#component-lifecycle) (по умолчанию: `30s`)
+    5.  Устанавливает пользовательский максимальный возраст соединения, при превышении которого соединение будет штатно прервано (по умолчанию не указано, необязательно). К значению будет добавлен случайный коэффициент +/-10%.
+    6.  Устанавливает дополнительное время для штатного завершения соединения после достижения максимального возраста соединения (по умолчанию не указано, необязательно). `RPC`, не завершившиеся вовремя, будут отменены, чтобы соединение могло завершиться.
+    7.  Устанавливает интервал времени между `PING`-кадрами (по умолчанию не указано, необязательно)
+    8.  Время ожидания подтверждения `PING`-кадра (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение будет закрыто.
+    9.  Включает логирование модуля (по умолчанию: `false`)
+    10.  Включает метрики модуля (по умолчанию: `true`)
+    11.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    12.  Теги метрик (по умолчанию: `{}`)
+    13.  Включает трассировку модуля (по умолчанию: `true`)
+    14.  Атрибуты трассировки (по умолчанию: `{}`)
 
 Можно также настроить [Netty транспорт](netty.md).
+
+### Настройка через код { #builder-configurer }
+
+Если параметров конфигурации недостаточно, можно зарегистрировать компонент `GrpcServerBuilderConfigurer` и донастроить `NettyServerBuilder` кодом.
+Такой компонент вызывается после применения конфигурации, добавления служб, пользовательских и стандартных `ServerInterceptor`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyGrpcServerBuilderConfigurer implements GrpcServerBuilderConfigurer {
+
+        @Override
+        public NettyServerBuilder configure(NettyServerBuilder builder) {
+            return builder.permitKeepAliveWithoutCalls(true);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyGrpcServerBuilderConfigurer : GrpcServerBuilderConfigurer {
+
+        override fun configure(builder: NettyServerBuilder): NettyServerBuilder {
+            return builder.permitKeepAliveWithoutCalls(true)
+        }
+    }
+    ```
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-server).
 
 ## Обработчики { #handlers }
 
-Созданные gRPC сервисы требуется пометить аннотацией `@Component`:
+Созданные `gRPC-сервисы` нужно добавить в граф приложения с помощью аннотации `@Component`.
+Обычно обработчик наследуется от класса `...ImplBase`, который сгенерировал `protobuf gradle plugin` из `proto`-описания.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -211,22 +254,26 @@ agent:
 
 ## Перехватчики { #interceptors }
 
-[Перехватчики](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) позволяют перехватывать запросы перед тем, как они будут переданы обработчикам.
+[Перехватчики](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) позволяют обрабатывать запросы до передачи в `gRPC-сервис`.
+Они подходят для сквозной логики: логирования, авторизации, трассировки, работы с `Metadata` и преобразования ошибок.
 
 ### Стандартные { #default }
 
-При запуске сервера по-умолчанию используются следующие перехватчики:
+При запуске сервера Kora добавляет стандартные перехватчики:
 
+- `TelemetryInterceptor`
 - `ContextServerInterceptor`
 - `CoroutineContextInjectInterceptor`
-- `MetricCollectorServerInterceptor`
-- `LoggingServerInterceptor`
 
-Для переопределения списка перехватчиков по умолчанию можно переопределить метод `serverBuilder` из класса `GrpcModule`
+`TelemetryInterceptor` включает телеметрию сервера: логирование, метрики и трассировку в зависимости от подключенных модулей и настроек `grpcServer.telemetry`.
+`ContextServerInterceptor` переносит контекст Kora в обработку вызова, а `CoroutineContextInjectInterceptor` добавляет поддержку `CoroutineContext` для `Kotlin`.
+
+Пользовательские `ServerInterceptor` из графа приложения добавляются в `NettyServerBuilder` до стандартных перехватчиков.
+Для полной настройки `NettyServerBuilder` используйте [GrpcServerBuilderConfigurer](#builder-configurer).
 
 ### Собственные { #custom }
 
-Для добавления собственного перехватчика требуется создать наследника `ServerInterceptor` с аннотацией `@Component`:
+Для добавления собственного перехватчика требуется создать реализацию `ServerInterceptor` с аннотацией `@Component`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -240,7 +287,7 @@ agent:
                                                                      ServerCallHandler<ReqT, RespT> serverCallHandler) {
             // do something
             
-            return serverCallHandler.startCall(serverCall, metadata):
+            return serverCallHandler.startCall(serverCall, metadata);
         }
     }
     ```
@@ -265,35 +312,35 @@ agent:
 
 ## Отладка { #reflection }
 
-Поддерживается [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
-который предоставляет информацию об общедоступных gRPC-сервисах на сервере
-и помогает клиентам во время выполнения строить запросы и ответы RPC без предварительно скомпилированной информации о сервисе.
-Он используется инструментом командной строки gRPC (gRPC CLI), с помощью которого можно исследовать proto-файлы сервера и отправлять/получать тестовые RPC.
-Reflection поддерживается только для сервисов, основанных на proto.
+Поддерживается [`gRPC Server Reflection`](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md), который предоставляет информацию о доступных `gRPC-сервисах` на сервере.
+Рефлексия помогает клиентам и инструментам во время выполнения строить `RPC`-запросы без заранее скомпилированной информации о сервисе.
+Например, ее использует `gRPC CLI`, с помощью которого можно исследовать `proto`-описания сервера и отправлять тестовые `RPC`.
+`gRPC Server Reflection` поддерживается только для сервисов, основанных на `proto`.
 
-Подробнее о работе с gRPC Server Reflection можно ознакомится [тут](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
+Подробнее о работе с `gRPC Server Reflection` можно прочитать в [руководстве grpc-java](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
 
 ### Подключение { #dependency-2 }
 
-Требуется дополнительно подключить зависимость [gRPC Server Reflection](https://mvnrepository.com/artifact/io.grpc/grpc-services).
+Требуется дополнительно подключить зависимость [`gRPC Server Reflection`](https://mvnrepository.com/artifact/io.grpc/grpc-services).
 
 ===! ":fontawesome-brands-java: `Java`"
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "io.grpc:grpc-services:1.62.2"
+    implementation "io.grpc:grpc-services:1.74.0"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("io.grpc:grpc-services:1.62.2")
+    implementation("io.grpc:grpc-services:1.74.0")
     ```
 
 ### Конфигурация { #configuration-2 }
 
-Требуется также включить сервис gRPC Server Reflection в конфигурации:
+Требуется также включить сервис `gRPC Server Reflection` в конфигурации.
+Kora добавит его в сервер только если в приложении есть класс `io.grpc.protobuf.services.ProtoReflectionService`, поэтому одной настройки без зависимости недостаточно.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -303,7 +350,7 @@ Reflection поддерживается только для сервисов, о
     }
     ```
 
-    1.  Включает сервис gRPC Server Reflection
+    1.  Включает сервис `gRPC Server Reflection` (по умолчанию: `false`)
 
 === ":simple-yaml: `YAML`"
 
@@ -312,4 +359,4 @@ Reflection поддерживается только для сервисов, о
       reflectionEnabled: false #(1)!
     ```
 
-    1.  Включает сервис gRPC Server Reflection
+    1.  Включает сервис `gRPC Server Reflection` (по умолчанию: `false`)

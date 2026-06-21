@@ -4,14 +4,18 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing; key triggers include TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
 ---
 
-Модуль для сбора трассировка приложения по стандарту [OpenTelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/)
-и экспорта трассировки по gRPC/HTTP в формате OTLP. 
+Трассировка помогает связать отдельные операции приложения в одну цепочку выполнения и понять, где запрос провел время или завершился ошибкой.
+Kora использует [`OpenTelemetry`](https://opentelemetry.io/docs/what-is-opentelemetry/) для создания `Span`, хранения текущего контекста трассировки в `OpentelemetryContext` и экспорта данных в формате `OTLP`.
+
+Текущий `Span` хранится в контексте Kora, поэтому его можно передавать между компонентами приложения и использовать при ручном создании вложенных `Span`.
+При установке `OpentelemetryContext` Kora также добавляет `traceId` и `spanId` в `MDC`, чтобы эти идентификаторы попадали в логи при использовании модуля логирования.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
 
 ## gRPC { #grpc }
 
-Модуль позволяет собирать трассировку с помощью [gRPC протокола](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) посредствам `GrpcSender`.
+Модуль экспортирует трассировку в `OpenTelemetry Collector` через `OTLP/gRPC`.
+Для этого используется `GrpcSender`, а типичный адрес коллектора выглядит как `http://localhost:4317`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -41,7 +45,8 @@ agent:
 
 ## HTTP { #http }
 
-Модуль позволяет собирать трассировку с помощью [HTTP протокола](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) посредствам `HttpSender`.
+Модуль экспортирует трассировку в `OpenTelemetry Collector` через `OTLP/HTTP`.
+Для этого используется `HttpSender`, а типичный адрес коллектора выглядит как `http://localhost:4318/v1/traces`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -71,9 +76,11 @@ agent:
 
 ## Конфигурация { #configuration }
 
-Обязательным полем является только `endpoint`, аттрибуты из поля `attributes` будут отправляться с каждым спаном.
+Параметры экспорта описаны в классах `OpentelemetryGrpcExporterConfig` и `OpentelemetryHttpExporterConfig`, а атрибуты ресурса описаны в классе `OpentelemetryResourceConfig`.
+Если `tracing.exporter.endpoint` не указан, экспортер не создается и приложение стартует без отправки трассировок во внешний коллектор.
 
-Пример полной конфигурации, описанной в классе `OpentelemetryGrpcExporterConfig` или `OpentelemetryHttpExporterConfig`, а также `OpentelemetryResourceConfig` (указаны примеры значений или значения по умолчанию):
+Поле `tracing.attributes` задает атрибуты `OpenTelemetry Resource`, которые добавляются к экспортируемым `Span`.
+Обычно здесь указывают имя сервиса и пространство имен, например `service.name` и `service.namespace`.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -103,20 +110,20 @@ agent:
     }
     ```
 
-    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса (**обязательный**)
-    2.  Время ожидания соедининя с экспортером
-    3.  Максимальное время ожидания обработки телеметрии коллектором 
-    4.  Время между экспортом телеметрии в коллектор
-    5.  Максимальная кол-во телеметрии в рамках одного экспорта
-    6.  Максимальный размер очереди неотправленной телеметрии
-    7.  Максимальное вреия ожидания экспорта
-    8.  Механизм сжатия телеметрии при экпорте
-    9.  Экспортировать ли не сэмплированную телеметрию
-    10. Максимальное кол-во попыток на экспорт
-    11. Начальное значение ожидания перед следующей попыткой экспорта
-    12. Максимальное значение ожидания перед следующей попыткой экспорта
-    13. Мультипликатор значения задержки ожидания
-    14. Дополнительные атрибуты телеметрии
+    1. Адрес `OpenTelemetry Collector` для экспорта трассировок (по умолчанию не указано, необязательно). Для `gRPC` обычно используется `http://localhost:4317`, для `HTTP` обычно используется `http://localhost:4318/v1/traces`.
+    2. Время ожидания соединения с экспортером (по умолчанию не указано, необязательно).
+    3. Максимальное время ожидания отправки данных экспортером (по умолчанию: `3s`).
+    4. Период между отправками накопленных `Span` в коллектор (по умолчанию: `2s`).
+    5. Максимальное количество `Span` в одной отправке (по умолчанию: `512`).
+    6. Максимальный размер очереди `Span`, ожидающих отправки (по умолчанию: `2048`).
+    7. Максимальное время ожидания пакетной отправки (по умолчанию: `30s`).
+    8. Сжатие данных при экспорте (по умолчанию: `gzip`).
+    9. Экспортировать ли `Span`, которые не были выбраны `Sampler` (по умолчанию: `false`).
+    10. Максимальное количество попыток повторной отправки (по умолчанию: `5`).
+    11. Начальная задержка перед повторной отправкой (по умолчанию: `1s`).
+    12. Максимальная задержка перед повторной отправкой (по умолчанию: `5s`).
+    13. Множитель задержки между повторными отправками (по умолчанию: `1.5`).
+    14. Атрибуты `OpenTelemetry Resource`, которые будут добавлены к экспортируемым `Span` (по умолчанию: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -142,26 +149,26 @@ agent:
         service.namespace: kora
     ```
 
-    1.  URL от [OpenTelemetry](https://opentelemetry.io/docs/collector/) коллектор сервиса (**обязательный**)
-    2.  Время ожидания соедининя с экспортером
-    3.  Максимальное время ожидания обработки телеметрии коллектором 
-    4.  Время между экспортом телеметрии в коллектор
-    5.  Максимальная кол-во телеметрии в рамках одного экспорта
-    6.  Максимальный размер очереди неотправленной телеметрии
-    7.  Максимальное вреия ожидания экспорта
-    8.  Механизм сжатия телеметрии при экпорте
-    9.  Экспортировать ли не сэмплированную телеметрию
-    10. Максимальное кол-во попыток на экспорт
-    11. Начальное значение ожидания перед следующей попыткой экспорта
-    12. Максимальное значение ожидания перед следующей попыткой экспорта
-    13. Мультипликатор значения задержки ожидания
-    14. Дополнительные атрибуты телеметрии
+    1. Адрес `OpenTelemetry Collector` для экспорта трассировок (по умолчанию не указано, необязательно). Для `gRPC` обычно используется `http://localhost:4317`, для `HTTP` обычно используется `http://localhost:4318/v1/traces`.
+    2. Время ожидания соединения с экспортером (по умолчанию не указано, необязательно).
+    3. Максимальное время ожидания отправки данных экспортером (по умолчанию: `3s`).
+    4. Период между отправками накопленных `Span` в коллектор (по умолчанию: `2s`).
+    5. Максимальное количество `Span` в одной отправке (по умолчанию: `512`).
+    6. Максимальный размер очереди `Span`, ожидающих отправки (по умолчанию: `2048`).
+    7. Максимальное время ожидания пакетной отправки (по умолчанию: `30s`).
+    8. Сжатие данных при экспорте (по умолчанию: `gzip`).
+    9. Экспортировать ли `Span`, которые не были выбраны `Sampler` (по умолчанию: `false`).
+    10. Максимальное количество попыток повторной отправки (по умолчанию: `5`).
+    11. Начальная задержка перед повторной отправкой (по умолчанию: `1s`).
+    12. Максимальная задержка перед повторной отправкой (по умолчанию: `5s`).
+    13. Множитель задержки между повторными отправками (по умолчанию: `1.5`).
+    14. Атрибуты `OpenTelemetry Resource`, которые будут добавлены к экспортируемым `Span` (по умолчанию: `{}`).
 
-Параметры конфигурации сбора трассировки описываются в модулях в которых присутствует сбор трассировки, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md) и т.д.
+Параметры включения трассировки в конкретных модулях описываются в документации этих модулей, например [HTTP сервер](http-server.md), [HTTP клиент](http-client.md), [gRPC-сервер](grpc-server.md), [gRPC-клиент](grpc-client.md).
 
 ## Контекст трассировки { #tracing-context }
 
-Чтобы получить текущий `Span` трассировки можно использовать метод `getSpan` у `OpentelemetryContext`:
+Чтобы получить текущий `Span`, можно использовать метод `getSpan` у `OpentelemetryContext`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -172,7 +179,7 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val span = OpentelemetryContext.getSpan();
+    val span = OpentelemetryContext.getSpan()
     ```
 
 Для получения текущего идентификатора трассировки можно использовать метод `getTraceId()` у `OpentelemetryContext`:
@@ -186,15 +193,16 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val traceId = OpentelemetryContext.getTraceId();
+    val traceId = OpentelemetryContext.getTraceId()
     ```
+
+Если текущего `Span` нет, оба метода вернут `null`.
+Если нужно получить значение-заглушку от `OpenTelemetry`, используйте методы `getSpanOrInvalid()` и `getTraceIdOrInvalid()`.
 
 ## Синхронная трассировка { #tracing-sync }
 
-Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer` 
-из контейнера для создания своих трассировок.
-
-Создать трассировку синхронного кода от текущего родительского можно следующим образом:
+Помимо автоматически создаваемых фреймворком `Span`, можно использовать объект `Tracer` из графа приложения и создавать собственные вложенные `Span`.
+При ручной трассировке важно сохранить текущий `OpentelemetryContext`, установить новый контекст на время работы и восстановить исходный контекст в `finally`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -212,8 +220,8 @@ agent:
             var ctx = ru.tinkoff.kora.common.Context.current();
             var otctx = OpentelemetryContext.get(ctx);
             var span = tracer.spanBuilder("myOperation")
-                    .setParent(otctx.getContext())
-                    .startSpan();
+                .setParent(otctx.getContext())
+                .startSpan();
 
             OpentelemetryContext.set(ctx, otctx.add(span));
             try {
@@ -264,22 +272,21 @@ agent:
             }
         }
 
-        fun doWork(): String = // do some work
+        fun doWork(): String {
+            // do some work
+        }
     }
     ```
 
 ## Асинхронная трассировка { #async-tracing }
 
-Помимо автоматически создаваемых фреймворком спанов, можно пользоваться объектом `Tracer`
-из контейнера для создания своих трассировок. Главная сложность заключается в прокидывании `Fork`'а контекста 
-в другой поток исполнения, для корректной работы трассировки.
-
-Создать трассировку асинхронного кода от текущего родительского можно следующим образом:
+При переходе в другой поток выполнения нужно передать не только `Span`, но и контекст Kora.
+Для `CompletionStage` используется `Context.fork()`, а для `suspend`-кода - `Context.Kotlin.asCoroutineContext(ctx)`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Пример показан для `CompletableStage` асинхронного подхода:
-    
+    Пример для асинхронного кода на `CompletionStage`:
+
     ```java
     @Component
     public final class MyService {
@@ -294,23 +301,23 @@ agent:
             var ctx = ru.tinkoff.kora.common.Context.current().fork();
             var otctx = OpentelemetryContext.get(ctx);
             var span = tracer.spanBuilder("myOperation")
-                    .setParent(otctx.getContext())
-                    .startSpan();
+                .setParent(otctx.getContext())
+                .startSpan();
 
             return CompletableFuture.supplyAsync(() -> {
-                        OpentelemetryContext.set(ctx, otctx.add(span));
-                        var result = doWork();
-                        return result;
-                    })
-                    .whenComplete((r, e) -> {
-                        if (e != null) {
-                            span.recordException(e);
-                            span.setStatus(StatusCode.ERROR, e.getMessage());
-                        } else {
-                            span.setStatus(StatusCode.OK);
-                        }
-                        span.end();
-                    });
+                    OpentelemetryContext.set(ctx, otctx.add(span));
+                    return doWork();
+                })
+                .whenComplete((r, e) -> {
+                    if (e != null) {
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR, e.getMessage());
+                    } else {
+                        span.setStatus(StatusCode.OK);
+                    }
+                    span.end();
+                    OpentelemetryContext.set(ctx, otctx);
+                });
         }
 
         public String doWork() {
@@ -321,7 +328,7 @@ agent:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Пример показан для `suspend` асинхронного подхода:
+    Пример для асинхронного `suspend`-кода:
 
     ```kotlin
     @Component
@@ -351,6 +358,8 @@ agent:
             }
         }
 
-        fun doWork(): String = // do some work
+        fun doWork(): String {
+            // do some work
+        }
     }
     ```
