@@ -4,34 +4,41 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora readiness and liveness probes, probe configuration, dependency health checks, and Kubernetes-style availability reporting; key triggers include ReadinessProbe, LivenessProbe, ProbeFailure, ProbesModule, CircuitBreaker."
 ---
 
-Функционал дающий приложению два метода для получения проб на служебном порту для предоставления информации о жизнеспособности и готовности сервиса.
+Пробы позволяют проверять `жизнеспособность` и `готовность` приложения через служебный HTTP-порт.
+Их обычно используют оркестраторы и балансировщики нагрузки, чтобы понять, можно ли отправлять приложению запросы и нужно ли перезапускать его экземпляр.
+Разделение на две пробы помогает отличать временную неготовность приложения к приему трафика от состояния, когда процесс действительно считается неисправным.
 
-Предоставляется по средствам подключения [служебного HTTP сервера](http-server.md).
+Пробами управляет [служебный HTTP-сервер](http-server.md). По умолчанию он работает на порту `8085`.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
 
-## Жизнеспособности { #liveness }
+## Жизнеспособность { #liveness }
 
-Эта проба отвечает за признак — является ли приложение живым в данный момент. Kora старается начать отдавать эту пробу как можно раньше, чтобы оркестраторы точно знали, что нет проблем при старте и не пытались сделать рестарт приложения.
+Эта проба показывает, что приложение живо и его не нужно перезапускать. Kora старается начать отдавать эту пробу как можно раньше, чтобы оркестратор не перезапускал приложение во время штатного запуска.
 
-Пример конфигурации пути HTTP сервера для получения проб, описанной в классе `HttpServerConfig` (указаны значения по умолчанию):
+Пример конфигурации пути служебного HTTP-сервера, описанной в классе `HttpServerConfig` (указано значение по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-        privateApiHttpLivenessPath = "/system/liveness"
+        privateApiHttpLivenessPath = "/system/liveness" //(1)!
     }
     ```
+
+    1. Путь пробы `жизнеспособности` на служебном HTTP-сервере (по умолчанию: `/system/liveness`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      privateApiHttpLivenessPath: "/system/liveness"
+      privateApiHttpLivenessPath: "/system/liveness" #(1)!
     ```
 
-Для создания собственной пробы жизнеспособности требуется чтобы компонент реализовывал интерфейс:
+    1. Путь пробы `жизнеспособности` на служебном HTTP-сервере (по умолчанию: `/system/liveness`).
+
+Для создания собственной пробы `жизнеспособности` требуется, чтобы компонент реализовывал интерфейс:
+
 ```java
 public interface LivenessProbe {
 
@@ -42,28 +49,63 @@ public interface LivenessProbe {
 
 В случае ошибки проба должна возвращать `LivenessProbeFailure`, а в случае успеха `null`.
 
-## Готовности { #readiness }
+===! ":fontawesome-brands-java: `Java`"
 
-Эта проба отвечает за признак — является ли приложение готовым к работе в данный момент. 
+    ```java
+    import ru.tinkoff.kora.common.Component;
+    import ru.tinkoff.kora.common.liveness.LivenessProbe;
+    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure;
 
-Пример конфигурации пути HTTP сервера для получения проб, описанной в классе `HttpServerConfig` (указаны значения по умолчанию):
+    @Component
+    public final class ApplicationHealthProbe implements LivenessProbe {
+
+        @Override
+        public LivenessProbeFailure probe() {
+            return null;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.common.Component
+    import ru.tinkoff.kora.common.liveness.LivenessProbe
+    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure
+
+    @Component
+    class ApplicationHealthProbe : LivenessProbe {
+        override fun probe(): LivenessProbeFailure? = null
+    }
+    ```
+
+## Готовность { #readiness }
+
+Эта проба показывает, что приложение готово принимать рабочую нагрузку.
+
+Пример конфигурации пути служебного HTTP-сервера, описанной в классе `HttpServerConfig` (указано значение по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-        privateApiHttpReadinessPath = "/system/readiness"
+        privateApiHttpReadinessPath = "/system/readiness" //(1)!
     }
     ```
+
+    1. Путь пробы `готовности` на служебном HTTP-сервере (по умолчанию: `/system/readiness`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      privateApiHttpReadinessPath: "/system/readiness"
+      privateApiHttpReadinessPath: "/system/readiness" #(1)!
     ```
 
-Для создания собственной пробы жизнеспособности требуется чтобы компонент реализовывал интерфейс:
+    1. Путь пробы `готовности` на служебном HTTP-сервере (по умолчанию: `/system/readiness`).
+
+Для создания собственной пробы `готовности` требуется, чтобы компонент реализовывал интерфейс:
+
 ```java
 public interface ReadinessProbe {
 
@@ -74,12 +116,73 @@ public interface ReadinessProbe {
 
 В случае ошибки проба должна возвращать `ReadinessProbeFailure`, а в случае успеха `null`.
 
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import ru.tinkoff.kora.common.Component;
+    import ru.tinkoff.kora.common.readiness.ReadinessProbe;
+    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure;
+
+    import java.time.Duration;
+    import java.time.Instant;
+
+    @Component
+    public final class CustomReadinessProbe implements ReadinessProbe {
+
+        private static final Duration WARMUP_PERIOD = Duration.ofMillis(500);
+
+        private final Instant startedAt = Instant.now();
+
+        @Override
+        public ReadinessProbeFailure probe() {
+            var readyAt = startedAt.plus(WARMUP_PERIOD);
+            if (Instant.now().isBefore(readyAt)) {
+                return new ReadinessProbeFailure("Service is warming up");
+            }
+            return null;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.common.Component
+    import ru.tinkoff.kora.common.readiness.ReadinessProbe
+    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure
+    import java.time.Duration
+    import java.time.Instant
+
+    @Component
+    class CustomReadinessProbe : ReadinessProbe {
+        private val startedAt = Instant.now()
+
+        override fun probe(): ReadinessProbeFailure? {
+            val readyAt = startedAt.plus(Duration.ofMillis(500))
+            return if (Instant.now().isBefore(readyAt)) {
+                ReadinessProbeFailure("Service is warming up")
+            } else {
+                null
+            }
+        }
+    }
+    ```
+
+## Ответ { #response }
+
+Служебный HTTP-сервер возвращает:
+
+- `200 OK` — если все пробы вернули `null`.
+- `503 Service Unavailable` — если проба вернула `LivenessProbeFailure` или `ReadinessProbeFailure`.
+- `503 Service Unavailable` — если компонент пробы еще не готов.
+- `408 Request Timeout` — если выполнение проб не завершилось за `30` секунд.
+
 ## Совет { #recommendations }
 
 ???+ warning "Совет"
 
-    **Мы крайне не советуем делать пробы, проверяющие внешние зависимости, такие как базы данных или другие сервисы.**
+    **Не рекомендуется делать пробы, которые напрямую проверяют внешние зависимости: базы данных, очереди или другие сервисы.**
 
-    В случае недоступности внешних зависимостей рекомендуется использовать шаблон [Прерыватель](resilient.md#circuitbreaker).
+    Временная недоступность внешней зависимости не должна автоматически приводить к перезапуску приложения. Для таких случаев лучше использовать шаблон [Прерыватель](resilient.md#circuitbreaker).
 
 Хорошим примером для `ReadinessProbe` может служить проба, которая возвращает ошибку во время прогрева сервиса.

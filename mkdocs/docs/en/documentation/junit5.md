@@ -4,20 +4,20 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @MockComponent, @Tag, @TestConfig, @TestConfigSource, Graph, Mockito."
 ---
 
-Module provides an `Extension` for [JUnit5](https://junit.org/junit5/docs/current/user-guide/) that allows you to easily test your application.
+Module provides an extension for [JUnit 5](https://junit.org/junit5/docs/current/user-guide/) that allows testing an application through the same component graph that is used at runtime.
 
-The concept of the JUnit 5 Kora extension is to test the source code that will eventually be used in production.
-This implies that dependency container of the main application is involved in the test,
-it can be limited or its parts can be replaced by stubs if the test requires.
+The Kora extension for `JUnit 5` is intended for component and integration testing of the source code that will later run in the real application.
+The test uses the dependency container of the main application: it can be limited to the required components,
+extended with test components, or have individual parts replaced with mocks.
 
 Module allows you to conduct:
 
-- `Component tests` - testing of a single component
-- `Inter-component tests` - testing of several components and their interaction with each other
+- `Component tests` - testing of a single component.
+- `Inter-component tests` - testing of several components and their interaction with each other.
 - `Integration tests` - testing of components and interaction with external systems.
 
 It is recommended to additionally test the service artifact packaged in the final image,
-as black box using [TestContainers library](https://java.testcontainers.org/).
+as a black box using the [Testcontainers library](https://java.testcontainers.org/).
 
 For a step-by-step walkthrough before the reference details, see [Component Testing](../guides/testing-junit.md), [Integration Testing](../guides/testing-integration.md) and [Black-Box Testing](../guides/testing-black-box.md).
 
@@ -104,15 +104,16 @@ Examples will be shown relative to such an application:
 
 ### Test { #test }
 
-The `@KoraAppTest` annotation is supposed to be used to annotate the test class.
+To enable the Kora extension, annotate the test class with `@KoraAppTest`.
+The annotation connects the `JUnit 5` extension, finds the generated graph of the specified `@KoraApp` application, and prepares the dependency container for the test.
 
 Parameters of the `@KoraAppTest` annotation:
 
-- `value` - required parameter that points to the class annotated by `@KoraApp`, representing a graph of all dependencies that will be available within the test.
-- `components` - list of components to be initialized within the test,
-  components that are not declared within the test are specified using special annotation `@TestComponent`.
-- `modules` - list of modules with components connected in the application,
-  which should be additionally included in the dependency container within the test.
+- `value` - class annotated with `@KoraApp` whose component graph will be used in the test (`required`, no default).
+- `components` - additional component classes that should be included in the test graph in addition to components discovered through `@TestComponent` (default: `{}`).
+- `modules` - additional modules with component factory methods that should be connected to the test graph (default: `{}`).
+
+Only module interfaces can be specified in `modules`. If the whole graph needs to be tested, inject `KoraAppGraph` or do not limit the graph to individual `@TestComponent` components.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -137,11 +138,11 @@ Parameters of the `@KoraAppTest` annotation:
 
 ### Component { #component }
 
-In order to use components within a test, it is suggested to use the `@TestComponent` annotation
-which allows injecting component dependencies into arguments and/or fields of the test class.
+To inject and select components for testing, use the `@TestComponent` annotation.
+It allows injecting components into test method arguments, the constructor, and/or test class fields, and limits the dependency container to those components.
 
 All components listed in the test fields and/or method/constructor arguments annotated `@TestComponent` will be injected as dependencies within the test.
-Entire dependency container will be limited to just those components and their dependencies within the test.
+The test dependency container will be limited to those components and their dependencies.
 
 It is important that components within the test must be used by at least one [@Root component](container.md#root-component) that is also specified within the test.
 
@@ -168,7 +169,7 @@ An example of a test where components are injected in fields:
     @KoraAppTest(Application::class)
     class SomeTests {
 
-        @TestComponent 
+        @TestComponent
         lateinit var component1: Supplier<String>
 
         @Test
@@ -240,6 +241,21 @@ Example of a test where components are injected in method arguments:
     }
     ```
 
+#### Injection Rules { #injection-rules }
+
+Components can be injected in three ways: into a test class field, into the constructor, or into a test method parameter.
+The chosen form affects when the Kora extension can access the test class instance and which additional mechanisms are available.
+
+- Fields suit most tests and are compatible with `KoraAppTestConfigModifier`, `KoraAppTestGraphModifier`, `PER_METHOD`, and `PER_CLASS`.
+- Constructor injection is convenient for immutable fields, but is incompatible with `KoraAppTestConfigModifier` and `KoraAppTestGraphModifier`, because the extension needs a test class instance to call `config()` or `graph()`, while that instance is still being created during constructor injection.
+- Method parameters are convenient for dependencies local to a specific test; with `PER_METHOD`, the graph includes parameters of the current method, while with `PER_CLASS`, the extension collects `@TestComponent` parameters from all methods of the class in advance.
+- If constructor injection is used, `@TestComponent`, `@Mock`, `@Spy`, `@MockK`, or `@SpyK` cannot also be injected into test method parameters.
+- In `PER_CLASS` mode, `@Mock` / `@MockK` cannot be injected into test method parameters because method-level mocks live shorter than the shared test class graph.
+- The same element cannot be declared as a regular `@TestComponent`, mock, and spy at the same time: the extension will fail the test with a configuration error.
+
+If the test needs `KoraAppTestConfigModifier` or `KoraAppTestGraphModifier`, use field injection or method parameters.
+If constructor injection is required, it is better to move configuration and graph modification into a separate test `@KoraApp` or connected module.
+
 ### Tag { #tag }
 
 In order to inject a dependency/mock that has an `@Tag`, you must specify the appropriate `@Tag` annotation next to the argument for injection:
@@ -264,11 +280,55 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     class SomeTests {
 
         @Test
-        fun example(@Tag(Supplier.class) @TestComponent component1: Supplier<String>) {
+        fun example(@Tag(Supplier::class) @TestComponent component1: Supplier<String>) {
             assertEquals("?", component1.get())
         }
     }
     ```
+
+### Application Graph { #application-graph }
+
+If a test needs direct access to the prepared graph, inject `KoraAppGraph` into a field, constructor, or test method argument.
+It can retrieve one or several components by type and can also account for `@Tag`.
+
+Main `KoraAppGraph` methods:
+
+- `getFirst(Type type)` / `getFirst(Class<T> type)` - return the first found component or `null`.
+- `getFirst(Type type, Class<?>... tags)` / `getFirst(Class<T> type, Class<?>... tags)` - return the first component with the specified tags or `null`.
+- `findFirst(...)` - returns `Optional<T>` instead of `null`.
+- `getAll(...)` - returns all components of the specified type, optionally accounting for tags.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class SomeTests {
+
+        @Test
+        void example(KoraAppGraph graph) {
+            var component = graph.getFirst(Supplier.class, Supplier.class);
+
+            assertNotNull(component);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class SomeTests {
+
+        @Test
+        fun example(graph: KoraAppGraph) {
+            val component = graph.getFirst(Supplier::class.java, Supplier::class.java)
+
+            assertNotNull(component)
+        }
+    }
+    ```
+
+`KoraAppGraph` cannot be used as a target for `@Mock`, `@Spy`, `@MockK`, or `@SpyK`, because it is a service object of the test extension, not an application component.
 
 ### Mock { #mock }
 
@@ -290,7 +350,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     annotated component and control the behavior of its methods with `Mockito` or the methods will return default values: `void`, default values for primitives, empty collections and `null` for all other objects. 
 
     The stub component will be injected as a dependency into the arguments and/or fields of the test class and into all components that required it as a dependency.
-    All dependent components that are not required anywhere else within the test will be excluded for non-necessity.
+    All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
 
 
     Example of a test using a `@Mock` component and injecting a mock in a field:
@@ -328,7 +388,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     class SomeTests {
 
         @Test
-        void example(@MSpy @TestComponent Supplier<String> component1) {
+        void example(@Spy @TestComponent Supplier<String> component1) {
             Mockito.when(component1.get()).thenReturn("?");
             assertEquals("?", component1.get());
         }
@@ -338,7 +398,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     You can also make a spy from the value of a test class field.
 
     The spy component will be injected as a dependency in the arguments and/or fields of the test class and in all components that required it as a dependency.
-    All dependent components that are not required anywhere else within the test will be excluded for non-necessity.
+    All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
 
     Example of a test using `@Spy` spy component:
 
@@ -383,7 +443,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     annotated component and control the behavior of its methods using `MockK`. 
 
     Mock component will be injected as a dependency into the arguments and/or fields of the test class and into all components that required it as a dependency.
-    All dependent components that are not required anywhere else within the test will be excluded for non-necessity.
+    All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
 
     Example of a test using `@MockK` component and injecting a mock:
 
@@ -426,7 +486,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
     You can also make a spy from the value of a test class field.
 
     The spy component will be implemented as a dependency in the arguments and/or fields of the test class and in all components that required it as a dependency.
-    All dependent components that are not required anywhere else within the test will be excluded for non-necessity.
+    All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
 
     An example of a test using the `@SpyK` spy component:
 
@@ -447,15 +507,20 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
 #### Mock strictness { #mock-strictness }
 
-You can check usage of `Mockito` mocks in tests by setting the verification level using the `@MockitoStrictness` annotation.
+`Mockito` mocks can be checked with the `@MockitoStrictness` annotation.
+It sets the verification level for `Mockito` mocks created by the Kora extension within the test class.
 
-It works similarly to `MockitoSession` and is an imitation of a session within the Mockito framework,
-which usually involves the execution of a single test method.
-It provides a mechanism for managing the lifecycle of imitations and ensuring proper cleanup and verification.
+The extension behaves similarly to `MockitoSession`: after the test completes, it passes the created mocks to `Mockito` verification and reports unused or suspicious stubbing.
+If `@MockitoStrictness` is not specified, Kora uses `Strictness.WARN`: the test does not fail, but warnings are written to the log.
 
-It allows you to maintain strict stub guarantees using the `Strictness` enumeration,
-which helps identify unused calls and potentially throw an `UnnecessaryStubbingException`
-or write a warning to the log.
+Supported levels:
+
+- `Strictness.WARN` - default value; writes warnings to the log and does not fail the test.
+- `Strictness.STRICT_STUBS` - strict mode; unused stubbing fails the test, for example with `UnnecessaryStubbingException`.
+- `Strictness.LENIENT` - lenient mode; disables unused stubbing checks.
+
+If a specific `@Mock` has its own `strictness` parameter, it applies to that mock's settings.
+`@MockitoStrictness` is convenient as a common level for the whole test class, so the setting does not need to be duplicated on every mock.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -480,6 +545,9 @@ or write a warning to the log.
     }
     ```
 
+In the example above, `Mockito.when(component1.get()).thenReturn("?")` must be used by the test.
+If the `component1.get()` call is removed from the test method, `Strictness.STRICT_STUBS` will fail the test.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
@@ -499,13 +567,15 @@ or write a warning to the log.
     }
     ```
 
+For Kotlin with `Mockito Kotlin`, the same mechanism applies because verification is performed by `Mockito`.
+`@MockitoStrictness` does not apply to `MockK` mocks.
+
 ### Test graph { #test-graph }
 
 Sometimes you may need to use an extended dependency container as part of your tests.
-For example, a test container is an application that extends the main application and adds
-some components from common modules that are not used in this application.
+For example, a test application can extend the main application and add components that are only needed in tests.
 
-For example, when you have different Read API and Write API applications with common components,
+This approach is useful when you have different Read API and Write API applications with common components,
 which may be required as part of testing one and the other.
 Or, you may need some save/delete/update functions just for testing as a quick test utility.
 
@@ -547,12 +617,12 @@ Let's imagine that the application looks like this:
     }
     ```
 
-In tests, you can create a graph extending the main application and use it within tests.
+In tests, you can create a separate test `@KoraApp` that extends the main application and use that graph.
+For this scenario, the generated submodule of the main application is required: without it, the test application cannot inherit and connect the main graph components.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    In order to do this, first of all you need to enable the option 
-    to create a sub-module of the main application in `build.gradle`:
+    First, enable the parameter that creates a submodule of the main application in `build.gradle`:
 
     ```groovy
     compileJava {
@@ -564,8 +634,7 @@ In tests, you can create a graph extending the main application and use it withi
 
 === ":simple-kotlin: `Kotlin`"
 
-    In order to do this, first of all you need to enable the option 
-    to create a sub-module of the main application in `build.gradle.kts`:
+    First, enable the parameter that creates a submodule of the main application in `build.gradle.kts`:
 
     ```groovy
     ksp {
@@ -678,14 +747,67 @@ You can now use the extended application graph in your tests:
     }
     ```
 
+If inheritance from the main `@KoraApp` is not needed and only factory methods from a separate module should be added,
+use the `modules` parameter of `@KoraAppTest`.
+`modules` accepts module interfaces, not component classes:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface TestModule {
+
+        @Root
+        default Integer testOnlyComponent() {
+            return 1;
+        }
+    }
+
+    @KoraAppTest(value = Application.class, modules = TestModule.class)
+    class SomeTests {
+
+        @Test
+        void test(@TestComponent Integer component) {
+            assertEquals(1, component);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface TestModule {
+
+        @Root
+        fun testOnlyComponent(): Int {
+            return 1
+        }
+    }
+
+    @KoraAppTest(value = Application::class, modules = [TestModule::class])
+    class SomeTests {
+
+        @Test
+        fun test(@TestComponent component: Int) {
+            assertEquals(1, component)
+        }
+    }
+    ```
+
+Summary:
+
+- `kora.app.submodule.enabled=true` is needed when a test `@KoraApp` extends the main `@KoraApp`.
+- `@KoraAppTest(modules = ...)` suits cases where additional modules simply need to be connected to the test graph.
+- Components that should appear in the limited test graph must still be reachable from `@TestComponent`, `components`, or `KoraAppGraph`.
+
 ## Test configuration { #test-configuration }
 
 By default, the basic configuration will be used, as in the case of running a real application.
 
-For configuration changes/additions within tests, it is assumed that the test class implements the `KoraAppTestConfigModifier` interface,
-where it is required to implement the `KoraConfigModification` method of providing config modification.
+To change or add configuration within tests, the test class should implement `KoraAppTestConfigModifier`,
+and the `config()` method should return a `KoraConfigModification`.
 
-It is forbidden to use `KoraAppTestConfigModifier` and implementation in the constructor, because in this case it is impossible to get the configuration before implementation.
+`KoraAppTestConfigModifier` cannot be used together with component injection into the test class constructor:
+the extension needs to obtain the configuration modification before creating the test graph, and for that the test instance must already exist.
 
 #### Environment variables { #environment-variables }
 
@@ -749,6 +871,46 @@ In order to use such a config and pass only environment variables, you need to r
                 .ofSystemProperty("POSTGRES_JDBC_URL", "jdbc:postgresql://localhost:5432/postgres")
                 .withSystemProperty("POSTGRES_USER", "postgres")
                 .withSystemProperty("POSTGRES_PASS", "postgres")
+        }
+    }
+    ```
+
+If several values need to be passed at once, use `withSystemProperties(Map<String, String>)`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class SomeTests implements KoraAppTestConfigModifier {
+
+        @NotNull
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification
+                .ofSystemProperty("POSTGRES_JDBC_URL", "jdbc:postgresql://localhost:5432/postgres")
+                .withSystemProperties(Map.of(
+                    "POSTGRES_USER", "postgres",
+                    "POSTGRES_PASS", "postgres"
+                ));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class SomeTests : KoraAppTestConfigModifier {
+
+        override fun config(): KoraConfigModification {
+            return KoraConfigModification
+                .ofSystemProperty("POSTGRES_JDBC_URL", "jdbc:postgresql://localhost:5432/postgres")
+                .withSystemProperties(
+                    mapOf(
+                        "POSTGRES_USER" to "postgres",
+                        "POSTGRES_PASS" to "postgres"
+                    )
+                )
         }
     }
     ```
@@ -824,10 +986,20 @@ in this case only this configuration will be used without any configuration file
 
 ## Container modification { #container-modification }
 
-In order to add/replace/mock components within an unannotated application dependency container requires implementing the `KoraAppTestGraphModifier` interface and
-Implement a method to provide a dependency container modifier.
+To add, replace, or programmatically create mocks in the application container without annotations, implement `KoraAppTestGraphModifier`
+and return a `KoraGraphModification` from the `graph()` method.
 
-It is forbidden to use `KoraAppTestGraphModifier` and embedding in the constructor because then you can't get the graph before embedding.
+`KoraAppTestGraphModifier` cannot be used together with component injection into the test class constructor:
+the extension needs to obtain the graph modification before creating the graph and injecting components.
+
+`KoraGraphModification` supports these operations:
+
+- `addComponent(...)` - adds a new component to the test graph.
+- `replaceComponent(...)` - replaces an existing component, while its dependencies remain in the graph.
+- `mockComponent(...)` - replaces an existing component with a mock and removes the replaced component's real dependencies from the graph if they are no longer needed by the test.
+
+`addComponent(...)` and `replaceComponent(...)` have overloads with `Function<KoraAppGraph, T>` if the new component should be built from already initialized graph components.
+For components with `@Tag`, use overloads with `List<Class<?>> tags`.
 
 ### Adding { #adding }
 
@@ -921,7 +1093,7 @@ In case it is required to add components using a real component from the graph, 
 
 ### Replacement { #replacement }
 
-An example of replacing a component in a dependency container:
+An example of replacing a component in a dependency container, this mechanism can also be used to create custom mocks:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -960,7 +1132,7 @@ An example of replacing a component in a dependency container:
     }
     ```
 
-In case it is required to add components using a real component from the graph, this is also available through another method signature:
+In case it is required to replace components using a real component from the graph, this is also available through another method signature:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1009,9 +1181,56 @@ In case it is required to add components using a real component from the graph, 
     }
     ```
 
+### Programmatic Mock { #programmatic-mock }
+
+If a component should be replaced specifically as a mock, use `mockComponent(...)`.
+Unlike `replaceComponent(...)`, this method tells the extension that the real dependencies of the replaced component are not needed and can be excluded from the test graph.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(value = Application.class)
+    class SomeTests implements KoraAppTestGraphModifier {
+
+        @Override
+        public @Nonnull KoraGraphModification graph() {
+            return KoraGraphModification.create()
+                .mockComponent(TypeRef.of(Supplier.class, String.class), () -> Mockito.mock(Supplier.class));
+        }
+
+        @Test
+        void example(@TestComponent Supplier<String> supplier) {
+            Mockito.when(supplier.get()).thenReturn("?");
+
+            assertEquals("?", supplier.get());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(value = Application::class)
+    class SomeTests : KoraAppTestGraphModifier {
+
+        override fun graph(): KoraGraphModification {
+            return KoraGraphModification.create()
+                .mockComponent(TypeRef.of(Supplier::class.java, String::class.java), Supplier { mockk<Supplier<String>>() })
+        }
+
+        @Test
+        fun example(@TestComponent supplier: Supplier<String>) {
+            every { supplier.get() } returns "?"
+
+            assertEquals("?", supplier.get())
+        }
+    }
+    ```
+
 ## Initialization { #initialization }
 
-In case you want to initialize the dependency container once within the entire test class, you should annotate the test class with `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`:
+By default, `JUnit 5` uses `TestInstance.Lifecycle.PER_METHOD`, so Kora creates and cleans up the test graph for each test method.
+If the container should be initialized once for the whole test class, annotate the test class with `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1033,4 +1252,12 @@ In case you want to initialize the dependency container once within the entire t
     }
     ```
 
-The default behavior is to initialize the container every time of every test method.
+With `PER_CLASS`, one graph instance is used by all test methods in the class, and cleanup runs after the whole class completes.
+This speeds up heavy integration tests, but mutable component and mock state should be handled more carefully.
+
+Lifecycle restrictions:
+
+- When components are injected into the constructor, `@TestComponent` or mocks cannot also be injected into test method parameters.
+- When components are injected into the constructor, `KoraAppTestConfigModifier` and `KoraAppTestGraphModifier` cannot be used.
+- In `PER_CLASS` mode, `@Mock` / `@MockK` cannot be injected into test method parameters; use fields or the constructor.
+- For `@Nested` classes, field injection into the inner class cannot be used if the outer test class runs in `PER_CLASS` mode; use method parameters or a separate lifecycle for the nested class.

@@ -4,7 +4,11 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration; key triggers include SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
 ---
 
-Модуль для создания и регистрации SOAP сервисов по классам аннотированным `javax.jws.WebService`/`jakarta.jws.WebService`.
+`SOAP` — это протокол обмена `XML`-сообщениями, который часто используется для интеграции с внешними системами через `HTTP` и контракт `WSDL`.
+Модуль `soap-client` создает клиентские реализации для интерфейсов, размеченных `javax.jws.WebService` или `jakarta.jws.WebService`, и регистрирует их в графе приложения.
+
+Обычно такие интерфейсы и связанные `JAXB`-классы генерируются из `WSDL`, например с помощью `wsdl2java`.
+После генерации Kora создает реализацию клиента, подключает к ней `HTTP-клиент`, `XML`-преобразование и телеметрию.
 
 ## Подключение { #dependency }
 
@@ -34,26 +38,33 @@ agent:
     interface Application : SoapClientModule
     ```
 
-**Требуется** подключить реализацию [HTTP клиента](http-client.md).
+**Требуется** подключить реализацию [`HTTP-клиента`](http-client.md), например `http-client-ok`.
 
 ## Описание { #description }
 
-Подразумевается что у нас есть классы аннотированные `javax.jws.WebService`/`jakarta.jws.WebService`, которые могут быть созданы другими средствами, 
-такими как [Gradle Plugin](#wsdl2java-plugin).
+Подразумевается, что в приложении уже есть интерфейсы, размеченные `javax.jws.WebService` или `jakarta.jws.WebService`.
+Они могут быть написаны вручную, но чаще создаются из `WSDL` отдельным инструментом, например [Gradle-плагином](#wsdl2java-plugin).
 
-На основании таких классов с помощью Kora создаются реализации SOAP клиента с суффиксом Impl в том же пакете и регистрирует их как модуль с конфигурацей.
+На основании таких интерфейсов Kora создает реализации SOAP-клиентов с суффиксом `SoapClientImpl` в том же пакете.
+Также создается модуль с суффиксом `SoapClientModule`, который регистрирует конфигурацию и сам клиент в графе приложения.
 
-Затем конфигурация и сам SOAP сервис становятся доступны для внедрения зависимостей автоматически.
+После этого конфигурация и `SOAP-клиент` становятся доступны для внедрения зависимостей автоматически.
 
 ## Конфигурация { #configuration }
 
-Все конфигурации для SOAP клиентов создаются с префиксом `soapClient`, 
-а основная часть конфигурации клиента находится под именем клиента из WSDL аннотации `@WebService`, 
-который соответствует зачастую тегу `<wsdl:binding type="tns:SimpleService">` в конфигурации WSDL.
+Все конфигурации для `SOAP-клиентов` создаются с префиксом `soapClient`.
+Основная часть конфигурации клиента находится под именем сервиса из аннотации `@WebService`.
 
-Сервис SOAP с именем `SimpleService` будет иметь конфигурацию с путем `soapClient.SimpleService`.
+Имя секции выбирается в таком порядке:
 
-Пример полной конфигурации, описанной в классе `SoapServiceConfig` (указаны примеры значений или значения по умолчанию):
+1. `name` из `@WebService`
+2. `serviceName` из `@WebService`
+3. `portName` из `@WebService`
+4. имя интерфейса
+
+`SOAP-клиент` с именем `SimpleService` будет иметь конфигурацию с путем `soapClient.SimpleService`.
+
+Пример полной конфигурации, описанной в классе `SoapServiceConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -86,14 +97,14 @@ agent:
     }
     ```
 
-    1.  URL сервиса куда будут отправляться запросы (**обязательный**)
-    2.  Максимальное время запроса
-    3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Настройка тегов для метрик (опционально)
-    7.  Включает трассировку модуля (по умолчанию `true`)
-    8.  Настройка атрибутов для трассировки (опционально)
+    1.  `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
+    2.  Максимальное время выполнения запроса (по умолчанию: `60s`).
+    3.  Включает логирование модуля (по умолчанию: `false`).
+    4.  Включает метрики модуля (по умолчанию: `true`).
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    6.  Дополнительные теги для метрик (по умолчанию: `{}`).
+    7.  Включает трассировку модуля (по умолчанию: `true`).
+    8.  Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -111,27 +122,32 @@ agent:
             tags: #(6)!
               key1: value1
               key2: value2
-        tracing:
-          enabled: true #(7)!
-          attributes: #(8)!
-            key1: value1
-            key2: value2
+          tracing:
+            enabled: true #(7)!
+            attributes: #(8)!
+              key1: value1
+              key2: value2
     ```
 
-    1.  URL сервиса куда будут отправляться запросы (**обязательный**)
-    2.  Максимальное время запроса
-    3.  Включает логгирование модуля (по умолчанию `false`)
-    4.  Включает метрики модуля (по умолчанию `true`)
-    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) метрики
-    6.  Настройка тегов для метрик (опционально)
-    7.  Включает трассировку модуля (по умолчанию `true`)
-    8.  Настройка атрибутов для трассировки (опционально)
+    1.  `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
+    2.  Максимальное время выполнения запроса (по умолчанию: `60s`).
+    3.  Включает логирование модуля (по умолчанию: `false`).
+    4.  Включает метрики модуля (по умолчанию: `true`).
+    5.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    6.  Дополнительные теги для метрик (по умолчанию: `{}`).
+    7.  Включает трассировку модуля (по умолчанию: `true`).
+    8.  Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#soap-client).
 
+`SOAP-клиент` использует подключенный `HttpClient` и отправляет запросы на адрес из параметра `url`.
+Если у метода в `@WebMethod` задан `action`, клиент добавит HTTP-заголовок `SOAPAction`.
+Если сервер вернет `SOAP Fault`, клиент преобразует его в исключение.
+
 ## Использование { #usage }
 
-После создания всех компонент созданный SOAP сервис становится доступен для внедрения, ниже показан пример для `SimpleService` сервиса:
+После создания всех компонентов `SOAP-клиент` становится доступен для внедрения.
+Ниже показан пример для клиента `SimpleService`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -156,10 +172,10 @@ agent:
     }
     ```
 
-## Плагин wsdl2java { #wsdl2java-plugin }
+## Плагин `wsdl2java` { #wsdl2java-plugin }
 
-[Gradle Plugin](https://github.com/bjornvester/wsdl2java-gradle-plugin) может использоваться как один из вариантов для создания классов аннотированных `javax.jws.WebService`/`jakarta.jws.WebService`
-на основании [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/wsdl-kratkoe-rukovodstvo).
+[Gradle-плагин](https://github.com/bjornvester/wsdl2java-gradle-plugin) может использоваться как один из вариантов для создания интерфейсов, размеченных `javax.jws.WebService` или `jakarta.jws.WebService`,
+а также `JAXB`-классов на основании `WSDL`.
 
 ### Подключение { #dependency-2 }
 
@@ -183,7 +199,8 @@ agent:
 
 ### Использование { #usage-2 }
 
-Предположим что у нас есть WSDL, где объявлен сервис `SimpleService` то настройка плагина для `jakarta` аннотацией будет выглядить так:
+Предположим, что есть `WSDL`, где объявлен сервис `SimpleService`.
+Тогда настройка плагина для генерации с `jakarta`-аннотациями будет выглядеть так:
 
 ===! ":fontawesome-brands-java: `Java`"
 

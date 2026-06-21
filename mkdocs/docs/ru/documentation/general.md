@@ -1,100 +1,107 @@
 ---
 description: "Explains Kora framework fundamentals, annotation processors, compatibility, Gradle build setup, dependencies, application runtime, and terminology. Use when working with @KoraApp, annotation processors, Gradle, BOM, kora-parent, application plugin."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora framework fundamentals, annotation processors, compatibility, Gradle build setup, dependencies, application runtime, and terminology; key triggers include @KoraApp, annotation processors, Gradle, BOM, kora-parent, application plugin."
+  use_when: "Use this file for Kora docs or implementation questions about Kora framework fundamentals, annotation processors, Gradle, BOM, kora-parent, application plugin."
 ---
 
-Kora является облачно ориентированным серверным фреймворком написанным на Java и предлагает
-множество различных модулей для быстрого создания приложений такие как HTTP сервер и клиент, Kafka потребители, 
-абстракция над базой данных в виде репозиториев, S3-клиент, gRPC сервер и клиент, интеграции с Camunda,
-телеметрию всех модулей, модули отказоустойчивости и многое другое.
+Kora - облачно ориентированный серверный фреймворк, написанный на `Java`, для приложений на `Java` и `Kotlin`.
+Эта страница описывает базовые принципы Kora, требования к окружению, подключение обработчиков аннотаций, минимальную настройку `Gradle`, управление зависимостями и запуск приложения.
 
-Прочитать про основные характеристики Kora можно [на главной](../index.md).
+Kora предоставляет набор модулей для быстрого создания серверных приложений: `HTTP`-сервер и `HTTP`-клиент, потребители `Kafka`, репозитории для работы с базами данных, `S3`-клиент, `gRPC`-сервер и `gRPC`-клиент, интеграции с `Camunda`, телеметрию модулей, отказоустойчивость и другие возможности.
+Основные характеристики фреймворка описаны [на главной странице](../index.md).
 
-Kora предоставляет все необходимые для современной Java или Kotlin серверной разработки инструменты:
+Kora предоставляет инструменты, которые обычно нужны современной серверной разработке:
 
-- Внедрение и инверсию зависимостей посредствам аннотаций
-- Достаточно высокоуровневые простые абстракции и инструменты разработки
-- Аспектно-ориентированное программирование посредствам аннотаций
-- Большой набор пред-сконфигурированных интеграций
-- Телеметрия, трассировка, метрики по `OpenTelemetry` стандарту и логирование всех модулей
-- Легкое и быстрое тестирование с помощью [JUnit5](junit5.md)
-- Простая и подробная документация подкрепленная [примерами и руководствами рабочих сервисов](../guides/home.md)
+- внедрение зависимостей через аннотации;
+- инверсию управления без отдельного контейнера во время выполнения;
+- аспектно-ориентированное программирование через аннотации;
+- достаточно высокоуровневые простые абстракции и инструменты разработки;
+- большой набор заранее настроенных интеграций;
+- телеметрию, трассировку, метрики по стандарту `OpenTelemetry` и логирование модулей;
+- быстрое тестирование с помощью [JUnit5](junit5.md);
+- рабочие [примеры и руководства](../guides/home.md).
 
-Для достижения высокопроизводительного и эффективного кода, Kora стоит на таких принципах:
+Для высокопроизводительного, эффективного и предсказуемого кода Kora следует нескольким принципам:
 
-- Отказ от использования Reflection API во время работы
-- Отказ от динамических прокси во время работы
-- Отказ от генерации байт-кода во время компиляции и работы
-- Создание исходного кода посредствам обработчиков аннотаций во время компиляции
-- Тонкие абстракции над модулями
-- Бесплатные аспекты
-- Использование только наиболее эффективных реализаций для интеграций
-- Поощрение и использование наиболее эффективных принципов разработки и естественных конструкций языка
+- не использует `Reflection` во время работы приложения;
+- не использует `динамический прокси` во время работы приложения;
+- не генерирует байт-код во время компиляции или работы приложения;
+- создает исходный код на этапе компиляции через обработчики аннотаций;
+- оставляет тонкие абстракции над интеграциями;
+- предоставляет бесплатные аспекты: без дополнительной стоимости во время работы приложения;
+- использует только наиболее эффективные реализации для интеграций;
+- поощряет и использует наиболее эффективные принципы разработки и естественные конструкции языка.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [Создание первого приложения на Kora](../guides/getting-started.md) и [Введение во внедрение зависимостей](../guides/dependency-injection-introduction.md).
 
-## Обработчики аннотаций { #annotation-handlers }
+## Обработчики аннотаций { #annotation-processor }
 
-Главный столп на котором строится фреймворк Kora это обработчики аннотаций.
+Kora строит приложение на этапе компиляции: обработчики читают аннотации, проверяют код и генерируют исходные файлы, которые затем компилируются вместе с кодом приложения.
+За счет этого граф зависимостей, аспекты, `HTTP`-обработчики, репозитории и другие компоненты становятся обычным скомпилированным кодом без `Reflection` во время работы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Аннотация - это конструкция, связанная с элементами исходного кода Java, такими как классы, методы и переменные. 
-    Аннотации предоставляют программе информацию во время компиляции на основе которой программа может предпринять дальнейшие действия. 
-    [Процессор аннотаций](https://docs.oracle.com/en/java/javase/17/docs/api/java.compiler/javax/annotation/processing/Processor.html) обрабатывает эти аннотации во время компиляции для обеспечения таких функций, как генерация кода, проверка ошибок и т.д.
+    Аннотация - это конструкция, связанная с элементами исходного кода `Java`: классами, методами, параметрами и полями.
+    [Обработчик аннотаций](https://docs.oracle.com/en/java/javase/17/docs/api/java.compiler/javax/annotation/processing/Processor.html) запускается компилятором, читает эти аннотации и может сгенерировать дополнительный исходный код или остановить компиляцию с понятной ошибкой.
 
-    Kora предоставляет в рамках одной зависимости все [обработчики аннотаций](https://docs.oracle.com/en/java/javase/17/docs/api/java.compiler/javax/annotation/processing/Processor.html), которые потребуются для работы со всеми модулями, 
-    процессоры не тянут за собой никакие лишние зависимости которые протекали бы во время компиляции или выполнения приложения.
+    Kora предоставляет все обработчики аннотаций в одной зависимости:
+
+    ```groovy
+    annotationProcessor "ru.tinkoff.kora:annotation-processors"
+    ```
+
+    Эта зависимость нужна только на этапе компиляции и не добавляет лишние библиотеки в путь классов времени выполнения приложения.
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Kotlin Symbol Processing (KSP)](https://kotlinlang.org/docs/ksp-overview.html) - это API, который можно использовать для разработки легких плагинов для компиляторов. 
-    KSP представляет собой упрощенный API для плагинов к компиляторам, который позволяет использовать возможности Kotlin 
-    при минимальной кривой обучения. По сравнению с kapt, процессоры аннотаций, использующие KSP, могут работать в два раза быстрее (но в разы медленее чем Java).
+    Для `Kotlin` используется [`KSP`](https://kotlinlang.org/docs/ksp-overview.html) (`Kotlin Symbol Processing`).
+    `KSP` читает символы исходного кода `Kotlin`, передает их процессорам Kora и позволяет генерировать код до основной компиляции.
 
-    Другой способ представить [KSP](https://kotlinlang.org/docs/ksp-overview.html) как препроцессорный фреймворк программ на языке Kotlin. Если рассматривать плагины на базе KSP как символьные процессоры, или просто процессоры, то поток данных при компиляции можно описать следующими шагами:
+    Kora предоставляет `KSP`-обработчики в одной зависимости:
 
-    - Процессоры читают и анализируют исходные программы и ресурсы.
-    - Процессоры генерируют код или другие формы вывода.
-    - Компилятор Kotlin компилирует исходные программы вместе со сгенерированным кодом.
+    ```kotlin
+    ksp("ru.tinkoff.kora:symbol-processors")
+    ```
 
-Такой подход позволяет использовать привычную всем парадигму программирования посредствам создания с помощью аннотаций HTTP-обработчиков,
-Kafka продюсеров, репозиториев баз данных и так далее, но дает большой прирост в производительности и прозрачности относительно известных JVM фреймворков.
+    При этом обработка `Kotlin` обычно медленнее обработки аннотаций в `Java`.
+
+### `KSP` { #ksp }
+
+`KSP` нужен только для `Kotlin`-проектов.
+Если приложение написано на `Java`, используйте обычный `annotationProcessor`; если приложение написано на `Kotlin`, подключайте `com.google.devtools.ksp` и зависимость `ru.tinkoff.kora:symbol-processors`.
 
 ## Совместимость { #compatibility }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Требуется версия не ниже [JDK 17](https://openjdk.org/projects/jdk/17/).
+    Требуется версия не ниже [JDK 17](https://openjdk.org/projects/jdk/17/), рекомендуется [`JDK` `25+`](https://openjdk.org/projects/jdk/25/).
 
-    Конфигурация в `build.gradle`:
+    Минимальная конфигурация в `build.gradle`:
     ```groovy
     plugins {
         id "java"
-    }   
+    }
 
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Требуется версия не ниже [JDK 17](https://openjdk.org/projects/jdk/17/).
+    Требуется версия не ниже [JDK 17](https://openjdk.org/projects/jdk/17/), рекомендуется [`JDK` `21`](https://openjdk.org/projects/jdk/21/) из-за совместимости с `Kotlin`.
 
-    Рекомендуемая версия [Kotlin `1.9+`](https://github.com/JetBrains/kotlin/releases), совместимость с версией `1.8+` и `2+` не гарантируется.
+    Рекомендуемая версия [`Kotlin` `1.9+`](https://github.com/JetBrains/kotlin/releases), совместимость с версиями `1.8+` и `2+` не гарантируется.
+    Рекомендуемая версия [`KSP` `1.9+`](https://github.com/google/ksp/releases) должна соответствовать версии `Kotlin`.
 
-    Рекомендуемая версия [KSP `1.9+`](https://github.com/google/ksp/releases) соответсвующая версии Kotlin.
-
-    Конфигурация в `build.gradle.kts`:
-    ```groovy
+    Минимальная конфигурация в `build.gradle.kts`:
+    ```kotlin
     plugins {
-        kotlin("jvm") version ("1.9.25")
-        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
+        kotlin("jvm") version "1.9.25"
+        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
 
     kotlin {
-        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
+        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("21")) }
         sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
         sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
@@ -102,27 +109,23 @@ Kafka продюсеров, репозиториев баз данных и та
 
 ## Система сборки { #build-system }
 
-Поскольку основным столпом являются обработчики аннотаций, то подразумевается что вы будете использовать именно систему сборки [Gradle](https://gradle.org/guides/),
-так как она лучше других поддерживает обработчики аннотаций, инкрементальную сборку и является наиболее совершенной системой сборки в JVM экосистеме.
-Требуется версия Gradle `7+`.
+Kora рассчитана на сборку через [Gradle](https://gradle.org/guides/), потому что `Gradle` хорошо поддерживает обработчики аннотаций, `KSP`, инкрементальную сборку и управление зависимостями.
+Требуется версия `Gradle` `7+`, рекомендуется `Gradle` `9.5+`.
 
-Для того чтобы не прописывать версии для каждой зависимости, предполагается использовать [BOM](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import)
-зависимость `ru.tinkoff.kora:kora-parent` в которой требуется один раз указать версию для всех Kora зависимостей разом.
+Чтобы не указывать версии для каждой зависимости Kora отдельно, используется [`BOM`](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) `ru.tinkoff.kora:kora-parent`.
+Версия `BOM` задается один раз, а остальные зависимости Kora подключаются без явного указания версии.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Kora поддерживает инкрементальную сборку из нескольких раундов на этапе обработки аннотаций,
-    более подробное описание по работе с Gradle и Java можно почитать в их [официальной документации](https://docs.gradle.org/current/userguide/java_plugin.html).
-
-    Ниже будет представлена минимально необходимая конфигурация приложения `build.gradle`:
+    Минимальная конфигурация приложения в `build.gradle`:
     ```groovy
     plugins {
         id "java"
         id "application"
-    }   
+    }
 
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 
     configurations {
         koraBom
@@ -138,27 +141,23 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Также можно ознакомиться с [руководством по созданию первого приложения](../guides/getting-started.md) с более подробным пошаговым описанием.
+    Более подробный пример есть в [руководстве по созданию первого приложения](../guides/getting-started.md).
 
 === ":simple-kotlin: `Kotlin`"
 
-    Kora поддерживает инкрементальную сборку из нескольких раундов на этапе обработки аннотаций,
-    более подробное описание по работе с Gradle и Kotlin можно почитать в их [официальной документации](https://kotlinlang.org/docs/get-started-with-jvm-gradle-project.html),
-    а также будет полезно ознакомиться с работой [KSP в Gradle](https://kotlinlang.org/docs/ksp-quickstart.html)
+    Для `Kotlin` предполагается [Gradle Kotlin DSL](https://docs.gradle.org/current/userguide/kotlin_dsl.html).
+    Если проект использует `Groovy DSL`, ориентируйтесь на примеры для `Java`.
 
-    Для Kotlin предполагается что будет использоваться [Gradle Kotlin DSL](https://docs.gradle.org/current/userguide/kotlin_dsl.html),
-    так что все примеры для Kotlin будут даваться именно в этом синтаксисе, если вы используете Groovy синтаксис, то используйте Java примеры.
-
-    Ниже будет представлена минимально необходимая конфигурация приложения `build.gradle.kts`:
-    ```groovy
+    Минимальная конфигурация приложения в `build.gradle.kts`:
+    ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version ("1.9.25")
-        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
+        kotlin("jvm") version "1.9.25"
+        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
 
     kotlin {
-        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("17")) }
+        jvmToolchain { languageVersion.set(JavaLanguageVersion.of("21")) }
         sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
         sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
@@ -177,12 +176,12 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Также можно ознакомиться с [руководством по созданию первого приложения](../guides/getting-started.md) с более подробным пошаговым описанием.
+    Более подробный пример есть в [руководстве по созданию первого приложения](../guides/getting-started.md).
 
 ## Зависимости { #dependencies }
 
-Так как основным столпом на котором строится Kora являются обработчики аннотаций, то они являются обязательной зависимостью,
-также не стоит забывать и о [BOM зависимости](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import):
+В документации модулей Kora обычно показывается только зависимость конкретного модуля.
+Но в приложении также должны быть подключены [`BOM`](https://docs.gradle.org/current/userguide/platforms.html#sub:bom_import) и обработчики, показанные ниже.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -207,7 +206,7 @@ Kafka продюсеров, репозиториев баз данных и та
 
     `build.gradle.kts`:
 
-    ```groovy
+    ```kotlin
     val koraBom: Configuration by configurations.creating
     configurations {
         ksp.get().extendsFrom(koraBom)
@@ -222,21 +221,34 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-## Запуск { #run }
-
-Запускать и работать с приложением через систему сборки, предполагается с помощью [application плагина](https://docs.gradle.org/current/userguide/application_plugin.html)
-который предоставляет Gradle.
+После этого зависимости модулей можно указывать без версии, например:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Требуется указать плагин в `build.gradle`:
+    ```groovy
+    implementation "ru.tinkoff.kora:http-server-undertow"
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    implementation("ru.tinkoff.kora:http-server-undertow")
+    ```
+
+## Запуск { #run }
+
+Для локального запуска и сборки исполняемого архива обычно используется [плагин `application`](https://docs.gradle.org/current/userguide/application_plugin.html).
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Подключите плагин в `build.gradle`:
     ```groovy
     plugins {
         id "application"
     }
     ```
 
-    Можно указывать как системные переменные, так и переменные окружения при локальном запуске приложения в `build.gradle`:
+    Системные свойства и переменные окружения для локального запуска можно задать в задаче `run`:
     ```groovy
     run {
         jvmArgs += [
@@ -249,12 +261,12 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Запускать надо с помощью команды:
+    Запуск:
     ```shell
     ./gradlew run
     ```
 
-    Настроить сборку артефакта можно таким способом в `build.gradle`:
+    Настройка сборки архива:
     ```groovy
     application {
         applicationName = "application"
@@ -267,26 +279,26 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Собирать артефакт можно командой:
+    Сборка архива:
     ```shell
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-java-template/blob/master/build.gradle)
+    Пример настроенного приложения можно посмотреть в [шаблоне Java-приложения](https://github.com/kora-projects/kora-java-template/blob/master/build.gradle).
 
 === ":simple-kotlin: `Kotlin`"
 
-    Требуется указать плагин в `build.gradle`:
-    ```groovy
+    Подключите плагин в `build.gradle.kts`:
+    ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version ("1.9.25")
-        id("com.google.devtools.ksp") version ("1.9.25-1.0.20")
+        kotlin("jvm") version "1.9.25"
+        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
     ```
 
-    Можно указывать как системные переменные, так и переменные окружения при локальном запуске приложения в `build.gradle.kts`:
-    ```groovy
+    Системные свойства и переменные окружения для локального запуска можно задать в задачах `JavaExec`:
+    ```kotlin
     tasks.withType<JavaExec> {
         jvmArgs(
             "-Xmx256m",
@@ -298,13 +310,13 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Запускать надо с помощью команды:
+    Запуск:
     ```shell
     ./gradlew run
     ```
 
-    Настроить сборку артефакта можно таким способом:
-    ```groovy
+    Настройка сборки архива:
+    ```kotlin
     application {
         applicationName = "application"
         mainClass.set("ru.tinkoff.kora.kotlin.ApplicationKt")
@@ -316,22 +328,24 @@ Kafka продюсеров, репозиториев баз данных и та
     }
     ```
 
-    Собирать артефакт можно командой:
+    Сборка архива:
     ```shell
     ./gradlew distTar
     ```
 
-    Пример настроенного приложения можно посмотреть [тут](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts)
+    Пример настроенного приложения можно посмотреть в [шаблоне Kotlin-приложения](https://github.com/kora-projects/kora-kotlin-template/blob/master/build.gradle.kts).
 
 ## Терминология { #terminology }
 
-В данной секции описываются основные термины которые встречаются во всей документации и в рамках фреймворка Kora:
+В этой секции описаны базовые термины, которые встречаются в документации Kora:
 
-- Фабрика - под фабрикой подразумевается метод который, создает экземпляры компонент/классов/зависимостей.
-- Модуль - под [модулем](container.md#external-module-factory) понимается подключаемая зависимость, зачастую внешняя которая предоставляет какие-то фабричные методы и новый функционал в приложение.
-- Компонент - под [компонентом](container.md#components) понимается класс в одном экземпляре (`Singleton`) который реализует какую то логику и является зависимостью в контейнере зависимостей.
-- Аспект - под аспектом подразумевается логика которая будет расширять стандартное поведение метода посредствам какой-либо аннотации до и/или после его выполнения.
+- Фабрика - метод, который создает и возвращает экземпляр компонента или зависимости.
+- [Модуль](container.md#external-module-factory) - подключаемая зависимость или интерфейс с фабричными методами, которые добавляют в приложение новые компоненты.
+- [Компонент](container.md#components) - объект в графе зависимостей Kora. Обычно это единственный экземпляр класса, который реализует часть логики приложения.
+- Аспект - логика, которая расширяет поведение метода до, после или вокруг его выполнения на основании аннотации.
+- Граф зависимостей - набор компонентов приложения и связей между ними, построенный Kora на этапе компиляции.
 
 ## Первое руководство
 
-После общего обзора переходите к руководству [Создание первого приложения на Kora](../guides/getting-started.md). В нем базовая структура приложения показана на небольшом HTTP-сервисе, который можно собрать и запустить.
+После общего обзора переходите к руководству [Создание первого приложения на Kora](../guides/getting-started.md).
+В нем базовая структура приложения показана на небольшом `HTTP`-сервисе, который можно собрать и запустить.

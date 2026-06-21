@@ -4,7 +4,11 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora SOAP client setup, SOAP client configuration, usage patterns, generated clients, and wsdl2java Gradle plugin integration; key triggers include SoapClientModule, @SoapClient, wsdl2java, JAX-WS, SOAPAction, WebServiceClient."
 ---
 
-A module for creating and registering SOAP services by classes annotated `javax.jws.WebService`/`jakarta.jws.WebService`.
+`SOAP` is a protocol for exchanging `XML` messages, often used for integration with external systems over `HTTP` and a `WSDL` contract.
+The `soap-client` module creates client implementations for interfaces annotated with `javax.jws.WebService` or `jakarta.jws.WebService` and registers them in the application graph.
+
+Usually, such interfaces and related `JAXB` classes are generated from `WSDL`, for example with `wsdl2java`.
+After generation, Kora creates the client implementation and connects it to an `HTTP client`, `XML` mapping, and telemetry.
 
 ## Dependency { #dependency }
 
@@ -34,26 +38,33 @@ A module for creating and registering SOAP services by classes annotated `javax.
     interface Application : SoapClientModule
     ```
 
-**Requires** the [HTTP client](http-client.md) implementation to be connected.
+**Requires** an [`HTTP client`](http-client.md) implementation, for example `http-client-ok`.
 
 ## Description { #description }
 
-It is understood that we have classes annotated with `javax.jws.WebService`/`jakarta.jws.WebService` that can be created by other means,
-such as [Gradle Plugin](#wsdl2java-plugin).
+The application is expected to already have interfaces annotated with `javax.jws.WebService` or `jakarta.jws.WebService`.
+They can be written manually, but are usually created from `WSDL` by a separate tool, for example a [Gradle plugin](#wsdl2java-plugin).
 
-Based on such classes, Kora is used to create SOAP client implementations with the Impl suffix in the same package and register them as a module with config.
+Based on such interfaces, Kora creates SOAP client implementations with the `SoapClientImpl` suffix in the same package.
+It also creates a module with the `SoapClientModule` suffix that registers the configuration and the client itself in the application graph.
 
-Then the configuration and the SOAP service itself become available for dependency injection automatically.
+After that, the configuration and the `SOAP client` become available for dependency injection automatically.
 
 ## Configuration { #configuration }
 
-All configurations for SOAP clients are created with the prefix `soapClient`,
-and the bulk of the client configuration is under the client name from the WSDL annotation `@WebService`,
-which corresponds often to the `<wsdl:binding type="tns:SimpleService">` tag in the WSDL configuration.
+All configurations for `SOAP clients` are created with the `soapClient` prefix.
+The main part of the client configuration is placed under the service name from the `@WebService` annotation.
 
-SOAP service named `SimpleService` will have a configuration with the path `soapClient.SimpleService`.
+The section name is selected in this order:
 
-Example of the complete configuration described in the `SoapServiceConfig` class (default or example values are specified):
+1. `name` from `@WebService`
+2. `serviceName` from `@WebService`
+3. `portName` from `@WebService`
+4. interface name
+
+A `SOAP client` named `SimpleService` will have the `soapClient.SimpleService` configuration path.
+
+Example of the complete configuration described by the `SoapServiceConfig` class:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -86,14 +97,14 @@ Example of the complete configuration described in the `SoapServiceConfig` class
     }
     ```
 
-    1. URL of the service where requests will be sent (**required**)
-    2. Maximum request time
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Configures tags for metrics (optional)
-    7. Enables module tracing (default `true`)
-    8. Configures attributes for tracing (optional)
+    1. Service `URL` where requests will be sent (required, default: not specified).
+    2. Maximum request execution time (default: `60s`).
+    3. Enables module logging (default: `false`).
+    4. Enables module metrics (default: `true`).
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    6. Additional tags for metrics (default: `{}`).
+    7. Enables module tracing (default: `true`).
+    8. Additional attributes for tracing (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -111,27 +122,32 @@ Example of the complete configuration described in the `SoapServiceConfig` class
             tags: #(6)!
               key1: value1
               key2: value2
-        tracing:
-          enabled: true #(7)!
-          attributes: #(8)!
-            key1: value1
-            key2: value2
+          tracing:
+            enabled: true #(7)!
+            attributes: #(8)!
+              key1: value1
+              key2: value2
     ```
 
-    1. URL of the service where requests will be sent (**required**)
-    2. Maximum request time
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Configures tags for metrics (optional)
-    7. Enables module tracing (default `true`)
-    8. Configures attributes for tracing (optional)
+    1. Service `URL` where requests will be sent (required, default: not specified).
+    2. Maximum request execution time (default: `60s`).
+    3. Enables module logging (default: `false`).
+    4. Enables module metrics (default: `true`).
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+    6. Additional tags for metrics (default: `{}`).
+    7. Enables module tracing (default: `true`).
+    8. Additional attributes for tracing (default: `{}`).
 
 Module metrics are described in the [Metrics Reference](metrics.md#soap-client) section.
 
+The `SOAP client` uses the connected `HttpClient` and sends requests to the address from the `url` parameter.
+If a method has `action` set in `@WebMethod`, the client adds the `SOAPAction` HTTP header.
+If the server returns `SOAP Fault`, the client converts it to an exception.
+
 ## Usage { #usage }
 
-Once all components have been created the created SOAP service is available for deployment, an example for a `SimpleService` service is shown below:
+After all components are created, the `SOAP client` becomes available for injection.
+Below is an example for the `SimpleService` client:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -156,10 +172,10 @@ Once all components have been created the created SOAP service is available for 
     }
     ```
 
-## Wsdl2java plugin { #wsdl2java-plugin }
+## `wsdl2java` Plugin { #wsdl2java-plugin }
 
-[Gradle Plugin](https://github.com/bjornvester/wsdl2java-gradle-plugin) can be used as one option to create classes annotated `javax.jws.WebService`/`jakarta.jws.WebService`
-based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/wsdl-kratkoe-rukovodstvo).
+A [Gradle plugin](https://github.com/bjornvester/wsdl2java-gradle-plugin) can be used as one option for creating interfaces annotated with `javax.jws.WebService` or `jakarta.jws.WebService`,
+as well as `JAXB` classes based on `WSDL`.
 
 ### Dependency { #dependency-2 }
 
@@ -183,7 +199,8 @@ based on [WSDL](https://coderlessons.com/tutorials/xml-tekhnologii/uznaite-wsdl/
 
 ### Usage { #usage-2 }
 
-Suppose we have a WSDL where `SimpleService` is declared, then configuring the plugin for `jakarta` annotation will look like this:
+Suppose there is a `WSDL` where the `SimpleService` service is declared.
+Then the plugin configuration for generation with `jakarta` annotations will look like this:
 
 ===! ":fontawesome-brands-java: `Java`"
 

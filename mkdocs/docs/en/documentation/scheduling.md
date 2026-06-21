@@ -4,24 +4,22 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
 ---
 
-A module for creating declarative-style planners using annotations.
+The Kora scheduling module allows application methods to run on a schedule in a declarative style through annotations.
+At compile time, Kora generates task components and connects them to the selected scheduling mechanism.
 
-===! ":fontawesome-brands-java: `Java`"
+Two options are available: the native scheduler based on `ScheduledExecutorService` from the `JDK`, and the scheduler based on `Quartz`.
+The native option is suitable for simple periodic tasks inside one application, while `Quartz` is useful for `cron` expressions, custom `Trigger` instances, and additional task execution rules.
 
-    When applying aspects, class must not be `final`
+## Native Scheduler { #native }
 
-=== ":simple-kotlin: `Kotlin`"
+The native scheduler uses the standard [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) that comes with the `JDK`.
 
-    When applying aspects, class must be `open`
+Special annotations are used to create tasks through aspects, and they correspond to `ScheduledExecutorService` methods.
+Annotation parameters match the parameters of the `scheduleAtFixedRate`, `scheduleWithFixedDelay`, and `schedule` methods.
 
-## Native { #native }
-
-Creating a scheduler using the standard [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) that comes with the JVM.
-
-In order to create a scheduler via aspects, special annotations are used that essentially duplicate the `ScheduledExecutorService` method signatures.
-The parameters of the annotations correspond to the parameters of the methods `scheduleAtFixedRate`, `schedule`, `scheduleWithFixedDelay` respectively.
-
-Also all annotations have the `config` argument, if it is present, the parameter values will be taken from the configuration on the specified path.
+All annotations have the `config` parameter.
+If it is specified, parameter values are taken from the configuration at that path and have priority over annotation values.
+The configuration of a specific task can also contain the `telemetry` section; its values override the common scheduler telemetry for that task.
 
 ### Dependency { #dependency }
 
@@ -41,7 +39,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
-    ```groovy
+    ```kotlin
     implementation("ru.tinkoff.kora:scheduling-jdk")
     ```
 
@@ -53,7 +51,7 @@ Also all annotations have the `config` argument, if it is present, the parameter
 
 ### Configuration { #configuration }
 
-Example of the complete configuration described in the `ScheduledExecutorServiceConfig` class (default values are specified):
+Complete configuration example described by the `ScheduledExecutorServiceConfig` class with default values:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -84,14 +82,14 @@ Example of the complete configuration described in the `ScheduledExecutorService
     }
     ```
 
-    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Time to wait for jobs to complete before shutting down the scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Configures tags for metrics (optional)
-    7. Enables module tracing (default `true`)
-    8. Configures attributes for tracing (optional)
+    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) (default: `2`)
+    2. Time to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    3. Enables module logging (default: `false`)
+    4. Enables module metrics (default: `true`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Configures metric tags (default: `{}`)
+    7. Enables module tracing (default: `true`)
+    8. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -115,24 +113,24 @@ Example of the complete configuration described in the `ScheduledExecutorService
             key2: value2
     ```
 
-    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html)
-    2. Time to wait for jobs to complete before shutting down the scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Configures tags for metrics (optional)
-    7. Enables module tracing (default `true`)
-    8. Configures attributes for tracing (optional)
+    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) (default: `2`)
+    2. Time to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    3. Enables module logging (default: `false`)
+    4. Enables module metrics (default: `true`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Configures metric tags (default: `{}`)
+    7. Enables module tracing (default: `true`)
+    8. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
 
-### Fixed rate { #fixed-rate }
+### Fixed Rate { #fixed-rate }
 
-Scheduling with tasks running at fixed time intervals, regardless of whether the previous task has completed or not
-This can lead to simultaneous execution of several tasks.
+Scheduling with tasks started at a fixed time interval, regardless of whether the previous execution has completed.
+This can lead to concurrent execution of several tasks.
 
-For example, if the period is set to 10 seconds, and each task execution takes 5 seconds,
-next task execution will start 5 seconds after the previous one completed.
+For example, if the period is 10 seconds and each task execution takes 5 seconds,
+the next task starts 5 seconds after the previous one completes.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -162,7 +160,7 @@ next task execution will start 5 seconds after the previous one completed.
 
 #### Configuration { #configuration-2 }
 
-It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
+Parameters can be passed through configuration; it has priority over annotation values:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -190,7 +188,7 @@ It is possible to transfer parameters via configuration, it has priority over th
     }
     ```
 
-SomeService of configuration via a config file:
+Configuration file example:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -201,8 +199,8 @@ SomeService of configuration via a config file:
     }
     ```
 
-    1.  Initial delay interval before the first task
-    2.  Intermittent interval between tasks
+    1. Initial delay before the first task (default: `0ms`)
+    2. Periodic interval between tasks (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -212,16 +210,16 @@ SomeService of configuration via a config file:
       period: "50ms" #(2)!
     ```
 
-    1.  Initial delay interval before the first task
-    2.  Intermittent interval between tasks
+    1. Initial delay before the first task (default: `0ms`)
+    2. Periodic interval between tasks (`required`, no default)
 
-### Fixed delay { #fixed-delay }
+### Fixed Delay { #fixed-delay }
 
-The scheduler waits for a fixed period of time from the end of the previous task execution.
-Multiple tasks will not be executed simultaneously.
+The scheduler waits for a fixed time interval from the end of the previous task execution.
+Multiple executions of the same task will not happen concurrently.
 
-It does not matter how long the current execution takes,
-the next task will start after the previous task is finished and the specified waiting interval.
+It does not matter how long the current execution takes:
+the next task starts after the previous task completes and the configured delay passes.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -251,7 +249,7 @@ the next task will start after the previous task is finished and the specified w
 
 #### Configuration { #configuration-3 }
 
-It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
+Parameters can be passed through configuration; it has priority over annotation values:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -279,7 +277,7 @@ It is possible to transfer parameters via configuration, it has priority over th
     }
     ```
 
-SomeService of configuration via a config file:
+Configuration file example:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -290,8 +288,8 @@ SomeService of configuration via a config file:
     }
     ```
 
-    1.  Initial delay interval before the first task
-    2.  Intermittent delay interval between tasks
+    1. Initial delay before the first task (default: `0ms`)
+    2. Periodic delay between tasks (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -301,12 +299,12 @@ SomeService of configuration via a config file:
       delay: "50ms" #(2)!
     ```
 
-    1.  Initial delay interval before the first task
-    2.  Intermittent delay interval between tasks
+    1. Initial delay before the first task (default: `0ms`)
+    2. Periodic delay between tasks (`required`, no default)
 
 ### Once { #once }
 
-Runs a single task at a certain fixed time interval.
+Runs a task once after the configured time interval.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -336,7 +334,7 @@ Runs a single task at a certain fixed time interval.
 
 #### Configuration { #configuration-4 }
 
-It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
+Parameters can be passed through configuration; it has priority over annotation values:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -364,7 +362,7 @@ It is possible to transfer parameters via configuration, it has priority over th
     }
     ```
 
-SomeService of configuration via a config file:
+Configuration file example:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -374,7 +372,7 @@ SomeService of configuration via a config file:
     }
     ```
 
-    1.  Initial delay interval before the task
+    1. Delay before the task (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -383,16 +381,16 @@ SomeService of configuration via a config file:
       delay: "50ms" #(1)!
     ```
 
-    1.  Initial delay interval before the task
+    1. Delay before the task (`required`, no default)
 
 ### Graceful Shutdown { #graceful-shutdown }
 
-If you want to pre-terminate processing on a scheduled service termination without waiting for the service to end,
-you need to check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) status and terminate the service yourself.
+During [graceful shutdown](container.md#component-lifecycle), the native scheduler waits for tasks to complete for `scheduling.shutdownWait`.
+If a task needs to stop earlier, check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
 
 ## Quartz { #quartz }
 
-A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a scheduler for creating aspects.
+The implementation based on the [Quartz](https://www.quartz-scheduler.org/) library is used for tasks with `cron` schedules, custom `Trigger` instances, and `Quartz` execution rules.
 
 ### Dependency { #dependency-2 }
 
@@ -412,7 +410,7 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
-    ```groovy
+    ```kotlin
     implementation("ru.tinkoff.kora:scheduling-quartz")
     ```
 
@@ -424,7 +422,9 @@ A library-based implementation of [Quartz](https://www.baeldung.com/quartz) as a
 
 ### Configuration { #configuration-5 }
 
-Configuration is specified as [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) values in key and value format:
+`Quartz` configuration is specified as [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) values in key-value format.
+Kora settings for graceful shutdown and telemetry are configured in the `scheduling` section.
+The configuration of a specific `cron` task can also contain the `telemetry` section; its values override the common scheduler telemetry for that task.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -441,20 +441,30 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
             metrics {
                 enabled = true //(4)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                tags = { // (6)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(6)!
+                enabled = true //(7)!
+                attributes = { // (8)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
     ```
 
-    1. Quartz scheduler configuration parameters
-    2. Whether to wait for jobs to complete before shutting down scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
+    2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    3. Enables module logging (default: `false`)
+    4. Enables module metrics (default: `true`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Configures metric tags (default: `{}`)
+    7. Enables module tracing (default: `true`)
+    8. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -468,17 +478,25 @@ Configuration is specified as [Properties](https://www.quartz-scheduler.org/docu
           enabled: false #(3)!
         metrics:
           enabled: true #(4)!
-          slo: [ 3, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-        telemetry:
-          enabled: true #(6)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+          tags: #(6)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(7)!
+          attributes: #(8)!
+            key1: value1
+            key2: value2
     ```
 
-    1. Quartz scheduler configuration parameters
-    2. Whether to wait for jobs to complete before shutting down scheduler in case of [graceful shutdown](container.md#graceful-shutdown)
-    3. Enables module logging (default `false`)
-    4. Enables module metrics (default `true`)
-    5. Configuring [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    6. Enables module tracing (default `true`)
+    1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
+    2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    3. Enables module logging (default: `false`)
+    4. Enables module metrics (default: `true`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    6. Configures metric tags (default: `{}`)
+    7. Enables module tracing (default: `true`)
+    8. Configures tracing attributes (default: `{}`)
 
 Default settings are used from:
 
@@ -502,9 +520,9 @@ Default settings are used from:
 
 ### Cron { #cron }
 
-Usage [Cron](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) expressions to run scheduled tasks.
+[`cron` expressions](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) are used to run scheduled tasks.
 
-Starts a single task at a certain fixed time interval.
+`Quartz` uses a format with six required fields and one optional year field: seconds, minutes, hours, day of month, month, day of week, and year.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -519,7 +537,7 @@ Starts a single task at a certain fixed time interval.
     }
     ```
 
-    1. Cron expression saying to run a task every hour and every day
+    1. `cron` expression that runs the task every hour every day
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -534,11 +552,11 @@ Starts a single task at a certain fixed time interval.
     }
     ```
 
-    1. Cron expression saying to run a task every hour and every day
+    1. `cron` expression that runs the task every hour every day
 
 #### Configuration { #configuration-6 }
 
-It is possible to transfer parameters via configuration, it has priority over the parameters specified in the annotation:
+Parameters can be passed through configuration; it has priority over annotation values:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -576,7 +594,7 @@ Configuration example:
     }
     ```
 
-    1. Cron expression saying to run a task every hour and every day
+    1. `cron` expression that runs the task every hour every day (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -585,11 +603,11 @@ Configuration example:
       cron: "0 0 * * * * ?" #(1)!
     ```
 
-    1. Cron expression saying to run a task every hour and every day
+    1. `cron` expression that runs the task every hour every day (`required`, no default)
 
 ### Trigger { #trigger }
 
-This involves creating your custom `trigger` based on the Quartz library and registering it in the application dependency container with a specific tag and then using it via annotation.
+For a custom schedule, you can create a `Trigger` from the `Quartz` library, register it in the dependency graph with a tag, and then use this tag in the `@ScheduleWithTrigger` annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -619,8 +637,8 @@ This involves creating your custom `trigger` based on the Quartz library and reg
     }
     ```
 
-    1. Trigger tag
-    2. Trigger tag
+    1. Tag used to register the `Trigger` in the dependency graph.
+    2. The same tag used by the task to receive the `Trigger`.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -645,19 +663,19 @@ This involves creating your custom `trigger` based on the Quartz library and reg
     @Component
     class SomeService {
 
-        @ScheduleWithTrigger(@Tag(SomeService.class)) //(2)!
+        @ScheduleWithTrigger(@Tag(SomeService::class)) //(2)!
         fun schedule() {
             // do something
         }
     }
     ```
 
-    1. Trigger tag
-    2. Trigger tag
+    1. Tag used to register the `Trigger` in the dependency graph.
+    2. The same tag used by the task to receive the `Trigger`.
 
-### Non-concurrent execution { #non-concurrent-execution }
+### Non-Concurrent Execution { #non-concurrent-execution }
 
-Annotation that says that a method with an annotation should not be executed in parallel.
+The `@DisallowConcurrentExecution` annotation prevents concurrent execution of the same method by the `Quartz` scheduler.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -687,13 +705,12 @@ Annotation that says that a method with an annotation should not be executed in 
     }
     ```
 
-### Persistent execution { #persistent-execution }
+### Persisting Job Data { #persistent-execution }
 
-Annotation that says to forcefully update `org.quartz.JobDataMap` during execution and requires
-the scheduler to resave `org.quartz.JobDataMap` upon completion of execution.
+The `@PersistJobDataAfterExecution` annotation tells `Quartz` to save the updated `org.quartz.JobDataMap` state after task execution.
 
-It is recommended to use this annotation in conjunction with the `@DisallowConcurrentExecution` annotation
-to avoid conflicts when storing data during concurrent task execution.
+It is recommended to use it together with `@DisallowConcurrentExecution`
+to avoid data storage conflicts during concurrent task execution.
 
 ===! ":fontawesome-brands-java: `Java`"
 

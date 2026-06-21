@@ -4,23 +4,27 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing; key triggers include TracingModule, OpenTelemetry, GrpcSender, OpentelemetryContext, Span, TraceContext, OTLP."
 ---
 
-Module for collecting application trace according to [OpenTelemetry] standard(https://opentelemetry.io/docs/what-is-opentelemetry/)
-and export trace by gRPC in OTLP format.
+Tracing helps link separate application operations into a single execution chain and understand where a request spent time or failed.
+Kora uses [`OpenTelemetry`](https://opentelemetry.io/docs/what-is-opentelemetry/) to create `Span`, store the current tracing context in `OpentelemetryContext`, and export data in the `OTLP` format.
+
+The current `Span` is stored in the Kora context, so it can be propagated between application components and used when manually creating nested `Span`.
+When `OpentelemetryContext` is set, Kora also adds `traceId` and `spanId` to `MDC` so these identifiers appear in logs when the logging module is used.
 
 For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
 
 ## gRPC { #grpc }
 
-Module allows trace collection using [gRPC protocol](https://github.com/open-telemetry/oteps/blob/main/text/0035-opentelemetry-protocol.md#protocol-details) by means of `GrpcSender`.
+The module exports tracing data to `OpenTelemetry Collector` through `OTLP/gRPC`.
+It uses `GrpcSender`, and the typical collector endpoint is `http://localhost:4317`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc"
     ```
 
-    Модуль:
+    Module:
     ```java
     @KoraApp
     public interface Application extends OpentelemetryGrpcExporterModule { }
@@ -28,12 +32,12 @@ Module allows trace collection using [gRPC protocol](https://github.com/open-tel
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc")
     ```
 
-    Модуль:
+    Module:
     ```kotlin
     @KoraApp
     interface Application : OpentelemetryGrpcExporterModule
@@ -41,16 +45,17 @@ Module allows trace collection using [gRPC protocol](https://github.com/open-tel
 
 ## HTTP { #http }
 
-Module allows to collect trace using [HTTP protocol](https://github.com/open-telemetry/oteps/blob/main/text/0099-otlp-http.md) by means of `HttpSender`.
+The module exports tracing data to `OpenTelemetry Collector` through `OTLP/HTTP`.
+It uses `HttpSender`, and the typical collector endpoint is `http://localhost:4318/v1/traces`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-http"
     ```
 
-    Модуль:
+    Module:
     ```java
     @KoraApp
     public interface Application extends OpentelemetryHttpExporterModule { }
@@ -58,12 +63,12 @@ Module allows to collect trace using [HTTP protocol](https://github.com/open-tel
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
     ```
 
-    Модуль:
+    Module:
     ```kotlin
     @KoraApp
     interface Application : OpentelemetryHttpExporterModule
@@ -71,9 +76,11 @@ Module allows to collect trace using [HTTP protocol](https://github.com/open-tel
 
 ## Configuration { #configuration }
 
-`endpoint` is the only a required field, attributes from the `attributes` field will be sent with each span.
+Export parameters are described by `OpentelemetryGrpcExporterConfig` and `OpentelemetryHttpExporterConfig`, and resource attributes are described by `OpentelemetryResourceConfig`.
+If `tracing.exporter.endpoint` is not specified, the exporter is not created and the application starts without sending traces to an external collector.
 
-Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttpExporterConfig` and `OpentelemetryResourceConfig` classes:
+The `tracing.attributes` field defines `OpenTelemetry Resource` attributes that are added to exported `Span`.
+It usually contains the service name and namespace, for example `service.name` and `service.namespace`.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -103,22 +110,21 @@ Parameters described in the `OpentelemetryGrpcExporterConfig`/`OpentelemetryHttp
     }
     ```
 
-    1. URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**mandatory**)
-    2. Time to wait for connection to exporter
-    3. Maximum time to wait for telemetry processing by collector
-    4. Time between exporting telemetry to the collector 
-    5. Maximum number of telemetry within one export
-    6. Maximum queue size of unsent telemetry
-    7. Maximum waiting time for export
-    8. Telemetry compression mechanism when exporting
-    9. Whether to export unsampled telemetry
-    10. Maximum number of export attempts
-    11. Initial value of waiting time before next export attempt
-    12. Maximum wait value before next export attempt
-    13. Waiting delay value multiplier
-    14. Additional telemetry attributes
+    1. `OpenTelemetry Collector` endpoint for exporting traces (default: not specified, optional). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
+    2. Timeout for establishing a connection to the exporter (default: not specified, optional).
+    3. Maximum time to wait while the exporter sends data (default: `3s`).
+    4. Delay between sending accumulated `Span` to the collector (default: `2s`).
+    5. Maximum number of `Span` in one export batch (default: `512`).
+    6. Maximum queue size for `Span` waiting to be sent (default: `2048`).
+    7. Maximum time to wait for a batch export (default: `30s`).
+    8. Data compression used during export (default: `gzip`).
+    9. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
+    10. Maximum number of retry attempts (default: `5`).
+    11. Initial delay before a retry attempt (default: `1s`).
+    12. Maximum delay before a retry attempt (default: `5s`).
+    13. Delay multiplier between retry attempts (default: `1.5`).
+    14. `OpenTelemetry Resource` attributes added to exported `Span` (default: `{}`).
 
-Translated with DeepL.com (free version)
 === ":simple-yaml: `YAML`"
 
     ```yaml
@@ -143,26 +149,26 @@ Translated with DeepL.com (free version)
         service.namespace: kora
     ```
 
-    1. URL from [OpenTelemetry](https://opentelemetry.io/docs/collector/) service collector (**mandatory**)
-    2. Time to wait for connection to exporter
-    3. Maximum time to wait for telemetry processing by collector
-    4. Time between exporting telemetry to the collector 
-    5. Maximum number of telemetry within one export
-    6. Maximum queue size of unsent telemetry
-    7. Maximum waiting time for export
-    8. Telemetry compression mechanism when exporting
-    9. Whether to export unsampled telemetry
-    10. Maximum number of export attempts
-    11. Initial value of waiting time before next export attempt
-    12. Maximum wait value before next export attempt
-    13. Waiting delay value multiplier
-    14. Additional telemetry attributes
+    1. `OpenTelemetry Collector` endpoint for exporting traces (default: not specified, optional). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
+    2. Timeout for establishing a connection to the exporter (default: not specified, optional).
+    3. Maximum time to wait while the exporter sends data (default: `3s`).
+    4. Delay between sending accumulated `Span` to the collector (default: `2s`).
+    5. Maximum number of `Span` in one export batch (default: `512`).
+    6. Maximum queue size for `Span` waiting to be sent (default: `2048`).
+    7. Maximum time to wait for a batch export (default: `30s`).
+    8. Data compression used during export (default: `gzip`).
+    9. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
+    10. Maximum number of retry attempts (default: `5`).
+    11. Initial delay before a retry attempt (default: `1s`).
+    12. Maximum delay before a retry attempt (default: `5s`).
+    13. Delay multiplier between retry attempts (default: `1.5`).
+    14. `OpenTelemetry Resource` attributes added to exported `Span` (default: `{}`).
 
-Trace collection configuration parameters are described in modules that include trace collection, e.g. [HTTP server](http-server.md), [HTTP client](http-client.md), etc.
+Tracing enablement parameters for specific modules are described in those modules' documentation, for example [HTTP server](http-server.md), [HTTP client](http-client.md), [gRPC server](grpc-server.md), and [gRPC client](grpc-client.md).
 
 ## Tracing context { #tracing-context }
 
-Obtain the current tracing `Span`, you can use the `getSpan` method in `OpentelemetryContext`:
+To get the current `Span`, use the `getSpan` method on `OpentelemetryContext`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -173,10 +179,10 @@ Obtain the current tracing `Span`, you can use the `getSpan` method in `Opentele
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val span = OpentelemetryContext.getSpan();
+    val span = OpentelemetryContext.getSpan()
     ```
 
-Obtain the current trace ID, you can use the `getTraceId()` method in `OpentelemetryContext`:
+To get the current trace identifier, use the `getTraceId()` method on `OpentelemetryContext`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -187,13 +193,16 @@ Obtain the current trace ID, you can use the `getTraceId()` method in `Opentelem
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val traceId = OpentelemetryContext.getTraceId();
+    val traceId = OpentelemetryContext.getTraceId()
     ```
 
-## Tracing sync { #tracing-sync }
+If there is no current `Span`, both methods return `null`.
+If you need an invalid placeholder value from `OpenTelemetry`, use `getSpanOrInvalid()` and `getTraceIdOrInvalid()`.
 
-In addition to automatically created spans, you can use the `Tracer` object from the dependency container.
-You can create a span with the current one in parent as follows:
+## Synchronous tracing { #tracing-sync }
+
+In addition to `Span` automatically created by the framework, you can use the `Tracer` object from the application graph and create custom nested `Span`.
+When tracing manually, it is important to save the current `OpentelemetryContext`, set the new context for the duration of the operation, and restore the original context in `finally`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -211,8 +220,8 @@ You can create a span with the current one in parent as follows:
             var ctx = ru.tinkoff.kora.common.Context.current();
             var otctx = OpentelemetryContext.get(ctx);
             var span = tracer.spanBuilder("myOperation")
-                    .setParent(otctx.getContext())
-                    .startSpan();
+                .setParent(otctx.getContext())
+                .startSpan();
 
             OpentelemetryContext.set(ctx, otctx.add(span));
             try {
@@ -263,20 +272,21 @@ You can create a span with the current one in parent as follows:
             }
         }
 
-        fun doWork(): String = // do some work
+        fun doWork(): String {
+            // do some work
+        }
     }
     ```
 
-## Асинхронная трассировка { #async-tracing }
+## Asynchronous tracing { #async-tracing }
 
-In addition to spans automatically created by the framework, you can use the `Tracer` object from the container to create your own traces. The main challenge lies in correctly propagating the context `Fork` to another execution thread to ensure the trace works properly.
-
-To create a trace for asynchronous code inherited from the current parent context, you can do the following:
+When switching to another execution thread, pass not only `Span`, but also the Kora context.
+Use `Context.fork()` for `CompletionStage` and `Context.Kotlin.asCoroutineContext(ctx)` for `suspend` code.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Example is shown for the `CompletableStage` asynchronous approach:
-    
+    Example for asynchronous code with `CompletionStage`:
+
     ```java
     @Component
     public final class MyService {
@@ -291,23 +301,23 @@ To create a trace for asynchronous code inherited from the current parent contex
             var ctx = ru.tinkoff.kora.common.Context.current().fork();
             var otctx = OpentelemetryContext.get(ctx);
             var span = tracer.spanBuilder("myOperation")
-                    .setParent(otctx.getContext())
-                    .startSpan();
+                .setParent(otctx.getContext())
+                .startSpan();
 
             return CompletableFuture.supplyAsync(() -> {
-                        OpentelemetryContext.set(ctx, otctx.add(span));
-                        var result = doWork();
-                        return result;
-                    })
-                    .whenComplete((r, e) -> {
-                        if (e != null) {
-                            span.recordException(e);
-                            span.setStatus(StatusCode.ERROR, e.getMessage());
-                        } else {
-                            span.setStatus(StatusCode.OK);
-                        }
-                        span.end();
-                    });
+                    OpentelemetryContext.set(ctx, otctx.add(span));
+                    return doWork();
+                })
+                .whenComplete((r, e) -> {
+                    if (e != null) {
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR, e.getMessage());
+                    } else {
+                        span.setStatus(StatusCode.OK);
+                    }
+                    span.end();
+                    OpentelemetryContext.set(ctx, otctx);
+                });
         }
 
         public String doWork() {
@@ -318,7 +328,7 @@ To create a trace for asynchronous code inherited from the current parent contex
 
 === ":simple-kotlin: `Kotlin`"
 
-    Example is shown for the `suspend` asynchronous approach:
+    Example for asynchronous `suspend` code:
 
     ```kotlin
     @Component
@@ -348,6 +358,8 @@ To create a trace for asynchronous code inherited from the current parent contex
             }
         }
 
-        fun doWork(): String = // do some work
+        fun doWork(): String {
+            // do some work
+        }
     }
     ```

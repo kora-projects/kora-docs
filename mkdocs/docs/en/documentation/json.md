@@ -1,10 +1,14 @@
 ---
-description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonIgnore, JsonNullable, JacksonModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
 ---
 
-Module allows you to create productive and reflection-free JSON readers and writers for application classes using annotations.
+The `JSON` module creates efficient `JsonReader` and `JsonWriter` implementations for application classes at compile time and without using `Reflection` at runtime.
+Generation is controlled by `@Json`, `@JsonReader`, `@JsonWriter`, and related field-level annotations.
+
+`JsonModule` also provides ready-to-use mappers for `HTTP` client, `HTTP` server, string parameters, and `Kafka`.
+This allows the same generated `JsonReader` or `JsonWriter` to be used across different Kora modules.
 
 For a step-by-step walkthrough before the reference details, see [JSON](../guides/json.md).
 
@@ -12,7 +16,7 @@ For a step-by-step walkthrough before the reference details, see [JSON](../guide
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Dependency](general.md#dependencies) `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:json-module"
     ```
@@ -25,7 +29,7 @@ For a step-by-step walkthrough before the reference details, see [JSON](../guide
     
 === ":simple-kotlin: `Kotlin`"
 
-    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:json-module")
     ```
@@ -38,7 +42,8 @@ For a step-by-step walkthrough before the reference details, see [JSON](../guide
 
 ## Writer { #writer }
 
-You can use `@JsonWriter` to create a writer only:
+Use `@JsonWriter` to create only a `JsonWriter`.
+This option is useful when the type only needs to be written to `JSON`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -56,7 +61,8 @@ You can use `@JsonWriter` to create a writer only:
 
 ## Reader { #reader }
 
-You can use `@JsonReader` to create a reader only:
+Use `@JsonReader` to create only a `JsonReader`.
+This option is useful when the type only needs to be read from `JSON`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -74,8 +80,8 @@ You can use `@JsonReader` to create a reader only:
 
 ## Reader & Writer { #reader-and-writer }
 
-You can use `@Json` to create a reader and a writer at once.
-In most cases, it is the `@Json` annotation that is preferred:
+Use `@Json` to create both `JsonReader` and `JsonWriter`.
+In most cases, `@Json` is the preferred annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -91,11 +97,65 @@ In most cases, it is the `@Json` annotation that is preferred:
     data class Dto(val field1: String, val field2: Int)
     ```
 
+## Reader And Writer Interfaces { #reader-writer-interfaces }
+
+`JsonReader<T>` and `JsonWriter<T>` are regular application graph components.
+After generation or manual registration, they can be injected by signature like any other dependency.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyService {
+
+        private final JsonReader<Dto> reader;
+        private final JsonWriter<Dto> writer;
+
+        public MyService(JsonReader<Dto> reader, JsonWriter<Dto> writer) {
+            this.reader = reader;
+            this.writer = writer;
+        }
+
+        public Dto read(String json) throws IOException {
+            return this.reader.read(json);
+        }
+
+        public byte[] write(Dto dto) throws IOException {
+            return this.writer.toByteArray(dto);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyService(
+        private val reader: JsonReader<Dto>,
+        private val writer: JsonWriter<Dto>
+    ) {
+
+        fun read(json: String): Dto? {
+            return reader.read(json)
+        }
+
+        fun write(dto: Dto): ByteArray {
+            return writer.toByteArray(dto)
+        }
+    }
+    ```
+
+`JsonReader` reads a value from `JsonParser`, `byte[]`, `String`, or `InputStream`.
+The `readUnchecked(...)` methods do the same, but convert `IOException` to `UncheckedIOException`.
+
+`JsonWriter` writes a value through `JsonGenerator` and can also return `byte[]`, a string, or a formatted string through `toByteArray(...)`, `toString(...)`, and `toPrettyString(...)`.
+The `toByteArrayUnchecked(...)`, `toStringUnchecked(...)`, and `toPrettyStringUnchecked(...)` methods convert `IOException` to `UncheckedIOException`.
+
 ## Required fields { #required-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    By default, all fields declared in an object are considered **required** (*NotNull*).
+    By default, all fields declared in an object are considered **required** (`NotNull`).
 
     ```java
     @Json
@@ -104,7 +164,7 @@ In most cases, it is the `@Json` annotation that is preferred:
 
 === ":simple-kotlin: `Kotlin`"
 
-    By default, all fields declared in an object that do not use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax are considered **required** (*NotNull*).
+    By default, all fields declared in an object without [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax are considered **required** (`NotNull`).
 
     ```kotlin
     @Json
@@ -115,8 +175,7 @@ In most cases, it is the `@Json` annotation that is preferred:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    In case a field in Json is optional, that is, it may not exist then,
-    you can use the `@Nullable` annotation to match the field in Json and DTO:
+    If a `JSON` field is optional and can be absent, use the `@Nullable` annotation:
 
     ```java
     @Json
@@ -124,11 +183,11 @@ In most cases, it is the `@Json` annotation that is preferred:
                       int field2) { }
     ```
 
-    1.  Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+    1. Any `@Nullable` annotation is suitable, for example `javax.annotation.Nullable`, `jakarta.annotation.Nullable`, or `org.jetbrains.annotations.Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    It is expected to use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such a parameter as Nullable:
+    For `Kotlin`, use [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark the parameter as `nullable`:
 
     ```kotlin
     @Json
@@ -138,10 +197,10 @@ In most cases, it is the `@Json` annotation that is preferred:
     )
     ```
 
-## Field naming { #field-naming }
+## Field Naming { #field-naming }
 
-In case a field in Json is named differently from what you want to use in a class,
-you can use the `@JsonField` annotation to match the field in Json and the DTO.
+If a field in `JSON` has a different name than the field in the class, use `@JsonField`.
+It sets the key name in `JSON` and also allows specifying separate `JsonReader` and `JsonWriter` implementations for a field.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -161,10 +220,36 @@ you can use the `@JsonField` annotation to match the field in Json and the DTO.
     )
     ```
 
-## Field ignore { #field-ignore }
+If a field needs separate mappers, specify them in `reader` and `writer`:
 
-In case you don't want to read/write a field in DTO,
-you can use the `@JsonSkip` annotation and ignore such a field.
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(@JsonField(value = "created_at",
+                                 reader = InstantJsonReader.class,
+                                 writer = InstantJsonWriter.class)
+                      Instant createdAt) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(
+        @field:JsonField(
+            value = "created_at",
+            reader = InstantJsonReader::class,
+            writer = InstantJsonWriter::class
+        )
+        val createdAt: Instant
+    )
+    ```
+
+## Field Ignore { #field-ignore }
+
+If a field in a `DTO` should not be read or written, use `@JsonSkip`.
+Such a field is ignored when reading and writing `JSON`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -184,29 +269,29 @@ you can use the `@JsonSkip` annotation and ignore such a field.
     )
     ```
 
-## Serialization levels { #serialization-levels }
+## Serialization Levels { #serialization-levels }
 
-The default behavior is not to write fields with `null` values. (1)
+By default, fields with `null` values are not written. (1)
 { .annotate }
 
-1.  `IncludeType.NON_NULL` - include the field in the record if not `null`.
+1. `IncludeType.NON_NULL` - write the field only if the value is not `null`.
 
-In case you want to change the behavior of the record in these moments, it is suggested to use the `@JsonInclude` annotation.
-The annotation can be used not only over a field, but also over a class and then the rule will apply to all fields at once.
+To change this behavior, use `@JsonInclude`.
+The annotation can be placed not only on a field, but also on a class; in that case, the rule applies to all fields at once.
 
-Various use cases are available:
+Available options:
 
-- `IncludeType.ALWAYS` - include the field in the record always
-- `IncludeType.NON_NULL` - include the field in the record if it is not `null`.
-- `IncludeType.NON_EMPTY` - include the field in the record if it is not `null` and not an empty collection
+- `IncludeType.ALWAYS` - always write the field.
+- `IncludeType.NON_NULL` - write the field if the value is not `null`.
+- `IncludeType.NON_EMPTY` - write the field if the value is not `null` and is not an empty collection or map.
 
-Example of annotation usage:
+Example:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Json
-    @JsonInclude(IncludeType.NOT_NULL)
+    @JsonInclude(IncludeType.NON_NULL)
     public record Dto(@JsonInclude(IncludeType.ALWAYS) @Nullable String field1, 
                       int field2) { }
     ```
@@ -221,10 +306,10 @@ Example of annotation usage:
     )
     ```
 
-## Serialization constructor { #serialization-constructor }
+## Serialization Constructor { #serialization-constructor }
 
-If you want to use a specific constructor for serialization,
-it can be done by specifying the `@JsonReader` annotation above the constructor or the lower-priority `@Json` annotation:
+If a specific constructor should be used for reading `JSON`, annotate it with `@JsonReader`.
+You can also use `@Json`, but `@JsonReader` has higher priority:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -250,10 +335,20 @@ it can be done by specifying the `@JsonReader` annotation above the constructor 
     }
     ```
 
-## JsonNullable wrapper { #jsonnullable-wrapper }
+`JsonReader` and `JsonWriter` can be generated for classes, `record`, `enum`, and `sealed` types.
+For reading a class, there must be one public constructor or a constructor explicitly annotated with `@JsonReader` or `@Json`.
 
-In case you want to distinguish a missing field from a specified `null` value during deserialization,
-it is supposed to use a special type `JsonNullable`, which allows interpreting all states of the field.
+## JsonNullable Wrapper { #jsonnullable-wrapper }
+
+If reading `JSON` must distinguish an absent field from a field with a `null` value, use `JsonNullable`.
+Main states and factory methods:
+
+- `JsonNullable.undefined()` - the field is absent in `JSON`.
+- `JsonNullable.nullValue()` - the field is present and contains `null`.
+- `JsonNullable.of(value)` - the field is present and contains a value.
+- `JsonNullable.ofNullable(value)` - creates `nullValue()` if the value is `null`, otherwise `of(value)`.
+
+When writing `JSON`, `undefined()` is skipped, `nullValue()` is written as `null`, and `of(value)` writes the value itself.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -269,16 +364,16 @@ it is supposed to use a special type `JsonNullable`, which allows interpreting a
     data class Dto(val field1: String, val field2: JsonNullable<Int>)
     ```
 
-## Sealed classes and interfaces { #sealed-classes-and-interfaces }
+## Sealed Classes And Interfaces { #sealed-classes-and-interfaces }
 
-In case you need to write different Json objects depending on the value in a particular field, you are supposed to use an
-[isolated class/interface](https://habr.com/ru/companies/otus/articles/720044/) to represent such objects.
+If different `JSON` objects should be read and written depending on a specific field value, use a
+[sealed class or interface](https://kotlinlang.org/docs/sealed-classes.html) to represent those objects.
 
-Two annotations are added to support isolated classes:
+Two annotations support sealed types:
 
-1. `@JsonDiscriminatorField` - specifies the discriminator field in the DTO with which the sealed class/interface is tagged
-2. `@JsonDiscriminatorValue` - the value for the above field, marks the inheritor class of the sealed class/interface
-3. 
+1. `@JsonDiscriminatorField` - specifies the discriminator field in the `DTO` marked as a `sealed` class or interface.
+2. `@JsonDiscriminatorValue` - specifies one or more discriminator values for a subclass.
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
@@ -315,9 +410,11 @@ Two annotations are added to support isolated classes:
     }
     ```
 
-A `JsonReader` and `JsonWriter` will be created for the inheritor classes using the same rules as if they had the `@Json` annotation on them and a `JsonReader` and `JsonWriter` will be created for the sealed class/interface itself.
+Subclasses receive `JsonReader` and `JsonWriter` by the same rules as if they were annotated with `@Json`.
+The `sealed` class or interface itself also receives a common `JsonReader` and `JsonWriter`.
+Nested `sealed` hierarchies are supported, and `@JsonDiscriminatorValue` can accept multiple values for one subclass.
 
-The Json object below will be written to the `FirstTypeEvent` class:
+The `JSON` object below is written to the `FirstTypeEvent` class:
 ```json
 {
     "id": "1",
@@ -328,9 +425,104 @@ The Json object below will be written to the `FirstTypeEvent` class:
 }
 ```
 
-## Supported types { #supported-types }
+## Enums { #enum }
 
-Module provides an extensive list of supported out-of-the-box types that cover most of what you might need.
+For `enum`, `JsonReader` and `JsonWriter` can be generated with the same `@Json`, `@JsonReader`, and `@JsonWriter` annotations.
+By default, the `enum` value in `JSON` is the result of `toString()`, so it can be overridden:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public enum Status {
+        CREATED,
+        DELETED;
+
+        @Override
+        public String toString() {
+            return this.name().toLowerCase();
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    enum class Status {
+        CREATED,
+        DELETED;
+
+        override fun toString(): String {
+            return name.lowercase()
+        }
+    }
+    ```
+
+If a value other than the string from `toString()` is needed, annotate a public parameterless method with `@Json`.
+In that case, a corresponding `JsonReader` and `JsonWriter` must be available for the return type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public enum Status {
+        CREATED(1),
+        DELETED(2);
+
+        private final int code;
+
+        Status(int code) {
+            this.code = code;
+        }
+
+        @Json
+        public int code() {
+            return this.code;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    enum class Status(private val code: Int) {
+        CREATED(1),
+        DELETED(2);
+
+        @Json
+        fun code(): Int = code
+    }
+    ```
+
+## RawJson { #raw-json }
+
+`RawJson` is used when an object needs to include an already prepared `JSON` fragment without serializing it again.
+When written, `RawJson` is passed to the output `JSON` as is, so the value must be a valid `JSON` fragment.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(String id, RawJson payload) { }
+
+    var dto = new Dto("1", new RawJson("{\"status\":\"ok\"}"));
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(val id: String, val payload: RawJson)
+
+    val dto = Dto("1", RawJson("""{"status":"ok"}"""))
+    ```
+
+## Supported Types { #supported-types }
+
+The module provides built-in types that cover most common tasks.
+For collections and maps, Kora uses the `JsonReader` or `JsonWriter` of the element type.
 
 ??? abstract "List of supported types"
 
@@ -351,11 +543,17 @@ Module provides an extensive list of supported out-of-the-box types that cover m
     * UUID
     * BigInteger
     * BigDecimal
-    * List<Integer>
-    * Set<Integer>
+    * RawJson
+    * Object
+    * Enum
+    * List<T>
+    * Set<T>
+    * SortedSet<T>
+    * Map<String, T>
     * LocalDate
     * LocalTime
     * LocalDateTime
+    * Instant
     * OffsetTime
     * OffsetDateTime
     * ZonedDateTime
@@ -367,11 +565,11 @@ Module provides an extensive list of supported out-of-the-box types that cover m
     * ZoneId
     * Duration
 
-### Custom types { #custom-types }
+### Custom Types { #custom-types }
 
-In case you need to write/read your custom type, it is suggested to register your custom [factory](container.md) for `JsonReader` / `JsonWriter`:
+If a custom type must be read or written, register a custom [factory](container.md) for `JsonReader` or `JsonWriter`.
 
-Example of registering a `JsonWriter`:
+Example of registering a custom `JsonWriter`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -381,7 +579,7 @@ Example of registering a `JsonWriter`:
 
         default JsonWriter<ZoneOffset> zoneOffsetJsonWriter() {
             return (generator, value) -> {
-                if(value != null) {
+                if (value != null) {
                     generator.writeString(value.getId());
                 }
             };
@@ -407,12 +605,12 @@ Example of registering a `JsonWriter`:
 
 ## Jackson { #jackson }
 
-In case one wants to use `Jackson` for writing/reading, one can register [factory](container.md) that
-provide `ObjectMapper` and the corresponding `Mappers` that are required in other Kora modules will be provided by the dependency below:
+If `Jackson` must be used for reading and writing `JSON`, register a [factory](container.md) in the application graph that provides `ObjectMapper`.
+`JacksonModule` adds mappers for `HTTP` client and `HTTP` server that use this `ObjectMapper`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Dependency](general.md#dependencies) `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
     annotationProcessor "ru.tinkoff.kora:json-annotation-processor"
     implementation "ru.tinkoff.kora:jackson-module"
@@ -426,7 +624,7 @@ provide `ObjectMapper` and the corresponding `Mappers` that are required in othe
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
     ksp("ru.tinkoff.kora:json-annotation-processor")
     implementation("ru.tinkoff.kora:jackson-module")

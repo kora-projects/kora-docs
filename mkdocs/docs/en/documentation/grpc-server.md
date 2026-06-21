@@ -4,7 +4,11 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora gRPC server generation, protobuf Gradle plugin setup, server configuration, handlers, interceptors, reflection, and debugging; key triggers include GrpcServerModule, @GrpcService, @InterceptWith, GrpcServerConfig, GrpcServerInterceptor, Server Reflection."
 ---
 
-Module for gRPC server handlers support based on [grpc.io](https://grpc.io/docs/languages/java/basics/) functionality.
+The module starts a `gRPC server` based on [`grpc-java`](https://grpc.io/docs/languages/java/basics/) and connects handlers from the application graph to it.
+A handler is a `BindableService`, usually a class that extends a generated `...ImplBase`.
+
+Kora creates a `NettyServerBuilder`, adds server services, user-defined and standard `ServerInterceptor`, manages the server lifecycle, and participates in application readiness checks.
+If configuration parameters are not enough, the resulting `NettyServerBuilder` can be additionally configured in code through `GrpcServerBuilderConfigurer`.
 
 For a step-by-step walkthrough before the reference details, see [gRPC Server](../guides/grpc-server.md) and [Advanced gRPC Server](../guides/grpc-server-advanced.md).
 
@@ -12,10 +16,10 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    [Dependency](general.md#dependencies) `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
     implementation "ru.tinkoff.kora:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.62.2"
+    implementation "io.grpc:grpc-protobuf:1.74.0"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -27,10 +31,10 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
 
 === ":simple-kotlin: `Kotlin`"
 
-    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
     implementation("ru.tinkoff.kora:grpc-server")
-    implementation "io.grpc:grpc-protobuf:1.62.2"
+    implementation("io.grpc:grpc-protobuf:1.74.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -42,11 +46,11 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
 
 ### Plugin { #plugin }
 
-The code for the gRPC server is created with [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
+The code for the `gRPC server` is generated with the [protobuf gradle plugin](https://github.com/google/protobuf-gradle-plugin).
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Plugin `build.gradle`:
+    Plugin in `build.gradle`:
     ```groovy
     plugins {
         id "com.google.protobuf" version "0.9.4"
@@ -55,7 +59,7 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -72,7 +76,7 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
 
 === ":simple-kotlin: `Kotlin`"
 
-    Plugin `build.gradle.kts`:
+    Plugin in `build.gradle.kts`:
     ```groovy
     import com.google.protobuf.gradle.id
 
@@ -83,7 +87,7 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
     protobuf {
         protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.62.2" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
         }
         generateProtoTasks {
             ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
@@ -100,7 +104,7 @@ The code for the gRPC server is created with [protobuf gradle plugin](https://gi
 
 ## Configuration { #configuration }
 
-Example of a complete configuration described in the `GrpcServerConfig` class (example values or default values are indicated):
+Example of a complete configuration described by `GrpcServerConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -137,20 +141,20 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
     }
     ```
 
-    1. gRPC server port
-    2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
-    3. Enables [gRPC Server Reflection](#reflection) service
-    4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
-    5. Sets a custom max connection age, connection lasting longer than which will be gracefully terminated. An unreasonably small value might be increased. A random jitter of +/-10% will be added to it.
-    6. Sets a custom grace time for the graceful connection termination. Once the max connection age is reached, RPCs have the grace time to complete. RPCs that do not complete in time will be cancelled, allowing the connection to terminate.
-    7. Sets the interval in milliseconds between PING frames
-    8. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
-    9. Enables module logging (default `false`)
-    10. Enables module metrics (default `true`)
-    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    12. Configures tags for metrics (optional)
-    13. Enables module tracing (default `true`)
-    14. Configures attributes for tracing (optional)
+    1. `gRPC server` port (default: `8090`).
+    2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
+    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
+    4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+    5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
+    6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+    7. Sets the interval between `PING` frames (default: not specified, optional).
+    8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+    9. Enables module logging (default: `false`).
+    10. Enables module metrics (default: `true`).
+    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    12. Metric tags (default: `{}`).
+    13. Enables module tracing (default: `true`).
+    14. Tracing attributes (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -180,28 +184,59 @@ Example of a complete configuration described in the `GrpcServerConfig` class (e
             key2: value2
     ```
 
-    1. gRPC server port
-    2. Maximum size of the incoming message (specified as a number in bytes / or as `4MiB` / `4MB` / `1000Kb` etc.)
-    3. Enables [gRPC Server Reflection](#reflection) service
-    4. Time to wait for processing before shutting down the server in case of [graceful shutdown](container.md#graceful-shutdown)
-    5. Sets a custom max connection age, connection lasting longer than which will be gracefully terminated. An unreasonably small value might be increased. A random jitter of +/-10% will be added to it.
-    6. Sets a custom grace time for the graceful connection termination. Once the max connection age is reached, RPCs have the grace time to complete. RPCs that do not complete in time will be cancelled, allowing the connection to terminate.
-    7. Sets the interval in milliseconds between PING frames
-    8. Sets the timeout in milliseconds for a PING frame to be acknowledged. If sender does not receive an acknowledgment within this time, it will close the connection
-    9. Enables module logging (default `false`)
-    10. Enables module metrics (default `true`)
-    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    12. Configures tags for metrics (optional)
-    13. Enables module tracing (default `true`)
-    14. Configures attributes for tracing (optional)
+    1. `gRPC server` port (default: `8090`).
+    2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
+    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
+    4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+    5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
+    6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+    7. Sets the interval between `PING` frames (default: not specified, optional).
+    8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+    9. Enables module logging (default: `false`).
+    10. Enables module metrics (default: `true`).
+    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    12. Metric tags (default: `{}`).
+    13. Enables module tracing (default: `true`).
+    14. Tracing attributes (default: `{}`).
 
 You can also configure [Netty transport](netty.md).
+
+### Configuration In Code { #builder-configurer }
+
+If configuration parameters are not enough, register a `GrpcServerBuilderConfigurer` component and additionally configure `NettyServerBuilder` in code.
+This component is called after configuration has been applied and after services, user-defined `ServerInterceptor`, and standard `ServerInterceptor` have been added.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyGrpcServerBuilderConfigurer implements GrpcServerBuilderConfigurer {
+
+        @Override
+        public NettyServerBuilder configure(NettyServerBuilder builder) {
+            return builder.permitKeepAliveWithoutCalls(true);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyGrpcServerBuilderConfigurer : GrpcServerBuilderConfigurer {
+
+        override fun configure(builder: NettyServerBuilder): NettyServerBuilder {
+            return builder.permitKeepAliveWithoutCalls(true)
+        }
+    }
+    ```
 
 Module metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
 
 ## Handlers { #handlers }
 
-Created gRPC service handlers are required to be tagged with the `@Component` annotation:
+Created `gRPC services` must be added to the application graph with the `@Component` annotation.
+Usually, a handler extends the `...ImplBase` class generated from the `proto` description by the `protobuf gradle plugin`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -219,22 +254,26 @@ Created gRPC service handlers are required to be tagged with the `@Component` an
 
 ## Interceptors { #interceptors }
 
-[Interceptors](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) allow you to intercept requests before they are passed to handlers.
+[Interceptors](https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html) allow processing requests before they are passed to a `gRPC service`.
+They are suitable for cross-cutting logic: logging, authorization, tracing, working with `Metadata`, and error mapping.
 
 ### Default { #default }
 
-The following interceptors are used at server startup by default:
+When the server starts, Kora adds standard interceptors:
 
-- `ContextServerInterceptor`.
-- `CoroutineContextInjectInterceptor`.
-- `MetricCollectorServerInterceptor`
-- `LoggingServerInterceptor`.
+- `TelemetryInterceptor`
+- `ContextServerInterceptor`
+- `CoroutineContextInjectInterceptor`
 
-To override the default interceptor list, you can override the `serverBuilder` method from the `GrpcModule` class
+`TelemetryInterceptor` enables server telemetry: logging, metrics, and tracing depending on connected modules and `grpcServer.telemetry` settings.
+`ContextServerInterceptor` propagates the Kora context into call processing, and `CoroutineContextInjectInterceptor` adds `CoroutineContext` support for `Kotlin`.
+
+User-defined `ServerInterceptor` from the application graph are added to `NettyServerBuilder` before the standard interceptors.
+For full `NettyServerBuilder` configuration, use [GrpcServerBuilderConfigurer](#builder-configurer).
 
 ### Custom { #custom }
 
-Adding your custom interceptor requires creating an inheritor of `ServerInterceptor` with the `@Component` annotation:
+To add a custom interceptor, create a `ServerInterceptor` implementation with the `@Component` annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -248,7 +287,7 @@ Adding your custom interceptor requires creating an inheritor of `ServerIntercep
                                                                      ServerCallHandler<ReqT, RespT> serverCallHandler) {
             // do something
             
-            return serverCallHandler.startCall(serverCall, metadata):
+            return serverCallHandler.startCall(serverCall, metadata);
         }
     }
     ```
@@ -273,35 +312,35 @@ Adding your custom interceptor requires creating an inheritor of `ServerIntercep
 
 ## Reflection { #reflection }
 
-Supported by [gRPC Server Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
-which provides information about publicly available gRPC services on the server
-and helps clients at runtime build RPC requests and responses without pre-compiled service information.
-It is used by the gRPC command line tool (gRPC CLI), which can be used to examine server proto-files and send/receive test RPCs.
-Reflection is only supported for proto-based services.
+[`gRPC Server Reflection`](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) is supported and provides information about available `gRPC services` on the server.
+Reflection helps clients and tools build `RPC` requests at runtime without precompiled service information.
+For example, it is used by `gRPC CLI`, which can inspect server `proto` descriptions and send test `RPC` calls.
+`gRPC Server Reflection` is supported only for `proto`-based services.
 
-You can learn more about working with gRPC Server Reflection [here](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
+You can learn more about `gRPC Server Reflection` in the [grpc-java guide](https://github.com/grpc/grpc-java/blob/master/documentation/server-reflection-tutorial.md#enable-server-reflection).
 
 ### Dependency { #dependency-2 }
 
-An optional gRPC Server Reflection dependency is required.
+You must additionally add the [`gRPC Server Reflection`](https://mvnrepository.com/artifact/io.grpc/grpc-services) dependency.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Зависимость `build.gradle`:
+    [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
-    implementation "io.grpc:grpc-services:1.62.2"
+    implementation "io.grpc:grpc-services:1.74.0"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Зависимость `build.gradle.kts`:
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    implementation("io.grpc:grpc-services:1.62.2")
+    implementation("io.grpc:grpc-services:1.74.0")
     ```
 
 ### Configuration { #configuration-2 }
 
-You must also enable the gRPC Server Reflection service in the configuration:
+You must also enable the `gRPC Server Reflection` service in the configuration.
+Kora adds it to the server only if the application has the `io.grpc.protobuf.services.ProtoReflectionService` class, so configuration alone is not enough without the dependency.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -311,7 +350,7 @@ You must also enable the gRPC Server Reflection service in the configuration:
     }
     ```
 
-    1.  Enables gRPC Server Reflection service
+    1. Enables the `gRPC Server Reflection` service (default: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -320,4 +359,4 @@ You must also enable the gRPC Server Reflection service in the configuration:
       reflectionEnabled: false #(1)!
     ```
 
-    1.  Enables gRPC Server Reflection service
+    1. Enables the `gRPC Server Reflection` service (default: `false`).
