@@ -17,7 +17,7 @@ For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP S
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.16")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.17")
         }
     }
     ```
@@ -37,7 +37,7 @@ For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP S
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.16")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.17")
         }
     }
     ```

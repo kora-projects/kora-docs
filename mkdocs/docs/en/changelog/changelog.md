@@ -5,7 +5,22 @@ hide:
   - navigation
 ---
 
-## 1.2.16
+## 1.2.17
+
+Added:
+
+- Added `RedisCache#putExpireAfterWrite` contracts for manual regulation
+- Updated patch and safe minor dependencies
+
+Fixed:
+
+- Fixed AOP generated proxies should be registered with supertype in graph
+- Fixed render OpenAPI `additionalContractAnnotations` verbatim without HTML-escaping
+- Fixed missed complete signals in `QueuePublisher` which was used in `AsyncHttpClient`
+- Fixed propagate meta-annotation tags (`@Json`) through `@KoraSubmodule`, HTTP routes and `@KoraAppTest`
+- Fixed track HOCON `#include` files when application config is loaded as a resource
+
+### 1.2.16
 
 Added:
 
