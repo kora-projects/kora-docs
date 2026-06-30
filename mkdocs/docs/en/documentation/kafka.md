@@ -1839,7 +1839,7 @@ To use, simply specify the type in the publisher/consumer method:
     @KafkaPublisher("kafka.someProducer")
     public interface MyPublisher {
         @KafkaPublisher.Topic("kafka.someProducer.topic")
-        void send(UUID key, String value); // UUID and String are serialized automatically
+        void send(UUID key, String value);
     }
     ```
 
@@ -1849,7 +1849,7 @@ To use, simply specify the type in the publisher/consumer method:
     @KafkaPublisher("kafka.someProducer")
     interface MyPublisher {
         @KafkaPublisher.Topic("kafka.someProducer.topic")
-        fun send(key: UUID, value: String) // UUID and String are serialized automatically
+        fun send(key: UUID, value: String)
     }
     ```
 
