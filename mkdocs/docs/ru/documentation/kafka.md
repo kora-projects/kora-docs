@@ -414,7 +414,145 @@ Kora предоставляет компоненты `Deserializer` для ба�
 
 Для потребителей, не использующих ключ, по умолчанию используется `Deserializer<byte[]>`, так как он возвращает необработанные байты.
 
-### Обработка исключений { #exception-handling }
+### Кастомный десериализатор { #custom-deserializer }
+
+В случае если требуется кастомная десериализация, можно реализовать собственный `Deserializer`.
+
+**Вариант 1: Десериализатор по умолчанию для типа**
+
+Если предоставить `Deserializer<T>` как компонент без тега, он будет использоваться для всех потребителей этого типа:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public static class MyEventDeserializer implements Deserializer<MyEvent> {
+
+        private final JsonReader<MyEvent> reader;
+
+        public MyEventDeserializer(JsonReader<MyEvent> reader) {
+            this.reader = reader;
+        }
+
+        @Override
+        public MyEvent deserialize(String topic, byte[] data) {
+            try {
+                return reader.read(data);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+    @Component
+    final class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer")
+        void process(MyEvent value) { // Используется MyEventDeserializer
+            // обработка события
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyEventDeserializer(
+        private val reader: JsonReader<MyEvent>
+    ) : Deserializer<MyEvent> {
+
+        override fun deserialize(topic: String, data: ByteArray): MyEvent {
+            return try {
+                reader.read(data)
+            } catch (e: IOException) {
+                throw IllegalArgumentException(e)
+            }
+        }
+    }
+
+    @Component
+    class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(value: MyEvent) { // Используется MyEventDeserializer
+            // обработка события
+        }
+    }
+    ```
+
+**Вариант 2: Точечный десериализатор для конкретного потребителя**
+
+Если требуется использовать разную десериализацию для разных потребителей одного типа, можно использовать теги:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class SomeConsumer {
+
+        @Json
+        public record MyEvent(String username, int code) {}
+
+        @Tag(MyEvent.class)
+        @Component
+        public static class MyDeserializer implements Deserializer<MyEvent> {
+
+            private final JsonReader<MyEvent> reader;
+
+            public MyDeserializer(JsonReader<MyEvent> reader) {
+                this.reader = reader;
+            }
+
+            @Override
+            public MyEvent deserialize(String topic, byte[] data) {
+                try {
+                    return reader.read(data);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        }
+
+        @KafkaListener("kafka.someConsumer")
+        void process(@Tag(MyEvent.class) MyEvent value) {
+            // обработка события
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConsumer {
+
+        @Json
+        data class MyEvent(val username: String, val code: Int)
+
+        @Tag(MyEvent::class)
+        @Component
+        class MyDeserializer(
+            private val reader: JsonReader<MyEvent>
+        ) : Deserializer<MyEvent> {
+
+            override fun deserialize(topic: String, data: ByteArray): MyEvent {
+                return try {
+                    reader.read(data)
+                } catch (e: IOException) {
+                    throw IllegalArgumentException(e)
+                }
+            }
+        }
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(@Tag(MyEvent::class) value: MyEvent) {
+            // обработка события
+        }
+    }
+    ```
+
+### Обработка исключений { #exception-handling-consumer }
 
 Если метод помеченный `@KafkaListener` выбросит исключение, то Consumer будет перезапущен,
 потому что нет общего решения, как реагировать на это и разработчик **должен** сам решить как эту ситуацию обрабатывать.
@@ -485,7 +623,49 @@ Kora предоставляет компоненты `Deserializer` для ба�
 * `ru.tinkoff.kora.kafka.common.exceptions.RecordKeyDeserializationException`
 * `ru.tinkoff.kora.kafka.common.exceptions.RecordValueDeserializationException`
 
-Из этих исключений можно получить сырой `ConsumerRecord<byte[], byte[]>`.
+Из этих исключений можно получить сырой `ConsumerRecord<byte[], byte[]>` через метод `getRecord()`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someConsumer")
+    void process(ConsumerRecord<String, String> record) {
+        try {
+            var key = record.key();
+            var value = record.value();
+            // обработка
+        } catch (RecordKeyDeserializationException e) {
+            ConsumerRecord<byte[], byte[]> rawRecord = e.getRecord();
+            // Логирование сырых данных для отладки
+            logger.error("Failed to deserialize key for record: {}", rawRecord);
+        } catch (RecordValueDeserializationException e) {
+            ConsumerRecord<byte[], byte[]> rawRecord = e.getRecord();
+            // Логирование сырых данных для отладки
+            logger.error("Failed to deserialize value for record: {}", rawRecord);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someConsumer")
+    fun process(record: ConsumerRecord<String, String>) {
+        try {
+            val key = record.key()
+            val value = record.value()
+            // обработка
+        } catch (e: RecordKeyDeserializationException) {
+            val rawRecord = e.record
+            // Логирование сырых данных для отладки
+            logger.error("Failed to deserialize key for record: {}", rawRecord)
+        } catch (e: RecordValueDeserializationException) {
+            val rawRecord = e.record
+            // Логирование сырых данных для отладки
+            logger.error("Failed to deserialize value for record: {}", rawRecord)
+        }
+    }
+    ```
 
 Если вы используете сигнатуру с распакованными `key`/`value`/`headers`, 
 то можно добавить последним аргументом `Exception`, `Throwable`, `RecordKeyDeserializationException` или `RecordValueDeserializationException`,
@@ -561,7 +741,7 @@ Kora предоставляет компоненты `Deserializer` для ба�
 
 ### События ребалансировки { #rebalance-events }
 
-Можно слушать и реагировать на события ребалансировки с помощью свой реализации интерфейса `ConsumerAwareRebalanceListener`,
+Можно слушать и реагировать на события ребалансировки с помощью своей реализации интерфейса `ConsumerAwareRebalanceListener`,
 его следует предоставить как компонент по тегу потребителя:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -573,12 +753,21 @@ Kora предоставляет компоненты `Deserializer` для ба�
 
         @Override
         public void onPartitionsRevoked(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
-            
+            // Вызывается когда партиции были отобраны у потребителя (перед коммитом offset'ов)
+            // Можно использовать для сохранения состояния или коммита offset'ов
         }
 
         @Override
         public void onPartitionsAssigned(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            // Вызывается когда партиции были назначены потребителю
+            // Можно использовать для инициализации состояния
+        }
 
+        @Override
+        public void onPartitionsLost(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            // Вызывается когда партиции были потеряны (например, при ребалансировке группы)
+            // В отличие от onPartitionsRevoked, коммит offset'ов уже не возможен
+            // По умолчанию вызывает onPartitionsRevoked
         }
     }
     ```
@@ -591,11 +780,19 @@ Kora предоставляет компоненты `Deserializer` для ба�
     class SomeListener : ConsumerAwareRebalanceListener {
 
         override fun onPartitionsRevoked(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
-            
+            // Вызывается когда партиции были отобраны у потребителя (перед коммитом offset'ов)
+            // Можно использовать для сохранения состояния или коммита offset'ов
         }
-        
+
         override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
-            
+            // Вызывается когда партиции были назначены потребителю
+            // Можно использовать для инициализации состояния
+        }
+
+        override fun onPartitionsLost(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            // Вызывается когда партиции были потеряны (например, при ребалансировке группы)
+            // В отличие от onPartitionsRevoked, коммит offset'ов уже не возможен
+            // По умолчанию вызывает onPartitionsRevoked
         }
     }
     ```
@@ -769,6 +966,62 @@ public interface BaseKafkaRecordsHandler<K, V> {
 Сигнатура с `ConsumerRecords<K, V>` принимает всю пачку событий из одного `poll()`.
 Вместе с ней можно указать только `Consumer<K, V>` и `KafkaConsumerRecordsTelemetryContext<K, V>`.
 Отдельные `key`/`value`, `Headers` и аргументы ошибок чтения в такой сигнатуре не поддерживаются; ошибки чтения нужно обрабатывать при обходе событий.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someConsumer")
+    void process(ConsumerRecords<K, V> records,
+                 KafkaConsumerTelemetry.KafkaConsumerRecordsTelemetryContext<K, V> ctx) {
+        for (ConsumerRecord<K, V> record : records) {
+            var telemetryContext = ctx.get(record);
+            // обработка события
+            telemetryContext.close(null); // закрыть с результатом (null = успех)
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someConsumer")
+    fun process(records: ConsumerRecords<K, V>,
+                ctx: KafkaConsumerTelemetry.KafkaConsumerRecordsTelemetryContext<K, V>) {
+        for (record in records) {
+            val telemetryContext = ctx.get(record)
+            // обработка события
+            telemetryContext.close(null) // закрыть с результатом (null = успех)
+        }
+    }
+    ```
+
+`KafkaConsumerRecordsTelemetryContext` позволяет вручную управлять телеметрией для каждого сообщения.
+Используйте `ctx.get(record)` для получения контекста, и `close(exception)` для закрытия с результатом.
+Если не передавать контекст явно, Kora автоматически закроет его после обработки.
+
+Для обработки единичных событий с ручным управлением телеметрией используйте `KafkaConsumerRecordTelemetryContext`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaListener("kafka.someConsumer")
+    void process(ConsumerRecord<K, V> record,
+                 KafkaConsumerTelemetry.KafkaConsumerRecordTelemetryContext ctx) {
+        // обработка события
+        ctx.close(null); // закрыть с результатом
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaListener("kafka.someConsumer")
+    fun process(record: ConsumerRecord<K, V>,
+                ctx: KafkaConsumerTelemetry.KafkaConsumerRecordTelemetryContext) {
+        // обработка события
+        ctx.close(null) // закрыть с результатом
+    }
+    ```
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1014,6 +1267,8 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
     1.  `topic`, в который метод будет отправлять данные (`обязательная`, по умолчанию не указано)
     2.  Раздел `topic`, в который метод будет отправлять данные (по умолчанию не указано, необязательно)
+        Если указан, все сообщения будут отправляться в указанную партицию.
+        Если не указан, используется стандартное партиционирование Kafka (по ключу или random).
 
 === ":simple-yaml: `YAML`"
 
@@ -1027,6 +1282,8 @@ public interface BaseKafkaRecordsHandler<K, V> {
 
     1.  `topic`, в который метод будет отправлять данные (`обязательная`, по умолчанию не указано)
     2.  Раздел `topic`, в который метод будет отправлять данные (по умолчанию не указано, необязательно)
+        Если указан, все сообщения будут отправляться в указанную партицию.
+        Если не указан, используется стандартное партиционирование Kafka (по ключу или random).
 
 ### Сериализация { #serialization }
 
@@ -1098,11 +1355,163 @@ Kora предоставляет компоненты `Serializer` для баз�
     }
     ```
 
-### Обработка исключений { #exception-handling-2 }
+### Кастомный сериализатор { #custom-serializer }
+
+В случае если требуется кастомная сериализация, можно реализовать собственный `Serializer`.
+
+**Вариант 1: Сериализатор по умолчанию для типа**
+
+Если предоставить `Serializer<T>` как компонент без тега, он будет использоваться для всех продюсеров этого типа:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public static class MyEventSerializer implements Serializer<MyEvent> {
+
+        private final JsonWriter<MyEvent> writer;
+
+        public MyEventSerializer(JsonWriter<MyEvent> writer) {
+            this.writer = writer;
+        }
+
+        @Override
+        public byte[] serialize(String topic, MyEvent data) {
+            try {
+                return writer.toByteArray(data);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        void send(MyEvent value); // Используется MyEventSerializer
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyEventSerializer(
+        private val writer: JsonWriter<MyEvent>
+    ) : Serializer<MyEvent> {
+
+        override fun serialize(topic: String, data: MyEvent): ByteArray {
+            return try {
+                writer.toByteArray(data)
+            } catch (e: IOException) {
+                throw IllegalArgumentException(e)
+            }
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        fun send(value: MyEvent) // Используется MyEventSerializer
+    }
+    ```
+
+**Вариант 2: Точечный сериализатор для конкретного продюсера**
+
+Если требуется использовать разную сериализацию для разных продюсеров одного типа, можно использовать теги:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyKafkaProducer {
+
+        @Json
+        record MyEvent(String username, int code) {}
+
+        @Tag(MyEvent.class)
+        @Component
+        class MySerializer implements Serializer<MyEvent> {
+
+            private final JsonWriter<MyEvent> writer;
+
+            public MySerializer(JsonWriter<MyEvent> writer) {
+                this.writer = writer;
+            }
+
+            @Override
+            public byte[] serialize(String topic, MyEvent data) {
+                try {
+                    return writer.toByteArray(data);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        }
+
+        void send(ProducerRecord<String, @Tag(MyEvent.class) MyEvent> record);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyKafkaProducer {
+
+        @Json
+        data class MyEvent(val username: String, val code: Int)
+
+        @Tag(MyEvent::class)
+        @Component
+        class MySerializer(
+            private val writer: JsonWriter<MyEvent>
+        ) : Serializer<MyEvent> {
+
+            override fun serialize(topic: String, data: MyEvent): ByteArray {
+                return try {
+                    writer.toByteArray(data)
+                } catch (e: IOException) {
+                    throw IllegalArgumentException(e)
+                }
+            }
+        }
+
+        fun send(record: ProducerRecord<String, @Tag(MyEvent::class) MyEvent>)
+    }
+    ```
+
+### Обработка исключений { #exception-handling-producer }
 
 В случае ошибки отправки в методе, помеченном `@KafkaPublisher.Topic`, который не возвращает `Future<RecordMetadata>`,
 будет выброшено `ru.tinkoff.kora.kafka.common.exceptions.KafkaPublishException`.
 Исходная ошибка из `KafkaProducer` будет доступна в `cause`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try {
+        myPublisher.send("key", "value");
+    } catch (KafkaPublishException e) {
+        // Обработка ошибки публикации
+        Throwable cause = e.getCause(); // Реальная ошибка от KafkaProducer
+        // ...
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    try {
+        myPublisher.send("key", "value")
+    } catch (e: KafkaPublishException) {
+        // Обработка ошибки публикации
+        val cause = e.cause // Реальная ошибка от KafkaProducer
+        // ...
+    }
+    ```
 
 #### Ошибки сериализации { #serialization-errors }
 
@@ -1211,9 +1620,10 @@ Kora предоставляет компоненты `Serializer` для баз�
     }
     ```
 
-    1.  Префикс идентификатора транзакций; к нему будет добавлен случайный `UUID` (по умолчанию: `kora-app-`)
-    2.  Максимальный размер пула транзакционных `Producer` (по умолчанию: `10`)
-    3.  Максимальное время ожидания свободного `Producer` из пула (по умолчанию: `10s`)
+    1.  Префикс идентификатора транзакций. Используется для генерации уникального `transactional.id`.
+        Формат: `{idPrefix}-{uuid}`. Пример: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
+    2.  Размер пула транзакционных продюсеров. Определяет максимальное количество параллельных транзакций.
+    3.  Максимальное время ожидания получения транзакции из пула. Если превышено, будет выброшено исключение.
 
 === ":simple-yaml: `YAML`"
 
@@ -1225,9 +1635,137 @@ Kora предоставляет компоненты `Serializer` для баз�
         maxWaitTime: "10s" #(3)!
     ```
 
-    1.  Префикс идентификатора транзакций; к нему будет добавлен случайный `UUID` (по умолчанию: `kora-app-`)
-    2.  Максимальный размер пула транзакционных `Producer` (по умолчанию: `10`)
-    3.  Максимальное время ожидания свободного `Producer` из пула (по умолчанию: `10s`)
+    1.  Префикс идентификатора транзакций. Используется для генерации уникального `transactional.id`.
+        Формат: `{idPrefix}-{uuid}`. Пример: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
+    2.  Размер пула транзакционных продюсеров. Определяет максимальное количество параллельных транзакций.
+    3.  Максимальное время ожидания получения транзакции из пула. Если превышено, будет выброшено исключение.
+
+### Продвинутое использование транзакций { #advanced-transactions }
+
+#### Интерфейс Transaction { #transaction-interface }
+
+Метод `begin()` возвращает объект `Transaction<P>`, который предоставляет расширенные возможности управления транзакцией:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try (var tx = transactionalPublisher.begin()) {
+        // Отправка сообщений
+        tx.publisher().send("key1", "value1");
+        tx.publisher().send("key2", "value2");
+        
+        // Коммит offset'ов потребителя в транзакции (exactly-once семантика)
+        Map<TopicPartition, OffsetAndMetadata> offsets = ...;
+        ConsumerGroupMetadata groupMetadata = ...;
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+        
+        // Явный flush для гарантии отправки перед коммитом
+        tx.flush();
+        
+        // commit() вызывается автоматически при закрытии try-with-resources
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    transactionalPublisher.begin().use { tx ->
+        // Отправка сообщений
+        tx.publisher().send("key1", "value1")
+        tx.publisher().send("key2", "value2")
+        
+        // Коммит offset'ов потребителя в транзакции (exactly-once семантика)
+        val offsets: Map<TopicPartition, OffsetAndMetadata> = ...
+        val groupMetadata: ConsumerGroupMetadata = ...
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+        
+        // Явный flush для гарантии отправки перед коммитом
+        tx.flush()
+        
+        // commit() вызывается автоматически при закрытии use
+    }
+    ```
+
+**Методы `Transaction<P>`:**
+
+| Метод | Описание |
+|-------|----------|
+| `publisher()` | Возвращает типизированный publisher для отправки сообщений |
+| `producer()` | Возвращает raw `Producer<byte[], byte[]>` для низкоуровневых операций |
+| `sendOffsetsToTransaction(offsets, groupMetadata)` | Коммитит offset'ы потребителя в рамках той же транзакции |
+| `flush()` | Гарантирует отправку всех сообщений перед коммитом |
+| `abort()` | Откатывает транзакцию |
+| `abort(cause)` | Откатывает транзакцию с указанием причины |
+| `close()` | Закрывает транзакцию (коммит если не было abort) |
+
+#### `inTx()` vs `withTx()` { #intx-vs-withtx }
+
+`TransactionalPublisher` предоставляет 4 метода для работы с транзакциями:
+
+| Метод | Что передаёт в callback | Возвращает значение |
+|-------|------------------------|---------------------|
+| `inTx(TransactionalConsumer)` | `P publisher` | `void` |
+| `inTx(TransactionalFunction)` | `P publisher` | `R` |
+| `withTx(TransactionConsumer)` | `Transaction<P> tx` | `void` |
+| `withTx(TransactionFunction)` | `Transaction<P> tx` | `R` |
+
+**Пример с возвратом значения:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // inTx с возвратом значения
+    Long messageId = transactionalPublisher.inTx(producer -> {
+        producer.send("key", "value");
+        return System.currentTimeMillis();
+    });
+    
+    // withTx с доступом к Transaction
+    transactionalPublisher.withTx(tx -> {
+        tx.publisher().send("key", "value");
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+        tx.flush(); // Явный flush
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // inTx с возвратом значения
+    val messageId = transactionalPublisher.inTx { producer ->
+        producer.send("key", "value")
+        System.currentTimeMillis()
+    }
+    
+    // withTx с доступом к Transaction
+    transactionalPublisher.withTx { tx ->
+        tx.publisher().send("key", "value")
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+        tx.flush() // Явный flush
+    }
+    ```
+
+#### Сериализаторы и десериализаторы по умолчанию { #default-serializers }
+
+`KafkaModule` автоматически предоставляет сериализаторы и десериализаторы для базовых типов через `KafkaSerializersModule` и `KafkaDeserializersModule`.
+
+Эти сериализаторы/десериализаторы предоставляются как компоненты **без тегов** и используются по умолчанию для всех потребителей/продюсеров соответствующих типов.
+
+**Поддерживаемые типы из коробки:**
+
+| Тип | Serializer | Deserializer |
+|-----|------------|--------------|
+| `String` | `StringSerializer` | `StringDeserializer` |
+| `byte[]` | `ByteArraySerializer` | `ByteArrayDeserializer` |
+| `ByteBuffer` | `ByteBufferSerializer` | `ByteBufferDeserializer` |
+| `Bytes` | `BytesSerializer` | `BytesDeserializer` |
+| `UUID` | `UUIDSerializer` | `UUIDDeserializer` |
+| `Integer` | `IntegerSerializer` | `IntegerDeserializer` |
+| `Long` | `LongSerializer` | `LongDeserializer` |
+| `Short` | `ShortSerializer` | `ShortDeserializer` |
+| `Double` | `DoubleSerializer` | `DoubleDeserializer` |
+| `Float` | `FloatSerializer` | `FloatDeserializer` |
+| `Void` | `VoidSerializer` | `VoidDeserializer` |
 
 ### Сигнатуры { #signatures-3 }
 
@@ -1328,10 +1866,10 @@ Kora предоставляет компоненты `Serializer` для баз�
     public interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        RecordMetadata send(V value);
+        RecordMetadata send(V value); // Синхронный, ждёт подтверждения от брокера
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        Future<RecordMetadata> sendFuture(V value);
+        Future<RecordMetadata> sendFuture(V value); // Асинхронный через Java Future
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         CompletionStage<RecordMetadata> sendStage(V value);
@@ -1348,22 +1886,22 @@ Kora предоставляет компоненты `Serializer` для баз�
     interface MyPublisher {
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: V): RecordMetadata
+        fun send(value: V): RecordMetadata // Синхронный, ждёт подтверждения от брокера
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        suspend fun sendSuspend(value: V): RecordMetadata
+        suspend fun sendSuspend(value: V): RecordMetadata // Kotlin Coroutines
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Future<RecordMetadata>
+        fun send(value: V): Future<RecordMetadata> // Java Future
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): CompletionStage<RecordMetadata>
+        fun send(value: V): CompletionStage<RecordMetadata> // Java CompletableFuture
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String): CompletableFuture<RecordMetadata>
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Deferred<RecordMetadata>
+        fun send(value: V): Deferred<RecordMetadata> // Kotlin Deferred
     } 
     ```
 
