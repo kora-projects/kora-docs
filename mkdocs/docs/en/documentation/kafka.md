@@ -174,13 +174,19 @@ In a real configuration, either `topics` or `topicsPattern` is usually specified
     1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
     2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
     3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
+        If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
     4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+        If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
+        If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
     5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
         1. `earliest` - earliest available `offset`
         2. `latest` - latest available `offset`
         3. string in `Duration` format, for example `5m`, - shift back by the specified duration
+           Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
     6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
     7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+        If consumer throws unexpected exception (not `KafkaSkipRecordException`),
+        Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
     8.  Partition list refresh period for the `assign` strategy (default: `1m`)
     9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
     10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
@@ -233,13 +239,19 @@ In a real configuration, either `topics` or `topicsPattern` is usually specified
     1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
     2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
     3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
+        If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
     4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+        If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
+        If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
     5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
         1. `earliest` - earliest available `offset`
         2. `latest` - latest available `offset`
         3. string in `Duration` format, for example `5m`, - shift back by the specified duration
+           Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
     6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
     7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+        If consumer throws unexpected exception (not `KafkaSkipRecordException`),
+        Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
     8.  Partition list refresh period for the `assign` strategy (default: `1m`)
     9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
     10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
@@ -650,7 +662,145 @@ In this case, Kora uses `JsonReader<T>` and `JsonKafkaDeserializer<T>` from the 
 
 For non-key handlers, the default is `Deserializer<byte[]>` since it simply returns unhandled bytes.
 
-### Exception handling { #exception-handling }
+### Custom Deserializer { #custom-deserializer }
+
+If custom deserialization is required, you can implement your own `Deserializer`.
+
+**Option 1: Default deserializer for type**
+
+If you provide `Deserializer<T>` as a component without a tag, it will be used for all consumers of this type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public static class MyEventDeserializer implements Deserializer<MyEvent> {
+
+        private final JsonReader<MyEvent> reader;
+
+        public MyEventDeserializer(JsonReader<MyEvent> reader) {
+            this.reader = reader;
+        }
+
+        @Override
+        public MyEvent deserialize(String topic, byte[] data) {
+            try {
+                return reader.read(data);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+    @Component
+    final class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer")
+        void process(MyEvent value) { // Uses MyEventDeserializer
+            // event handling
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyEventDeserializer(
+        private val reader: JsonReader<MyEvent>
+    ) : Deserializer<MyEvent> {
+
+        override fun deserialize(topic: String, data: ByteArray): MyEvent {
+            return try {
+                reader.read(data)
+            } catch (e: IOException) {
+                throw IllegalArgumentException(e)
+            }
+        }
+    }
+
+    @Component
+    class SomeConsumer {
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(value: MyEvent) { // Uses MyEventDeserializer
+            // event handling
+        }
+    }
+    ```
+
+**Option 2: Point deserializer for specific consumer**
+
+If you need to use different deserialization for different consumers of the same type, you can use tags:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class SomeConsumer {
+
+        @Json
+        public record MyEvent(String username, int code) {}
+
+        @Tag(MyEvent.class)
+        @Component
+        public static class MyDeserializer implements Deserializer<MyEvent> {
+
+            private final JsonReader<MyEvent> reader;
+
+            public MyDeserializer(JsonReader<MyEvent> reader) {
+                this.reader = reader;
+            }
+
+            @Override
+            public MyEvent deserialize(String topic, byte[] data) {
+                try {
+                    return reader.read(data);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        }
+
+        @KafkaListener("kafka.someConsumer")
+        void process(@Tag(MyEvent.class) MyEvent value) {
+            // event handling
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConsumer {
+
+        @Json
+        data class MyEvent(val username: String, val code: Int)
+
+        @Tag(MyEvent::class)
+        @Component
+        class MyDeserializer(
+            private val reader: JsonReader<MyEvent>
+        ) : Deserializer<MyEvent> {
+
+            override fun deserialize(topic: String, data: ByteArray): MyEvent {
+                return try {
+                    reader.read(data)
+                } catch (e: IOException) {
+                    throw IllegalArgumentException(e)
+                }
+            }
+        }
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(@Tag(MyEvent::class) value: MyEvent) {
+            // event handling
+        }
+    }
+    ```
+
+### Exception handling { #exception-handling-consumer }
 
 If the method labeled `@KafkaListener` throws an exception, Consumer will be restarted,
 because there is no general solution on how to handle this and the developer **must** decide how to handle it.
@@ -717,10 +867,52 @@ At that point, it is worth handling it in the way you want.
 
 The following exceptions are thrown:
 
-* ` `ru.tinkoff.kora.kafka.common.exceptions.RecordKeyDeserializationException`.
+* `ru.tinkoff.kora.kafka.common.exceptions.RecordKeyDeserializationException`.
 * `ru.tinkoff.kora.kafka.common.exceptions.RecordValueDeserializationException`.
 
-From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>`.
+From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>` using `getRecord()` method:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    final class ConsumerService {
+
+        @KafkaListener("kafka.someConsumer")
+        public void process(String key, String value) {
+            try {
+                // Access key/value which may throw deserialization exception
+            } catch (RecordKeyDeserializationException e) {
+                ConsumerRecord<byte[], byte[]> rawRecord = e.getRecord();
+                // Handle raw record (log, send to DLQ, etc.)
+            } catch (RecordValueDeserializationException e) {
+                ConsumerRecord<byte[], byte[]> rawRecord = e.getRecord();
+                // Handle raw record (log, send to DLQ, etc.)
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ConsumerService {
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(key: String, value: String) {
+            try {
+                // Access key/value which may throw deserialization exception
+            } catch (e: RecordKeyDeserializationException) {
+                val rawRecord = e.getRecord()
+                // Handle raw record (log, send to DLQ, etc.)
+            } catch (e: RecordValueDeserializationException) {
+                val rawRecord = e.getRecord()
+                // Handle raw record (log, send to DLQ, etc.)
+            }
+        }
+    }
+    ```
 
 If you use a signature with unpacked `key`/`value`/`headers`, you can add `Exception`, `Throwable`, `RecordKeyDeserializationException`, `RecordKeyDeserializationException` with the last argument
 or `RecordValueDeserializationException`.
@@ -807,12 +999,22 @@ it should be provided as a component by the consumer tag:
 
         @Override
         public void onPartitionsRevoked(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
-            
+            // Called before partitions are revoked from this consumer.
+            // Use this to commit offsets or cleanup state.
         }
 
         @Override
         public void onPartitionsAssigned(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            // Called when partitions are assigned to this consumer.
+            // Use this to initialize state for assigned partitions.
+        }
 
+        @Override
+        public void onPartitionsLost(Consumer<?, ?> consumer, Collection<TopicPartition> partitions) {
+            // Called when partitions are lost (e.g., consumer failure, group rebalance).
+            // Unlike onPartitionsRevoked, this is called when the consumer is no longer
+            // part of the group and cannot commit offsets.
+            // Use this to cleanup local state for lost partitions.
         }
     }
     ```
@@ -825,11 +1027,20 @@ it should be provided as a component by the consumer tag:
     class SomeListener : ConsumerAwareRebalanceListener {
 
         override fun onPartitionsRevoked(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
-            
+            // Called before partitions are revoked from this consumer.
+            // Use this to commit offsets or cleanup state.
         }
         
         override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
-            
+            // Called when partitions are assigned to this consumer.
+            // Use this to initialize state for assigned partitions.
+        }
+
+        override fun onPartitionsLost(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
+            // Called when partitions are lost (e.g., consumer failure, group rebalance).
+            // Unlike onPartitionsRevoked, this is called when the consumer is no longer
+            // part of the group and cannot commit offsets.
+            // Use this to cleanup local state for lost partitions.
         }
     }
     ```
@@ -1007,6 +1218,8 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
 
     1. `topic` where the method sends data (`required`, not set by default)
     2. `topic` partition where the method sends data (not set by default, optional)
+        If specified, all messages will be sent to the specified partition.
+        If not specified, standard Kafka partitioning is used (by key or random).
 
 === ":simple-yaml: `YAML`"
 
@@ -1020,6 +1233,102 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
 
     1. `topic` where the method sends data (`required`, not set by default)
     2. `topic` partition where the method sends data (not set by default, optional)
+        If specified, all messages will be sent to the specified partition.
+        If not specified, standard Kafka partitioning is used (by key or random).
+
+### Signatures { #signatures-2 }
+
+Allows `value` and `key` (optional) and `headers` (optional) to be sent from `ProducerRecord`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        void send(String key, String value, Headers headers);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(key: String, value: String, headers: Headers)
+    } 
+    ```
+
+Can be received as the result of a `RecordMetadata` operation:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Can be also obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        RecordMetadata send(String value);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        Future<RecordMetadata> send(String value);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        CompletionStage<RecordMetadata> sendStage(V value);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Can be also obtained as the result of a `suspend` or `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` or `Deferred<RecordMetadata>` operation:
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        suspend fun sendSuspend(value: V): RecordMetadata
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): Future<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): CompletionStage<RecordMetadata>
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(value: String): Deferred<RecordMetadata>
+    } 
+    ```
+
+It is possible to send `ProducerRecord` with or without `Callback` and combine the response with the examples above:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+          void send(ProducerRecord<String, String> record, Callback callback);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        fun send(record: ProducerRecord<String, String>, callback: Callback)
+    }
+    ```
 
 ### Serialization { #serialization }
 
@@ -1091,11 +1400,183 @@ In this case, Kora uses `JsonWriter<T>` and `JsonKafkaSerializer<T>` from the [J
     }
     ```
 
-### Exception handling { #exception-handling-2 }
+### Custom Serializer { #custom-serializer }
+
+If custom serialization is required, you can implement your own `Serializer`.
+
+**Option 1: Default serializer for type**
+
+If you provide `Serializer<T>` as a component without a tag, it will be used for all producers of this type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public static class MyEventSerializer implements Serializer<MyEvent> {
+
+        private final JsonWriter<MyEvent> writer;
+
+        public MyEventSerializer(JsonWriter<MyEvent> writer) {
+            this.writer = writer;
+        }
+
+        @Override
+        public byte[] serialize(String topic, MyEvent data) {
+            try {
+                return writer.toByteArray(data);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        void send(MyEvent value); // Uses MyEventSerializer
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyEventSerializer(
+        private val writer: JsonWriter<MyEvent>
+    ) : Serializer<MyEvent> {
+
+        override fun serialize(topic: String, data: MyEvent): ByteArray {
+            return try {
+                writer.toByteArray(data)
+            } catch (e: IOException) {
+                throw IllegalArgumentException(e)
+            }
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        fun send(value: MyEvent) // Uses MyEventSerializer
+    }
+    ```
+
+**Option 2: Point serializer for specific producer**
+
+If you need to use different serialization for different producers of the same type, you can use tags:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyKafkaProducer {
+
+        @Json
+        record MyEvent(String username, int code) {}
+
+        @Tag(MyEvent.class)
+        @Component
+        class MySerializer implements Serializer<MyEvent> {
+
+            private final JsonWriter<MyEvent> writer;
+
+            public MySerializer(JsonWriter<MyEvent> writer) {
+                this.writer = writer;
+            }
+
+            @Override
+            public byte[] serialize(String topic, MyEvent data) {
+                try {
+                    return writer.toByteArray(data);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        }
+
+        void send(ProducerRecord<String, @Tag(MyEvent.class) MyEvent> record);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyKafkaProducer {
+
+        @Json
+        data class MyEvent(val username: String, val code: Int)
+
+        @Tag(MyEvent::class)
+        @Component
+        class MySerializer(
+            private val writer: JsonWriter<MyEvent>
+        ) : Serializer<MyEvent> {
+
+            override fun serialize(topic: String, data: MyEvent): ByteArray {
+                return try {
+                    writer.toByteArray(data)
+                } catch (e: IOException) {
+                    throw IllegalArgumentException(e)
+                }
+            }
+        }
+
+        fun send(record: ProducerRecord<String, @Tag(MyEvent::class) MyEvent>)
+    }
+    ```
+
+### Exception handling { #exception-handling-producer }
 
 If a send error happens in a method annotated with `@KafkaPublisher.Topic` that does not return `Future<RecordMetadata>`,
 `ru.tinkoff.kora.kafka.common.exceptions.KafkaPublishException` is thrown.
 The original error from `KafkaProducer` is available in `cause`.
+
+To get the failed record, use the `getRecord()` method:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    class SomeService {
+
+        private final MyPublisher publisher;
+
+        public SomeService(MyPublisher publisher) {
+            this.publisher = publisher;
+        }
+
+        void sendMessage() {
+            try {
+                publisher.send("key", "value");
+            } catch (KafkaPublishException e) {
+                ProducerRecord<byte[], byte[]> failedRecord = e.getRecord();
+                // Handle the failed record (log, retry, etc.)
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val publisher: MyPublisher
+    ) {
+
+        fun sendMessage() {
+            try {
+                publisher.send("key", "value")
+            } catch (e: KafkaPublishException) {
+                val failedRecord = e.getRecord()
+                // Handle the failed record (log, retry, etc.)
+            }
+        }
+    }
+    ```
 
 #### Serialization errors { #serialization-errors }
 
@@ -1204,6 +1685,7 @@ It is also possible to manage the transaction manually through `begin()`:
     ```
 
     1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
+        Format: `{idPrefix}-{uuid}`. Example: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
     2.  Maximum size of the transactional `Producer` pool (default: `10`)
     3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
 
@@ -1218,8 +1700,158 @@ It is also possible to manage the transaction manually through `begin()`:
     ```
 
     1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
+        Format: `{idPrefix}-{uuid}`. Example: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
     2.  Maximum size of the transactional `Producer` pool (default: `10`)
     3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
+
+### Advanced Transaction Usage { #advanced-transactions }
+
+#### Transaction Interface { #transaction-interface }
+
+The `begin()` method returns a `Transaction<P>` object that provides advanced transaction management capabilities:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try (var tx = transactionalPublisher.begin()) {
+        // Sending messages
+        tx.publisher().send("key1", "value1");
+        tx.publisher().send("key2", "value2");
+        
+        // Commit consumer offsets within the transaction (exactly-once semantics)
+        Map<TopicPartition, OffsetAndMetadata> offsets = ...;
+        ConsumerGroupMetadata groupMetadata = ...;
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+        
+        // Explicit flush to guarantee sending before commit
+        tx.flush();
+        
+        // commit() is called automatically on try-with-resources close
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    transactionalPublisher.begin().use { tx ->
+        // Sending messages
+        tx.publisher().send("key1", "value1")
+        tx.publisher().send("key2", "value2")
+        
+        // Commit consumer offsets within the transaction (exactly-once semantics)
+        val offsets: Map<TopicPartition, OffsetAndMetadata> = ...
+        val groupMetadata: ConsumerGroupMetadata = ...
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+        
+        // Explicit flush to guarantee sending before commit
+        tx.flush()
+        
+        // commit() is called automatically on use close
+    }
+    ```
+
+**`Transaction<P>` methods:**
+
+| Method | Description |
+|--------|-------------|
+| `publisher()` | Returns typed publisher for sending messages |
+| `producer()` | Returns raw `Producer<byte[], byte[]>` for low-level operations |
+| `sendOffsetsToTransaction(offsets, groupMetadata)` | Commits consumer offsets within the same transaction |
+| `flush()` | Guarantees all messages are sent before commit |
+| `abort()` | Aborts the transaction |
+| `abort(cause)` | Aborts the transaction with specified cause |
+| `close()` | Closes the transaction (commits if no abort) |
+
+#### `inTx()` vs `withTx()` { #intx-vs-withtx }
+
+`TransactionalPublisher` provides 4 methods for working with transactions:
+
+| Method | Passes to callback | Returns value |
+|--------|-------------------|---------------|
+| `inTx(TransactionalConsumer)` | `P publisher` | `void` |
+| `inTx(TransactionalFunction)` | `P publisher` | `R` |
+| `withTx(TransactionConsumer)` | `Transaction<P> tx` | `void` |
+| `withTx(TransactionFunction)` | `Transaction<P> tx` | `R` |
+
+**Example with return value:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // inTx with return value
+    Long messageId = transactionalPublisher.inTx(producer -> {
+        producer.send("key", "value");
+        return System.currentTimeMillis();
+    });
+    
+    // withTx with Transaction access
+    transactionalPublisher.withTx(tx -> {
+        tx.publisher().send("key", "value");
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+        tx.flush(); // Explicit flush
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // inTx with return value
+    val messageId = transactionalPublisher.inTx { producer ->
+        producer.send("key", "value")
+        System.currentTimeMillis()
+    }
+    
+    // withTx with Transaction access
+    transactionalPublisher.withTx { tx ->
+        tx.publisher().send("key", "value")
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+        tx.flush() // Explicit flush
+    }
+    ```
+
+#### Default Serializers and Deserializers { #default-serializers }
+
+`KafkaModule` automatically provides serializers and deserializers for base types via `KafkaSerializersModule` and `KafkaDeserializersModule`.
+
+These serializers/deserializers are provided as components **without tags** and are used by default for all consumers/producers of corresponding types.
+
+**Supported types out of the box:**
+
+| Type | Serializer | Deserializer |
+|------|------------|--------------|
+| `String` | `StringSerializer` | `StringDeserializer` |
+| `byte[]` | `ByteArraySerializer` | `ByteArrayDeserializer` |
+| `ByteBuffer` | `ByteBufferSerializer` | `ByteBufferDeserializer` |
+| `Bytes` | `BytesSerializer` | `BytesDeserializer` |
+| `UUID` | `UUIDSerializer` | `UUIDDeserializer` |
+| `Integer` | `IntegerSerializer` | `IntegerDeserializer` |
+| `Long` | `LongSerializer` | `LongDeserializer` |
+| `Short` | `ShortSerializer` | `ShortDeserializer` |
+| `Double` | `DoubleSerializer` | `DoubleDeserializer` |
+| `Float` | `FloatSerializer` | `FloatDeserializer` |
+| `Void` | `VoidSerializer` | `VoidDeserializer` |
+
+To use, simply specify the type in the publisher/consumer method:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        void send(UUID key, String value); // UUID and String are serialized automatically
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        fun send(key: UUID, value: String) // UUID and String are serialized automatically
+    }
+    ```
 
 ### Signatures { #signatures-3 }
 
