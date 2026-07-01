@@ -4,8 +4,13 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerModule, UndertowHttpServerModule."
 ---
 
-Module provides a thin layer of abstraction over HTTP server libraries to create HTTP request handlers
-using both declarative-style annotations and imperative-style annotations.
+The `HTTP server` module describes the incoming HTTP boundary of an application: accepting a request, parsing parameters,
+reading the body, selecting a handler, creating a response, telemetry, and interceptors. In Kora, controllers can be described
+declaratively with `@HttpController` and `@HttpRoute`, or handlers can be registered imperatively with `HttpServerRequestHandler`.
+
+The declarative approach fits most APIs: the method signature describes the HTTP contract, and Kora creates the handler at
+compile time without using `Reflection` at runtime. The imperative approach is useful for low-level or dynamic routes where
+it is easier to process the request manually.
 
 ???+ tip "Recommendation"
 
@@ -19,9 +24,9 @@ For a step-by-step walkthrough before the reference details, see [HTTP Server](.
 
 ## Dependency { #dependency }
 
-Implementation based on [Undertow](https://undertow.io/).
-Undertow is a lightweight open-source web server for Java applications.
-It is built on asynchronous and non-blocking I/O operations using NIO,
+Implementation is based on [Undertow](https://undertow.io/).
+`Undertow` is a lightweight open-source web server for `Java` applications.
+It is built on asynchronous and non-blocking I/O operations using `NIO`,
 which ensures high performance and low resource consumption.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -101,32 +106,32 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     }
     ```
 
-    1.  Public server port
-    2.  Private server port
-    3.  Path to get [metrics](metrics.md) on the private server
-    4.  Path to get [probes](probes.md) status on the private server
-    5.  Path to get [probes viability](probes.md) status on a private server
-    6.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
-    7.  Number of network threads, default is the number of CPU cores or minimum `2`.
-    8.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
-    9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Maximum lifetime of the request handler thread
-    11.  Maximum waiting time for reading data from the socket/connection
-    12.  Maximum waiting time for writing data to the socket/connection
-    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
-    14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Maximum allowed size of the incoming request body
-    16.  Enables module logging (default `false`)
-    17.  Enables call stack logging in case of exception
-    18.  Mask that is used to hide specified headers and request/response parameters
-    19.  List of request parameters to be hidden
-    20.  List of request/response headers that should be hidden
-    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    22.  Enables module metrics (default `true`)
-    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    24.  Configures tags for metrics (optional)
-    25.  Enables module tracing (default is `true`)
-    26.  Configures attributes for tracing (optional)
+    1.  Public `HTTP` server port (default: `8080`)
+    2.  Private `HTTP` server port (default: `8085`)
+    3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
+    4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
+    5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
+    6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
+    7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
+    8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
+    9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    10.  Maximum idle lifetime of a request handler thread (default: `60s`)
+    11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
+    12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
+    13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
+    14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
+    15.  Maximum allowed size of an incoming request body (default: `256MiB`)
+    16.  Enables module logging (default: `false`)
+    17.  Enables call stack logging on exception (default: `true`)
+    18.  Mask used to hide specified headers and request or response parameters (default: `***`)
+    19.  List of request parameters to hide (default: `[]`)
+    20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
+    22.  Enables module metrics (default: `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    24.  Configures metric tags (default: `{}`)
+    25.  Enables module tracing (default: `true`)
+    26.  Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -168,37 +173,37 @@ Example of the complete configuration described in the `HttpServerConfig` class 
             key2: value2
     ```
 
-    1.  Public server port
-    2.  Private server port
-    3.  Path to get [metrics](metrics.md) on the private server
-    4.  Path to get [probes](probes.md) status on the private server
-    5.  Path to get [probes viability](probes.md) status on a private server
-    6.  Whether to ignore the slash at the end of the path, if enabled `/my/path` and `/my/path/` will be interpreted the same way, default is off
-    7.  Number of network threads, default is the number of CPU cores or minimum `2`.
-    8.  Number of worker threads, default is the number of CPU cores multiplied by 2 or a minimum of `2` threads.
-    9.  Waiting time to shut down the server in case of [normal termination](https://maxilect.ru/blog/pochemu-vazhen-graceful-shutdown-v-oblachnoy-srede-na-pr/)
-    10.  Maximum lifetime of the request handler thread
-    11.  Maximum waiting time for reading data from the socket/connection
-    12.  Maximum waiting time for writing data to the socket/connection
-    13.  Whether to send `keep-alive' messages during TCP socket/connection lifetime
-    14.  Includes support for virtual threads for processing requests (instead of `blockingThreads`), requires Java 21+
-    15.  Maximum allowed size of the incoming request body
-    16.  Enables module logging (default `false`)
-    17.  Enables call stack logging in case of exception
-    18.  Mask that is used to hide specified headers and request/response parameters
-    19.  List of request parameters to be hidden
-    20.  List of request/response headers that should be hidden
-    21.  Whether to always use the request path template when logging. The default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    22.  Enables module metrics (default `true`)
-    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    24.  Configures tags for metrics (optional)
-    25.  Enables module tracing (default is `true`)
-    26.  Configures attributes for tracing (optional)
+    1.  Public `HTTP` server port (default: `8080`)
+    2.  Private `HTTP` server port (default: `8085`)
+    3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
+    4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
+    5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
+    6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
+    7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
+    8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
+    9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    10.  Maximum idle lifetime of a request handler thread (default: `60s`)
+    11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
+    12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
+    13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
+    14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
+    15.  Maximum allowed size of an incoming request body (default: `256MiB`)
+    16.  Enables module logging (default: `false`)
+    17.  Enables call stack logging on exception (default: `true`)
+    18.  Mask used to hide specified headers and request or response parameters (default: `***`)
+    19.  List of request parameters to hide (default: `[]`)
+    20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
+    22.  Enables module metrics (default: `true`)
+    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    24.  Configures metric tags (default: `{}`)
+    25.  Enables module tracing (default: `true`)
+    26.  Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
-Kora provides fine-grained control over the Undertow HTTP server through two dedicated configuration interfaces: `UndertowConfigurer` and `HttpHandlerConfigurer`. 
-These allow you to customize server behavior and request processing pipeline without sacrificing integration with Kora’s modular architecture.
+Kora provides fine-grained control over the `Undertow` `HTTP` server through two dedicated configuration interfaces: `UndertowConfigurer` and `HttpHandlerConfigurer`.
+They allow configuring server behavior and the request processing pipeline without sacrificing integration with Kora's modular architecture.
 
 ## SomeController declarative { #somecontroller-declarative }
 
@@ -224,7 +229,7 @@ The `@HttpRoute` annotation is responsible for specifying the HTTP path and meth
     1. Indicates that the class is a component and should be registered in the application dependency container
     2. Indicates that the class is a controller and contains HTTP handlers
     3. Indicates that the method is a path handler in the controller
-    4. Indicates the type of HTTP method handler
+    4. Indicates the type of the handler `HTTP` method
     5. Indicates the path of the handler method
 
 === ":simple-kotlin: `Kotlin`"
@@ -246,18 +251,81 @@ The `@HttpRoute` annotation is responsible for specifying the HTTP path and meth
     1. Indicates that the class is a component and should be registered in the application dependency container
     2. Indicates that the class is a controller and contains HTTP handlers
     3. Indicates that the method is a path handler in the controller
-    4. Indicates the type of HTTP method handler
+    4. Indicates the type of the handler `HTTP` method
     5. Indicates the path of the handler method
 
 ### Request { #request }
 
-The section describes HTTP request transformations at the controller.
-It is suggested to use special annotations to specify the request parameters.
+This section describes how an `HTTP` request is converted into controller method arguments.
+Special annotations are used for request parts, and the request body is passed as an argument without such an annotation.
+
+#### String parameter conversion { #string-parameter-reader }
+
+Values from paths, query parameters, headers, and `cookie` arrive as strings.
+Kora uses `StringParameterReader<T>` to convert a string into the target type:
+
+```java
+public interface StringParameterReader<T> {
+    T read(String string);
+}
+```
+
+`StringParameterReader<T>` is looked up as a graph component by the exact parameter type. If the parameter is declared as `List<T>` or `Set<T>`,
+the converter is applied to every value separately.
+
+Out of the box, Kora supports `String`, `Boolean`, `Integer`, `Long`, `Float`, `Double`, `UUID`, `BigInteger`, `BigDecimal`,
+`Duration`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime`, `ZonedDateTime`, and `enum`.
+For `enum`, the default mapping uses the value name via `Enum.name()`. If a value cannot be converted, the request is completed
+with a `400` response through `HttpServerResponseException`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record UserId(long value) {}
+
+    @Module
+    public interface UserIdModule {
+
+        default StringParameterReader<UserId> userIdStringParameterReader() {
+            return StringParameterReader.of(
+                value -> new UserId(Long.parseLong(value)),
+                value -> "Invalid user id: " + value
+            );
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class UserId(val value: Long)
+
+    @Module
+    interface UserIdModule {
+
+        fun userIdStringParameterReader(): StringParameterReader<UserId> {
+            return StringParameterReader.of(
+                { value -> UserId(value.toLong()) },
+                { value -> "Invalid user id: $value" }
+            )
+        }
+    }
+    ```
+
+After registering the converter, the custom type can be used in controller parameters:
+
+```java
+@HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+public User get(@Path("id") UserId id) {
+    return userService.get(id);
+}
+```
 
 #### Path parameter { #path-parameter }
 
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{path}` in the path
 and the name of the parameter is specified in `value` or defaults to the name of the method argument.
+The value is converted through `StringParameterReader<T>`, so both built-in and custom types can be used.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -292,6 +360,8 @@ and the name of the parameter is specified in `value` or defaults to the name of
 #### Query parameter { #query-parameter }
 
 `@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
+Single values, `List<T>`, and `Set<T>` are supported. `List<T>` keeps all parameter values,
+while `Set<T>` removes duplicates and preserves the order of first occurrence.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -328,6 +398,7 @@ and the name of the parameter is specified in `value` or defaults to the name of
 #### Request header { #request-header }
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), the parameter name is specified in `value` or defaults to the method argument name.
+Single values, `List<T>`, and `Set<T>` are supported. `List<T>` and `Set<T>` use all values of the header.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -363,13 +434,13 @@ and the name of the parameter is specified in `value` or defaults to the name of
 
 #### Request body { #request-body }
 
-Specifying the body of a request requires using a method argument without special annotations,
-default supported types are `byte[]`, `ByteBuffer`, `String`.
+Specifying the request body requires using a method argument without special annotations.
+By default, `byte[]`, `ByteBuffer`, `String`, `FormUrlEncoded`, `FormMultipart`, and custom types through `HttpServerRequestMapper<T>` are supported.
 
-##### Json { #json }
+##### JSON { #json }
 
-In order to indicate that the body is Json and needs to automatically create such a reader and embed it,
-is required to use the `@Json` annotation:
+To indicate that the body is `JSON` and requires an automatically created and injected `JsonReader<T>`,
+use the `@Json` annotation:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -387,7 +458,7 @@ is required to use the `@Json` annotation:
     }
     ```
 
-    1. Specifies that the body should be written as Json
+    1. Specifies that the body should be read as `JSON`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -405,9 +476,9 @@ is required to use the `@Json` annotation:
     }
     ```
 
-    1. Specifies that the body should be written as Json
+    1. Specifies that the body should be read as `JSON`
 
-Need to connect [Json](json.md) module.
+The [JSON](json.md) module is required.
 
 ##### Form UrlEncoded { #form-urlencoded }
 
@@ -476,6 +547,7 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
 #### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
+The value can be received as `String`, as a `Cookie` type with name, value, and attributes, or as another type through `StringParameterReader<T>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -509,7 +581,8 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
 
 #### Custom parameter { #custom-parameter }
 
-In case you need to handle the request in a different way, you can use a special `HttpServerRequestMapper` interface:
+If a method argument needs to be assembled from the request manually, use the `HttpServerRequestMapper<T>` interface.
+This is useful for user context, authorization, complex header validation, or several request parts at once:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -554,7 +627,7 @@ In case you need to handle the request in a different way, you can use a special
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        @Mapping(UserContextRequestMapper::class)
+        @Mapping(RequestMapper::class)
         operator fun get(@Mapping(RequestMapper::class) context: UserContext): String {
             return "Hello World"
         }
@@ -565,18 +638,20 @@ In case you need to handle the request in a different way, you can use a special
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    By default, all arguments declared in a method are **required** (*NotNull*).
+    By default, all arguments declared in a method are **required**.
+    If a required value is missing in the request, Kora returns a `400` response.
 
 === ":simple-kotlin: `Kotlin`"
 
-    By default, all arguments declared in a method that do not use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax are **required** (*NotNull*).
+    By default, all method arguments that do not use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax
+    are **required**. If a required value is missing in the request, Kora returns a `400` response.
 
 #### Optional parameters { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    In case a method argument is optional, that is, it may not exist then,
-    `@Nullable` annotation can be used:
+    If a method argument is optional, meaning it may be missing in the request,
+    use `@Nullable` or `Optional<T>` for single values:
 
     ```java
     @Component
@@ -590,11 +665,11 @@ In case you need to handle the request in a different way, you can use a special
     }
     ```
 
-    1.  Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+    1.  Any `@Nullable` annotation will do, for example `javax.annotation.Nullable`, `jakarta.annotation.Nullable`, or `org.jetbrains.annotations.Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    It is expected to use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such a parameter as Nullable:
+    Use the [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) syntax and mark such a parameter as optional:
 
     ```kotlin
     @Component
@@ -610,9 +685,20 @@ In case you need to handle the request in a different way, you can use a special
 
 ### Response { #response }
 
-By default, you can use standard return value types,
-such as `byte[]`, `ByteBuffer`, `String` which will be processed with status code `200` and corresponding response type header
-or `HttpServerResponse` where you will have to fill in all information about HTTP response yourself.
+By default, standard return value types can be used: `byte[]`, `ByteBuffer`, `String`.
+They are processed with status `200` and the corresponding response content type header.
+
+If the status, headers, or body must be specified manually, the method can return `HttpServerResponse`.
+The main `HttpServerResponse` contract consists of a response code, headers, and an optional body:
+
+```java
+public interface HttpServerResponse {
+    int code();
+    MutableHttpHeaders headers();
+    @Nullable
+    HttpBodyOutput body();
+}
+```
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -626,13 +712,13 @@ or `HttpServerResponse` where you will have to fill in all information about HTT
             return HttpServerResponse.of(
                     200, //(1)!
                     HttpHeaders.of("headerName", "headerValue"), //(2)!
-                    HttpBody.plaintext(body) //(3)!
+                    HttpBody.plaintext("Hello World") //(3)!
             ); 
         }
     }
     ```
 
-    1. HTTP status response code
+    1. `HTTP` response status code
     2. Response headers
     3. Response body
 
@@ -648,19 +734,20 @@ or `HttpServerResponse` where you will have to fill in all information about HTT
             return HttpServerResponse.of(
                 200, //(1)!
                 HttpHeaders.of("headerName", "headerValue"), //(2)!
-                HttpBody.plaintext(body) //(3)!
+                HttpBody.plaintext("Hello World") //(3)!
             )
         }
     }
     ```
 
-    1. HTTP status response code
+    1. `HTTP` response status code
     2. Response headers
     3. Response body
 
-#### Json { #json-2 }
+#### JSON { #json-2 }
 
-If you intend to respond in Json format, you are required to use the `@Json` annotation over the method:
+If the response should be returned as `JSON`, use the `@Json` annotation on the method.
+Kora will find or create `JsonWriter<T>` for the response type:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -679,7 +766,7 @@ If you intend to respond in Json format, you are required to use the `@Json` ann
     }
     ```
 
-    1. Specifies that the response should be in Json format
+    1. Specifies that the response should be in `JSON` format
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -698,16 +785,16 @@ If you intend to respond in Json format, you are required to use the `@Json` ann
     }
     ```
 
-    1. Specifies that the response should be in Json format
+    1. Specifies that the response should be in `JSON` format
 
-[Json](json.md) module is required.
+The [JSON](json.md) module is required.
 
 #### Response entity { #response-entity }
 
-If the intention is to read the body and also get the headers and status code of the response,
-then the `HttpResponseEntity` is supposed to be used, it is a wrapper over the response body.
+If the body, headers, and response status code should be returned together,
+use `HttpResponseEntity<T>`, a wrapper around the response body.
 
-Below is an example similar to the Json example along with the `HttpResponseEntity` wrapper:
+Below is an example similar to the `JSON` example with the `HttpResponseEntity` wrapper:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -745,7 +832,11 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
 
 #### Respond exception { #respond-exception }
 
-If you need to respond with an error, you can use `HttpServerResponseException` to throw an exception.
+If processing should be interrupted and an error should be returned immediately, throw `HttpServerResponseException`.
+It is both an exception and an `HttpServerResponse`, so it can be thrown from a controller, service, or parameter converter.
+
+The `HttpServerResponseException.of(...)` factory methods allow specifying the status code, response text, cause, and headers.
+The response body is written as `text/plain; charset=utf-8`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -783,7 +874,8 @@ If you need to respond with an error, you can use `HttpServerResponseException` 
 
 #### Custom response { #custom-response }
 
-In case you need to read the response in a different way, you can use the special `HttpServerResponseMapper` interface:
+If the response needs to be created in a custom way, use the `HttpServerResponseMapper<T>` interface.
+It receives `Context`, the original `HttpServerRequest`, and the controller method result, and returns a ready `HttpServerResponse`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -835,7 +927,7 @@ In case you need to read the response in a different way, you can use the specia
 
 ### Signatures { #signatures }
 
-Available signatures for repository methods out of the box:
+Available signatures for declarative `HTTP` handler methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -854,13 +946,28 @@ Available signatures for repository methods out of the box:
 
 ## Interceptors { #interceptors }
 
-You can create interceptors to change behavior or create additional behavior using the `HttpServerInterceptor` class.
+Interceptors can be created to change behavior or add shared logic around request processing.
+Use the `HttpServerInterceptor` interface:
+
+```java
+public interface HttpServerInterceptor {
+    CompletionStage<HttpServerResponse> intercept(Context context, HttpServerRequest request, InterceptChain chain) throws Exception;
+
+    interface InterceptChain {
+        CompletionStage<HttpServerResponse> process(Context ctx, HttpServerRequest request) throws Exception;
+    }
+}
+```
+
+An interceptor receives the current `Context`, `HttpServerRequest`, and the chain of further processing.
+To pass the request further, call `chain.process(context, request)`. If the interceptor returns a response itself,
+the controller handler is not called.
 
 Interceptors can be used on:
 
 - Specific controller methods
 - Entire controller
-- All controllers at once (requires using `@Tag(HttpServerModule.class)` over the interceptor class) (there can be only one such interceptor).
+- All controllers at once: register the interceptor component with the `@Tag(HttpServerModule.class)` tag; there can be several global interceptors
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -915,8 +1022,8 @@ Interceptors can be used on:
 
 ### Error handling { #error-handling }
 
-Error handling at the level of all HTTP responses can also be realized by means of an interceptor,
-below is a simple example of such an interceptor.
+Error handling for all `HTTP` responses can also be implemented through an interceptor.
+Below is a simple example of such an interceptor.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1006,7 +1113,7 @@ The following example shows how to handle all the described declarative request 
     }
     ```
 
-    1. Specifies the HTTP method type of the handler method
+    1. Specifies the `HTTP` method type of the handler method
     2. Indicates the path of the handler method
 
 === ":simple-kotlin: `Kotlin`"
@@ -1030,5 +1137,5 @@ The following example shows how to handle all the described declarative request 
     }
     ```
 
-    1. Specifies the HTTP method type of the handler method
+    1. Specifies the `HTTP` method type of the handler method
     2. Indicates the path of the handler method
