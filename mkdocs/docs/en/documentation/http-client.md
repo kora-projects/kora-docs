@@ -1222,6 +1222,47 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
     }
     ```
 
+**Example: Protobuf Serialization**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface ProtobufClient {
+
+        final class ProtobufRequestMapper implements HttpClientRequestMapper<MyMessage> {
+
+            @Override
+            public HttpBodyOutput apply(Context ctx, MyMessage value) {
+                byte[] protobufBytes = value.toByteArray();
+                return HttpBody.of(protobufBytes, "application/x-protobuf");
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.POST, path = "/message")
+        void sendMessage(@Mapping(ProtobufRequestMapper.class) MyMessage message);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface ProtobufClient {
+
+        class ProtobufRequestMapper : HttpClientRequestMapper<MyMessage> {
+
+            override fun apply(Context ctx, MyMessage value): HttpBodyOutput {
+                val protobufBytes = value.toByteArray()
+                return HttpBody.of(protobufBytes, "application/x-protobuf")
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.POST, path = "/message")
+        fun sendMessage(@Mapping(ProtobufRequestMapper::class) message: MyMessage)
+    }
+    ```
+
 #### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
@@ -1428,6 +1469,84 @@ If you need to read the response in a different way, you can use the special `Ht
     }
     ```
 
+**Example: Error Handling in Mapper**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface ApiClient {
+
+        record ApiResponse(String status, Object data) {}
+
+        final class SafeResponseMapper implements HttpClientResponseMapper<ApiResponse> {
+
+            private final JsonReader<ApiResponse> jsonReader;
+
+            public SafeResponseMapper(JsonReader<ApiResponse> jsonReader) {
+                this.jsonReader = jsonReader;
+            }
+
+            @Override
+            public ApiResponse apply(HttpClientResponse response) throws IOException {
+                int statusCode = response.statusCode();
+                byte[] body = response.body();
+
+                if (statusCode >= 400) {
+                    // Handle error: log or throw exception
+                    throw new HttpClientResponseException(statusCode, body, response.headers());
+                }
+
+                if (body == null || body.length == 0) {
+                    return null;
+                }
+
+                return jsonReader.read(body);
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.GET, path = "/api/data")
+        @Mapping(SafeResponseMapper.class)
+        ApiResponse getData();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface ApiClient {
+
+        data class ApiResponse(val status: String, val data: Any?)
+
+        class SafeResponseMapper(
+            private val jsonReader: JsonReader<ApiResponse>
+        ) : HttpClientResponseMapper<ApiResponse> {
+
+            @Throws(IOException::class)
+            override fun apply(response: HttpClientResponse): ApiResponse {
+                val statusCode = response.statusCode()
+                val body = response.body()
+
+                if (statusCode >= 400) {
+                    // Handle error: log or throw exception
+                    throw HttpClientResponseException(statusCode, body, response.headers())
+                }
+
+                if (body == null || body.isEmpty()) {
+                    return null
+                }
+
+                return jsonReader.read(body)
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.GET, path = "/api/data")
+        @Mapping(SafeResponseMapper::class)
+        fun getData(): ApiResponse
+    }
+    ```
+
 #### Response Error { #response-error }
 
 By default, when neither converter tag nor converter is specified, conversion is applied only for `2xx` HTTP response codes.
@@ -1578,8 +1697,10 @@ Available signatures for declarative `HTTP` client methods out of the box:
 
 ## Interceptors { #interceptors }
 
-You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` class.
-Interceptors can be applied to specific methods or to the entire `@HttpClient` class:
+You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` interface.
+Interceptors can be attached to specific methods or the entire `@HttpClient` class using the `@InterceptWith` annotation.
+
+**Method-level interceptor:**
 
 ### Root URL { #root-uri-interceptor }
 
@@ -1647,13 +1768,13 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     public interface SomeClient {
 
         final class MethodInterceptor implements HttpClientInterceptor {
-            
+
             private final Component1 component1;
 
             private MethodInterceptor(Component1 component1) {
                 this.component1 = component1;
             }
-    
+
             @Override
             public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
                 component1.doSomething();
@@ -1689,6 +1810,87 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
         @InterceptWith(MethodInterceptor::class)
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         fun hello()
+    }
+    ```
+
+**Class-level interceptor:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @InterceptWith(LoggingInterceptor.class) // Applied to all client methods
+    @HttpClient
+    public interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        void hello();
+
+        @HttpRoute(method = HttpMethod.POST, path = "/world")
+        void world();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @InterceptWith(LoggingInterceptor::class) // Applied to all client methods
+    @HttpClient
+    interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        fun hello()
+
+        @HttpRoute(method = HttpMethod.POST, path = "/world")
+        fun world()
+    }
+    ```
+
+**Interceptor execution order:**
+
+Interceptors are executed in declaration order (left to right). Each interceptor can:
+- Modify the request before sending
+- Call the next interceptor in the chain (`chain.process()`)
+- Modify the response after receiving
+- Throw an exception to break the chain
+
+```
+Request → Interceptor1 → Interceptor2 → Interceptor3 → HTTP Server
+Response ← Interceptor1 ← Interceptor2 ← Interceptor3 ← HTTP Server
+```
+
+### Global interceptor { #interceptor-global }
+
+To apply an interceptor to all clients, register it as a component without `@InterceptWith`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class GlobalInterceptor implements HttpClientInterceptor {
+
+        @Override
+        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
+            // Applied to all HTTP clients
+            return chain.process(ctx, request);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class GlobalInterceptor : HttpClientInterceptor {
+
+        @Throws(Exception::class)
+        override fun processRequest(
+            ctx: Context,
+            chain: HttpClientInterceptor.InterceptChain,
+            request: HttpClientRequest
+        ): CompletionStage<HttpClientResponse> {
+            // Applied to all HTTP clients
+            return chain.process(ctx, request)
+        }
     }
     ```
 
@@ -1931,6 +2133,260 @@ Then add interceptor for the entire HTTP client or specific methods.
 Authorization by [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) is similar to [Bearer](#bearer),
 you need to implement `HttpClientTokenProvider` yourself and put it in dependency container.
 
+#### HttpClientTokenProvider { #token-provider }
+
+`HttpClientTokenProvider` — interface for providing authorization tokens dynamically.
+Used when the token needs to be refreshed or obtained from an external source (e.g., OAuth2 token endpoint).
+
+**Implementation example:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class MyTokenProvider implements HttpClientTokenProvider {
+
+        private final OAuthClient oauthClient;
+        private volatile String cachedToken;
+        private volatile long tokenExpiry;
+
+        public MyTokenProvider(OAuthClient oauthClient) {
+            this.oauthClient = oauthClient;
+        }
+
+        @Override
+        public CompletionStage<String> getToken(HttpClientRequest request) {
+            if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
+                return CompletableFuture.completedFuture(cachedToken);
+            }
+            
+            // Get new token
+            return oauthClient.refreshToken()
+                .thenApply(response -> {
+                    this.cachedToken = response.accessToken();
+                    this.tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000;
+                    return this.cachedToken;
+                });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyTokenProvider(
+        private val oauthClient: OAuthClient
+    ) : HttpClientTokenProvider {
+
+        private var cachedToken: String? = null
+        private var tokenExpiry: Long = 0
+
+        override fun getToken(request: HttpClientRequest): CompletionStage<String> {
+            if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
+                return CompletableFuture.completedFuture(cachedToken)
+            }
+            
+            // Get new token
+            return oauthClient.refreshToken()
+                .thenApply { response ->
+                    cachedToken = response.accessToken()
+                    tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000
+                    cachedToken!!
+                }
+        }
+    }
+    ```
+
+**Usage with BearerAuthHttpClientInterceptor:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AuthModule {
+
+        default BearerAuthHttpClientInterceptor bearerAuthInterceptor(HttpClientTokenProvider tokenProvider) {
+            return new BearerAuthHttpClientInterceptor(tokenProvider);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface AuthModule {
+
+        fun bearerAuthInterceptor(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
+            return BearerAuthHttpClientInterceptor(tokenProvider)
+        }
+    }
+    ```
+
+## Exception handling { #exception-handling }
+
+Various exceptions may occur during HTTP requests. All exceptions inherit from the base `HttpClientException`.
+
+**Exception hierarchy:**
+
+```
+HttpClientException
+├── HttpClientTimeoutException
+├── HttpClientConnectionException
+├── HttpClientResponseException
+├── HttpClientEncoderException
+├── HttpClientDecoderException
+└── HttpClientUnknownException
+```
+
+**Handling example:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    class SomeService {
+        private final SomeClient client;
+
+        public SomeService(SomeClient client) {
+            this.client = client;
+        }
+
+        public void call() {
+            try {
+                client.hello();
+            } catch (HttpClientTimeoutException e) {
+                // Timeout: log, retry
+            } catch (HttpClientConnectionException e) {
+                // Connection error: check service availability
+            } catch (HttpClientResponseException e) {
+                // Response error: statusCode, body, headers
+                int statusCode = e.getStatusCode();
+                byte[] body = e.getBody();
+            } catch (HttpClientEncoderException e) {
+                // Serialization error: validate data
+            } catch (HttpClientDecoderException e) {
+                // Deserialization error: log
+            } catch (HttpClientUnknownException e) {
+                // Unknown error: e.getCause()
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val client: SomeClient
+    ) {
+        fun call() {
+            try {
+                client.hello()
+            } catch (e: HttpClientTimeoutException) {
+                // Timeout: log, retry
+            } catch (e: HttpClientConnectionException) {
+                // Connection error: check service availability
+            } catch (e: HttpClientResponseException) {
+                // Response error: statusCode, body, headers
+                val statusCode = e.statusCode
+                val body = e.body
+            } catch (e: HttpClientEncoderException) {
+                // Serialization error: validate data
+            } catch (e: HttpClientDecoderException) {
+                // Deserialization error: log
+            } catch (e: HttpClientUnknownException) {
+                // Unknown error: e.cause
+            }
+        }
+    }
+    ```
+
+#### HttpClientTimeoutException { #timeout-exception }
+
+Thrown when a request exceeds the configured timeout (`requestTimeout` or `connectTimeout`).
+
+**Causes:**
+- Server does not respond within `requestTimeout`
+- Connection establishment time exceeds `connectTimeout`
+- Network delays
+
+**Recommendations:**
+- Configure adequate timeouts in configuration
+- Implement retry logic for temporary failures
+- Use circuit breaker to protect from cascading failures
+
+#### HttpClientConnectionException { #connection-exception }
+
+Thrown when connection to server cannot be established.
+
+**Causes:**
+- DNS resolution fails
+- Server unavailable (port closed, firewall)
+- Connection refused
+- SSL/TLS handshake failed
+
+**Recommendations:**
+- Check service availability (health check)
+- Use fallback to backup service
+- Configure retry with exponential backoff
+
+#### HttpClientResponseException { #response-exception }
+
+Thrown when server returns HTTP error status code (4xx or 5xx) and no custom mapper is specified via `@ResponseCodeMapper`.
+
+**Available data:**
+- `statusCode` — HTTP status code (400, 404, 500, etc.)
+- `body` — response body (may contain error details)
+- `headers` — response headers
+
+**Recommendations:**
+- Use `@ResponseCodeMapper` for custom status handling
+- Log statusCode and body for debugging
+- Distinguish client (4xx) and server (5xx) errors
+
+#### HttpClientEncoderException { #encoder-exception }
+
+Thrown when serialization of request body fails.
+
+**Causes:**
+- JSON/XML serialization error
+- Invalid data in request object
+- Missing serializer for type
+
+**Recommendations:**
+- Validate data before sending
+- Check for Json annotations on classes
+- Log original exception in `cause`
+
+#### HttpClientDecoderException { #decoder-exception }
+
+Thrown when deserialization of response body fails.
+
+**Causes:**
+- Invalid JSON/XML in server response
+- Schema mismatch (server returned unexpected fields)
+- Missing deserializer for type
+
+**Recommendations:**
+- Check API version compatibility
+- Log response body for debugging
+- Use `@ResponseCodeMapper` for format error handling
+
+#### HttpClientUnknownException { #unknown-exception }
+
+Thrown when an unknown error occurs that doesn't fit other categories.
+
+**Available data:**
+- `cause` — original exception
+
+**Recommendations:**
+- Always log `cause` for diagnostics
+- Check HTTP client logs at DEBUG/TRACE level
+- Report bug if exception is reproducible
+
 ## Client imperative { #client-imperative }
 
 The base client represents the `HttpClient` interface and is available for deployment:
@@ -1971,25 +2427,174 @@ You can use `HttpClientRequestBuilder` to build requests manually:
         .build()
     ```
 
-`HttpClientRequestBuilder` supports methods for main `HTTP` methods (`get`, `post`, `put`, `delete`, `patch`, and others), path parameter substitution,
-query parameters, headers, request body, and `requestTimeout` for a particular request.
+### HttpClientRequestBuilder { #request-builder }
 
-Because `HttpClientResponse` implements `Closeable`, it must be closed after reading the body when called manually:
+`HttpClientRequestBuilder` allows building HTTP requests manually.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    httpClient.execute(request).thenApply(response -> {
-        try (response) {
-            if (response.code() >= 400) {
-                throw new IllegalStateException("HTTP error: " + response.code());
-            }
+    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
+            .templateParam("petId", "1")
+            .queryParam("page", 1)
+            .header("token", "12345")
+            .body(HttpBody.plaintext("refresh"))
+            .build();
+    ```
 
-            try (var is = response.body().asInputStream()) {
-                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
+        .templateParam("petId", "1")
+        .queryParam("page", 1)
+        .header("token", "12345")
+        .body(HttpBody.plaintext("refresh"))
+        .build()
+    ```
+
+### UriQueryBuilder { #uri-query-builder }
+
+`UriQueryBuilder` helps build URIs with query parameters.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    UriQueryBuilder builder = new UriQueryBuilder()
+        .path("/api/users")
+        .queryParam("page", 1)
+        .queryParam("size", 10)
+        .queryParam("sort", "name");
+    
+    String uri = builder.build();
+    // /api/users?page=1&size=10&sort=name
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val builder = UriQueryBuilder()
+        .path("/api/users")
+        .queryParam("page", 1)
+        .queryParam("size", 10)
+        .queryParam("sort", "name")
+    
+    val uri = builder.build()
+    // /api/users?page=1&size=10&sort=name
+    ```
+
+### HttpBodyInput { #http-body-input }
+
+`HttpBodyInput` is an interface that describes HTTP request body as a data stream (Flow.Publisher<ByteBuffer>).
+Used for streaming large data without loading into memory.
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `asInputStream()` | `InputStream` | Represents body as InputStream for reading |
+| `asBufferStage()` | `CompletionStage<ByteBuffer>` | Asynchronously reads entire body to ByteBuffer |
+| `asArrayStage()` | `CompletionStage<byte[]>` | Asynchronously reads entire body to byte[] |
+
+### HttpClientResponse { #http-client-response }
+
+`HttpClientResponse` is an interface that represents HTTP response from server.
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `statusCode()` | `int` | HTTP status code (200, 404, 500, etc.) |
+| `body()` | `byte[]` | Response body as byte array |
+| `headers()` | `HttpHeaders` | Response headers |
+| `cookies()` | `Cookies` | Cookies from response |
+
+### HttpHeaders { #http-headers-imperative }
+
+`HttpHeaders` provides access to request and response headers in the imperative client.
+
+**Reading headers:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/data")
+        .build();
+    
+    httpClient.execute(request).thenAccept(response -> {
+        HttpHeaders headers = response.headers();
+        String contentType = headers.getFirst("Content-Type");
+        List<String> allValues = headers.get("X-Custom-Header");
+        boolean hasHeader = headers.contains("Authorization");
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/data").build()
+    
+    httpClient.execute(request).thenAccept { response ->
+        val headers = response.headers
+        val contentType = headers.getFirst("Content-Type")
+        val allValues = headers.get("X-Custom-Header")
+        val hasHeader = headers.contains("Authorization")
+    }
+    ```
+
+**Adding headers:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    MutableHttpHeaders headers = new MutableHttpHeaders();
+    headers.add("Authorization", "Bearer token123");
+    headers.add("X-Custom-Header", "value");
+    headers.set("Content-Type", "application/json");
+    
+    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
+        .headers(headers)
+        .body(HttpBody.plaintext("body"))
+        .build();
+    
+    httpClient.execute(request);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val headers = MutableHttpHeaders()
+    headers.add("Authorization", "Bearer token123")
+    headers.add("X-Custom-Header", "value")
+    headers.set("Content-Type", "application/json")
+    
+    val request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
+        .headers(headers)
+        .body(HttpBody.plaintext("body"))
+        .build()
+    
+    httpClient.execute(request)
+    ```
+
+### Cookies { #cookies-imperative }
+
+`Cookies` provides access to request and response cookies in the imperative client.
+
+**Reading cookies:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
+        .build();
+    
+    httpClient.execute(request).thenAccept(response -> {
+        Cookies cookies = response.cookies();
+        Cookie sessionCookie = cookies.get("SESSIONID");
+        if (sessionCookie != null) {
+            String value = sessionCookie.value();
+            String domain = sessionCookie.domain();
+            String path = sessionCookie.path();
         }
     });
     ```
@@ -1997,15 +2602,15 @@ Because `HttpClientResponse` implements `Closeable`, it must be closed after rea
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    httpClient.execute(request).thenApply { response ->
-        response.use {
-            if (response.code() >= 400) {
-                throw IllegalStateException("HTTP error: ${response.code()}")
-            }
-
-            response.body().asInputStream().use { body ->
-                String(body.readAllBytes(), StandardCharsets.UTF_8)
-            }
+    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile").build()
+    
+    httpClient.execute(request).thenAccept { response ->
+        val cookies = response.cookies
+        val sessionCookie = cookies.get("SESSIONID")
+        if (sessionCookie != null) {
+            val value = sessionCookie.value()
+            val domain = sessionCookie.domain()
+            val path = sessionCookie.path()
         }
     }
     ```
