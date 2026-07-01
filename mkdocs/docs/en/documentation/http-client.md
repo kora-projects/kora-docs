@@ -4,15 +4,20 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpClientModule, OkHttp."
 ---
 
-Module provides a thin layer of abstraction over HTTP client libraries to create HTTP clients
-using declarative-style annotations or using client in imperative-style.
+The `HTTP client` module describes outgoing HTTP calls: transport implementation, request mapping, response mapping,
+telemetry, and interceptors. In Kora, clients can be described declaratively with `@HttpClient` and `@HttpRoute`,
+or used imperatively through the common `HttpClient` interface when a request must be built in code.
+
+The declarative approach is suitable for most integrations with external services: the method contract becomes the remote call contract,
+and Kora creates the implementation at compile time without using `Reflection` at runtime. The imperative approach is useful for low-level
+or dynamic scenarios where path, headers, query parameters, or body are easier to assemble manually.
 
 ???+ tip "Recommendation"
 
-    **We recommend** using an approach where OpenAPI file is primary contract
-    and clients are created from it using a OpenAPI generator. 
+    **We recommend** using an approach where the `OpenAPI` file is the primary contract
+    and clients are created from it using the generator.
     This approach allows you to achieve consistency between the consumer and owner of the contract
-    and update API faster in case of new version by just updaing contract file. 
+    and update the API faster when the contract changes by replacing the contract file.
     For more information about the generator, see the [section on generating from OpenAPI](openapi-codegen.md).
 
 For a step-by-step walkthrough before the reference details, see [HTTP Client](../guides/http-client.md) and [Advanced HTTP Client](../guides/http-client-advanced.md).
@@ -62,36 +67,37 @@ and `HttpClientConfig` classes (default or example values are specified):
         ok {
             followRedirects = true //(1)!
             httpVersion = "HTTP_1_1" //(2)!
+            retryOnConnectionFailure = true //(3)!
         }
-        connectTimeout = "5s" //(3)!
-        readTimeout = "2m" //(4)!
-        useEnvProxy = false //(5)!
+        connectTimeout = "5s" //(4)!
+        readTimeout = "2m" //(5)!
+        useEnvProxy = false //(6)!
         proxy {
-            host = "localhost" //(6)!
-            port = 8090 //(7)!
-            user = "user" //(8)!
-            password = "password" //(9)!
-            nonProxyHosts = [ "host1", "host2" ] //(10)!
+            host = "localhost" //(7)!
+            port = 8090 //(8)!
+            user = "user" //(9)!
+            password = "password" //(10)!
+            nonProxyHosts = [ "host1", "host2" ] //(11)!
         }
         telemetry {
             logging {
-                enabled = false //(11)!
-                mask = "***" //(12)!
-                maskQueries = [ ] //(13)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
-                pathTemplate = true //(15)!
+                enabled = false //(12)!
+                mask = "***" //(13)!
+                maskQueries = [ ] //(14)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(15)!
+                pathTemplate = true //(16)!
             }
             metrics {
-                enabled = true //(16)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
-                tags = { // (18)!
+                enabled = true //(17)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                tags = { // (19)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
             }
             tracing {
-                enabled = true //(19)!
-                attributes = { // (20)!
+                enabled = true //(20)!
+                attributes = { // (21)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
@@ -100,26 +106,27 @@ and `HttpClientConfig` classes (default or example values are specified):
     }
     ```
 
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum HTTP protocol version used (available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3`)
-    3. Maximum time to establish a connection
-    4. Maximum time to read a response
-    5. Whether to use environment variables to configure the proxy
-    6. Proxy address (optional)
-    7. Proxy port (optional)
-    8. User for the proxy (optional)
-    9. Password for the proxy (optional)
-    10. Hosts that should be excluded from proxying (optional)
-    11. Enables module logging (default `false`)
-    12.  Mask that is used to hide specified headers and request/response parameters
-    13.  List of request parameters to be hidden
-    14.  List of request/response headers that should be hidden
-    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    16. Enables module metrics (default `true`)
-    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Configures tags for metrics (optional)
-    19. Enables module tracing (default `true`)
-    20. Configures attributes for tracing (optional)
+    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+    2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
+    3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+    4. Maximum time to establish a connection (default: `5s`)
+    5. Maximum time to read a response (default: `2m`)
+    6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    7. Proxy host (`required`, default not specified)
+    8. Proxy port (`required`, default not specified)
+    9. Proxy user (default not specified, optional)
+    10. Proxy password (default not specified, optional)
+    11. Hosts to exclude from proxying (default not specified, optional)
+    12. Enables module logging (default: `false`)
+    13. Mask used to hide specified headers and request or response parameters (default: `***`)
+    14. List of request parameters to hide (default: `[]`)
+    15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    17. Enables module metrics (default: `true`)
+    18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Configures metric tags (default: `{}`)
+    20. Enables module tracing (default: `true`)
+    21. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -128,55 +135,57 @@ and `HttpClientConfig` classes (default or example values are specified):
       ok:
         followRedirects: true #(1)!
         httpVersion: "HTTP_1_1" #(2)!
-      connectTimeout: "5s" #(3)!
-      readTimeout: "2m" #(4)!
-      useEnvProxy: false #(5)!
+        retryOnConnectionFailure: true #(3)!
+      connectTimeout: "5s" #(4)!
+      readTimeout: "2m" #(5)!
+      useEnvProxy: false #(6)!
       proxy:
-        host: "localhost" #(6)!
-        port: 8090  #(7)!
-        user: "user"  #(8)!
-        password: "password" #(9)!
-        nonProxyHosts: [ "host1", "host2" ] #(10)!
+        host: "localhost" #(7)!
+        port: 8090  #(8)!
+        user: "user"  #(9)!
+        password: "password" #(10)!
+        nonProxyHosts: [ "host1", "host2" ] #(11)!
       telemetry:
         logging:
-          enabled: false #(11)!
-          mask: "***" #(12)!
-          maskQueries: [ ] #(13)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
-          pathTemplate: true #(15)!
+          enabled: false #(12)!
+          mask: "***" #(13)!
+          maskQueries: [ ] #(14)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(15)!
+          pathTemplate: true #(16)!
         metrics:
-          enabled: true #(16)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-          tags: #(18)!
+          enabled: true #(17)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+          tags: #(19)!
             key1: value1
             key2: value2
         tracing:
-          enabled: true #(19)!
-          attributes: #(20)!
+          enabled: true #(20)!
+          attributes: #(21)!
             key1: value1
             key2: value2
     ```
 
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum HTTP protocol version used (available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3`)
-    3. Maximum time to establish a connection
-    4. Maximum time to read a response
-    5. Whether to use environment variables to configure the proxy
-    6. Proxy address (optional)
-    7. Proxy port (optional)
-    8. User for the proxy (optional)
-    9. Password for the proxy (optional)
-    10. Hosts that should be excluded from proxying (optional)
-    11. Enables module logging (default `false`)
-    12.  Mask that is used to hide specified headers and request/response parameters
-    13.  List of request parameters to be hidden
-    14.  List of request/response headers that should be hidden
-    15.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    16. Enables module metrics (default `true`)
-    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    18. Configures tags for metrics (optional)
-    19. Enables module tracing (default `true`)
-    20. Configures attributes for tracing (optional)
+    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+    2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
+    3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+    4. Maximum time to establish a connection (default: `5s`)
+    5. Maximum time to read a response (default: `2m`)
+    6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    7. Proxy host (`required`, default not specified)
+    8. Proxy port (`required`, default not specified)
+    9. Proxy user (default not specified, optional)
+    10. Proxy password (default not specified, optional)
+    11. Hosts to exclude from proxying (default not specified, optional)
+    12. Enables module logging (default: `false`)
+    13. Mask used to hide specified headers and request or response parameters (default: `***`)
+    14. List of request parameters to hide (default: `[]`)
+    15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    17. Enables module metrics (default: `true`)
+    18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Configures metric tags (default: `{}`)
+    20. Enables module tracing (default: `true`)
+    21. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
 
@@ -291,25 +300,25 @@ and `HttpClientConfig` classes (default or example values are specified):
     }
     ```
 
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Configures tags for metrics (optional)
-    18. Enables module tracing (default `true`)
-    19. Configures attributes for tracing (optional)
+    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+    2. Maximum time to establish a connection (default: `5s`)
+    3. Maximum time to read a response (default: `2m`)
+    4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    5. Proxy host (`required`, default not specified)
+    6. Proxy port (`required`, default not specified)
+    7. Proxy user (default not specified, optional)
+    8. Proxy password (default not specified, optional)
+    9. Hosts to exclude from proxying (default not specified, optional)
+    10. Enables module logging (default: `false`)
+    11. Mask used to hide specified headers and request or response parameters (default: `***`)
+    12. List of request parameters to hide (default: `[]`)
+    13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    15. Enables module metrics (default: `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    17. Configures metric tags (default: `{}`)
+    18. Enables module tracing (default: `true`)
+    19. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -346,25 +355,25 @@ and `HttpClientConfig` classes (default or example values are specified):
             key2: value2
     ```
 
-    1. Whether to follow [redirects in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
-    2. Maximum time to establish a connection
-    3. Maximum time to read a response
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Configures tags for metrics (optional)
-    18. Enables module tracing (default `true`)
-    19. Configures attributes for tracing (optional)
+    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+    2. Maximum time to establish a connection (default: `5s`)
+    3. Maximum time to read a response (default: `2m`)
+    4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    5. Proxy host (`required`, default not specified)
+    6. Proxy port (`required`, default not specified)
+    7. Proxy user (default not specified, optional)
+    8. Proxy password (default not specified, optional)
+    9. Hosts to exclude from proxying (default not specified, optional)
+    10. Enables module logging (default: `false`)
+    11. Mask used to hide specified headers and request or response parameters (default: `***`)
+    12. List of request parameters to hide (default: `[]`)
+    13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    15. Enables module metrics (default: `true`)
+    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    17. Configures metric tags (default: `{}`)
+    18. Enables module tracing (default: `true`)
+    19. Configures tracing attributes (default: `{}`)
 
 You can also configure [Netty transport](netty.md).
 
@@ -416,50 +425,62 @@ and `HttpClientConfig` classes (default or example values are specified):
             httpVersion = "HTTP_1_1" //(2)!
         }
         connectTimeout = "5s" //(3)!
-        useEnvProxy = false //(4)!
+        readTimeout = "2m" //(4)!
+        useEnvProxy = false //(5)!
         proxy {
-            host = "localhost" //(5)!
-            port = 8090 //(6)!
-            user = "user" //(7)!
-            password = "password" //(8)!
-            nonProxyHosts = [ "host1", "host2" ] //(9)!
+            host = "localhost" //(6)!
+            port = 8090 //(7)!
+            user = "user" //(8)!
+            password = "password" //(9)!
+            nonProxyHosts = [ "host1", "host2" ] //(10)!
         }
         telemetry {
             logging {
-                enabled = false //(10)!
-                mask = "***" //(11)!
-                maskQueries = [ ] //(12)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
-                pathTemplate = true //(14)!
+                enabled = false //(11)!
+                mask = "***" //(12)!
+                maskQueries = [ ] //(13)!
+                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
+                pathTemplate = true //(15)!
             }
             metrics {
-                enabled = true //(15)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+                enabled = true //(16)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                tags = { // (18)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
             tracing {
-                enabled = true //(17)!
+                enabled = true //(19)!
+                attributes = { // (20)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
             }
         }
     }
     ```
 
-    1. Number of threads for HTTP client
-    2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
-    3. Maximum time to establish a connection
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
+    1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+    2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
+    3. Maximum time to establish a connection (default: `5s`)
+    4. Maximum time to read a response (default: `2m`)
+    5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    6. Proxy host (`required`, default not specified)
+    7. Proxy port (`required`, default not specified)
+    8. Proxy user (default not specified, optional)
+    9. Proxy password (default not specified, optional)
+    10. Hosts to exclude from proxying (default not specified, optional)
+    11. Enables module logging (default: `false`)
+    12. Mask used to hide specified headers and request or response parameters (default: `***`)
+    13. List of request parameters to hide (default: `[]`)
+    14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    16. Enables module metrics (default: `true`)
+    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    18. Configures metric tags (default: `{}`)
+    19. Enables module tracing (default: `true`)
+    20. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -468,47 +489,57 @@ and `HttpClientConfig` classes (default or example values are specified):
       jdk:
         threads: 2 #(1)!
         httpVersion: "HTTP_1_1" #(2)!
-      connectTimeout: "2s" #(3)!
-      useEnvProxy: false #(4)!
+      connectTimeout: "5s" #(3)!
+      readTimeout: "2m" #(4)!
+      useEnvProxy: false #(5)!
       proxy:
-        host: "localhost" #(5)!
-        port: 8090 #(6)!
-        user: "user" #(7)!
-        password: "password" #(8)!
-        nonProxyHosts: [ "host1", "host2" ] #(9)!
+        host: "localhost" #(6)!
+        port: 8090 #(7)!
+        user: "user" #(8)!
+        password: "password" #(9)!
+        nonProxyHosts: [ "host1", "host2" ] #(10)!
       telemetry:
         logging:
-          enabled: false #(10)!
-          mask: "***" #(11)!
-          maskQueries: [ ] #(12)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
-          pathTemplate: true #(14)!
+          enabled: false #(11)!
+          mask: "***" #(12)!
+          maskQueries: [ ] #(13)!
+          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
+          pathTemplate: true #(15)!
         metrics:
-          enabled: true #(15)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-        telemetry:
-          enabled: true #(17)!
+          enabled: true #(16)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+          tags: #(18)!
+            key1: value1
+            key2: value2
+        tracing:
+          enabled: true #(19)!
+          attributes: #(20)!
+            key1: value1
+            key2: value2
     ```
 
-    1. Number of threads for HTTP client
-    2. Which version of HTTP protocol to use (available values: `HTTP_1_1` / `HTTP_2`)
-    3. Maximum time to establish a connection
-    4. Whether to use environment variables to configure the proxy
-    5. Proxy address (optional)
-    6. Proxy port (optional)
-    7. User for the proxy (optional)
-    8. Password for the proxy (optional)
-    9. Hosts that should be excluded from proxying (optional)
-    10. Enables module logging (default `false`)
-    11.  Mask that is used to hide specified headers and request/response parameters
-    12.  List of request parameters to be hidden
-    13.  List of request/response headers that should be hidden
-    14.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    15. Enables module metrics (default `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    17. Enables module tracing (default `true`)
+    1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+    2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
+    3. Maximum time to establish a connection (default: `5s`)
+    4. Maximum time to read a response (default: `2m`)
+    5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+    6. Proxy host (`required`, default not specified)
+    7. Proxy port (`required`, default not specified)
+    8. Proxy user (default not specified, optional)
+    9. Proxy password (default not specified, optional)
+    10. Hosts to exclude from proxying (default not specified, optional)
+    11. Enables module logging (default: `false`)
+    12. Mask used to hide specified headers and request or response parameters (default: `***`)
+    13. List of request parameters to hide (default: `[]`)
+    14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    16. Enables module metrics (default: `true`)
+    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    18. Configures metric tags (default: `{}`)
+    19. Enables module tracing (default: `true`)
+    20. Configures tracing attributes (default: `{}`)
 
-## Client declarative { #client-declarative }
+## Declarative Client { #client-declarative }
 
 It is suggested to use special annotations to create a declarative client:
 
@@ -537,10 +568,10 @@ It is suggested to use special annotations to create a declarative client:
     }
     ```
 
-#### Client Configuration { #client-configuration }
+### Client Configuration { #client-configuration }
 
-The default configuration of a particular implementation of `@HttpClient` uses the following path `httpClient.{lower case class name}` for configuration lookup,
-or specified in the `configPath` parameter in the annotation:
+By default, configuration for a particular `@HttpClient` implementation is looked up at `httpClient.{lower case class name}`.
+If the path must be specified explicitly, use the `configPath` annotation parameter:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -568,6 +599,41 @@ or specified in the `configPath` parameter in the annotation:
 
     1. The path to the configuration of this particular client
 
+`@HttpClient` can also specify tags for injected components:
+
+* `httpClientTag` — tag used to select a particular transport `HttpClient` when the graph contains several implementations with different `@Tag` values
+* `telemetryTag` — tag used to select a particular client telemetry factory
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient(
+        configPath = "httpClient.someClient",
+        httpClientTag = CustomTransport.class,
+        telemetryTag = CustomTelemetry.class
+    )
+    public interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient(
+        configPath = "httpClient.someClient",
+        httpClientTag = [CustomTransport::class],
+        telemetryTag = [CustomTelemetry::class]
+    )
+    interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
 Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig` class:
 
 ===! ":material-code-json: `Hocon`"
@@ -588,25 +654,35 @@ Example configuration in the case of the `httpClient.someClient` path described 
                 metrics {
                     enabled = true //(8)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                    tags = { // (10)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
                 tracing {
-                    enabled = true //(10)!
+                    enabled = true //(11)!
+                    attributes = { // (12)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
                 }
             }
         }
     }
     ```
 
-    1. URL of the service where requests will be sent
-    2. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
-    3. Enables module logging (default `false`)
-    4.  Mask that is used to hide specified headers and request/response parameters
-    5.  List of request parameters to be hidden
-    6.  List of request/response headers that should be hidden
-    7.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    8. Enables module metrics (default `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    10. Enables module tracing (default `true`)
+    1. Base service `URL` where requests will be sent (`required`, default not specified)
+    2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+    3. Enables module logging (default: `false`)
+    4. Mask used to hide specified headers and request or response parameters (default: `***`)
+    5. List of request parameters to hide (default: `[]`)
+    6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    8. Enables module metrics (default: `true`)
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    10. Configures metric tags (default: `{}`)
+    11. Enables module tracing (default: `true`)
+    12. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -625,26 +701,36 @@ Example configuration in the case of the `httpClient.someClient` path described 
           metrics:
             enabled: true #(8)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-          telemetry:
-            enabled: true #(10)!
+            tags: #(10)!
+              key1: value1
+              key2: value2
+          tracing:
+            enabled: true #(11)!
+            attributes: #(12)!
+              key1: value1
+              key2: value2
     ```
 
-    1. URL of the service where requests will be sent
-    2. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
-    3. Enables module logging (default `false`)
-    4.  Mask that is used to hide specified headers and request/response parameters
-    5.  List of request parameters to be hidden
-    6.  List of request/response headers that should be hidden
-    7.  Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    8. Enables module metrics (default `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    10. Enables module tracing (default `true`)
+    1. Base service `URL` where requests will be sent (`required`, default not specified)
+    2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+    3. Enables module logging (default: `false`)
+    4. Mask used to hide specified headers and request or response parameters (default: `***`)
+    5. List of request parameters to hide (default: `[]`)
+    6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+    8. Enables module metrics (default: `true`)
+    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    10. Configures metric tags (default: `{}`)
+    11. Enables module tracing (default: `true`)
+    12. Configures tracing attributes (default: `{}`)
 
 ### Method Configuration { #method-configuration }
 
-Using the above HTTP client example, it is possible to configure separately some of the parameters for a particular method, the configuration path
-is determined by the path to the client and the method name, in the example above the configuration is `httpClient.someClient`
-and method `hello` the final path will be `httpClient.someClient.hello`
+For a particular method, some parameters can be configured separately. The method configuration path is determined by the client path and the method name:
+if the client path is `httpClient.someClient`, the final path for the `hello` method is `httpClient.someClient.hello`.
+
+Method configuration is applied over client configuration: method `requestTimeout` replaces the client value, and method telemetry settings override
+only explicitly specified fields.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -664,9 +750,17 @@ and method `hello` the final path will be `httpClient.someClient.hello`
                     metrics {
                         enabled = true //(7)!
                         slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
+                        tags = { // (9)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
                     tracing {
-                        enabled = true //(9)!
+                        enabled = true //(10)!
+                        attributes = { // (11)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
                 }
             }
@@ -674,51 +768,131 @@ and method `hello` the final path will be `httpClient.someClient.hello`
     }
     ```
 
-    1. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
-    2. Enables module logging (default `false`)
-    3. Mask that is used to hide specified headers and request/response parameters
-    4. List of request parameters to be hidden
-    5. List of request/response headers that should be hidden
-    6. Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    7. Includes module metrics
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9. Enables module tracing (default `true`)
+    1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+    2. Enables module logging (default: `false`)
+    3. Mask used to hide specified headers and request or response parameters (default: `***`)
+    4. List of request parameters to hide (default: `[]`)
+    5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
+    7. Enables module metrics (default: `true`)
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    9. Configures metric tags (default: `{}`)
+    10. Enables module tracing (default: `true`)
+    11. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
       someClient:
-        hello:  
+        hello:
           requestTimeout: "10s" #(1)!
           telemetry:
             logging:
               enabled: false #(2)!
-                mask: "***" #(3)!
-                maskQueries: [ ] #(4)!
-                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-                pathTemplate: true #(6)!
+              mask: "***" #(3)!
+              maskQueries: [ ] #(4)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
+              pathTemplate: true #(6)!
             metrics:
               enabled: true #(7)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-            telemetry:
-              enabled: true #(9)!
+              tags: #(9)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(10)!
+              attributes: #(11)!
+                key1: value1
+                key2: value2
     ```
 
-    1. Maximum request timeout, may spans the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body, if call requires redirects or retries all must complete within one timeout period
-    2. Enables module logging (default `false`)
-    3. Mask that is used to hide specified headers and request/response parameters
-    4. List of request parameters to be hidden
-    5. List of request/response headers that should be hidden
-    6. Whether to always use the request path template when logging. Default is to always use the path template, except for the `TRACE` logging level, which uses the full path.
-    7. Includes module metrics
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics
-    9. Enables module tracing (default `true`)
+    1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+    2. Enables module logging (default: `false`)
+    3. Mask used to hide specified headers and request or response parameters (default: `***`)
+    4. List of request parameters to hide (default: `[]`)
+    5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+    6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
+    7. Enables module metrics (default: `true`)
+    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    9. Configures metric tags (default: `{}`)
+    10. Enables module tracing (default: `true`)
+    11. Configures tracing attributes (default: `{}`)
 
 ### Request { #request }
 
-The section describes HTTP request transformations at a declarative HTTP client.
-It is suggested to use special annotations to specify request parameters.
+This section describes `HTTP` request transformations for a declarative `HTTP` client.
+Use special annotations to specify request parameters.
+
+#### String Parameter Conversion { #string-parameter-converter }
+
+`StringParameterConverter<T>` converts a parameter value to a string before Kora puts it into a path, query parameter,
+header, or cookie. The interface has one method:
+
+```java
+public interface StringParameterConverter<T> {
+    String convert(T value);
+}
+```
+
+The converter is looked up as a regular graph component by the exact parameter type. If the parameter has type `Map<String, T>`,
+the converter is looked up for value type `T`; if `Map<String, List<T>>` is used, it is applied to every list item.
+
+Built-in converters are available for `Boolean`, `Short`, `Integer`, `Long`, `Double`, `Float`, `UUID`, `BigDecimal`, `BigInteger`,
+`Duration`, `OffsetTime`, `OffsetDateTime`, `LocalTime`, `LocalDate`, `LocalDateTime`, `ZonedDateTime`, and `Instant`.
+Date and time types are written in `ISO` format. For custom types, provide a `StringParameterConverter<T>` component:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record UserId(long value) {}
+
+    @Module
+    public interface UserIdModule {
+
+        default StringParameterConverter<UserId> userIdStringParameterConverter() {
+            return value -> Long.toString(value.value());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class UserId(val value: Long)
+
+    @Module
+    interface UserIdModule {
+
+        fun userIdStringParameterConverter(): StringParameterConverter<UserId> {
+            return StringParameterConverter { value -> value.value.toString() }
+        }
+    }
+    ```
+
+After that, the type can be used in client parameters:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        User get(@Path("id") UserId id);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        fun get(@Path("id") id: UserId): User
+    }
+    ```
 
 #### Path parameter { #path-parameter }
 
@@ -749,7 +923,9 @@ and the name of the parameter is specified in `value` or is equal to the name of
 
 #### Query parameter { #query-parameter }
 
-`@Query` - value of the query parameter, the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
+`@Query` - query parameter value, the name is specified in `value` or defaults to the method argument name.
+Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and `Map<String, List<T>>` are supported.
+For non-string values, an available `StringParameterConverter<T>` is used.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -776,8 +952,9 @@ and the name of the parameter is specified in `value` or is equal to the name of
     ```
 
 
-It is possible to send query parameters in key and value format, for this purpose it is assumed to use `Map` type,
-where the key is the parameter name and must be of type `String`, and the parameter value can be of any type and will be processed through `String.valueOf()`:
+Query parameters can also be sent in key-value format using `Map`, where the key is the parameter name and must be `String`.
+If a `Map` value is a list, every item is sent as a separate value of the same parameter.
+If a list item is `null`, the parameter is sent without a value.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -804,6 +981,7 @@ where the key is the parameter name and must be of type `String`, and the parame
 #### Header { #header }
 
 `@Header` - value of [request header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers), parameter name is specified in `value` or defaults to the method argument name.
+Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and a ready `HttpHeaders` object are supported.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -829,8 +1007,8 @@ where the key is the parameter name and must be of type `String`, and the parame
     }
     ```
 
-It is possible to send request parameters in key and value format, for this purpose it is supposed to use `HttpHeaders` type or `Map` type,
-where the key is the parameter name and must be of type `String`, and the parameter value can be of any type and will be processed through `String.valueOf()`:
+Headers can be sent in key-value format using `HttpHeaders` or `Map`, where the key is the header name and must be `String`.
+For non-string values, an available `StringParameterConverter<T>` is used:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1047,6 +1225,8 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 #### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
+Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and a ready `Cookie` object are supported.
+Cookies are added to the `Cookie` header; for collections, every value becomes a separate cookie value with the same name.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1250,15 +1430,47 @@ If you need to read the response in a different way, you can use the special `Ht
 
 #### Response Error { #response-error }
 
-By default, when no converter tag or converter itself is specified, the conversion will be applied for `2xx` HTTP status codes,
-for all others a `HttpClientResponseException` exception will be thrown, which contains [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status), response body and response headers.
+By default, when neither converter tag nor converter is specified, conversion is applied only for `2xx` HTTP response codes.
+For all other codes, `HttpClientResponseException` is thrown. It contains the [HTTP response code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status), response body, and response headers.
+
+#### Client Exceptions { #client-exceptions }
+
+All standard `HTTP` client exceptions inherit from `HttpClientException`, which is a `RuntimeException`.
+This lets you catch a specific error type or all client errors with one common type:
+
+```java
+try {
+    client.getUser("123");
+} catch (HttpClientResponseException e) {
+    var code = e.getCode();
+    var headers = e.getHeaders();
+    var body = e.getBytes();
+} catch (HttpClientException e) {
+    throw e;
+}
+```
+
+Main exception types:
+
+* `HttpClientResponseException` — response was received, but its code was not handled as successful. Contains `getCode()`, `getHeaders()`, and `getBytes()`.
+* `HttpClientTimeoutException` — request, connection, or read timeout expired.
+* `HttpClientConnectionException` — error while establishing or maintaining a connection to the remote host.
+* `HttpClientEncoderException` — error while converting a user value into a request body.
+* `HttpClientDecoderException` — error while converting a response body into a user type.
+* `HttpClientUnknownException` — other transport client error that did not match a more specific category.
+
+`HttpClientResponseException` is created after reading the response body into a byte array. If the body could not be read fully,
+the read error is added as a `suppressed` exception, and `getBytes()` contains the body that could be collected.
 
 #### Conversion by Code { #conversion-by-code }
 
 If specific conversions are required depending on the [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) of the response, you can use the `@ResponseCodeMapper` annotation to specify a
 correspondence between the HTTP status code and the `HttpClientResponseMapper` resolver.
 
-You can also use `ResponseCodeMapper.DEFAULT` as an indication of the default behavior for all unlisted status codes.
+You can also use `ResponseCodeMapper.DEFAULT` to define default behavior for all unlisted HTTP codes.
+If `mapper` is specified for a code, that particular `HttpClientResponseMapper` is used.
+If `type` is specified, Kora selects a response mapper for that type and then casts the result to the method return type.
+This is useful for closed response hierarchies where different HTTP statuses correspond to different result subtypes.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1303,9 +1515,51 @@ You can also use `ResponseCodeMapper.DEFAULT` as an indication of the default be
 In the example above, `ResponseSuccessMapper` will be used for status code `200`,
 and for all other status codes the `ResponseErrorMapper` will be used.
 
+Example with the `type` parameter:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        sealed interface UserResponse permits Success, Error {}
+
+        record Success(String id) implements UserResponse {}
+
+        record Error(String message) implements UserResponse {}
+
+        @Json
+        @ResponseCodeMapper(code = 200, type = Success.class)
+        @ResponseCodeMapper(code = 404, type = Error.class)
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        UserResponse get(@Path String id);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        sealed interface UserResponse
+
+        data class Success(val id: String) : UserResponse
+
+        data class Error(val message: String) : UserResponse
+
+        @Json
+        @ResponseCodeMapper(code = 200, type = Success::class)
+        @ResponseCodeMapper(code = 404, type = Error::class)
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        fun get(@Path id: String): UserResponse
+    }
+    ```
+
 ### Signatures { #signatures }
 
-Available signatures for repository methods out of the box:
+Available signatures for declarative `HTTP` client methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1326,6 +1580,65 @@ Available signatures for repository methods out of the box:
 
 You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` class.
 Interceptors can be applied to specific methods or to the entire `@HttpClient` class:
+
+### Root URL { #root-uri-interceptor }
+
+`RootUriInterceptor` is a ready-made interceptor that adds a base `URL` to relative requests.
+If the request already contains a scheme (`http://` or `https://`), the interceptor leaves it unchanged.
+If the request is relative, `RootUriInterceptor` adds the root address and guarantees one `/` separator between the root and the path.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface ClientModule {
+
+        default RootUriInterceptor rootUriInterceptor() {
+            return new RootUriInterceptor("https://api.example.com");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface ClientModule {
+
+        fun rootUriInterceptor(): RootUriInterceptor {
+            return RootUriInterceptor("https://api.example.com")
+        }
+    }
+    ```
+
+After registering the interceptor, connect it to the client:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    @InterceptWith(RootUriInterceptor.class)
+    public interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        User get(@Path String id);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    @InterceptWith(RootUriInterceptor::class)
+    interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        fun get(@Path id: String): User
+    }
+    ```
+
+For declarative clients, it is usually more convenient to set the base `URL` through `DeclarativeHttpClientConfig.url`.
+`RootUriInterceptor` is useful for imperative `HttpClient` or when a shared root address should be added as separate cross-cutting behavior.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1378,6 +1691,34 @@ Interceptors can be applied to specific methods or to the entire `@HttpClient` c
         fun hello()
     }
     ```
+
+If the interceptor must be applied to all client methods, `@InterceptWith` can be placed on the interface:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    @InterceptWith(ClientInterceptor.class)
+    public interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    @InterceptWith(ClientInterceptor::class)
+    interface SomeClient {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello()
+    }
+    ```
+
+If interceptors are specified on both the client and the method, both interceptor sets are applied for that call.
 
 ### Authorization { #authorization }
 
@@ -1628,4 +1969,43 @@ You can use `HttpClientRequestBuilder` to build requests manually:
         .header("token", "12345")
         .body(HttpBody.plaintext("refresh"))
         .build()
+    ```
+
+`HttpClientRequestBuilder` supports methods for main `HTTP` methods (`get`, `post`, `put`, `delete`, `patch`, and others), path parameter substitution,
+query parameters, headers, request body, and `requestTimeout` for a particular request.
+
+Because `HttpClientResponse` implements `Closeable`, it must be closed after reading the body when called manually:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    httpClient.execute(request).thenApply(response -> {
+        try (response) {
+            if (response.code() >= 400) {
+                throw new IllegalStateException("HTTP error: " + response.code());
+            }
+
+            try (var is = response.body().asInputStream()) {
+                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    httpClient.execute(request).thenApply { response ->
+        response.use {
+            if (response.code() >= 400) {
+                throw IllegalStateException("HTTP error: ${response.code()}")
+            }
+
+            response.body().asInputStream().use { body ->
+                String(body.readAllBytes(), StandardCharsets.UTF_8)
+            }
+        }
+    }
     ```
