@@ -4,15 +4,15 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, MDC enrichment, structured parameters, conversion, and signatures; key triggers include @Log, @Log.in, @Log.out, @Log.off, @Mdc, @StructuredArgument, MDC, LogAspect."
 ---
 
-Модуль декларативного логирования позволяет описывать логирование методов с помощью аннотаций `@Log` и `@Mdc`.
-Kora на этапе компиляции создает аспектную обертку метода, которая записывает в лог вход в метод, выход из метода, результат, ошибку и значения `MDC` без ручного кода в бизнес-логике.
-Такой подход полезен для единообразной диагностики вызовов, особенно когда нужно быстро понять, какой метод был вызван, с какими аргументами и чем завершился.
+Модуль декларативного логирования позволяет описывать логирование метода с помощью аннотаций `@Log` и `@Mdc`.
+На этапе компиляции Kora создает аспект-обертку для метода; обертка логирует вход в метод, выход из метода, результат, ошибку и значения `MDC` без ручного кода в бизнес-логике.
+Это удобно для единообразной диагностики вызовов, особенно когда нужно быстро понять, какой метод был вызван, с какими аргументами и как он завершился.
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
+Пошаговый разбор перед справочным описанием смотрите в разделе [Наблюдаемость](../guides/observability.md).
 
 ## Подключение { #dependency }
 
-Аннотации и вспомогательные классы находятся в зависимости `logging-common`.
+Аннотации и вспомогательные классы предоставляются зависимостью `logging-common`.
 Обычно она уже приходит через другие модули Kora или через [Logback](logging-slf4j.md#logback), но при использовании аннотаций напрямую зависимость можно добавить явно:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -57,6 +57,7 @@ Kora на этапе компиляции создает аспектную об
 
 Само событие входа или выхода пишется на уровне, указанном в `@Log`, `@Log.in` или `@Log.out`.
 Значения аргументов и результата добавляются в структурированные данные только если включен соответствующий уровень детализации.
+Какой уровень детализации активен, зависит от эффективного уровня логгера, настроенного через `logging.level` / `logging.levels` — смотрите [настройку уровней логирования](logging-slf4j.md#configuration).
 
 ### Аргументов { #argument }
 
@@ -346,6 +347,30 @@ Kora на этапе компиляции создает аспектную об
     </tr>
 </table>
 
+Когда нужно структурированное значение без введения отдельного типа, интерфейс `StructuredArgument` предоставляет статические фабричные методы:
+`arg(fieldName, value)` / `arg(fieldName, value, JsonWriter)` создают структурированный аргумент (перегрузки принимают `String`, `Integer`, `Long`, `Boolean`, `Map<String, String>`, `JsonWriter` или сырой `StructuredArgumentWriter`),
+а `marker(fieldName, value)` создает `org.slf4j.Marker` для одного вызова лога. Полученный `StructuredArgument` можно также передать напрямую в `MDC.put`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId));
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted");
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId))
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted")
+    ```
+
 ### Конвертация параметров { #parameter-conversion }
 
 Если менять сам тип параметра нельзя, можно описать внешний преобразователь `StructuredArgumentMapper` и указать его через `@Mapping` на нужном аргументе.
@@ -512,6 +537,9 @@ Kora на этапе компиляции создает аспектную об
 В этом примере к методу применены две аннотации `@Mdc`, а к параметру - одна.
 Запись `key=value` останется в `MDC` после выполнения метода из-за `global = true`, остальные записи будут восстановлены или удалены.
 
+Под капотом неглобальные записи сохраняются в виде снимка до вызова и восстанавливаются в блоке `finally` после возврата из метода, поэтому они никогда не выходят за пределы области видимости метода.
+Записи, добавленные с `global = true` (а также любое значение, установленное через императивный `MDC.put`, смотрите ниже), остаются в `Context` на протяжении всей области видимости запроса/потока и потому видны в каждой последующей строке лога.
+
 #### Генерация значения из кода { #generated-value-for-mdc-value }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -543,6 +571,68 @@ INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value
 `@Mdc` не поддерживается для методов, которые возвращают `CompletionStage`, `Mono` или `Flux`.
 Для `Kotlin` поддерживаются обычные методы и `suspend`-методы, но `global = true` нельзя использовать в `suspend`-методах.
 
+### Императивный MDC { #imperative-mdc }
+
+Там, где аннотация не подходит — внутри перехватчиков, фильтров или обычного кода сервиса — используйте императивный API `ru.tinkoff.kora.logging.common.MDC`.
+Это программный аналог `@Mdc`: записи привязываются к `Context` Kora, поэтому они распространяются через асинхронные границы точно так же, как записи `@Mdc(global = true)`, и появляются в каждой строке лога, выводимой на протяжении оставшейся области видимости текущего `Context`.
+
+Статический метод `put` имеет перегрузки для значений `String`, `Integer`, `Long` и `Boolean`, а также перегрузку с `StructuredArgumentWriter` для структурированных значений.
+`remove(key)` удаляет одну запись, а `get().values()` возвращает текущие записи как неизменяемую `Map<String, StructuredArgumentWriter>`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import ru.tinkoff.kora.logging.common.MDC;
+
+    @Component
+    public final class OrderService {
+
+        public void process(String orderId) {
+            MDC.put("orderId", orderId);                  // String
+            MDC.put("attempt", 1);                        // Integer
+            MDC.put("bytes", 1024L);                      // Long
+            MDC.put("retryable", true);                   // Boolean
+            MDC.put("payload", gen -> gen.writeString(orderId)); // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt");                        // drop a single key
+            var current = MDC.get().values();             // read current entries
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.logging.common.MDC
+
+    @Component
+    class OrderService {
+
+        fun process(orderId: String) {
+            MDC.put("orderId", orderId)                   // String
+            MDC.put("attempt", 1)                         // Integer
+            MDC.put("bytes", 1024L)                       // Long
+            MDC.put("retryable", true)                    // Boolean
+            MDC.put("payload") { gen -> gen.writeString(orderId) } // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt")                         // drop a single key
+            val current = MDC.get().values()              // read current entries
+        }
+    }
+    ```
+
+Когда у вас уже есть `Context` (например, внутри перехватчика), обращайтесь к нему явно через `MDC.get(ctx)` и `MDC.put(ctx, key, writer)` вместо сокращений для текущего `Context`.
+В отличие от `@Mdc`, у императивного API нет ограничения на реактивные/`suspend`-методы, поскольку он пишет напрямую в `Context`, а не оборачивает вызов метода.
+
+!!! warning "Используйте `MDC` из Kora, а не из SLF4J"
+
+    Всегда импортируйте `ru.tinkoff.kora.logging.common.MDC` — никогда `org.slf4j.MDC`.
+    Класс SLF4J пишет в отдельный `ThreadLocal`, не связанный с `Context` Kora: помещенные туда значения не появятся в структурированных логах Kora и не будут распространяться через асинхронные границы (реактивные операторы, `suspend`-функции, передача между потоками).
+
 ## Сигнатуры { #signatures }
 
 Сигнатуры методов, поддерживаемые для аспектов логирования:
@@ -555,6 +645,9 @@ INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (только для `@Log`)
+    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (только для `@Log`, требует [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (только для `@Log`, требует [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -563,4 +656,5 @@ INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value
     Под `T` подразумевается тип возвращаемого значения, либо `T?`, либо `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требуется подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `suspend myMethod(): T` [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): Flow<T>` [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)

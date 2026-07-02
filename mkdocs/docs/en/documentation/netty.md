@@ -18,6 +18,43 @@ but only serves to configure [Netty transport and Netty event loop](https://nett
 
 Usually you do not need to connect this module manually: it is added as a transitive dependency by Kora modules that require Netty.
 
+## What it provides { #what-it-provides }
+
+When the module is connected, `NettyCommonModule` contributes the following shared components to the dependency container.
+Consumer modules ([HTTP Async client](http-client.md#asynchttpclient), [gRPC client](grpc-client.md), [gRPC server](grpc-server.md)) inject them instead of creating their own Netty threads:
+
+- **`NettyTransportConfig`** - configuration bound to the `netty` section (preferred [transport](#transport) and [worker thread count](#configuration)).
+- **Worker `EventLoopGroup`** with tag `@Tag(NettyCommonModule.WorkerLoopGroup.class)` - the shared `event loop` that processes connections and network I/O. Its size is set by the `threads` parameter, and both clients and servers use it.
+- **Boss `EventLoopGroup`** with tag `@Tag(NettyCommonModule.BossLoopGroup.class)` - a separate group fixed at `1` thread that only server components (for example [gRPC server](grpc-server.md)) use to accept incoming connections; the `threads` parameter does not affect it.
+- **[`NettyChannelFactory`](#channel-factory)** - a factory that creates Netty channels matching the selected [transport](#transport).
+
+Both `event loop` groups are managed by the Kora [lifecycle](container.md#component-lifecycle): they are shut down gracefully after all dependent components are released, so no manual management is required.
+
+Advanced modules that build a custom Netty `transport` can inject these components directly:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyNettyTransport {
+
+        public MyNettyTransport(@Tag(NettyCommonModule.WorkerLoopGroup.class) EventLoopGroup workerGroup,
+                                NettyChannelFactory channelFactory) {
+            // build a client or server bootstrap on the shared event loop
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyNettyTransport(
+        @Tag(NettyCommonModule.WorkerLoopGroup::class) workerGroup: EventLoopGroup,
+        channelFactory: NettyChannelFactory,
+    )
+    ```
+
 ## Configuration { #configuration }
 
 An example of the configuration described by the `NettyTransportConfig` class:
@@ -73,3 +110,43 @@ When adding a native dependency, choose the `classifier` for the target platform
 ???+ tip "Recommendation"
 
     Usually it is enough to leave `transport` unset and let Kora select it automatically. Add `native transport` intentionally: for example, when you need it for performance or Netty features unavailable in `NIO`.
+
+## Channel factory { #channel-factory }
+
+`NettyChannelFactory` is a shared injectable component that produces Netty [`ChannelFactory`](https://netty.io/4.1/api/io/netty/channel/ChannelFactory.html) instances matching the selected [transport](#transport).
+It is an advanced injection point for modules that build their own Netty client or server `bootstrap` and want channels consistent with the chosen `transport`:
+
+- `getClientFactory()` / `getClientFactory(boolean domainSocket)` - a factory for client channels.
+- `getServerFactory()` / `getServerFactory(boolean domainSocket)` - a factory for server channels.
+
+The no-argument overloads create standard `TCP` socket channels.
+Passing `domainSocket = true` requests a [Unix domain socket](https://en.wikipedia.org/wiki/Unix_domain_socket) channel: this is supported by the `EPOLL` and `KQUEUE` `native transports`, while the `NIO` implementation currently falls back to standard socket channels.
+
+## Thread factory { #thread-factory }
+
+Both the worker and boss `event loop` groups accept an optional [`ThreadFactory`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadFactory.html).
+To customize Netty thread naming or priority, provide a `ThreadFactory` component tagged with `@Tag(NettyCommonModule.class)`; when present, Kora uses it for both groups:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends AsyncHttpClientModule {
+
+        @Tag(NettyCommonModule.class)
+        default ThreadFactory nettyThreadFactory() {
+            return new DefaultThreadFactory("netty-io");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : AsyncHttpClientModule {
+
+        @Tag(NettyCommonModule::class)
+        fun nettyThreadFactory(): ThreadFactory = DefaultThreadFactory("netty-io")
+    }
+    ```

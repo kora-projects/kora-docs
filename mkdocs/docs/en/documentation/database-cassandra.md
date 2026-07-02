@@ -610,7 +610,9 @@ Simple configuration example:
 
 ### Code configuration { #code-configuration }
 
-You can configure the driver manually in your code using `CassandraConfigurer` to modify the `CqlSession` builder:
+You can configure the driver manually in your code by registering a `CassandraConfigurer` component.
+The `configure` method receives the `CqlSessionBuilder` and the `ProgrammaticDriverConfigLoaderBuilder`,
+so you can adjust the session builder and override raw driver options that are not exposed through the `cassandra` configuration section:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -619,7 +621,7 @@ You can configure the driver manually in your code using `CassandraConfigurer` t
     public final class MyCassandraConfigurer implements CassandraConfigurer {
 
         @Override
-        public CqlSessionBuilder configure(CqlSessionBuilder builder) {
+        public CqlSessionBuilder configure(CqlSessionBuilder builder, ProgrammaticDriverConfigLoaderBuilder loaderBuilder) {
             return builder.withClientId(UUID.randomUUID());
         }
     }
@@ -630,7 +632,8 @@ You can configure the driver manually in your code using `CassandraConfigurer` t
     ```kotlin
     @Component
     class MyCassandraConfigurer : CassandraConfigurer {
-        override fun configure(builder: CqlSessionBuilder): CqlSessionBuilder {
+
+        override fun configure(builder: CqlSessionBuilder, loaderBuilder: ProgrammaticDriverConfigLoaderBuilder): CqlSessionBuilder {
             return builder.withClientId(UUID.randomUUID())
         }
     }
@@ -642,19 +645,104 @@ To create a repository, declare an interface with `@Repository` and extend `Cass
 Such a repository gets access to `CqlSession` through generated code and uses `@Query` to execute `CQL` queries.
 Query parameters are bound by name: `:id`, `:entity.field`, `:filter.value`.
 
+Entities are described with the [common database annotations](database-common.md) and marked with `@EntityCassandra`
+so that `Kora` generates the entity mapper at compile time (see [Entity](#entity)):
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
-    public interface EntityRepository extends CassandraRepository { }
+    public interface EntityRepository extends CassandraRepository {
+
+        @EntityCassandra
+        record Entity(String id,
+                      @Column("value1") int field1,
+                      String value2,
+                      @Nullable String value3) {}
+
+        @Query("SELECT * FROM entities WHERE id = :id")
+        @Nullable
+        Entity findById(String id);
+
+        @Query("SELECT * FROM entities")
+        List<Entity> findAll();
+
+        @Query("""
+                INSERT INTO entities(id, value1, value2, value3)
+                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+                """)
+        void insert(Entity entity);
+
+        @Query("""
+                INSERT INTO entities(id, value1, value2, value3)
+                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+                """)
+        void insertBatch(@Batch List<Entity> entities);
+
+        @Query("""
+                UPDATE entities
+                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
+                WHERE id = :entity.id
+                """)
+        void update(Entity entity);
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        void deleteById(String id);
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Repository
-    interface EntityRepository : CassandraRepository
+    interface EntityRepository : CassandraRepository {
+
+        @EntityCassandra
+        data class Entity(
+            val id: String,
+            @field:Column("value1") val field1: Int,
+            val value2: String,
+            val value3: String?
+        )
+
+        @Query("SELECT * FROM entities WHERE id = :id")
+        fun findById(id: String): Entity?
+
+        @Query("SELECT * FROM entities")
+        fun findAll(): List<Entity>
+
+        @Query("""
+                INSERT INTO entities(id, value1, value2, value3)
+                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+                """)
+        fun insert(entity: Entity)
+
+        @Query("""
+                INSERT INTO entities(id, value1, value2, value3)
+                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+                """)
+        fun insertBatch(@Batch entities: List<Entity>)
+
+        @Query("""
+                UPDATE entities
+                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
+                WHERE id = :entity.id
+                """)
+        fun update(entity: Entity)
+
+        @Query("DELETE FROM entities WHERE id = :id")
+        fun deleteById(id: String)
+    }
     ```
+
+`CQL` remains under the developer's control: you write the query text yourself, while `Kora` only handles parameter binding,
+query execution, and result mapping.
+Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
+[Common database rules](database-common.md).
+
+Unlike relational databases, `Cassandra` has no transactions.
+When you need several statements to be applied atomically, use a `@Batch` method (a `CQL` `BATCH`) as shown above;
+its semantics and macros are documented in the [common database section](database-common.md).
 
 ### Profile { #profile }
 
@@ -719,6 +807,29 @@ It is possible to override the mapping of different parts of [entity](database-c
 Out of the box, `CassandraModule` provides mappers for common types: `String`, numeric types, `Boolean`, `BigDecimal`, `BigInteger`, `UUID`, `ByteBuffer`, `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, and `Instant`.
 If a type is not covered by that set, or if it needs a custom representation in `CQL`, add a custom mapper through `@Mapping`.
 
+### Entity { #entity }
+
+Use the `@EntityCassandra` annotation for optimal entity mapping.
+The annotation processor creates the row and result mappers for such a type ahead of time, at compile time,
+instead of resolving them from the graph at runtime.
+This is the recommended way to map every entity returned from or bound into a repository.
+
+All nested entities and [UDT](#udt) types are also expected to use this annotation.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @EntityCassandra
+    public record Entity(String id, String name) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @EntityCassandra
+    data class Entity(val id: String, val name: String)
+    ```
+
 ### Result { #result }
 
 If you need to convert the whole synchronous query result manually, use `CassandraResultSetMapper<T>`.
@@ -767,6 +878,13 @@ It receives `ResultSet` and returns the repository method value: a single object
         fun getIds(): List<UUID>
     }
     ```
+
+Each result-mapper interface also exposes static factory helpers that build a full result mapper from a `CassandraRowMapper<T>`,
+so you can reuse a single row mapper across signatures:
+
+- `CassandraResultSetMapper` — `singleResultSetMapper`, `optionalResultSetMapper`, `listResultSetMapper`;
+- `CassandraAsyncResultSetMapper` — `one`, `list` (auto-paginates across result pages);
+- `CassandraReactiveResultSetMapper` — `flux`, `mono`, `monoVoid`, `monoList`.
 
 ### Row { #row }
 
@@ -916,7 +1034,8 @@ It receives `SettableByName<?>`, the parameter index, and the value from the rep
 
 ### Async { #async }
 
-For `CompletionStage<T>`, use `CassandraAsyncResultSetMapper<T>`, which receives `AsyncResultSet` and returns `CompletionStage<T>`.
+For `CompletionStage<T>` and `CompletableFuture<T>`, use `CassandraAsyncResultSetMapper<T>`, which receives `AsyncResultSet` and returns `CompletionStage<T>`.
+Its `list` helper automatically requests subsequent result pages, so a `List<T>` result gathers every page before completing.
 For reactive types `Mono<T>` / `Flux<T>`, use `CassandraReactiveResultSetMapper<T, P>`, which receives `ReactiveResultSet` and returns the required `Publisher`.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -957,48 +1076,169 @@ For reactive types `Mono<T>` / `Flux<T>`, use `CassandraReactiveResultSetMapper<
     }
     ```
 
-## UDT { #udt }
+## Manual Query { #query }
 
-There is support for [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html) types through the `@UDT` annotation.
-`UDT` describes a Cassandra user-defined type and can be used as a field of a regular entity.
+If a query is hard to express as a single static `@Query`, you can declare a regular method with an implementation and build `CQL` manually.
+The repository exposes `getCassandraConnectionFactory()`, and `CassandraConnectionFactory#query` executes such a query:
+it prepares the statement through the current `CqlSession`, wraps execution in `Kora` telemetry, and returns the value produced by the callback.
+The `currentSession()` accessor returns the active `CqlSession`, and `telemetry()` returns the `DataBaseTelemetry` used for reporting.
+
+`QueryContext` carries the query identifier and the final `CQL`.
+The identifier is reported to telemetry, so use a stable name such as `Repository.method`.
+Bind values through a `BoundStatement` obtained from the prepared statement; never concatenate values directly into the query string.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Table("entities")
-    public record Entity(String id, Name name) {
+    @Repository
+    public interface EntityRepository extends CassandraRepository {
 
-        @UDT
-        public record Name(String first, String middle, String last) { }
+        default List<Entity> findByFilter(@Nullable String value2) {
+            var sql = new StringBuilder("SELECT id, value1, value2, value3 FROM entities");
+            if (value2 != null) {
+                sql.append(" WHERE value2 = ? ALLOW FILTERING");
+            }
+
+            var connectionFactory = getCassandraConnectionFactory();
+            var queryContext = new QueryContext("EntityRepository.findByFilter", sql.toString());
+            return connectionFactory.query(queryContext, statement -> {
+                var boundStatement = (value2 != null)
+                    ? statement.bind(value2)
+                    : statement.bind();
+                var resultSet = connectionFactory.currentSession().execute(boundStatement);
+
+                var result = new ArrayList<Entity>();
+                for (var row : resultSet) {
+                    result.add(new Entity(
+                        row.getString("id"),
+                        row.getInt("value1"),
+                        row.getString("value2"),
+                        row.getString("value3")));
+                }
+                return result;
+            });
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Table("entities")
-    data class Entity(val id: String, val name: Name) {
+    @Repository
+    interface EntityRepository : CassandraRepository {
 
-        @UDT
-        data class Name(val first: String, val middle: String, val last: String)
+        fun findByFilter(value2: String?): List<Entity> {
+            val sql = StringBuilder("SELECT id, value1, value2, value3 FROM entities")
+            if (value2 != null) {
+                sql.append(" WHERE value2 = ? ALLOW FILTERING")
+            }
+
+            val connectionFactory = cassandraConnectionFactory
+            val queryContext = QueryContext("EntityRepository.findByFilter", sql.toString())
+            return connectionFactory.query(queryContext) { statement ->
+                val boundStatement = if (value2 != null) statement.bind(value2) else statement.bind()
+                val resultSet = connectionFactory.currentSession().execute(boundStatement)
+
+                resultSet.map { row ->
+                    Entity(
+                        row.getString("id"),
+                        row.getInt("value1"),
+                        row.getString("value2"),
+                        row.getString("value3")
+                    )
+                }
+            }
+        }
     }
     ```
 
-If the type is not used as a repository return value, but as a standalone Cassandra type, mapper generation can be enabled explicitly with `@EntityCassandra`.
+Because `Cassandra` has no transactions, `query` simply runs on the current session with telemetry; there is no commit or rollback to manage.
+
+## UDT { #udt }
+
+There is support for [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html) types through the `@UDT` annotation.
+`UDT` describes a Cassandra user-defined type and can be used as a field of a regular entity.
+The `@UDT` type is mapped like any other entity, so the enclosing entity is annotated with `@EntityCassandra`.
+
+Given the following schema, where `username` is a user-defined type stored as a `FROZEN` column:
+
+```cql
+CREATE TYPE IF NOT EXISTS username(first text, last text);
+
+CREATE TABLE IF NOT EXISTS entities_udt
+(
+    id   VARCHAR,
+    name FROZEN<username>,
+    PRIMARY KEY (id)
+);
+```
+
+the entity and repository look like this:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends CassandraRepository {
+
+        @EntityCassandra
+        record Entity(String id, Name name) {
+
+            @UDT
+            record Name(String first, String last) {}
+        }
+
+        @Query("SELECT * FROM entities_udt WHERE id = :id")
+        @Nullable
+        Entity findById(String id);
+
+        @Query("""
+                INSERT INTO entities_udt(id, name)
+                VALUES (:entity.id, :entity.name)
+                """)
+        void insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : CassandraRepository {
+
+        @EntityCassandra
+        data class Entity(val id: String, val name: Name) {
+
+            @UDT
+            data class Name(val first: String, val last: String)
+        }
+
+        @Query("SELECT * FROM entities_udt WHERE id = :id")
+        fun findById(id: String): Entity?
+
+        @Query("""
+                INSERT INTO entities_udt(id, name)
+                VALUES (:entity.id, :entity.name)
+                """)
+        fun insert(entity: Entity)
+    }
+    ```
+
+If the `UDT` type is not used through an enclosing entity, but as a standalone Cassandra type, mapper generation can be enabled explicitly with `@EntityCassandra`.
 This is useful when the mapper is needed as a separate graph component.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @EntityCassandra
-    public record Name(String first, String middle, String last) { }
+    public record Name(String first, String last) { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @EntityCassandra
-    data class Name(val first: String, val middle: String, val last: String)
+    data class Name(val first: String, val last: String)
     ```
 
 ## Signatures { #signatures }
@@ -1013,8 +1253,12 @@ Available signatures for repository methods out of the box:
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
     - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html)
     - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
     - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+
+    The `CompletionStage<T>`, `CompletableFuture<T>`, and `Mono<T>` wrappers can also wrap `List<T>`,
+    for example `CompletionStage<List<Entity>>` or `Mono<List<Entity>>`.
 
     Method parameters can include regular values, DTOs, `@Batch List<T>` for batch execution, and `CqlSession` when the method needs access to the current driver session.
 

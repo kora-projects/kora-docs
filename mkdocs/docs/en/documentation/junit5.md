@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization. Use when working with @KoraAppTest, @TestComponent, @MockComponent, @Tag, @TestConfig, @TestConfigSource, Graph, Mockito."
+description: "Explains Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization. Use when working with @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @MockComponent, @Tag, @TestConfig, @TestConfigSource, Graph, Mockito."
+  use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
 ---
 
 Module provides an extension for [JUnit 5](https://junit.org/junit5/docs/current/user-guide/) that allows testing an application through the same component graph that is used at runtime.
@@ -983,6 +983,156 @@ in this case only this configuration will be used without any configuration file
         }
     }
     ```
+
+### Configuration substitution { #configuration-substitution }
+
+The environment substitution shown in [Environment variables](#environment-variables) also works with an inline configuration:
+declare `${ENV}` placeholders directly inside the `ofString(...)` configuration and resolve them with chained `withSystemProperty(...)`.
+This is convenient when the whole configuration is described in the test, but some values (ports, hosts, credentials) are only known at runtime:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class SomeTests implements KoraAppTestConfigModifier {
+
+        @Override
+        public @Nonnull KoraConfigModification config() {
+            return KoraConfigModification.ofString("""
+                myconfig {
+                    myinnerconfig {
+                        first = ${ENV_FIRST}
+                        second = ${ENV_SECOND}
+                    }
+                }
+                """)
+                .withSystemProperty("ENV_FIRST", "1")
+                .withSystemProperty("ENV_SECOND", "2");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class SomeTests : KoraAppTestConfigModifier {
+
+        override fun config(): KoraConfigModification {
+            return KoraConfigModification.ofString(
+                """
+                myconfig {
+                    myinnerconfig {
+                        first = \${ENV_FIRST}
+                        second = \${ENV_SECOND}
+                    }
+                }
+                """.trimIndent()
+            )
+                .withSystemProperty("ENV_FIRST", "1")
+                .withSystemProperty("ENV_SECOND", "2")
+        }
+    }
+    ```
+
+### Testcontainers { #testcontainers }
+
+A common use of `KoraAppTestConfigModifier` is [Testcontainers](https://java.testcontainers.org/) integration:
+the test starts a container and passes its runtime connection values into the configuration through `config()`.
+Testcontainers assigns a random host port on each run, so the values must not be hardcoded — they are declared as `${...}` placeholders in the inline configuration
+and populated from the container getters via `withSystemProperty(...)`.
+
+Because `config()` runs **before** the test graph is built, the configuration is ready before any component is created.
+For the same reason `KoraAppTestConfigModifier` is incompatible with [constructor injection](#injection-rules): use field or method-parameter injection as shown below.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Add the [Testcontainers](https://java.testcontainers.org/) dependencies in `build.gradle`:
+    ```groovy
+    testImplementation "org.testcontainers:junit-jupiter:1.21.4"
+    testImplementation "org.testcontainers:postgresql:1.21.4"
+    ```
+
+    ```java
+    @Testcontainers
+    @KoraAppTest(Application.class)
+    class SomeIntegrationTests implements KoraAppTestConfigModifier {
+
+        @Container
+        private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+
+        @TestComponent
+        private SomeService service;
+
+        @NotNull
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification.ofString("""
+                db {
+                    jdbcUrl = ${POSTGRES_JDBC_URL}
+                    username = ${POSTGRES_USER}
+                    password = ${POSTGRES_PASS}
+                    poolName = "kora"
+                }
+                """)
+                .withSystemProperty("POSTGRES_JDBC_URL", POSTGRES.getJdbcUrl())
+                .withSystemProperty("POSTGRES_USER", POSTGRES.getUsername())
+                .withSystemProperty("POSTGRES_PASS", POSTGRES.getPassword());
+        }
+
+        @Test
+        void example() {
+            // interact with the service backed by the container
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Add the [Testcontainers](https://java.testcontainers.org/) dependencies in `build.gradle.kts`:
+    ```groovy
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    testImplementation("org.testcontainers:postgresql:1.21.4")
+    ```
+
+    ```kotlin
+    @Testcontainers
+    @KoraAppTest(Application::class)
+    class SomeIntegrationTests : KoraAppTestConfigModifier {
+
+        companion object {
+            @Container
+            @JvmStatic
+            val POSTGRES = PostgreSQLContainer("postgres:16")
+        }
+
+        @TestComponent
+        lateinit var service: SomeService
+
+        override fun config(): KoraConfigModification {
+            return KoraConfigModification.ofString(
+                """
+                db {
+                    jdbcUrl = \${POSTGRES_JDBC_URL}
+                    username = \${POSTGRES_USER}
+                    password = \${POSTGRES_PASS}
+                    poolName = "kora"
+                }
+                """.trimIndent()
+            )
+                .withSystemProperty("POSTGRES_JDBC_URL", POSTGRES.jdbcUrl)
+                .withSystemProperty("POSTGRES_USER", POSTGRES.username)
+                .withSystemProperty("POSTGRES_PASS", POSTGRES.password)
+        }
+
+        @Test
+        fun example() {
+            // interact with the service backed by the container
+        }
+    }
+    ```
+
+For a full walkthrough — dependencies, a test `@KoraApp`, migrations and repository setup — see the [Integration Testing](../guides/testing-integration.md) guide.
 
 ## Container modification { #container-modification }
 
