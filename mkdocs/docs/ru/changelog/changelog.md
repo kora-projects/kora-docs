@@ -9,9 +9,9 @@ hide:
 
 Добавлено:
 
-- Добавлена интеграция Konvert мапперов для Kotlin/KSP-native
-- Добавлена кастомная сериализация JSON для enum и произвольных типов через `@JsonReader` factory / `@JsonWriter` method
-- Добавлены lambda-расширения для `JdbcConnectionFactory` в Kotlin
+- Добавлена интеграция преобразователей `Konvert` для Kotlin/KSP-native
+- Добавлена пользовательская сериализация JSON для `enum` и произвольных типов через фабрику `@JsonReader` / метод `@JsonWriter`
+- Добавлены `lambda`-расширения для `JdbcConnectionFactory` в Kotlin
 
 Исправлено:
 

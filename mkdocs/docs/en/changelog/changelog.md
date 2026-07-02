@@ -9,9 +9,9 @@ hide:
 
 Added:
 
-- Added Kotlin/KSP-native Konvert mapper integration
-- Added custom JSON value serialization for enums and arbitrary types via `@JsonReader` factory / `@JsonWriter` method
-- Added Kotlin lambda extensions for `JdbcConnectionFactory`
+- Added Kotlin/KSP-native `Konvert` mapper integration
+- Added custom JSON value serialization for `enum` and arbitrary types via `@JsonReader` factory / `@JsonWriter` method
+- Added Kotlin `lambda` extensions for `JdbcConnectionFactory`
 
 Fixed:
 
