@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 ---
 
 ??? warning "Experimental module"
@@ -188,13 +188,52 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-8-worker) section.
 
-If `deployment.resources` contains paths, the module finds resources in `classpath:` during startup and uploads them to
-`Zeebe`. Only paths with the `classpath:` prefix are supported, for example `classpath:bpm`; other locations are skipped.
+### Resource deployment { #resource-deployment }
+
+If `deployment.resources` contains paths, the module finds resources on the classpath during startup and deploys them to
+`Zeebe` through the `ZeebeResourceDeployment` component. Both `BPMN` processes and `DMN` decisions found under the
+configured locations are deployed. Only paths with the `classpath:` prefix are supported, for example `classpath:bpm`;
+other locations are logged and skipped.
+
+Put the deployable resources under the corresponding classpath directory:
+
+```text
+src/main/resources/
+└── bpm/
+    └── demo.bpmn
+```
+
+===! ":material-code-json: `HOCON`"
+
+    ```javascript
+    zeebe {
+        client {
+            deployment {
+                resources = "classpath:bpm" //(1)!
+            }
+        }
+    }
+    ```
+
+    1. One or more classpath locations to scan for `BPMN` / `DMN` resources (a single value or a list)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    zeebe:
+      client:
+        deployment:
+          resources: "classpath:bpm" #(1)!
+    ```
+
+    1. One or more classpath locations to scan for `BPMN` / `DMN` resources (a single value or a list)
 
 ### Client { #client }
 
 The module creates a `ZeebeClient` component that can be injected into your own services when you need to manually start
 processes, publish messages, or execute other `Zeebe` commands.
+
+For example, to start a new process instance:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -207,19 +246,90 @@ processes, publish messages, or execute other `Zeebe` commands.
         public ProcessStarter(ZeebeClient client) {
             this.client = client;
         }
+
+        public void start() {
+            ProcessInstanceEvent event = client.newCreateInstanceCommand()
+                    .bpmnProcessId("demo") //(1)!
+                    .latestVersion() //(2)!
+                    .variables("{\"startId\":\"42\"}") //(3)!
+                    .send()
+                    .join(); //(4)!
+        }
+    }
+    ```
+
+    1. `BPMN` process identifier of the process to start
+    2. Start the latest deployed version of the process
+    3. Initial process variables as a `JSON` string (a `Map` or a `@Json` object are also accepted)
+    4. Send the command and block until `Zeebe` acknowledges it (use the returned `CompletionStage` for a non-blocking call)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ProcessStarter(private val client: ZeebeClient) {
+
+        fun start() {
+            val event = client.newCreateInstanceCommand()
+                .bpmnProcessId("demo") //(1)!
+                .latestVersion() //(2)!
+                .variables("""{"startId":"42"}""") //(3)!
+                .send()
+                .join() //(4)!
+        }
+    }
+    ```
+
+    1. `BPMN` process identifier of the process to start
+    2. Start the latest deployed version of the process
+    3. Initial process variables as a `JSON` string (a `Map` or a `@Json` object are also accepted)
+    4. Send the command and block until `Zeebe` acknowledges it (use the returned `CompletionStage` for a non-blocking call)
+
+The same client publishes messages (`client.newPublishMessageCommand()`) and executes any other `Zeebe` command.
+
+#### Client customization { #client-customization }
+
+The `ZeebeClient` can be tuned with optional graph components that the module picks up automatically:
+
+* `CredentialsProvider` — authorization for `Zeebe` (`Camunda 8 SaaS` or self-managed with `OAuth`);
+* `JsonMapper` — custom `JSON` mapper used by `ZeebeClient` for variable (de)serialization;
+* `ScheduledExecutorService` — executor used by job workers;
+* `ClientInterceptor` — a `gRPC` interceptor applied to the `Zeebe` channel (all registered interceptors are collected).
+
+For example, to authenticate against `Camunda 8` with `OAuth`, provide a `CredentialsProvider` bean:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface ZeebeAuthModule {
+
+        default CredentialsProvider zeebeCredentialsProvider() {
+            return CredentialsProvider.newCredentialsProviderBuilder()
+                    .clientId("client-id")
+                    .clientSecret("client-secret")
+                    .audience("zeebe.camunda.io")
+                    .authorizationServerUrl("https://login.cloud.camunda.io/oauth/token")
+                    .build();
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
-    class ProcessStarter(private val client: ZeebeClient)
-    ```
+    @Module
+    interface ZeebeAuthModule {
 
-The client can be additionally configured with graph components: register a `CredentialsProvider` for authorization,
-a `JsonMapper` for `ZeebeClient`, a `ScheduledExecutorService` for job workers, or a `ClientInterceptor` for the
-`gRPC` channel.
+        fun zeebeCredentialsProvider(): CredentialsProvider =
+            CredentialsProvider.newCredentialsProviderBuilder()
+                .clientId("client-id")
+                .clientSecret("client-secret")
+                .audience("zeebe.camunda.io")
+                .authorizationServerUrl("https://login.cloud.camunda.io/oauth/token")
+                .build()
+    }
+    ```
 
 ## Worker { #worker }
 
@@ -313,6 +423,48 @@ Example of a complete worker configuration described in the `ZeebeWorkerConfig` 
     12. Delay multiplication factor: the previous delay is multiplied by this value (default: `1.0`)
     13. `jitter` factor: the next delay is randomly changed within the `+/-` range of this factor (default: `1.1`)
 
+To override settings for a single worker, add a section keyed by the [worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/)
+declared in `@JobWorker`. A named section is merged over `default`, which in turn is merged over the built-in defaults,
+so a named section only needs to list the keys it changes. Setting `enabled = false` on a named type disables just that
+one worker.
+
+===! ":material-code-json: `HOCON`"
+
+    ```javascript
+    zeebe {
+        worker {
+            job {
+                foo { //(1)!
+                    timeout = "30s"
+                    maxJobsActive = 8
+                }
+                bar { //(2)!
+                    enabled = false
+                }
+            }
+        }
+    }
+    ```
+
+    1. Overrides only `timeout` and `maxJobsActive` for the `@JobWorker("foo")` worker; all other settings come from `default`
+    2. Disables the `@JobWorker("bar")` worker while leaving the rest of the configuration untouched
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    zeebe:
+      worker:
+        job:
+          foo: #(1)!
+            timeout: "30s"
+            maxJobsActive: 8
+          bar: #(2)!
+            enabled: false
+    ```
+
+    1. Overrides only `timeout` and `maxJobsActive` for the `@JobWorker("foo")` worker; all other settings come from `default`
+    2. Disables the `@JobWorker("bar")` worker while leaving the rest of the configuration untouched
+
 ### Declarative { #declarative }
 
 You can declaratively create [workers](https://docs.camunda.io/docs/components/concepts/job-workers/) that perform work
@@ -320,6 +472,9 @@ within the `Zeebe` orchestrator.
 
 The `@JobWorker` annotation specifies the [worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 from the process. `Zeebe` uses this value to connect a job from a `BPMN` process with a handler in the application.
+
+A worker method may only declare `@JobVariable`, `@JobVariables`, and `JobContext` parameters — any other parameter type
+is rejected at compile time. The raw `JobClient` and `ActivatedJob` are available only in the [imperative](#imperative) worker.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -374,6 +529,55 @@ You can inject the job context as a method argument.
         @JobWorker("someJobType")
         fun process(context: JobContext) {
             // do something
+        }
+    }
+    ```
+
+`JobContext` exposes the following read-only accessors:
+
+| Method                       | Description                                                                          |
+|------------------------------|--------------------------------------------------------------------------------------|
+| `jobKey()`                   | Unique key of the activated job                                                      |
+| `jobName()`                  | Worker name/type this handler is registered under (the `@JobWorker` value)           |
+| `jobType()`                  | Job type of the activated job as defined in the `BPMN` process                       |
+| `jobWorker()`                | Name of the worker that activated the job on the broker side                         |
+| `tenantId()`                 | Tenant identifier the job belongs to                                                 |
+| `processId()`                | `BPMN` process identifier                                                             |
+| `processInstanceKey()`       | Key of the process instance the job belongs to                                       |
+| `processDefinitionVersion()` | Version of the deployed process definition                                           |
+| `processDefinitionKey()`     | Key of the deployed process definition                                               |
+| `elementId()`                | Identifier of the `BPMN` element the job was created for                              |
+| `elementInstanceKey()`       | Key of the `BPMN` element instance                                                   |
+| `headers()`                  | Custom headers defined on the job in the `BPMN` model                                |
+| `retryCount()`               | Number of remaining retries for the job                                              |
+| `deadline()`                 | Moment (`Instant`) until which the job is exclusively assigned to the worker         |
+| `deadlineAsMillis()`         | Same deadline expressed as epoch milliseconds                                        |
+| `variablesAsString()`        | Raw job variables as a `JSON` string                                                 |
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeJob {
+
+        @JobWorker("someJobType")
+        public void process(JobContext context) {
+            logger.info("Job {} of process {} at element {} with deadline {}",
+                    context.jobType(), context.processInstanceKey(), context.elementId(), context.deadline());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeJob {
+
+        @JobWorker("someJobType")
+        fun process(context: JobContext) {
+            logger.info("Job {} of process {} at element {} with deadline {}",
+                context.jobType(), context.processInstanceKey(), context.elementId(), context.deadline())
         }
     }
     ```
@@ -563,11 +767,18 @@ In this case, it is obligatory to specify the name of the variable in the `@JobV
 
 If you need to complete execution with a process error, throw `JobWorkerException`.
 The exception can contain an error code, message, and process variables if they are required.
-This exception is converted to a `throwError` command for `Zeebe`.
+This exception is converted to a `throwError` command for `Zeebe`: the `getCode()`, message, and `getVariables()`
+of the exception are sent as the error code, error message, and variables of the command.
 
-If the handler throws another exception, the module converts it to `JobWorkerException` with the `INTERNAL` code.
-Variable reading errors get the `DESERIALIZATION` code, result writing errors get the `SERIALIZATION` code, and
-unexpected errors in a synchronous handler get the `UNEXPECTED` code.
+If the handler throws any other exception, the module wraps it into a `JobWorkerException` with one of the following
+built-in codes:
+
+| Code              | When it is used                                                             |
+|-------------------|-----------------------------------------------------------------------------|
+| `DESERIALIZATION` | A job variable could not be read/deserialized into a method argument       |
+| `SERIALIZATION`   | The worker result could not be written/serialized into variables           |
+| `UNEXPECTED`      | An unexpected error was thrown from a synchronous handler                   |
+| `INTERNAL`        | Fallback code for any other error not covered above                        |
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -577,10 +788,12 @@ unexpected errors in a synchronous handler get the `UNEXPECTED` code.
 
         @JobWorker("someJobType")
         public User process() {
-            throw new JobWorkerException("DOESNT_WORK");
+            throw new JobWorkerException("DOESNT_WORK"); //(1)!
         }
     }
     ```
+
+    1. Additional overloads accept a message/cause and a `Map<String, Object>` of variables to attach to the `throwError` command
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -590,10 +803,12 @@ unexpected errors in a synchronous handler get the `UNEXPECTED` code.
 
         @JobWorker("someJobType")
         fun process(): User {
-            throw JobWorkerException("DOESNT_WORK")
+            throw JobWorkerException("DOESNT_WORK") //(1)!
         }
     }
     ```
+
+    1. Additional overloads accept a message/cause and a `Map<String, Any>` of variables to attach to the `throwError` command
 
 ### Imperative { #imperative }
 
@@ -612,11 +827,18 @@ To do that, the component must implement the `KoraJobWorker` interface.
         }
 
         @Override
+        public List<String> fetchVariables() {
+            return List.of("startId"); //(1)!
+        }
+
+        @Override
         public CompletionStage<FinalCommandStep<?>> handle(JobClient client, ActivatedJob job) {
             return CompletableFuture.completedFuture(client.newCompleteCommand(job));
         }
     }
     ```
+
+    1. Only these variables are fetched from `Zeebe`; return an empty list (the default) to fetch **all** variables
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -626,11 +848,20 @@ To do that, the component must implement the `KoraJobWorker` interface.
 
         override fun type(): String = "someJobType"
 
+        override fun fetchVariables(): List<String> = listOf("startId") //(1)!
+
         override fun handle(client: JobClient, job: ActivatedJob): CompletionStage<FinalCommandStep<*>> {
             return CompletableFuture.completedFuture(client.newCompleteCommand(job))
         }
     }
     ```
+
+    1. Only these variables are fetched from `Zeebe`; return an empty list (the default) to fetch **all** variables
+
+The `fetchVariables()` method is the imperative analogue of `@JobVariable`: it controls which process variables `Zeebe`
+sends with the job. By default it returns an empty list, which fetches all variables; returning a non-empty list limits
+the payload to just those variables. Unlike declarative workers, `handle` receives the raw `JobClient` and `ActivatedJob`
+and is responsible for completing the job (for example with `client.newCompleteCommand(job)`).
 
 ## Signatures { #signatures }
 
