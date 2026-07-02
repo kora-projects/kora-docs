@@ -81,6 +81,44 @@ Example of a complete configuration for a cache at `mycache.config`; parameters 
     3.  Initial cache size, helps avoid resizing when the number of values grows quickly (default not specified, optional)
     4.  Maximum cache size; when the boundary is reached **or slightly earlier**, [least relevant values](https://blog.skillfactory.ru/glossary/lru/) are evicted (default: `100000`)
 
+The underlying `Caffeine` cache is built by a `CaffeineCacheFactory` supplied as a `@DefaultComponent`.
+If tuning beyond the configuration options above is required (for example custom eviction, weak keys, or a custom weigher),
+register your own `CaffeineCacheFactory` component to override the default and customize the `Caffeine` builder directly.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyCaffeineCacheFactory implements CaffeineCacheFactory {
+
+        @Nonnull
+        @Override
+        public <K, V> Cache<K, V> build(@Nonnull String name, @Nonnull CaffeineCacheConfig config) {
+            var builder = Caffeine.newBuilder().weakKeys();
+            if (config.expireAfterWrite() != null) {
+                builder.expireAfterWrite(config.expireAfterWrite());
+            }
+            builder.maximumSize(config.maximumSize());
+            return builder.build();
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyCaffeineCacheFactory : CaffeineCacheFactory {
+
+        override fun <K, V> build(name: String, config: CaffeineCacheConfig): Cache<K, V> {
+            val builder = Caffeine.newBuilder().weakKeys()
+            config.expireAfterWrite()?.let { builder.expireAfterWrite(it) }
+            builder.maximumSize(config.maximumSize())
+            return builder.build()
+        }
+    }
+    ```
+
 ## Redis { #redis }
 
 Implementation based on in-memory database [Redis](https://redis.io/docs/about/) and connection driver [Lettuce](https://github.com/lettuce-io/lettuce-core).
@@ -268,6 +306,8 @@ Example of a complete configuration for a cache at `mycache.config`; parameters 
     3.  Key prefix for the specific cache, used to avoid key collisions in one `Redis` database; can be an empty string, then keys will have no prefix (`required`, default not specified)
 
 Module metrics are described in the [Metrics Reference](metrics.md#cache) section.
+Custom cache telemetry for both backends can be plugged by registering the nullable `CacheMetrics` and `CacheTracer` components,
+which receive a `CacheTelemetryOperation` describing the operation name, cache name, and origin.
 
 ### Key and Value Mappers { #redis-mappers }
 
@@ -312,6 +352,30 @@ If another representation is needed, register your own `RedisCacheValueMapper<V>
                 ?: "NUL".toByteArray(Charsets.UTF_8)
         }
     }
+    ```
+
+The common case is storing an object value as `JSON`. Annotate the value type with `@Json`: `Kora` generates a `JsonWriter` and `JsonReader` for it,
+and `RedisCacheModule` provides a matching `RedisCacheValueMapper<V>` (`jsonRedisValueMapper`) automatically, so no manual mapper is needed for `JSON`-serializable types.
+To use a different representation for such a type, register your own `RedisCacheValueMapper<V>` component, which overrides the default `JSON` mapper.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record UserData(String id, String name) { }
+
+    @Cache("mycache.config")
+    public interface MyCache extends RedisCache<String, UserData> { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class UserData(val id: String, val name: String)
+
+    @Cache("mycache.config")
+    interface MyCache : RedisCache<String, UserData>
     ```
 
 For a composite key based on a `record` or `data class`, Kora generates a separate `RedisCacheKeyMapper` for the whole key.
@@ -368,6 +432,9 @@ You can register `LettuceConfigurator` to customize the `Lettuce` client before 
     }
     ```
 
+For advanced scenarios beyond the typed cache, `RedisCacheClient` is available for injection as a low-level client that operates on raw `byte[]`
+(`scan`/`get`/`mget`/`getex`/`set`/`mset`/`psetex`/`del`/`flushAll`) over the shared `Lettuce` connection; it is the client that `RedisCache` is built on top of.
+
 ## Usage { #usage }
 
 Creating a cache will require registering a typed `@Cache` contract.
@@ -375,6 +442,8 @@ The contract interface must extend one of the `Kora` implementations: `CaffeineC
 For such an `@Cache`, an implementation is generated and added to the graph, so it can be injected as a dependency.
 
 The `value` argument in `@Cache` defines the full path to the configuration of the specific cache.
+It points at the configuration object of that cache, so the config keys can live under a nested path such as `mycache.config { ... }`,
+or flat directly under the path such as `my-cache { ... }` as used in the example projects. Both forms are valid; pick one and keep the config keys under it.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -494,6 +563,49 @@ This is suitable, for example, for several `RedisCache` instances or other async
 
 The facade built through `Cache.Builder` does not support direct `get(Collection<K>)`, and the facade built through `AsyncCache.Builder` does not support direct `getAsync(Collection<K>)`.
 For batch loading, use `computeIfAbsent(Collection<K>, ...)` or `computeIfAbsentAsync(Collection<K>, ...)`.
+
+#### Redis expiration override { #redis-expiration-override }
+
+Beyond the shared `Cache`/`AsyncCache` surface, `RedisCache` adds methods to override the configured `expireAfterWrite` for a single write.
+`putExpireAfterWrite(key, value, Duration)` and its `Map` batch overload write synchronously, while `putAsyncExpireAfterWrite(...)`
+(single and `Map` batch) return `CompletionStage`. The provided `Duration` is applied to that specific write instead of the value from configuration.
+These methods are `Redis`-only, since `RedisCache` extends `AsyncCache`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Cache("mycache.config")
+    public interface MyCache extends RedisCache<String, String> { }
+
+    @Component
+    public class SomeService {
+
+        private final MyCache cache;
+
+        public SomeService(MyCache cache) {
+            this.cache = cache;
+        }
+
+        public void cacheFor(String key, String value) {
+            cache.putExpireAfterWrite(key, value, Duration.ofMinutes(5));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Cache("mycache.config")
+    interface MyCache : RedisCache<String, String>
+
+    @Component
+    class SomeService(private val cache: MyCache) {
+
+        fun cacheFor(key: String, value: String) {
+            cache.putExpireAfterWrite(key, value, Duration.ofMinutes(5))
+        }
+    }
+    ```
 
 ### Declarative { #declarative }
 

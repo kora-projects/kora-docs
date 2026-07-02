@@ -151,6 +151,12 @@ The `readUnchecked(...)` methods do the same, but convert `IOException` to `Unch
 `JsonWriter` writes a value through `JsonGenerator` and can also return `byte[]`, a string, or a formatted string through `toByteArray(...)`, `toString(...)`, and `toPrettyString(...)`.
 The `toByteArrayUnchecked(...)`, `toStringUnchecked(...)`, and `toPrettyStringUnchecked(...)` methods convert `IOException` to `UncheckedIOException`.
 
+Runtime behavior worth noting when calling the codecs directly:
+
+- `read(...)` returns `null` when the parser is positioned on a `JSON` `null` token, so a top-level `null` document deserializes to `null`.
+- Malformed `JSON` or an unexpected token surfaces as a `Jackson` `JsonParseException`, which is a subtype of `IOException`.
+- The `readUnchecked(...)` and `to...Unchecked(...)` variants rethrow any `IOException` (including `JsonParseException`) wrapped in `UncheckedIOException`.
+
 ## Required fields { #required-fields }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -338,6 +344,44 @@ You can also use `@Json`, but `@JsonReader` has higher priority:
 `JsonReader` and `JsonWriter` can be generated for classes, `record`, `enum`, and `sealed` types.
 For reading a class, there must be one public constructor or a constructor explicitly annotated with `@JsonReader` or `@Json`.
 
+### Java Bean and plain classes { #java-bean }
+
+`@Json`, `@JsonReader`, and `@JsonWriter` are not limited to `record` and `data class`.
+A plain class works too: reading requires a single public constructor (or one annotated with `@JsonReader`/`@Json`), and writing uses the field accessors.
+`@JsonField` may be placed on private fields to rename the `JSON` key:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @JsonWriter
+    public class DtoJavaBean {
+
+        @JsonField("string_field")
+        private String field1;
+        @JsonField("int_field")
+        private int field2;
+
+        public DtoJavaBean(String field1, int field2) {
+            this.field1 = field1;
+            this.field2 = field2;
+        }
+
+        public String getField1() { return field1; }
+
+        public int getField2() { return field2; }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @JsonWriter
+    class DtoJavaBean(
+        @field:JsonField("string_field") val field1: String,
+        @field:JsonField("int_field") val field2: Int
+    )
+    ```
+
 ## JsonNullable Wrapper { #jsonnullable-wrapper }
 
 If reading `JSON` must distinguish an absent field from a field with a `null` value, use `JsonNullable`.
@@ -363,6 +407,73 @@ When writing `JSON`, `undefined()` is skipped, `nullValue()` is written as `null
     @Json
     data class Dto(val field1: String, val field2: JsonNullable<Int>)
     ```
+
+### @Nullable vs JsonNullable { #nullable-vs-jsonnullable }
+
+A plain [optional field](#optional-fields) (`@Nullable` in `Java` or a nullable type in `Kotlin`) collapses two different `JSON` inputs into the same value: a field that is **absent** and a field that is present with an explicit `null` both read as `null`.
+`JsonNullable` keeps these apart, which is what makes it the correct type for `HTTP` `PATCH` bodies where the client sends only the fields it actually wants to change.
+
+The three read outcomes for a `JsonNullable<T>` field:
+
+| `JSON` input           | Read result               | `isDefined()` | `isNull()` | `value()`     |
+|------------------------|---------------------------|---------------|------------|---------------|
+| `{}` (field absent)    | `JsonNullable.undefined()`| `false`       | `false`    | throws        |
+| `{"field": null}`      | `JsonNullable.nullValue()`| `true`        | `true`     | `null`        |
+| `{"field": value}`     | `JsonNullable.of(value)`  | `true`        | `false`    | `value`       |
+
+Because `value()` throws on `undefined()`, always guard access with `isDefined()` (or check `isNull()`) before calling it.
+
+### PATCH partial update { #jsonnullable-patch }
+
+In a `PATCH` request, an absent field means "leave unchanged" while an explicit `null` means "clear the value".
+`JsonNullable` lets the handler tell the two apart and apply only the fields the client actually sent:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record UserPatch(JsonNullable<String> name,
+                            JsonNullable<String> email) { }
+
+    public void apply(User user, UserPatch patch) {
+        if (patch.name().isDefined()) { //(1)!
+            user.setName(patch.name().value());
+        }
+        if (patch.email().isDefined()) {
+            user.setEmail(patch.email().value()); //(2)!
+        }
+        // fields left as undefined() are not touched
+    }
+    ```
+
+    1. The field was present in the request body, so it must be applied (even if the value is an explicit `null`).
+    2. `value()` returns `null` when the client sent `{"email": null}`, which clears the field.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class UserPatch(
+        val name: JsonNullable<String>,
+        val email: JsonNullable<String>
+    )
+
+    fun apply(user: User, patch: UserPatch) {
+        if (patch.name.isDefined()) { //(1)!
+            user.name = patch.name.value()
+        }
+        if (patch.email.isDefined()) {
+            user.email = patch.email.value() //(2)!
+        }
+        // fields left as undefined() are not touched
+    }
+    ```
+
+    1. The field was present in the request body, so it must be applied (even if the value is an explicit `null`).
+    2. `value()` returns `null` when the client sent `{"email": null}`, which clears the field.
+
+Interaction with [serialization levels](#serialization-levels): `IncludeType.ALWAYS` and `IncludeType.NON_NULL` do **not** change how `JsonNullable` is written (its own `undefined`/`nullValue`/`of` rules apply).
+Only `IncludeType.NON_EMPTY` affects `JsonNullable`, treating an `undefined()` or `nullValue()` field as empty so it is omitted from the output.
 
 ## Sealed Classes And Interfaces { #sealed-classes-and-interfaces }
 
@@ -424,6 +535,39 @@ The `JSON` object below is written to the `FirstTypeEvent` class:
     }
 }
 ```
+
+Generic `DTO` types are supported, including generic `sealed` hierarchies.
+The codec for each concrete type argument is resolved from the graph like any other field type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    @JsonDiscriminatorField("@type")
+    public sealed interface Response<T> {
+
+        @JsonDiscriminatorValue("ok")
+        record Ok<T>(T data) implements Response<T> {}
+
+        @JsonDiscriminatorValue("fail")
+        record Fail<T>(String error) implements Response<T> {}
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    @JsonDiscriminatorField("@type")
+    sealed interface Response<T> {
+
+        @JsonDiscriminatorValue("ok")
+        data class Ok<T>(val data: T) : Response<T>
+
+        @JsonDiscriminatorValue("fail")
+        data class Fail<T>(val error: String) : Response<T>
+    }
+    ```
 
 ## Enums { #enum }
 
@@ -495,6 +639,8 @@ In that case, a corresponding `JsonReader` and `JsonWriter` must be available fo
         fun code(): Int = code
     }
     ```
+
+When reading, a `JSON` value that does not match any `enum` constant throws a `Jackson` `JsonParseException` that lists the accepted values.
 
 ## RawJson { #raw-json }
 
@@ -603,10 +749,100 @@ Example of registering a custom `JsonWriter`:
     }
     ```
 
+Example of registering a custom `JsonReader`.
+The reader switches on the current parser token, returns `null` on a `JSON` `null`, reads the expected token, and throws a `JsonParseException` for anything else:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application {
+
+        default JsonReader<ZoneOffset> zoneOffsetJsonReader() {
+            return parser -> switch (parser.currentToken()) {
+                case VALUE_NULL -> null;
+                case VALUE_STRING -> ZoneOffset.of(parser.getValueAsString());
+                default -> throw new JsonParseException(parser,
+                    "Expecting VALUE_STRING token, got " + parser.currentToken());
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application {
+
+        fun zoneOffsetJsonReader(): JsonReader<ZoneOffset> = JsonReader { parser ->
+            when (parser.currentToken()) {
+                JsonToken.VALUE_NULL -> null
+                JsonToken.VALUE_STRING -> ZoneOffset.of(parser.valueAsString)
+                else -> throw JsonParseException(parser,
+                    "Expecting VALUE_STRING token, got ${parser.currentToken()}")
+            }
+        }
+    }
+    ```
+
+A custom `JsonReader<T>` or `JsonWriter<T>` is an ordinary graph component.
+Once registered, generated codecs pick it up automatically wherever a field of type `T` occurs, and it can also be pinned to a single field through `@JsonField(reader = ..., writer = ...)` (see [Field Naming](#field-naming)).
+
+## Using @Json with HTTP and Kafka { #using-with-http-and-kafka }
+
+`JsonModule` (unlike the bare `JsonCommonModule`) also provides, for every generated `JsonReader<T>`/`JsonWriter<T>`, the mappers needed to use a `@Json` `DTO` directly as:
+
+- an [HTTP server](http-server.md#json) request body and response, and its string parameters;
+- an [HTTP client](http-client.md) request body and response;
+- a [Kafka](kafka.md) record value through `JsonKafkaSerializer<T>` and `JsonKafkaDeserializer<T>`.
+
+All of these module mappers are tagged `@Json`, so a single `@Json` `DTO` needs no extra wiring on either side:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Event(String name, Integer code) {}
+
+    @HttpController
+    public final class EventController {
+
+        @HttpRoute(method = HttpMethod.POST, path = "/events")
+        public Event handle(@Json Event event) { //(1)!
+            return event;
+        }
+    }
+    ```
+
+    1. `@Json` on the parameter selects the generated `JsonReader<Event>`; the returned `Event` is written with the generated `JsonWriter<Event>`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Event(val name: String, val code: Int)
+
+    @HttpController
+    class EventController {
+
+        @HttpRoute(method = HttpMethod.POST, path = "/events")
+        fun handle(@Json event: Event): Event { //(1)!
+            return event
+        }
+    }
+    ```
+
+    1. `@Json` on the parameter selects the generated `JsonReader<Event>`; the returned `Event` is written with the generated `JsonWriter<Event>`.
+
+For `Kafka`, mark the value with the `@Json` tag to have Kora bind `JsonKafkaDeserializer<T>`/`JsonKafkaSerializer<T>` automatically; to pin a specific generated or custom codec instead, tag the value with the codec's tag as shown in [Kafka serialization](kafka.md#serialization) and [Kafka deserialization](kafka.md#deserialization).
+
 ## Jackson { #jackson }
 
-If `Jackson` must be used for reading and writing `JSON`, register a [factory](container.md) in the application graph that provides `ObjectMapper`.
-`JacksonModule` adds mappers for `HTTP` client and `HTTP` server that use this `ObjectMapper`.
+If `Jackson` must be used for reading and writing `JSON` instead of the compile-time generated codecs, use `JacksonModule`.
+It replaces the `HTTP` client and `HTTP` server request/response mappers with `Jackson`-backed ones.
+
+Every `JacksonModule` mapper depends on an `ObjectMapper` component, so a [factory](container.md) that supplies `ObjectMapper` **must** be present in the graph. Without it the graph fails to build.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -616,11 +852,18 @@ If `Jackson` must be used for reading and writing `JSON`, register a [factory](c
     implementation "ru.tinkoff.kora:jackson-module"
     ```
 
-    Module:
+    Module and `ObjectMapper` factory:
     ```java
     @KoraApp
-    public interface Application extends JacksonModule { }
+    public interface Application extends JacksonModule {
+
+        default ObjectMapper objectMapper() { //(1)!
+            return new ObjectMapper();
+        }
+    }
     ```
+
+    1. Required by all `JacksonModule` mappers; configure it as needed (modules, features, and so on).
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -630,8 +873,16 @@ If `Jackson` must be used for reading and writing `JSON`, register a [factory](c
     implementation("ru.tinkoff.kora:jackson-module")
     ```
 
-    Module:
+    Module and `ObjectMapper` factory:
     ```kotlin
     @KoraApp
-    interface Application : JacksonModule
+    interface Application : JacksonModule {
+
+        fun objectMapper(): ObjectMapper = ObjectMapper() //(1)!
+    }
     ```
+
+    1. Required by all `JacksonModule` mappers; configure it as needed (modules, features, and so on).
+
+The `json-annotation-processor` shown above lets `@Json`, `@JsonReader`, and `@JsonWriter` continue to generate codecs, so generated and `Jackson` serialization can coexist (for example, `Jackson` for `HTTP` and generated codecs for [Kafka](kafka.md)).
+The `JacksonModule` `HTTP` mappers themselves depend only on the `ObjectMapper`.

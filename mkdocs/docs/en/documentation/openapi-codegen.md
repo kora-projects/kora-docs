@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support. Use when working with openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth."
+description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support. Use when working with openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth, prefixPath, requestInDelegateParams, HttpClientTokenProvider, PrincipalWithScopes, ApiSecurity."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support; key triggers include openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth."
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support; key triggers include openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth, prefixPath, requestInDelegateParams, HttpClientTokenProvider, PrincipalWithScopes, ApiSecurity."
 ---
 
 This module generates Kora code from an `OpenAPI` contract using [OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle).
@@ -253,6 +253,7 @@ They do not depend on whether a client or a server is generated.
 | `objectType` | Type for `type: object` schemas without a more precise description. `Java` uses `java.lang.Object` by default, and `Kotlin` uses `kotlin.Any`. For example, set it to `com.fasterxml.jackson.databind.JsonNode` if the application wants to handle arbitrary `JSON` as a tree. |
 | `disableHtmlEscaping` | Disables HTML character escaping in `JSON` strings (default: `false`). Usually the default value is kept. |
 | `ignoreAnyOfInEnum` | Ignores `anyOf` when generating enums (default: `false`). Can help with contracts where an enum is described through mixed `anyOf` constructs. |
+| `discriminatorCaseSensitive` | Controls case sensitivity of the discriminator value lookup for polymorphic (`oneOf`) models with a discriminator (default: `true`). Set to `false` when incoming discriminator values may differ in case from the schema definition. |
 | `additionalModelTypeAnnotations` | Additional annotations on model types (not specified by default, optional). Several annotations are separated by `;`, for example `@Deprecated;@MyAnnotation`. |
 | `additionalEnumTypeAnnotations` | Additional annotations on enum types (not specified by default, optional). Several annotations are separated by `;`. |
 
@@ -279,6 +280,78 @@ Example:
         "additionalModelTypeAnnotations" to "@Deprecated"
     )
     ```
+
+### Multiple Generation Tasks { #multiple-generation-tasks }
+
+Several `GenerateTask` tasks can be registered in one module, for example to generate two independent contracts,
+or to generate a client for one contract and a server for another. Each task writes into the same `outputDir` and is added to the same source set,
+so the only requirement is that generated packages do not collide. Give every task its own `apiPackage`/`modelPackage`/`invokerPackage`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    def openApiGeneratePetV2 = tasks.register("openApiGeneratePetV2", GenerateTask) {
+        generatorName = "kora"
+        inputSpec = "$projectDir/src/main/resources/openapi/petstoreV2.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        def corePackage = "ru.tinkoff.kora.example.openapi.petV2" //(1)!
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
+        configOptions = [mode: "java-client", clientConfigPrefix: "httpClient.petV2"]
+    }
+    sourceSets.main { java.srcDirs += openApiGeneratePetV2.get().outputDir }
+    compileJava.dependsOn openApiGeneratePetV2
+
+    def openApiGeneratePetV3 = tasks.register("openApiGeneratePetV3", GenerateTask) {
+        generatorName = "kora"
+        inputSpec = "$projectDir/src/main/resources/openapi/petstoreV3.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        def corePackage = "ru.tinkoff.kora.example.openapi.petV3" //(2)!
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
+        configOptions = [mode: "java-reactive-client", clientConfigPrefix: "httpClient.petV3"]
+    }
+    sourceSets.main { java.srcDirs += openApiGeneratePetV3.get().outputDir }
+    compileJava.dependsOn openApiGeneratePetV3
+    ```
+
+    1. Isolated package for the first contract
+    2. Different package for the second contract, so class names cannot clash
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    val openApiGeneratePetV2 = tasks.register<GenerateTask>("openApiGeneratePetV2") {
+        generatorName = "kora"
+        inputSpec = "$projectDir/src/main/resources/openapi/petstoreV2.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        val corePackage = "ru.tinkoff.kora.example.openapi.petV2" //(1)!
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
+        configOptions = mapOf("mode" to "kotlin-client", "clientConfigPrefix" to "httpClient.petV2")
+    }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGeneratePetV2.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGeneratePetV2) }
+
+    val openApiGeneratePetV3 = tasks.register<GenerateTask>("openApiGeneratePetV3") {
+        generatorName = "kora"
+        inputSpec = "$projectDir/src/main/resources/openapi/petstoreV3.yaml"
+        outputDir = "$buildDir/generated/openapi"
+        val corePackage = "ru.tinkoff.kora.example.openapi.petV3" //(2)!
+        apiPackage = "${corePackage}.api"
+        modelPackage = "${corePackage}.model"
+        invokerPackage = "${corePackage}.invoker"
+        configOptions = mapOf("mode" to "kotlin-suspend-client", "clientConfigPrefix" to "httpClient.petV3")
+    }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGeneratePetV3.get().outputDir) }
+    tasks.withType<KspTask> { dependsOn(openApiGeneratePetV3) }
+    ```
+
+    1. Isolated package for the first contract
+    2. Different package for the second contract, so class names cannot clash
 
 ## Client { #client }
 
@@ -360,6 +433,90 @@ A minimal plugin configuration for creating a declarative HTTP client:
 
 After generation, the HTTP client is available for dependency injection through the generated interface.
 
+### Generated Client Usage { #client-usage }
+
+For every API tag, the generator produces an interface annotated with [`@HttpClient`](http-client.md), named after the tag (for example `PetApi`).
+It is injected into components like any other Kora client, without extra registration:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class RootService {
+
+        private final PetApi petApi; //(1)!
+
+        public RootService(PetApi petApi) {
+            this.petApi = petApi;
+        }
+    }
+    ```
+
+    1. The generated `@HttpClient` interface, injected directly
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class RootService(
+        private val petApi: PetApi, //(1)!
+    )
+    ```
+
+    1. The generated `@HttpClient` interface, injected directly
+
+The generated client reads its configuration from the path given by `clientConfigPrefix`, followed by the generated interface name.
+For `clientConfigPrefix = "httpClient.petV2"` and interface `PetApi`, the configuration block is `httpClient.petV2.PetApi`.
+The full set of client options (`url`, `requestTimeout`, per-operation blocks, `telemetry`) is described in the [HTTP client](http-client.md#configuration) documentation:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpClient.petV2.PetApi {
+        url = "https://localhost:8443" //(1)!
+        requestTimeout = "10s" //(2)!
+        getValuesConfig { //(3)!
+            requestTimeout = "20s"
+        }
+        telemetry.logging.enabled = true
+    }
+    ```
+
+    1. Base URL of the target service
+    2. Default request timeout for all operations
+    3. Per-operation override block, named after the `operationId` (here `getValues`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpClient:
+      petV2:
+        PetApi:
+          url: "https://localhost:8443" #(1)!
+          requestTimeout: "10s" #(2)!
+          getValuesConfig: #(3)!
+            requestTimeout: "20s"
+          telemetry:
+            logging:
+              enabled: true
+    ```
+
+    1. Base URL of the target service
+    2. Default request timeout for all operations
+    3. Per-operation override block, named after the `operationId` (here `getValues`)
+
+The client method signatures depend on the selected `mode`:
+
+| Mode | Return type example |
+| -------- | -------- |
+| `java-client` | `PetApiResponses.GetPetByIdApiResponse` (blocking value) |
+| `java-async-client` | `CompletionStage<PetApiResponses.GetPetByIdApiResponse>` |
+| `java-reactive-client` | `Mono<PetApiResponses.GetPetByIdApiResponse>` (requires `reactor-core`) |
+| `kotlin-client` | `PetApiResponses.GetPetByIdApiResponse` (blocking value) |
+| `kotlin-suspend-client` | `suspend fun ...: PetApiResponses.GetPetByIdApiResponse` |
+
+Every method returns a sealed `*ApiResponses` envelope whose subtypes encode the HTTP status, the same way [server delegates](#delegate-response-types) do.
+
 ### Client Authorization { #client-authorization }
 
 If the `OpenAPI` contract describes `securitySchemes`, the generator creates an `ApiSecurity` module with components for client authorization.
@@ -369,6 +526,115 @@ For `apiKey` and `basic`, configuration-reading components are generated. For `b
 If an operation has several authorization schemes, `primaryAuth` can be specified; otherwise the generator picks one of the schemes and logs a warning.
 If `authAllowMultiple` is enabled, the generator creates a composite interceptor that applies several authorization schemes sequentially.
 If `authAsMethodArgument` is enabled, authorization data is added to the client method signature instead of a generated interceptor.
+
+#### apiKey and basic { #client-authorization-config }
+
+For `apiKey` and `basic` schemes, the generator produces `@DefaultComponent` config readers and interceptors, so no beans are required — only configuration values.
+The configuration path is `securityConfigPrefix` followed by the scheme name (or just the scheme name when `securityConfigPrefix` is not set).
+An `apiKey` scheme reads a single string; a `basic` scheme reads a `username`/`password` object:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    openapiAuth {
+        apiKeyAuth = "MyAuthApiKey" //(1)!
+        basicAuth { //(2)!
+            username = "user"
+            password = "password"
+        }
+    }
+    ```
+
+    1. `apiKey` scheme `apiKeyAuth`: value sent by the generated `ApiKeyHttpClientInterceptor` in the header/query/cookie declared by the scheme
+    2. `basic` scheme `basicAuth`: credentials wrapped by the generated `BasicAuthHttpClientInterceptor`
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    openapiAuth:
+      apiKeyAuth: "MyAuthApiKey" #(1)!
+      basicAuth: #(2)!
+        username: "user"
+        password: "password"
+    ```
+
+    1. `apiKey` scheme `apiKeyAuth`: value sent by the generated `ApiKeyHttpClientInterceptor` in the header/query/cookie declared by the scheme
+    2. `basic` scheme `basicAuth`: credentials wrapped by the generated `BasicAuthHttpClientInterceptor`
+
+#### bearer and oauth { #client-authorization-token }
+
+For `bearer` and `oauth` schemes, the generator expects an [`HttpClientTokenProvider`](http-client.md#token-provider) component tagged with the generated `ApiSecurity` marker class
+(for example `ApiSecurity.BearerAuth`). The generator wraps it in a `BearerAuthHttpClientInterceptor` automatically, so only the token provider must be supplied:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface ClientAuthModule {
+
+        @Tag(ApiSecurity.BearerAuth.class) //(1)!
+        default HttpClientTokenProvider bearerTokenProvider() {
+            return request -> CompletableFuture.completedFuture("my-token"); //(2)!
+        }
+    }
+    ```
+
+    1. Tag must match the generated marker class for the scheme
+    2. Real implementations usually fetch or refresh the token here
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface ClientAuthModule {
+
+        @Tag(ApiSecurity.BearerAuth::class) //(1)!
+        fun bearerTokenProvider(): HttpClientTokenProvider {
+            return HttpClientTokenProvider { CompletableFuture.completedFuture("my-token") } //(2)!
+        }
+    }
+    ```
+
+    1. Tag must match the generated marker class for the scheme
+    2. Real implementations usually fetch or refresh the token here
+
+#### Multiple schemes { #client-authorization-multiple }
+
+When an operation declares several security schemes, `primaryAuth` selects which one to apply; otherwise the generator picks one and logs a warning.
+To apply several schemes on the same request, enable `authAllowMultiple` — the generator builds a composite interceptor that runs each scheme sequentially.
+To pass the credentials explicitly per call instead of through an interceptor, enable `authAsMethodArgument` — the authorization value becomes a client method argument:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+        mode: "java-client",
+        securityConfigPrefix: "openapiAuth",
+        primaryAuth: "apiKeyAuth", //(1)!
+        authAllowMultiple: "false", //(2)!
+        authAsMethodArgument: "false" //(3)!
+    ]
+    ```
+
+    1. Scheme applied when an operation lists several
+    2. Apply every declared scheme with a composite interceptor
+    3. Add the auth value as a method argument instead of an interceptor
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "securityConfigPrefix" to "openapiAuth",
+        "primaryAuth" to "apiKeyAuth", //(1)!
+        "authAllowMultiple" to "false", //(2)!
+        "authAsMethodArgument" to "false" //(3)!
+    )
+    ```
+
+    1. Scheme applied when an operation lists several
+    2. Apply every declared scheme with a composite interceptor
+    3. Add the auth value as a method argument instead of an interceptor
 
 ### Additional Annotations { #additional-contract-annotations }
 
@@ -710,6 +976,126 @@ with a default `delegate` contract implementation. This mode is useful when the 
     )
     ```
 
+#### Delegate Response Types { #delegate-response-types }
+
+Each generated `delegate` method returns a sealed `*ApiResponses` envelope whose subtypes encode the HTTP status declared in the contract.
+For an operation `getPetById` with responses `200` and `404`, the generator produces `PetApiResponses.GetPetByIdApiResponse` with subtypes
+`GetPetById200ApiResponse` (carrying the body via `content()`) and `GetPetById404ApiResponse`. The implementation returns the subtype matching the outcome:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Return type depends on `mode`: `java-server` returns the value directly, `java-async-server` returns `CompletionStage<...>`, `java-reactive-server` returns `Mono<...>` (shown here):
+
+    ```java
+    @Component
+    public final class PetDelegate implements PetApiDelegate {
+
+        private final Map<Long, Pet> petMap = new ConcurrentHashMap<>();
+
+        @Override
+        public Mono<PetApiResponses.GetPetByIdApiResponse> getPetById(long petId) {
+            var pet = petMap.get(petId);
+            if (pet == null) {
+                return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse()); //(1)!
+            }
+            return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet)); //(2)!
+        }
+
+        @Override
+        public Mono<PetApiResponses.AddPetApiResponse> addPet(Pet body) {
+            petMap.put(body.id(), body);
+            return Mono.just(new PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(body));
+        }
+    }
+    ```
+
+    1. Status `404` subtype, no body
+    2. Status `200` subtype carrying the response body
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Return type depends on `mode`: `kotlin-server` returns the value directly (shown here), `kotlin-suspend-server` uses a `suspend` method:
+
+    ```kotlin
+    @Component
+    class PetDelegate : PetApiDelegate {
+
+        private val petMap = ConcurrentHashMap<Long, Pet>()
+
+        override fun getPetById(petId: Long): PetApiResponses.GetPetByIdApiResponse {
+            val pet = petMap[petId]
+            return if (pet == null) {
+                PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse() //(1)!
+            } else {
+                PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet) //(2)!
+            }
+        }
+
+        override fun addPet(pet: Pet): PetApiResponses.AddPetApiResponse {
+            petMap[pet.id] = pet
+            return PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(pet)
+        }
+    }
+    ```
+
+    1. Status `404` subtype, no body
+    2. Status `200` subtype carrying the response body
+
+#### Raw Request in Delegate { #request-in-delegate }
+
+By default, a `delegate` method receives only the parameters declared in the contract. If an implementation needs access to the raw request
+(for example to read an infrastructure header or the remote address), enable `requestInDelegateParams`. The generator then adds an
+`HttpServerRequest` as the first parameter of every `delegate` method. This is a server-only option.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+        mode: "java-server",
+        requestInDelegateParams: "true" //(1)!
+    ]
+    ```
+
+    1. Adds `HttpServerRequest _serverRequest` as the first argument of each delegate method
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    configOptions = mapOf(
+        "mode" to "kotlin-server",
+        "requestInDelegateParams" to "true" //(1)!
+    )
+    ```
+
+    1. Adds `HttpServerRequest _serverRequest` as the first argument of each delegate method
+
+#### Controller Path Prefix { #prefix-path }
+
+`prefixPath` prepends a base path to every generated HTTP server controller route. It is useful when all operations should be served under a common
+segment (for example `/api/v1`) that is not part of the `OpenAPI` paths.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+        mode: "java-server",
+        prefixPath: "/api/v1" //(1)!
+    ]
+    ```
+
+    1. A contract path `/pet/{id}` becomes `/api/v1/pet/{id}`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    configOptions = mapOf(
+        "mode" to "kotlin-server",
+        "prefixPath" to "/api/v1" //(1)!
+    )
+    ```
+
+    1. A contract path `/pet/{id}` becomes `/api/v1/pet/{id}`
+
 ### Interceptors { #interceptors-2 }
 
 Generated controllers annotated with `@HttpController` can also be annotated with [interceptors](http-server.md#interceptors).
@@ -778,8 +1164,11 @@ Set `configOptions.interceptors`:
 
 ### Authorization { #authorization }
 
-Kora provides an interface for extracting authorization information inside the interceptor created for the server from `OpenAPI`.
-Different authorization types can be handled: [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/).
+When the `OpenAPI` contract describes `securitySchemes`, the server generator creates an `ApiSecurity` module with one marker class per scheme:
+`ApiSecurity.BearerAuth`, `ApiSecurity.BasicAuth`, `ApiSecurity.ApiKeyAuth`, and `ApiSecurity.OAuth`
+(handling [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)).
+For each scheme, the application must provide an `HttpServerPrincipalExtractor` component tagged with the matching marker class.
+The extractor receives the request and the parsed credential value and returns the authenticated `Principal`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -789,10 +1178,27 @@ Different authorization types can be handled: [Basic/ApiKey/Bearer/OAuth](https:
 
         @Tag(ApiSecurity.BearerAuth.class)
         default HttpServerPrincipalExtractor<Principal> bearerHttpServerPrincipalExtractor() {
-            return (request, value) -> CompletableFuture.completedFuture(new MyPrincipal(request.headers().getFirst("Authorization")));
+            return (request, value) -> CompletableFuture.completedFuture(new UserPrincipal("name"));
+        }
+
+        @Tag(ApiSecurity.BasicAuth.class)
+        default HttpServerPrincipalExtractor<Principal> basicHttpServerPrincipalExtractor() {
+            return (request, value) -> CompletableFuture.completedFuture(new UserPrincipal("name"));
+        }
+
+        @Tag(ApiSecurity.ApiKeyAuth.class)
+        default HttpServerPrincipalExtractor<Principal> apiKeyHttpServerPrincipalExtractor() {
+            return (request, value) -> CompletableFuture.completedFuture(new UserPrincipal("name"));
+        }
+
+        @Tag(ApiSecurity.OAuth.class)
+        default HttpServerPrincipalExtractor<PrincipalWithScopes> oauthHttpServerPrincipalExtractor() { //(1)!
+            return (request, value) -> CompletableFuture.completedFuture(new UserPrincipal("name"));
         }
     }
     ```
+
+    1. `OAuth` schemes declare scopes, so the extractor returns a `PrincipalWithScopes`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -802,14 +1208,57 @@ Different authorization types can be handled: [Basic/ApiKey/Bearer/OAuth](https:
 
         @Tag(ApiSecurity.BearerAuth::class)
         fun bearerHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
-            return HttpServerPrincipalExtractor<Principal> { request, value ->
-                CompletableFuture.completedFuture<Principal>(
-                    MyPrincipal(request.headers().getFirst("Authorization"))
-                )
-            }
+            return HttpServerPrincipalExtractor { _, _ -> CompletableFuture.completedFuture(UserPrincipal("name")) }
+        }
+
+        @Tag(ApiSecurity.BasicAuth::class)
+        fun basicHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor { _, _ -> CompletableFuture.completedFuture(UserPrincipal("name")) }
+        }
+
+        @Tag(ApiSecurity.ApiKeyAuth::class)
+        fun apiKeyHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor { _, _ -> CompletableFuture.completedFuture(UserPrincipal("name")) }
+        }
+
+        @Tag(ApiSecurity.OAuth::class)
+        fun oauthHttpServerPrincipalExtractor(): HttpServerPrincipalExtractor<PrincipalWithScopes> { //(1)!
+            return HttpServerPrincipalExtractor { _, _ -> CompletableFuture.completedFuture(UserPrincipal("name")) }
         }
     }
     ```
+
+    1. `OAuth` schemes declare scopes, so the extractor returns a `PrincipalWithScopes`
+
+For `OAuth`, the returned principal must implement `PrincipalWithScopes` so the generated controller can enforce the scopes declared on each operation.
+Only the schemes that the contract actually uses need an extractor; a marker class exists for every declared scheme:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record UserPrincipal(String name) implements PrincipalWithScopes {
+
+        @Override
+        public Collection<String> scopes() {
+            return List.of("read", "write"); //(1)!
+        }
+    }
+    ```
+
+    1. Scopes granted to this principal, matched against the operation's required scopes
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class UserPrincipal(val name: String) : PrincipalWithScopes {
+
+        override fun scopes(): Collection<String> {
+            return listOf("read", "write") //(1)!
+        }
+    }
+    ```
+
+    1. Scopes granted to this principal, matched against the operation's required scopes
 
 ## Recommendations { #recommendations }
 
