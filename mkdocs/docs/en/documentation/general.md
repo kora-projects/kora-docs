@@ -136,7 +136,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.17")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -171,7 +171,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
@@ -197,7 +197,7 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
     }
 
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.17")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
     }
     ```
@@ -216,7 +216,7 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
     }
 
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
         ksp("ru.tinkoff.kora:symbol-processors")
     }
     ```
