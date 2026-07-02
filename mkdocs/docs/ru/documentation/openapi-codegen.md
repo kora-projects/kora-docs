@@ -17,7 +17,7 @@ agent:
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.17")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.18")
         }
     }
     ```
@@ -37,7 +37,7 @@ agent:
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.17")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.18")
         }
     }
     ```

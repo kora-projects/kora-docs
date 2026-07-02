@@ -494,7 +494,7 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```groovy
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.17")
+        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
 
         annotationProcessor "ru.tinkoff.kora:annotation-processors"
 
@@ -509,7 +509,7 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```kotlin
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
+        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
 
         ksp("ru.tinkoff.kora:symbol-processor")
 

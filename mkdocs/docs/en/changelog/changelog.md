@@ -5,7 +5,20 @@ hide:
   - navigation
 ---
 
-## 1.2.17
+## 1.2.18
+
+Added:
+
+- Added Kotlin/KSP-native `Konvert` mapper integration
+- Added custom JSON value serialization for `enum` and arbitrary types via `@JsonReader` factory / `@JsonWriter` method
+- Added Kotlin `lambda` extensions for `JdbcConnectionFactory`
+
+Fixed:
+
+- Fixed handling of non-native `@Mdc` parameter types and `${}` value expressions
+- Fixed and removed unnecessary `os.flush` call from `HttpBodyOutput.write`
+
+### 1.2.17
 
 Added:
 
