@@ -4,16 +4,16 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcConnectionFactory, JdbcRepository."
 ---
 
-Модуль предоставляет реализацию репозиториев на основе [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) для
-работы с реляционными базами данных и использует [Hikari](https://github.com/brettwooldridge/HikariCP) для управления
-пулом соединений.
-Вы описываете интерфейс репозитория и `SQL`-запросы через `@Repository` и `@Query`, а `Kora` генерирует реализацию,
-которая получает соединение из пула, подставляет параметры, читает результат и участвует в транзакциях.
+Модуль предоставляет реализацию репозитория на основе [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) для
+работы с реляционными базами данных и использует [Hikari](https://github.com/brettwooldridge/HikariCP) для управления пулом
+соединений.
+Вы описываете интерфейс репозитория и `SQL`-запросы с помощью `@Repository` и `@Query`, а `Kora` генерирует реализацию,
+которая получает соединение из пула, связывает параметры, читает результат и участвует в транзакциях.
 
-Общие правила для сущностей, `@Repository`, `@Query`, `@Batch`, `UpdateCount`, макросов, ручных запросов и других
-механизмов репозиториев описаны в разделе [Общие правила баз данных](database-common.md).
+Общие правила для сущностей, `@Repository`, `@Query`, `@Batch`, `UpdateCount`, макросов, ручных запросов и других механизмов
+репозитория описаны в разделе [Общие правила работы с базами данных](database-common.md).
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [База данных JDBC](../guides/database-jdbc.md) и [База данных JDBC продвинутая](../guides/database-jdbc-advanced.md).
+Если нужен пошаговый разбор перед справочным описанием, смотрите [База данных JDBC](../guides/database-jdbc.md) и [Продвинутая база данных JDBC](../guides/database-jdbc-advanced.md).
 
 ## Подключение { #dependency }
 
@@ -43,7 +43,7 @@ agent:
     interface Application : JdbcDatabaseModule
     ```
 
-Также **требуется предоставить** реализацию драйвера базы данных как зависимость.
+Также вы **обязаны предоставить** реализацию драйвера базы данных в качестве зависимости.
 
 ## Конфигурация { #configuration }
 
@@ -93,27 +93,27 @@ agent:
     }
     ```
 
-    1.  `JDBC URL` подключения к базе данных (`обязательная`, по умолчанию не указано)
-    2.  Имя пользователя для подключения (`обязательная`, по умолчанию не указано)
-    3.  Пароль пользователя для подключения (`обязательная`, по умолчанию не указано)
-    4.  Схема базы данных для подключения (по умолчанию не указано, необязательно)
-    5.  Имя пула соединений `Hikari` (`обязательная`, по умолчанию не указано)
+    1.  `JDBC URL` для подключения к базе данных (`обязательно`, по умолчанию: не указано)
+    2.  Имя пользователя для подключения (`обязательно`, по умолчанию: не указано)
+    3.  Пароль пользователя для подключения (`обязательно`, по умолчанию: не указано)
+    4.  Схема базы данных для подключения (по умолчанию: не указано, необязательно)
+    5.  Имя пула соединений `Hikari` (`обязательно`, по умолчанию: не указано)
     6.  Максимальный размер пула соединений `Hikari` (по умолчанию: `10`)
-    7.  Минимальный размер пула готовых соединений `Hikari` в режиме ожидания (по умолчанию: `0`)
-    8.  Максимальное время ожидания получения соединения из пула `Hikari` (по умолчанию: `10s`)
-    9.  Максимальное время проверки соединения в `Hikari` (по умолчанию: `5s`)
-    10. Максимальное время простоя соединения в `Hikari` (по умолчанию: `10m`)
-    11. Максимальное время жизни соединения в `Hikari` (по умолчанию: `15m`)
-    12. Время, после которого занятое соединение будет считаться возможной утечкой (по умолчанию: `0s`)
-    13. Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию не указано, необязательно)
-    14. Включить ли [пробу готовности](probes.md#readiness) для соединения с базой данных (по умолчанию: `false`)
-    15. Дополнительные свойства `JDBC`-соединения, которые будут переданы в `dataSourceProperties` `Hikari` (по умолчанию: `{}`)
+    7.  Минимальное количество простаивающих готовых соединений в пуле `Hikari` (по умолчанию: `0`)
+    8.  Максимальное время ожидания соединения из пула `Hikari` (по умолчанию: `10s`)
+    9.  Максимальное время проверки соединения `Hikari` (по умолчанию: `5s`)
+    10. Максимальное время простоя соединения `Hikari` (по умолчанию: `10m`)
+    11. Максимальное время жизни соединения `Hikari` (по умолчанию: `15m`)
+    12. Время, после которого занятое соединение считается возможной утечкой (по умолчанию: `0s`)
+    13. Максимальное время ожидания инициализации соединения при запуске сервиса (по умолчанию: не указано, необязательно)
+    14. Включать ли [пробу готовности](probes.md#readiness) для соединения с базой данных (по умолчанию: `false`)
+    15. Дополнительные свойства соединения `JDBC`, передаваемые в `dataSourceProperties` `Hikari` (по умолчанию: `{}`)
     16. Включает логирование модуля (по умолчанию: `false`)
     17. Включает метрики модуля (по умолчанию: `true`)
-    18. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Настройка тегов для метрик (по умолчанию: `{}`)
+    18. Настраивает [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Настраивает теги метрик (по умолчанию: `{}`)
     20. Включает трассировку модуля (по умолчанию: `true`)
-    21. Настройка атрибутов для трассировки (по умолчанию: `{}`)
+    21. Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -151,33 +151,33 @@ agent:
             key2: value2
     ```
 
-    1.  `JDBC URL` подключения к базе данных (`обязательная`, по умолчанию не указано)
-    2.  Имя пользователя для подключения (`обязательная`, по умолчанию не указано)
-    3.  Пароль пользователя для подключения (`обязательная`, по умолчанию не указано)
-    4.  Схема базы данных для подключения (по умолчанию не указано, необязательно)
-    5.  Имя пула соединений `Hikari` (`обязательная`, по умолчанию не указано)
+    1.  `JDBC URL` для подключения к базе данных (`обязательно`, по умолчанию: не указано)
+    2.  Имя пользователя для подключения (`обязательно`, по умолчанию: не указано)
+    3.  Пароль пользователя для подключения (`обязательно`, по умолчанию: не указано)
+    4.  Схема базы данных для подключения (по умолчанию: не указано, необязательно)
+    5.  Имя пула соединений `Hikari` (`обязательно`, по умолчанию: не указано)
     6.  Максимальный размер пула соединений `Hikari` (по умолчанию: `10`)
-    7.  Минимальный размер пула готовых соединений `Hikari` в режиме ожидания (по умолчанию: `0`)
-    8.  Максимальное время ожидания получения соединения из пула `Hikari` (по умолчанию: `10s`)
-    9.  Максимальное время проверки соединения в `Hikari` (по умолчанию: `5s`)
-    10. Максимальное время простоя соединения в `Hikari` (по умолчанию: `10m`)
-    11. Максимальное время жизни соединения в `Hikari` (по умолчанию: `15m`)
-    12. Время, после которого занятое соединение будет считаться возможной утечкой (по умолчанию: `0s`)
-    13. Максимальное время ожидания инициализации соединения при старте сервиса (по умолчанию не указано, необязательно)
-    14. Включить ли [пробу готовности](probes.md#readiness) для соединения с базой данных (по умолчанию: `false`)
-    15. Дополнительные свойства `JDBC`-соединения, которые будут переданы в `dataSourceProperties` `Hikari` (по умолчанию: `{}`)
+    7.  Минимальное количество простаивающих готовых соединений в пуле `Hikari` (по умолчанию: `0`)
+    8.  Максимальное время ожидания соединения из пула `Hikari` (по умолчанию: `10s`)
+    9.  Максимальное время проверки соединения `Hikari` (по умолчанию: `5s`)
+    10. Максимальное время простоя соединения `Hikari` (по умолчанию: `10m`)
+    11. Максимальное время жизни соединения `Hikari` (по умолчанию: `15m`)
+    12. Время, после которого занятое соединение считается возможной утечкой (по умолчанию: `0s`)
+    13. Максимальное время ожидания инициализации соединения при запуске сервиса (по умолчанию: не указано, необязательно)
+    14. Включать ли [пробу готовности](probes.md#readiness) для соединения с базой данных (по умолчанию: `false`)
+    15. Дополнительные свойства соединения `JDBC`, передаваемые в `dataSourceProperties` `Hikari` (по умолчанию: `{}`)
     16. Включает логирование модуля (по умолчанию: `false`)
     17. Включает метрики модуля (по умолчанию: `true`)
-    18. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Настройка тегов для метрик (по умолчанию: `{}`)
+    18. Настраивает [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Настраивает теги метрик (по умолчанию: `{}`)
     20. Включает трассировку модуля (по умолчанию: `true`)
-    21. Настройка атрибутов для трассировки (по умолчанию: `{}`)
+    21. Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
 ## Использование { #usage }
 
-`JDBC`-репозиторий объявляется интерфейсом с аннотацией `@Repository` и должен наследовать `JdbcRepository`.
-Каждый метод с `@Query` содержит обычный `SQL`-запрос. Параметры метода подставляются в запрос по имени через
-синтаксис `:parameter`, а поля объекта можно указывать через `:entity.field`.
+Репозиторий `JDBC` объявляется как интерфейс, помеченный аннотацией `@Repository`, и должен наследовать `JdbcRepository`.
+Каждый метод, помеченный `@Query`, содержит обычный `SQL`-запрос. Параметры метода связываются по имени с помощью
+синтаксиса `:parameter`, а к полям объекта можно обращаться как `:entity.field`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -208,20 +208,20 @@ agent:
     }
     ```
 
-`SQL` остается под контролем разработчика: можно использовать специфичные возможности конкретной базы данных, а `Kora`
-занимается только безопасной подстановкой параметров, выполнением запроса и преобразованием результата.
-Общие правила сущностей, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch` и макросов описаны в разделе
-[Общие правила баз данных](database-common.md).
+`SQL` остается под контролем разработчика: вы можете использовать специфичные для базы данных возможности, тогда как `Kora`
+берет на себя только безопасное связывание параметров, выполнение запроса и отображение результата.
+Общие правила для сущностей, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch` и макросов описаны в разделе
+[Общие правила работы с базами данных](database-common.md).
 
-## Преобразование { #mapping }
+## Отображение { #mapping }
 
-Можно переопределять преобразование разных частей [сущности](database-common.md), результата и параметров запроса.
-Для этого `Kora` предоставляет несколько интерфейсов преобразователей.
+Вы можете переопределить отображение различных частей [сущности](database-common.md), результата запроса и параметров запроса.
+Для этого `Kora` предоставляет несколько интерфейсов-отображателей.
 
 ### Результат { #result }
 
-Если требуется преобразовать весь `ResultSet` вручную, используйте `JdbcResultSetMapper<T>`.
-Такой преобразователь получает весь результат запроса и сам решает, сколько строк прочитать и что вернуть.
+Используйте `JdbcResultSetMapper<T>`, когда нужно вручную отобразить весь `ResultSet`.
+Такой отображатель получает весь результат запроса и сам решает, сколько строк прочитать и что вернуть.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -230,7 +230,7 @@ agent:
 
         @Override
         public UUID apply(ResultSet rs) throws SQLException {
-            // код преобразования
+            // mapping code
         }
     }
 
@@ -250,7 +250,7 @@ agent:
 
         @Throws(SQLException::class)
         override fun apply(rs: ResultSet): UUID {
-            // код преобразования
+            // mapping code
         }
     }
 
@@ -263,12 +263,15 @@ agent:
     }
     ```
 
+`JdbcResultSetMapper` также предоставляет статические вспомогательные методы `singleResultSetMapper`, `listResultSetMapper`
+и `optionalResultSetMapper`, которые создают отображатель всего `ResultSet` из `JdbcRowMapper<T>`.
+
 #### Сущность { #entity }
 
-Для оптимального преобразования сущности используйте аннотацию `@EntityJdbc`.
-Обработчик аннотаций заранее создаст преобразователь результата для такого типа.
+Используйте аннотацию `@EntityJdbc` для оптимального отображения сущности.
+Обработчик аннотаций заранее создает отображатель результата для такого типа.
 
-Для всех вложенных сущностей также предполагается использовать эту аннотацию.
+Ожидается, что все вложенные сущности также используют эту аннотацию.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -286,8 +289,8 @@ agent:
 
 ### Строка { #row }
 
-Если требуется преобразовать одну строку вручную, используйте `JdbcRowMapper<T>`.
-Имейте в виду, что в `JDBC` порядок колонок в `ResultSet` начинается с `1`:
+Используйте `JdbcRowMapper<T>`, когда нужно вручную отобразить одну строку.
+Учтите, что в `JDBC` индексы столбцов в `ResultSet` начинаются с `1`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -329,9 +332,9 @@ agent:
     }
     ```
 
-### Колонка { #column }
+### Столбец { #column }
 
-Если требуется преобразовать значение отдельной колонки вручную, используйте `JdbcResultColumnMapper<T>`:
+Используйте `JdbcResultColumnMapper<T>`, когда нужно вручную отобразить значение одного столбца:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -384,7 +387,7 @@ agent:
 
 ### Параметр { #parameter }
 
-Если требуется преобразовать значение параметра запроса вручную, используйте `JdbcParameterColumnMapper<T>`:
+Используйте `JdbcParameterColumnMapper<T>`, когда нужно вручную отобразить значение параметра запроса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -432,8 +435,8 @@ agent:
 
 ??? abstract "Список поддерживаемых типов для аргументов/возвращаемых значений из коробки"
 
-    Такие типы выбраны так как поддерживаются большинством популярных баз данных.
-    Для них `Kora` предоставляет встроенные преобразователи строк, колонок и параметров.
+    Эти типы выбраны потому, что поддерживаются большинством популярных баз данных.
+    `Kora` предоставляет для них встроенные отображатели строк, столбцов и параметров.
 
     * void
     * boolean / Boolean
@@ -452,21 +455,19 @@ agent:
     * OffsetTime
     * OffsetDateTime
 
-    Для полей сущностей без явного `@Mapping` нативно поддерживаются `boolean` / `Boolean`, `short` / `Short`,
+    Поля сущности без явного `@Mapping` нативно поддерживают `boolean` / `Boolean`, `short` / `Short`,
     `int` / `Integer`, `long` / `Long`, `double` / `Double`, `float` / `Float`, `byte[]`, `String`,
     `BigDecimal`, `LocalDate` и `LocalDateTime`.
-    Для остальных типов можно использовать встроенные преобразователи `JdbcResultColumnMapper<T>` /
-    `JdbcParameterColumnMapper<T>` или объявить собственные преобразователи.
+    Для остальных типов используйте встроенные отображатели `JdbcResultColumnMapper<T>` / `JdbcParameterColumnMapper<T>` или объявите собственные отображатели.
 
 ## Выборка по списку { #select-by-list }
 
-Иногда требуется выборка по списку значений из базы данных.
-На уровне `JDBC` такие параметры должны быть отдельно подготовлены драйвером, потому что длина списка заранее неизвестна.
-`Kora` старается делать преобразования во время компиляции и не переписывать `SQL` во время работы, поэтому для таких
-параметров нужно добавить самостоятельный преобразователь.
+Иногда нужно выбрать строки по списку значений.
+На уровне `JDBC` такие параметры должны подготавливаться драйвером отдельно, поскольку длина списка заранее неизвестна.
+`Kora` старается выполнять отображения во время компиляции и не переписывает `SQL` во время выполнения, поэтому для таких параметров требуется собственный отображатель.
 
-Из коробки `Kora` не предоставляет преобразование таких параметров, но его легко добавить самостоятельно.
-Ниже показан пример для `Postgres` через `JDBC Array`:
+`Kora` не предоставляет отображение такого параметра из коробки, но его легко добавить самостоятельно.
+В примере ниже показан `Postgres` через `JDBC Array`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -512,11 +513,137 @@ agent:
     }
     ```
 
-## Созданный идентификатор { #generated-identifier }
+## JSON / JSONB { #json }
 
-Если необходимо получить в качестве результата первичные ключи, созданные базой данных,
+Столбец `JSON` / `JSONB` можно отобразить на поле сущности, зарегистрировав обобщенные
+`JdbcParameterColumnMapper<T>` и `JdbcResultColumnMapper<T>` как компоненты по умолчанию в `@Module`, помеченные `@Json`.
+Эти отображатели связывают `JsonWriter<T>` / `JsonReader<T>` из модуля [JSON](json.md) со значением, специфичным для драйвера.
+В примере для `Postgres` ниже значение сериализуется в `PGobject` типа `jsonb` при связывании параметра,
+`null` обрабатывается через `setNull(index, Types.NULL)`, а столбец читается обратно как `String`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface JdbcJsonbMapperModule {
+
+        @Json
+        default <T> JdbcParameterColumnMapper<T> jdbcJsonParameterColumnMapper(JsonWriter<T> writer) {
+            return (stmt, index, value) -> {
+                if (value != null) {
+                    PGobject jsonb = new PGobject();
+                    jsonb.setType("jsonb");
+                    jsonb.setValue(writer.toStringUnchecked(value));
+                    stmt.setObject(index, jsonb);
+                } else {
+                    stmt.setNull(index, Types.NULL);
+                }
+            };
+        }
+
+        @Json
+        default <T> JdbcResultColumnMapper<T> jdbcJsonResultColumnMapper(JsonReader<T> reader) {
+            return (row, index) -> {
+                var value = row.getString(index);
+                if (value == null) {
+                    return null;
+                } else {
+                    return reader.readUnchecked(value);
+                }
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface JdbcJsonbMapperModule {
+
+        @Json
+        fun <T> jdbcJsonParameterColumnMapper(writer: JsonWriter<T>): JdbcParameterColumnMapper<T> {
+            return JdbcParameterColumnMapper { stmt, index, value ->
+                if (value == null) {
+                    stmt.setNull(index, Types.NULL)
+                } else {
+                    val jsonb = PGobject()
+                    jsonb.type = "jsonb"
+                    jsonb.value = writer.toStringUnchecked(value)
+                    stmt.setObject(index, jsonb)
+                }
+            }
+        }
+
+        @Json
+        fun <T> jdbcJsonResultColumnMapper(reader: JsonReader<T>): JdbcResultColumnMapper<T> {
+            return JdbcResultColumnMapper { row, index ->
+                val value = row.getString(index)
+                if (value == null) null else reader.readUnchecked(value)
+            }
+        }
+    }
+    ```
+
+Пометьте поле сущности аннотацией `@Json` (и `@Column`, если имя столбца отличается), где тип поля сам является `@Json`-типом.
+В `INSERT` используется приведение `::jsonb`, чтобы `Postgres` принял сериализованную строку как `JSONB`;
+`findById` читает ее обратно через тот же отображатель столбца, помеченный `@Json`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface JdbcJsonbRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(UUID id,
+                      @Column("value") @Json JsonbValue value) {
+
+            @Json
+            record JsonbValue(String name, String surname) {}
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        @Nullable
+        Entity findById(UUID id);
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        void insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface JdbcJsonbRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            val id: UUID,
+            @field:Column("value") @Json val value: JsonbValue
+        ) {
+
+            @Json
+            data class JsonbValue(val name: String, val surname: String)
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        fun findById(id: UUID): Entity?
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        fun insert(entity: Entity)
+    }
+    ```
+
+Зависимость модуля [JSON](json.md) обязательна, чтобы `Kora` мог сгенерировать `JsonWriter` / `JsonReader` для типа поля,
+а `@Module` с отображателями должен быть добавлен в [граф приложения](container.md).
+
+## Сгенерированный идентификатор { #generated-identifier }
+
+Если нужно вернуть первичные ключи, сгенерированные базой данных,
 используйте аннотацию `@Id` над методом.
-Такой подход работает и для `@Batch` запросов.
+Этот подход также работает для `@Batch`-запросов.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -548,16 +675,69 @@ agent:
     }
     ```
 
+Сгенерированный ключ также можно вернуть как тип ключа сущности, а не как скалярное значение.
+Когда идентификатор является составным ключом, описанным записью [`@Embedded`](database-common.md#embedded-fields),
+метод `@Id` возвращает эту запись, а вставка `@Batch` возвращает `List` ключей — по одному на каждую вставленную строку:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(@Id @Embedded EntityId id, @Column("name") String name) {
+
+            @EntityJdbc
+            record EntityId(Long a, Long b) {}
+        }
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        Entity.EntityId insertGenerated(Entity entity);
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        List<Entity.EntityId> insertGenerated(@Batch List<Entity> entities);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            @field:Id @field:Embedded val id: EntityId?,
+            @field:Column("name") val name: String
+        ) {
+
+            @EntityJdbc
+            data class EntityId(val a: Long?, val b: Long?)
+        }
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(entity: Entity): Entity.EntityId
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(@Batch entities: List<Entity>): List<Entity.EntityId>
+    }
+    ```
+
 ## Ручной запрос с телеметрией { #query }
 
-Если запрос сложно выразить одним статическим `@Query`, можно сделать обычный метод с реализацией и самостоятельно собрать `SQL`.
-Для выполнения такого запроса используйте `JdbcConnectionFactory#query`.
-Этот метод создает `PreparedStatement`, проводит запрос через телеметрию `Kora` и использует то же соединение, что и остальные методы репозитория.
-Если `query` вызывается внутри активной транзакции `inTx`, запрос будет выполнен на текущем транзакционном соединении.
+Если запрос сложно выразить одной статической `@Query`, вы можете создать обычный метод с реализацией и построить `SQL` вручную.
+Используйте `JdbcConnectionFactory#query` для выполнения такого запроса.
+Этот метод создает `PreparedStatement`, выполняет запрос через телеметрию Kora и использует то же соединение, что и другие методы репозитория.
+Если `query` вызывается внутри активной транзакции `inTx`, запрос выполняется на текущем транзакционном соединении.
 
-В `QueryContext` указывается идентификатор запроса и итоговый `SQL`.
-Идентификатор запроса попадает в телеметрию, поэтому для него удобно использовать стабильное имя вида `Repository.method`.
-Значения нужно передавать через параметры `PreparedStatement`, а не подставлять в строку запроса напрямую.
+`QueryContext` содержит идентификатор запроса и итоговый `SQL`.
+Идентификатор запроса передается в телеметрию, поэтому удобно использовать стабильное имя, например `Repository.method`.
+Значения должны передаваться через параметры `PreparedStatement`, а не конкатенироваться напрямую в строку запроса.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -631,18 +811,17 @@ agent:
 
 ## Транзакции { #transaction }
 
-Для выполнения блокирующих запросов в `Kora` есть интерфейс `JdbcConnectionFactory`,
-который предоставляется в методе в рамках контракта `JdbcRepository`.
-Все методы репозитория, вызванные в рамках лямбды транзакции, будут выполнены в этой самой транзакции.
+Для выполнения блокирующих запросов `Kora` предоставляет интерфейс `JdbcConnectionFactory` через контракт `JdbcRepository`.
+Все методы репозитория, вызванные внутри лямбды транзакции, выполняются в этой же транзакции.
 
-Для того чтобы выполнять запросы транзакционно, можно использовать метод `inTx`.
-Если на текущем потоке уже есть активная транзакция, вложенный вызов `inTx` использует то же соединение и не открывает
+Используйте `inTx` для транзакционного выполнения запросов.
+Если в текущем потоке уже есть активная транзакция, вложенный вызов `inTx` использует то же соединение и не открывает
 новую транзакцию.
 
-Транзакционную последовательность операций можно оставлять внутри самого репозитория с помощью обычного метода с реализацией.
-Такой подход удобен, когда нужно инкапсулировать несколько `@Query`-методов или сложный самостоятельный `SQL`-запрос рядом с остальными запросами репозитория,
-не вынося техническую работу с базой данных в сервисный слой.
-Внутри такого метода можно использовать и `@Query`-методы репозитория, и `JdbcConnectionFactory#query` для ручного запроса с телеметрией.
+Транзакционную последовательность операций можно оставить внутри самого репозитория в виде обычного метода с реализацией.
+Это удобно, когда несколько методов `@Query` или сложный ручной `SQL`-запрос должны находиться рядом с остальными запросами репозитория,
+без переноса технической работы с базой данных в слой сервиса.
+Внутри такого метода можно использовать как методы репозитория `@Query`, так и `JdbcConnectionFactory#query` для ручного запроса с телеметрией.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -656,7 +835,7 @@ agent:
         @Query("UPDATE entities SET name = :name WHERE id = :id")
         UpdateCount updateName(long id, String name);
 
-        default List<Entity> saveAll(Entity one, Entity two) {
+        public List<Entity> saveAll(Entity one, Entity two) {
             return getJdbcConnectionFactory().inTx(() -> {
                 insert(one); //(1)!
                 updateName(two.id(), two.name()); //(2)!
@@ -666,8 +845,8 @@ agent:
     }
     ```
 
-    1. Будет выполнено в рамках транзакции или откатится, если вся лямбда выбросит исключение
-    2. Будет выполнено в рамках транзакции или откатится, если вся лямбда выбросит исключение
+    1. Выполняется в рамках транзакции или откатывается, если вся лямбда выбрасывает исключение
+    2. Выполняется в рамках транзакции или откатывается, если вся лямбда выбрасывает исключение
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -691,14 +870,14 @@ agent:
     }
     ```
 
-    1. Будет выполнено в рамках транзакции или откатится, если вся лямбда выбросит исключение
-    2. Будет выполнено в рамках транзакции или откатится, если вся лямбда выбросит исключение
+    1. Выполняется в рамках транзакции или откатывается, если вся лямбда выбрасывает исключение
+    2. Выполняется в рамках транзакции или откатывается, если вся лямбда выбрасывает исключение
 
-Транзакция считается успешно зафиксированной после выполнения метода, если метод не выбросил исключение.
-Если метод выбросил исключение, все изменения в базе данных в рамках транзакции не будут применены.
+Транзакция считается успешно зафиксированной после завершения метода, если он не выбросил исключение.
+Если метод выбрасывает исключение, все изменения в базе данных, сделанные в рамках транзакции, не применяются.
 
 Уровень изоляции транзакции берется из конфигурации `dsProperties` пула `Hikari`,
-либо можно самостоятельно поменять его через `java.sql.Connection` перед выполнением запросов.
+либо вы можете изменить его вручную через `java.sql.Connection` перед выполнением запросов.
 
 ```java
 connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -706,20 +885,26 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 ### Ручное управление соединением { #connection }
 
-Если для запроса нужна более сложная логика или запросы вне репозитория, можно использовать `java.sql.Connection`.
+Если для запроса нужна более сложная логика или запросы вне репозитория, вы можете использовать `java.sql.Connection`.
 Метод `withConnection` выполняет код с соединением, но сам по себе не открывает транзакцию.
 
-`withConnection` работает так:
+`withConnection` работает следующим образом:
 
-- если в текущем `Context` уже есть `ConnectionContext`, метод передает в лямбду текущее соединение;
-- если соединения в текущем `Context` нет, метод берет новое соединение из `DataSource`, кладет его в `ConnectionContext` на время выполнения лямбды и закрывает после завершения;
-- повторные вызовы `withConnection`, `JdbcConnectionFactory#query` и методы репозитория внутри этой лямбды используют то же текущее соединение;
-- если исключение из `JDBC` является `SQLException`, оно оборачивается в `RuntimeSqlException`.
+- если текущий `Context` уже содержит `ConnectionContext`, метод передает текущее соединение в лямбду;
+- если текущий `Context` не содержит соединения, метод берет новое соединение из `DataSource`, сохраняет его в `ConnectionContext` на время выполнения лямбды и закрывает после завершения;
+- вложенные вызовы `withConnection`, `JdbcConnectionFactory#query` и методов репозитория внутри этой лямбды используют то же текущее соединение;
+- если исключение `JDBC` является `SQLException`, оно оборачивается в `RuntimeSqlException`.
 
-Транзакцию открывает метод `inTx`, который построен поверх `withConnection`.
-Если текущее соединение уже находится в активной транзакции, то есть у него `autoCommit = false`, вложенный `inTx` использует эту же транзакцию.
-Если активной транзакции нет, `inTx` отключает `autoCommit`, выполняет лямбду, затем делает `commit` при успешном завершении или `rollback` при исключении.
-После завершения транзакции выполняются зарегистрированные действия `addPostCommitAction` или `addPostRollbackAction`.
+!!! note
+
+    Ручные вызовы `query`, `withConnection` и `inTx` представляют сбой `JDBC` как непроверяемое исключение `RuntimeSqlException`,
+    которое оборачивает исходное `java.sql.SQLException`. Перехватывайте `RuntimeSqlException` (а не `SQLException`) в месте вызова
+    и используйте `getCause()`, чтобы добраться до исходного `SQLException`.
+
+Метод `inTx` открывает транзакцию и построен поверх `withConnection`.
+Если текущее соединение уже находится в активной транзакции, то есть `autoCommit = false`, вложенный `inTx` использует ту же транзакцию.
+Если активной транзакции нет, `inTx` отключает `autoCommit`, выполняет лямбду, а затем вызывает `commit` при успехе или `rollback` при исключении.
+После завершения транзакции выполняются зарегистрированные обратные вызовы `addPostCommitAction` или `addPostRollbackAction`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -759,9 +944,9 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 ### Действия после фиксации { #post-commit-actions }
 
-Если требуется выполнить действия после успешной фиксации транзакции, можно добавить их с помощью `addPostCommitAction`.
+Если нужно выполнить действия после успешной фиксации транзакции, добавьте их с помощью `addPostCommitAction`.
 Действие выполняется после `commit` и только если транзакция завершилась успешно.
-Добавлять такие действия можно только внутри активной транзакции.
+Такие действия можно добавлять только внутри активной транзакции.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -811,9 +996,9 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 ### Действия после отката { #post-rollback-actions }
 
-Если требуется выполнить действия после отката транзакции, можно добавить их с помощью `addPostRollbackAction`.
-Действие получает соединение и исключение, из-за которого транзакция была отменена.
-Добавлять такие действия можно только внутри активной транзакции.
+Если нужно выполнить действия после отката транзакции, добавьте их с помощью `addPostRollbackAction`.
+Действие получает соединение и исключение, вызвавшее откат транзакции.
+Такие действия можно добавлять только внутри активной транзакции.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -863,29 +1048,29 @@ connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 ## Сигнатуры { #signatures }
 
-Доступные сигнатуры для методов репозитория из коробки:
+Доступные из коробки сигнатуры методов репозитория:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `List<T>`, либо `Void`, либо `UpdateCount`.
-    Для `CompletionStage<T>`, `CompletableFuture<T>` и `Mono<T>` нужно предоставить компонент `Executor`.
+    `T` означает тип возвращаемого значения, либо `List<T>`, либо `Void`, либо `UpdateCount`.
+    `CompletionStage<T>`, `CompletableFuture<T>` и `Mono<T>` требуют компонент `Executor`.
 
     - `T myMethod()`
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (надо предоставить `Executor`)
-    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html) (надо предоставить `Executor`)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо предоставить `Executor` и подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (требует `Executor`)
+    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html) (требует `Executor`)
+    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (требует `Executor` и [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `T?`, либо `List<T>`, либо `Unit`, либо `UpdateCount`.
-    Для `suspend`-методов нужно предоставить компонент `Executor`.
+    `T` означает тип возвращаемого значения, либо `T?`, либо `List<T>`, либо `Unit`, либо `UpdateCount`.
+    Методы `suspend` требуют компонент `Executor`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо предоставить `Executor` и подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует `Executor` и [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
 
-Для асинхронных методов можно указать отдельный тег `Executor` через параметр `executorTag` в `@Repository`.
+Для асинхронных методов вы можете указать отдельный тег `Executor` через параметр `executorTag` в `@Repository`.
 
 ===! ":fontawesome-brands-java: `Java`"
 

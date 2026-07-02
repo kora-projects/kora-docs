@@ -263,6 +263,9 @@ This mapper receives the whole query result and decides how many rows to read an
     }
     ```
 
+`JdbcResultSetMapper` also exposes static helpers `singleResultSetMapper`, `listResultSetMapper`,
+and `optionalResultSetMapper` that build a full-`ResultSet` mapper from a `JdbcRowMapper<T>`.
+
 #### Entity { #entity }
 
 Use the `@EntityJdbc` annotation for optimal entity mapping.
@@ -510,6 +513,132 @@ The example below shows `Postgres` through a `JDBC Array`:
     }
     ```
 
+## JSON / JSONB { #json }
+
+A `JSON` / `JSONB` column can be mapped to an entity field by registering generic
+`JdbcParameterColumnMapper<T>` and `JdbcResultColumnMapper<T>` as default `@Module` components tagged with `@Json`.
+These mappers bridge the [JSON](json.md) module `JsonWriter<T>` / `JsonReader<T>` to a driver-specific value.
+The `Postgres` example below serializes the value into a `PGobject` of type `jsonb` when binding a parameter,
+handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a `String`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface JdbcJsonbMapperModule {
+
+        @Json
+        default <T> JdbcParameterColumnMapper<T> jdbcJsonParameterColumnMapper(JsonWriter<T> writer) {
+            return (stmt, index, value) -> {
+                if (value != null) {
+                    PGobject jsonb = new PGobject();
+                    jsonb.setType("jsonb");
+                    jsonb.setValue(writer.toStringUnchecked(value));
+                    stmt.setObject(index, jsonb);
+                } else {
+                    stmt.setNull(index, Types.NULL);
+                }
+            };
+        }
+
+        @Json
+        default <T> JdbcResultColumnMapper<T> jdbcJsonResultColumnMapper(JsonReader<T> reader) {
+            return (row, index) -> {
+                var value = row.getString(index);
+                if (value == null) {
+                    return null;
+                } else {
+                    return reader.readUnchecked(value);
+                }
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface JdbcJsonbMapperModule {
+
+        @Json
+        fun <T> jdbcJsonParameterColumnMapper(writer: JsonWriter<T>): JdbcParameterColumnMapper<T> {
+            return JdbcParameterColumnMapper { stmt, index, value ->
+                if (value == null) {
+                    stmt.setNull(index, Types.NULL)
+                } else {
+                    val jsonb = PGobject()
+                    jsonb.type = "jsonb"
+                    jsonb.value = writer.toStringUnchecked(value)
+                    stmt.setObject(index, jsonb)
+                }
+            }
+        }
+
+        @Json
+        fun <T> jdbcJsonResultColumnMapper(reader: JsonReader<T>): JdbcResultColumnMapper<T> {
+            return JdbcResultColumnMapper { row, index ->
+                val value = row.getString(index)
+                if (value == null) null else reader.readUnchecked(value)
+            }
+        }
+    }
+    ```
+
+Annotate the entity field with `@Json` (and `@Column` if the column name differs), where the field type is itself a `@Json` type.
+The `INSERT` uses the `::jsonb` cast so `Postgres` accepts the serialized string as `JSONB`;
+`findById` reads it back through the same `@Json`-tagged column mapper:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface JdbcJsonbRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(UUID id,
+                      @Column("value") @Json JsonbValue value) {
+
+            @Json
+            record JsonbValue(String name, String surname) {}
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        @Nullable
+        Entity findById(UUID id);
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        void insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface JdbcJsonbRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            val id: UUID,
+            @field:Column("value") @Json val value: JsonbValue
+        ) {
+
+            @Json
+            data class JsonbValue(val name: String, val surname: String)
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        fun findById(id: UUID): Entity?
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        fun insert(entity: Entity)
+    }
+    ```
+
+The [JSON](json.md) module dependency is required so `Kora` can generate `JsonWriter` / `JsonReader` for the field type,
+and the mapper `@Module` must be added to the [application graph](container.md).
+
 ## Generated Identifier { #generated-identifier }
 
 If you need to return primary keys generated by the database,
@@ -543,6 +672,59 @@ This approach also works for `@Batch` queries.
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
         fun insert(entity: Entity): Long
+    }
+    ```
+
+The generated key can also be returned as the entity key type rather than a scalar.
+When the identifier is a composite key described by an [`@Embedded`](database-common.md#embedded-fields) record,
+the `@Id` method returns that record, and a `@Batch` insert returns a `List` of keys, one per inserted row:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(@Id @Embedded EntityId id, @Column("name") String name) {
+
+            @EntityJdbc
+            record EntityId(Long a, Long b) {}
+        }
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        Entity.EntityId insertGenerated(Entity entity);
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        List<Entity.EntityId> insertGenerated(@Batch List<Entity> entities);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            @field:Id @field:Embedded val id: EntityId?,
+            @field:Column("name") val name: String
+        ) {
+
+            @EntityJdbc
+            data class EntityId(val a: Long?, val b: Long?)
+        }
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(entity: Entity): Entity.EntityId
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(@Batch entities: List<Entity>): List<Entity.EntityId>
     }
     ```
 
@@ -712,6 +894,12 @@ The `withConnection` method executes code with a connection, but does not open a
 - if the current `Context` does not contain a connection, the method takes a new connection from the `DataSource`, stores it in `ConnectionContext` for the duration of the lambda, and closes it after completion;
 - nested calls to `withConnection`, `JdbcConnectionFactory#query`, and repository methods inside this lambda use the same current connection;
 - if a `JDBC` exception is a `SQLException`, it is wrapped in `RuntimeSqlException`.
+
+!!! note
+
+    Manual `query`, `withConnection`, and `inTx` calls surface a `JDBC` failure as an unchecked `RuntimeSqlException`
+    that wraps the original `java.sql.SQLException`. Catch `RuntimeSqlException` (not `SQLException`) at the call site,
+    and use `getCause()` to reach the underlying `SQLException`.
 
 The `inTx` method opens a transaction and is built on top of `withConnection`.
 If the current connection is already in an active transaction, meaning `autoCommit = false`, nested `inTx` uses the same transaction.

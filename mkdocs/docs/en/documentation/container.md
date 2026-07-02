@@ -255,6 +255,35 @@ And there is the main application module with the assembly point for the whole a
 
 This will connect the `SomeModule` module found through `SomeSubModule` to the final application container.
 
+A common real-world use of `@KoraSubmodule` is a separate `Gradle` module that owns one domain area and simply
+aggregates the [external modules](#external-module-factory) it needs (databases, caches, and so on) by extending them,
+together with its own `@Component` classes and `@Module` interfaces. The application module then connects the
+generated submodules the same way it connects any other module:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // in the "pet" Gradle module
+    @KoraSubmodule
+    public interface PetModule extends JdbcDatabaseModule, CaffeineCacheModule { }
+
+    // in the application Gradle module
+    @KoraApp
+    public interface Application extends PetModule, VetModule { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // in the "pet" Gradle module
+    @KoraSubmodule
+    interface PetModule : JdbcDatabaseModule, CaffeineCacheModule
+
+    // in the application Gradle module
+    @KoraApp
+    interface Application : PetModule, VetModule
+    ```
+
 #### Generic factory { #generic-factory }
 
 If the dependency container could not find a factory for a particular type, the `Kora` container can try to find
@@ -535,7 +564,7 @@ For example, we have some entity `Handler` and it is injected by N different typ
 The `All` type itself has the following contract:
 
 ```java
-public interface All<T> extends List<T> {}
+public sealed interface All<T> extends List<T> permits AllImpl {}
 ```
 
 This is a token type that extends `List` and can be given to constructors that expect `List`.
@@ -771,6 +800,89 @@ To get a list of all components with and without a tag, you need to use a specia
     }
     ```
 
+### Circular dependencies { #circular-dependencies }
+
+Because `Kora` builds and validates the whole dependency graph at compile time, a dependency cycle
+(component `A` needs `B`, `B` needs `A`, possibly through more components in between) is detected during compilation
+rather than blowing up at runtime. How such a cycle is handled depends on how the dependency inside the cycle is declared.
+
+**Direct dependency on a `final` class (or any non-interface type).**
+Such a cycle cannot be resolved and compilation fails. The error points at the type that closes the cycle and lists the
+cycle candidates:
+
+```
+Encountered circular dependency in graph for source type: ru.tinkoff.kora.example.ServiceA (no tags)
+  Cycle dependency candidates:
+  - ru.tinkoff.kora.example.ServiceA
+  - ru.tinkoff.kora.example.ServiceB
+Please check that you are not using cycle dependency in ru.tinkoff.kora.application.graph.Lifecycle, this is forbidden.
+```
+
+**Dependency declared through an interface (or a non-`final` class).**
+`Kora` breaks the cycle automatically: for the interface-typed dependency it generates a lazy proxy that implements
+`ru.tinkoff.kora.common.PromisedProxy<T>` and injects the proxy instead of the real component. The proxy resolves the
+actual component from the graph on first access (and re-resolves it after a graph refresh), so both components can be
+constructed. No action is required from the developer, but keep in mind that the proxied side becomes usable only after
+the graph is fully bound, so it must not be called from a constructor.
+
+In the example below `ServiceAImpl` and `ServiceBImpl` reference each other through interfaces, so the cycle is broken
+by an auto-generated `PromisedProxy` and the graph resolves successfully:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface ServiceA { }
+
+    public interface ServiceB { }
+
+    @Component
+    public final class ServiceAImpl implements ServiceA {
+
+        public ServiceAImpl(ServiceB serviceB) { }
+    }
+
+    @Component
+    public final class ServiceBImpl implements ServiceB {
+
+        public ServiceBImpl(ServiceA serviceA) { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface ServiceA
+
+    interface ServiceB
+
+    @Component
+    class ServiceAImpl(serviceB: ServiceB) : ServiceA
+
+    @Component
+    class ServiceBImpl(serviceA: ServiceA) : ServiceB
+    ```
+
+The reliable way to break a cycle deliberately is to inject one side through [`ValueOf<T>`](#indirect-dependency)
+or [`PromiseOf<T>`](#updating-components) instead of a direct dependency. This decouples the consumer from the other
+component's lifecycle, so the container no longer treats the two as a hard cycle:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ServiceAImpl implements ServiceA {
+
+        public ServiceAImpl(ValueOf<ServiceB> serviceB) { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ServiceAImpl(serviceB: ValueOf<ServiceB>) : ServiceA
+    ```
+
 ## Runtime { #runtime }
 
 The dependency container uses as much parallelism as possible within the graph that has been built.
@@ -814,6 +926,10 @@ in the same package will look like this:
         KoraApplication.run { ApplicationGraph.graph() }
     }
     ```
+
+`KoraApplication.run` boots the container and returns a `RefreshableGraph` (a `Graph` combined with [`Lifecycle`](#component-lifecycle)).
+For a running application you usually do not interact with it directly, but it is useful in tests and advanced flows where
+you need to look up a component from the graph or trigger a refresh manually.
 
 ### Container lifecycle { #container-lifecycle }
 
