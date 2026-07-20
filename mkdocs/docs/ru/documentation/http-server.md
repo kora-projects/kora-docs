@@ -1173,6 +1173,471 @@ public interface HttpServerInterceptor {
     1. Указывает тип `HTTP`-метода обработчика
     2. Указывает путь метода обработчика
 
+## Авторизация { #authorization }
+
+Kora предоставляет механизм извлечения контекста авторизации из HTTP запроса через интерфейс `HttpServerPrincipalExtractor`.
+Этот интерфейс позволяет реализовать любую схему аутентификации: [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/).
+
+### Принцип работы { #how-it-works }
+
+`HttpServerPrincipalExtractor<T>` извлекает токен из запроса (обычно из заголовка `Authorization`) и возвращает объект `Principal`.
+Полученный `Principal` сохраняется в `Context` запроса и может быть получен в любом месте обработки запроса через `Principal.current()`.
+
+```java
+public interface HttpServerPrincipalExtractor<T extends Principal> {
+    CompletionStage<T> extract(HttpServerRequest request, @Nullable String value);
+}
+```
+
+Где:
+
+- `request` — текущий HTTP запрос, из которого можно извлечь дополнительные данные (заголовки, параметры)
+- `value` — значение токена, извлеченное из заголовка `Authorization` (или другого источника)
+- `T extends Principal` — тип контекста авторизации, который будет сохранен в `Context`
+
+### Базовый пример { #basic-example }
+
+Простой пример извлечения API ключа из заголовка `Authorization`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AuthModule {
+
+        @ConfigSource("auth.apiKey")
+        interface ApiKeyAuthConfig {
+            String value();
+        }
+
+        default HttpServerPrincipalExtractor<Principal> apiKeyExtractor(ApiKeyAuthConfig config) {
+            return (request, value) -> {
+                if (value == null || !config.value().equals(value)) {
+                    return CompletableFuture.failedFuture(
+                        new IllegalAccessException("Invalid API key")
+                    );
+                }
+                return CompletableFuture.completedFuture(
+                    new Principal() {
+                        @Override
+                        public String name() {
+                            return "api-client";
+                        }
+                    }
+                );
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface AuthModule {
+
+        @ConfigSource("auth.apiKey")
+        interface ApiKeyAuthConfig {
+            fun value(): String
+        }
+
+        fun apiKeyExtractor(config: ApiKeyAuthConfig): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor { request, value ->
+                if (value == null || config.value() != value) {
+                    return@HttpServerPrincipalExtractor CompletableFuture.failedFuture(
+                        IllegalAccessException("Invalid API key")
+                    )
+                }
+                CompletableFuture.completedFuture(
+                    object : Principal {
+                        override fun name() = "api-client"
+                    }
+                )
+            }
+        }
+    }
+    ```
+
+### Кастомный Principal { #custom-principal }
+
+Для передачи дополнительной информации об авторизации (userId, роли, scope) создайте собственную реализацию `Principal`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record UserContext(String userId, List<String> roles) implements Principal {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class UserContext(val userId: String, val roles: List<String>) : Principal
+    ```
+
+Если требуется работа с scope (областями видимости), используйте интерфейс `PrincipalWithScopes`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record ScopedUser(String userId, Collection<String> scopes) implements PrincipalWithScopes {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class ScopedUser(val userId: String, val scopes: Collection<String>) : PrincipalWithScopes
+    ```
+
+### Bearer токен { #bearer }
+
+Пример извлечения Bearer токена с кастомной реализацией `Principal`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface BearerAuthModule {
+
+        default HttpServerPrincipalExtractor<UserContext> bearerExtractor(TokenValidator validator) {
+            return (request, value) -> {
+                if (value == null || !value.startsWith("Bearer ")) {
+                    return CompletableFuture.failedFuture(
+                        new IllegalAccessException("No Bearer token")
+                    );
+                }
+                
+                String token = value.substring(7);
+                return validator.validate(token)
+                    .thenApply(userData -> new UserContext(userData.userId(), userData.roles()));
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface BearerAuthModule {
+
+        fun bearerExtractor(validator: TokenValidator): HttpServerPrincipalExtractor<UserContext> {
+            return HttpServerPrincipalExtractor { request, value ->
+                if (value == null || !value.startsWith("Bearer ")) {
+                    return CompletableFuture.failedFuture(
+                        IllegalAccessException("No Bearer token")
+                    )
+                }
+                
+                val token = value.substring(7)
+                validator.validate(token)
+                    .thenApply { userData ->
+                        UserContext(userData.userId, userData.roles)
+                    }
+            }
+        }
+    }
+    ```
+
+### Получение Principal в контроллере { #getting-principal }
+
+Получить текущий контекст авторизации можно в любом месте обработки запроса:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    @HttpController
+    public class SecureController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/secure")
+        public String getSecureData() {
+            Principal principal = Principal.current();
+            if (principal instanceof UserContext user) {
+                return "Hello, user: " + user.userId();
+            }
+            throw new SecurityException("Not authenticated");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    @HttpController
+    class SecureController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/secure")
+        fun getSecureData(): String {
+            val principal = Principal.current()
+            return if (principal is UserContext) {
+                "Hello, user: ${principal.userId}"
+            } else {
+                throw SecurityException("Not authenticated")
+            }
+        }
+    }
+    ```
+
+### OAuth2 { #oauth2 }
+
+Для OAuth2 авторизации создайте `HttpServerPrincipalExtractor`, который проверяет токен через OAuth2 provider:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface OAuth2Module {
+
+        default HttpServerPrincipalExtractor<ScopedUser> oauth2Extractor(OAuth2Client oauth2Client) {
+            return (request, value) -> {
+                if (value == null || !value.startsWith("Bearer ")) {
+                    return CompletableFuture.failedFuture(
+                        new IllegalAccessException("No OAuth2 token")
+                    );
+                }
+                
+                String token = value.substring(7);
+                return oauth2Client.introspect(token)
+                    .thenApply(introspection -> 
+                        new ScopedUser(
+                            introspection.subject(),
+                            introspection.scopes()
+                        )
+                    );
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface OAuth2Module {
+
+        fun oauth2Extractor(oauth2Client: OAuth2Client): HttpServerPrincipalExtractor<ScopedUser> {
+            return HttpServerPrincipalExtractor { request, value ->
+                if (value == null || !value.startsWith("Bearer ")) {
+                    return CompletableFuture.failedFuture(
+                        IllegalAccessException("No OAuth2 token")
+                    )
+                }
+                
+                val token = value.substring(7)
+                oauth2Client.introspect(token)
+                    .thenApply { introspection ->
+                        ScopedUser(introspection.subject, introspection.scopes)
+                    }
+            }
+        }
+    }
+    ```
+
+### Проверка scope в перехватчике { #scope-check }
+
+Для проверки scope можно создать перехватчик, который проверяет `PrincipalWithScopes`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ScopeCheckingInterceptor implements HttpServerInterceptor {
+
+        private final String requiredScope;
+
+        public ScopeCheckingInterceptor(@ConfigSource("auth.requiredScope") String requiredScope) {
+            this.requiredScope = requiredScope;
+        }
+
+        @Override
+        public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                             HttpServerRequest request, 
+                                                             InterceptChain chain) {
+            Principal principal = Principal.current(context);
+            if (principal instanceof PrincipalWithScopes scoped) {
+                if (!scoped.scopes().contains(requiredScope)) {
+                    return CompletableFuture.failedFuture(
+                        HttpServerResponseException.of(403, "Insufficient scope")
+                    );
+                }
+            } else {
+                return CompletableFuture.failedFuture(
+                    HttpServerResponseException.of(403, "No scopes available")
+                );
+            }
+            
+            return chain.process(context, request);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ScopeCheckingInterceptor(
+        @ConfigSource("auth.requiredScope") private val requiredScope: String
+    ) : HttpServerInterceptor {
+
+        override fun intercept(
+            context: Context,
+            request: HttpServerRequest,
+            chain: HttpServerInterceptor.InterceptChain
+        ): CompletionStage<HttpServerResponse> {
+            val principal = Principal.current(context)
+            if (principal is PrincipalWithScopes) {
+                if (!principal.scopes.contains(requiredScope)) {
+                    return CompletableFuture.failedFuture(
+                        HttpServerResponseException.of(403, "Insufficient scope")
+                    )
+                }
+            } else {
+                return CompletableFuture.failedFuture(
+                    HttpServerResponseException.of(403, "No scopes available")
+                )
+            }
+            
+            return chain.process(context, request)
+        }
+    }
+    ```
+
+### OpenAPI интеграция { #openapi }
+
+При использовании Kora OpenAPI Generator авторизация настраивается автоматически на основе спецификации OpenAPI.
+Генератор создает:
+
+1. Интерфейс `ApiSecurity` с классами-маркерами для каждого типа авторизации
+2. `HttpServerInterceptor` для каждого security scheme
+3. Требует предоставить `HttpServerPrincipalExtractor` с соответствующим `@Tag`
+
+Пример из [kora-examples](https://github.com/kora-projects/kora-examples):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends
+            HoconConfigModule,
+            UndertowHttpServerModule,
+            JsonModule {
+
+        @Tag(ApiSecurity.ApiKeyAuth.class)
+        default HttpServerPrincipalExtractor<Principal> apiKeyExtractor(DataApiAuthConfig config) {
+            return (request, value) -> {
+                if (value == null || !config.value().equals(value)) {
+                    throw new SecurityException("Invalid API key");
+                }
+                return CompletableFuture.completedFuture(
+                    new DataApiPrincipal("data-api-client")
+                );
+            };
+        }
+    }
+    ```
+
+    где `DataApiPrincipal`:
+
+    ```java
+    public record DataApiPrincipal(String name) implements Principal {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application :
+        HoconConfigModule,
+        UndertowHttpServerModule,
+        JsonModule {
+
+        @Tag(ApiSecurity.ApiKeyAuth::class)
+        fun apiKeyExtractor(config: DataApiAuthConfig): HttpServerPrincipalExtractor<Principal> {
+            return HttpServerPrincipalExtractor { request, value ->
+                if (value == null || config.value() != value) {
+                    throw SecurityException("Invalid API key")
+                }
+                CompletableFuture.completedFuture(
+                    DataApiPrincipal("data-api-client")
+                )
+            }
+        }
+    }
+    ```
+
+    где `DataApiPrincipal`:
+
+    ```kotlin
+    data class DataApiPrincipal(val name: String) : Principal
+    ```
+
+Конфигурация:
+
+```hocon
+auth.apiKey {
+  value = "secret-api-key-123"
+}
+```
+
+### Обработка ошибок { #error-handling }
+
+Если `HttpServerPrincipalExtractor` выбрасывает исключение или возвращает `null`, запрос отклоняется с кодом `403 Forbidden`.
+Для кастомной обработки ошибок авторизации используйте перехватчик:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(HttpServerModule.class)
+    @Component
+    public final class AuthErrorInterceptor implements HttpServerInterceptor {
+
+        @Override
+        public CompletionStage<HttpServerResponse> intercept(Context context, 
+                                                             HttpServerRequest request, 
+                                                             InterceptChain chain) {
+            return chain.process(context, request).exceptionally(e -> {
+                if (e instanceof CompletionException) {
+                    e = e.getCause();
+                }
+                if (e instanceof IllegalAccessException) {
+                    return HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: " + e.getMessage()));
+                }
+                if (e instanceof SecurityException) {
+                    return HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: " + e.getMessage()));
+                }
+                throw new CompletionException(e);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(HttpServerModule::class)
+    @Component
+    class AuthErrorInterceptor : HttpServerInterceptor {
+
+        override fun intercept(
+            context: Context,
+            request: HttpServerRequest,
+            chain: HttpServerInterceptor.InterceptChain
+        ): CompletionStage<HttpServerResponse> {
+            return chain.process(context, request).exceptionally { e ->
+                val error = if (e is CompletionException) e.cause!! else e
+                when (error) {
+                    is IllegalAccessException -> 
+                        HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: ${error.message}"))
+                    is SecurityException -> 
+                        HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: ${error.message}"))
+                    else -> throw CompletionException(error)
+                }
+            }
+        }
+    }
+    ```
+
 ## Телеметрия { #telemetry }
 
 HTTP Server использует контракт телеметрии для логирования, метрик и трассировки запросов.
