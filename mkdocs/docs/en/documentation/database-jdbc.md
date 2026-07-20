@@ -47,7 +47,7 @@ You also **must provide** the database driver implementation as a dependency.
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described by `JdbcDatabaseConfig` (example values or default values are shown):
+Basic JDBC configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
@@ -56,64 +56,16 @@ Example of the complete configuration described by `JdbcDatabaseConfig` (example
         jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
         username = "postgres" //(2)!
         password = "postgres" //(3)!
-        schema = "public" //(4)!
-        poolName = "kora" //(5)!
-        maxPoolSize = 10 //(6)!
-        minIdle = 0 //(7)!
-        connectionTimeout = "10s" //(8)!
-        validationTimeout = "5s" //(9)!
-        idleTimeout = "10m" //(10)!
-        maxLifetime = "15m" //(11)!
-        leakDetectionThreshold = "0s" //(12)!
-        initializationFailTimeout = "0s" //(13)!
-        readinessProbe = false //(14)!
-        dsProperties { //(15)!
-            "hostRecheckSeconds": "2"
-        }
-        telemetry {
-            logging {
-                enabled = false //(16)!
-            }
-            metrics {
-                enabled = true //(17)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                tags = { // (19)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(20)!
-                attributes = { // (21)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        poolName = "kora" //(4)!
+        maxPoolSize = 10 //(5)!
     }
     ```
 
-    1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Database schema for the connection (default: not specified, optional)
-    5.  `Hikari` connection pool name (`required`, default: not specified)
-    6.  Maximum `Hikari` connection pool size (default: `10`)
-    7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
-    8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
-    9.  Maximum time for `Hikari` connection validation (default: `5s`)
-    10. Maximum idle time for a `Hikari` connection (default: `10m`)
-    11. Maximum lifetime of a `Hikari` connection (default: `15m`)
-    12. Time after which a busy connection is considered a possible leak (default: `0s`)
-    13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
-    14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
-    16. Enables module logging (default: `false`)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  `JDBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  `Hikari` connection pool name (`required`, no default)
+    5.  Maximum `Hikari` connection pool size (default: `10`)
 
 === ":simple-yaml: `YAML`"
 
@@ -122,56 +74,143 @@ Example of the complete configuration described by `JdbcDatabaseConfig` (example
       jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
       username: "postgres" #(2)!
       password: "postgres" #(3)!
-      schema: "public" #(4)!
-      poolName: "kora" #(5)!
-      maxPoolSize: 10 #(6)!
-      minIdle: 0 #(7)!
-      connectionTimeout: "10s" #(8)!
-      validationTimeout: "5s" #(9)!
-      idleTimeout: "10m" #(10)!
-      maxLifetime: "15m" #(11)!
-      leakDetectionThreshold: "0s" #(12)!
-      initializationFailTimeout: "0s" #(13)!
-      readinessProbe: false #(14)!
-      dsProperties: #(15)!
-        hostRecheckSeconds: "1"
-      telemetry:
-        logging:
-          enabled: false #(16)!
-        metrics:
-          enabled: true #(17)!
-          slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-          tags: #(19)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(20)!
-          attributes: #(21)!
-            key1: value1
-            key2: value2
+      poolName: "kora" #(4)!
+      maxPoolSize: 10 #(5)!
     ```
 
-    1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Database schema for the connection (default: not specified, optional)
-    5.  `Hikari` connection pool name (`required`, default: not specified)
-    6.  Maximum `Hikari` connection pool size (default: `10`)
-    7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
-    8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
-    9.  Maximum time for `Hikari` connection validation (default: `5s`)
-    10. Maximum idle time for a `Hikari` connection (default: `10m`)
-    11. Maximum lifetime of a `Hikari` connection (default: `15m`)
-    12. Time after which a busy connection is considered a possible leak (default: `0s`)
-    13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
-    14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
-    16. Enables module logging (default: `false`)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  `JDBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  `Hikari` connection pool name (`required`, no default)
+    5.  Maximum `Hikari` connection pool size (default: `10`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described by `JdbcDatabaseConfig` (example values or default values are shown):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        db {
+            jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
+            username = "postgres" //(2)!
+            password = "postgres" //(3)!
+            schema = "public" //(4)!
+            poolName = "kora" //(5)!
+            maxPoolSize = 10 //(6)!
+            minIdle = 0 //(7)!
+            connectionTimeout = "10s" //(8)!
+            validationTimeout = "5s" //(9)!
+            idleTimeout = "10m" //(10)!
+            maxLifetime = "15m" //(11)!
+            leakDetectionThreshold = "0s" //(12)!
+            initializationFailTimeout = "0s" //(13)!
+            readinessProbe = false //(14)!
+            dsProperties { //(15)!
+                "hostRecheckSeconds": "2"
+            }
+            telemetry {
+                logging {
+                    enabled = false //(16)!
+                }
+                metrics {
+                    enabled = true //(17)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                    tags = { // (19)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(20)!
+                    attributes = { // (21)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Database schema for the connection (default: not specified, optional)
+        5.  `Hikari` connection pool name (`required`, default: not specified)
+        6.  Maximum `Hikari` connection pool size (default: `10`)
+        7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
+        8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
+        9.  Maximum time for `Hikari` connection validation (default: `5s`)
+        10. Maximum idle time for a `Hikari` connection (default: `10m`)
+        11. Maximum lifetime of a `Hikari` connection (default: `15m`)
+        12. Time after which a busy connection is considered a possible leak (default: `0s`)
+        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
+        16. Enables module logging (default: `false`)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        db:
+          jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
+          username: "postgres" #(2)!
+          password: "postgres" #(3)!
+          schema: "public" #(4)!
+          poolName: "kora" #(5)!
+          maxPoolSize: 10 #(6)!
+          minIdle: 0 #(7)!
+          connectionTimeout: "10s" #(8)!
+          validationTimeout: "5s" #(9)!
+          idleTimeout: "10m" #(10)!
+          maxLifetime: "15m" #(11)!
+          leakDetectionThreshold: "0s" #(12)!
+          initializationFailTimeout: "0s" #(13)!
+          readinessProbe: false #(14)!
+          dsProperties: #(15)!
+            hostRecheckSeconds: "1"
+          telemetry:
+            logging:
+              enabled: false #(16)!
+            metrics:
+              enabled: true #(17)!
+              slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+              tags: #(19)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(20)!
+              attributes: #(21)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Database schema for the connection (default: not specified, optional)
+        5.  `Hikari` connection pool name (`required`, default: not specified)
+        6.  Maximum `Hikari` connection pool size (default: `10`)
+        7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
+        8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
+        9.  Maximum time for `Hikari` connection validation (default: `5s`)
+        10. Maximum idle time for a `Hikari` connection (default: `10m`)
+        11. Maximum lifetime of a `Hikari` connection (default: `15m`)
+        12. Time after which a busy connection is considered a possible leak (default: `0s`)
+        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
+        16. Enables module logging (default: `false`)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
 
 ## Usage { #usage }
 

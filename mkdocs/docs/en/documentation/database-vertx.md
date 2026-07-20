@@ -65,7 +65,7 @@ required only if you use `Mono`/`Flux` method signatures.
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described by `VertxDatabaseConfig` (example values or default values are shown):
+Basic Vert.x configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
@@ -76,52 +76,14 @@ Example of the complete configuration described by `VertxDatabaseConfig` (exampl
         password = "postgres" //(3)!
         poolName = "kora" //(4)!
         maxPoolSize = 10 //(5)!
-        connectionTimeout = "10s" //(6)!
-        acquireTimeout = "10s" //(7)!
-        idleTimeout = "10m" //(8)!
-        cachePreparedStatements = true //(9)!
-        initializationFailTimeout = "10s" //(10)!
-        readinessProbe = false //(11)!
-        telemetry {
-            logging {
-                enabled = false //(12)!
-            }
-            metrics {
-                enabled = true //(13)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(14)!
-                tags = { // (15)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(16)!
-                attributes = { // (17)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
     }
     ```
 
-    1.  Connection [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) for the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Connection pool name (`required`, default: not specified)
+    1.  Database connection `URL` (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  Connection pool name (`required`, no default)
     5.  Maximum connection pool size (default: `10`)
-    6.  Maximum time to establish a physical connection (default: `10s`)
-    7.  Maximum time to acquire a connection from the pool; if not set, `connectionTimeout` is used instead (default: not specified, optional)
-    8.  Maximum idle time for a connection (default: `10m`)
-    9.  Whether to cache prepared statements (default: `true`)
-    10. Maximum time to wait for a `SELECT 1` connection check at service startup; if not set, no startup check is performed (default: not specified, optional)
-    11. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    12. Enables module logging (default: `false`)
-    13. Enables module metrics (default: `true`)
-    14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    15. Configures metric tags (default: `{}`)
-    16. Enables module tracing (default: `true`)
-    17. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -132,45 +94,122 @@ Example of the complete configuration described by `VertxDatabaseConfig` (exampl
       password: "postgres" #(3)!
       poolName: "kora" #(4)!
       maxPoolSize: 10 #(5)!
-      connectionTimeout: "10s" #(6)!
-      acquireTimeout: "10s" #(7)!
-      idleTimeout: "10m" #(8)!
-      cachePreparedStatements: true #(9)!
-      initializationFailTimeout: "10s" #(10)!
-      readinessProbe: false #(11)!
-      telemetry:
-        logging:
-          enabled: false #(12)!
-        metrics:
-          enabled: true #(13)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
-          tags: #(15)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(16)!
-          attributes: #(17)!
-            key1: value1
-            key2: value2
     ```
 
-    1.  Connection [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) for the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Connection pool name (`required`, default: not specified)
+    1.  Database connection `URL` (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  Connection pool name (`required`, no default)
     5.  Maximum connection pool size (default: `10`)
-    6.  Maximum time to establish a physical connection (default: `10s`)
-    7.  Maximum time to acquire a connection from the pool; if not set, `connectionTimeout` is used instead (default: not specified, optional)
-    8.  Maximum idle time for a connection (default: `10m`)
-    9.  Whether to cache prepared statements (default: `true`)
-    10. Maximum time to wait for a `SELECT 1` connection check at service startup; if not set, no startup check is performed (default: not specified, optional)
-    11. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    12. Enables module logging (default: `false`)
-    13. Enables module metrics (default: `true`)
-    14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    15. Configures metric tags (default: `{}`)
-    16. Enables module tracing (default: `true`)
-    17. Configures tracing attributes (default: `{}`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described by `VertxDatabaseConfig` (example values or default values are shown):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        db {
+            connectionUri = "postgresql://localhost:5432/postgres" //(1)!
+            username = "postgres" //(2)!
+            password = "postgres" //(3)!
+            poolName = "kora" //(4)!
+            maxPoolSize = 10 //(5)!
+            connectionTimeout = "10s" //(6)!
+            acquireTimeout = "10s" //(7)!
+            idleTimeout = "10m" //(8)!
+            cachePreparedStatements = true //(9)!
+            initializationFailTimeout = "10s" //(10)!
+            readinessProbe = false //(11)!
+            telemetry {
+                logging {
+                    enabled = false //(12)!
+                }
+                metrics {
+                    enabled = true //(13)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(14)!
+                    tags = { // (15)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(16)!
+                    attributes = { // (17)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  Connection [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) for the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Connection pool name (`required`, default: not specified)
+        5.  Maximum connection pool size (default: `10`)
+        6.  Maximum time to establish a physical connection (default: `10s`)
+        7.  Maximum time to acquire a connection from the pool; if not set, `connectionTimeout` is used instead (default: not specified, optional)
+        8.  Maximum idle time for a connection (default: `10m`)
+        9.  Whether to cache prepared statements (default: `true`)
+        10. Maximum time to wait for a `SELECT 1` connection check at service startup; if not set, no startup check is performed (default: not specified, optional)
+        11. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        12. Enables module logging (default: `false`)
+        13. Enables module metrics (default: `true`)
+        14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        15. Configures metric tags (default: `{}`)
+        16. Enables module tracing (default: `true`)
+        17. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        db:
+          connectionUri: "postgresql://localhost:5432/postgres" #(1)!
+          username: "postgres" #(2)!
+          password: "postgres" #(3)!
+          poolName: "kora" #(4)!
+          maxPoolSize: 10 #(5)!
+          connectionTimeout: "10s" #(6)!
+          acquireTimeout: "10s" #(7)!
+          idleTimeout: "10m" #(8)!
+          cachePreparedStatements: true #(9)!
+          initializationFailTimeout: "10s" #(10)!
+          readinessProbe: false #(11)!
+          telemetry:
+            logging:
+              enabled: false #(12)!
+            metrics:
+              enabled: true #(13)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
+              tags: #(15)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(16)!
+              attributes: #(17)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  Connection [URI](https://vertx.io/docs/vertx-pg-client/java/#_connection_uri) for the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Connection pool name (`required`, default: not specified)
+        5.  Maximum connection pool size (default: `10`)
+        6.  Maximum time to establish a physical connection (default: `10s`)
+        7.  Maximum time to acquire a connection from the pool; if not set, `connectionTimeout` is used instead (default: not specified, optional)
+        8.  Maximum idle time for a connection (default: `10m`)
+        9.  Whether to cache prepared statements (default: `true`)
+        10. Maximum time to wait for a `SELECT 1` connection check at service startup; if not set, no startup check is performed (default: not specified, optional)
+        11. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        12. Enables module logging (default: `false`)
+        13. Enables module metrics (default: `true`)
+        14. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        15. Configures metric tags (default: `{}`)
+        16. Enables module tracing (default: `true`)
+        17. Configures tracing attributes (default: `{}`)
 
 Because the pool runs on the [Netty](netty.md) transport, you can also configure the [Netty transport](netty.md) separately.
 

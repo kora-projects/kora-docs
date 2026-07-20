@@ -156,120 +156,147 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 The `Lettuce` driver must be configured separately to connect to `Redis`.
 A single connection is used for all `Redis` caches.
 
-Example of a complete configuration for the `Lettuce` driver; parameters are described in the `LettuceClientConfig` class (example values or default values are shown):
+Basic Lettuce configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     lettuce {
         uri = "redis://localhost:6379" //(1)!
-        user = "admin" //(2)!
-        password = "12345" //(3)!
-        database = 0 //(4)!
-        protocol = "RESP3" //(5)!
-        socketTimeout = "10s" //(6)!
-        commandTimeout = "60s" //(7)!
-        forceClusterClient = false //(8)!
-        ssl {
-            ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
-            handshakeTimeout = "10s" //(10)!
-        }
-        telemetry {
-            logging {
-                enabled = false //(11)!
-            }
-            metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
-                tags = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(15)!
-                attributes = { // (16)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        commandTimeout = "60s" //(2)!
     }
     ```
 
-    1.  `URI` for connecting to `Redis` (`required`, default not specified).
-        Single-server connection: `redis://localhost:6379`.
-        Multi-server connection: `redis://localhost:6379,localhost:6380`.
-        Connection with `SSL`: `rediss://localhost:6380`.
-        Connection with `TLS`: `redis+tls://localhost:6380`.
-    2.  Username for the connection (default not specified, optional)
-    3.  User password for the connection (default not specified, optional)
-    4.  Database number for the connection (default not specified, optional)
-    5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
-    6.  Socket connection timeout (default: `10s`)
-    7.  Command execution timeout (default: `60s`)
-    8.  Create a cluster client even with a single connection `URI` (default: `false`)
-    9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
-    10. Timeout for establishing a secure connection with the server (default: `10s`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Tags configuration for metrics (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Attributes configuration for tracing (default: `{}`)
- 
+    1.  `URI` for connecting to `Redis` (`required`, no default)
+    2.  Command execution timeout (default: `60s`)
+
 === ":simple-yaml: `YAML`"
 
     ```yaml
     lettuce:
       uri: "redis://localhost:6379" #(1)!
-      user: "admin" #(2)!
-      password: "12345" #(3)!
-      database: 0 #(4)!
-      protocol: "RESP3" #(5)!
-      socketTimeout: "10s" #(6)!
-      commandTimeout: "60s" #(7)!
-      forceClusterClient: false #(8)!
-      ssl:
-        ciphers:
-          - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
-        handshakeTimeout: "10s" #(10)!
-      telemetry:
-        logging:
-          enabled: false #(11)!
-        metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
-          tags: #(14)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(15)!
-          attributes: #(16)!
-            key1: value1
-            key2: value2
+      commandTimeout: "60s" #(2)!
     ```
 
-    1.  `URI` for connecting to `Redis` (`required`, default not specified).
-        Single-server connection: `redis://localhost:6379`.
-        Multi-server connection: `redis://localhost:6379,localhost:6380`.
-        Connection with `SSL`: `rediss://localhost:6380`.
-        Connection with `TLS`: `redis+tls://localhost:6380`.
-    2.  Username for the connection (default not specified, optional)
-    3.  User password for the connection (default not specified, optional)
-    4.  Database number for the connection (default not specified, optional)
-    5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
-    6.  Socket connection timeout (default: `10s`)
-    7.  Command execution timeout (default: `60s`)
-    8.  Create a cluster client even with a single connection `URI` (default: `false`)
-    9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
-    10. Timeout for establishing a secure connection with the server (default: `10s`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Tags configuration for metrics (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Attributes configuration for tracing (default: `{}`)
+    1.  `URI` for connecting to `Redis` (`required`, no default)
+    2.  Command execution timeout (default: `60s`)
+
+??? note "Full Configuration"
+
+    Example of a complete configuration for the `Lettuce` driver; parameters are described in the `LettuceClientConfig` class (example values or default values are shown):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        lettuce {
+            uri = "redis://localhost:6379" //(1)!
+            user = "admin" //(2)!
+            password = "12345" //(3)!
+            database = 0 //(4)!
+            protocol = "RESP3" //(5)!
+            socketTimeout = "10s" //(6)!
+            commandTimeout = "60s" //(7)!
+            forceClusterClient = false //(8)!
+            ssl {
+                ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
+                handshakeTimeout = "10s" //(10)!
+            }
+            telemetry {
+                logging {
+                    enabled = false //(11)!
+                }
+                metrics {
+                    enabled = true //(12)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                    tags = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(15)!
+                    attributes = { // (16)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  `URI` for connecting to `Redis` (`required`, default not specified).
+            Single-server connection: `redis://localhost:6379`.
+            Multi-server connection: `redis://localhost:6379,localhost:6380`.
+            Connection with `SSL`: `rediss://localhost:6380`.
+            Connection with `TLS`: `redis+tls://localhost:6380`.
+        2.  Username for the connection (default not specified, optional)
+        3.  User password for the connection (default not specified, optional)
+        4.  Database number for the connection (default not specified, optional)
+        5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
+        6.  Socket connection timeout (default: `10s`)
+        7.  Command execution timeout (default: `60s`)
+        8.  Create a cluster client even with a single connection `URI` (default: `false`)
+        9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
+        10. Timeout for establishing a secure connection with the server (default: `10s`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Tags configuration for metrics (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Attributes configuration for tracing (default: `{}`)
+     
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        lettuce:
+          uri: "redis://localhost:6379" #(1)!
+          user: "admin" #(2)!
+          password: "12345" #(3)!
+          database: 0 #(4)!
+          protocol: "RESP3" #(5)!
+          socketTimeout: "10s" #(6)!
+          commandTimeout: "60s" #(7)!
+          forceClusterClient: false #(8)!
+          ssl:
+            ciphers:
+              - "TLS_CHACHA20_POLY1305_SHA256" #(9)!
+            handshakeTimeout: "10s" #(10)!
+          telemetry:
+            logging:
+              enabled: false #(11)!
+            metrics:
+              enabled: true #(12)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+              tags: #(14)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(15)!
+              attributes: #(16)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  `URI` for connecting to `Redis` (`required`, default not specified).
+            Single-server connection: `redis://localhost:6379`.
+            Multi-server connection: `redis://localhost:6379,localhost:6380`.
+            Connection with `SSL`: `rediss://localhost:6380`.
+            Connection with `TLS`: `redis+tls://localhost:6380`.
+        2.  Username for the connection (default not specified, optional)
+        3.  User password for the connection (default not specified, optional)
+        4.  Database number for the connection (default not specified, optional)
+        5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
+        6.  Socket connection timeout (default: `10s`)
+        7.  Command execution timeout (default: `60s`)
+        8.  Create a cluster client even with a single connection `URI` (default: `false`)
+        9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
+        10. Timeout for establishing a secure connection with the server (default: `10s`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Tags configuration for metrics (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Attributes configuration for tracing (default: `{}`)
 
 The `Redis` cache configuration defines behavior for a specific cache.
 

@@ -110,7 +110,7 @@ The plugin generates Java message classes from the `protobuf` contract and gRPC 
 
 A `gRPC client` for the `SimpleService` service will have the `grpcClient.SimpleService` configuration path.
 
-Example of the complete configuration described by the `GrpcClientConfig` class:
+Basic configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -119,52 +119,12 @@ Example of the complete configuration described by the `GrpcClientConfig` class:
         SimpleService {
             url = "http://localhost:8090" //(1)!
             timeout = "10s"  //(2)!
-            keepAliveTime = "0s" //(3)!
-            keepAliveTimeout = "0s" //(4)!
-            loadBalancingPolicy = "pick_first" //(5)!
-            defaultServiceConfig { //(6)!
-                loadBalancingConfig = [
-                    {
-                        round_robin = {}
-                    }
-                ]
-            }
-            telemetry {
-                logging {
-                    enabled = false //(7)!
-                }
-                metrics {
-                    enabled = true //(8)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                    tags = { // (10)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(11)!
-                    attributes = { // (12)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
     }
     ```
 
-    1. Server `URL` where requests will be sent (required, default: not specified).
+    1. Server `URL` where requests will be sent (`required`, no default).
     2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
-    3. Interval between gRPC `PING` frames (default: not specified, optional).
-    4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
-    5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
-    6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
-    7. Enables module logging (default: `false`).
-    8. Enables module metrics (default: `true`).
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    10. Additional tags for metrics (default: `{}`).
-    11. Enables module tracing (default: `true`).
-    12. Additional attributes for tracing (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
@@ -173,40 +133,110 @@ Example of the complete configuration described by the `GrpcClientConfig` class:
       SimpleService:
         url: "http://localhost:8090" #(1)!
         timeout: "10s" #(2)!
-        keepAliveTime: "0s" #(3)!
-        keepAliveTimeout: "0s" #(4)!
-        loadBalancingPolicy: "pick_first" #(5)!
-        defaultServiceConfig: #(6)!
-          loadBalancingConfig:
-            - round_robin: {}
-        telemetry:
-          logging:
-            enabled: false #(7)!
-          metrics:
-            enabled: true #(8)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-            tags: #(10)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(11)!
-            attributes: #(12)!
-              key1: value1
-              key2: value2
     ```
 
-    1. Server `URL` where requests will be sent (required, default: not specified).
+    1. Server `URL` where requests will be sent (`required`, no default).
     2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
-    3. Interval between gRPC `PING` frames (default: not specified, optional).
-    4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
-    5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
-    6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
-    7. Enables module logging (default: `false`).
-    8. Enables module metrics (default: `true`).
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    10. Additional tags for metrics (default: `{}`).
-    11. Enables module tracing (default: `true`).
-    12. Additional attributes for tracing (default: `{}`).
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described by the `GrpcClientConfig` class:
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        grpcClient {
+            SimpleService {
+                url = "http://localhost:8090" //(1)!
+                timeout = "10s"  //(2)!
+                keepAliveTime = "0s" //(3)!
+                keepAliveTimeout = "0s" //(4)!
+                loadBalancingPolicy = "pick_first" //(5)!
+                defaultServiceConfig { //(6)!
+                    loadBalancingConfig = [
+                        {
+                            round_robin = {}
+                        }
+                    ]
+                }
+                telemetry {
+                    logging {
+                        enabled = false //(7)!
+                    }
+                    metrics {
+                        enabled = true //(8)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                        tags = { // (10)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                    tracing {
+                        enabled = true //(11)!
+                        attributes = { // (12)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Server `URL` where requests will be sent (required, default: not specified).
+        2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
+        3. Interval between gRPC `PING` frames (default: not specified, optional).
+        4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
+        5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
+        6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
+        7. Enables module logging (default: `false`).
+        8. Enables module metrics (default: `true`).
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        10. Additional tags for metrics (default: `{}`).
+        11. Enables module tracing (default: `true`).
+        12. Additional attributes for tracing (default: `{}`).
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        grpcClient:
+          SimpleService:
+            url: "http://localhost:8090" #(1)!
+            timeout: "10s" #(2)!
+            keepAliveTime: "0s" #(3)!
+            keepAliveTimeout: "0s" #(4)!
+            loadBalancingPolicy: "pick_first" #(5)!
+            defaultServiceConfig: #(6)!
+              loadBalancingConfig:
+                - round_robin: {}
+            telemetry:
+              logging:
+                enabled: false #(7)!
+              metrics:
+                enabled: true #(8)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+                tags: #(10)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(11)!
+                attributes: #(12)!
+                  key1: value1
+                  key2: value2
+        ```
+
+        1. Server `URL` where requests will be sent (required, default: not specified).
+        2. Maximum request execution time (default: not specified, optional). The value is applied as a `deadline` if the call does not already have its own `deadline`.
+        3. Interval between gRPC `PING` frames (default: not specified, optional).
+        4. Timeout for acknowledging a `PING` frame (default: not specified, optional). If the acknowledgement is not received within this time, the connection is closed.
+        5. Load balancing policy for `ManagedChannelBuilder` (default: not specified, optional).
+        6. Standard gRPC service configuration passed to `ManagedChannelBuilder.defaultServiceConfig` (default: not specified, optional).
+        7. Enables module logging (default: `false`).
+        8. Enables module metrics (default: `true`).
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        10. Additional tags for metrics (default: `{}`).
+        11. Enables module tracing (default: `true`).
+        12. Additional attributes for tracing (default: `{}`).
 
 ### Transport and TLS { #transport-tls }
 

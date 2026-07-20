@@ -126,7 +126,7 @@ A minimal configuration that binds a port from an environment variable and enabl
           enabled: true
     ```
 
-Example of a complete configuration described by `GrpcServerConfig`:
+Basic configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -135,48 +135,12 @@ Example of a complete configuration described by `GrpcServerConfig`:
         port = 8090 //(1)!
         maxMessageSize = "4MiB" //(2)!
         reflectionEnabled = false //(3)!
-        shutdownWait = "30s" //(4)!
-        maxConnectionAge = "0s" //(5)!
-        maxConnectionAgeGrace = "0s" //(6)!
-        keepAliveTime = "0s" //(7)!
-        keepAliveTimeout = "0s" //(8)!
-        telemetry {
-            logging {
-                enabled = false //(9)!
-            }
-            metrics {
-                enabled = true //(10)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
-                tags = { // (12)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(13)!
-                attributes = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
     }
     ```
 
     1. `gRPC server` port (default: `8090`).
-    2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
-    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
-    4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
-    5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
-    6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
-    7. Sets the interval between `PING` frames (default: not specified, optional).
-    8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
-    9. Enables module logging (default: `false`).
-    10. Enables module metrics (default: `true`).
-    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    12. Metric tags (default: `{}`).
-    13. Enables module tracing (default: `true`).
-    14. Tracing attributes (default: `{}`).
+    2. Maximum incoming message size (default: `4MiB`).
+    3. Enables [`gRPC Server Reflection`](#reflection) service (default: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -185,41 +149,108 @@ Example of a complete configuration described by `GrpcServerConfig`:
       port: 8090 #(1)!
       maxMessageSize: "4MiB" #(2)!
       reflectionEnabled: false #(3)!
-      shutdownWait: "30s" #(4)!
-      maxConnectionAge: "0s" #(5)!
-      maxConnectionAgeGrace: "0s" #(6)!
-      keepAliveTime: "0s" #(7)!
-      keepAliveTimeout: "0s" #(8)!
-      telemetry:
-        logging:
-          enabled: false #(9)!
-        metrics:
-          enabled: true #(10)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-          tags: #(12)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(13)!
-          attributes: #(14)!
-            key1: value1
-            key2: value2
     ```
 
     1. `gRPC server` port (default: `8090`).
-    2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
-    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
-    4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
-    5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
-    6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
-    7. Sets the interval between `PING` frames (default: not specified, optional).
-    8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
-    9. Enables module logging (default: `false`).
-    10. Enables module metrics (default: `true`).
-    11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    12. Metric tags (default: `{}`).
-    13. Enables module tracing (default: `true`).
-    14. Tracing attributes (default: `{}`).
+    2. Maximum incoming message size (default: `4MiB`).
+    3. Enables [`gRPC Server Reflection`](#reflection) service (default: `false`).
+
+??? note "Full Configuration"
+
+    Example of a complete configuration described by `GrpcServerConfig`:
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        grpcServer {
+            port = 8090 //(1)!
+            maxMessageSize = "4MiB" //(2)!
+            reflectionEnabled = false //(3)!
+            shutdownWait = "30s" //(4)!
+            maxConnectionAge = "0s" //(5)!
+            maxConnectionAgeGrace = "0s" //(6)!
+            keepAliveTime = "0s" //(7)!
+            keepAliveTimeout = "0s" //(8)!
+            telemetry {
+                logging {
+                    enabled = false //(9)!
+                }
+                metrics {
+                    enabled = true //(10)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                    tags = { // (12)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(13)!
+                    attributes = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. `gRPC server` port (default: `8090`).
+        2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
+        3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
+        4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+        5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
+        6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+        7. Sets the interval between `PING` frames (default: not specified, optional).
+        8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+        9. Enables module logging (default: `false`).
+        10. Enables module metrics (default: `true`).
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        12. Metric tags (default: `{}`).
+        13. Enables module tracing (default: `true`).
+        14. Tracing attributes (default: `{}`).
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        grpcServer:
+          port: 8090 #(1)!
+          maxMessageSize: "4MiB" #(2)!
+          reflectionEnabled: false #(3)!
+          shutdownWait: "30s" #(4)!
+          maxConnectionAge: "0s" #(5)!
+          maxConnectionAgeGrace: "0s" #(6)!
+          keepAliveTime: "0s" #(7)!
+          keepAliveTimeout: "0s" #(8)!
+          telemetry:
+            logging:
+              enabled: false #(9)!
+            metrics:
+              enabled: true #(10)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+              tags: #(12)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(13)!
+              attributes: #(14)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. `gRPC server` port (default: `8090`).
+        2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
+        3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
+        4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+        5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
+        6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+        7. Sets the interval between `PING` frames (default: not specified, optional).
+        8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+        9. Enables module logging (default: `false`).
+        10. Enables module metrics (default: `true`).
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        12. Metric tags (default: `{}`).
+        13. Enables module tracing (default: `true`).
+        14. Tracing attributes (default: `{}`).
 
 You can also configure [Netty transport](netty.md).
 

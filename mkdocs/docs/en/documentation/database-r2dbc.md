@@ -45,7 +45,7 @@ You also **must provide** the database driver implementation as a dependency.
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described by `R2dbcDatabaseConfig` (example values or default values are shown):
+Basic R2DBC configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
@@ -56,60 +56,14 @@ Example of the complete configuration described by `R2dbcDatabaseConfig` (exampl
         password = "postgres" //(3)!
         poolName = "kora" //(4)!
         maxPoolSize = 10 //(5)!
-        minIdle = 0 //(6)!
-        acquireRetry = 3 //(7)!
-        connectionTimeout = "10s" //(8)!
-        connectionCreateTimeout = "30s" //(9)!
-        idleTimeout = "10m" //(10)!
-        maxLifetime = "0s" //(11)!
-        statementTimeout = "0s" //(12)!
-        readinessProbe = false //(13)!
-        options { //(14)!
-            "backgroundEvictionInterval": "PT120S"
-        }
-        telemetry {
-            logging {
-                enabled = false //(15)!
-            }
-            metrics {
-                enabled = true //(16)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
-                tags = { // (18)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(19)!
-                attributes = { // (20)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
     }
     ```
 
-    1.  `R2DBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Connection pool name (`required`, default: not specified)
+    1.  `R2DBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  Connection pool name (`required`, no default)
     5.  Maximum connection pool size (default: `10`)
-    6.  Minimum number of idle ready connections in the pool (default: `0`)
-    7.  Maximum number of attempts to acquire a connection (default: `3`)
-    8.  Maximum time to acquire a connection from the pool (default: `10s`)
-    9.  Maximum time to create a new physical connection (default: `30s`)
-    10. Maximum idle time for a connection (default: `10m`)
-    11. Maximum lifetime of a connection, `0s` means no limit (default: `0s`)
-    12. Maximum time to execute a query on the database (default: not specified, optional)
-    13. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    14. Additional `R2DBC` connection options passed to the driver (default: `{}`)
-    15. Enables module logging (default: `false`)
-    16. Enables module metrics (default: `true`)
-    17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    18. Configures metric tags (default: `{}`)
-    19. Enables module tracing (default: `true`)
-    20. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -120,52 +74,137 @@ Example of the complete configuration described by `R2dbcDatabaseConfig` (exampl
       password: "postgres" #(3)!
       poolName: "kora" #(4)!
       maxPoolSize: 10 #(5)!
-      minIdle: 0 #(6)!
-      acquireRetry: 3 #(7)!
-      connectionTimeout: "10s" #(8)!
-      connectionCreateTimeout: "30s" #(9)!
-      idleTimeout: "10m" #(10)!
-      maxLifetime: "0s" #(11)!
-      statementTimeout: "0s" #(12)!
-      readinessProbe: false #(13)!
-      options: #(14)!
-        backgroundEvictionInterval: "PT120S"
-      telemetry:
-        logging:
-          enabled: false #(15)!
-        metrics:
-          enabled: true #(16)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-          tags: #(18)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(19)!
-          attributes: #(20)!
-            key1: value1
-            key2: value2
     ```
 
-    1.  `R2DBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Connection pool name (`required`, default: not specified)
+    1.  `R2DBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  Connection pool name (`required`, no default)
     5.  Maximum connection pool size (default: `10`)
-    6.  Minimum number of idle ready connections in the pool (default: `0`)
-    7.  Maximum number of attempts to acquire a connection (default: `3`)
-    8.  Maximum time to acquire a connection from the pool (default: `10s`)
-    9.  Maximum time to create a new physical connection (default: `30s`)
-    10. Maximum idle time for a connection (default: `10m`)
-    11. Maximum lifetime of a connection, `0s` means no limit (default: `0s`)
-    12. Maximum time to execute a query on the database (default: not specified, optional)
-    13. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    14. Additional `R2DBC` connection options passed to the driver (default: `{}`)
-    15. Enables module logging (default: `false`)
-    16. Enables module metrics (default: `true`)
-    17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    18. Configures metric tags (default: `{}`)
-    19. Enables module tracing (default: `true`)
-    20. Configures tracing attributes (default: `{}`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described by `R2dbcDatabaseConfig` (example values or default values are shown):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        db {
+            r2dbcUrl = "r2dbc:postgresql://localhost:5432/postgres" //(1)!
+            username = "postgres" //(2)!
+            password = "postgres" //(3)!
+            poolName = "kora" //(4)!
+            maxPoolSize = 10 //(5)!
+            minIdle = 0 //(6)!
+            acquireRetry = 3 //(7)!
+            connectionTimeout = "10s" //(8)!
+            connectionCreateTimeout = "30s" //(9)!
+            idleTimeout = "10m" //(10)!
+            maxLifetime = "0s" //(11)!
+            statementTimeout = "0s" //(12)!
+            readinessProbe = false //(13)!
+            options { //(14)!
+                "backgroundEvictionInterval": "PT120S"
+            }
+            telemetry {
+                logging {
+                    enabled = false //(15)!
+                }
+                metrics {
+                    enabled = true //(16)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                    tags = { // (18)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(19)!
+                    attributes = { // (20)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  `R2DBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Connection pool name (`required`, default: not specified)
+        5.  Maximum connection pool size (default: `10`)
+        6.  Minimum number of idle ready connections in the pool (default: `0`)
+        7.  Maximum number of attempts to acquire a connection (default: `3`)
+        8.  Maximum time to acquire a connection from the pool (default: `10s`)
+        9.  Maximum time to create a new physical connection (default: `30s`)
+        10. Maximum idle time for a connection (default: `10m`)
+        11. Maximum lifetime of a connection, `0s` means no limit (default: `0s`)
+        12. Maximum time to execute a query on the database (default: not specified, optional)
+        13. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        14. Additional `R2DBC` connection options passed to the driver (default: `{}`)
+        15. Enables module logging (default: `false`)
+        16. Enables module metrics (default: `true`)
+        17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        18. Configures metric tags (default: `{}`)
+        19. Enables module tracing (default: `true`)
+        20. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        db:
+          r2dbcUrl: "r2dbc:postgresql://localhost:5432/postgres" #(1)!
+          username: "postgres" #(2)!
+          password: "postgres" #(3)!
+          poolName: "kora" #(4)!
+          maxPoolSize: 10 #(5)!
+          minIdle: 0 #(6)!
+          acquireRetry: 3 #(7)!
+          connectionTimeout: "10s" #(8)!
+          connectionCreateTimeout: "30s" #(9)!
+          idleTimeout: "10m" #(10)!
+          maxLifetime: "0s" #(11)!
+          statementTimeout: "0s" #(12)!
+          readinessProbe: false #(13)!
+          options: #(14)!
+            backgroundEvictionInterval: "PT120S"
+          telemetry:
+            logging:
+              enabled: false #(15)!
+            metrics:
+              enabled: true #(16)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+              tags: #(18)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(19)!
+              attributes: #(20)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  `R2DBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Connection pool name (`required`, default: not specified)
+        5.  Maximum connection pool size (default: `10`)
+        6.  Minimum number of idle ready connections in the pool (default: `0`)
+        7.  Maximum number of attempts to acquire a connection (default: `3`)
+        8.  Maximum time to acquire a connection from the pool (default: `10s`)
+        9.  Maximum time to create a new physical connection (default: `30s`)
+        10. Maximum idle time for a connection (default: `10m`)
+        11. Maximum lifetime of a connection, `0s` means no limit (default: `0s`)
+        12. Maximum time to execute a query on the database (default: not specified, optional)
+        13. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        14. Additional `R2DBC` connection options passed to the driver (default: `{}`)
+        15. Enables module logging (default: `false`)
+        16. Enables module metrics (default: `true`)
+        17. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        18. Configures metric tags (default: `{}`)
+        19. Enables module tracing (default: `true`)
+        20. Configures tracing attributes (default: `{}`)
 
 ## Usage { #usage }
 

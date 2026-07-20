@@ -57,135 +57,162 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
 ### Configuration { #configuration }
 
-Example of the complete configuration described in the `OkHttpClientConfig`
-and `HttpClientConfig` classes (default or example values are specified):
+Basic OkHttp client configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpClient {
-        ok {
-            followRedirects = true //(1)!
-            httpVersion = "HTTP_1_1" //(2)!
-            retryOnConnectionFailure = true //(3)!
-        }
-        connectTimeout = "5s" //(4)!
-        readTimeout = "2m" //(5)!
-        useEnvProxy = false //(6)!
-        proxy {
-            host = "localhost" //(7)!
-            port = 8090 //(8)!
-            user = "user" //(9)!
-            password = "password" //(10)!
-            nonProxyHosts = [ "host1", "host2" ] //(11)!
-        }
-        telemetry {
-            logging {
-                enabled = false //(12)!
-                mask = "***" //(13)!
-                maskQueries = [ ] //(14)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(15)!
-                pathTemplate = true //(16)!
-            }
-            metrics {
-                enabled = true //(17)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                tags = { // (19)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(20)!
-                attributes = { // (21)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        connectTimeout = "5s" //(1)!
+        readTimeout = "2m" //(2)!
     }
     ```
 
-    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-    2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
-    3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
-    4. Maximum time to establish a connection (default: `5s`)
-    5. Maximum time to read a response (default: `2m`)
-    6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    7. Proxy host (`required`, default not specified)
-    8. Proxy port (`required`, default not specified)
-    9. Proxy user (default not specified, optional)
-    10. Proxy password (default not specified, optional)
-    11. Hosts to exclude from proxying (default not specified, optional)
-    12. Enables module logging (default: `false`)
-    13. Mask used to hide specified headers and request or response parameters (default: `***`)
-    14. List of request parameters to hide (default: `[]`)
-    15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
-      ok:
-        followRedirects: true #(1)!
-        httpVersion: "HTTP_1_1" #(2)!
-        retryOnConnectionFailure: true #(3)!
-      connectTimeout: "5s" #(4)!
-      readTimeout: "2m" #(5)!
-      useEnvProxy: false #(6)!
-      proxy:
-        host: "localhost" #(7)!
-        port: 8090  #(8)!
-        user: "user"  #(9)!
-        password: "password" #(10)!
-        nonProxyHosts: [ "host1", "host2" ] #(11)!
-      telemetry:
-        logging:
-          enabled: false #(12)!
-          mask: "***" #(13)!
-          maskQueries: [ ] #(14)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(15)!
-          pathTemplate: true #(16)!
-        metrics:
-          enabled: true #(17)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-          tags: #(19)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(20)!
-          attributes: #(21)!
-            key1: value1
-            key2: value2
+      connectTimeout: "5s" #(1)!
+      readTimeout: "2m" #(2)!
     ```
 
-    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-    2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
-    3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
-    4. Maximum time to establish a connection (default: `5s`)
-    5. Maximum time to read a response (default: `2m`)
-    6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    7. Proxy host (`required`, default not specified)
-    8. Proxy port (`required`, default not specified)
-    9. Proxy user (default not specified, optional)
-    10. Proxy password (default not specified, optional)
-    11. Hosts to exclude from proxying (default not specified, optional)
-    12. Enables module logging (default: `false`)
-    13. Mask used to hide specified headers and request or response parameters (default: `***`)
-    14. List of request parameters to hide (default: `[]`)
-    15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `OkHttpClientConfig`
+    and `HttpClientConfig` classes (default or example values are specified):
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpClient {
+            ok {
+                followRedirects = true //(1)!
+                httpVersion = "HTTP_1_1" //(2)!
+                retryOnConnectionFailure = true //(3)!
+            }
+            connectTimeout = "5s" //(4)!
+            readTimeout = "2m" //(5)!
+            useEnvProxy = false //(6)!
+            proxy {
+                host = "localhost" //(7)!
+                port = 8090 //(8)!
+                user = "user" //(9)!
+                password = "password" //(10)!
+                nonProxyHosts = [ "host1", "host2" ] //(11)!
+            }
+            telemetry {
+                logging {
+                    enabled = false //(12)!
+                    mask = "***" //(13)!
+                    maskQueries = [ ] //(14)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(15)!
+                    pathTemplate = true //(16)!
+                }
+                metrics {
+                    enabled = true //(17)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                    tags = { // (19)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(20)!
+                    attributes = { // (21)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+        2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
+        3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        4. Maximum time to establish a connection (default: `5s`)
+        5. Maximum time to read a response (default: `2m`)
+        6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        7. Proxy host (`required`, default not specified)
+        8. Proxy port (`required`, default not specified)
+        9. Proxy user (default not specified, optional)
+        10. Proxy password (default not specified, optional)
+        11. Hosts to exclude from proxying (default not specified, optional)
+        12. Enables module logging (default: `false`)
+        13. Mask used to hide specified headers and request or response parameters (default: `***`)
+        14. List of request parameters to hide (default: `[]`)
+        15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpClient:
+          ok:
+            followRedirects: true #(1)!
+            httpVersion: "HTTP_1_1" #(2)!
+            retryOnConnectionFailure: true #(3)!
+          connectTimeout: "5s" #(4)!
+          readTimeout: "2m" #(5)!
+          useEnvProxy: false #(6)!
+          proxy:
+            host: "localhost" #(7)!
+            port: 8090  #(8)!
+            user: "user"  #(9)!
+            password: "password" #(10)!
+            nonProxyHosts: [ "host1", "host2" ] #(11)!
+          telemetry:
+            logging:
+              enabled: false #(12)!
+              mask: "***" #(13)!
+              maskQueries: [ ] #(14)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(15)!
+              pathTemplate: true #(16)!
+            metrics:
+              enabled: true #(17)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+              tags: #(19)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(20)!
+              attributes: #(21)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+        2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
+        3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        4. Maximum time to establish a connection (default: `5s`)
+        5. Maximum time to read a response (default: `2m`)
+        6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        7. Proxy host (`required`, default not specified)
+        8. Proxy port (`required`, default not specified)
+        9. Proxy user (default not specified, optional)
+        10. Proxy password (default not specified, optional)
+        11. Hosts to exclude from proxying (default not specified, optional)
+        12. Enables module logging (default: `false`)
+        13. Mask used to hide specified headers and request or response parameters (default: `***`)
+        14. List of request parameters to hide (default: `[]`)
+        15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
 
@@ -253,127 +280,154 @@ The `HttpClient` interface implementation is `AsyncHttpClient` and is available 
 
 ### Configuration { #configuration-2 }
 
-Example of the complete configuration described in the `AsyncHttpClientConfig` 
-and `HttpClientConfig` classes (default or example values are specified):
+Basic AsyncHttpClient configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpClient {
-        async {
-            followRedirects = true //(1)!
-        }
-        connectTimeout = "5s" //(2)!
-        readTimeout = "2m" //(3)!
-        useEnvProxy = false //(4)!
-        proxy {
-            host = "localhost"  //(5)!
-            port = 8090  //(6)!
-            user = "user"  //(7)!
-            password = "password"  //(8)!
-            nonProxyHosts = [ "host1", "host2" ]  //(9)!
-        }
-        telemetry {
-            logging {
-                enabled = false //(10)!
-                mask = "***" //(11)!
-                maskQueries = [ ] //(12)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
-                pathTemplate = true //(14)!
-            }
-            metrics {
-                enabled = true //(15)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
-                tags = { // (17)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(18)!
-                attributes = { // (19)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        connectTimeout = "5s" //(1)!
+        readTimeout = "2m" //(2)!
     }
     ```
 
-    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-    2. Maximum time to establish a connection (default: `5s`)
-    3. Maximum time to read a response (default: `2m`)
-    4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    5. Proxy host (`required`, default not specified)
-    6. Proxy port (`required`, default not specified)
-    7. Proxy user (default not specified, optional)
-    8. Proxy password (default not specified, optional)
-    9. Hosts to exclude from proxying (default not specified, optional)
-    10. Enables module logging (default: `false`)
-    11. Mask used to hide specified headers and request or response parameters (default: `***`)
-    12. List of request parameters to hide (default: `[]`)
-    13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    15. Enables module metrics (default: `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    17. Configures metric tags (default: `{}`)
-    18. Enables module tracing (default: `true`)
-    19. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
-      async:
-        followRedirects: true #(1)!
-      connectTimeout: "5s" #(2)!
-      readTimeout: "2m" #(3)!
-      useEnvProxy: false #(4)!
-      proxy:
-        host: "localhost"  #(5)!
-        port: 8090  #(6)!
-        user: "user"  #(7)!
-        password: "password"  #(8)!
-        nonProxyHosts: [ "host1", "host2" ]  #(9)!
-      telemetry:
-        logging:
-          enabled: false #(10)!
-          mask: "***" #(11)!
-          maskQueries: [ ] #(12)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
-          pathTemplate: true #(14)!
-        metrics:
-          enabled: true #(15)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-          tags: #(17)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(18)!
-          attributes: #(19)!
-            key1: value1
-            key2: value2
+      connectTimeout: "5s" #(1)!
+      readTimeout: "2m" #(2)!
     ```
 
-    1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-    2. Maximum time to establish a connection (default: `5s`)
-    3. Maximum time to read a response (default: `2m`)
-    4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    5. Proxy host (`required`, default not specified)
-    6. Proxy port (`required`, default not specified)
-    7. Proxy user (default not specified, optional)
-    8. Proxy password (default not specified, optional)
-    9. Hosts to exclude from proxying (default not specified, optional)
-    10. Enables module logging (default: `false`)
-    11. Mask used to hide specified headers and request or response parameters (default: `***`)
-    12. List of request parameters to hide (default: `[]`)
-    13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    15. Enables module metrics (default: `true`)
-    16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    17. Configures metric tags (default: `{}`)
-    18. Enables module tracing (default: `true`)
-    19. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `AsyncHttpClientConfig`
+    and `HttpClientConfig` classes (default or example values are specified):
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpClient {
+            async {
+                followRedirects = true //(1)!
+            }
+            connectTimeout = "5s" //(2)!
+            readTimeout = "2m" //(3)!
+            useEnvProxy = false //(4)!
+            proxy {
+                host = "localhost"  //(5)!
+                port = 8090  //(6)!
+                user = "user"  //(7)!
+                password = "password"  //(8)!
+                nonProxyHosts = [ "host1", "host2" ]  //(9)!
+            }
+            telemetry {
+                logging {
+                    enabled = false //(10)!
+                    mask = "***" //(11)!
+                    maskQueries = [ ] //(12)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
+                    pathTemplate = true //(14)!
+                }
+                metrics {
+                    enabled = true //(15)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
+                    tags = { // (17)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(18)!
+                    attributes = { // (19)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+        2. Maximum time to establish a connection (default: `5s`)
+        3. Maximum time to read a response (default: `2m`)
+        4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        5. Proxy host (`required`, default not specified)
+        6. Proxy port (`required`, default not specified)
+        7. Proxy user (default not specified, optional)
+        8. Proxy password (default not specified, optional)
+        9. Hosts to exclude from proxying (default not specified, optional)
+        10. Enables module logging (default: `false`)
+        11. Mask used to hide specified headers and request or response parameters (default: `***`)
+        12. List of request parameters to hide (default: `[]`)
+        13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        15. Enables module metrics (default: `true`)
+        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Configures metric tags (default: `{}`)
+        18. Enables module tracing (default: `true`)
+        19. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpClient:
+          async:
+            followRedirects: true #(1)!
+          connectTimeout: "5s" #(2)!
+          readTimeout: "2m" #(3)!
+          useEnvProxy: false #(4)!
+          proxy:
+            host: "localhost"  #(5)!
+            port: 8090  #(6)!
+            user: "user"  #(7)!
+            password: "password"  #(8)!
+            nonProxyHosts: [ "host1", "host2" ]  #(9)!
+          telemetry:
+            logging:
+              enabled: false #(10)!
+              mask: "***" #(11)!
+              maskQueries: [ ] #(12)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
+              pathTemplate: true #(14)!
+            metrics:
+              enabled: true #(15)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
+              tags: #(17)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(18)!
+              attributes: #(19)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
+        2. Maximum time to establish a connection (default: `5s`)
+        3. Maximum time to read a response (default: `2m`)
+        4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        5. Proxy host (`required`, default not specified)
+        6. Proxy port (`required`, default not specified)
+        7. Proxy user (default not specified, optional)
+        8. Proxy password (default not specified, optional)
+        9. Hosts to exclude from proxying (default not specified, optional)
+        10. Enables module logging (default: `false`)
+        11. Mask used to hide specified headers and request or response parameters (default: `***`)
+        12. List of request parameters to hide (default: `[]`)
+        13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        15. Enables module metrics (default: `true`)
+        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        17. Configures metric tags (default: `{}`)
+        18. Enables module tracing (default: `true`)
+        19. Configures tracing attributes (default: `{}`)
 
 You can also configure [Netty transport](netty.md).
 
@@ -413,131 +467,158 @@ The `HttpClient` interface implementation is `JdkHttpClient` and is available fo
 
 ### Configuration { #configuration-3 }
 
-Example of the complete configuration described in the `JdkHttpClientConfig`
-and `HttpClientConfig` classes (default or example values are specified):
+Basic JDK HttpClient configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpClient {
-        jdk {
-            threads = 2 //(1)!
-            httpVersion = "HTTP_1_1" //(2)!
-        }
-        connectTimeout = "5s" //(3)!
-        readTimeout = "2m" //(4)!
-        useEnvProxy = false //(5)!
-        proxy {
-            host = "localhost" //(6)!
-            port = 8090 //(7)!
-            user = "user" //(8)!
-            password = "password" //(9)!
-            nonProxyHosts = [ "host1", "host2" ] //(10)!
-        }
-        telemetry {
-            logging {
-                enabled = false //(11)!
-                mask = "***" //(12)!
-                maskQueries = [ ] //(13)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
-                pathTemplate = true //(15)!
-            }
-            metrics {
-                enabled = true //(16)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
-                tags = { // (18)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(19)!
-                attributes = { // (20)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        connectTimeout = "5s" //(1)!
+        readTimeout = "2m" //(2)!
     }
     ```
 
-    1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
-    2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
-    3. Maximum time to establish a connection (default: `5s`)
-    4. Maximum time to read a response (default: `2m`)
-    5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    6. Proxy host (`required`, default not specified)
-    7. Proxy port (`required`, default not specified)
-    8. Proxy user (default not specified, optional)
-    9. Proxy password (default not specified, optional)
-    10. Hosts to exclude from proxying (default not specified, optional)
-    11. Enables module logging (default: `false`)
-    12. Mask used to hide specified headers and request or response parameters (default: `***`)
-    13. List of request parameters to hide (default: `[]`)
-    14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    16. Enables module metrics (default: `true`)
-    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    18. Configures metric tags (default: `{}`)
-    19. Enables module tracing (default: `true`)
-    20. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpClient:
-      jdk:
-        threads: 2 #(1)!
-        httpVersion: "HTTP_1_1" #(2)!
-      connectTimeout: "5s" #(3)!
-      readTimeout: "2m" #(4)!
-      useEnvProxy: false #(5)!
-      proxy:
-        host: "localhost" #(6)!
-        port: 8090 #(7)!
-        user: "user" #(8)!
-        password: "password" #(9)!
-        nonProxyHosts: [ "host1", "host2" ] #(10)!
-      telemetry:
-        logging:
-          enabled: false #(11)!
-          mask: "***" #(12)!
-          maskQueries: [ ] #(13)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
-          pathTemplate: true #(15)!
-        metrics:
-          enabled: true #(16)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-          tags: #(18)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(19)!
-          attributes: #(20)!
-            key1: value1
-            key2: value2
+      connectTimeout: "5s" #(1)!
+      readTimeout: "2m" #(2)!
     ```
 
-    1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
-    2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
-    3. Maximum time to establish a connection (default: `5s`)
-    4. Maximum time to read a response (default: `2m`)
-    5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-    6. Proxy host (`required`, default not specified)
-    7. Proxy port (`required`, default not specified)
-    8. Proxy user (default not specified, optional)
-    9. Proxy password (default not specified, optional)
-    10. Hosts to exclude from proxying (default not specified, optional)
-    11. Enables module logging (default: `false`)
-    12. Mask used to hide specified headers and request or response parameters (default: `***`)
-    13. List of request parameters to hide (default: `[]`)
-    14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    16. Enables module metrics (default: `true`)
-    17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    18. Configures metric tags (default: `{}`)
-    19. Enables module tracing (default: `true`)
-    20. Configures tracing attributes (default: `{}`)
+    1.  Maximum time to establish a connection (default: `5s`)
+    2.  Maximum time to read a response (default: `2m`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `JdkHttpClientConfig`
+    and `HttpClientConfig` classes (default or example values are specified):
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpClient {
+            jdk {
+                threads = 2 //(1)!
+                httpVersion = "HTTP_1_1" //(2)!
+            }
+            connectTimeout = "5s" //(3)!
+            readTimeout = "2m" //(4)!
+            useEnvProxy = false //(5)!
+            proxy {
+                host = "localhost" //(6)!
+                port = 8090 //(7)!
+                user = "user" //(8)!
+                password = "password" //(9)!
+                nonProxyHosts = [ "host1", "host2" ] //(10)!
+            }
+            telemetry {
+                logging {
+                    enabled = false //(11)!
+                    mask = "***" //(12)!
+                    maskQueries = [ ] //(13)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
+                    pathTemplate = true //(15)!
+                }
+                metrics {
+                    enabled = true //(16)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
+                    tags = { // (18)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(19)!
+                    attributes = { // (20)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+        2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
+        3. Maximum time to establish a connection (default: `5s`)
+        4. Maximum time to read a response (default: `2m`)
+        5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        6. Proxy host (`required`, default not specified)
+        7. Proxy port (`required`, default not specified)
+        8. Proxy user (default not specified, optional)
+        9. Proxy password (default not specified, optional)
+        10. Hosts to exclude from proxying (default not specified, optional)
+        11. Enables module logging (default: `false`)
+        12. Mask used to hide specified headers and request or response parameters (default: `***`)
+        13. List of request parameters to hide (default: `[]`)
+        14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        16. Enables module metrics (default: `true`)
+        17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        18. Configures metric tags (default: `{}`)
+        19. Enables module tracing (default: `true`)
+        20. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpClient:
+          jdk:
+            threads: 2 #(1)!
+            httpVersion: "HTTP_1_1" #(2)!
+          connectTimeout: "5s" #(3)!
+          readTimeout: "2m" #(4)!
+          useEnvProxy: false #(5)!
+          proxy:
+            host: "localhost" #(6)!
+            port: 8090 #(7)!
+            user: "user" #(8)!
+            password: "password" #(9)!
+            nonProxyHosts: [ "host1", "host2" ] #(10)!
+          telemetry:
+            logging:
+              enabled: false #(11)!
+              mask: "***" #(12)!
+              maskQueries: [ ] #(13)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
+              pathTemplate: true #(15)!
+            metrics:
+              enabled: true #(16)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
+              tags: #(18)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(19)!
+              attributes: #(20)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+        2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
+        3. Maximum time to establish a connection (default: `5s`)
+        4. Maximum time to read a response (default: `2m`)
+        5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        6. Proxy host (`required`, default not specified)
+        7. Proxy port (`required`, default not specified)
+        8. Proxy user (default not specified, optional)
+        9. Proxy password (default not specified, optional)
+        10. Hosts to exclude from proxying (default not specified, optional)
+        11. Enables module logging (default: `false`)
+        12. Mask used to hide specified headers and request or response parameters (default: `***`)
+        13. List of request parameters to hide (default: `[]`)
+        14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        16. Enables module metrics (default: `true`)
+        17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        18. Configures metric tags (default: `{}`)
+        19. Enables module tracing (default: `true`)
+        20. Configures tracing attributes (default: `{}`)
 
 ## Declarative Client { #client-declarative }
 
@@ -634,7 +715,7 @@ If the path must be specified explicitly, use the `configPath` annotation parame
     }
     ```
 
-Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig` class:
+Basic declarative client configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -643,46 +724,12 @@ Example configuration in the case of the `httpClient.someClient` path described 
         someClient {
             url = "https://localhost:8090" //(1)!
             requestTimeout = "10s" //(2)!
-            telemetry {
-                logging {
-                    enabled = false //(3)!
-                    mask = "***" //(4)!
-                    maskQueries = [ ] //(5)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
-                    pathTemplate = true //(7)!
-                }
-                metrics {
-                    enabled = true //(8)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                    tags = { // (10)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(11)!
-                    attributes = { // (12)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
     }
     ```
 
-    1. Base service `URL` where requests will be sent (`required`, default not specified)
-    2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-    3. Enables module logging (default: `false`)
-    4. Mask used to hide specified headers and request or response parameters (default: `***`)
-    5. List of request parameters to hide (default: `[]`)
-    6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    8. Enables module metrics (default: `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    10. Configures metric tags (default: `{}`)
-    11. Enables module tracing (default: `true`)
-    12. Configures tracing attributes (default: `{}`)
+    1.  Base service `URL` where requests will be sent (`required`, no default)
+    2.  Maximum request time (default: not specified, optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -691,38 +738,102 @@ Example configuration in the case of the `httpClient.someClient` path described 
       someClient:
         url: "https://localhost:8090" #(1)!
         requestTimeout: "10s" #(2)!
-        telemetry:
-          logging:
-            enabled: false #(3)!
-            mask: "***" #(4)!
-            maskQueries: [ ] #(5)!
-            maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
-            pathTemplate: true #(7)!
-          metrics:
-            enabled: true #(8)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-            tags: #(10)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(11)!
-            attributes: #(12)!
-              key1: value1
-              key2: value2
     ```
 
-    1. Base service `URL` where requests will be sent (`required`, default not specified)
-    2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-    3. Enables module logging (default: `false`)
-    4. Mask used to hide specified headers and request or response parameters (default: `***`)
-    5. List of request parameters to hide (default: `[]`)
-    6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-    8. Enables module metrics (default: `true`)
-    9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    10. Configures metric tags (default: `{}`)
-    11. Enables module tracing (default: `true`)
-    12. Configures tracing attributes (default: `{}`)
+    1.  Base service `URL` where requests will be sent (`required`, no default)
+    2.  Maximum request time (default: not specified, optional)
+
+??? note "Full Configuration"
+
+    Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig` class:
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpClient {
+            someClient {
+                url = "https://localhost:8090" //(1)!
+                requestTimeout = "10s" //(2)!
+                telemetry {
+                    logging {
+                        enabled = false //(3)!
+                        mask = "***" //(4)!
+                        maskQueries = [ ] //(5)!
+                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
+                        pathTemplate = true //(7)!
+                    }
+                    metrics {
+                        enabled = true //(8)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                        tags = { // (10)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                    tracing {
+                        enabled = true //(11)!
+                        attributes = { // (12)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Base service `URL` where requests will be sent (`required`, default not specified)
+        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        3. Enables module logging (default: `false`)
+        4. Mask used to hide specified headers and request or response parameters (default: `***`)
+        5. List of request parameters to hide (default: `[]`)
+        6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        8. Enables module metrics (default: `true`)
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        10. Configures metric tags (default: `{}`)
+        11. Enables module tracing (default: `true`)
+        12. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpClient:
+          someClient:
+            url: "https://localhost:8090" #(1)!
+            requestTimeout: "10s" #(2)!
+            telemetry:
+              logging:
+                enabled: false #(3)!
+                mask: "***" #(4)!
+                maskQueries: [ ] #(5)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
+                pathTemplate: true #(7)!
+              metrics:
+                enabled: true #(8)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+                tags: #(10)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(11)!
+                attributes: #(12)!
+                  key1: value1
+                  key2: value2
+        ```
+
+        1. Base service `URL` where requests will be sent (`required`, default not specified)
+        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        3. Enables module logging (default: `false`)
+        4. Mask used to hide specified headers and request or response parameters (default: `***`)
+        5. List of request parameters to hide (default: `[]`)
+        6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
+        8. Enables module metrics (default: `true`)
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        10. Configures metric tags (default: `{}`)
+        11. Enables module tracing (default: `true`)
+        12. Configures tracing attributes (default: `{}`)
 
 ### Method Configuration { #method-configuration }
 
@@ -732,6 +843,8 @@ if the client path is `httpClient.someClient`, the final path for the `hello` me
 Method configuration is applied over client configuration: method `requestTimeout` replaces the client value, and method telemetry settings override
 only explicitly specified fields.
 
+Basic method configuration parameters:
+
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
@@ -739,46 +852,12 @@ only explicitly specified fields.
         someClient {
             hello {
                 requestTimeout = "10s" //(1)!
-                telemetry {
-                    logging {
-                        enabled = false //(2)!
-                        mask = "***" //(3)!
-                        maskQueries = [ ] //(4)!
-                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
-                        pathTemplate = true //(6)!
-                    }
-                    metrics {
-                        enabled = true //(7)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                        tags = { // (9)!
-                            "key1" = "value1"
-                            "key2" = "value2"
-                        }
-                    }
-                    tracing {
-                        enabled = true //(10)!
-                        attributes = { // (11)!
-                            "key1" = "value1"
-                            "key2" = "value2"
-                        }
-                    }
-                }
             }
         }
     }
     ```
 
-    1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-    2. Enables module logging (default: `false`)
-    3. Mask used to hide specified headers and request or response parameters (default: `***`)
-    4. List of request parameters to hide (default: `[]`)
-    5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
-    7. Enables module metrics (default: `true`)
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    9. Configures metric tags (default: `{}`)
-    10. Enables module tracing (default: `true`)
-    11. Configures tracing attributes (default: `{}`)
+    1.  Maximum request time (default: not specified, optional)
 
 === ":simple-yaml: `YAML`"
 
@@ -787,37 +866,100 @@ only explicitly specified fields.
       someClient:
         hello:
           requestTimeout: "10s" #(1)!
-          telemetry:
-            logging:
-              enabled: false #(2)!
-              mask: "***" #(3)!
-              maskQueries: [ ] #(4)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-              pathTemplate: true #(6)!
-            metrics:
-              enabled: true #(7)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-              tags: #(9)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(10)!
-              attributes: #(11)!
-                key1: value1
-                key2: value2
     ```
 
-    1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-    2. Enables module logging (default: `false`)
-    3. Mask used to hide specified headers and request or response parameters (default: `***`)
-    4. List of request parameters to hide (default: `[]`)
-    5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
-    7. Enables module metrics (default: `true`)
-    8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    9. Configures metric tags (default: `{}`)
-    10. Enables module tracing (default: `true`)
-    11. Configures tracing attributes (default: `{}`)
+    1.  Maximum request time (default: not specified, optional)
+
+??? note "Full Configuration"
+
+    Full method configuration example:
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpClient {
+            someClient {
+                hello {
+                    requestTimeout = "10s" //(1)!
+                    telemetry {
+                        logging {
+                            enabled = false //(2)!
+                            mask = "***" //(3)!
+                            maskQueries = [ ] //(4)!
+                            maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
+                            pathTemplate = true //(6)!
+                        }
+                        metrics {
+                            enabled = true //(7)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
+                            tags = { // (9)!
+                                "key1" = "value1"
+                                "key2" = "value2"
+                            }
+                        }
+                        tracing {
+                            enabled = true //(10)!
+                            attributes = { // (11)!
+                                "key1" = "value1"
+                                "key2" = "value2"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        2. Enables module logging (default: `false`)
+        3. Mask used to hide specified headers and request or response parameters (default: `***`)
+        4. List of request parameters to hide (default: `[]`)
+        5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
+        7. Enables module metrics (default: `true`)
+        8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        9. Configures metric tags (default: `{}`)
+        10. Enables module tracing (default: `true`)
+        11. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpClient:
+          someClient:
+            hello:
+              requestTimeout: "10s" #(1)!
+              telemetry:
+                logging:
+                  enabled: false #(2)!
+                  mask: "***" #(3)!
+                  maskQueries: [ ] #(4)!
+                  maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
+                  pathTemplate: true #(6)!
+                metrics:
+                  enabled: true #(7)!
+                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
+                  tags: #(9)!
+                    key1: value1
+                    key2: value2
+                tracing:
+                  enabled: true #(10)!
+                  attributes: #(11)!
+                    key1: value1
+                    key2: value2
+        ```
+
+        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        2. Enables module logging (default: `false`)
+        3. Mask used to hide specified headers and request or response parameters (default: `***`)
+        4. List of request parameters to hide (default: `[]`)
+        5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
+        7. Enables module metrics (default: `true`)
+        8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        9. Configures metric tags (default: `{}`)
+        10. Enables module tracing (default: `true`)
+        11. Configures tracing attributes (default: `{}`)
 
 ### Request { #request }
 

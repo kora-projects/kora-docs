@@ -59,116 +59,151 @@ agent:
 
 ### Конфигурация { #configuration }
 
-Пример полной конфигурации, описанной в классах `AwsS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
+Основные параметры конфигурации S3 клиента:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        aws {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            checksumValidationEnabled = false //(3)!
-            chunkedEncodingEnabled = true //(4)!
-            upload {
-                bufferSize = "32MiB" //(5)!
-                partSize = "8MiB" //(6)!
-            }
-        }
-
-        url = "http://localhost:9000" //(7)!
-        accessKey = "someKey" //(8)!
-        secretKey = "someSecret" //(9)!
-        region = "aws-global" //(10)!
-        telemetry {
-            logging {
-                enabled = false //(11)!
-            }
-            metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
-                tags = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(15)!
-                attributes = { // (16)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1.  Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
-    2.  Максимальное время выполнения операции (по умолчанию: `45s`)
-    3.  Проверять ли [контрольную сумму MD5 перед загрузкой и при получении](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) из `AWS` (по умолчанию: `false`)
-    4.  Использовать ли частичное (chunked) кодирование при подписании данных файла во время загрузки в `AWS` (по умолчанию: `true`)
-    5.  Максимальный размер буфера для загрузки файлов (по умолчанию: `32MiB`)
-    6.  Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
-    7.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
-    8.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
-    9.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
-    10. Регион хранилища `S3` (по умолчанию: `aws-global`)
-    11. Включает логирование модуля (по умолчанию: `false`)
-    12. Включает метрики модуля (по умолчанию: `true`)
-    13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Настройка тегов метрик (по умолчанию: `{}`)
-    15. Включает трассировку модуля (по умолчанию: `true`)
-    16. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+    2.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+    3.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+    4.  Регион хранилища `S3` (по умолчанию: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      aws:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        checksumValidationEnabled: false #(3)!
-        chunkedEncodingEnabled: true #(4)!
-        upload:
-          bufferSize: "32MiB" #(5)!
-          partSize: "8MiB" #(6)!
-
-      url: "http://localhost:9000" #(7)!
-      accessKey: "someKey" #(8)!
-      secretKey: "someSecret" #(9)!
-      region: "aws-global" #(10)!
-      telemetry:
-        logging:
-          enabled: false #(11)!
-        metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
-          tags: #(14)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(15)!
-          attributes: #(16)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1.  Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
-    2.  Максимальное время выполнения операции (по умолчанию: `45s`)
-    3.  Проверять ли [контрольную сумму MD5 перед загрузкой и при получении](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) из `AWS` (по умолчанию: `false`)
-    4.  Использовать ли частичное (chunked) кодирование при подписании данных файла во время загрузки в `AWS` (по умолчанию: `true`)
-    5.  Максимальный размер буфера для загрузки файлов (по умолчанию: `32MiB`)
-    6.  Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
-    7.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
-    8.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
-    9.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
-    10. Регион хранилища `S3` (по умолчанию: `aws-global`)
-    11. Включает логирование модуля (по умолчанию: `false`)
-    12. Включает метрики модуля (по умолчанию: `true`)
-    13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Настройка тегов метрик (по умолчанию: `{}`)
-    15. Включает трассировку модуля (по умолчанию: `true`)
-    16. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+    2.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+    3.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+    4.  Регион хранилища `S3` (по умолчанию: `aws-global`)
+
+??? note "Полная конфигурация"
+
+    Пример полной конфигурации, описанной в классах `AwsS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            aws {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                checksumValidationEnabled = false //(3)!
+                chunkedEncodingEnabled = true //(4)!
+                upload {
+                    bufferSize = "32MiB" //(5)!
+                    partSize = "8MiB" //(6)!
+                }
+            }
+
+            url = "http://localhost:9000" //(7)!
+            accessKey = "someKey" //(8)!
+            secretKey = "someSecret" //(9)!
+            region = "aws-global" //(10)!
+            telemetry {
+                logging {
+                    enabled = false //(11)!
+                }
+                metrics {
+                    enabled = true //(12)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                    tags = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(15)!
+                    attributes = { // (16)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
+        2.  Максимальное время выполнения операции (по умолчанию: `45s`)
+        3.  Проверять ли [контрольную сумму MD5 перед загрузкой и при получении](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) из `AWS` (по умолчанию: `false`)
+        4.  Использовать ли частичное (chunked) кодирование при подписании данных файла во время загрузки в `AWS` (по умолчанию: `true`)
+        5.  Максимальный размер буфера для загрузки файлов (по умолчанию: `32MiB`)
+        6.  Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
+        7.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+        8.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+        9.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+        10. Регион хранилища `S3` (по умолчанию: `aws-global`)
+        11. Включает логирование модуля (по умолчанию: `false`)
+        12. Включает метрики модуля (по умолчанию: `true`)
+        13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Настройка тегов метрик (по умолчанию: `{}`)
+        15. Включает трассировку модуля (по умолчанию: `true`)
+        16. Настройка атрибутов трассировки (по умолчанию: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          aws:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            checksumValidationEnabled: false #(3)!
+            chunkedEncodingEnabled: true #(4)!
+            upload:
+              bufferSize: "32MiB" #(5)!
+              partSize: "8MiB" #(6)!
+
+          url: "http://localhost:9000" #(7)!
+          accessKey: "someKey" #(8)!
+          secretKey: "someSecret" #(9)!
+          region: "aws-global" #(10)!
+          telemetry:
+            logging:
+              enabled: false #(11)!
+            metrics:
+              enabled: true #(12)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+              tags: #(14)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(15)!
+              attributes: #(16)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
+        2.  Максимальное время выполнения операции (по умолчанию: `45s`)
+        3.  Проверять ли [контрольную сумму MD5 перед загрузкой и при получении](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) из `AWS` (по умолчанию: `false`)
+        4.  Использовать ли частичное (chunked) кодирование при подписании данных файла во время загрузки в `AWS` (по умолчанию: `true`)
+        5.  Максимальный размер буфера для загрузки файлов (по умолчанию: `32MiB`)
+        6.  Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
+        7.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+        8.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+        9.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+        10. Регион хранилища `S3` (по умолчанию: `aws-global`)
+        11. Включает логирование модуля (по умолчанию: `false`)
+        12. Включает метрики модуля (по умолчанию: `true`)
+        13. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Настройка тегов метрик (по умолчанию: `{}`)
+        15. Включает трассировку модуля (по умолчанию: `true`)
+        16. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 Метрики модуля описаны в разделе [Справочник по метрикам](metrics.md#s3-client).
 
@@ -233,104 +268,139 @@ agent:
 
 ### Конфигурация { #configuration-2 }
 
-Пример полной конфигурации, описанной в классах `MinioS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
+Основные параметры конфигурации Minio S3 клиента:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        minio {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            upload {
-                partSize = "8MiB" //(3)!
-            }
-        }
-
-        url = "http://localhost:9000" //(4)!
-        accessKey = "someKey" //(5)!
-        secretKey = "someSecret" //(6)!
-        region = "aws-global" //(7)!
-        telemetry {
-            logging {
-                enabled = false //(8)!
-            }
-            metrics {
-                enabled = true //(9)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
-                tags = { // (11)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(12)!
-                attributes = { // (13)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1. Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
-    2. Максимальное время выполнения операции (по умолчанию: `45s`)
-    3. Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
-    4. `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
-    5. Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
-    6. Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
-    7. Регион хранилища `S3` (по умолчанию: `aws-global`)
-    8. Включает логирование модуля (по умолчанию: `false`)
-    9. Включает метрики модуля (по умолчанию: `true`)
-    10. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Настройка тегов метрик (по умолчанию: `{}`)
-    12. Включает трассировку модуля (по умолчанию: `true`)
-    13. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+    2.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+    3.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+    4.  Регион хранилища `S3` (по умолчанию: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      minio:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        upload:
-          partSize: "8MiB" #(3)!
-
-      url: "http://localhost:9000" #(4)!
-      accessKey: "someKey" #(5)!
-      secretKey: "someSecret" #(6)!
-      region: "aws-global" #(7)!
-      telemetry:
-        logging:
-          enabled: false #(8)!
-        metrics:
-          enabled: true #(9)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
-          tags: #(11)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(12)!
-          attributes: #(13)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1. Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
-    2. Максимальное время выполнения операции (по умолчанию: `45s`)
-    3. Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
-    4. `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
-    5. Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
-    6. Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
-    7. Регион хранилища `S3` (по умолчанию: `aws-global`)
-    8. Включает логирование модуля (по умолчанию: `false`)
-    9. Включает метрики модуля (по умолчанию: `true`)
-    10. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Настройка тегов метрик (по умолчанию: `{}`)
-    12. Включает трассировку модуля (по умолчанию: `true`)
-    13. Настройка атрибутов трассировки (по умолчанию: `{}`)
+    1.  `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+    2.  Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+    3.  Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+    4.  Регион хранилища `S3` (по умолчанию: `aws-global`)
+
+??? note "Полная конфигурация"
+
+    Пример полной конфигурации, описанной в классах `MinioS3ClientConfig` и `S3Config` (указаны примеры значений или значения по умолчанию):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            minio {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                upload {
+                    partSize = "8MiB" //(3)!
+                }
+            }
+
+            url = "http://localhost:9000" //(4)!
+            accessKey = "someKey" //(5)!
+            secretKey = "someSecret" //(6)!
+            region = "aws-global" //(7)!
+            telemetry {
+                logging {
+                    enabled = false //(8)!
+                }
+                metrics {
+                    enabled = true //(9)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                    tags = { // (11)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(12)!
+                    attributes = { // (13)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
+        2. Максимальное время выполнения операции (по умолчанию: `45s`)
+        3. Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
+        4. `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+        5. Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+        6. Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+        7. Регион хранилища `S3` (по умолчанию: `aws-global`)
+        8. Включает логирование модуля (по умолчанию: `false`)
+        9. Включает метрики модуля (по умолчанию: `true`)
+        10. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Настройка тегов метрик (по умолчанию: `{}`)
+        12. Включает трассировку модуля (по умолчанию: `true`)
+        13. Настройка атрибутов трассировки (по умолчанию: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          minio:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            upload:
+              partSize: "8MiB" #(3)!
+
+          url: "http://localhost:9000" #(4)!
+          accessKey: "someKey" #(5)!
+          secretKey: "someSecret" #(6)!
+          region: "aws-global" #(7)!
+          telemetry:
+            logging:
+              enabled: false #(8)!
+            metrics:
+              enabled: true #(9)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+              tags: #(11)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(12)!
+              attributes: #(13)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Стиль доступа к объектам, может иметь значения `PATH` или `VIRTUAL_HOSTED` (по умолчанию: `PATH`)
+        2. Максимальное время выполнения операции (по умолчанию: `45s`)
+        3. Максимальный размер части файла при загрузке одного файла (по умолчанию: `8MiB`)
+        4. `URL` хранилища `S3` (`обязательный`, по умолчанию не указано)
+        5. Ключ доступа к `S3` (`обязательный`, по умолчанию не указано)
+        6. Секрет доступа к `S3` (`обязательный`, по умолчанию не указано)
+        7. Регион хранилища `S3` (по умолчанию: `aws-global`)
+        8. Включает логирование модуля (по умолчанию: `false`)
+        9. Включает метрики модуля (по умолчанию: `true`)
+        10. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Настройка тегов метрик (по умолчанию: `{}`)
+        12. Включает трассировку модуля (по умолчанию: `true`)
+        13. Настройка атрибутов трассировки (по умолчанию: `{}`)
 
 ## Декларативный клиент { #client-declarative }
 

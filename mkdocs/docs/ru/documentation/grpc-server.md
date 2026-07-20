@@ -105,7 +105,7 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
 ## Конфигурация { #configuration }
 
 Обычно нужно задать только `port`; все остальные параметры имеют значения по умолчанию.
-Минимальная конфигурация, которая привязывает порт из переменной окружения и включает логирование, выглядит так:
+Минимальная конфигурация, которая привязывает порт и включает логирование:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -126,7 +126,7 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
           enabled: true
     ```
 
-Пример полной конфигурации, описанной в классе `GrpcServerConfig`:
+Основные параметры конфигурации:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -135,48 +135,13 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
         port = 8090 //(1)!
         maxMessageSize = "4MiB" //(2)!
         reflectionEnabled = false //(3)!
-        shutdownWait = "30s" //(4)!
-        maxConnectionAge = "0s" //(5)!
-        maxConnectionAgeGrace = "0s" //(6)!
-        keepAliveTime = "0s" //(7)!
-        keepAliveTimeout = "0s" //(8)!
-        telemetry {
-            logging {
-                enabled = false //(9)!
-            }
-            metrics {
-                enabled = true //(10)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
-                tags = { // (12)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(13)!
-                attributes = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
     }
     ```
 
     1. Порт `gRPC-сервера` (по умолчанию: `8090`).
-    2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
+    2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`).
     3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
-    4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
-    5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
-    6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
-    7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
-    8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
-    9. Включает логирование модуля (по умолчанию: `false`).
-    10. Включает метрики модуля (по умолчанию: `true`).
-    11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    12. Теги метрик (по умолчанию: `{}`).
-    13. Включает трассировку модуля (по умолчанию: `true`).
-    14. Атрибуты трассировки (по умолчанию: `{}`).
+    4. Включает виртуальные потоки для обработки вызовов, требует `Java 21+` (по умолчанию: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -185,75 +150,109 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
       port: 8090 #(1)!
       maxMessageSize: "4MiB" #(2)!
       reflectionEnabled: false #(3)!
-      shutdownWait: "30s" #(4)!
-      maxConnectionAge: "0s" #(5)!
-      maxConnectionAgeGrace: "0s" #(6)!
-      keepAliveTime: "0s" #(7)!
-      keepAliveTimeout: "0s" #(8)!
-      telemetry:
-        logging:
-          enabled: false #(9)!
-        metrics:
-          enabled: true #(10)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-          tags: #(12)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(13)!
-          attributes: #(14)!
-            key1: value1
-            key2: value2
     ```
 
     1. Порт `gRPC-сервера` (по умолчанию: `8090`).
-    2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
+    2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`).
     3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
-    4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
-    5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
-    6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
-    7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
-    8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
-    9. Включает логирование модуля (по умолчанию: `false`).
-    10. Включает метрики модуля (по умолчанию: `true`).
-    11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    12. Теги метрик (по умолчанию: `{}`).
-    13. Включает трассировку модуля (по умолчанию: `true`).
-    14. Атрибуты трассировки (по умолчанию: `{}`).
 
-Также можно настроить [транспорт Netty](netty.md).
+??? note "Полная конфигурация"
 
-### Конфигурация в коде { #builder-configurer }
+    Пример полной конфигурации, описанной в классе `GrpcServerConfig`:
 
-Если параметров конфигурации недостаточно, зарегистрируйте компонент `GrpcServerBuilderConfigurer` и дополнительно настройте `NettyServerBuilder` в коде.
-Этот компонент вызывается после применения конфигурации и после добавления сервисов, пользовательских `ServerInterceptor` и стандартных `ServerInterceptor`.
+    ===! ":material-code-json: `Hocon`"
 
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class MyGrpcServerBuilderConfigurer implements GrpcServerBuilderConfigurer {
-
-        @Override
-        public NettyServerBuilder configure(NettyServerBuilder builder) {
-            return builder.permitKeepAliveWithoutCalls(true);
+        ```javascript
+        grpcServer {
+            port = 8090 //(1)!
+            maxMessageSize = "4MiB" //(2)!
+            reflectionEnabled = false //(3)!
+            shutdownWait = "30s" //(4)!
+            maxConnectionAge = "0s" //(5)!
+            maxConnectionAgeGrace = "0s" //(6)!
+            keepAliveTime = "0s" //(7)!
+            keepAliveTimeout = "0s" //(8)!
+            telemetry {
+                logging {
+                    enabled = false //(9)!
+                }
+                metrics {
+                    enabled = true //(10)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                    tags = { // (12)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(13)!
+                    attributes = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
         }
-    }
-    ```
+        ```
 
-=== ":simple-kotlin: `Kotlin`"
+        1. Порт `gRPC-сервера` (по умолчанию: `8090`).
+        2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
+        3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
+        4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
+        5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
+        6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
+        7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
+        8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        9. Включает логирование модуля (по умолчанию: `false`).
+        10. Включает метрики модуля (по умолчанию: `true`).
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        12. Теги метрик (по умолчанию: `{}`).
+        13. Включает трассировку модуля (по умолчанию: `true`).
+        14. Атрибуты трассировки (по умолчанию: `{}`).
 
-    ```kotlin
-    @Component
-    class MyGrpcServerBuilderConfigurer : GrpcServerBuilderConfigurer {
+    === ":simple-yaml: `YAML`"
 
-        override fun configure(builder: NettyServerBuilder): NettyServerBuilder {
-            return builder.permitKeepAliveWithoutCalls(true)
-        }
-    }
-    ```
+        ```yaml
+        grpcServer:
+          port: 8090 #(1)!
+          maxMessageSize: "4MiB" #(2)!
+          reflectionEnabled: false #(3)!
+          shutdownWait: "30s" #(4)!
+          maxConnectionAge: "0s" #(5)!
+          maxConnectionAgeGrace: "0s" #(6)!
+          keepAliveTime: "0s" #(7)!
+          keepAliveTimeout: "0s" #(8)!
+          telemetry:
+            logging:
+              enabled: false #(9)!
+            metrics:
+              enabled: true #(10)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+              tags: #(12)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(13)!
+              attributes: #(14)!
+                key1: value1
+                key2: value2
+        ```
 
-Метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-server).
+        1. Порт `gRPC-сервера` (по умолчанию: `8090`).
+        2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
+        3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
+        4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
+        5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
+        6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
+        7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
+        8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        9. Включает логирование модуля (по умолчанию: `false`).
+        10. Включает метрики модуля (по умолчанию: `true`).
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        12. Теги метрик (по умолчанию: `{}`).
+        13. Включает трассировку модуля (по умолчанию: `true`).
+        14. Атрибуты трассировки (по умолчанию: `{}`).
+
 
 ## Обработчики { #handlers }
 

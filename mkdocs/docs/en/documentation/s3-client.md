@@ -59,116 +59,151 @@ Requires any [HTTP client](http-client.md) module to be added.
 
 ### Configuration { #configuration }
 
-Complete configuration described in the `AwsS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+Basic S3 client configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        aws {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            checksumValidationEnabled = false //(3)!
-            chunkedEncodingEnabled = true //(4)!
-            upload {
-                bufferSize = "32MiB" //(5)!
-                partSize = "8MiB" //(6)!
-            }
-        }
-
-        url = "http://localhost:9000" //(7)!
-        accessKey = "someKey" //(8)!
-        secretKey = "someSecret" //(9)!
-        region = "aws-global" //(10)!
-        telemetry {
-            logging {
-                enabled = false //(11)!
-            }
-            metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
-                tags = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(15)!
-                attributes = { // (16)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2.  Maximum operation execution time (default: `45s`)
-    3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
-    4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
-    5.  Maximum buffer size for file uploads (default: `32MiB`)
-    6.  Maximum file part size for a single file upload (default: `8MiB`)
-    7.  `S3` storage `URL` (`required`, default is not specified)
-    8.  `S3` access key (`required`, default is not specified)
-    9.  `S3` access secret (`required`, default is not specified)
-    10. `S3` storage region (default: `aws-global`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Configures metric tags (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      aws:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        checksumValidationEnabled: false #(3)!
-        chunkedEncodingEnabled: true #(4)!
-        upload:
-          bufferSize: "32MiB" #(5)!
-          partSize: "8MiB" #(6)!
-
-      url: "http://localhost:9000" #(7)!
-      accessKey: "someKey" #(8)!
-      secretKey: "someSecret" #(9)!
-      region: "aws-global" #(10)!
-      telemetry:
-        logging:
-          enabled: false #(11)!
-        metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
-          tags: #(14)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(15)!
-          attributes: #(16)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2.  Maximum operation execution time (default: `45s`)
-    3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
-    4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
-    5.  Maximum buffer size for file uploads (default: `32MiB`)
-    6.  Maximum file part size for a single file upload (default: `8MiB`)
-    7.  `S3` storage `URL` (`required`, default is not specified)
-    8.  `S3` access key (`required`, default is not specified)
-    9.  `S3` access secret (`required`, default is not specified)
-    10. `S3` storage region (default: `aws-global`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Configures metric tags (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
+
+??? note "Full Configuration"
+
+    Complete configuration described in the `AwsS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            aws {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                checksumValidationEnabled = false //(3)!
+                chunkedEncodingEnabled = true //(4)!
+                upload {
+                    bufferSize = "32MiB" //(5)!
+                    partSize = "8MiB" //(6)!
+                }
+            }
+
+            url = "http://localhost:9000" //(7)!
+            accessKey = "someKey" //(8)!
+            secretKey = "someSecret" //(9)!
+            region = "aws-global" //(10)!
+            telemetry {
+                logging {
+                    enabled = false //(11)!
+                }
+                metrics {
+                    enabled = true //(12)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                    tags = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(15)!
+                    attributes = { // (16)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2.  Maximum operation execution time (default: `45s`)
+        3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
+        4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
+        5.  Maximum buffer size for file uploads (default: `32MiB`)
+        6.  Maximum file part size for a single file upload (default: `8MiB`)
+        7.  `S3` storage `URL` (`required`, default is not specified)
+        8.  `S3` access key (`required`, default is not specified)
+        9.  `S3` access secret (`required`, default is not specified)
+        10. `S3` storage region (default: `aws-global`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Configures metric tags (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          aws:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            checksumValidationEnabled: false #(3)!
+            chunkedEncodingEnabled: true #(4)!
+            upload:
+              bufferSize: "32MiB" #(5)!
+              partSize: "8MiB" #(6)!
+
+          url: "http://localhost:9000" #(7)!
+          accessKey: "someKey" #(8)!
+          secretKey: "someSecret" #(9)!
+          region: "aws-global" #(10)!
+          telemetry:
+            logging:
+              enabled: false #(11)!
+            metrics:
+              enabled: true #(12)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+              tags: #(14)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(15)!
+              attributes: #(16)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2.  Maximum operation execution time (default: `45s`)
+        3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
+        4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
+        5.  Maximum buffer size for file uploads (default: `32MiB`)
+        6.  Maximum file part size for a single file upload (default: `8MiB`)
+        7.  `S3` storage `URL` (`required`, default is not specified)
+        8.  `S3` access key (`required`, default is not specified)
+        9.  `S3` access secret (`required`, default is not specified)
+        10. `S3` storage region (default: `aws-global`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Configures metric tags (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#s3-client) section.
 
@@ -233,104 +268,139 @@ You can add [OkHttp module](http-client.md#okhttp) dependency or a standard HTTP
 
 ### Configuration { #configuration-2 }
 
-Complete configuration described in the `MinioS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+Basic Minio S3 client configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        minio {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            upload {
-                partSize = "8MiB" //(3)!
-            }
-        }
-
-        url = "http://localhost:9000" //(4)!
-        accessKey = "someKey" //(5)!
-        secretKey = "someSecret" //(6)!
-        region = "aws-global" //(7)!
-        telemetry {
-            logging {
-                enabled = false //(8)!
-            }
-            metrics {
-                enabled = true //(9)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
-                tags = { // (11)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(12)!
-                attributes = { // (13)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2. Maximum operation execution time (default: `45s`)
-    3. Maximum file part size for a single file upload (default: `8MiB`)
-    4. `S3` storage `URL` (`required`, default is not specified)
-    5. `S3` access key (`required`, default is not specified)
-    6. `S3` access secret (`required`, default is not specified)
-    7. `S3` storage region (default: `aws-global`)
-    8. Enables module logging (default: `false`)
-    9. Enables module metrics (default: `true`)
-    10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Configures metric tags (default: `{}`)
-    12. Enables module tracing (default: `true`)
-    13. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      minio:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        upload:
-          partSize: "8MiB" #(3)!
-
-      url: "http://localhost:9000" #(4)!
-      accessKey: "someKey" #(5)!
-      secretKey: "someSecret" #(6)!
-      region: "aws-global" #(7)!
-      telemetry:
-        logging:
-          enabled: false #(8)!
-        metrics:
-          enabled: true #(9)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
-          tags: #(11)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(12)!
-          attributes: #(13)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2. Maximum operation execution time (default: `45s`)
-    3. Maximum file part size for a single file upload (default: `8MiB`)
-    4. `S3` storage `URL` (`required`, default is not specified)
-    5. `S3` access key (`required`, default is not specified)
-    6. `S3` access secret (`required`, default is not specified)
-    7. `S3` storage region (default: `aws-global`)
-    8. Enables module logging (default: `false`)
-    9. Enables module metrics (default: `true`)
-    10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Configures metric tags (default: `{}`)
-    12. Enables module tracing (default: `true`)
-    13. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
+
+??? note "Full Configuration"
+
+    Complete configuration described in the `MinioS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            minio {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                upload {
+                    partSize = "8MiB" //(3)!
+                }
+            }
+
+            url = "http://localhost:9000" //(4)!
+            accessKey = "someKey" //(5)!
+            secretKey = "someSecret" //(6)!
+            region = "aws-global" //(7)!
+            telemetry {
+                logging {
+                    enabled = false //(8)!
+                }
+                metrics {
+                    enabled = true //(9)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                    tags = { // (11)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(12)!
+                    attributes = { // (13)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2. Maximum operation execution time (default: `45s`)
+        3. Maximum file part size for a single file upload (default: `8MiB`)
+        4. `S3` storage `URL` (`required`, default is not specified)
+        5. `S3` access key (`required`, default is not specified)
+        6. `S3` access secret (`required`, default is not specified)
+        7. `S3` storage region (default: `aws-global`)
+        8. Enables module logging (default: `false`)
+        9. Enables module metrics (default: `true`)
+        10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          minio:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            upload:
+              partSize: "8MiB" #(3)!
+
+          url: "http://localhost:9000" #(4)!
+          accessKey: "someKey" #(5)!
+          secretKey: "someSecret" #(6)!
+          region: "aws-global" #(7)!
+          telemetry:
+            logging:
+              enabled: false #(8)!
+            metrics:
+              enabled: true #(9)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+              tags: #(11)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(12)!
+              attributes: #(13)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2. Maximum operation execution time (default: `45s`)
+        3. Maximum file part size for a single file upload (default: `8MiB`)
+        4. `S3` storage `URL` (`required`, default is not specified)
+        5. `S3` access key (`required`, default is not specified)
+        6. `S3` access secret (`required`, default is not specified)
+        7. `S3` storage region (default: `aws-global`)
+        8. Enables module logging (default: `false`)
+        9. Enables module metrics (default: `true`)
+        10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Configures tracing attributes (default: `{}`)
 
 ## Client declarative { #client-declarative }
 

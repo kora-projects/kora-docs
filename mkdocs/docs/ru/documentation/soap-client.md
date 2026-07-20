@@ -114,7 +114,7 @@ agent:
 
 У `SOAP-клиента` с именем `SimpleService` путь конфигурации будет `soapClient.SimpleService`.
 
-Пример полной конфигурации, описанной классом `SoapServiceConfig`:
+Основные параметры конфигурации:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -123,38 +123,12 @@ agent:
         SimpleService {
             url = "https://localhost:8090" //(1)!
             timeout = "60s" //(2)!
-            telemetry {
-                logging {
-                    enabled = false //(3)!
-                }
-                metrics {
-                    enabled = true //(4)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                    tags = { // (6)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(7)!
-                    attributes = { // (8)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
     }
     ```
 
-    1. `URL` службы, куда будут отправляться запросы (обязательная, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию: `60s`).
-    3. Включает логирование модуля (по умолчанию: `false`).
-    4. Включает метрики модуля (по умолчанию: `true`).
-    5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    6. Дополнительные теги для метрик (по умолчанию: `{}`).
-    7. Включает трассировку модуля (по умолчанию: `true`).
-    8. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+    1. `URL` службы, куда будут отправляться запросы (`обязательный`, по умолчанию не указано).
+    2. Максимальное время выполнения запроса (по умолчанию не указано, опционально).
 
 === ":simple-yaml: `YAML`"
 
@@ -163,30 +137,86 @@ agent:
       SimpleService:
         url: "https://localhost:8090" #(1)!
         timeout: "60s" #(2)!
-        telemetry:
-          logging:
-            enabled: false #(3)!
-          metrics:
-            enabled: true #(4)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-            tags: #(6)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(7)!
-            attributes: #(8)!
-              key1: value1
-              key2: value2
     ```
 
-    1. `URL` службы, куда будут отправляться запросы (обязательная, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию: `60s`).
-    3. Включает логирование модуля (по умолчанию: `false`).
-    4. Включает метрики модуля (по умолчанию: `true`).
-    5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    6. Дополнительные теги для метрик (по умолчанию: `{}`).
-    7. Включает трассировку модуля (по умолчанию: `true`).
-    8. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+    1. `URL` службы, куда будут отправляться запросы (`обязательный`, по умолчанию не указано).
+    2. Максимальное время выполнения запроса (по умолчанию не указано, опционально).
+
+??? note "Полная конфигурация"
+
+    Пример полной конфигурации, описанной классом `SoapServiceConfig`:
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        soapClient {
+            SimpleService {
+                url = "https://localhost:8090" //(1)!
+                timeout = "60s" //(2)!
+                telemetry {
+                    logging {
+                        enabled = false //(3)!
+                    }
+                    metrics {
+                        enabled = true //(4)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                        tags = { // (6)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                    tracing {
+                        enabled = true //(7)!
+                        attributes = { // (8)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                }
+            }
+        }
+        ```
+
+        1. `URL` службы, куда будут отправляться запросы (обязательная, по умолчанию не указано).
+        2. Максимальное время выполнения запроса (по умолчанию: `60s`).
+        3. Включает логирование модуля (по умолчанию: `false`).
+        4. Включает метрики модуля (по умолчанию: `true`).
+        5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        6. Дополнительные теги для метрик (по умолчанию: `{}`).
+        7. Включает трассировку модуля (по умолчанию: `true`).
+        8. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        soapClient:
+          SimpleService:
+            url: "https://localhost:8090" #(1)!
+            timeout: "60s" #(2)!
+            telemetry:
+              logging:
+                enabled: false #(3)!
+              metrics:
+                enabled: true #(4)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+                tags: #(6)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(7)!
+                attributes: #(8)!
+                  key1: value1
+                  key2: value2
+        ```
+
+        1. `URL` службы, куда будут отправляться запросы (обязательная, по умолчанию не указано).
+        2. Максимальное время выполнения запроса (по умолчанию: `60s`).
+        3. Включает логирование модуля (по умолчанию: `false`).
+        4. Включает метрики модуля (по умолчанию: `true`).
+        5. Настройка [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        6. Дополнительные теги для метрик (по умолчанию: `{}`).
+        7. Включает трассировку модуля (по умолчанию: `true`).
+        8. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 Метрики модуля описаны в разделе [Справочник метрик](metrics.md#soap-client).
 

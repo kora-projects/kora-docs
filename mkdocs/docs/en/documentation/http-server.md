@@ -57,7 +57,7 @@ which ensures high performance and low resource consumption.
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described in the `HttpServerConfig` class (default or example values are specified):
+Basic HTTP server configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -65,73 +65,13 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     httpServer {
         publicApiHttpPort = 8080 //(1)!
         privateApiHttpPort = 8085 //(2)!
-        privateApiHttpMetricsPath = "/metrics" //(3)!
-        privateApiHttpReadinessPath = "/system/readiness" //(4)!
-        privateApiHttpLivenessPath = "/system/liveness" //(5)!
-        ignoreTrailingSlash = false //(6)!
-        ioThreads = 2 //(7)!
-        blockingThreads = 2 //(8)!
-        shutdownWait = "30s" //(9)!
-        threadKeepAliveTimeout = "60s" //(10)!
-        socketReadTimeout = "0s" //(11)!
-        socketWriteTimeout = "0s" //(12)!
-        socketKeepAliveEnabled = false //(13)!
-        virtualThreadsEnabled = false //(14)!
-        maxRequestBodySize = "256MiB" //(15)!
-        telemetry {
-            logging {
-                enabled = false //(16)!
-                stacktrace = true //(17)!
-                mask = "***" //(18)!
-                maskQueries = [ ] //(19)!
-                maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
-                pathTemplate = true //(21)!
-            }
-            metrics {
-                enabled = true //(22)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
-                tags = { // (24)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(25)!
-                attributes = { // (26)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        maxRequestBodySize = "256MiB" //(3)!
     }
     ```
 
     1.  Public `HTTP` server port (default: `8080`)
     2.  Private `HTTP` server port (default: `8085`)
-    3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
-    4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
-    5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
-    6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
-    7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
-    8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
-    9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
-    10.  Maximum idle lifetime of a request handler thread (default: `60s`)
-    11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
-    12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
-    13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
-    14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
-    15.  Maximum allowed size of an incoming request body (default: `256MiB`)
-    16.  Enables module logging (default: `false`)
-    17.  Enables call stack logging on exception (default: `true`)
-    18.  Mask used to hide specified headers and request or response parameters (default: `***`)
-    19.  List of request parameters to hide (default: `[]`)
-    20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
-    22.  Enables module metrics (default: `true`)
-    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    24.  Configures metric tags (default: `{}`)
-    25.  Enables module tracing (default: `true`)
-    26.  Configures tracing attributes (default: `{}`)
+    3.  Maximum allowed size of incoming request body (default: `256MiB`)
 
 === ":simple-yaml: `YAML`"
 
@@ -139,66 +79,157 @@ Example of the complete configuration described in the `HttpServerConfig` class 
     httpServer:
       publicApiHttpPort: 8080 #(1)!
       privateApiHttpPort: 8085 #(2)!
-      privateApiHttpMetricsPath: "/metrics" #(3)!
-      privateApiHttpReadinessPath: "/system/readiness" #(4)!
-      privateApiHttpLivenessPath: "/system/liveness" #(5)!
-      ignoreTrailingSlash: false #(6)!
-      ioThreads: 2 #(7)!
-      blockingThreads: 2 #(8)!
-      shutdownWait: "30s" #(9)!
-      threadKeepAliveTimeout: "60s" #(10)!
-      socketReadTimeout: "0s" #(11)!
-      socketWriteTimeout: "0s" #(12)!
-      socketKeepAliveEnabled: false #(13)!
-      virtualThreadsEnabled: false #(14)!
-      maxRequestBodySize: "256MiB" #(15)!
-      telemetry:
-        logging:
-          enabled: false #(16)!
-          stacktrace: true #(17)!
-          mask: "***" #(18)!
-          maskQueries: [ ] #(19)!
-          maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(20)!
-          pathTemplate: true #(21)!
-        metrics:
-          enabled: true #(22)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
-          tags: #(24)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(25)!
-          attributes: #(26)!
-            key1: value1
-            key2: value2
+      maxRequestBodySize: "256MiB" #(3)!
     ```
 
     1.  Public `HTTP` server port (default: `8080`)
     2.  Private `HTTP` server port (default: `8085`)
-    3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
-    4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
-    5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
-    6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
-    7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
-    8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
-    9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
-    10.  Maximum idle lifetime of a request handler thread (default: `60s`)
-    11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
-    12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
-    13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
-    14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
-    15.  Maximum allowed size of an incoming request body (default: `256MiB`)
-    16.  Enables module logging (default: `false`)
-    17.  Enables call stack logging on exception (default: `true`)
-    18.  Mask used to hide specified headers and request or response parameters (default: `***`)
-    19.  List of request parameters to hide (default: `[]`)
-    20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-    21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
-    22.  Enables module metrics (default: `true`)
-    23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    24.  Configures metric tags (default: `{}`)
-    25.  Enables module tracing (default: `true`)
-    26.  Configures tracing attributes (default: `{}`)
+    3.  Maximum allowed size of incoming request body (default: `256MiB`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `HttpServerConfig` class (default or example values are specified):
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        httpServer {
+            publicApiHttpPort = 8080 //(1)!
+            privateApiHttpPort = 8085 //(2)!
+            privateApiHttpMetricsPath = "/metrics" //(3)!
+            privateApiHttpReadinessPath = "/system/readiness" //(4)!
+            privateApiHttpLivenessPath = "/system/liveness" //(5)!
+            ignoreTrailingSlash = false //(6)!
+            ioThreads = 2 //(7)!
+            blockingThreads = 2 //(8)!
+            shutdownWait = "30s" //(9)!
+            threadKeepAliveTimeout = "60s" //(10)!
+            socketReadTimeout = "0s" //(11)!
+            socketWriteTimeout = "0s" //(12)!
+            socketKeepAliveEnabled = false //(13)!
+            virtualThreadsEnabled = false //(14)!
+            maxRequestBodySize = "256MiB" //(15)!
+            telemetry {
+                logging {
+                    enabled = false //(16)!
+                    stacktrace = true //(17)!
+                    mask = "***" //(18)!
+                    maskQueries = [ ] //(19)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
+                    pathTemplate = true //(21)!
+                }
+                metrics {
+                    enabled = true //(22)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
+                    tags = { // (24)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(25)!
+                    attributes = { // (26)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  Public `HTTP` server port (default: `8080`)
+        2.  Private `HTTP` server port (default: `8085`)
+        3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
+        4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
+        5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
+        6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
+        7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
+        8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
+        9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+        10.  Maximum idle lifetime of a request handler thread (default: `60s`)
+        11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
+        12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
+        13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
+        14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
+        15.  Maximum allowed size of an incoming request body (default: `256MiB`)
+        16.  Enables module logging (default: `false`)
+        17.  Enables call stack logging on exception (default: `true`)
+        18.  Mask used to hide specified headers and request or response parameters (default: `***`)
+        19.  List of request parameters to hide (default: `[]`)
+        20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
+        22.  Enables module metrics (default: `true`)
+        23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        24.  Configures metric tags (default: `{}`)
+        25.  Enables module tracing (default: `true`)
+        26.  Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        httpServer:
+          publicApiHttpPort: 8080 #(1)!
+          privateApiHttpPort: 8085 #(2)!
+          privateApiHttpMetricsPath: "/metrics" #(3)!
+          privateApiHttpReadinessPath: "/system/readiness" #(4)!
+          privateApiHttpLivenessPath: "/system/liveness" #(5)!
+          ignoreTrailingSlash: false #(6)!
+          ioThreads: 2 #(7)!
+          blockingThreads: 2 #(8)!
+          shutdownWait: "30s" #(9)!
+          threadKeepAliveTimeout: "60s" #(10)!
+          socketReadTimeout: "0s" #(11)!
+          socketWriteTimeout: "0s" #(12)!
+          socketKeepAliveEnabled: false #(13)!
+          virtualThreadsEnabled: false #(14)!
+          maxRequestBodySize: "256MiB" #(15)!
+          telemetry:
+            logging:
+              enabled: false #(16)!
+              stacktrace: true #(17)!
+              mask: "***" #(18)!
+              maskQueries: [ ] #(19)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(20)!
+              pathTemplate: true #(21)!
+            metrics:
+              enabled: true #(22)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
+              tags: #(24)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(25)!
+              attributes: #(26)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  Public `HTTP` server port (default: `8080`)
+        2.  Private `HTTP` server port (default: `8085`)
+        3.  Path to get [metrics](metrics.md) on the private server (default: `/metrics`)
+        4.  Path to get [readiness probe](probes.md) status on the private server (default: `/system/readiness`)
+        5.  Path to get [liveness probe](probes.md) status on the private server (default: `/system/liveness`)
+        6.  Whether to ignore a trailing `/` in the path: when enabled, `/my/path` and `/my/path/` are treated as the same route (default: `false`)
+        7.  Number of network I/O threads (default: number of available processors, but not less than `2`)
+        8.  Number of threads for blocking request processing (default: `min(max(available processors, 2) * 8, 200)`)
+        9.  Time to wait for processing before server shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+        10.  Maximum idle lifetime of a request handler thread (default: `60s`)
+        11.  Maximum time to wait for reading data from a socket or connection; `0s` disables the timeout (default: `0s`)
+        12.  Maximum time to wait for writing data to a socket or connection; `0s` disables the timeout (default: `0s`)
+        13.  Whether to enable `TCP keep-alive` for a socket or connection (default: `false`)
+        14.  Enables virtual threads for blocking request processing instead of the `blockingThreads` pool, requires `Java 21+` (default: `false`)
+        15.  Maximum allowed size of an incoming request body (default: `256MiB`)
+        16.  Enables module logging (default: `false`)
+        17.  Enables call stack logging on exception (default: `true`)
+        18.  Mask used to hide specified headers and request or response parameters (default: `***`)
+        19.  List of request parameters to hide (default: `[]`)
+        20.  List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        21.  Whether to use the request path template in logs; when not specified, the template is always used except at `TRACE`, where the full path is used (default not specified, optional)
+        22.  Enables module metrics (default: `true`)
+        23.  Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        24.  Configures metric tags (default: `{}`)
+        25.  Enables module tracing (default: `true`)
+        26.  Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
