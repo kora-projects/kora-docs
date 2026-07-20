@@ -789,54 +789,6 @@ The reader switches on the current parser token, returns `null` on a `JSON` `nul
 A custom `JsonReader<T>` or `JsonWriter<T>` is an ordinary graph component.
 Once registered, generated codecs pick it up automatically wherever a field of type `T` occurs, and it can also be pinned to a single field through `@JsonField(reader = ..., writer = ...)` (see [Field Naming](#field-naming)).
 
-## Using @Json with HTTP and Kafka { #using-with-http-and-kafka }
-
-`JsonModule` (unlike the bare `JsonCommonModule`) also provides, for every generated `JsonReader<T>`/`JsonWriter<T>`, the mappers needed to use a `@Json` `DTO` directly as:
-
-- an [HTTP server](http-server.md#json) request body and response, and its string parameters;
-- an [HTTP client](http-client.md) request body and response;
-- a [Kafka](kafka.md) record value through `JsonKafkaSerializer<T>` and `JsonKafkaDeserializer<T>`.
-
-All of these module mappers are tagged `@Json`, so a single `@Json` `DTO` needs no extra wiring on either side:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Json
-    public record Event(String name, Integer code) {}
-
-    @HttpController
-    public final class EventController {
-
-        @HttpRoute(method = HttpMethod.POST, path = "/events")
-        public Event handle(@Json Event event) { //(1)!
-            return event;
-        }
-    }
-    ```
-
-    1. `@Json` on the parameter selects the generated `JsonReader<Event>`; the returned `Event` is written with the generated `JsonWriter<Event>`.
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Json
-    data class Event(val name: String, val code: Int)
-
-    @HttpController
-    class EventController {
-
-        @HttpRoute(method = HttpMethod.POST, path = "/events")
-        fun handle(@Json event: Event): Event { //(1)!
-            return event
-        }
-    }
-    ```
-
-    1. `@Json` on the parameter selects the generated `JsonReader<Event>`; the returned `Event` is written with the generated `JsonWriter<Event>`.
-
-For `Kafka`, mark the value with the `@Json` tag to have Kora bind `JsonKafkaDeserializer<T>`/`JsonKafkaSerializer<T>` automatically; to pin a specific generated or custom codec instead, tag the value with the codec's tag as shown in [Kafka serialization](kafka.md#serialization) and [Kafka deserialization](kafka.md#deserialization).
-
 ## Jackson { #jackson }
 
 If `Jackson` must be used for reading and writing `JSON` instead of the compile-time generated codecs, use `JacksonModule`.

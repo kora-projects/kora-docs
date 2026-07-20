@@ -655,41 +655,38 @@ agent:
     public interface EntityRepository extends CassandraRepository {
 
         @EntityCassandra
-        record Entity(String id,
+        @Table("entities")
+        record Entity(@Id String id,
                       @Column("value1") int field1,
                       String value2,
                       @Nullable String value3) {}
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         @Nullable
         Entity findById(String id);
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, value1, value2, value3 FROM entities") //(2)!
         List<Entity> findAll();
 
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         void insert(Entity entity);
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
-        void insertBatch(@Batch List<Entity> entities);
-
-        @Query("""
-                UPDATE entities
-                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
-                WHERE id = :entity.id
-                """)
-        void update(Entity entity);
-
-        @Query("DELETE FROM entities WHERE id = :id")
-        void deleteById(String id);
     }
     ```
+
+    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+        ```sql
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
+    2.  Поля перечислены вручную без использования макросов — это допустимо, но требует поддержки при изменении сущности.
+    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(id, value1, value2, value3) 
+        VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
+        ```
+        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -698,47 +695,46 @@ agent:
     interface EntityRepository : CassandraRepository {
 
         @EntityCassandra
+        @Table("entities")
         data class Entity(
-            val id: String,
+            @field:Id val id: String,
             @field:Column("value1") val field1: Int,
             val value2: String,
             val value3: String?
         )
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: String): Entity?
 
-        @Query("SELECT * FROM entities")
-        fun findAll(): List<Entity>
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity)
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
-        fun insertBatch(@Batch entities: List<Entity>)
-
-        @Query("""
-                UPDATE entities
-                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
-                WHERE id = :entity.id
-                """)
-        fun update(entity: Entity)
-
-        @Query("DELETE FROM entities WHERE id = :id")
-        fun deleteById(id: String)
     }
     ```
+
+    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+        ```sql
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
+    2.  Поля перечислены вручную без использования макросов — это допустимо, но требует поддержки при изменении сущности.
+    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(id, value1, value2, value3) 
+        VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
+        ```
+        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 `CQL` остается под контролем разработчика: вы сами пишете текст запроса, тогда как `Kora` берет на себя только связывание параметров,
 выполнение запроса и отображение результата.
 Общие правила для сущностей, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch` и макросов описаны в разделе
 [Общие правила работы с базами данных](database-common.md).
+
+**Связывание параметров:** Kora выполняет типизированное внедрение аргументов в CQL-запрос на этапе компиляции.
+Параметры запроса (например, `:id`, `:entity.field1`) заменяются в сгенерированном коде на соответствующие вызовы драйвера Cassandra.
+Например, для параметра `String id` будет сгенерировано что-то вроде `statement.setString(1, id)`, где индекс соответствует порядку параметра в запросе.
+Это обеспечивает безопасность (защита от CQL-инъекций) и производительность (использование подготовленных запросов драйвером).
 
 В отличие от реляционных баз данных, в `Cassandra` нет транзакций.
 Когда нужно, чтобы несколько операторов применились атомарно, используйте `@Batch`-метод (`CQL` `BATCH`), как показано выше;
@@ -810,8 +806,8 @@ agent:
 ### Сущность { #entity }
 
 Используйте аннотацию `@EntityCassandra` для оптимального отображения сущности.
-Обработчик аннотаций создает отображатели строки и результата для такого типа заранее, на этапе компиляции,
-вместо того чтобы разрешать их из графа во время выполнения.
+Аннотация позволяет обработчику аннотаций сгенерировать все необходимые отображатели за **один раунд** аннотационной обработки.
+Без этой аннотации отображатели генерируются по требованию, что может потребовать **множества раундов** обработки и значительно увеличить время компиляции.
 Это рекомендуемый способ отображения каждой сущности, возвращаемой из репозитория или связываемой в нем.
 
 Ожидается, что все вложенные сущности и типы [UDT](#udt) также используют эту аннотацию.
@@ -1240,6 +1236,13 @@ CREATE TABLE IF NOT EXISTS entities_udt
     @EntityCassandra
     data class Name(val first: String, val last: String)
     ```
+
+### Макросы { #macros }
+
+Для упрощения написания `CQL`-запросов используйте макросы — они разворачиваются в `CQL`-конструкции на этапе компиляции.
+Примеры использования показаны выше в секции [Использование](#usage) (методы `findById` и `insert`).
+
+**Подробная документация:** [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 ## Сигнатуры { #signatures }
 

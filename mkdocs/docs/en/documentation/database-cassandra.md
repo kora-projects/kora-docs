@@ -655,41 +655,38 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](#entity
     public interface EntityRepository extends CassandraRepository {
 
         @EntityCassandra
-        record Entity(String id,
+        @Table("entities")
+        record Entity(@Id String id,
                       @Column("value1") int field1,
                       String value2,
                       @Nullable String value3) {}
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         @Nullable
         Entity findById(String id);
 
-        @Query("SELECT * FROM entities")
+        @Query("SELECT id, value1, value2, value3 FROM entities") //(2)!
         List<Entity> findAll();
 
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         void insert(Entity entity);
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
-        void insertBatch(@Batch List<Entity> entities);
-
-        @Query("""
-                UPDATE entities
-                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
-                WHERE id = :entity.id
-                """)
-        void update(Entity entity);
-
-        @Query("DELETE FROM entities WHERE id = :id")
-        void deleteById(String id);
     }
     ```
+
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, value1, value2, value3) 
+        VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -698,47 +695,46 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](#entity
     interface EntityRepository : CassandraRepository {
 
         @EntityCassandra
+        @Table("entities")
         data class Entity(
-            val id: String,
+            @field:Id val id: String,
             @field:Column("value1") val field1: Int,
             val value2: String,
             val value3: String?
         )
 
-        @Query("SELECT * FROM entities WHERE id = :id")
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: String): Entity?
 
-        @Query("SELECT * FROM entities")
-        fun findAll(): List<Entity>
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity)
-
-        @Query("""
-                INSERT INTO entities(id, value1, value2, value3)
-                VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
-                """)
-        fun insertBatch(@Batch entities: List<Entity>)
-
-        @Query("""
-                UPDATE entities
-                SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
-                WHERE id = :entity.id
-                """)
-        fun update(entity: Entity)
-
-        @Query("DELETE FROM entities WHERE id = :id")
-        fun deleteById(id: String)
     }
     ```
+
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, value1, value2, value3 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, value1, value2, value3) 
+        VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
 
 `CQL` remains under the developer's control: you write the query text yourself, while `Kora` only handles parameter binding,
 query execution, and result mapping.
 Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
 [Common database rules](database-common.md).
+
+**Parameter binding:** Kora performs typed injection of arguments into the CQL query at compile time.
+Query parameters (e.g., `:id`, `:entity.field1`) are replaced in the generated code with corresponding Cassandra driver calls.
+For example, for a `String id` parameter, something like `statement.setString(1, id)` will be generated, where the index corresponds to the parameter order in the query.
+This ensures security (protection against CQL injection) and performance (using driver prepared statements).
 
 Unlike relational databases, `Cassandra` has no transactions.
 When you need several statements to be applied atomically, use a `@Batch` method (a `CQL` `BATCH`) as shown above;
@@ -810,8 +806,8 @@ If a type is not covered by that set, or if it needs a custom representation in 
 ### Entity { #entity }
 
 Use the `@EntityCassandra` annotation for optimal entity mapping.
-The annotation processor creates the row and result mappers for such a type ahead of time, at compile time,
-instead of resolving them from the graph at runtime.
+The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
+Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
 This is the recommended way to map every entity returned from or bound into a repository.
 
 All nested entities and [UDT](#udt) types are also expected to use this annotation.
@@ -1240,6 +1236,13 @@ This is useful when the mapper is needed as a separate graph component.
     @EntityCassandra
     data class Name(val first: String, val last: String)
     ```
+
+### Macros { #macros }
+
+To simplify writing `CQL` queries, use macros — they expand into `CQL` constructs at compile time.
+Usage examples are shown above in the [Usage](#usage) section (`findById` and `insert` methods).
+
+**Detailed documentation:** [Common Database Rules — Macros](database-common.md#macros)
 
 ## Signatures { #signatures }
 

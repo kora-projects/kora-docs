@@ -850,64 +850,6 @@ A failed gRPC call throws an `io.grpc.StatusRuntimeException`. Its `getStatus()`
     }
     ```
 
-## Testing { #testing }
-
-A gRPC client is tested like any other Kora component with [`@KoraAppTest`](junit5.md).
-Implement `KoraAppTestConfigModifier` to supply the `url` (for example through the `GRPC_URL` environment substitution used in the example),
-inject the stub-backed service with `@TestComponent`, build a request with the generated builder, and assert on `StatusRuntimeException`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KoraAppTest(Application.class)
-    class GrpcClientTests implements KoraAppTestConfigModifier {
-
-        @TestComponent
-        private RootService service;
-
-        @Override
-        public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty("GRPC_URL", "grpc://localhost:8090");
-        }
-
-        @Test
-        void createUser() {
-            var event = Message.RequestEvent.newBuilder()
-                .setName("bob")
-                .setCode("b1")
-                .build();
-
-            var stub = service.service();
-            assertThrows(StatusRuntimeException.class, () -> stub.createUser(event));
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KoraAppTest(Application::class)
-    class GrpcClientTests : KoraAppTestConfigModifier {
-
-        @TestComponent
-        lateinit var service: RootService
-
-        override fun config(): KoraConfigModification =
-            KoraConfigModification.ofSystemProperty("GRPC_URL", "grpc://localhost:8090")
-
-        @Test
-        fun createUser() {
-            val event = Message.RequestEvent.newBuilder()
-                .setName("bob")
-                .setCode("b1")
-                .build()
-
-            val stub = service.service()
-            assertThrows(StatusRuntimeException::class.java) { stub.createUser(event) }
-        }
-    }
-    ```
-
 ## Telemetry { #telemetry }
 
 Default logging, metrics, and tracing are configured through the `telemetry` block of the [configuration](#configuration) and

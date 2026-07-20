@@ -984,7 +984,7 @@ For an operation `getPetById` with responses `200` and `404`, the generator prod
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Return type depends on `mode`: `java-server` returns the value directly, `java-async-server` returns `CompletionStage<...>`, `java-reactive-server` returns `Mono<...>` (shown here):
+    Return type depends on `mode`: `java-server` returns the value directly (shown here), `java-async-server` returns `CompletionStage<...>`, `java-reactive-server` returns `Mono<...>`:
 
     ```java
     @Component
@@ -993,18 +993,18 @@ For an operation `getPetById` with responses `200` and `404`, the generator prod
         private final Map<Long, Pet> petMap = new ConcurrentHashMap<>();
 
         @Override
-        public Mono<PetApiResponses.GetPetByIdApiResponse> getPetById(long petId) {
+        public PetApiResponses.GetPetByIdApiResponse getPetById(long petId) {
             var pet = petMap.get(petId);
             if (pet == null) {
-                return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse()); //(1)!
+                return new PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse(); //(1)!
             }
-            return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet)); //(2)!
+            return new PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet); //(2)!
         }
 
         @Override
-        public Mono<PetApiResponses.AddPetApiResponse> addPet(Pet body) {
+        public PetApiResponses.AddPetApiResponse addPet(Pet body) {
             petMap.put(body.id(), body);
-            return Mono.just(new PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(body));
+            return new PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(body);
         }
     }
     ```

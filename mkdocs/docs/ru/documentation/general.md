@@ -137,20 +137,9 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
         }
     }
 
-    configurations {
-        koraBom
-        annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
-        implementation.extendsFrom(koraBom)
-        api.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
-        testAnnotationProcessor.extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.18"
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
     }
     ```
 
@@ -175,19 +164,9 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
         sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
 
-    val koraBom: Configuration by configurations.creating
-    configurations {
-        ksp.get().extendsFrom(koraBom)
-        kspTest.get().extendsFrom(koraBom)
-        compileOnly.get().extendsFrom(koraBom)
-        api.get().extendsFrom(koraBom)
-        implementation.get().extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
-        ksp("ru.tinkoff.kora:symbol-processors")
-        kspTest("ru.tinkoff.kora:symbol-processors")
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.18")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
     }
     ```
 
@@ -212,69 +191,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
       --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
     ```
 
-### Maven { #maven }
 
-Рекомендуемой системой сборки остается `Gradle`, но проект на `Java` можно собрать и через [Maven](https://maven.apache.org/).
-Поддержка `Maven` распространяется только на `Java`: набор инструментов `KSP` для `Kotlin` не имеет интеграции с `Maven`, поэтому проекты на `Kotlin` должны использовать `Gradle`.
-
-Проще всего унаследоваться от `ru.tinkoff.kora:kora-parent` как от родителя `Maven`.
-Опубликованный `POM` `kora-parent` содержит секцию `<build>`, которая автоматически настраивает `maven-compiler-plugin` `3.8.1` (с аргументом компилятора `-parameters` и путем обработчика аннотаций `ru.tinkoff.kora:annotation-processors`), `maven-surefire-plugin` `2.22.2` и устанавливает свойство `java.version` в `17`:
-
-```xml
-<parent>
-    <groupId>ru.tinkoff.kora</groupId>
-    <artifactId>kora-parent</artifactId>
-    <version>1.2.17</version>
-    <relativePath/>
-</parent>
-```
-
-Если у проекта уже есть собственный родитель, импортируйте `kora-parent` как `BOM` и настройте плагин компилятора явно:
-
-```xml
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>ru.tinkoff.kora</groupId>
-            <artifactId>kora-parent</artifactId>
-            <version>1.2.17</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.8.1</version>
-            <configuration>
-                <compilerArgs>
-                    <arg>-parameters</arg>
-                </compilerArgs>
-                <annotationProcessorPaths>
-                    <path>
-                        <groupId>ru.tinkoff.kora</groupId>
-                        <artifactId>annotation-processors</artifactId>
-                        <version>1.2.17</version>
-                    </path>
-                </annotationProcessorPaths>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-```
-
-После этого зависимости модулей Kora объявляются без явного указания версии, так как их версии управляются импортированным `BOM`:
-
-```xml
-<dependency>
-    <groupId>ru.tinkoff.kora</groupId>
-    <artifactId>http-server-undertow</artifactId>
-</dependency>
-```
 
 ## Зависимости { #dependencies }
 
@@ -286,20 +203,9 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     `build.gradle`:
 
     ```groovy
-    configurations {
-        koraBom
-        annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
-        implementation.extendsFrom(koraBom)
-        api.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
-        testAnnotationProcessor.extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.18"
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
     }
     ```
 
@@ -308,23 +214,13 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     `build.gradle.kts`:
 
     ```kotlin
-    val koraBom: Configuration by configurations.creating
-    configurations {
-        ksp.get().extendsFrom(koraBom)
-        kspTest.get().extendsFrom(koraBom)
-        compileOnly.get().extendsFrom(koraBom)
-        api.get().extendsFrom(koraBom)
-        implementation.get().extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
-        ksp("ru.tinkoff.kora:symbol-processors")
-        kspTest("ru.tinkoff.kora:symbol-processors")
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.18")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
     }
     ```
 
-Для сборки через `Maven` импорт `BOM` и путь обработчика аннотаций настраиваются так, как показано в разделе [Maven](#maven).
+
 
 После этого зависимости модулей можно указывать без версии, например:
 
@@ -340,14 +236,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     implementation("ru.tinkoff.kora:http-server-undertow")
     ```
 
-=== ":simple-apachemaven: `Maven`"
 
-    ```xml
-    <dependency>
-        <groupId>ru.tinkoff.kora</groupId>
-        <artifactId>http-server-undertow</artifactId>
-    </dependency>
-    ```
 
 ## Запуск { #run }
 

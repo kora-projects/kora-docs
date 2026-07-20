@@ -789,54 +789,6 @@ Reader переключается по текущему токену парсе�
 Пользовательский `JsonReader<T>` или `JsonWriter<T>` — это обычный компонент графа.
 После регистрации сгенерированные кодеки автоматически подхватывают его везде, где встречается поле типа `T`, а также его можно закрепить за отдельным полем через `@JsonField(reader = ..., writer = ...)` (см. [Именование полей](#field-naming)).
 
-## Использование @Json с HTTP и Kafka { #using-with-http-and-kafka }
-
-`JsonModule` (в отличие от чистого `JsonCommonModule`) также предоставляет для каждого сгенерированного `JsonReader<T>`/`JsonWriter<T>` преобразователи, необходимые для использования `@Json` `DTO` напрямую в качестве:
-
-- тела запроса и ответа [HTTP-сервера](http-server.md#json), а также его строковых параметров;
-- тела запроса и ответа [HTTP-клиента](http-client.md);
-- значения записи [Kafka](kafka.md) через `JsonKafkaSerializer<T>` и `JsonKafkaDeserializer<T>`.
-
-Все эти преобразователи модуля помечены тегом `@Json`, поэтому единственному `@Json` `DTO` не требуется дополнительная настройка ни на одной из сторон:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Json
-    public record Event(String name, Integer code) {}
-
-    @HttpController
-    public final class EventController {
-
-        @HttpRoute(method = HttpMethod.POST, path = "/events")
-        public Event handle(@Json Event event) { //(1)!
-            return event;
-        }
-    }
-    ```
-
-    1. `@Json` на параметре выбирает сгенерированный `JsonReader<Event>`; возвращаемый `Event` записывается сгенерированным `JsonWriter<Event>`.
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Json
-    data class Event(val name: String, val code: Int)
-
-    @HttpController
-    class EventController {
-
-        @HttpRoute(method = HttpMethod.POST, path = "/events")
-        fun handle(@Json event: Event): Event { //(1)!
-            return event
-        }
-    }
-    ```
-
-    1. `@Json` на параметре выбирает сгенерированный `JsonReader<Event>`; возвращаемый `Event` записывается сгенерированным `JsonWriter<Event>`.
-
-Для `Kafka` пометьте значение тегом `@Json`, чтобы Kora автоматически связала `JsonKafkaDeserializer<T>`/`JsonKafkaSerializer<T>`; чтобы вместо этого закрепить конкретный сгенерированный или пользовательский кодек, пометьте значение тегом этого кодека, как показано в разделах [Сериализация Kafka](kafka.md#serialization) и [Десериализация Kafka](kafka.md#deserialization).
-
 ## Jackson { #jackson }
 
 Если для чтения и записи `JSON` вместо сгенерированных во время компиляции кодеков нужно использовать `Jackson`, применяйте `JacksonModule`.

@@ -984,7 +984,7 @@ Kora также поддерживает несколько `configOptions`, у�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Возвращаемый тип зависит от `mode`: `java-server` возвращает значение напрямую, `java-async-server` возвращает `CompletionStage<...>`, `java-reactive-server` возвращает `Mono<...>` (показано здесь):
+    Возвращаемый тип зависит от `mode`: `java-server` возвращает значение напрямую (показано здесь), `java-async-server` возвращает `CompletionStage<...>`, `java-reactive-server` возвращает `Mono<...>`:
 
     ```java
     @Component
@@ -993,18 +993,18 @@ Kora также поддерживает несколько `configOptions`, у�
         private final Map<Long, Pet> petMap = new ConcurrentHashMap<>();
 
         @Override
-        public Mono<PetApiResponses.GetPetByIdApiResponse> getPetById(long petId) {
+        public PetApiResponses.GetPetByIdApiResponse getPetById(long petId) {
             var pet = petMap.get(petId);
             if (pet == null) {
-                return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse()); //(1)!
+                return new PetApiResponses.GetPetByIdApiResponse.GetPetById404ApiResponse(); //(1)!
             }
-            return Mono.just(new PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet)); //(2)!
+            return new PetApiResponses.GetPetByIdApiResponse.GetPetById200ApiResponse(pet); //(2)!
         }
 
         @Override
-        public Mono<PetApiResponses.AddPetApiResponse> addPet(Pet body) {
+        public PetApiResponses.AddPetApiResponse addPet(Pet body) {
             petMap.put(body.id(), body);
-            return Mono.just(new PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(body));
+            return new PetApiResponses.AddPetApiResponse.AddPet200ApiResponse(body);
         }
     }
     ```

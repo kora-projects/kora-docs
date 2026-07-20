@@ -137,20 +137,9 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
         }
     }
 
-    configurations {
-        koraBom
-        annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
-        implementation.extendsFrom(koraBom)
-        api.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
-        testAnnotationProcessor.extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.18")
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.18"
+        implementation platform("ru.tinkoff.kora:kora-parent:1.2.17")
     }
     ```
 
@@ -175,19 +164,9 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
         sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
 
-    val koraBom: Configuration by configurations.creating
-    configurations {
-        ksp.get().extendsFrom(koraBom)
-        kspTest.get().extendsFrom(koraBom)
-        compileOnly.get().extendsFrom(koraBom)
-        api.get().extendsFrom(koraBom)
-        implementation.get().extendsFrom(koraBom)
-    }
-
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
-        ksp("ru.tinkoff.kora:symbol-processors")
-        kspTest("ru.tinkoff.kora:symbol-processors")
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.18")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
     }
     ```
 
@@ -211,70 +190,6 @@ In real projects the `BOM` version is usually extracted into a `gradle.propertie
       --add-exports jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED \
       --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
     ```
-
-### Maven { #maven }
-
-`Gradle` remains the recommended build system, but a `Java` project can also be built with [Maven](https://maven.apache.org/).
-`Maven` support applies to `Java` only: the `Kotlin` `KSP` toolchain has no `Maven` integration, so `Kotlin` projects must use `Gradle`.
-
-The simplest setup is to inherit from `ru.tinkoff.kora:kora-parent` as a `Maven` parent.
-The published `kora-parent` `POM` carries a `<build>` section that automatically wires `maven-compiler-plugin` `3.8.1` (with the `-parameters` compiler argument and the `ru.tinkoff.kora:annotation-processors` annotation processor path), `maven-surefire-plugin` `2.22.2`, and sets the `java.version` property to `17`:
-
-```xml
-<parent>
-    <groupId>ru.tinkoff.kora</groupId>
-    <artifactId>kora-parent</artifactId>
-    <version>1.2.17</version>
-    <relativePath/>
-</parent>
-```
-
-If the project already has its own parent, import `kora-parent` as a `BOM` instead and configure the compiler plugin explicitly:
-
-```xml
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>ru.tinkoff.kora</groupId>
-            <artifactId>kora-parent</artifactId>
-            <version>1.2.17</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.8.1</version>
-            <configuration>
-                <compilerArgs>
-                    <arg>-parameters</arg>
-                </compilerArgs>
-                <annotationProcessorPaths>
-                    <path>
-                        <groupId>ru.tinkoff.kora</groupId>
-                        <artifactId>annotation-processors</artifactId>
-                        <version>1.2.17</version>
-                    </path>
-                </annotationProcessorPaths>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-```
-
-Kora module dependencies are then declared without an explicit version, as their versions are managed by the imported `BOM`:
-
-```xml
-<dependency>
-    <groupId>ru.tinkoff.kora</groupId>
-    <artifactId>http-server-undertow</artifactId>
-</dependency>
-```
 
 ## Dependencies { #dependencies }
 
@@ -324,7 +239,7 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
     }
     ```
 
-For a `Maven` build the `BOM` import and annotation processor path are configured as shown in the [Maven](#maven) section.
+
 
 After that, module dependencies can be declared without a version, for example:
 
@@ -340,14 +255,7 @@ After that, module dependencies can be declared without a version, for example:
     implementation("ru.tinkoff.kora:http-server-undertow")
     ```
 
-=== ":simple-apachemaven: `Maven`"
 
-    ```xml
-    <dependency>
-        <groupId>ru.tinkoff.kora</groupId>
-        <artifactId>http-server-undertow</artifactId>
-    </dependency>
-    ```
 
 ## Run { #run }
 

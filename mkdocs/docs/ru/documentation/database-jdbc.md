@@ -179,20 +179,47 @@ agent:
 Каждый метод, помеченный `@Query`, содержит обычный `SQL`-запрос. Параметры метода связываются по имени с помощью
 синтаксиса `:parameter`, а к полям объекта можно обращаться как `:entity.field`.
 
+Сущности описываются с помощью [общих аннотаций баз данных](database-common.md) и помечаются `@EntityJdbc`,
+чтобы `Kora` сгенерировала отображатель сущности на этапе компиляции (см. [Сущность](database-common.md#entity)):
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        record Entity(@Id long id,
+                      String name,
+                      @Nullable String description) {}
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         @Nullable
         Entity findById(long id);
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("SELECT id, name, description FROM entities") //(2)!
+        List<Entity> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         UpdateCount insert(Entity entity);
     }
     ```
+
+    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
+    2.  Поля перечислены вручную без использования макросов — это допустимо, но требует поддержки при изменении сущности.
+    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -200,18 +227,45 @@ agent:
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: Long,
+            val name: String,
+            val description: String?
+        )
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: Long): Entity?
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity): UpdateCount
     }
     ```
+
+    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
+    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 `SQL` остается под контролем разработчика: вы можете использовать специфичные для базы данных возможности, тогда как `Kora`
 берет на себя только безопасное связывание параметров, выполнение запроса и отображение результата.
 Общие правила для сущностей, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch` и макросов описаны в разделе
 [Общие правила работы с базами данных](database-common.md).
+
+**Связывание параметров:** Kora выполняет типизированное внедрение аргументов в SQL-запрос на этапе компиляции.
+Параметры запроса (например, `:id`, `:entity.name`) заменяются в сгенерированном коде на соответствующие вызовы `PreparedStatement`.
+Например, для параметра `String name` будет сгенерировано что-то вроде `statement.setString(1, name)`, где индекс соответствует порядку параметра в запросе.
+Это обеспечивает безопасность (защита от SQL-инъекций) и производительность (использование подготовленных запросов).
 
 ## Отображение { #mapping }
 
@@ -269,7 +323,8 @@ agent:
 #### Сущность { #entity }
 
 Используйте аннотацию `@EntityJdbc` для оптимального отображения сущности.
-Обработчик аннотаций заранее создает отображатель результата для такого типа.
+Аннотация позволяет обработчику аннотаций сгенерировать все необходимые отображатели за **один раунд** аннотационной обработки.
+Без этой аннотации отображатели генерируются по требованию, что может потребовать **множества раундов** обработки и значительно увеличить время компиляции.
 
 Ожидается, что все вложенные сущности также используют эту аннотацию.
 

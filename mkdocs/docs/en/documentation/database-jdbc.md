@@ -179,20 +179,47 @@ A `JDBC` repository is declared as an interface annotated with `@Repository` and
 Each method annotated with `@Query` contains a regular `SQL` query. Method parameters are bound by name with the
 `:parameter` syntax, and object fields can be referenced as `:entity.field`.
 
+Entities are described with the [common database annotations](database-common.md) and marked with `@EntityJdbc`
+so that `Kora` generates the entity mapper at compile time (see [Entity](database-common.md#entity)):
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        record Entity(@Id long id,
+                      String name,
+                      @Nullable String description) {}
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         @Nullable
         Entity findById(long id);
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("SELECT id, name, description FROM entities") //(2)!
+        List<Entity> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         UpdateCount insert(Entity entity);
     }
     ```
+
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -200,18 +227,45 @@ Each method annotated with `@Query` contains a regular `SQL` query. Method param
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: Long,
+            val name: String,
+            val description: String?
+        )
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: Long): Entity?
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity): UpdateCount
     }
     ```
+
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
 
 `SQL` remains under the developer's control: you can use database-specific features, while `Kora` only handles safe
 parameter binding, query execution, and result mapping.
 Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
 [Common database rules](database-common.md).
+
+**Parameter binding:** Kora performs typed injection of arguments into the SQL query at compile time.
+Query parameters (e.g., `:id`, `:entity.name`) are replaced in the generated code with corresponding `PreparedStatement` calls.
+For example, for a `String name` parameter, something like `statement.setString(1, name)` will be generated, where the index corresponds to the parameter order in the query.
+This ensures security (protection against SQL injection) and performance (using prepared statements).
 
 ## Mapping { #mapping }
 
@@ -269,7 +323,8 @@ and `optionalResultSetMapper` that build a full-`ResultSet` mapper from a `JdbcR
 #### Entity { #entity }
 
 Use the `@EntityJdbc` annotation for optimal entity mapping.
-The annotation processor creates a result mapper for such a type ahead of time.
+The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
+Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
 
 All nested entities are also expected to use this annotation.
 
