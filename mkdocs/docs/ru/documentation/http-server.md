@@ -1141,3 +1141,19 @@ public interface HttpServerInterceptor {
 
     1. Указывает тип `HTTP`-метода обработчика
     2. Указывает путь метода обработчика
+
+## Телеметрия { #telemetry }
+
+HTTP Server использует контракт телеметрии для логирования, метрик и трассировки запросов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.http.server.common.telemetry`.
+
+Для каждого HTTP-запроса создаётся `HttpServerTelemetry.HttpServerTelemetryContext`, который закрывается по завершении обработки запроса.
+Запрос описывается через параметры обработчика телеметрии, включая метод, путь, статус ответа и длительность.
+
+Фабрика по умолчанию `DefaultHttpServerTelemetryFactory` объединяет три фабрики:
+- `HttpServerLoggerFactory` строит `HttpServerLogger` для логирования начала/конца обработки запроса;
+- `HttpServerMetricsFactory` строит `HttpServerMetrics` для записи метрик запросов;
+- `HttpServerTracerFactory` строит `HttpServerTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).

@@ -1274,3 +1274,20 @@ CREATE TABLE IF NOT EXISTS entities_udt
     - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
 
     Параметры метода могут включать обычные значения, DTO, `@Batch List<T>` для пакетного выполнения и `CqlSession`, когда методу нужен доступ к текущей сессии драйвера.
+
+## Телеметрия { #telemetry }
+
+Cassandra драйвер использует общий контракт телеметрии для логирования, метрик и трассировки запросов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.database.common.telemetry`.
+
+Для каждого запроса создаётся `DataBaseTelemetry.DataBaseTelemetryContext`, который закрывается по завершении запроса.
+Выполняемый запрос описывается `QueryContext(queryId, cql, operation)`, где `queryId` — стабильный идентификатор запроса,
+`cql` — итоговый текст запроса, а `operation` по умолчанию равно `db_query`.
+
+Фабрика по умолчанию `DefaultDataBaseTelemetryFactory` объединяет три фабрики:
+- `DataBaseLoggerFactory` строит `DataBaseLogger` для логирования начала/конца запроса;
+- `DataBaseMetricWriterFactory` строит `DataBaseMetricWriter` для записи метрик;
+- `DataBaseTracerFactory` строит `DataBaseTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#cassandra).

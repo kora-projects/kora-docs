@@ -866,3 +866,19 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 1. Выводит список сервисов, предоставляемых сервером
 2. Описывает сервис и его методы
 3. Отправляет унарный `RPC`; `-plaintext` используется, потому что у сервера из примера нет `TLS`
+
+## Телеметрия { #telemetry }
+
+gRPC Server использует контракт телеметрии для логирования, метрик и трассировки вызовов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.grpc.server.common.telemetry`.
+
+Для каждого gRPC-вызова создаётся `GrpcServerTelemetry.GrpcServerTelemetryContext`, который закрывается по завершении вызова.
+Вызов описывается через параметры обработчика телеметрии, включая сервис, метод, статус ответа и длительность.
+
+Фабрика по умолчанию `DefaultGrpcServerTelemetryFactory` объединяет три фабрики:
+- `GrpcServerLoggerFactory` строит `GrpcServerLogger` для логирования начала/конца вызова;
+- `GrpcServerMetricsFactory` строит `GrpcServerMetrics` для записи метрик вызовов;
+- `GrpcServerTracerFactory` строит `GrpcServerTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#grpc-server).

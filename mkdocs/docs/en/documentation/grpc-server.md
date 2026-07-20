@@ -866,3 +866,19 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 1. Lists the services exposed by the server
 2. Describes a service and its methods
 3. Sends a unary `RPC`; `-plaintext` is used because the example server has no `TLS`
+
+## Telemetry { #telemetry }
+
+gRPC Server uses a telemetry contract for logging, metrics, and tracing of calls.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.grpc.server.common.telemetry`.
+
+For each gRPC call, a `GrpcServerTelemetry.GrpcServerTelemetryContext` is created, which is closed upon call completion.
+The call is described through telemetry handler parameters, including service, method, response status, and duration.
+
+The default factory `DefaultGrpcServerTelemetryFactory` combines three factories:
+- `GrpcServerLoggerFactory` builds `GrpcServerLogger` for logging call start/end;
+- `GrpcServerMetricsFactory` builds `GrpcServerMetrics` for writing call metrics;
+- `GrpcServerTracerFactory` builds `GrpcServerTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#grpc-server) section.

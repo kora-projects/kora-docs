@@ -2614,3 +2614,19 @@ Used for streaming large data without loading into memory.
         }
     }
     ```
+
+## Telemetry { #telemetry }
+
+HTTP Client uses a telemetry contract for logging, metrics, and tracing of requests.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.http.client.common.telemetry`.
+
+For each HTTP request, an `HttpClientTelemetry.HttpClientTelemetryContext` is created, which is closed upon request completion.
+The request is described through telemetry handler parameters, including method, URL, response status, and duration.
+
+The default factory `DefaultHttpClientTelemetryFactory` combines three factories:
+- `HttpClientLoggerFactory` builds `HttpClientLogger` for logging request start/end;
+- `HttpClientMetricsFactory` builds `HttpClientMetrics` for writing request metrics;
+- `HttpClientTracerFactory` builds `HttpClientTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#http-client) section.

@@ -916,3 +916,19 @@ gRPC-клиент тестируется как любой другой комп
 Чтобы настроить собираемые сигналы, переопределите SPI-фабрики телеметрии как компоненты: `GrpcClientTelemetryFactory`
 (вся телеметрия), `GrpcClientLoggerFactory`, `GrpcClientMetricsFactory` или `GrpcClientTracerFactory`.
 Реализации по умолчанию связываются `GrpcClientModule`; предоставление собственного компонента заменяет соответствующую реализацию по умолчанию.
+
+## Телеметрия { #telemetry }
+
+gRPC Client использует контракт телеметрии для логирования, метрик и трассировки вызовов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.grpc.client.common.telemetry`.
+
+Для каждого gRPC-вызова создаётся `GrpcClientTelemetry.GrpcClientTelemetryContext`, который закрывается по завершении вызова.
+Вызов описывается через параметры обработчика телеметрии, включая сервис, метод, статус ответа и длительность.
+
+Фабрика по умолчанию `DefaultGrpcClientTelemetryFactory` объединяет три фабрики:
+- `GrpcClientLoggerFactory` строит `GrpcClientLogger` для логирования начала/конца вызова;
+- `GrpcClientMetricsFactory` строит `GrpcClientMetrics` для записи метрик вызовов;
+- `GrpcClientTracerFactory` строит `GrpcClientTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#grpc-client).

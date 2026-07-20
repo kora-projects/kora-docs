@@ -1152,3 +1152,20 @@ For asynchronous methods, you can specify a separate `Executor` tag through the 
         suspend fun findAll(): List<Entity>
     }
     ```
+
+## Telemetry { #telemetry }
+
+JDBC driver uses a common telemetry contract for logging, metrics, and tracing of queries.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.database.common.telemetry`.
+
+For each query, a `DataBaseTelemetry.DataBaseTelemetryContext` is created, which is closed upon query completion.
+The executed query is described by `QueryContext(queryId, sql, operation)`, where `queryId` is a stable query identifier
+passed to telemetry, `sql` is the final query text, and `operation` defaults to `db_query`.
+
+The default factory `DefaultDataBaseTelemetryFactory` combines three factories:
+- `DataBaseLoggerFactory` builds `DataBaseLogger` for logging query start/end;
+- `DataBaseMetricWriterFactory` builds `DataBaseMetricWriter` for writing metrics;
+- `DataBaseTracerFactory` builds `DataBaseTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#jdbc) section.

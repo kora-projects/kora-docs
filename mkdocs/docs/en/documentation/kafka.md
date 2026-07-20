@@ -1992,3 +1992,19 @@ If the signature contains a `Callback`, Kora first completes its own send teleme
     ```
 
 Invalid combinations are: `ProducerRecord<K, V>` together with `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` together with separate `key`/`value`/`Headers`, more than one `Headers`, more than one `Callback`, and a method with separate `key`/`value` without `@KafkaPublisher.Topic`.
+
+## Telemetry { #telemetry }
+
+Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.kafka.common.telemetry`.
+
+For each Kafka message, a `KafkaTelemetry.KafkaTelemetryContext` is created, which is closed upon message processing completion.
+The message is described through telemetry handler parameters, including topic, partition, offset, and processing duration.
+
+The default factory `DefaultKafkaTelemetryFactory` combines three factories:
+- `KafkaLoggerFactory` builds `KafkaLogger` for logging message processing start/end;
+- `KafkaMetricsFactory` builds `KafkaMetrics` for writing message metrics;
+- `KafkaTracerFactory` builds `KafkaTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.

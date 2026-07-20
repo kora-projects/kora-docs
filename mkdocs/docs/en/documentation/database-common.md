@@ -1383,9 +1383,6 @@ The concrete configuration knobs (the `telemetry { logging / metrics / tracing }
 for each driver, for example [JDBC](database-jdbc.md#configuration); this section documents only the shared extension points
 that live in `ru.tinkoff.kora.database.common.telemetry`.
 
-Per-query telemetry is built by a `DataBaseTelemetryFactory`, which produces a `DataBaseTelemetry` from the driver's
-[telemetry configuration](database-jdbc.md#configuration) and connection metadata
-(pool name, driver type, database type, and user).
 For every executed query a `DataBaseTelemetry.DataBaseTelemetryContext` is created and closed when the query finishes
 (receiving the thrown exception, if any).
 The query being executed is described by `QueryContext(queryId, sql, operation)`, where `queryId` is a stable query
@@ -1400,10 +1397,7 @@ The default factory `DefaultDataBaseTelemetryFactory` combines three optional su
 If none of the sub-factories produces an implementation (for example, when logging, [metrics](metrics.md), and [tracing](tracing.md)
 are all disabled in configuration), `DataBaseTelemetryFactory.EMPTY` is used and telemetry becomes a no-op.
 
-`DataBaseModule` (a transitive part of each driver's module, such as `JdbcDatabaseModule`) supplies the default
-`DefaultDataBaseTelemetryFactory` and `DataBaseLoggerFactory` as [default components](container.md#component-override),
-so metric and tracing factories from the [metrics](metrics.md) and [tracing](tracing.md) modules are picked up automatically when present.
-To fully customize telemetry, provide your own `DataBaseTelemetryFactory` in the [application graph](container.md),
+In case you want to provide fully customize telemetry, provide your own `DataBaseTelemetryFactory` in the [application graph](container.md),
 which [overrides](container.md#component-override) the default one:
 
 ===! ":fontawesome-brands-java: `Java`"

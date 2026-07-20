@@ -858,3 +858,19 @@ described in the [Metrics Reference](metrics.md#grpc-client) section.
 To customize the collected signals, override the telemetry SPI factories as components: `GrpcClientTelemetryFactory`
 (the whole telemetry), `GrpcClientLoggerFactory`, `GrpcClientMetricsFactory`, or `GrpcClientTracerFactory`.
 The default implementations are wired by `GrpcClientModule`; providing your own component replaces the corresponding default.
+
+## Telemetry { #telemetry }
+
+gRPC Client uses a telemetry contract for logging, metrics, and tracing of calls.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.grpc.client.common.telemetry`.
+
+For each gRPC call, a `GrpcClientTelemetry.GrpcClientTelemetryContext` is created, which is closed upon call completion.
+The call is described through telemetry handler parameters, including service, method, response status, and duration.
+
+The default factory `DefaultGrpcClientTelemetryFactory` combines three factories:
+- `GrpcClientLoggerFactory` builds `GrpcClientLogger` for logging call start/end;
+- `GrpcClientMetricsFactory` builds `GrpcClientMetrics` for writing call metrics;
+- `GrpcClientTracerFactory` builds `GrpcClientTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#grpc-client) section.

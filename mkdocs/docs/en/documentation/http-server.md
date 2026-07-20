@@ -1139,3 +1139,19 @@ The following example shows how to handle all the described declarative request 
 
     1. Specifies the `HTTP` method type of the handler method
     2. Indicates the path of the handler method
+
+## Telemetry { #telemetry }
+
+HTTP Server uses a telemetry contract for logging, metrics, and tracing of requests.
+Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
+Extension points are located in `ru.tinkoff.kora.http.server.common.telemetry`.
+
+For each HTTP request, an `HttpServerTelemetry.HttpServerTelemetryContext` is created, which is closed upon request completion.
+The request is described through telemetry handler parameters, including method, path, response status, and duration.
+
+The default factory `DefaultHttpServerTelemetryFactory` combines three factories:
+- `HttpServerLoggerFactory` builds `HttpServerLogger` for logging request start/end;
+- `HttpServerMetricsFactory` builds `HttpServerMetrics` for writing request metrics;
+- `HttpServerTracerFactory` builds `HttpServerTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#http-server) section.

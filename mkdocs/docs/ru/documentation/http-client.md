@@ -2671,3 +2671,19 @@ public interface HttpClient {
         }
     }
     ```
+
+## Телеметрия { #telemetry }
+
+HTTP Client использует контракт телеметрии для логирования, метрик и трассировки запросов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.http.client.common.telemetry`.
+
+Для каждого HTTP-запроса создаётся `HttpClientTelemetry.HttpClientTelemetryContext`, который закрывается по завершении запроса.
+Запрос описывается через параметры обработчика телеметрии, включая метод, URL, статус ответа и длительность.
+
+Фабрика по умолчанию `DefaultHttpClientTelemetryFactory` объединяет три фабрики:
+- `HttpClientLoggerFactory` строит `HttpClientLogger` для логирования начала/конца запроса;
+- `HttpClientMetricsFactory` строит `HttpClientMetrics` для записи метрик запросов;
+- `HttpClientTracerFactory` строит `HttpClientTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-client).

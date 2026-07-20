@@ -1916,3 +1916,19 @@ Kora предоставляет компоненты `Serializer` для баз�
     ```
 
 Недопустимые сочетания: `ProducerRecord<K, V>` вместе с `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` вместе с отдельными `key`/`value`/`Headers`, больше одного `Headers`, больше одного `Callback`, а также метод с отдельными `key`/`value` без `@KafkaPublisher.Topic`.
+
+## Телеметрия { #telemetry }
+
+Kafka использует контракт телеметрии для логирования, метрик и трассировки сообщений.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.kafka.common.telemetry`.
+
+Для каждого сообщения Kafka создаётся `KafkaTelemetry.KafkaTelemetryContext`, который закрывается по завершении обработки.
+Сообщение описывается через параметры обработчика телеметрии, включая topic, partition, offset и длительность обработки.
+
+Фабрика по умолчанию `DefaultKafkaTelemetryFactory` объединяет три фабрики:
+- `KafkaLoggerFactory` строит `KafkaLogger` для логирования начала/конца обработки сообщения;
+- `KafkaMetricsFactory` строит `KafkaMetrics` для записи метрик сообщений;
+- `KafkaTracerFactory` строит `KafkaTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#kafka).
