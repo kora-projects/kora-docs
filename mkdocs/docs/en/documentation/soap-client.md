@@ -423,7 +423,7 @@ A custom processor can add arbitrary `SOAP` headers by appending to `envelope.ge
     }
     ```
 
-### Authorization (WS-Security) { #authorization }
+### Authorization { #authorization }
 
 `SoapEnvelopeProcessors.wssAuth(username, password)` is a built-in processor that adds a
 [WS-Security](https://en.wikipedia.org/wiki/WS-Security) `UsernameToken` header (`Username` plus a plaintext `Password`)

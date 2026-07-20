@@ -323,7 +323,7 @@ which binds the channel to Kora's shared Netty `EventLoopGroup`.
 A production override should also bind the builder to Kora's shared Netty `EventLoopGroup` and `NettyChannelFactory`
 the way `GrpcNettyClientChannelFactory` does, rather than letting Netty create its own event loop.
 
-### Timeouts and deadlines { #timeouts }
+### Timeouts { #timeouts }
 
 The `timeout` value is applied by the always-on `GrpcClientConfigInterceptor` as a call `deadline`, but **only when the call has no deadline of its own**.
 A per-call deadline set through the stub always wins over the configured `timeout`:
@@ -350,7 +350,7 @@ A per-call deadline set through the stub always wins over the configured `timeou
 
 When a deadline expires, the call fails with a `StatusRuntimeException` carrying `Status.DEADLINE_EXCEEDED`.
 
-### Keep-alive, load balancing and service config { #keepalive-lb }
+### Channel config { #channge-config }
 
 - `keepAliveTime` / `keepAliveTimeout` map to `ManagedChannelBuilder` `PING` settings. `keepAliveTime` is the interval between `HTTP/2` `PING` frames on an idle connection; `keepAliveTimeout` is how long to wait for the `PING` acknowledgement before closing the connection. Both are disabled unless set.
 - `loadBalancingPolicy` maps to `ManagedChannelBuilder.defaultLoadBalancingPolicy`. The gRPC default is `pick_first` (a single connection to the first resolved address); `round_robin` distributes calls across all resolved addresses and is typically used with DNS targets that return multiple `A`/`AAAA` records.

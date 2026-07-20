@@ -591,7 +591,7 @@ agent:
 Фасад, построенный через `Cache.Builder`, не поддерживает прямой `get(Collection<K>)`, а фасад, построенный через `AsyncCache.Builder`, не поддерживает прямой `getAsync(Collection<K>)`.
 Для пакетной загрузки используйте `computeIfAbsent(Collection<K>, ...)` или `computeIfAbsentAsync(Collection<K>, ...)`.
 
-#### Переопределение времени устаревания Redis { #redis-expiration-override }
+#### Ручное управление устареванием { #redis-expiration-override }
 
 Помимо общего набора методов `Cache`/`AsyncCache`, `RedisCache` добавляет методы для переопределения настроенного `expireAfterWrite` для отдельной записи.
 `putExpireAfterWrite(key, value, Duration)` и его пакетная перегрузка с `Map` записывают синхронно, тогда как `putAsyncExpireAfterWrite(...)`

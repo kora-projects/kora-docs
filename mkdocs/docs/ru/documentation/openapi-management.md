@@ -1,5 +1,5 @@
 ---
-description: "Описывает модуль управления OpenAPI в Kora для публикации сгенерированных спецификаций OpenAPI, а также страниц Swagger UI и RapiDoc через публичный HTTP-сервер. Используйте при работе с OpenApiManagementModule, OpenApiManagementConfig, эндпоинтом OpenAPI, Swagger UI, RapiDoc."
+description: "Описывает модуль управления OpenAPI в Kora для публикации сгенерированных спецификаций OpenAPI, а также страниц Swagger UI и RapiDoc через публичный HTTP-сервер. Используйте при работе с OpenApiManagementModule, OpenApiManagementConfig, маршруты OpenAPI, Swagger UI, RapiDoc."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications, Swagger UI, and RapiDoc pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenAPI endpoint, Swagger UI, RapiDoc, /openapi, /swagger-ui, /rapidoc."
 ---
@@ -113,7 +113,7 @@ agent:
 Когда настроено несколько файлов, запрос к `/openapi/{file}` с неизвестным именем `{file}` возвращает `404` (`OpenAPI file not registered`), а запрос с пустым значением `{file}` возвращает `400` (`OpenAPI file not specified`).
 Если настроенный ресурс не удается найти или прочитать в момент запроса, обработчик возвращает `404` или `500` соответственно, иначе он отвечает `200` и содержимым файла.
 
-## Эндпоинты { #endpoints }
+## Маршруты { #endpoints }
 
 При включенной выдаче модуль регистрирует на публичном HTTP-сервере следующие `GET`-маршруты (пути показаны со значениями `endpoint` по умолчанию):
 

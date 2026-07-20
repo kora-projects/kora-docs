@@ -45,7 +45,7 @@ agent:
 | Модуль | Артефакт | Предоставляет | Когда использовать |
 |--------|----------|---------------|--------------------|
 | `ValidatorModule` | `validation-common` | Сгенерированные компоненты `Validator<T>`, все встроенные фабрики ограничений и валидаторы элементов (`Validator<List<T>>`, `Validator<Set<T>>`, `Validator<Collection<T>>`) | Библиотеки и приложения без `HTTP`, либо когда вы обрабатываете `ViolationException` самостоятельно |
-| `ValidationModule` | `validation-module` | Всё из `ValidatorModule` **плюс** `ValidationHttpServerInterceptor`, который отображает `ViolationException` в [ответ HTTP 400](#validation-response-http-400) | `HTTP`-сервисы, которые должны автоматически возвращать `400` клиентам |
+| `ValidationModule` | `validation-module` | Всё из `ValidatorModule` **плюс** `ValidationHttpServerInterceptor`, который отображает `ViolationException` в [ответ HTTP 400](#validation-response-http) | `HTTP`-сервисы, которые должны автоматически возвращать `400` клиентам |
 
 `ValidationModule` расширяет `ValidatorModule`, поэтому подключение `ValidationModule` даёт вам всё, что предоставляет базовый модуль.
 Показанная выше зависимость (`validation-module`) — правильный выбор для `HTTP`-сервиса; библиотека, которой нужно только генерировать валидаторы, может зависеть от `validation-common` и подключать вместо этого `ValidatorModule`.
@@ -632,7 +632,7 @@ Kora генерирует код аспекта во время компиляц
     }
     ```
 
-## Ответ при валидации (HTTP 400) { #validation-response-http-400 }
+## HTTP обработки ошибок { #validation-response-http }
 
 Когда `HTTP`-сервис Kora использует `ValidationModule` (из артефакта `validation-module`), неудачная валидация может быть автоматически превращена в ответ `HTTP` `400` вместо неперехваченной ошибки.
 

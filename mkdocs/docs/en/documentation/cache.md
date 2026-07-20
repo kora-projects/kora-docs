@@ -591,7 +591,7 @@ This is suitable, for example, for several `RedisCache` instances or other async
 The facade built through `Cache.Builder` does not support direct `get(Collection<K>)`, and the facade built through `AsyncCache.Builder` does not support direct `getAsync(Collection<K>)`.
 For batch loading, use `computeIfAbsent(Collection<K>, ...)` or `computeIfAbsentAsync(Collection<K>, ...)`.
 
-#### Redis expiration override { #redis-expiration-override }
+#### Manual Redis expiration { #redis-expiration-override }
 
 Beyond the shared `Cache`/`AsyncCache` surface, `RedisCache` adds methods to override the configured `expireAfterWrite` for a single write.
 `putExpireAfterWrite(key, value, Duration)` and its `Map` batch overload write synchronously, while `putAsyncExpireAfterWrite(...)`

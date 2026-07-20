@@ -1115,6 +1115,21 @@ public interface BaseKafkaRecordsHandler<K, V> {
 }
 ```
 
+### Telemetry { #telemetry }
+
+Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
+Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-consumer) section.
+
+For each batch & message, `KafkaListener` creates a separate telemetry context, which is closed upon completion of processing.
+The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
+
+The default factory, `DefaultKafkaListenerTelemetryFactory`, combines three factories:
+- `KafkaListenerLoggerFactory` builds a `KafkaListenerLogger` to log the start and end of message processing;
+- `KafkaListenerMetricsFactory` builds a `KafkaListenerMetrics` to record message metrics;
+- `KafkaListenerTracerFactory` builds a `KafkaListenerTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
+
 ## Producer { #producer }
 
 `Producer` sends records to a `topic`. Kora creates an implementation of the interface annotated with `@KafkaPublisher`,
@@ -1840,7 +1855,7 @@ The `begin()` method returns a `Transaction<P>` object that provides advanced tr
 | `abort(cause)` | Aborts the transaction with specified cause |
 | `close()` | Closes the transaction (commits if no abort) |
 
-#### `inTx()` vs `withTx()` { #intx-vs-withtx }
+#### Transaction methods { #tx-methods }
 
 `TransactionalPublisher` provides 4 methods for working with transactions:
 
@@ -1937,7 +1952,7 @@ Available signatures for out-of-the-box `Kafka Producer` methods, where `K` refe
 The generator supports two signature families: sending a ready `ProducerRecord<K, V>` and sending through a method annotated with `@KafkaPublisher.Topic`.
 These families cannot be mixed in the same method.
 
-#### Ready `ProducerRecord` { #producer-record-signature }
+#### Prepared event { #producer-record-signature }
 
 A method with `ProducerRecord<K, V>` is used when the `topic`, partition, timestamp, or `Headers` should be set by the calling code.
 Such a method cannot be annotated with `@KafkaPublisher.Topic`, because all send details are already contained in the `ProducerRecord`.
@@ -1967,7 +1982,7 @@ One `Callback` can be passed additionally.
     } 
     ```
 
-#### Methods with `@KafkaPublisher.Topic` { #topic-signature }
+#### Methods per topic { #topic-signature }
 
 A method with `key`, `value`, and `Headers` must be annotated with `@KafkaPublisher.Topic`.
 One user argument is treated as `value`; two user arguments are treated as `key` and `value` in that exact order.
@@ -2071,18 +2086,17 @@ If the signature contains a `Callback`, Kora first completes its own send teleme
 
 Invalid combinations are: `ProducerRecord<K, V>` together with `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` together with separate `key`/`value`/`Headers`, more than one `Headers`, more than one `Callback`, and a method with separate `key`/`value` without `@KafkaPublisher.Topic`.
 
-## Telemetry { #telemetry }
+### Telemetry { #telemetry }
 
 Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.kafka.common.telemetry`.
+Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-producer) section.
 
-For each Kafka message, a `KafkaTelemetry.KafkaTelemetryContext` is created, which is closed upon message processing completion.
-The message is described through telemetry handler parameters, including topic, partition, offset, and processing duration.
+For each message, `KafkaPublisher` creates a telemetry context, which is closed upon completion of processing.
+The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
 
-The default factory `DefaultKafkaTelemetryFactory` combines three factories:
-- `KafkaLoggerFactory` builds `KafkaLogger` for logging message processing start/end;
-- `KafkaMetricsFactory` builds `KafkaMetrics` for writing message metrics;
-- `KafkaTracerFactory` builds `KafkaTracer` for distributed tracing.
+The default factory, `DefaultKafkaPublisherTelemetryFactory`, combines three factories:
+- `KafkaPublisherLoggerFactory` builds a `KafkaPublisherLogger` to log the start and end of message processing;
+- `KafkaPublisherMetricsFactory` builds a `KafkaPublisherMetrics` to record message metrics;
+- `KafkaPublisherTracerFactory` builds a `KafkaPublisherTracer` for distributed tracing.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.

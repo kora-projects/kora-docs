@@ -142,101 +142,101 @@ agent:
 
     Пример полной конфигурации, описанной в классе `GrpcClientConfig`:
 
-===! ":material-code-json: `Hocon`"
+    ===! ":material-code-json: `Hocon`"
 
-    ```javascript
-    grpcClient {
-        SimpleService {
-            url = "http://localhost:8090" //(1)!
-            timeout = "10s"  //(2)!
-            keepAliveTime = "0s" //(3)!
-            keepAliveTimeout = "0s" //(4)!
-            loadBalancingPolicy = "pick_first" //(5)!
-            defaultServiceConfig { //(6)!
-                loadBalancingConfig = [
-                    {
-                        round_robin = {}
-                    }
-                ]
-            }
-            telemetry {
-                logging {
-                    enabled = false //(7)!
+        ```javascript
+        grpcClient {
+            SimpleService {
+                url = "http://localhost:8090" //(1)!
+                timeout = "10s"  //(2)!
+                keepAliveTime = "0s" //(3)!
+                keepAliveTimeout = "0s" //(4)!
+                loadBalancingPolicy = "pick_first" //(5)!
+                defaultServiceConfig { //(6)!
+                    loadBalancingConfig = [
+                        {
+                            round_robin = {}
+                        }
+                    ]
                 }
-                metrics {
-                    enabled = true //(8)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                    tags = { // (10)!
-                        "key1" = "value1"
-                        "key2" = "value2"
+                telemetry {
+                    logging {
+                        enabled = false //(7)!
                     }
-                }
-                tracing {
-                    enabled = true //(11)!
-                    attributes = { // (12)!
-                        "key1" = "value1"
-                        "key2" = "value2"
+                    metrics {
+                        enabled = true //(8)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                        tags = { // (10)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                    tracing {
+                        enabled = true //(11)!
+                        attributes = { // (12)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
                     }
                 }
             }
         }
-    }
-    ```
+        ```
 
-    1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
-    3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
-    4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
-    5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
-    6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
-    7. Включает логирование модуля (по умолчанию: `false`).
-    8. Включает метрики модуля (по умолчанию: `true`).
-    9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    10. Дополнительные теги для метрик (по умолчанию: `{}`).
-    11. Включает трассировку модуля (по умолчанию: `true`).
-    12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+        1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
+        2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+        3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
+        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
+        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
+        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
+        7. Включает логирование модуля (по умолчанию: `false`).
+        8. Включает метрики модуля (по умолчанию: `true`).
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        10. Дополнительные теги для метрик (по умолчанию: `{}`).
+        11. Включает трассировку модуля (по умолчанию: `true`).
+        12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
-=== ":simple-yaml: `YAML`"
+    === ":simple-yaml: `YAML`"
 
-    ```yaml
-    grpcClient:
-      SimpleService:
-        url: "http://localhost:8090" #(1)!
-        timeout: "10s" #(2)!
-        keepAliveTime: "0s" #(3)!
-        keepAliveTimeout: "0s" #(4)!
-        loadBalancingPolicy: "pick_first" #(5)!
-        defaultServiceConfig: #(6)!
-          loadBalancingConfig:
-            - round_robin: {}
-        telemetry:
-          logging:
-            enabled: false #(7)!
-          metrics:
-            enabled: true #(8)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-            tags: #(10)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(11)!
-            attributes: #(12)!
-              key1: value1
-              key2: value2
-    ```
+        ```yaml
+        grpcClient:
+          SimpleService:
+            url: "http://localhost:8090" #(1)!
+            timeout: "10s" #(2)!
+            keepAliveTime: "0s" #(3)!
+            keepAliveTimeout: "0s" #(4)!
+            loadBalancingPolicy: "pick_first" #(5)!
+            defaultServiceConfig: #(6)!
+              loadBalancingConfig:
+                - round_robin: {}
+            telemetry:
+              logging:
+                enabled: false #(7)!
+              metrics:
+                enabled: true #(8)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+                tags: #(10)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(11)!
+                attributes: #(12)!
+                  key1: value1
+                  key2: value2
+        ```
 
-    1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
-    3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
-    4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
-    5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
-    6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
-    7. Включает логирование модуля (по умолчанию: `false`).
-    8. Включает метрики модуля (по умолчанию: `true`).
-    9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
-    10. Дополнительные теги для метрик (по умолчанию: `{}`).
-    11. Включает трассировку модуля (по умолчанию: `true`).
-    12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+        1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
+        2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+        3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
+        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
+        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
+        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
+        7. Включает логирование модуля (по умолчанию: `false`).
+        8. Включает метрики модуля (по умолчанию: `true`).
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        10. Дополнительные теги для метрик (по умолчанию: `{}`).
+        11. Включает трассировку модуля (по умолчанию: `true`).
+        12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 ### Транспорт и TLS { #transport-tls }
 
@@ -323,7 +323,7 @@ agent:
 Реализация для промышленного окружения также должна привязывать построитель к общей для Kora группе Netty `EventLoopGroup` и `NettyChannelFactory`
 так же, как это делает `GrpcNettyClientChannelFactory`, вместо того чтобы позволять Netty создавать собственный event loop.
 
-### Таймауты и deadline { #timeouts }
+### Ограничение по времени { #timeouts }
 
 Значение `timeout` применяется всегда включённым перехватчиком `GrpcClientConfigInterceptor` как `deadline` вызова, но **только если у вызова нет собственного deadline**.
 Заданный для конкретного вызова deadline через stub всегда имеет приоритет над настроенным `timeout`:
@@ -350,7 +350,7 @@ agent:
 
 Когда истекает deadline, вызов завершается с ошибкой `StatusRuntimeException`, несущей `Status.DEADLINE_EXCEEDED`.
 
-### Keep-alive, балансировка нагрузки и конфигурация службы { #keepalive-lb }
+### Конфигурация канала { #channel-config }
 
 - `keepAliveTime` / `keepAliveTimeout` соответствуют настройкам `PING` у `ManagedChannelBuilder`. `keepAliveTime` — интервал между фреймами `PING` протокола `HTTP/2` на простаивающем соединении; `keepAliveTimeout` — как долго ждать подтверждения `PING` перед закрытием соединения. Оба отключены, если не заданы.
 - `loadBalancingPolicy` соответствует `ManagedChannelBuilder.defaultLoadBalancingPolicy`. Значение по умолчанию в gRPC — `pick_first` (единственное соединение с первым разрешённым адресом); `round_robin` распределяет вызовы по всем разрешённым адресам и обычно используется с DNS-адресами, возвращающими несколько записей `A`/`AAAA`.
@@ -439,7 +439,7 @@ stub также можно внедрить напрямую в конструк
     class SomeService(private val grpcService: SimpleServiceGrpc.SimpleServiceBlockingStub)
     ```
 
-### Типы stub { #stub-types }
+### Типы реализаций { #stub-types }
 
 Плагин `protobuf` генерирует для одной службы (`SimpleService`) несколько stub-классов. Каждый доступен для внедрения простым объявлением соответствующего типа;
 на самом stub указывать `@Tag` не нужно (Kora самостоятельно разрешает помеченный тегом `Channel`):

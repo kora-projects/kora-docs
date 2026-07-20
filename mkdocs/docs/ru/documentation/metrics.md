@@ -178,7 +178,7 @@ Kora дополнительно связывает реестр `Micrometer` с 
 ### Экспорт в Prometheus { #prometheus-export }
 
 Метрики отдаются в текстовом формате [Prometheus](https://prometheus.io/docs/concepts/data_model/) [приватным HTTP-сервером](http-server.md) по пути `privateApiHttpMetricsPath` (по умолчанию `/metrics`), обслуживаемому на порту `privateApiHttpPort`.
-У приватного сервера должен быть настроен порт, чтобы эндпоинт был доступен.
+У приватного сервера должен быть настроен порт, чтобы маршрут был доступен.
 При примерной конфигурации (`privateApiHttpPort = 8085`) текущий снимок метрик можно получить так:
 
 ```shell

@@ -1174,6 +1174,20 @@ public interface BaseKafkaRecordsHandler<K, V> {
     }
     ```
 
+### Телеметрия { #telemetry }
+
+Kafka использует контракт телеметрии для логирования, метрик и трассировки сообщений.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#config-consumer).
+
+Для каждого события и пачки-событий `KafkaListener` создаётся отдельный контекст телеметрии, который закрывается по завершении обработки.
+
+Фабрика по умолчанию `DefaultKafkaListenerTelemetryFactory` объединяет три фабрики:
+- `KafkaListenerLoggerFactory` строит `KafkaListenerLogger` для логирования начала/конца обработки сообщения;
+- `KafkaListenerMetricsFactory` строит `KafkaListenerMetrics` для записи метрик сообщений;
+- `KafkaListenerTracerFactory` строит `KafkaListenerTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#kafka).
+
 ## Продюсер { #producer }
 
 `Producer` отправляет записи в `topic`. Kora создает реализацию интерфейса, помеченного `@KafkaPublisher`,
@@ -1786,7 +1800,7 @@ Kora предоставляет компоненты `Serializer` для баз�
 | `abort(cause)` | Откатывает транзакцию с указанием причины |
 | `close()` | Закрывает транзакцию (коммит если не было abort) |
 
-#### `inTx()` vs `withTx()` { #intx-vs-withtx }
+#### Методы транзакций { #tx-methods }
 
 `TransactionalPublisher` предоставляет 4 метода для работы с транзакциями:
 
@@ -1861,7 +1875,7 @@ Kora предоставляет компоненты `Serializer` для баз�
 Генератор поддерживает два семейства сигнатур: отправку готового `ProducerRecord<K, V>` и отправку через метод с `@KafkaPublisher.Topic`.
 Эти семейства нельзя смешивать между собой в одном методе.
 
-#### Готовый `ProducerRecord` { #producer-record-signature }
+#### Готовое событие { #producer-record-signature }
 
 Метод с `ProducerRecord<K, V>` используется, когда `topic`, раздел, время создания или `Headers` нужно задать на стороне вызывающего кода.
 Такой метод нельзя помечать `@KafkaPublisher.Topic`, потому что все сведения об отправке уже находятся в самом `ProducerRecord`.
@@ -1891,7 +1905,7 @@ Kora предоставляет компоненты `Serializer` для баз�
     } 
     ```
 
-#### Методы с `@KafkaPublisher.Topic` { #topic-signature }
+#### Методы по топику { #topic-signature }
 
 Метод с `key`, `value` и `Headers` должен быть помечен `@KafkaPublisher.Topic`.
 Один пользовательский аргумент считается `value`, два пользовательских аргумента считаются `key` и `value` именно в таком порядке.
@@ -1995,18 +2009,16 @@ Kora предоставляет компоненты `Serializer` для баз�
 
 Недопустимые сочетания: `ProducerRecord<K, V>` вместе с `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` вместе с отдельными `key`/`value`/`Headers`, больше одного `Headers`, больше одного `Callback`, а также метод с отдельными `key`/`value` без `@KafkaPublisher.Topic`.
 
-## Телеметрия { #telemetry }
+### Телеметрия { #telemetry }
 
 Kafka использует контракт телеметрии для логирования, метрик и трассировки сообщений.
-Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
-Точки расширения находятся в `ru.tinkoff.kora.kafka.common.telemetry`.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#config-producer).
 
-Для каждого сообщения Kafka создаётся `KafkaTelemetry.KafkaTelemetryContext`, который закрывается по завершении обработки.
-Сообщение описывается через параметры обработчика телеметрии, включая topic, partition, offset и длительность обработки.
+Для каждого сообщения KafkaPublisher создаётся отдельный контекст телеметрии, который закрывается по завершении обработки.
 
-Фабрика по умолчанию `DefaultKafkaTelemetryFactory` объединяет три фабрики:
-- `KafkaLoggerFactory` строит `KafkaLogger` для логирования начала/конца обработки сообщения;
-- `KafkaMetricsFactory` строит `KafkaMetrics` для записи метрик сообщений;
-- `KafkaTracerFactory` строит `KafkaTracer` для распределённой трассировки.
+Фабрика по умолчанию `DefaultKafkaPublisherTelemetryFactory` объединяет три фабрики:
+- `KafkaPublisherLoggerFactory` строит `KafkaPublisherLogger` для логирования начала/конца обработки сообщения;
+- `KafkaPublisherMetricsFactory` строит `KafkaPublisherMetrics` для записи метрик сообщений;
+- `KafkaPublisherTracerFactory` строит `KafkaPublisherTracer` для распределённой трассировки.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#kafka).

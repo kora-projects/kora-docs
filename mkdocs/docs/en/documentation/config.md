@@ -933,9 +933,10 @@ for the requested path. `ConfigValue<?>` is a sealed type with typed accessors: 
     ```
 
 As noted in [Recommendations](#recommendations), prefer typed [custom configurations](#custom-configuration) over
-reading a raw `Config`; use the raw read API only for dynamic or generic access.
+reading a raw `Config`.
+Use the raw read API only for dynamic or generic access when no other choice and use `ValueOf<Config>` to avoid component refresh.
 
-???+ warning "Recommendation"
+???+ warning "Attention"
 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when configuration is updated, all graph components that use it will be updated as well.

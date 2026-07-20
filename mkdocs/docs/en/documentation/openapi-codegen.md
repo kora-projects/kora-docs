@@ -61,9 +61,9 @@ Configure the [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plu
 
 - `Gradle` plugin parameters are described in the [plugin documentation](https://github.com/OpenAPITools/openapi-generator/blob/v7.14.0/modules/openapi-generator-gradle-plugin/README.adoc).
 - The `configOptions` plugin parameter is described in the [configuration documentation](https://openapi-generator.tech/docs/configuration/).
-- The `openapiNormalizer` plugin parameter is described in the [customization documentation](https://openapi-generator.tech/docs/customization/#openapi-normalizer).
+- The `openapiNormalizer` plugin parameter is described in the [customization documentation](https://openapi-generator.tech/docs/customization/#normalizer-opts).
 
-### Common `OpenAPI Generator` Options { #common-generator-options }
+### Common `OpenAPI Generator` Options { #common-opts }
 
 In addition to Kora-specific `configOptions`, `GenerateTask` accepts common `OpenAPI Generator` parameters.
 They define where to read the contract from, where to put generated files, which packages to use, and how to preprocess the `OpenAPI` description.
@@ -164,7 +164,7 @@ Use `globalProperties` only for narrow generation tasks, for example when extrac
     )
     ```
 
-### Useful `openapiNormalizer` Rules { #openapi-normalizer }
+### Useful `openapiNormalizer` Rules { #normalizer-opts }
 
 `openapiNormalizer` changes the input `OpenAPI` contract before generation. It is not a Kora parameter, but a general `OpenAPI Generator` mechanism.
 For Kora, it is especially useful when one large contract is used by several applications or when the contract contains ambiguous shapes for code generation.
@@ -242,7 +242,7 @@ Example of normalizing tags for a contract without convenient grouping:
     )
     ```
 
-### Common `JSON` and Model Options { #common-model-options }
+### Common `JSON` and Model Options { #model-opts }
 
 Kora also supports several `configOptions` that control `JSON` mappers and common model generation.
 They do not depend on whether a client or a server is generated.
@@ -281,7 +281,7 @@ Example:
     )
     ```
 
-### Multiple Generation Tasks { #multiple-generation-tasks }
+### Multiple Generation Tasks { #multiple-gens }
 
 Several `GenerateTask` tasks can be registered in one module, for example to generate two independent contracts,
 or to generate a client for one contract and a server for another. Each task writes into the same `outputDir` and is added to the same source set,

@@ -533,7 +533,7 @@ The mapper returns the raw value that `Kora` binds into the Vert.x `Tuple`; retu
     }
     ```
 
-The result column mapper and the parameter mapper can be stacked on the same entity field.
+The result column mapper and the parameter mapper can be stacked on the same view field.
 This is convenient for mapping, for example, an enum both when reading a row and when binding a parameter:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -856,17 +856,5 @@ Because the Vert.x client is natively asynchronous, no `Executor` component is r
 
 ## Telemetry { #telemetry }
 
-Vert.x driver uses a common telemetry contract for logging, metrics, and tracing of queries.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.database.common.telemetry`.
-
-For each query, a `DataBaseTelemetry.DataBaseTelemetryContext` is created, which is closed upon query completion.
-The executed query is described by `QueryContext(queryId, sql, operation)`, where `queryId` is a stable query identifier
-passed to telemetry, `sql` is the final query text, and `operation` defaults to `db_query`.
-
-The default factory `DefaultDataBaseTelemetryFactory` combines three factories:
-- `DataBaseLoggerFactory` builds `DataBaseLogger` for logging query start/end;
-- `DataBaseMetricWriterFactory` builds `DataBaseMetricWriter` for writing metrics;
-- `DataBaseTracerFactory` builds `DataBaseTracer` for distributed tracing.
-
-Metrics and tracing are described in the [Metrics Reference](metrics.md#vertx) section.
+Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

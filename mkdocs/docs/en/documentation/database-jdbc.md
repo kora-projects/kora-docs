@@ -219,7 +219,7 @@ Each method annotated with `@Query` contains a regular `SQL` query. Method param
 `:parameter` syntax, and object fields can be referenced as `:entity.field`.
 
 Entities are described with the [common database annotations](database-common.md) and marked with `@EntityJdbc`
-so that `Kora` generates the entity mapper at compile time (see [Entity](database-common.md#entity)):
+so that `Kora` generates the view mapper at compile time (see [View](database-common.md#view)):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -252,7 +252,7 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](databas
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
-    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
         INSERT INTO entities(id, name, description) 
@@ -299,7 +299,7 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](databas
 `SQL` remains under the developer's control: you can use database-specific features, while `Kora` only handles safe
 parameter binding, query execution, and result mapping.
 Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
-[Common database rules](database-common.md).
+[Common database rules](database-common.md#macros).
 
 **Parameter binding:** Kora performs typed injection of arguments into the SQL query at compile time.
 Query parameters (e.g., `:id`, `:entity.name`) are replaced in the generated code with corresponding `PreparedStatement` calls.
@@ -359,13 +359,13 @@ This mapper receives the whole query result and decides how many rows to read an
 `JdbcResultSetMapper` also exposes static helpers `singleResultSetMapper`, `listResultSetMapper`,
 and `optionalResultSetMapper` that build a full-`ResultSet` mapper from a `JdbcRowMapper<T>`.
 
-#### Entity { #entity }
+#### View { #view }
 
-Use the `@EntityJdbc` annotation for optimal entity mapping.
+Use the `@EntityJdbc` annotation for optimal view mapping.
 The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
 Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
 
-All nested entities are also expected to use this annotation.
+All nested views are also expected to use this annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -549,7 +549,7 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
     * OffsetTime
     * OffsetDateTime
 
-    Entity fields without an explicit `@Mapping` natively support `boolean` / `Boolean`, `short` / `Short`,
+    View fields without an explicit `@Mapping` natively support `boolean` / `Boolean`, `short` / `Short`,
     `int` / `Integer`, `long` / `Long`, `double` / `Double`, `float` / `Float`, `byte[]`, `String`,
     `BigDecimal`, `LocalDate`, and `LocalDateTime`.
     For other types, use built-in `JdbcResultColumnMapper<T>` / `JdbcParameterColumnMapper<T>` mappers or declare custom mappers.
@@ -609,7 +609,7 @@ The example below shows `Postgres` through a `JDBC Array`:
 
 ## JSON / JSONB { #json }
 
-A `JSON` / `JSONB` column can be mapped to an entity field by registering generic
+A `JSON` / `JSONB` column can be mapped to a view field by registering generic
 `JdbcParameterColumnMapper<T>` and `JdbcResultColumnMapper<T>` as default `@Module` components tagged with `@Json`.
 These mappers bridge the [JSON](json.md) module `JsonWriter<T>` / `JsonReader<T>` to a driver-specific value.
 The `Postgres` example below serializes the value into a `PGobject` of type `jsonb` when binding a parameter,
@@ -679,7 +679,7 @@ handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a 
     }
     ```
 
-Annotate the entity field with `@Json` (and `@Column` if the column name differs), where the field type is itself a `@Json` type.
+Annotate the view field with `@Json` (and `@Column` if the column name differs), where the field type is itself a `@Json` type.
 The `INSERT` uses the `::jsonb` cast so `Postgres` accepts the serialized string as `JSONB`;
 `findById` reads it back through the same `@Json`-tagged column mapper:
 
@@ -769,7 +769,7 @@ This approach also works for `@Batch` queries.
     }
     ```
 
-The generated key can also be returned as the entity key type rather than a scalar.
+The generated key can also be returned as the view key type rather than a scalar.
 When the identifier is a composite key described by an [`@Embedded`](database-common.md#embedded-fields) record,
 the `@Id` method returns that record, and a `@Batch` insert returns a `List` of keys, one per inserted row:
 
@@ -1194,17 +1194,5 @@ For asynchronous methods, you can specify a separate `Executor` tag through the 
 
 ## Telemetry { #telemetry }
 
-JDBC driver uses a common telemetry contract for logging, metrics, and tracing of queries.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.database.common.telemetry`.
-
-For each query, a `DataBaseTelemetry.DataBaseTelemetryContext` is created, which is closed upon query completion.
-The executed query is described by `QueryContext(queryId, sql, operation)`, where `queryId` is a stable query identifier
-passed to telemetry, `sql` is the final query text, and `operation` defaults to `db_query`.
-
-The default factory `DefaultDataBaseTelemetryFactory` combines three factories:
-- `DataBaseLoggerFactory` builds `DataBaseLogger` for logging query start/end;
-- `DataBaseMetricWriterFactory` builds `DataBaseMetricWriter` for writing metrics;
-- `DataBaseTracerFactory` builds `DataBaseTracer` for distributed tracing.
-
-Metrics and tracing are described in the [Metrics Reference](metrics.md#jdbc) section.
+Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

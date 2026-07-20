@@ -1946,7 +1946,7 @@ try {
 Ответ ← Interceptor1 ← Interceptor2 ← Interceptor3 ← HTTP сервер
 ```
 
-### Перехватчик на весь клиент { #interceptor-global }
+### Перехватчик на клиент { #interceptor-global }
 
 Для применения перехватчика ко всем клиентам можно зарегистрировать его как компонент без `@InterceptWith`:
 
@@ -2332,7 +2332,7 @@ public interface HttpClientTokenProvider {
 Авторизация с помощью [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогична [Bearer](#bearer),
 требуется самостоятельно реализовать `HttpClientTokenProvider` и подложить его в контейнер зависимостей.
 
-#### HttpClientTokenProvider { #token-provider }
+#### Предоставление токена { #token-provider }
 
 `HttpClientTokenProvider` — интерфейс для предоставления токенов авторизации динамически.
 Используется когда токен нужно обновлять или получать из внешнего источника (например, OAuth2 token endpoint).
@@ -2503,7 +2503,7 @@ HttpClientException
     }
     ```
 
-#### HttpClientTimeoutException { #timeout-exception }
+#### Время ожидания { #timeout-exception }
 
 Выбрасывается когда запрос превышает установленное время ожидания (`requestTimeout` или `connectTimeout`).
 
@@ -2517,7 +2517,7 @@ HttpClientException
 - Реализуйте retry-логику для временных сбоев
 - Используйте circuit breaker для защиты от cascading failures
 
-#### HttpClientConnectionException { #connection-exception }
+#### Ошибка соединения { #connection-exception }
 
 Выбрасывается когда не удалось установить соединение с сервером.
 
@@ -2532,7 +2532,7 @@ HttpClientException
 - Используйте fallback на резервный сервис
 - Настройте retry с exponential backoff
 
-#### HttpClientResponseException { #response-exception }
+#### Ошибка клиента и сервера { #response-exception }
 
 Выбрасывается когда сервер вернул HTTP статус код ошибки (4xx или 5xx) и не указан кастомный маппер через `@ResponseCodeMapper`.
 
@@ -2546,7 +2546,7 @@ HttpClientException
 - Логируйте statusCode и body для отладки
 - Различайте клиентские (4xx) и серверные (5xx) ошибки
 
-#### HttpClientEncoderException { #encoder-exception }
+#### Ошибка запроса { #encoder-exception }
 
 Выбрасывается когда произошла ошибка при сериализации тела запроса.
 
@@ -2560,7 +2560,7 @@ HttpClientException
 - Проверьте наличие Json-аннотаций на классах
 - Логируйте оригинальное исключение в `cause`
 
-#### HttpClientDecoderException { #decoder-exception }
+#### Ошибка ответа { #decoder-exception }
 
 Выбрасывается когда произошла ошибка при десериализации тела ответа.
 
@@ -2574,7 +2574,7 @@ HttpClientException
 - Логируйте тело ответа для отладки
 - Используйте `@ResponseCodeMapper` для обработки ошибок формата
 
-#### HttpClientUnknownException { #unknown-exception }
+#### Ошибка неизвестная { #unknown-exception }
 
 Выбрасывается когда произошла неизвестная ошибка, не подпадающая под другие категории.
 
@@ -2626,7 +2626,7 @@ public interface HttpClient {
         .build()
     ```
 
-### HttpClientRequestBuilder { #request-builder }
+### Построитель запроса { #request-builder }
 
 `HttpClientRequestBuilder` позволяет строить HTTP запросы вручную.
 
@@ -2652,7 +2652,7 @@ public interface HttpClient {
         .build()
     ```
 
-### UriQueryBuilder { #uri-query-builder }
+### Построитель URI { #uri-query-builder }
 
 `UriQueryBuilder` помогает строить URI с параметрами запроса.
 
@@ -2682,7 +2682,7 @@ public interface HttpClient {
     // /api/users?page=1&size=10&sort=name
     ```
 
-### HttpBodyInput { #http-body-input }
+### Тело запроса { #http-body-input }
 
 `HttpBodyInput` — интерфейс который описывает тело HTTP запроса как поток данных (Flow.Publisher<ByteBuffer>).
 Используется для стриминга больших данных без загрузки в память.
@@ -2695,7 +2695,7 @@ public interface HttpClient {
 | `asBufferStage()` | `CompletionStage<ByteBuffer>` | Асинхронно читает всё тело в ByteBuffer |
 | `asArrayStage()` | `CompletionStage<byte[]>` | Асинхронно читает всё тело в byte[] |
 
-### HttpClientResponse { #http-client-response }
+### Ответ клиента { #http-client-response }
 
 `HttpClientResponse` — интерфейс который представляет HTTP ответ от сервера.
 
@@ -2708,7 +2708,7 @@ public interface HttpClient {
 | `headers()` | `HttpHeaders` | Заголовки ответа |
 | `cookies()` | `Cookies` | Cookies из ответа |
 
-### HttpHeaders { #http-headers-imperative }
+### Заголовки { #http-headers-imperative }
 
 `HttpHeaders` предоставляет доступ к заголовкам запроса и ответа в императивном клиенте.
 

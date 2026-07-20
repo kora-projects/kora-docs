@@ -645,8 +645,8 @@ To create a repository, declare an interface with `@Repository` and extend `Cass
 Such a repository gets access to `CqlSession` through generated code and uses `@Query` to execute `CQL` queries.
 Query parameters are bound by name: `:id`, `:entity.field`, `:filter.value`.
 
-Entities are described with the [common database annotations](database-common.md) and marked with `@EntityCassandra`
-so that `Kora` generates the entity mapper at compile time (see [Entity](#entity)):
+Views are described with the [common database annotations](database-common.md) and marked with `@EntityCassandra`
+so that `Kora` generates the view mapper at compile time (see [View](#view)):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -680,7 +680,7 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](#entity
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
-    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
         INSERT INTO entities(id, value1, value2, value3) 
@@ -718,7 +718,7 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](#entity
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
-    2.  Fields listed manually without macros — this is valid but requires maintenance when the entity changes.
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
         INSERT INTO entities(id, value1, value2, value3) 
@@ -729,7 +729,7 @@ so that `Kora` generates the entity mapper at compile time (see [Entity](#entity
 `CQL` remains under the developer's control: you write the query text yourself, while `Kora` only handles parameter binding,
 query execution, and result mapping.
 Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
-[Common database rules](database-common.md).
+[Common database rules](database-common.md#macros).
 
 **Parameter binding:** Kora performs typed injection of arguments into the CQL query at compile time.
 Query parameters (e.g., `:id`, `:entity.field1`) are replaced in the generated code with corresponding Cassandra driver calls.
@@ -799,18 +799,18 @@ The profile applies only to the method annotated with `@CassandraProfile`; other
 
 ## Mapping { #mapping }
 
-It is possible to override the mapping of different parts of [entity](database-common.md) and query parameters, Kora provides special interfaces for this.
+It is possible to override the mapping of different parts of [view](database-common.md) and query parameters, Kora provides special interfaces for this.
 Out of the box, `CassandraModule` provides mappers for common types: `String`, numeric types, `Boolean`, `BigDecimal`, `BigInteger`, `UUID`, `ByteBuffer`, `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, and `Instant`.
 If a type is not covered by that set, or if it needs a custom representation in `CQL`, add a custom mapper through `@Mapping`.
 
-### Entity { #entity }
+### View { #view }
 
-Use the `@EntityCassandra` annotation for optimal entity mapping.
+Use the `@EntityCassandra` annotation for optimal view mapping.
 The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
 Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
-This is the recommended way to map every entity returned from or bound into a repository.
+This is the recommended way to map every view returned from or bound into a repository.
 
-All nested entities and [UDT](#udt) types are also expected to use this annotation.
+All nested views and [UDT](#udt) types are also expected to use this annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1169,7 +1169,7 @@ CREATE TABLE IF NOT EXISTS entities_udt
 );
 ```
 
-the entity and repository look like this:
+the view and repository look like this:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1277,17 +1277,5 @@ Available signatures for repository methods out of the box:
 
 ## Telemetry { #telemetry }
 
-Cassandra driver uses a common telemetry contract for logging, metrics, and tracing of queries.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.database.common.telemetry`.
-
-For each query, a `DataBaseTelemetry.DataBaseTelemetryContext` is created, which is closed upon query completion.
-The executed query is described by `QueryContext(queryId, cql, operation)`, where `queryId` is a stable query identifier
-passed to telemetry, `cql` is the final query text, and `operation` defaults to `db_query`.
-
-The default factory `DefaultDataBaseTelemetryFactory` combines three factories:
-- `DataBaseLoggerFactory` builds `DataBaseLogger` for logging query start/end;
-- `DataBaseMetricWriterFactory` builds `DataBaseMetricWriter` for writing metrics;
-- `DataBaseTracerFactory` builds `DataBaseTracer` for distributed tracing.
-
-Metrics and tracing are described in the [Metrics Reference](metrics.md#cassandra) section.
+Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

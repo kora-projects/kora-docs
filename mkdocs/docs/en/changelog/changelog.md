@@ -597,7 +597,7 @@ Added:
 * Added [HTTP Client/Server logging masking](../documentation/http-server.md#configuration)
 * Added HTTP Client & Server metrics enriched
 * Added OpenAPI additional contract annotations for HTTP client/server
-* Added annotation processor for [JDBC result set mappers](../documentation/database-jdbc.md#entity)
+* Added annotation processor for [JDBC result set mappers](../documentation/database-jdbc.md#view)
 * Added [Resilient Retry & Timeout](../documentation/resilient.md#retry) virtual thread support
 
 Fixed:

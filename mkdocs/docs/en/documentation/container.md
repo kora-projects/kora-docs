@@ -86,7 +86,7 @@ The `@Component` annotation marks the class as accessible via the container. The
     class SomeService(val otherService: OtherService) { }
     ```
 
-#### Method factory { #basic-factory }
+#### Method factory { #method-factory }
 
 A factory method is a method with the `default` modifier that returns a component.
 The method can take other dependency components as arguments.
@@ -358,7 +358,7 @@ Available extensions are discovered through the `ServiceLocator` mechanism from 
 
 This mechanism is system-level and is most often used by internal `Kora` modules.
 
-#### Standard factory { #standard-factory }
+#### Standard factory { #default-factory }
 
 In order to provide default components by factory methods, which it is assumed that the user can override,
 it is required to use the `@DefaultComponent` annotation.

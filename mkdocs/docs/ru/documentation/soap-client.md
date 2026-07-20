@@ -423,7 +423,7 @@ agent:
     }
     ```
 
-### Авторизация (WS-Security) { #authorization }
+### Авторизация { #authorization }
 
 `SoapEnvelopeProcessors.wssAuth(username, password)` — встроенный обработчик, который добавляет в каждый конверт запроса заголовок
 `UsernameToken` стандарта [WS-Security](https://en.wikipedia.org/wiki/WS-Security) (`Username` и `Password` в открытом виде).

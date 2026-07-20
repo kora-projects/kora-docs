@@ -1569,7 +1569,7 @@ Classes annotated with `@Component` are automatically registered if they meet th
 - Final class (unless AOP aspects applied)
 - Constructor parameters become dependencies
 
-### Basic Factory Methods { #basic-factory-methods }
+### Basic Factory Methods { #method-factory-basics }
 
 Default methods in `@KoraApp` or `@Module` interfaces that return components:
 

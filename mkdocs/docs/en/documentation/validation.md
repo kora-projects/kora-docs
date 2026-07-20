@@ -45,7 +45,7 @@ The module ships two mixin interfaces, and you pick one depending on whether the
 | Module | Artifact | Provides | Use when |
 |--------|----------|----------|----------|
 | `ValidatorModule` | `validation-common` | Generated `Validator<T>` beans, all built-in constraint factories, and element validators (`Validator<List<T>>`, `Validator<Set<T>>`, `Validator<Collection<T>>`) | Libraries and non-`HTTP` applications, or when you handle `ViolationException` yourself |
-| `ValidationModule` | `validation-module` | Everything from `ValidatorModule` **plus** the `ValidationHttpServerInterceptor` that maps `ViolationException` to an [HTTP 400 response](#validation-response-http-400) | `HTTP` services that should return `400` to clients automatically |
+| `ValidationModule` | `validation-module` | Everything from `ValidatorModule` **plus** the `ValidationHttpServerInterceptor` that maps `ViolationException` to an [HTTP 400 response](#validation-response-http) | `HTTP` services that should return `400` to clients automatically |
 
 `ValidationModule` extends `ValidatorModule`, so wiring `ValidationModule` also gives you everything the base module provides.
 The dependency shown above (`validation-module`) is the right choice for an `HTTP` service; a library that only needs to generate validators can depend on `validation-common` and wire `ValidatorModule` instead.
@@ -632,7 +632,7 @@ Example of `FailFast` validation:
     }
     ```
 
-## Validation Response (HTTP 400) { #validation-response-http-400 }
+## Validation HTTP Response { #validation-response-http }
 
 When a Kora `HTTP` service uses the `ValidationModule` (from the `validation-module` artifact), a failed validation can be turned into an `HTTP` `400` response automatically instead of an uncaught error.
 
