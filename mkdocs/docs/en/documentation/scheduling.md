@@ -21,6 +21,19 @@ All annotations have the `config` parameter.
 If it is specified, parameter values are taken from the configuration at that path and have priority over annotation values.
 The configuration of a specific task can also contain the `telemetry` section; its values override the common scheduler telemetry for that task.
 
+Scheduled methods must satisfy the following requirements:
+
+- The enclosing class must be a component in the [dependency graph](container.md), for example annotated with `@Component`.
+- The native scheduler method must have no arguments (the `Quartz` scheduler additionally allows an optional [JobExecutionContext](#job-context) argument).
+- The method return value is ignored.
+- In `Kotlin` the method must not be a `suspend` function.
+
+!!! warning "Interval is required"
+
+    `@ScheduleAtFixedRate` requires `period` and `@ScheduleWithFixedDelay` requires `delay`.
+    If neither the annotation attribute (its default is `0`) nor a `config` path providing the value is set,
+    compilation fails with `Either period() or config() annotation parameter must be provided`.
+
 ### Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -124,6 +137,48 @@ Complete configuration example described by the `ScheduledExecutorServiceConfig`
 
 Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
 
+A specific task configuration may also contain its own `telemetry` section, which overrides the scheduler-wide `scheduling.telemetry` for that task only.
+Unset values fall back to the common configuration, so it is enough to specify only what should differ:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        jobs {
+            fix-rate {
+                period = "50ms"
+                telemetry {
+                    logging.enabled = true //(1)!
+                    metrics.enabled = false //(2)!
+                }
+            }
+        }
+    }
+    ```
+
+    1. Overrides `scheduling.telemetry.logging.enabled` for this task only
+    2. Overrides `scheduling.telemetry.metrics.enabled` for this task only
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      jobs:
+        fix-rate:
+          period: "50ms"
+          telemetry:
+            logging:
+              enabled: true #(1)!
+            metrics:
+              enabled: false #(2)!
+    ```
+
+    1. Overrides `scheduling.telemetry.logging.enabled` for this task only
+    2. Overrides `scheduling.telemetry.metrics.enabled` for this task only
+
+Observability of scheduled tasks can also be customized in code by registering a component that implements
+`SchedulingLoggerFactory`, `SchedulingMetricsFactory`, `SchedulingTracerFactory`, or the whole `SchedulingTelemetryFactory`.
+
 ### Fixed Rate { #fixed-rate }
 
 Scheduling with tasks started at a fixed time interval, regardless of whether the previous execution has completed.
@@ -160,7 +215,9 @@ the next task starts 5 seconds after the previous one completes.
 
 #### Configuration { #configuration-2 }
 
-Parameters can be passed through configuration; it has priority over annotation values:
+Parameters can be passed through configuration; the configuration has priority over annotation values.
+The `config` path is arbitrary, but by convention it is nested under the `scheduling` section so that a task's
+parameters and its `telemetry` live together (as in the [example project](https://github.com/kora-projects/kora-examples), `scheduling.jobs.fix-rate`):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -168,7 +225,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleAtFixedRate(config = "job")
+        @ScheduleAtFixedRate(config = "scheduling.jobs.fix-rate")
         void schedule() {
             // do something
         }
@@ -181,7 +238,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleAtFixedRate(config = "job")
+        @ScheduleAtFixedRate(config = "scheduling.jobs.fix-rate")
         fun schedule() {
             // do something
         }
@@ -193,9 +250,13 @@ Configuration file example:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    job {
-        initialDelay = "50ms" //(1)!
-        period = "50ms" //(2)!
+    scheduling {
+        jobs {
+            fix-rate {
+                initialDelay = "50ms" //(1)!
+                period = "50ms" //(2)!
+            }
+        }
     }
     ```
 
@@ -205,9 +266,11 @@ Configuration file example:
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    job:
-      initialDelay: "50ms" #(1)!
-      period: "50ms" #(2)!
+    scheduling:
+      jobs:
+        fix-rate:
+          initialDelay: "50ms" #(1)!
+          period: "50ms" #(2)!
     ```
 
     1. Initial delay before the first task (default: `0ms`)
@@ -257,7 +320,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleWithFixedDelay(config = "job")
+        @ScheduleWithFixedDelay(config = "scheduling.jobs.fix-delay")
         void schedule() {
             // do something
         }
@@ -270,7 +333,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleWithFixedDelay(config = "job")
+        @ScheduleWithFixedDelay(config = "scheduling.jobs.fix-delay")
         fun schedule() {
             // do something
         }
@@ -282,9 +345,13 @@ Configuration file example:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    job {
-        initialDelay = "50ms" //(1)!
-        delay = "50ms" //(2)!
+    scheduling {
+        jobs {
+            fix-delay {
+                initialDelay = "50ms" //(1)!
+                delay = "50ms" //(2)!
+            }
+        }
     }
     ```
 
@@ -294,9 +361,11 @@ Configuration file example:
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    job:
-      initialDelay: "50ms" #(1)!
-      delay: "50ms" #(2)!
+    scheduling:
+      jobs:
+        fix-delay:
+          initialDelay: "50ms" #(1)!
+          delay: "50ms" #(2)!
     ```
 
     1. Initial delay before the first task (default: `0ms`)
@@ -342,7 +411,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleOnce(config = "job")
+        @ScheduleOnce(config = "scheduling.jobs.once")
         void schedule() {
             // do something
         }
@@ -355,7 +424,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleOnce(config = "job")
+        @ScheduleOnce(config = "scheduling.jobs.once")
         fun schedule() {
             // do something
         }
@@ -367,8 +436,12 @@ Configuration file example:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    job {
-        delay = "50ms" //(1)!
+    scheduling {
+        jobs {
+            once {
+                delay = "50ms" //(1)!
+            }
+        }
     }
     ```
 
@@ -377,8 +450,10 @@ Configuration file example:
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    job:
-      delay: "50ms" #(1)!
+    scheduling:
+      jobs:
+        once:
+          delay: "50ms" #(1)!
     ```
 
     1. Delay before the task (`required`, no default)
@@ -387,6 +462,45 @@ Configuration file example:
 
 During [graceful shutdown](container.md#component-lifecycle), the native scheduler waits for tasks to complete for `scheduling.shutdownWait`.
 If a task needs to stop earlier, check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
+
+### Programmatic Scheduling { #programmatic }
+
+For scheduling tasks in imperative style, the `JdkSchedulingExecutor` component can be injected.
+It wraps the same `ScheduledExecutorService` as the annotations and exposes the `scheduleAtFixedRate`, `scheduleWithFixedDelay`, and `schedule` methods:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        private final JdkSchedulingExecutor executor;
+
+        public SomeService(JdkSchedulingExecutor executor) {
+            this.executor = executor;
+        }
+
+        public void start() {
+            executor.scheduleAtFixedRate(() -> {
+                // do something
+            }, 50, 50, TimeUnit.MILLISECONDS);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val executor: JdkSchedulingExecutor) {
+
+        fun start() {
+            executor.scheduleAtFixedRate({
+                // do something
+            }, 50, 50, TimeUnit.MILLISECONDS)
+        }
+    }
+    ```
 
 ## Quartz { #quartz }
 
@@ -522,7 +636,39 @@ Default settings are used from:
 
 [`cron` expressions](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) are used to run scheduled tasks.
 
-`Quartz` uses a format with six required fields and one optional year field: seconds, minutes, hours, day of month, month, day of week, and year.
+A `Quartz` expression has six required fields and an optional seventh year field, separated by spaces:
+
+| Field        | Allowed values      | Required |
+|--------------|---------------------|----------|
+| Seconds      | `0-59`              | yes      |
+| Minutes      | `0-59`              | yes      |
+| Hours        | `0-23`              | yes      |
+| Day of month | `1-31`              | yes      |
+| Month        | `1-12` or `JAN-DEC` | yes      |
+| Day of week  | `1-7` or `SUN-SAT`  | yes      |
+| Year         | empty, `1970-2099`  | no       |
+
+Besides plain numbers, ranges (`8-10`), lists (`6,19`), and steps (`0/30`), the following special characters are supported:
+
+| Character | Meaning                                                                                          |
+|-----------|--------------------------------------------------------------------------------------------------|
+| `*`       | All values of the field (for example `*` in the minute field means "every minute")               |
+| `?`       | No specific value, used in the day-of-month or day-of-week field when the other one is specified |
+| `L`       | Last (last day of the month, or last given weekday of the month)                                 |
+| `W`       | Nearest weekday to the given day of month                                                        |
+| `#`       | The N-th given weekday of the month, for example `5#2` is the second Friday                       |
+
+Expression examples:
+
+| Expression          | Meaning                                     |
+|---------------------|---------------------------------------------|
+| `0 0 * * * ?`       | The top of every hour of every day          |
+| `*/10 * * * * ?`    | Every ten seconds                           |
+| `0 0 8-10 * * ?`    | 8, 9 and 10 o'clock of every day            |
+| `0 0/30 8-10 * * ?` | 8:00, 8:30, 9:00, 9:30, 10:00 and 10:30     |
+| `0 0 0 L * ?`       | Last day of the month at midnight           |
+| `0 0 0 1W * ?`      | First weekday of the month at midnight      |
+| `0 0 0 ? * 5#2`     | The second Friday of the month at midnight  |
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -530,14 +676,14 @@ Default settings are used from:
     @Component
     public class SomeService {
 
-        @ScheduleWithCron("0 0 * * * * ?") //(1)!
+        @ScheduleWithCron("* * * ? * * *") //(1)!
         void schedule() {
             // do something
         }
     }
     ```
 
-    1. `cron` expression that runs the task every hour every day
+    1. `cron` expression that runs the task every second
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -545,18 +691,17 @@ Default settings are used from:
     @Component
     class SomeService {
 
-        @ScheduleWithCron("0 0 * * * * ?") //(1)!
+        @ScheduleWithCron("* * * ? * * *") //(1)!
         fun schedule() {
             // do something
         }
     }
     ```
 
-    1. `cron` expression that runs the task every hour every day
+    1. `cron` expression that runs the task every second
 
-#### Configuration { #configuration-6 }
-
-Parameters can be passed through configuration; it has priority over annotation values:
+The `identity` attribute sets the [Quartz Trigger identity](https://www.quartz-scheduler.org/api/2.3.0/org/quartz/TriggerBuilder.html)
+used to name the task, which is useful for identifying and replacing tasks, especially with clustered or persistent `JobStore` implementations:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -564,7 +709,43 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     public class SomeService {
 
-        @ScheduleWithCron(config = "job")
+        @ScheduleWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task at the top of every hour, registered under the trigger identity `my-hourly-job`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron(value = "0 0 * * * ?", identity = "my-hourly-job") //(1)!
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task at the top of every hour, registered under the trigger identity `my-hourly-job`
+
+#### Configuration { #configuration-6 }
+
+Parameters can be passed through configuration; the configuration has priority over annotation values.
+As with the native scheduler, the `config` path is arbitrary and by convention is nested under the `scheduling` section
+(as in the [example project](https://github.com/kora-projects/kora-examples), `scheduling.jobs.quartz`):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
         void schedule() {
             // do something
         }
@@ -577,7 +758,7 @@ Parameters can be passed through configuration; it has priority over annotation 
     @Component
     class SomeService {
 
-        @ScheduleWithCron(config = "job")
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
         fun schedule() {
             // do something
         }
@@ -589,21 +770,27 @@ Configuration example:
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    job {
-        cron = "0 0 * * * * ?" //(1)!
+    scheduling {
+        jobs {
+            quartz {
+                cron = "* * * ? * * *" //(1)!
+            }
+        }
     }
     ```
 
-    1. `cron` expression that runs the task every hour every day (`required`, no default)
+    1. `cron` expression that runs the task every second (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    job:
-      cron: "0 0 * * * * ?" #(1)!
+    scheduling:
+      jobs:
+        quartz:
+          cron: "* * * ? * * *" #(1)!
     ```
 
-    1. `cron` expression that runs the task every hour every day (`required`, no default)
+    1. `cron` expression that runs the task every second (`required`, no default)
 
 ### Trigger { #trigger }
 
@@ -676,6 +863,7 @@ For a custom schedule, you can create a `Trigger` from the `Quartz` library, reg
 ### Non-Concurrent Execution { #non-concurrent-execution }
 
 The `@DisallowConcurrentExecution` annotation prevents concurrent execution of the same method by the `Quartz` scheduler.
+It is the `Kora` counterpart of `org.quartz.DisallowConcurrentExecution` and can be placed on any `@Schedule*`-annotated method.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -684,7 +872,7 @@ The `@DisallowConcurrentExecution` annotation prevents concurrent execution of t
     public class SomeService {
 
         @DisallowConcurrentExecution
-        @ScheduleWithCron(config = "job")
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
         void schedule() {
             // do something
         }
@@ -698,16 +886,53 @@ The `@DisallowConcurrentExecution` annotation prevents concurrent execution of t
     class SomeService {
 
         @DisallowConcurrentExecution
-        @ScheduleWithCron(config = "job")
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
         fun schedule() {
             // do something
         }
     }
     ```
 
+### Job Context { #job-context }
+
+A `Quartz` scheduled method may optionally declare a single `org.quartz.JobExecutionContext` argument.
+When it is present, `Kora` passes the current execution context to the method; when it is absent, the method is called with no arguments.
+The context gives access to the task's `org.quartz.JobDataMap`, which is the way to read and write state associated with the task:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        void schedule(JobExecutionContext context) {
+            JobDataMap data = context.getJobDetail().getJobDataMap();
+            int counter = data.containsKey("counter") ? data.getInt("counter") : 0;
+            data.put("counter", counter + 1);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        fun schedule(context: JobExecutionContext) {
+            val data = context.jobDetail.jobDataMap
+            val counter = if (data.containsKey("counter")) data.getInt("counter") else 0
+            data.put("counter", counter + 1)
+        }
+    }
+    ```
+
 ### Persisting Job Data { #persistent-execution }
 
-The `@PersistJobDataAfterExecution` annotation tells `Quartz` to save the updated `org.quartz.JobDataMap` state after task execution.
+The `@PersistJobDataAfterExecution` annotation tells `Quartz` to store the updated `org.quartz.JobDataMap` back after task execution,
+so that the changes made through the [JobExecutionContext](#job-context) are visible in the next execution.
 
 It is recommended to use it together with `@DisallowConcurrentExecution`
 to avoid data storage conflicts during concurrent task execution.
@@ -718,10 +943,60 @@ to avoid data storage conflicts during concurrent task execution.
     @Component
     public class SomeService {
 
+        @DisallowConcurrentExecution
         @PersistJobDataAfterExecution
-        @ScheduleWithCron(config = "job")
-        void schedule() {
-            // do something
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        void schedule(JobExecutionContext context) {
+            JobDataMap data = context.getJobDetail().getJobDataMap();
+            int counter = data.containsKey("counter") ? data.getInt("counter") : 0;
+            data.put("counter", counter + 1); //(1)!
+        }
+    }
+    ```
+
+    1. The updated value is persisted after execution and available in the next run
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @DisallowConcurrentExecution
+        @PersistJobDataAfterExecution
+        @ScheduleWithCron(config = "scheduling.jobs.quartz")
+        fun schedule(context: JobExecutionContext) {
+            val data = context.jobDetail.jobDataMap
+            val counter = if (data.containsKey("counter")) data.getInt("counter") else 0
+            data.put("counter", counter + 1) //(1)!
+        }
+    }
+    ```
+
+    1. The updated value is persisted after execution and available in the next run
+
+### Graceful Shutdown { #graceful-shutdown-quartz }
+
+During [graceful shutdown](container.md#component-lifecycle), the `scheduling.waitForJobComplete` option controls how the `Quartz` scheduler stops.
+With `true` (default) it calls `scheduler.shutdown(true)` and blocks until running tasks finish; with `false` it stops without waiting.
+As with the native scheduler, long-running tasks should still cooperatively check
+[Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
+
+### Scheduler { #scheduler }
+
+The underlying `org.quartz.Scheduler` is registered as a component and can be injected for advanced scenarios,
+such as registering tasks programmatically or inspecting the scheduler state:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        private final Scheduler scheduler;
+
+        public SomeService(Scheduler scheduler) {
+            this.scheduler = scheduler;
         }
     }
     ```
@@ -730,12 +1005,5 @@ to avoid data storage conflicts during concurrent task execution.
 
     ```kotlin
     @Component
-    class SomeService {
-
-        @PersistJobDataAfterExecution
-        @ScheduleWithCron(config = "job")
-        fun schedule() {
-            // do something
-        }
-    }
+    class SomeService(private val scheduler: Scheduler)
     ```

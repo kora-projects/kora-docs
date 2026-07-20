@@ -18,6 +18,43 @@ Netty — это библиотека для сетевого взаимодей
 
 Обычно модуль не требуется подключать вручную: его добавляют как транзитивную зависимость модули Kora, которым нужен Netty.
 
+## Что предоставляется { #what-it-provides }
+
+При подключении модуля `NettyCommonModule` добавляет в контейнер зависимостей следующие общие компоненты.
+Модули-потребители ([асинхронный HTTP-клиент](http-client.md#asynchttpclient), [gRPC-клиент](grpc-client.md), [gRPC-сервер](grpc-server.md)) внедряют их вместо создания собственных потоков Netty:
+
+- **`NettyTransportConfig`** — конфигурация, привязанная к секции `netty` (предпочтительный [транспорт](#transport) и [количество рабочих потоков](#configuration)).
+- **Рабочая `EventLoopGroup`** с тегом `@Tag(NettyCommonModule.WorkerLoopGroup.class)` — общий `цикл событий`, который обрабатывает соединения и сетевой ввод-вывод. Его размер задается параметром `threads`, и его используют как клиенты, так и серверы.
+- **`EventLoopGroup` для приема соединений (boss)** с тегом `@Tag(NettyCommonModule.BossLoopGroup.class)` — отдельная группа, фиксированная на `1` поток, которую используют только серверные компоненты (например, [gRPC-сервер](grpc-server.md)) для приема входящих соединений; параметр `threads` на нее не влияет.
+- **[`NettyChannelFactory`](#channel-factory)** — фабрика, создающая каналы Netty, соответствующие выбранному [транспорту](#transport).
+
+Обе группы `цикла событий` управляются [жизненным циклом](container.md#component-lifecycle) Kora: они корректно останавливаются после освобождения всех зависимых компонентов, поэтому ручное управление не требуется.
+
+Продвинутые модули, которые строят собственный `транспорт` Netty, могут внедрять эти компоненты напрямую:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyNettyTransport {
+
+        public MyNettyTransport(@Tag(NettyCommonModule.WorkerLoopGroup.class) EventLoopGroup workerGroup,
+                                NettyChannelFactory channelFactory) {
+            // build a client or server bootstrap on the shared event loop
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyNettyTransport(
+        @Tag(NettyCommonModule.WorkerLoopGroup::class) workerGroup: EventLoopGroup,
+        channelFactory: NettyChannelFactory,
+    )
+    ```
+
 ## Конфигурация { #configuration }
 
 Пример конфигурации, описанной в классе `NettyTransportConfig`:
@@ -49,9 +86,9 @@ Netty — это библиотека для сетевого взаимодей
 
 Параметр `transport` задает предпочтительный `транспорт` Netty:
 
+- `NIO` - стандартный `транспорт` Java NIO, доступен всегда.
 - `EPOLL` - `платформенный транспорт` Linux.
 - `KQUEUE` - `платформенный транспорт` macOS / BSD.
-- `NIO` - стандартный `транспорт` Java NIO, доступен всегда.
 
 Если параметр `transport` не задан, Kora выбирает первый доступный транспорт в порядке:
 
@@ -73,3 +110,43 @@ Netty — это библиотека для сетевого взаимодей
 ???+ tip "Совет"
 
     Обычно достаточно не задавать `transport` явно и оставить автоматический выбор. `Платформенный транспорт` стоит подключать осознанно: например, если он нужен для производительности или возможностей Netty, недоступных в `NIO`.
+
+## Фабрика каналов { #channel-factory }
+
+`NettyChannelFactory` — это общий внедряемый компонент, который создает экземпляры [`ChannelFactory`](https://netty.io/4.1/api/io/netty/channel/ChannelFactory.html) Netty, соответствующие выбранному [транспорту](#transport).
+Это продвинутая точка внедрения для модулей, которые строят собственный клиентский или серверный `bootstrap` Netty и хотят получать каналы, согласованные с выбранным `транспортом`:
+
+- `getClientFactory()` / `getClientFactory(boolean domainSocket)` — фабрика клиентских каналов.
+- `getServerFactory()` / `getServerFactory(boolean domainSocket)` — фабрика серверных каналов.
+
+Перегрузки без аргументов создают стандартные сокет-каналы `TCP`.
+Передача `domainSocket = true` запрашивает канал [Unix domain socket](https://en.wikipedia.org/wiki/Unix_domain_socket): его поддерживают `платформенные транспорты` `EPOLL` и `KQUEUE`, тогда как реализация `NIO` в настоящее время возвращается к стандартным сокет-каналам.
+
+## Фабрика потоков { #thread-factory }
+
+Обе группы `цикла событий` — рабочая и boss — принимают необязательную [`ThreadFactory`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadFactory.html).
+Чтобы настроить именование или приоритет потоков Netty, предоставьте компонент `ThreadFactory` с тегом `@Tag(NettyCommonModule.class)`; при его наличии Kora использует его для обеих групп:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends AsyncHttpClientModule {
+
+        @Tag(NettyCommonModule.class)
+        default ThreadFactory nettyThreadFactory() {
+            return new DefaultThreadFactory("netty-io");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : AsyncHttpClientModule {
+
+        @Tag(NettyCommonModule::class)
+        fun nettyThreadFactory(): ThreadFactory = DefaultThreadFactory("netty-io")
+    }
+    ```

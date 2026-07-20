@@ -1305,7 +1305,7 @@ intact.
 
 **Why we need it**: libraries should provide safe defaults, but applications must keep final control over business-facing behavior. This
 matches [Dependency Injection with Kora: Standard factory](dependency-injection-introduction.md#defaultcomponent-factory), [@DefaultComponent](dependency-injection-introduction.md#defaultcomponent)
-and [Container documentation: Standard factory](../documentation/container.md#standard-factory).
+and [Container documentation: Standard factory](../documentation/container.md#default-factory).
 
 **What we are emulating**: application-specific customization of a shared library notifier without forking or rewriting the entire module.
 

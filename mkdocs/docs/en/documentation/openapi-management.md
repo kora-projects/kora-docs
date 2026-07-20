@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server. Use when working with OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+description: "Explains Kora OpenAPI management module for serving generated OpenAPI specifications, Swagger UI, and RapiDoc pages through the public HTTP server. Use when working with OpenApiManagementModule, OpenApiManagementConfig, OpenAPI endpoint, Swagger UI, RapiDoc."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server; key triggers include OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications, Swagger UI, and RapiDoc pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenAPI endpoint, Swagger UI, RapiDoc, /openapi, /swagger-ui, /rapidoc."
 ---
 
 The `openapi-management` module serves ready-made `OpenAPI` files from an application, along with [Swagger UI](https://swagger.io/tools/swagger-ui/) and [RapiDoc](https://rapidocweb.com/) pages for viewing them.
@@ -41,6 +41,7 @@ For a step-by-step walkthrough before the reference details, see [OpenAPI HTTP S
     ```
 
 Requires the [HTTP server](http-server.md) module because it registers its own `GET` handlers for serving files and viewer pages.
+These are ordinary `HttpServerRequestHandler` beans collected by the **public** HTTP server, so `/openapi`, `/swagger-ui`, and `/rapidoc` are exposed on the public HTTP port, not on the private (management) port.
 
 ## Configuration { #configuration }
 
@@ -104,12 +105,27 @@ An example of the configuration described by the `OpenApiManagementConfig` class
     6. Enables the `RapiDoc` page (default: `false`).
     7. Path where the `RapiDoc` page is available (default: `/rapidoc`).
 
-Files are read from application resources on the first request and then cached in memory.
+Files are read from application resources on the first request and then cached in memory (subsequent requests return the cached bytes).
 Files with the `.json` extension use the `text/json; charset=utf-8` response type; all other files use `text/x-yaml; charset=utf-8`.
 
-With multiple files, `Swagger UI` shows the list of available contracts.
-`RapiDoc` opens the first file from the list.
-When `Swagger UI` is enabled, an additional path for the `OAuth` redirect is registered.
+With multiple files, `Swagger UI` shows the list of available contracts, and `RapiDoc` opens the first file from the list.
+
+When multiple files are configured, a request to `/openapi/{file}` with an unknown `{file}` name returns `404` (`OpenAPI file not registered`), and a request with an empty `{file}` value returns `400` (`OpenAPI file not specified`).
+If a configured resource cannot be located or read at request time, the handler returns `404` or `500` respectively; otherwise it responds with `200` and the file content.
+
+## Endpoints { #endpoints }
+
+With serving enabled, the module registers the following `GET` routes on the public HTTP server (paths shown with default `endpoint` values):
+
+| Route | Backing handler | Enabled by |
+|-------|-----------------|------------|
+| `GET /openapi` (single file) or `GET /openapi/{file}` (multiple files) | `OpenApiHttpServerHandler` | `enabled = true` |
+| `GET /swagger-ui` | `SwaggerUIHttpServerHandler` | `swaggerui.enabled = true` |
+| `GET /swagger-ui/oauth2-redirect` | `SwaggerOauthHttpServerHandler` | registered automatically together with `Swagger UI` |
+| `GET /rapidoc` | `RapidocHttpServerHandler` | `rapidoc.enabled = true` |
+
+Each route uses the `endpoint` value from its configuration section, so overriding an `endpoint` moves the corresponding route.
+The `OAuth2` redirect path is always `swaggerui.endpoint` plus the `/oauth2-redirect` suffix.
 
 ## Recommendations { #recommendations }
 

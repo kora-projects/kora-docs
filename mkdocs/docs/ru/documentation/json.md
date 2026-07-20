@@ -4,13 +4,13 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
 ---
 
-Модуль `JSON` создает производительные `JsonReader` и `JsonWriter` для классов приложения на этапе компиляции и без использования `Reflection` во время работы.
-Для генерации используются аннотации `@Json`, `@JsonReader`, `@JsonWriter` и связанные с ними настройки полей.
+Модуль `JSON` создает эффективные реализации `JsonReader` и `JsonWriter` для классов приложения во время компиляции и без использования `Reflection` во время выполнения.
+Генерация управляется аннотациями `@Json`, `@JsonReader`, `@JsonWriter` и связанными аннотациями уровня поля.
 
-`JsonModule` также подключает готовые преобразователи для `HTTP`-клиента, `HTTP`-сервера, параметров строкового вида и `Kafka`.
-Благодаря этому один и тот же сгенерированный `JsonReader` или `JsonWriter` можно использовать в разных модулях Kora.
+`JsonModule` также предоставляет готовые преобразователи для `HTTP`-клиента, `HTTP`-сервера, строковых параметров и `Kafka`.
+Это позволяет использовать один и тот же сгенерированный `JsonReader` или `JsonWriter` в разных модулях Kora.
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [JSON](../guides/json.md).
+Пошаговый разбор перед справочным описанием смотрите в разделе [JSON](../guides/json.md).
 
 ## Подключение { #dependency }
 
@@ -42,8 +42,8 @@ agent:
 
 ## Запись { #writer }
 
-Можно воспользоваться `@JsonWriter` для создания только `JsonWriter`.
-Этот вариант нужен, когда тип требуется только записывать в `JSON`:
+Используйте `@JsonWriter`, чтобы создать только `JsonWriter`.
+Этот вариант полезен, когда тип нужно только записывать в `JSON`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -61,8 +61,8 @@ agent:
 
 ## Чтение { #reader }
 
-Можно воспользоваться `@JsonReader` для создания только `JsonReader`.
-Этот вариант нужен, когда тип требуется только читать из `JSON`:
+Используйте `@JsonReader`, чтобы создать только `JsonReader`.
+Этот вариант полезен, когда тип нужно только читать из `JSON`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -78,10 +78,10 @@ agent:
     data class Dto(val field1: String, val field2: Int)
     ```
 
-## Чтение & Запись { #reader-and-writer }
+## Чтение и запись { #reader-and-writer }
 
-Можно воспользоваться `@Json` для создания сразу `JsonReader` и `JsonWriter`.
-В большинстве случаев предпочтительнее использовать именно аннотацию `@Json`:
+Используйте `@Json`, чтобы создать одновременно `JsonReader` и `JsonWriter`.
+В большинстве случаев `@Json` — предпочтительная аннотация:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -99,8 +99,8 @@ agent:
 
 ## Интерфейсы чтения и записи { #reader-writer-interfaces }
 
-`JsonReader<T>` и `JsonWriter<T>` - это обычные компоненты графа приложения.
-После генерации или ручной регистрации их можно внедрять по сигнатуре, как и другие зависимости.
+`JsonReader<T>` и `JsonWriter<T>` — это обычные компоненты графа приложения.
+После генерации или ручной регистрации их можно внедрять по сигнатуре, как любую другую зависимость.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -148,8 +148,14 @@ agent:
 `JsonReader` читает значение из `JsonParser`, `byte[]`, `String` или `InputStream`.
 Методы `readUnchecked(...)` делают то же самое, но преобразуют `IOException` в `UncheckedIOException`.
 
-`JsonWriter` записывает значение через `JsonGenerator`, а также умеет возвращать `byte[]`, строку и форматированную строку через `toByteArray(...)`, `toString(...)` и `toPrettyString(...)`.
+`JsonWriter` записывает значение через `JsonGenerator` и также может вернуть `byte[]`, строку или форматированную строку через `toByteArray(...)`, `toString(...)` и `toPrettyString(...)`.
 Методы `toByteArrayUnchecked(...)`, `toStringUnchecked(...)` и `toPrettyStringUnchecked(...)` преобразуют `IOException` в `UncheckedIOException`.
+
+Особенности поведения во время выполнения при прямом вызове кодеков:
+
+- `read(...)` возвращает `null`, когда парсер находится на токене `JSON` `null`, поэтому документ верхнего уровня `null` десериализуется в `null`.
+- Некорректный `JSON` или неожиданный токен приводит к `JsonParseException` из `Jackson`, который является подтипом `IOException`.
+- Варианты `readUnchecked(...)` и `to...Unchecked(...)` пробрасывают любой `IOException` (включая `JsonParseException`), обернутый в `UncheckedIOException`.
 
 ## Обязательные поля { #required-fields }
 
@@ -164,7 +170,7 @@ agent:
 
 === ":simple-kotlin: `Kotlin`"
 
-    По умолчанию все поля, объявленные в объекте без синтаксиса [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html), считаются **обязательными** (`NotNull`).
+    По умолчанию все поля, объявленные в объекте без синтаксиса [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html), считаются **обязательными** (`NotNull`).
 
     ```kotlin
     @Json
@@ -175,7 +181,7 @@ agent:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если поле в `JSON` является необязательным и может отсутствовать, используйте аннотацию `@Nullable`:
+    Если поле `JSON` необязательное и может отсутствовать, используйте аннотацию `@Nullable`:
 
     ```java
     @Json
@@ -183,11 +189,11 @@ agent:
                       int field2) { }
     ```
 
-    1.  Подойдет любая аннотация `@Nullable`, например `javax.annotation.Nullable`, `jakarta.annotation.Nullable` или `org.jetbrains.annotations.Nullable`.
+    1. Подойдет любая аннотация `@Nullable`, например `javax.annotation.Nullable`, `jakarta.annotation.Nullable` или `org.jetbrains.annotations.Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Для `Kotlin` предполагается использовать синтаксис [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) и помечать такой параметр как `nullable`:
+    Для `Kotlin` используйте синтаксис [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) и пометьте параметр как `nullable`:
 
     ```kotlin
     @Json
@@ -197,10 +203,10 @@ agent:
     )
     ```
 
-## Именование поля { #field-naming }
+## Именование полей { #field-naming }
 
-Если поле в `JSON` называется иначе, чем поле в классе, можно использовать аннотацию `@JsonField`.
-Она задает имя ключа в `JSON`, а также позволяет указать отдельные `JsonReader` и `JsonWriter` для конкретного поля.
+Если поле в `JSON` имеет имя, отличное от имени поля в классе, используйте `@JsonField`.
+Она задает имя ключа в `JSON`, а также позволяет указать отдельные реализации `JsonReader` и `JsonWriter` для поля.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -220,7 +226,7 @@ agent:
     )
     ```
 
-Если для поля нужно использовать отдельные преобразователи, укажите их в `reader` и `writer`:
+Если для поля нужны отдельные преобразователи, укажите их в `reader` и `writer`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -248,8 +254,8 @@ agent:
 
 ## Игнорирование поля { #field-ignore }
 
-Если поле в `DTO` не нужно читать или писать, можно использовать аннотацию `@JsonSkip`.
-Такое поле будет проигнорировано при чтении и записи `JSON`.
+Если поле в `DTO` не нужно читать или записывать, используйте `@JsonSkip`.
+Такое поле игнорируется при чтении и записи `JSON`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -269,23 +275,23 @@ agent:
     )
     ```
 
-## Уровни записи { #serialization-levels }
+## Уровни сериализации { #serialization-levels }
 
 По умолчанию поля со значением `null` не записываются. (1)
 { .annotate }
 
-1.  `IncludeType.NON_NULL` - записывать поле, только если значение не равно `null`.
+1. `IncludeType.NON_NULL` — записывать поле только в том случае, если значение не `null`.
 
-Чтобы изменить это поведение, используйте аннотацию `@JsonInclude`.
-Аннотацию можно поставить не только на поле, но и на класс, тогда правило будет действовать на все поля сразу.
+Чтобы изменить это поведение, используйте `@JsonInclude`.
+Аннотацию можно разместить не только на поле, но и на классе; в этом случае правило применяется сразу ко всем полям.
 
-Доступны различные варианты использования:
+Доступные варианты:
 
-- `IncludeType.ALWAYS` - всегда записывать поле.
-- `IncludeType.NON_NULL` - записывать поле, если значение не равно `null`.
-- `IncludeType.NON_EMPTY` - записывать поле, если значение не равно `null` и не является пустой коллекцией или пустым словарем.
+- `IncludeType.ALWAYS` — всегда записывать поле.
+- `IncludeType.NON_NULL` — записывать поле, если значение не `null`.
+- `IncludeType.NON_EMPTY` — записывать поле, если значение не `null` и не является пустой коллекцией или ассоциативным массивом.
 
-Пример использования аннотации:
+Пример:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -306,10 +312,10 @@ agent:
     )
     ```
 
-## Указание конструктора { #serialization-constructor }
+## Конструктор сериализации { #serialization-constructor }
 
-Если для чтения `JSON` нужно использовать определенный конструктор, укажите над ним аннотацию `@JsonReader`.
-Также можно использовать аннотацию `@Json`, но у `@JsonReader` приоритет выше:
+Если для чтения `JSON` должен использоваться конкретный конструктор, пометьте его аннотацией `@JsonReader`.
+Можно также использовать `@Json`, но `@JsonReader` имеет более высокий приоритет:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -335,20 +341,58 @@ agent:
     }
     ```
 
-`JsonReader` и `JsonWriter` можно генерировать для классов, `record`, `enum` и `sealed`-типов.
-Для чтения класса должен быть доступен один публичный конструктор, либо конструктор, явно помеченный `@JsonReader` или `@Json`.
+`JsonReader` и `JsonWriter` могут быть сгенерированы для классов, `record`, `enum` и `sealed`-типов.
+Для чтения класса должен быть один публичный конструктор либо конструктор, явно помеченный `@JsonReader` или `@Json`.
+
+### Java Bean и обычные классы { #java-bean }
+
+`@Json`, `@JsonReader` и `@JsonWriter` не ограничиваются `record` и `data class`.
+Обычный класс тоже подходит: для чтения требуется единственный публичный конструктор (или конструктор, помеченный `@JsonReader`/`@Json`), а для записи используются методы доступа к полям.
+`@JsonField` можно разместить на приватных полях, чтобы переименовать ключ в `JSON`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @JsonWriter
+    public class DtoJavaBean {
+
+        @JsonField("string_field")
+        private String field1;
+        @JsonField("int_field")
+        private int field2;
+
+        public DtoJavaBean(String field1, int field2) {
+            this.field1 = field1;
+            this.field2 = field2;
+        }
+
+        public String getField1() { return field1; }
+
+        public int getField2() { return field2; }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @JsonWriter
+    class DtoJavaBean(
+        @field:JsonField("string_field") val field1: String,
+        @field:JsonField("int_field") val field2: Int
+    )
+    ```
 
 ## Обертка JsonNullable { #jsonnullable-wrapper }
 
-Если при чтении `JSON` нужно отличать отсутствующее поле от поля со значением `null`, используйте специальный тип `JsonNullable`.
+Если при чтении `JSON` необходимо отличать отсутствующее поле от поля со значением `null`, используйте `JsonNullable`.
 Основные состояния и фабричные методы:
 
-- `JsonNullable.undefined()` - поле отсутствует в `JSON`.
-- `JsonNullable.nullValue()` - поле присутствует и содержит `null`.
-- `JsonNullable.of(value)` - поле присутствует и содержит значение.
-- `JsonNullable.ofNullable(value)` - создает `nullValue()`, если значение равно `null`, иначе `of(value)`.
+- `JsonNullable.undefined()` — поле отсутствует в `JSON`.
+- `JsonNullable.nullValue()` — поле присутствует и содержит `null`.
+- `JsonNullable.of(value)` — поле присутствует и содержит значение.
+- `JsonNullable.ofNullable(value)` — создает `nullValue()`, если значение равно `null`, иначе `of(value)`.
 
-При записи `JSON` значение `undefined()` пропускается, `nullValue()` записывается как `null`, а `of(value)` записывает само значение.
+При записи `JSON` `undefined()` пропускается, `nullValue()` записывается как `null`, а `of(value)` записывает само значение.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -364,15 +408,82 @@ agent:
     data class Dto(val field1: String, val field2: JsonNullable<Int>)
     ```
 
-## Изолированные классы и интерфейсы { #sealed-classes-and-interfaces }
+### @Nullable против JsonNullable { #nullable-vs-jsonnullable }
 
-Если нужно читать и писать разные `JSON`-объекты в зависимости от значения конкретного поля, используйте
-[изолированный класс или интерфейс](https://habr.com/ru/companies/otus/articles/720044/) для представления таких объектов.
+Обычное [необязательное поле](#optional-fields) (`@Nullable` в `Java` или nullable-тип в `Kotlin`) сводит два разных входных значения `JSON` к одному и тому же результату: и **отсутствующее** поле, и поле с явным значением `null` читаются как `null`.
+`JsonNullable` разделяет эти случаи, что и делает его правильным типом для тел `HTTP`-запросов `PATCH`, где клиент отправляет только те поля, которые действительно хочет изменить.
 
-Для поддержки изолированных типов добавлены две аннотации:
+Три возможных результата чтения для поля `JsonNullable<T>`:
 
-1. `@JsonDiscriminatorField` - указывает поле дискриминатора в `DTO`, которым помечается `sealed`-класс или интерфейс.
-2. `@JsonDiscriminatorValue` - задает одно или несколько значений дискриминатора для класса-наследника.
+| Входной `JSON`          | Результат чтения          | `isDefined()` | `isNull()` | `value()`     |
+|-------------------------|---------------------------|---------------|------------|---------------|
+| `{}` (поле отсутствует) | `JsonNullable.undefined()`| `false`       | `false`    | выбрасывает   |
+| `{"field": null}`       | `JsonNullable.nullValue()`| `true`        | `true`     | `null`        |
+| `{"field": value}`      | `JsonNullable.of(value)`  | `true`        | `false`    | `value`       |
+
+Поскольку `value()` выбрасывает исключение при `undefined()`, всегда защищайте доступ проверкой `isDefined()` (или проверяйте `isNull()`) перед вызовом.
+
+### Частичное обновление PATCH { #jsonnullable-patch }
+
+В запросе `PATCH` отсутствующее поле означает «оставить без изменений», а явный `null` означает «очистить значение».
+`JsonNullable` позволяет обработчику различить эти два случая и применить только те поля, которые клиент действительно отправил:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record UserPatch(JsonNullable<String> name,
+                            JsonNullable<String> email) { }
+
+    public void apply(User user, UserPatch patch) {
+        if (patch.name().isDefined()) { //(1)!
+            user.setName(patch.name().value());
+        }
+        if (patch.email().isDefined()) {
+            user.setEmail(patch.email().value()); //(2)!
+        }
+        // fields left as undefined() are not touched
+    }
+    ```
+
+    1. Поле присутствовало в теле запроса, поэтому его необходимо применить (даже если значение — явный `null`).
+    2. `value()` возвращает `null`, когда клиент отправил `{"email": null}`, что очищает поле.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class UserPatch(
+        val name: JsonNullable<String>,
+        val email: JsonNullable<String>
+    )
+
+    fun apply(user: User, patch: UserPatch) {
+        if (patch.name.isDefined()) { //(1)!
+            user.name = patch.name.value()
+        }
+        if (patch.email.isDefined()) {
+            user.email = patch.email.value() //(2)!
+        }
+        // fields left as undefined() are not touched
+    }
+    ```
+
+    1. Поле присутствовало в теле запроса, поэтому его необходимо применить (даже если значение — явный `null`).
+    2. `value()` возвращает `null`, когда клиент отправил `{"email": null}`, что очищает поле.
+
+Взаимодействие с [уровнями сериализации](#serialization-levels): `IncludeType.ALWAYS` и `IncludeType.NON_NULL` **не** меняют способ записи `JsonNullable` (применяются его собственные правила `undefined`/`nullValue`/`of`).
+Только `IncludeType.NON_EMPTY` влияет на `JsonNullable`, рассматривая поле `undefined()` или `nullValue()` как пустое, так что оно опускается в выводе.
+
+## Sealed-классы и интерфейсы { #sealed-classes-and-interfaces }
+
+Если в зависимости от значения конкретного поля нужно читать и записывать разные `JSON`-объекты, используйте
+[sealed-класс или интерфейс](https://kotlinlang.org/docs/sealed-classes.html) для представления этих объектов.
+
+Sealed-типы поддерживаются двумя аннотациями:
+
+1. `@JsonDiscriminatorField` — задает поле-дискриминатор в `DTO`, помеченном как `sealed`-класс или интерфейс.
+2. `@JsonDiscriminatorValue` — задает одно или несколько значений дискриминатора для подкласса.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -410,11 +521,11 @@ agent:
     }
     ```
 
-Для классов-наследников будут созданы `JsonReader` и `JsonWriter` по тем же правилам, как если бы на них была аннотация `@Json`.
-Для самого `sealed`-класса или интерфейса также будет создан общий `JsonReader` и `JsonWriter`.
-Поддерживаются вложенные `sealed`-иерархии, а `@JsonDiscriminatorValue` может принимать несколько значений для одного класса-наследника.
+Подклассы получают `JsonReader` и `JsonWriter` по тем же правилам, как если бы они были помечены `@Json`.
+Сам `sealed`-класс или интерфейс также получает общий `JsonReader` и `JsonWriter`.
+Поддерживаются вложенные `sealed`-иерархии, а `@JsonDiscriminatorValue` может принимать несколько значений для одного подкласса.
 
-`JSON`-объект ниже будет записан в класс `FirstTypeEvent`:
+Приведенный ниже `JSON`-объект записывается в класс `FirstTypeEvent`:
 ```json
 {
     "id": "1",
@@ -425,10 +536,43 @@ agent:
 }
 ```
 
+Поддерживаются обобщенные (`generic`) типы `DTO`, включая обобщенные `sealed`-иерархии.
+Кодек для каждого конкретного аргумента типа разрешается из графа, как и для любого другого типа поля:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    @JsonDiscriminatorField("@type")
+    public sealed interface Response<T> {
+
+        @JsonDiscriminatorValue("ok")
+        record Ok<T>(T data) implements Response<T> {}
+
+        @JsonDiscriminatorValue("fail")
+        record Fail<T>(String error) implements Response<T> {}
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    @JsonDiscriminatorField("@type")
+    sealed interface Response<T> {
+
+        @JsonDiscriminatorValue("ok")
+        data class Ok<T>(val data: T) : Response<T>
+
+        @JsonDiscriminatorValue("fail")
+        data class Fail<T>(val error: String) : Response<T>
+    }
+    ```
+
 ## Перечисления { #enum }
 
-Для `enum` можно генерировать `JsonReader` и `JsonWriter` теми же аннотациями `@Json`, `@JsonReader` и `@JsonWriter`.
-По умолчанию значением `enum` в `JSON` будет результат метода `toString()`, поэтому его можно переопределить:
+Для `enum` `JsonReader` и `JsonWriter` можно сгенерировать теми же аннотациями `@Json`, `@JsonReader` и `@JsonWriter`.
+По умолчанию значением `enum` в `JSON` является результат `toString()`, поэтому его можно переопределить:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -459,8 +603,8 @@ agent:
     }
     ```
 
-Если нужно использовать не строковое значение из `toString()`, можно пометить публичный метод без параметров аннотацией `@Json`.
-В этом случае для типа возвращаемого значения должен быть доступен соответствующий `JsonReader` и `JsonWriter`:
+Если требуется значение, отличное от строки из `toString()`, пометьте публичный метод без параметров аннотацией `@Json`.
+В этом случае для возвращаемого типа должны быть доступны соответствующие `JsonReader` и `JsonWriter`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -496,10 +640,12 @@ agent:
     }
     ```
 
+При чтении значение `JSON`, не совпадающее ни с одной константой `enum`, приводит к `JsonParseException` из `Jackson`, где перечислены допустимые значения.
+
 ## RawJson { #raw-json }
 
-`RawJson` нужен, когда в объект требуется вставить уже готовый фрагмент `JSON` без повторной сериализации.
-При записи `RawJson` передается в выходной `JSON` как есть, поэтому значение должно быть корректным `JSON`-фрагментом.
+`RawJson` используется, когда в объект нужно включить уже готовый фрагмент `JSON`, не сериализуя его повторно.
+При записи `RawJson` передается в выходной `JSON` как есть, поэтому значение должно быть корректным фрагментом `JSON`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -521,8 +667,8 @@ agent:
 
 ## Поддерживаемые типы { #supported-types }
 
-Модуль предоставляет список поддерживаемых из коробки типов, которые покрывают большую часть типовых задач.
-Для коллекций и словарей Kora использует `JsonReader` или `JsonWriter` типа элемента.
+Модуль предоставляет встроенные типы, которые покрывают большинство распространенных задач.
+Для коллекций и ассоциативных массивов Kora использует `JsonReader` или `JsonWriter` типа элемента.
 
 ??? abstract "Список поддерживаемых типов"
 
@@ -565,11 +711,11 @@ agent:
     * ZoneId
     * Duration
 
-### Собственные типы { #custom-types }
+### Пользовательские типы { #custom-types }
 
-Если требуется читать или писать собственный тип, зарегистрируйте собственную [фабрику](container.md) для `JsonReader` или `JsonWriter`.
+Если необходимо читать или записывать пользовательский тип, зарегистрируйте пользовательскую [фабрику](container.md) для `JsonReader` или `JsonWriter`.
 
-Пример регистрации собственного `JsonWriter`:
+Пример регистрации пользовательского `JsonWriter`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -603,10 +749,52 @@ agent:
     }
     ```
 
+Пример регистрации пользовательского `JsonReader`.
+Reader переключается по текущему токену парсера, возвращает `null` для `JSON` `null`, читает ожидаемый токен и выбрасывает `JsonParseException` для всего остального:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application {
+
+        default JsonReader<ZoneOffset> zoneOffsetJsonReader() {
+            return parser -> switch (parser.currentToken()) {
+                case VALUE_NULL -> null;
+                case VALUE_STRING -> ZoneOffset.of(parser.getValueAsString());
+                default -> throw new JsonParseException(parser,
+                    "Expecting VALUE_STRING token, got " + parser.currentToken());
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application {
+
+        fun zoneOffsetJsonReader(): JsonReader<ZoneOffset> = JsonReader { parser ->
+            when (parser.currentToken()) {
+                JsonToken.VALUE_NULL -> null
+                JsonToken.VALUE_STRING -> ZoneOffset.of(parser.valueAsString)
+                else -> throw JsonParseException(parser,
+                    "Expecting VALUE_STRING token, got ${parser.currentToken()}")
+            }
+        }
+    }
+    ```
+
+Пользовательский `JsonReader<T>` или `JsonWriter<T>` — это обычный компонент графа.
+После регистрации сгенерированные кодеки автоматически подхватывают его везде, где встречается поле типа `T`, а также его можно закрепить за отдельным полем через `@JsonField(reader = ..., writer = ...)` (см. [Именование полей](#field-naming)).
+
 ## Jackson { #jackson }
 
-Если для чтения и записи `JSON` нужно использовать `Jackson`, зарегистрируйте в графе приложения [фабрику](container.md), которая предоставляет `ObjectMapper`.
-Модуль `JacksonModule` добавляет преобразователи для `HTTP`-клиента и `HTTP`-сервера, которые используют этот `ObjectMapper`.
+Если для чтения и записи `JSON` вместо сгенерированных во время компиляции кодеков нужно использовать `Jackson`, применяйте `JacksonModule`.
+Он заменяет преобразователи запросов/ответов `HTTP`-клиента и `HTTP`-сервера на основанные на `Jackson`.
+
+Каждый преобразователь `JacksonModule` зависит от компонента `ObjectMapper`, поэтому в графе **обязательно** должна присутствовать [фабрика](container.md), предоставляющая `ObjectMapper`. Без нее граф не соберется.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -616,11 +804,18 @@ agent:
     implementation "ru.tinkoff.kora:jackson-module"
     ```
 
-    Модуль:
+    Модуль и фабрика `ObjectMapper`:
     ```java
     @KoraApp
-    public interface Application extends JacksonModule { }
+    public interface Application extends JacksonModule {
+
+        default ObjectMapper objectMapper() { //(1)!
+            return new ObjectMapper();
+        }
+    }
     ```
+
+    1. Требуется всем преобразователям `JacksonModule`; настройте его по необходимости (модули, возможности и так далее).
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -630,8 +825,16 @@ agent:
     implementation("ru.tinkoff.kora:jackson-module")
     ```
 
-    Модуль:
+    Модуль и фабрика `ObjectMapper`:
     ```kotlin
     @KoraApp
-    interface Application : JacksonModule
+    interface Application : JacksonModule {
+
+        fun objectMapper(): ObjectMapper = ObjectMapper() //(1)!
+    }
     ```
+
+    1. Требуется всем преобразователям `JacksonModule`; настройте его по необходимости (модули, возможности и так далее).
+
+Показанный выше `json-annotation-processor` позволяет `@Json`, `@JsonReader` и `@JsonWriter` по-прежнему генерировать кодеки, так что сгенерированная и `Jackson`-сериализация могут сосуществовать (например, `Jackson` для `HTTP` и сгенерированные кодеки для [Kafka](kafka.md)).
+Сами `HTTP`-преобразователи `JacksonModule` зависят только от `ObjectMapper`.

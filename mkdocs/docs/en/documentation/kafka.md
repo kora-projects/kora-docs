@@ -124,9 +124,7 @@ Conceptually, it is similar to `@ConfigSource`: the annotation value selects the
 
 Configuration describes the settings of a particular `@KafkaListener` and an example for the configuration at path `kafka.someConsumer` is given below.
 
-Example of the complete configuration described in the `KafkaListenerConfig` class (default or example values are specified):
-
-In a real configuration, either `topics` or `topicsPattern` is usually specified.
+Basic configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -134,134 +132,185 @@ In a real configuration, either `topics` or `topicsPattern` is usually specified
     kafka {
         someConsumer {
             topics = ["topic1", "topic2"] //(1)!
-            topicsPattern = "topic*" //(2)!
-            partitions = ["0", "1"] //(3)!
-            allowEmptyRecords = false //(4)!
-            offset = "latest" //(5)!
-            pollTimeout = "5s" //(6)!
-            backoffTimeout = "15s" //(7)!
-            partitionRefreshInterval = "1m" //(8)!
-            threads = 1 //(9)!
-            shutdownWait = "30s" //(10)!
-            driverProperties { //(11)!
+            offset = "latest" //(2)!
+            pollTimeout = "5s" //(3)!
+            threads = 1 //(4)!
+            driverProperties { //(5)!
                 "bootstrap.servers": "localhost:9093"
                 "group.id": "my-group-id"
-            }
-            telemetry {
-                logging {
-                    enabled = false //(12)!
-                }
-                metrics {
-                    enabled = true //(13)!
-                    slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(14)!
-                    tags = { // (15)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(16)!
-                    attributes = { // (17)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
             }
         }
     }
     ```
 
-    1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-    2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-    3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
-        If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
-    4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
-        If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
-        If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
-    5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
-        1. `earliest` - earliest available `offset`
-        2. `latest` - latest available `offset`
-        3. string in `Duration` format, for example `5m`, - shift back by the specified duration
-           Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
-    6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
-    7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
-        If consumer throws unexpected exception (not `KafkaSkipRecordException`),
-        Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
-    8.  Partition list refresh period for the `assign` strategy (default: `1m`)
-    9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
-    10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
-    11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
-    12. Enables module logging (default: `false`)
-    13. Enables module metrics (default: `true`)
-    14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    15. Configures metric tags (default: `{}`)
-    16. Enables module tracing (default: `true`)
-    17. Configures tracing attributes (default: `{}`)
+    1.  List of `topic`s to subscribe to (`required` to specify either `topics` or `topicsPattern`)
+    2.  Initial read position (default: `latest`). Allowed values: `earliest`, `latest`, or time offset (e.g. `5m`)
+    3.  Maximum time to wait for messages (default: `5s`)
+    4.  Number of threads for the consumer (default: `1`)
+    5.  Official `Kafka Consumer` `Properties` (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     kafka:
       someConsumer:
-        topics: #(1)!
+        topics:
           - "topic1"
-          - "topic2"
-        topicsPattern: "topic*" #(2)!
-        partitions: #(3)!
-          - "0"
-          - "1"
-        allowEmptyRecords: false #(4)!
-        offset: "latest" #(5)!
-        pollTimeout: "5s" #(6)!
-        backoffTimeout: "15s" #(7)!
-        partitionRefreshInterval: "1m" #(8)!
-        threads: 1 #(9)!
-        shutdownWait: "30s" #(10)!
-        driverProperties: #(11)!
-          bootstrap.servers: "localhost:9093"
-          group.id: "my-group-id"
-        telemetry:
-          logging:
-            enabled: false #(12)!
-          metrics:
-            enabled: true #(13)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
-            tags: #(15)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(16)!
-            attributes: #(17)!
-              key1: value1
-              key2: value2
+          - "topic2" #(1)!
+        offset: "latest" #(2)!
+        pollTimeout: "5s" #(3)!
+        threads: 1 #(4)!
+        driverProperties: #(5)!
+          "bootstrap.servers": "localhost:9093"
+          "group.id": "my-group-id"
     ```
 
-    1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-    2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-    3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
-        If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
-    4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
-        If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
-        If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
-    5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
-        1. `earliest` - earliest available `offset`
-        2. `latest` - latest available `offset`
-        3. string in `Duration` format, for example `5m`, - shift back by the specified duration
-           Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
-    6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
-    7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
-        If consumer throws unexpected exception (not `KafkaSkipRecordException`),
-        Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
-    8.  Partition list refresh period for the `assign` strategy (default: `1m`)
-    9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
-    10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
-    11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
-    12. Enables module logging (default: `false`)
-    13. Enables module metrics (default: `true`)
-    14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    15. Configures metric tags (default: `{}`)
-    16. Enables module tracing (default: `true`)
-    17. Configures tracing attributes (default: `{}`)
+    1.  List of `topic`s to subscribe to (`required` to specify either `topics` or `topicsPattern`)
+    2.  Initial read position (default: `latest`). Allowed values: `earliest`, `latest`, or time offset (e.g. `5m`)
+    3.  Maximum time to wait for messages (default: `5s`)
+    4.  Number of threads for the consumer (default: `1`)
+    5.  Official `Kafka Consumer` `Properties` (`required`, no default)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `KafkaListenerConfig` class (default or example values are specified):
+
+    In a real configuration, either `topics` or `topicsPattern` is usually specified.
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        kafka {
+            someConsumer {
+                topics = ["topic1", "topic2"] //(1)!
+                topicsPattern = "topic*" //(2)!
+                partitions = ["0", "1"] //(3)!
+                allowEmptyRecords = false //(4)!
+                offset = "latest" //(5)!
+                pollTimeout = "5s" //(6)!
+                backoffTimeout = "15s" //(7)!
+                partitionRefreshInterval = "1m" //(8)!
+                threads = 1 //(9)!
+                shutdownWait = "30s" //(10)!
+                driverProperties { //(11)!
+                    "bootstrap.servers": "localhost:9093"
+                    "group.id": "my-group-id"
+                }
+                telemetry {
+                    logging {
+                        enabled = false //(12)!
+                    }
+                    metrics {
+                        enabled = true //(13)!
+                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(14)!
+                        tags = { // (15)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                    tracing {
+                        enabled = true //(16)!
+                        attributes = { // (17)!
+                            "key1" = "value1"
+                            "key2" = "value2"
+                        }
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
+        2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
+        3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
+            If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
+        4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+            If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
+            If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
+        5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
+            1. `earliest` - earliest available `offset`
+            2. `latest` - latest available `offset`
+            3. string in `Duration` format, for example `5m`, - shift back by the specified duration
+               Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
+        6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
+        7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+            If consumer throws unexpected exception (not `KafkaSkipRecordException`),
+            Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
+        8.  Partition list refresh period for the `assign` strategy (default: `1m`)
+        9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
+        10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
+        12. Enables module logging (default: `false`)
+        13. Enables module metrics (default: `true`)
+        14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        15. Configures metric tags (default: `{}`)
+        16. Enables module tracing (default: `true`)
+        17. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        kafka:
+          someConsumer:
+            topics: #(1)!
+              - "topic1"
+              - "topic2"
+            topicsPattern: "topic*" #(2)!
+            partitions: #(3)!
+              - "0"
+              - "1"
+            allowEmptyRecords: false #(4)!
+            offset: "latest" #(5)!
+            pollTimeout: "5s" #(6)!
+            backoffTimeout: "15s" #(7)!
+            partitionRefreshInterval: "1m" #(8)!
+            threads: 1 #(9)!
+            shutdownWait: "30s" #(10)!
+            driverProperties: #(11)!
+              bootstrap.servers: "localhost:9093"
+              group.id: "my-group-id"
+            telemetry:
+              logging:
+                enabled: false #(12)!
+              metrics:
+                enabled: true #(13)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
+                tags: #(15)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(16)!
+                attributes: #(17)!
+                  key1: value1
+                  key2: value2
+        ```
+
+        1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
+        2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
+        3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
+            If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
+        4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+            If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
+            If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
+        5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
+            1. `earliest` - earliest available `offset`
+            2. `latest` - latest available `offset`
+            3. string in `Duration` format, for example `5m`, - shift back by the specified duration
+               Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
+        6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
+        7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+            If consumer throws unexpected exception (not `KafkaSkipRecordException`),
+            Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
+        8.  Partition list refresh period for the `assign` strategy (default: `1m`)
+        9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
+        10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
+        12. Enables module logging (default: `false`)
+        13. Enables module metrics (default: `true`)
+        14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        15. Configures metric tags (default: `{}`)
+        16. Enables module tracing (default: `true`)
+        17. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
 
@@ -1066,6 +1115,21 @@ public interface BaseKafkaRecordsHandler<K, V> {
 }
 ```
 
+### Telemetry { #telemetry }
+
+Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
+Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-consumer) section.
+
+For each batch & message, `KafkaListener` creates a separate telemetry context, which is closed upon completion of processing.
+The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
+
+The default factory, `DefaultKafkaListenerTelemetryFactory`, combines three factories:
+- `KafkaListenerLoggerFactory` builds a `KafkaListenerLogger` to log the start and end of message processing;
+- `KafkaListenerMetricsFactory` builds a `KafkaListenerMetrics` to record message metrics;
+- `KafkaListenerTracerFactory` builds a `KafkaListenerTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
+
 ## Producer { #producer }
 
 `Producer` sends records to a `topic`. Kora creates an implementation of the interface annotated with `@KafkaPublisher`,
@@ -1126,7 +1190,7 @@ The annotation parameter indicates the path for the `topic` configuration.
 
 Configuration describes the settings of a particular `@KafkaPublisher`; below is an example for the `kafka.someProducer` configuration path.
 
-Example of the complete configuration described in the `KafkaPublisherConfig` class (default or example values are specified):
+Basic configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -1136,37 +1200,11 @@ Example of the complete configuration described in the `KafkaPublisherConfig` cl
             driverProperties { //(1)!
               "bootstrap.servers": "localhost:9093"
             }
-            telemetry {
-              logging {
-                enabled = false //(2)!
-              }
-              metrics {
-                enabled = true //(3)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
-                tags = { //(5)!
-                  "key1" = "value1"
-                  "key2" = "value2"
-                }
-              }
-              tracing {
-                enabled = true //(6)!
-                attributes = { //(7)!
-                  "key1" = "value1"
-                  "key2" = "value2"
-                }
-              }
-            }
         }
     }
     ```
 
-    1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
-    2.  Enables module logging (default: `false`)
-    3.  Enables module metrics (default: `true`)
-    4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    5.  Configures metric tags (default: `{}`)
-    6.  Enables module tracing (default: `true`)
-    7.  Configures tracing attributes (default: `{}`)
+    1.  Official `Kafka Producer` `Properties` (`required`, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -1174,30 +1212,85 @@ Example of the complete configuration described in the `KafkaPublisherConfig` cl
     kafka:
       someProducer:
         driverProperties: #(1)!
-          bootstrap.servers: "localhost:9093"
-        telemetry:
-          logging:
-            enabled: true #(2)!
-          metrics:
-            enabled: true #(3)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
-            tags: #(5)!
-              key1: value1
-              key2: value2
-          tracing:
-            enabled: true #(6)!
-            attributes: #(7)!
-              key1: value1
-              key2: value2
+          "bootstrap.servers": "localhost:9093"
     ```
 
-    1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
-    2.  Enables module logging (default: `false`)
-    3.  Enables module metrics (default: `true`)
-    4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    5.  Configures metric tags (default: `{}`)
-    6.  Enables module tracing (default: `true`)
-    7.  Configures tracing attributes (default: `{}`)
+    1.  Official `Kafka Producer` `Properties` (`required`, no default)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described in the `KafkaPublisherConfig` class (default or example values are specified):
+
+    ===! ":material-code-json: `Hocon`"
+
+        ```javascript
+        kafka {
+            someProducer {
+                driverProperties { //(1)!
+                  "bootstrap.servers": "localhost:9093"
+                }
+                telemetry {
+                  logging {
+                    enabled = false //(2)!
+                  }
+                  metrics {
+                    enabled = true //(3)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                    tags = { //(5)!
+                      "key1" = "value1"
+                      "key2" = "value2"
+                    }
+                  }
+                  tracing {
+                    enabled = true //(6)!
+                    attributes = { //(7)!
+                      "key1" = "value1"
+                      "key2" = "value2"
+                    }
+                  }
+                }
+            }
+        }
+        ```
+
+        1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
+        2.  Enables module logging (default: `false`)
+        3.  Enables module metrics (default: `true`)
+        4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        5.  Configures metric tags (default: `{}`)
+        6.  Enables module tracing (default: `true`)
+        7.  Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        kafka:
+          someProducer:
+            driverProperties: #(1)!
+              bootstrap.servers: "localhost:9093"
+            telemetry:
+              logging:
+                enabled: true #(2)!
+              metrics:
+                enabled: true #(3)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+                tags: #(5)!
+                  key1: value1
+                  key2: value2
+              tracing:
+                enabled: true #(6)!
+                attributes: #(7)!
+                  key1: value1
+                  key2: value2
+        ```
+
+        1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
+        2.  Enables module logging (default: `false`)
+        3.  Enables module metrics (default: `true`)
+        4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        5.  Configures metric tags (default: `{}`)
+        6.  Enables module tracing (default: `true`)
+        7.  Configures tracing attributes (default: `{}`)
 
 `topic` configuration describes the settings of a particular `@KafkaPublisher.Topic`; below is an example for the `kafka.someProducer.someTopic` configuration path.
 
@@ -1762,7 +1855,7 @@ The `begin()` method returns a `Transaction<P>` object that provides advanced tr
 | `abort(cause)` | Aborts the transaction with specified cause |
 | `close()` | Closes the transaction (commits if no abort) |
 
-#### `inTx()` vs `withTx()` { #intx-vs-withtx }
+#### Transaction methods { #tx-methods }
 
 `TransactionalPublisher` provides 4 methods for working with transactions:
 
@@ -1859,7 +1952,7 @@ Available signatures for out-of-the-box `Kafka Producer` methods, where `K` refe
 The generator supports two signature families: sending a ready `ProducerRecord<K, V>` and sending through a method annotated with `@KafkaPublisher.Topic`.
 These families cannot be mixed in the same method.
 
-#### Ready `ProducerRecord` { #producer-record-signature }
+#### Prepared event { #producer-record-signature }
 
 A method with `ProducerRecord<K, V>` is used when the `topic`, partition, timestamp, or `Headers` should be set by the calling code.
 Such a method cannot be annotated with `@KafkaPublisher.Topic`, because all send details are already contained in the `ProducerRecord`.
@@ -1889,7 +1982,7 @@ One `Callback` can be passed additionally.
     } 
     ```
 
-#### Methods with `@KafkaPublisher.Topic` { #topic-signature }
+#### Methods per topic { #topic-signature }
 
 A method with `key`, `value`, and `Headers` must be annotated with `@KafkaPublisher.Topic`.
 One user argument is treated as `value`; two user arguments are treated as `key` and `value` in that exact order.
@@ -1992,3 +2085,18 @@ If the signature contains a `Callback`, Kora first completes its own send teleme
     ```
 
 Invalid combinations are: `ProducerRecord<K, V>` together with `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` together with separate `key`/`value`/`Headers`, more than one `Headers`, more than one `Callback`, and a method with separate `key`/`value` without `@KafkaPublisher.Topic`.
+
+### Telemetry { #telemetry }
+
+Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
+Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-producer) section.
+
+For each message, `KafkaPublisher` creates a telemetry context, which is closed upon completion of processing.
+The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
+
+The default factory, `DefaultKafkaPublisherTelemetryFactory`, combines three factories:
+- `KafkaPublisherLoggerFactory` builds a `KafkaPublisherLogger` to log the start and end of message processing;
+- `KafkaPublisherMetricsFactory` builds a `KafkaPublisherMetrics` to record message metrics;
+- `KafkaPublisherTracerFactory` builds a `KafkaPublisherTracer` for distributed tracing.
+
+Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.

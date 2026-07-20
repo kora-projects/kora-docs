@@ -57,7 +57,38 @@ agent:
 
 ## Конфигурация { #configuration }
 
-Пример полной конфигурации, описанной в классе `HttpServerConfig` (указаны примеры значений или значения по умолчанию):
+Основные параметры конфигурации HTTP-сервера:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer {
+        publicApiHttpPort = 8080 //(1)!
+        privateApiHttpPort = 8085 //(2)!
+        maxRequestBodySize = "256MiB" //(3)!
+    }
+    ```
+
+    1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
+    2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
+    3.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      publicApiHttpPort: 8080 #(1)!
+      privateApiHttpPort: 8085 #(2)!
+      maxRequestBodySize: "256MiB" #(3)!
+    ```
+
+    1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
+    2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
+    3.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+
+??? note "Полная конфигурация"
+
+    Пример полной конфигурации, описанной в классе `HttpServerConfig` (указаны примеры значений или значения по умолчанию):
 
 ===! ":material-code-json: `Hocon`"
 
@@ -1141,3 +1172,19 @@ public interface HttpServerInterceptor {
 
     1. Указывает тип `HTTP`-метода обработчика
     2. Указывает путь метода обработчика
+
+## Телеметрия { #telemetry }
+
+HTTP Server использует контракт телеметрии для логирования, метрик и трассировки запросов.
+Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
+Точки расширения находятся в `ru.tinkoff.kora.http.server.common.telemetry`.
+
+Для каждого HTTP-запроса создаётся `HttpServerTelemetry.HttpServerTelemetryContext`, который закрывается по завершении обработки запроса.
+Запрос описывается через параметры обработчика телеметрии, включая метод, путь, статус ответа и длительность.
+
+Фабрика по умолчанию `DefaultHttpServerTelemetryFactory` объединяет три фабрики:
+- `HttpServerLoggerFactory` строит `HttpServerLogger` для логирования начала/конца обработки запроса;
+- `HttpServerMetricsFactory` строит `HttpServerMetrics` для записи метрик запросов;
+- `HttpServerTracerFactory` строит `HttpServerTracer` для распределённой трассировки.
+
+Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).

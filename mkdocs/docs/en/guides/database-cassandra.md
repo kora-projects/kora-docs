@@ -244,7 +244,7 @@ Update your Application interface to include the Cassandra module.
     }
     ```
 
-## Database entity { #entity-db }
+## Database entity { #view-db }
 
 Replace the old in-memory storage model with a Cassandra DAO model used by repository mappings.
 

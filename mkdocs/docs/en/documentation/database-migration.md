@@ -5,9 +5,9 @@ agent:
 ---
 
 Database migrations apply schema and reference data changes in a controlled order: they create tables, indexes, constraints, and perform other `SQL` operations required by a new application version.
-In Kora, migration modules are bound to `JdbcDatabase` initialization: when the application starts, the database is created as a graph component, and then an interceptor runs migrations.
-If a migration fails, `JdbcDatabase` component initialization and application startup fail as well.
-Migration modules do not perform additional actions when the application stops.
+In Kora, migration modules are bound to `JdbcDatabase` initialization through a `GraphInterceptor<JdbcDatabase>`: when the application starts, `JdbcDatabase` is created as a graph component, and the interceptor's `init()` runs migrations before the component is published to the rest of the graph.
+If a migration fails, `init()` throws, so `JdbcDatabase` component initialization and the whole graph build (application startup) fail as well.
+The interceptor's `release()` is a no-op: migrations are never rolled back or re-run when the application stops.
 
 This approach is convenient for local development, tests, and small installations where the application runs as a single instance.
 For environments with multiple replicas, choose a separate migration execution method in advance so migrations are not run simultaneously from every application instance.
@@ -18,6 +18,7 @@ Repositories do not create the database schema themselves: tables, indexes, cons
 Module for database migration using the [Flyway](https://documentation.red-gate.com/fd) tool.
 During `JdbcDatabase` initialization, the module calls `Flyway.migrate()` with settings from the `flyway` section.
 Migrations are run by `FlywayJdbcDatabaseInterceptor`, which is provided by `FlywayJdbcDatabaseModule`.
+`Flyway` is wired to `SLF4J` (`loggers("slf4j")`), so migration output and the `FlyWay migration applied in ...` timing line (logged at `INFO`) appear in the application's normal logs.
 
 ### Dependency { #dependency }
 
@@ -235,3 +236,5 @@ CREATE TABLE users (
     run `Flyway` from code after database startup in tests,
     use a [Kubernetes Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) for production Kubernetes environments,
     or run migrations separately from `CI`.
+
+

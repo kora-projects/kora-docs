@@ -67,6 +67,10 @@ services {
 10. Configuration value as a mapped class
 11. Configuration value as a list of mapped classes
 
+Values can also reference other configuration keys (self-reference / cross-reference) via `${path}`, and environment
+variables via `${VAR}` (required), `${?VAR}` (optional), or a default fallback. All substitutions are resolved after
+every layer is merged, so a reference can point at a key defined in another file or in another configuration layer.
+
 Configuration representation in code:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -182,6 +186,10 @@ First, all `reference.conf` files from the classpath are merged, then `applicati
 unresolved `reference.conf`, and after that the result is resolved and required substitutions are checked.
 
 The application configuration is expected to be in `application.conf`, while library configuration is expected to be in `reference.conf`.
+
+`HOCON` also supports the [`include`](https://github.com/lightbend/config/blob/master/HOCON.md#includes) directive:
+files pulled in through `include` participate in the same merge and substitution resolution as the main file,
+and are tracked by the [Config Watcher](#config-watcher) so that changes in an included file also refresh the graph.
 
 Application file selection priority for `HOCON`:
 
@@ -601,6 +609,9 @@ If you need to specify a value from the configuration file as optional, you can 
     }
     ```
 
+An `Optional<T>` return type is also supported (an absent value maps to `Optional.empty()`), but a `@Nullable` value
+(or a `Kotlin` nullable type) is the recommended style.
+
 ### Default values { #default-values }
 
 If you need to set a default value in configuration mapping, use a `default` method:
@@ -632,6 +643,62 @@ If you need to set a default value in configuration mapping, use a `default` met
         }
     }
     ```
+
+### Relaxed key names { #relaxed-key-names }
+
+Configuration keys are matched with relaxed naming. A method name is compared against the key in the file not only in
+its exact form, but also in its `kebab-case` and `snake_case` variants. This means a method `someBarString()` resolves
+equally from `someBarString`, `some-bar-string`, or `some_bar_string` in the configuration file, so teams that prefer
+kebab-case or snake_case keys can keep their style without renaming methods.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @ConfigValueExtractor
+    public interface BarConfig {
+
+        String someBarString();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @ConfigValueExtractor
+    interface BarConfig {
+
+        fun someBarString(): String
+    }
+    ```
+
+All three key spellings below are read into `someBarString()`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    bar {
+      someBarString = "value"        //(1)!
+      # some-bar-string = "value"    //(2)!
+      # some_bar_string = "value"    //(3)!
+    }
+    ```
+
+    1. Exact `camelCase` spelling of the method name
+    2. Relaxed `kebab-case` spelling
+    3. Relaxed `snake_case` spelling
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    bar:
+      someBarString: "value"         #(1)!
+      # some-bar-string: "value"     #(2)!
+      # some_bar_string: "value"     #(3)!
+    ```
+
+    1. Exact `camelCase` spelling of the method name
+    2. Relaxed `kebab-case` spelling
+    3. Relaxed `snake_case` spelling
 
 ### Recommended style { #recommended-configuration-style }
 
@@ -828,9 +895,48 @@ environment variables and system properties, simply inject the configuration cla
     class FooService(val config: Config)
     ```
 
-### Recommendations { #recommendations }
+### Reading raw Config values { #reading-raw-config-values }
 
-???+ warning "Recommendation"
+When a raw `Config` is injected, values are read through the `get(...)` method, which returns a `ConfigValue<?>` node
+for the requested path. `ConfigValue<?>` is a sealed type with typed accessors: `asString()`, `asNumber()`,
+`asBoolean()`, `asObject()`, `asArray()`, and `isNull()`. If the value has an unexpected type, the accessor throws
+`ConfigValueExtractionException`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class FooService {
+
+        public FooService(Config config) {
+            ConfigValue<?> value = config.get("services.foo.bar");
+            if (!value.isNull()) {
+                String bar = value.asString();
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class FooService(config: Config) {
+
+        init {
+            val value = config["services.foo.bar"]
+            if (!value.isNull) {
+                val bar = value.asString()
+            }
+        }
+    }
+    ```
+
+As noted in [Recommendations](#recommendations), prefer typed [custom configurations](#custom-configuration) over
+reading a raw `Config`.
+Use the raw read API only for dynamic or generic access when no other choice and use `ValueOf<Config>` to avoid component refresh.
+
+???+ warning "Attention"
 
     **We do not recommend** using `ru.tinkoff.kora.config.common.Config` directly as a dependency in components,
     because when configuration is updated, all graph components that use it will be updated as well.
@@ -987,3 +1093,77 @@ Example values:
 - `1024` - 1024 bytes
 
 If just a number without a suffix is specified, it is considered that bytes are specified.
+
+### Either { #either }
+
+`Either<A, B>` lets a single field accept two alternative shapes. The extractor tries the left type `A` first, and if
+extraction fails with any exception, it falls back to the right type `B`. This is useful when a value may be either a
+plain scalar or a structured object.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import ru.tinkoff.kora.common.util.Either;
+
+    @ConfigValueExtractor
+    public interface EndpointConfig {
+
+        String host();
+
+        int port();
+    }
+
+    @ConfigSource("services.foo")
+    public interface FooServiceConfig {
+
+        Either<String, EndpointConfig> endpoint();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.common.util.Either
+
+    @ConfigValueExtractor
+    interface EndpointConfig {
+
+        fun host(): String
+
+        fun port(): Int
+    }
+
+    @ConfigSource("services.foo")
+    interface FooServiceConfig {
+
+        fun endpoint(): Either<String, EndpointConfig>
+    }
+    ```
+
+Both of these forms are valid for the `endpoint` field:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    services {
+      foo {
+        endpoint = "https://example.com"   //(1)!
+      }
+    }
+    ```
+
+    1. Resolved as the left type (`String`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    services:
+      foo:
+        endpoint:                          #(1)!
+          host: "example.com"
+          port: 8080
+    ```
+
+    1. Resolved as the right type (`EndpointConfig`)
+
+Use `isLeft()` / `isRight()` to check which side was resolved, and `left()` / `right()` to read the value.

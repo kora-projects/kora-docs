@@ -1,13 +1,13 @@
 ---
-description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, ZeebeClient, ActivatedJob, JobClient, Camunda8WorkerModule, Camunda8WorkerConfig."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 ---
 
 ??? warning "Экспериментальный модуль"
 
     **Экспериментальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию,
-    по этой причине `API` может потенциально претерпеть незначительные изменения перед полной готовностью.
+    по этой причине его `API` может потенциально претерпеть незначительные изменения перед полной готовностью.
 
 Модуль подключает клиент [Camunda 8 (Zeebe)](https://docs.camunda.io/docs/components/concepts/job-workers/) и создает
 исполнителей заданий для внешнего оркестратора процессов. В `Kora` такой исполнитель объявляется обычным компонентом:
@@ -133,7 +133,7 @@ agent:
         certificatePath: "/file/path/to/cert.crt" #(4)!
         initializationFailTimeout: "15s" #(5)!
         grpc:
-          url: "grpc:#localhost:8090" //(6)!
+          url: "grpc://localhost:8090" #(6)!
           ttl: "1h" #(7)!
           maxMessageSize: "4Mib" #(8)!
           retryPolicy:
@@ -154,13 +154,13 @@ agent:
             enabled: true #(18)!
             slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
             tags: #(20)!
-              key1: "value1"
-              key2: "value2"
+              key1: value1
+              key2: value2
           tracing:
             enabled: true #(21)!
             attributes: #(22)!
-              key1: "value1"
-              key2: "value2"
+              key1: value1
+              key2: value2
     ```
 
     1.  Максимальное количество потоков для исполнителей заданий (по умолчанию: количество ядер процессора, но не меньше `2`)
@@ -188,14 +188,52 @@ agent:
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-8-worker).
 
-Если в `deployment.resources` указаны пути, модуль во время запуска найдет ресурсы в `classpath:` и загрузит их в
-`Zeebe`. Поддерживаются только пути с префиксом `classpath:`, например `classpath:bpm`; другие расположения будут
-пропущены.
+### Развертывание ресурсов { #resource-deployment }
+
+Если в `deployment.resources` указаны пути, модуль во время запуска находит ресурсы в `classpath` и развертывает их в
+`Zeebe` через компонент `ZeebeResourceDeployment`. Развертываются как `BPMN`-процессы, так и `DMN`-решения, найденные в
+настроенных расположениях. Поддерживаются только пути с префиксом `classpath:`, например `classpath:bpm`; другие
+расположения логируются и пропускаются.
+
+Разместите развертываемые ресурсы в соответствующей директории classpath:
+
+```text
+src/main/resources/
+└── bpm/
+    └── demo.bpmn
+```
+
+===! ":material-code-json: `HOCON`"
+
+    ```javascript
+    zeebe {
+        client {
+            deployment {
+                resources = "classpath:bpm" //(1)!
+            }
+        }
+    }
+    ```
+
+    1. Одно или несколько расположений в classpath для поиска `BPMN` / `DMN`-ресурсов (одно значение или список)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    zeebe:
+      client:
+        deployment:
+          resources: "classpath:bpm" #(1)!
+    ```
+
+    1. Одно или несколько расположений в classpath для поиска `BPMN` / `DMN`-ресурсов (одно значение или список)
 
 ### Клиент { #client }
 
 Модуль создает компонент `ZeebeClient`, который можно внедрять в собственные сервисы, если нужно вручную запускать
 процессы, публиковать сообщения или выполнять другие команды `Zeebe`.
+
+Например, чтобы запустить новый экземпляр процесса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -208,19 +246,90 @@ agent:
         public ProcessStarter(ZeebeClient client) {
             this.client = client;
         }
+
+        public void start() {
+            ProcessInstanceEvent event = client.newCreateInstanceCommand()
+                    .bpmnProcessId("demo") //(1)!
+                    .latestVersion() //(2)!
+                    .variables("{\"startId\":\"42\"}") //(3)!
+                    .send()
+                    .join(); //(4)!
+        }
+    }
+    ```
+
+    1. Идентификатор `BPMN`-процесса, который нужно запустить
+    2. Запуск последней развернутой версии процесса
+    3. Начальные переменные процесса в виде `JSON`-строки (также принимаются `Map` или `@Json`-объект)
+    4. Отправить команду и заблокироваться до подтверждения от `Zeebe` (используйте возвращаемый `CompletionStage` для неблокирующего вызова)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ProcessStarter(private val client: ZeebeClient) {
+
+        fun start() {
+            val event = client.newCreateInstanceCommand()
+                .bpmnProcessId("demo") //(1)!
+                .latestVersion() //(2)!
+                .variables("""{"startId":"42"}""") //(3)!
+                .send()
+                .join() //(4)!
+        }
+    }
+    ```
+
+    1. Идентификатор `BPMN`-процесса, который нужно запустить
+    2. Запуск последней развернутой версии процесса
+    3. Начальные переменные процесса в виде `JSON`-строки (также принимаются `Map` или `@Json`-объект)
+    4. Отправить команду и заблокироваться до подтверждения от `Zeebe` (используйте возвращаемый `CompletionStage` для неблокирующего вызова)
+
+Тот же клиент публикует сообщения (`client.newPublishMessageCommand()`) и выполняет любые другие команды `Zeebe`.
+
+#### Настройка клиента { #client-customization }
+
+`ZeebeClient` можно донастроить необязательными компонентами графа, которые модуль подхватывает автоматически:
+
+* `CredentialsProvider` — авторизация для `Zeebe` (`Camunda 8 SaaS` или self-managed с `OAuth`);
+* `JsonMapper` — пользовательский `JSON`-маппер, используемый `ZeebeClient` для (де)сериализации переменных;
+* `ScheduledExecutorService` — пул потоков, используемый исполнителями заданий;
+* `ClientInterceptor` — `gRPC`-перехватчик, применяемый к каналу `Zeebe` (собираются все зарегистрированные перехватчики).
+
+Например, чтобы аутентифицироваться в `Camunda 8` через `OAuth`, предоставьте компонент `CredentialsProvider`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface ZeebeAuthModule {
+
+        default CredentialsProvider zeebeCredentialsProvider() {
+            return CredentialsProvider.newCredentialsProviderBuilder()
+                    .clientId("client-id")
+                    .clientSecret("client-secret")
+                    .audience("zeebe.camunda.io")
+                    .authorizationServerUrl("https://login.cloud.camunda.io/oauth/token")
+                    .build();
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
-    class ProcessStarter(private val client: ZeebeClient)
-    ```
+    @Module
+    interface ZeebeAuthModule {
 
-Клиент можно дополнительно настроить компонентами графа: зарегистрировать `CredentialsProvider` для авторизации,
-`JsonMapper` для `ZeebeClient`, `ScheduledExecutorService` для исполнителей заданий или `ClientInterceptor` для
-`gRPC`-канала.
+        fun zeebeCredentialsProvider(): CredentialsProvider =
+            CredentialsProvider.newCredentialsProviderBuilder()
+                .clientId("client-id")
+                .clientSecret("client-secret")
+                .audience("zeebe.camunda.io")
+                .authorizationServerUrl("https://login.cloud.camunda.io/oauth/token")
+                .build()
+    }
+    ```
 
 ## Исполнители { #worker }
 
@@ -265,11 +374,11 @@ agent:
     ```
 
     1.  [Тип исполнителя (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/) или имя настроек по умолчанию `default`
-    2.  Включить ли исполнителя (по умолчанию: `true`)
+    2.  Включен ли исполнитель (по умолчанию: `true`)
     3.  Максимальное время выполнения одного задания исполнителем (по умолчанию: `15m`)
     4.  Максимальное количество заданий, которые будут одновременно активированы для этого исполнителя; используется для согласования скорости получения заданий со скоростью их обработки (`backpressure`) (по умолчанию: `32`)
     5.  Ограничение времени запроса, который используется для опроса нового задания исполнителем (по умолчанию: `15s`)
-    6.  Максимальный интервал между опросами новых заданий; если после завершения работы новые задания не активированы, исполнитель будет периодически опрашивать брокер (по умолчанию: `100ms`)
+    6.  Максимальный интервал между опросами новых заданий; если после завершения работы новые задания не активированы, исполнитель периодически опрашивает брокер (по умолчанию: `100ms`)
     7.  Идентификаторы `tenant`, для которых исполнитель может получать задания (по умолчанию: `[]`)
     8.  Использовать ли потоковую передачу вместе с опросом для активации заданий (по умолчанию: `false`)
     9.  Максимальное время жизни потока, если потоковая передача включена (по умолчанию: `15s`)
@@ -301,11 +410,11 @@ agent:
     ```
 
     1.  [Тип исполнителя (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/) или имя настроек по умолчанию `default`
-    2.  Включить ли исполнителя (по умолчанию: `true`)
+    2.  Включен ли исполнитель (по умолчанию: `true`)
     3.  Максимальное время выполнения одного задания исполнителем (по умолчанию: `15m`)
     4.  Максимальное количество заданий, которые будут одновременно активированы для этого исполнителя; используется для согласования скорости получения заданий со скоростью их обработки (`backpressure`) (по умолчанию: `32`)
     5.  Ограничение времени запроса, который используется для опроса нового задания исполнителем (по умолчанию: `15s`)
-    6.  Максимальный интервал между опросами новых заданий; если после завершения работы новые задания не активированы, исполнитель будет периодически опрашивать брокер (по умолчанию: `100ms`)
+    6.  Максимальный интервал между опросами новых заданий; если после завершения работы новые задания не активированы, исполнитель периодически опрашивает брокер (по умолчанию: `100ms`)
     7.  Идентификаторы `tenant`, для которых исполнитель может получать задания (по умолчанию: `[]`)
     8.  Использовать ли потоковую передачу вместе с опросом для активации заданий (по умолчанию: `false`)
     9.  Максимальное время жизни потока, если потоковая передача включена (по умолчанию: `15s`)
@@ -314,6 +423,48 @@ agent:
     12. Коэффициент умножения задержки: предыдущая задержка умножается на это значение (по умолчанию: `1.0`)
     13. Коэффициент `jitter`: следующая задержка случайно изменяется в диапазоне `+/-` этого коэффициента (по умолчанию: `1.1`)
 
+Чтобы переопределить настройки для одного исполнителя, добавьте секцию с ключом по [типу исполнителя (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/),
+указанному в `@JobWorker`. Именованная секция накладывается поверх `default`, который, в свою очередь, накладывается
+поверх встроенных значений по умолчанию, поэтому в именованной секции достаточно перечислить только изменяемые ключи.
+Установка `enabled = false` для именованного типа отключает только этого одного исполнителя.
+
+===! ":material-code-json: `HOCON`"
+
+    ```javascript
+    zeebe {
+        worker {
+            job {
+                foo { //(1)!
+                    timeout = "30s"
+                    maxJobsActive = 8
+                }
+                bar { //(2)!
+                    enabled = false
+                }
+            }
+        }
+    }
+    ```
+
+    1. Переопределяет только `timeout` и `maxJobsActive` для исполнителя `@JobWorker("foo")`; все остальные настройки берутся из `default`
+    2. Отключает исполнителя `@JobWorker("bar")`, не затрагивая остальную конфигурацию
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    zeebe:
+      worker:
+        job:
+          foo: #(1)!
+            timeout: "30s"
+            maxJobsActive: 8
+          bar: #(2)!
+            enabled: false
+    ```
+
+    1. Переопределяет только `timeout` и `maxJobsActive` для исполнителя `@JobWorker("foo")`; все остальные настройки берутся из `default`
+    2. Отключает исполнителя `@JobWorker("bar")`, не затрагивая остальную конфигурацию
+
 ### Декларативные { #declarative }
 
 Можно декларативно создавать [исполнителей](https://docs.camunda.io/docs/components/concepts/job-workers/), которые будут
@@ -321,6 +472,9 @@ agent:
 
 В аннотации `@JobWorker` указывается [тип исполнителя (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 из процесса. По этому значению `Zeebe` связывает задание из `BPMN`-процесса с обработчиком в приложении.
+
+Метод исполнителя может объявлять только параметры `@JobVariable`, `@JobVariables` и `JobContext` — любой другой тип
+параметра отклоняется на этапе компиляции. Сырые `JobClient` и `ActivatedJob` доступны только в [императивном](#imperative) исполнителе.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -350,7 +504,7 @@ agent:
 
 #### Параметр контекст { #parameter-context }
 
-Можно внедрять контекст исполнения как аргумент метода.
+Можно внедрить контекст задания как аргумент метода.
 `JobContext` содержит метаданные текущего задания, исполнителя и процесса.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -375,6 +529,55 @@ agent:
         @JobWorker("someJobType")
         fun process(context: JobContext) {
             // do something
+        }
+    }
+    ```
+
+`JobContext` предоставляет следующие методы только для чтения:
+
+| Метод                        | Описание                                                                             |
+|------------------------------|--------------------------------------------------------------------------------------|
+| `jobKey()`                   | Уникальный ключ активированного задания                                              |
+| `jobName()`                  | Имя/тип исполнителя, под которым зарегистрирован этот обработчик (значение `@JobWorker`) |
+| `jobType()`                  | Тип активированного задания, как определено в `BPMN`-процессе                        |
+| `jobWorker()`                | Имя исполнителя, активировавшего задание на стороне брокера                          |
+| `tenantId()`                 | Идентификатор `tenant`, которому принадлежит задание                                 |
+| `processId()`                | Идентификатор `BPMN`-процесса                                                        |
+| `processInstanceKey()`       | Ключ экземпляра процесса, которому принадлежит задание                               |
+| `processDefinitionVersion()` | Версия развернутого определения процесса                                             |
+| `processDefinitionKey()`     | Ключ развернутого определения процесса                                               |
+| `elementId()`                | Идентификатор `BPMN`-элемента, для которого создано задание                          |
+| `elementInstanceKey()`       | Ключ экземпляра `BPMN`-элемента                                                      |
+| `headers()`                  | Пользовательские заголовки, заданные для задания в `BPMN`-модели                     |
+| `retryCount()`               | Количество оставшихся повторов для задания                                           |
+| `deadline()`                 | Момент (`Instant`), до которого задание эксклюзивно закреплено за исполнителем       |
+| `deadlineAsMillis()`         | Тот же крайний срок, выраженный в миллисекундах эпохи                                |
+| `variablesAsString()`        | Сырые переменные задания в виде `JSON`-строки                                        |
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeJob {
+
+        @JobWorker("someJobType")
+        public void process(JobContext context) {
+            logger.info("Job {} of process {} at element {} with deadline {}",
+                    context.jobType(), context.processInstanceKey(), context.elementId(), context.deadline());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeJob {
+
+        @JobWorker("someJobType")
+        fun process(context: JobContext) {
+            logger.info("Job {} of process {} at element {} with deadline {}",
+                context.jobType(), context.processInstanceKey(), context.elementId(), context.deadline())
         }
     }
     ```
@@ -562,13 +765,20 @@ agent:
 
 #### Ошибки { #errors }
 
-Если требуется завершить исполнение ошибкой процесса, можно бросить `JobWorkerException`.
+Если требуется завершить исполнение ошибкой процесса, бросьте `JobWorkerException`.
 В исключении можно указать код ошибки, сообщение и переменные процесса, если они нужны.
-Такое исключение будет преобразовано в команду `throwError` для `Zeebe`.
+Это исключение преобразуется в команду `throwError` для `Zeebe`: `getCode()`, сообщение и `getVariables()` исключения
+передаются как код ошибки, сообщение об ошибке и переменные команды.
 
-Если обработчик выбросит другое исключение, модуль преобразует его в `JobWorkerException` с кодом `INTERNAL`.
-Ошибки чтения переменных получают код `DESERIALIZATION`, ошибки записи результата — `SERIALIZATION`, а неожиданные
-ошибки в синхронном обработчике — `UNEXPECTED`.
+Если обработчик выбрасывает любое другое исключение, модуль оборачивает его в `JobWorkerException` с одним из следующих
+встроенных кодов:
+
+| Код               | Когда используется                                                          |
+|-------------------|-----------------------------------------------------------------------------|
+| `DESERIALIZATION` | Переменную задания не удалось прочитать/десериализовать в аргумент метода   |
+| `SERIALIZATION`   | Результат исполнителя не удалось записать/сериализовать в переменные        |
+| `UNEXPECTED`      | Из синхронного обработчика было выброшено неожиданное исключение            |
+| `INTERNAL`        | Резервный код для любой другой ошибки, не охваченной выше                   |
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -578,10 +788,12 @@ agent:
 
         @JobWorker("someJobType")
         public User process() {
-            throw new JobWorkerException("DOESNT_WORK");
+            throw new JobWorkerException("DOESNT_WORK"); //(1)!
         }
     }
     ```
+
+    1. Дополнительные перегрузки принимают сообщение/причину и `Map<String, Object>` переменных для добавления в команду `throwError`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -591,10 +803,12 @@ agent:
 
         @JobWorker("someJobType")
         fun process(): User {
-            throw JobWorkerException("DOESNT_WORK")
+            throw JobWorkerException("DOESNT_WORK") //(1)!
         }
     }
     ```
+
+    1. Дополнительные перегрузки принимают сообщение/причину и `Map<String, Any>` переменных для добавления в команду `throwError`
 
 ### Императивные { #imperative }
 
@@ -613,11 +827,18 @@ agent:
         }
 
         @Override
+        public List<String> fetchVariables() {
+            return List.of("startId"); //(1)!
+        }
+
+        @Override
         public CompletionStage<FinalCommandStep<?>> handle(JobClient client, ActivatedJob job) {
             return CompletableFuture.completedFuture(client.newCompleteCommand(job));
         }
     }
     ```
+
+    1. Из `Zeebe` запрашиваются только эти переменные; верните пустой список (по умолчанию), чтобы запросить **все** переменные
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -627,11 +848,20 @@ agent:
 
         override fun type(): String = "someJobType"
 
+        override fun fetchVariables(): List<String> = listOf("startId") //(1)!
+
         override fun handle(client: JobClient, job: ActivatedJob): CompletionStage<FinalCommandStep<*>> {
             return CompletableFuture.completedFuture(client.newCompleteCommand(job))
         }
     }
     ```
+
+    1. Из `Zeebe` запрашиваются только эти переменные; верните пустой список (по умолчанию), чтобы запросить **все** переменные
+
+Метод `fetchVariables()` — императивный аналог `@JobVariable`: он определяет, какие переменные процесса `Zeebe`
+отправляет вместе с заданием. По умолчанию он возвращает пустой список, что запрашивает все переменные; непустой список
+ограничивает передаваемые данные только этими переменными. В отличие от декларативных исполнителей, `handle` получает
+сырые `JobClient` и `ActivatedJob` и отвечает за завершение задания (например, через `client.newCompleteCommand(job)`).
 
 ## Сигнатуры { #signatures }
 

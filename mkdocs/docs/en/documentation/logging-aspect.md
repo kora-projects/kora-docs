@@ -57,6 +57,7 @@ Method logging is configured with annotation combinations:
 
 The entry or exit event itself is written at the level specified in `@Log`, `@Log.in`, or `@Log.out`.
 Argument and result values are added to structured data only when the corresponding detail level is enabled.
+Which detail level is active depends on the effective logger level configured through `logging.level` / `logging.levels` — see [logging levels configuration](logging-slf4j.md#configuration).
 
 ### Arguments { #argument }
 
@@ -346,6 +347,30 @@ In that case, the object defines the field name through `fieldName()` and writes
     </tr>
 </table>
 
+When you need a structured value without introducing a dedicated type, the `StructuredArgument` interface exposes static factory helpers:
+`arg(fieldName, value)` / `arg(fieldName, value, JsonWriter)` build a structured argument (overloads accept `String`, `Integer`, `Long`, `Boolean`, `Map<String, String>`, a `JsonWriter`, or a raw `StructuredArgumentWriter`),
+while `marker(fieldName, value)` builds an `org.slf4j.Marker` for a single log call. The resulting `StructuredArgument` can also be passed straight into `MDC.put`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId));
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted");
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId))
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted")
+    ```
+
 ### Parameter Conversion { #parameter-conversion }
 
 If the parameter type cannot be changed, describe an external `StructuredArgumentMapper` and specify it through `@Mapping` on the required argument.
@@ -512,6 +537,9 @@ After the method completes, the previous `key1` value is restored.
 In this example, two `@Mdc` annotations are applied to the method, and one is applied to the parameter.
 The `key=value` entry remains in `MDC` after method execution because of `global = true`; the other entries are restored or removed.
 
+Under the hood, non-global entries are snapshotted before the call and restored in a `finally` block once the method returns, so they never leak beyond the method scope.
+Entries added with `global = true` (and any value set through the imperative `MDC.put`, see below) stay in the `Context` for the remainder of the request/thread scope and are therefore visible to every subsequent log line.
+
 #### Generated Value From Code { #generated-value-for-mdc-value }
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -542,6 +570,68 @@ INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value
 
 `@Mdc` is not supported for methods that return `CompletionStage`, `Mono`, or `Flux`.
 For `Kotlin`, regular methods and `suspend` methods are supported, but `global = true` cannot be used in `suspend` methods.
+
+### Imperative MDC { #imperative-mdc }
+
+Where an annotation does not fit — inside interceptors, filters, or plain service code — use the imperative `ru.tinkoff.kora.logging.common.MDC` API.
+It is the programmatic counterpart of `@Mdc`: entries are bound to Kora's `Context`, so they propagate across async boundaries exactly like `@Mdc(global = true)` entries and appear in every log line emitted for the remainder of the current `Context` scope.
+
+The static `put` method has overloads for `String`, `Integer`, `Long`, and `Boolean` values, plus a `StructuredArgumentWriter` overload for structured values.
+`remove(key)` drops a single entry, and `get().values()` returns the current entries as an unmodifiable `Map<String, StructuredArgumentWriter>`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import ru.tinkoff.kora.logging.common.MDC;
+
+    @Component
+    public final class OrderService {
+
+        public void process(String orderId) {
+            MDC.put("orderId", orderId);                  // String
+            MDC.put("attempt", 1);                        // Integer
+            MDC.put("bytes", 1024L);                      // Long
+            MDC.put("retryable", true);                   // Boolean
+            MDC.put("payload", gen -> gen.writeString(orderId)); // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt");                        // drop a single key
+            var current = MDC.get().values();             // read current entries
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.logging.common.MDC
+
+    @Component
+    class OrderService {
+
+        fun process(orderId: String) {
+            MDC.put("orderId", orderId)                   // String
+            MDC.put("attempt", 1)                         // Integer
+            MDC.put("bytes", 1024L)                       // Long
+            MDC.put("retryable", true)                    // Boolean
+            MDC.put("payload") { gen -> gen.writeString(orderId) } // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt")                         // drop a single key
+            val current = MDC.get().values()              // read current entries
+        }
+    }
+    ```
+
+When you already hold a `Context` (for example inside an interceptor), address it explicitly through `MDC.get(ctx)` and `MDC.put(ctx, key, writer)` instead of the current-`Context` shortcuts.
+Unlike `@Mdc`, the imperative API has no reactive/`suspend` restriction, because it writes directly to the `Context` rather than wrapping the method call.
+
+!!! warning "Use Kora's `MDC`, not SLF4J's"
+
+    Always import `ru.tinkoff.kora.logging.common.MDC` — never `org.slf4j.MDC`.
+    The SLF4J class writes to a separate `ThreadLocal` that is not tied to Kora's `Context`: values placed there will not appear in Kora structured logs and will not propagate across async boundaries (reactive operators, `suspend` functions, thread hand-offs).
 
 ## Signatures { #signatures }
 

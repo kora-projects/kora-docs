@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC. Use when working with Slf4jModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
+description: "Explains Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC. Use when working with LoggingModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC; key triggers include Slf4jModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
+  use_when: "Use this file for Kora docs or implementation questions about Kora SLF4J logging setup, module log configuration, Logback integration, alternative implementations, structured logs, markers, parameters, and MDC; key triggers include LoggingModule, LogbackModule, LoggerFactory, StructuredArgument, Marker, MDC, loggingConfig."
 ---
 
 Kora uses [`slf4j-api`](https://www.slf4j.org/) as the common logging facade across the framework.
@@ -61,7 +61,29 @@ The configuration sets a level for `ROOT`, a package, or a specific class:
 
     1. Logging levels for `ROOT`, classes, and packages (default: not specified, optional).
 
-If the `logging` section is not specified, Kora does not override logging levels through its configuration.
+The section key may be written as either `levels` or `level` — both are accepted as aliases.
+Logger names may be listed as flat dotted strings (as above) or as a nested object; Kora flattens nested objects into dotted logger names.
+The `ROOT` logger name is matched case-insensitively, so `ROOT` and `root` are equivalent.
+For example, the shipped [examples](https://github.com/kora-projects/kora-examples) use the singular `level` alias with a nested lowercase `root`:
+
+```javascript
+logging.level {
+  "root": "WARN"
+  "ru.tinkoff.kora": "INFO"
+  "ru.tinkoff.kora.example": "INFO"
+}
+```
+
+!!! note
+
+    When the `logging` section is absent, Kora applies no level map of its own.
+    The [Logback](#logback) implementation, however, resets all loggers on every (re)apply: `ROOT` is normalized to `INFO` and every other per-logger level is cleared so that it inherits from its parent, after which the configured levels are applied on top.
+    As a result, the `<root level="...">` value from `logback.xml` is effectively replaced by `INFO` at startup unless a `ROOT` level is set in the configuration.
+
+### Runtime level refresh { #levels-refresh }
+
+Configured levels are applied by the `LoggingLevelRefresher` — a root component that on startup resets all loggers and re-applies the levels from the `logging` section through the `LoggingLevelApplier`.
+It re-runs on every configuration refresh, so when the [Config Watcher](config.md#config-watcher) is active, changing a level in the configuration file takes effect at runtime without restarting the application.
 
 Logging parameters for specific modules are described in the documentation for those modules, for example [HTTP server](http-server.md), [HTTP client](http-client.md), [gRPC client](grpc-client.md).
 
@@ -94,8 +116,8 @@ By default, logging is **disabled for all modules**, so the configuration below 
     6. Logging for [gRPC client](grpc-client.md) requests, specified for a particular service (default: `false`).
     7. Logging for [SOAP client](soap-client.md) requests, specified for a particular service (default: `false`).
     8. Logging for [HTTP client](http-client.md) requests, specified for a particular client (default: `false`).
-    9. Logging for a Kafka [consumer](kafka.md#configuration), specified for a particular consumer (default: `false`).
-    10. Logging for a Kafka [producer](kafka.md#manual-override), specified for a particular producer (default: `false`).
+    9. Logging for a Kafka [consumer](kafka.md#config-consumer), specified for a particular consumer (default: `false`).
+    10. Logging for a Kafka [producer](kafka.md#config-producer), specified for a particular producer (default: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -120,8 +142,8 @@ By default, logging is **disabled for all modules**, so the configuration below 
     6. Logging for [gRPC client](grpc-client.md) requests, specified for a particular service (default: `false`).
     7. Logging for [SOAP client](soap-client.md) requests, specified for a particular service (default: `false`).
     8. Logging for [HTTP client](http-client.md) requests, specified for a particular client (default: `false`).
-    9. Logging for a Kafka [consumer](kafka.md#configuration), specified for a particular consumer (default: `false`).
-    10. Logging for a Kafka [producer](kafka.md#manual-override), specified for a particular producer (default: `false`).
+    9. Logging for a Kafka [consumer](kafka.md#config-consumer), specified for a particular consumer (default: `false`).
+    10. Logging for a Kafka [producer](kafka.md#config-producer), specified for a particular producer (default: `false`).
 
 ## Logback { #logback }
 
@@ -179,7 +201,37 @@ Example `logback.xml`:
 ```
 
 `ConsoleTextRecordEncoder` writes a text log record and adds structured data from `StructuredArgument`, `Marker`, `SLF4J` key-value pairs, and `MDC`.
+This is the only encoder shipped by the module: it produces text with structured fields appended, not a single JSON document.
+A record is emitted as a plain text line — `timestamp level [thread] logger - <mdc prefixes>message` — followed, when structured fields are present, by tab-indented `fieldName={json}` lines:
+
+```text
+2026-07-02 10:15:30.123 INFO  [main] r.t.k.example.SomeService - userId=42 user logged in
+	role="admin"
+```
+
 `KoraAsyncAppender` is used for asynchronous log writing: it stores `MDC` values from the current context in `KoraLoggingEvent` so they are not lost when the record is passed to another thread.
+
+### Custom pattern { #custom-pattern }
+
+Instead of `ConsoleTextRecordEncoder`, a standard `PatternLayoutEncoder` can be used together with the converters that render Kora structured data.
+`KoraMdcConverter` renders the Kora context `MDC` and `KoraLoggingMarkerConverter` renders a `StructuredArgument` marker; register them as conversion words and reference them in the pattern:
+
+```xml
+<configuration>
+    <conversionRule conversionWord="koraMdc" converterClass="ru.tinkoff.kora.logging.logback.KoraMdcConverter"/>
+    <conversionRule conversionWord="koraMarker" converterClass="ru.tinkoff.kora.logging.logback.KoraLoggingMarkerConverter"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger - %koraMdc%msg %koraMarker%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
+```
 
 ## Other Implementation { #other-implementation }
 
@@ -275,10 +327,45 @@ A message parameter adds a structured field through the regular `SLF4J` argument
     logger.info("message", parameter)
     ```
 
+### Complex object { #complex-object }
+
+For values that are not a `String`, number, `Boolean`, or `Map<String, String>`, pass a `JsonWriter<T>` (the same [`@Json`](json.md) writer generated for the type) or a raw `StructuredArgumentWriter` lambda that writes the field value directly to the `JsonGenerator`.
+Both `arg` and `marker` provide these overloads:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var logger = LoggerFactory.getLogger(getClass());
+    var parameter = StructuredArgument.arg("user", gen -> {
+        gen.writeStartObject();
+        gen.writeStringField("id", "42");
+        gen.writeStringField("role", "admin");
+        gen.writeEndObject();
+    });
+    logger.info("user logged in", parameter);
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val logger = LoggerFactory.getLogger(javaClass)
+    val parameter = StructuredArgument.arg("user") { gen ->
+        gen.writeStartObject()
+        gen.writeStringField("id", "42")
+        gen.writeStringField("role", "admin")
+        gen.writeEndObject()
+    }
+    logger.info("user logged in", parameter)
+    ```
+
 ### MDC { #mdc }
 
 Structured data can be attached to all records within the current context using the `ru.tinkoff.kora.logging.common.MDC` class.
 The value will be added to every log record until it is removed from `MDC`:
+
+!!! warning "Import"
+
+    Use `ru.tinkoff.kora.logging.common.MDC`, not `org.slf4j.MDC`. Kora keeps its `MDC` inside the Kora context rather than in a thread-local, so values placed into `org.slf4j.MDC` are not rendered by the Kora encoders and do not propagate across asynchronous boundaries. For a declarative alternative see [`@Mdc`](logging-aspect.md).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -302,5 +389,28 @@ The value will be added to every log record until it is removed from `MDC`:
     }
     ```
 
+`put` accepts `String`, `Integer`, `Long`, and `Boolean` values, as well as a raw `StructuredArgumentWriter` for arbitrary JSON; typed values are rendered as their JSON type rather than as text.
+There is also a `put(Context, key, value)` overload for writing into an explicitly provided context instead of the current one:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    MDC.put("userId", 42); //(1)!
+    logger.info("user resolved");
+    ```
+
+    1. Rendered as a JSON number (`userId=42`), not as a string.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    MDC.put("userId", 42) //(1)!
+    logger.info("user resolved")
+    ```
+
+    1. Rendered as a JSON number (`userId=42`), not as a string.
+
+Because it lives in the Kora context, the `MDC` propagates across asynchronous and reactive boundaries together with the context.
+
 If `AsyncAppender` is used, use `ru.tinkoff.kora.logging.logback.KoraAsyncAppender` to pass `MDC` parameters correctly.
-It passes `ru.tinkoff.kora.logging.logback.KoraLoggingEvent` to the delegate, and that event also contains structured `MDC`.
+It snapshots the current context `MDC` at append time and passes `ru.tinkoff.kora.logging.logback.KoraLoggingEvent` to the delegate, so the structured `MDC` is preserved when the record is handed to the async worker thread.

@@ -59,116 +59,151 @@ Requires any [HTTP client](http-client.md) module to be added.
 
 ### Configuration { #configuration }
 
-Complete configuration described in the `AwsS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+Basic S3 client configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        aws {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            checksumValidationEnabled = false //(3)!
-            chunkedEncodingEnabled = true //(4)!
-            upload {
-                bufferSize = "32MiB" //(5)!
-                partSize = "8MiB" //(6)!
-            }
-        }
-
-        url = "http://localhost:9000" //(7)!
-        accessKey = "someKey" //(8)!
-        secretKey = "someSecret" //(9)!
-        region = "aws-global" //(10)!
-        telemetry {
-            logging {
-                enabled = false //(11)!
-            }
-            metrics {
-                enabled = true //(12)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
-                tags = { // (14)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(15)!
-                attributes = { // (16)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2.  Maximum operation execution time (default: `45s`)
-    3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
-    4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
-    5.  Maximum buffer size for file uploads (default: `32MiB`)
-    6.  Maximum file part size for a single file upload (default: `8MiB`)
-    7.  `S3` storage `URL` (`required`, default is not specified)
-    8.  `S3` access key (`required`, default is not specified)
-    9.  `S3` access secret (`required`, default is not specified)
-    10. `S3` storage region (default: `aws-global`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Configures metric tags (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      aws:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        checksumValidationEnabled: false #(3)!
-        chunkedEncodingEnabled: true #(4)!
-        upload:
-          bufferSize: "32MiB" #(5)!
-          partSize: "8MiB" #(6)!
-
-      url: "http://localhost:9000" #(7)!
-      accessKey: "someKey" #(8)!
-      secretKey: "someSecret" #(9)!
-      region: "aws-global" #(10)!
-      telemetry:
-        logging:
-          enabled: false #(11)!
-        metrics:
-          enabled: true #(12)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
-          tags: #(14)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(15)!
-          attributes: #(16)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2.  Maximum operation execution time (default: `45s`)
-    3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
-    4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
-    5.  Maximum buffer size for file uploads (default: `32MiB`)
-    6.  Maximum file part size for a single file upload (default: `8MiB`)
-    7.  `S3` storage `URL` (`required`, default is not specified)
-    8.  `S3` access key (`required`, default is not specified)
-    9.  `S3` access secret (`required`, default is not specified)
-    10. `S3` storage region (default: `aws-global`)
-    11. Enables module logging (default: `false`)
-    12. Enables module metrics (default: `true`)
-    13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    14. Configures metric tags (default: `{}`)
-    15. Enables module tracing (default: `true`)
-    16. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
+
+??? note "Full Configuration"
+
+    Complete configuration described in the `AwsS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            aws {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                checksumValidationEnabled = false //(3)!
+                chunkedEncodingEnabled = true //(4)!
+                upload {
+                    bufferSize = "32MiB" //(5)!
+                    partSize = "8MiB" //(6)!
+                }
+            }
+
+            url = "http://localhost:9000" //(7)!
+            accessKey = "someKey" //(8)!
+            secretKey = "someSecret" //(9)!
+            region = "aws-global" //(10)!
+            telemetry {
+                logging {
+                    enabled = false //(11)!
+                }
+                metrics {
+                    enabled = true //(12)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
+                    tags = { // (14)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(15)!
+                    attributes = { // (16)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2.  Maximum operation execution time (default: `45s`)
+        3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
+        4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
+        5.  Maximum buffer size for file uploads (default: `32MiB`)
+        6.  Maximum file part size for a single file upload (default: `8MiB`)
+        7.  `S3` storage `URL` (`required`, default is not specified)
+        8.  `S3` access key (`required`, default is not specified)
+        9.  `S3` access secret (`required`, default is not specified)
+        10. `S3` storage region (default: `aws-global`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Configures metric tags (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          aws:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            checksumValidationEnabled: false #(3)!
+            chunkedEncodingEnabled: true #(4)!
+            upload:
+              bufferSize: "32MiB" #(5)!
+              partSize: "8MiB" #(6)!
+
+          url: "http://localhost:9000" #(7)!
+          accessKey: "someKey" #(8)!
+          secretKey: "someSecret" #(9)!
+          region: "aws-global" #(10)!
+          telemetry:
+            logging:
+              enabled: false #(11)!
+            metrics:
+              enabled: true #(12)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
+              tags: #(14)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(15)!
+              attributes: #(16)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2.  Maximum operation execution time (default: `45s`)
+        3.  Whether to check the [MD5 checksum before upload and on retrieval](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Configuration.Builder.html#checksumValidationEnabled(java.lang.Boolean)) from `AWS` (default: `false`)
+        4.  Whether to use chunked encoding when signing file data during upload to `AWS` (default: `true`)
+        5.  Maximum buffer size for file uploads (default: `32MiB`)
+        6.  Maximum file part size for a single file upload (default: `8MiB`)
+        7.  `S3` storage `URL` (`required`, default is not specified)
+        8.  `S3` access key (`required`, default is not specified)
+        9.  `S3` access secret (`required`, default is not specified)
+        10. `S3` storage region (default: `aws-global`)
+        11. Enables module logging (default: `false`)
+        12. Enables module metrics (default: `true`)
+        13. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        14. Configures metric tags (default: `{}`)
+        15. Enables module tracing (default: `true`)
+        16. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#s3-client) section.
 
@@ -233,104 +268,139 @@ You can add [OkHttp module](http-client.md#okhttp) dependency or a standard HTTP
 
 ### Configuration { #configuration-2 }
 
-Complete configuration described in the `MinioS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+Basic Minio S3 client configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
     ```javascript
     s3client {
-        minio {
-            addressStyle = "PATH" //(1)!
-            requestTimeout = "45s" //(2)!
-            upload {
-                partSize = "8MiB" //(3)!
-            }
-        }
-
-        url = "http://localhost:9000" //(4)!
-        accessKey = "someKey" //(5)!
-        secretKey = "someSecret" //(6)!
-        region = "aws-global" //(7)!
-        telemetry {
-            logging {
-                enabled = false //(8)!
-            }
-            metrics {
-                enabled = true //(9)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
-                tags = { // (11)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(12)!
-                attributes = { // (13)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        url = "http://localhost:9000" //(1)!
+        accessKey = "someKey" //(2)!
+        secretKey = "someSecret" //(3)!
+        region = "aws-global" //(4)!
     }
     ```
 
-    1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2. Maximum operation execution time (default: `45s`)
-    3. Maximum file part size for a single file upload (default: `8MiB`)
-    4. `S3` storage `URL` (`required`, default is not specified)
-    5. `S3` access key (`required`, default is not specified)
-    6. `S3` access secret (`required`, default is not specified)
-    7. `S3` storage region (default: `aws-global`)
-    8. Enables module logging (default: `false`)
-    9. Enables module metrics (default: `true`)
-    10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Configures metric tags (default: `{}`)
-    12. Enables module tracing (default: `true`)
-    13. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     s3client:
-      minio:
-        addressStyle: "PATH" #(1)!
-        requestTimeout: "45s" #(2)!
-        upload:
-          partSize: "8MiB" #(3)!
-
-      url: "http://localhost:9000" #(4)!
-      accessKey: "someKey" #(5)!
-      secretKey: "someSecret" #(6)!
-      region: "aws-global" #(7)!
-      telemetry:
-        logging:
-          enabled: false #(8)!
-        metrics:
-          enabled: true #(9)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
-          tags: #(11)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(12)!
-          attributes: #(13)!
-            key1: value1
-            key2: value2
+      url: "http://localhost:9000" #(1)!
+      accessKey: "someKey" #(2)!
+      secretKey: "someSecret" #(3)!
+      region: "aws-global" #(4)!
     ```
 
-    1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
-    2. Maximum operation execution time (default: `45s`)
-    3. Maximum file part size for a single file upload (default: `8MiB`)
-    4. `S3` storage `URL` (`required`, default is not specified)
-    5. `S3` access key (`required`, default is not specified)
-    6. `S3` access secret (`required`, default is not specified)
-    7. `S3` storage region (default: `aws-global`)
-    8. Enables module logging (default: `false`)
-    9. Enables module metrics (default: `true`)
-    10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    11. Configures metric tags (default: `{}`)
-    12. Enables module tracing (default: `true`)
-    13. Configures tracing attributes (default: `{}`)
+    1.  `URL` of the `S3` storage (`required`, no default)
+    2.  `S3` access key (`required`, no default)
+    3.  `S3` secret key (`required`, no default)
+    4.  `S3` storage region (default: `aws-global`)
+
+??? note "Full Configuration"
+
+    Complete configuration described in the `MinioS3ClientConfig` and `S3Config` classes (example values or default values are specified):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        s3client {
+            minio {
+                addressStyle = "PATH" //(1)!
+                requestTimeout = "45s" //(2)!
+                upload {
+                    partSize = "8MiB" //(3)!
+                }
+            }
+
+            url = "http://localhost:9000" //(4)!
+            accessKey = "someKey" //(5)!
+            secretKey = "someSecret" //(6)!
+            region = "aws-global" //(7)!
+            telemetry {
+                logging {
+                    enabled = false //(8)!
+                }
+                metrics {
+                    enabled = true //(9)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                    tags = { // (11)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(12)!
+                    attributes = { // (13)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2. Maximum operation execution time (default: `45s`)
+        3. Maximum file part size for a single file upload (default: `8MiB`)
+        4. `S3` storage `URL` (`required`, default is not specified)
+        5. `S3` access key (`required`, default is not specified)
+        6. `S3` access secret (`required`, default is not specified)
+        7. `S3` storage region (default: `aws-global`)
+        8. Enables module logging (default: `false`)
+        9. Enables module metrics (default: `true`)
+        10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        s3client:
+          minio:
+            addressStyle: "PATH" #(1)!
+            requestTimeout: "45s" #(2)!
+            upload:
+              partSize: "8MiB" #(3)!
+
+          url: "http://localhost:9000" #(4)!
+          accessKey: "someKey" #(5)!
+          secretKey: "someSecret" #(6)!
+          region: "aws-global" #(7)!
+          telemetry:
+            logging:
+              enabled: false #(8)!
+            metrics:
+              enabled: true #(9)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+              tags: #(11)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(12)!
+              attributes: #(13)!
+                key1: value1
+                key2: value2
+        ```
+
+        1. Object access style, can have values `PATH` or `VIRTUAL_HOSTED` (default: `PATH`)
+        2. Maximum operation execution time (default: `45s`)
+        3. Maximum file part size for a single file upload (default: `8MiB`)
+        4. `S3` storage `URL` (`required`, default is not specified)
+        5. `S3` access key (`required`, default is not specified)
+        6. `S3` access secret (`required`, default is not specified)
+        7. `S3` storage region (default: `aws-global`)
+        8. Enables module logging (default: `false`)
+        9. Enables module metrics (default: `true`)
+        10. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Configures tracing attributes (default: `{}`)
 
 ## Client declarative { #client-declarative }
 
@@ -789,8 +859,29 @@ It is required to specify the key and body of the file to be added:
 #### File body { #file-body }
 
 File body (`S3Body`) can be created from `byte[]`, `ByteBuffer`, `InputStream` or `Flow.Publisher<ByteBuffer>`
-using the corresponding static factory methods: `ofBytes(...)`, `ofBuffer(...)`, `ofInputStream(...)`,
-`ofInputStreamReadAll(...)`, `ofInputStreamUnbound(...)` and `ofPublisher(...)`.
+using the corresponding static factory methods. Every factory has overloads that additionally accept the
+`type` (`Content-Type`) and `encoding` (`Content-Encoding`) values:
+
+| Factory method                                | Source                       | Size       | Description                                                                                             |
+|-----------------------------------------------|------------------------------|------------|--------------------------------------------------------------------------------------------------------|
+| `S3Body.ofBytes(byte[])`                      | `byte[]`                     | Known      | Body from an in-memory byte array                                                                      |
+| `S3Body.ofBuffer(ByteBuffer)`                 | `ByteBuffer`                 | Known      | Body from an in-memory buffer (uses `remaining()` as the size)                                          |
+| `S3Body.ofInputStream(InputStream, long)`     | `InputStream`                | Known      | Streaming body whose exact length is passed explicitly as the `size` argument                          |
+| `S3Body.ofInputStreamReadAll(InputStream)`    | `InputStream`                | Known      | Reads the whole stream into memory **immediately**, then behaves like a byte array                     |
+| `S3Body.ofInputStreamUnbound(InputStream)`    | `InputStream`                | Unknown    | Streaming body of unknown length (`size()` returns `-1`)                                                |
+| `S3Body.ofPublisher(Flow.Publisher)`          | `Flow.Publisher<ByteBuffer>` | Unknown    | Reactive streaming body of unknown length (`size()` returns `-1`)                                       |
+| `S3Body.ofPublisher(Flow.Publisher, long)`    | `Flow.Publisher<ByteBuffer>` | Known      | Reactive streaming body whose length is passed explicitly as the `size` argument                       |
+
+The body itself exposes the following accessors:
+
+| Method                                      | Description                                                                       |
+|---------------------------------------------|-----------------------------------------------------------------------------------|
+| `byte[] asBytes()`                          | Reads the entire body into a byte array (drains the underlying stream)             |
+| `InputStream asInputStream()`               | Returns the body as a blocking `InputStream`                                       |
+| `Flow.Publisher<ByteBuffer> asPublisher()`  | Returns the body as a reactive `Flow.Publisher`                                    |
+| `long size()`                               | Content length in bytes, or `-1` if unknown (unbound stream / publisher)           |
+| `String type()`                             | `Content-Type` of the body                                                         |
+| `String encoding()`                         | `Content-Encoding` of the body                                                     |
 
 If the file is very large or its length is unknown and streaming is required, it is recommended to create the body using
 `S3Body.ofPublisher(...)` or `S3Body.ofInputStreamUnbound(...)`.
@@ -865,6 +956,54 @@ if the size is unknown, use an overload without size and the size will be consid
 In this variant, `Kora` obtains `Flow.Publisher<ByteBuffer>` from the `HTTP` request body through the standard
 `HttpServerRequestMapper`, and the `S3` client reads the same stream during upload. The handler does not need to call
 `asBytes()`, `asInputStream().readAllBytes()` or `S3Body.ofInputStreamReadAll(...)` if the goal is not to keep the whole file in memory.
+
+#### Content type and encoding { #content-type }
+
+Instead of constructing an `S3Body` yourself, you can pass the body directly as `byte[]` or `ByteBuffer` and let the client
+wrap it into an `S3Body`. In that case the `type` (`Content-Type`) and `encoding` (`Content-Encoding`) attributes of `@S3.Put`
+are used to build the body:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @S3.Client("s3client.someClient")
+    public interface SomeClient {
+
+        @S3.Put(value = "some-key", type = "image/jpeg", encoding = "gzip") //(1)!
+        void operation1(byte[] body); //(2)!
+
+        @S3.Put("some-key")
+        void operation2(ByteBuffer body); //(3)!
+    }
+    ```
+
+    1. `type` maps to `Content-Type` and `encoding` maps to `Content-Encoding`
+    2. When the body is `byte[]` or `ByteBuffer`, the client builds the `S3Body` itself using the annotation's `type`/`encoding`
+    3. If neither `type` nor `encoding` is set, `application/octet-stream` is used as the `Content-Type`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @S3.Client("s3client.someClient")
+    interface SomeClient {
+
+        @S3.Put(value = "some-key", type = "image/jpeg", encoding = "gzip") //(1)!
+        fun operation1(body: ByteArray) //(2)!
+
+        @S3.Put("some-key")
+        fun operation2(body: ByteBuffer) //(3)!
+    }
+    ```
+
+    1. `type` maps to `Content-Type` and `encoding` maps to `Content-Encoding`
+    2. When the body is `ByteArray` or `ByteBuffer`, the client builds the `S3Body` itself using the annotation's `type`/`encoding`
+    3. If neither `type` nor `encoding` is set, `application/octet-stream` is used as the `Content-Type`
+
+!!! warning "Body type"
+
+    The body of an `@S3.Put` operation must be `S3Body`, `byte[]` or `ByteBuffer`, otherwise a compilation error occurs.
+    The `type` and `encoding` attributes only apply to raw `byte[]`/`ByteBuffer` bodies; when you pass a ready `S3Body`,
+    its own `type()`/`encoding()` values are used and the annotation attributes are ignored.
 
 #### Key template { #key-template-2 }
 
@@ -1025,6 +1164,60 @@ Available signatures for declarative `S3` client methods out of the box:
     - `myMethod(): T`
     - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
+## Models { #models }
+
+Both declarative and imperative clients return the same set of model types (unless the `AWS` module's
+[native response format](#response-format) is used). All models are read-only interfaces.
+
+### S3Object { #model-s3-object }
+
+Full object together with its data, returned by [get](#get-file) operations and available inside [S3ObjectList](#model-s3-object-list):
+
+| Method              | Description                                                     |
+|---------------------|-----------------------------------------------------------------|
+| `String key()`      | Object key                                                       |
+| `Instant modified()`| Last modification time                                          |
+| `long size()`       | Object size in bytes                                            |
+| `S3Body body()`     | Object [body](#file-body) with the data                        |
+
+### S3ObjectMeta { #model-s3-object-meta }
+
+Lightweight metadata without the object data, returned by metadata [get](#metadata) operations and available inside
+[S3ObjectMetaList](#model-s3-object-meta-list). Retrieving metadata is faster because the object body is not transferred:
+
+| Method               | Description                     |
+|----------------------|---------------------------------|
+| `String key()`       | Object key                      |
+| `Instant modified()` | Last modification time          |
+| `long size()`        | Object size in bytes            |
+
+### S3ObjectList { #model-s3-object-list }
+
+List of full objects returned by [list](#list-files) operations. Extends `S3ObjectMetaList`, so it also exposes the prefix and metadata:
+
+| Method                        | Description                                       |
+|-------------------------------|---------------------------------------------------|
+| `String prefix()`             | Prefix used for the listing                        |
+| `List<S3Object> objects()`    | Objects that matched the prefix (with data)        |
+| `List<S3ObjectMeta> metas()`  | Metadata of the objects that matched the prefix    |
+
+### S3ObjectMetaList { #model-s3-object-meta-list }
+
+List of metadata returned by metadata [list](#metadata-2) operations:
+
+| Method                        | Description                                     |
+|-------------------------------|-------------------------------------------------|
+| `String prefix()`             | Prefix used for the listing                      |
+| `List<S3ObjectMeta> metas()`  | Metadata of the objects that matched the prefix  |
+
+### S3ObjectUpload { #model-s3-object-upload }
+
+Result of an [add file](#add-file) operation:
+
+| Method                | Description                                                                 |
+|-----------------------|-----------------------------------------------------------------------------|
+| `String versionId()`  | Version identifier of the uploaded object (if bucket versioning is enabled) |
+
 ## Client imperative { #client-imperative }
 
 It is possible to inject an imperative `Kora` client to work with `S3`; both synchronous and asynchronous clients are provided:
@@ -1033,12 +1226,412 @@ It is possible to inject an imperative `Kora` client to work with `S3`; both syn
 - `S3KoraAsyncClient` - client for asynchronous operation
 
 Both clients work with explicit `bucket` and `key` parameters and support retrieving objects or metadata, listing objects by prefix,
-uploading `S3Body`, and deleting one or more objects.
+uploading `S3Body`, and deleting one or more objects. Unlike the declarative client, they are not tied to a single `bucket` from
+configuration — the `bucket` is passed to each method explicitly.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final S3KoraClient s3;
+
+        public SomeService(S3KoraClient s3) {
+            this.s3 = s3;
+        }
+
+        public byte[] download(String bucket, String key) {
+            S3Object object = s3.get(bucket, key); //(1)!
+            return object.body().asBytes();
+        }
+    }
+    ```
+
+    1. Throws `S3NotFoundException` if the object is missing
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val s3: S3KoraClient
+    ) {
+
+        fun download(bucket: String, key: String): ByteArray {
+            val obj = s3.get(bucket, key) //(1)!
+            return obj.body().asBytes()
+        }
+    }
+    ```
+
+    1. Throws `S3NotFoundException` if the object is missing
+
+### Synchronous client { #client-imperative-sync }
+
+The `S3KoraClient` interface provides the following operations:
+
+| Method                                                                                | Description                                                        |
+|---------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `S3Object get(bucket, key)`                                                           | Get a single object with data                                      |
+| `S3ObjectMeta getMeta(bucket, key)`                                                   | Get metadata of a single object                                   |
+| `List<S3Object> get(bucket, Collection<String> keys)`                                 | Get multiple objects with data                                    |
+| `List<S3ObjectMeta> getMeta(bucket, Collection<String> keys)`                         | Get metadata of multiple objects                                  |
+| `S3ObjectList list(bucket[, prefix[, delimiter, limit]])`                             | List objects by prefix (with data)                                |
+| `S3ObjectMetaList listMeta(bucket[, prefix[, delimiter, limit]])`                     | List object metadata by prefix                                    |
+| `List<S3ObjectList> list(bucket, Collection<String> prefixes[, delimiter, limit])`    | List objects for several prefixes at once                         |
+| `List<S3ObjectMetaList> listMeta(bucket, Collection<String> prefixes[, delimiter, limit])` | List object metadata for several prefixes at once           |
+| `S3ObjectUpload put(bucket, key, S3Body body)`                                        | Add an object and return the upload result                        |
+| `void delete(bucket, key)`                                                            | Delete a single object                                            |
+| `void delete(bucket, Collection<String> keys)`                                        | Delete multiple objects (throws `S3DeleteException` on failure)   |
+
+The `list`/`listMeta` overloads without `delimiter`/`limit` default `delimiter` to `null` and `limit` to `1000`.
+The `limit` argument must be in the `1..1000` range.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // get a single object and its metadata
+    S3Object object = s3.get("documents", "report.pdf");
+    S3ObjectMeta meta = s3.getMeta("documents", "report.pdf");
+
+    // get several objects at once
+    List<S3Object> objects = s3.get("documents", List.of("a.pdf", "b.pdf"));
+
+    // list by prefix with a delimiter and a limit
+    S3ObjectList list = s3.list("documents", "2024/", "/", 100);
+    for (S3Object o : list.objects()) {
+        // ...
+    }
+
+    // list several prefixes at once
+    List<S3ObjectMetaList> perPrefix = s3.listMeta("documents", List.of("2023/", "2024/"));
+
+    // add an object
+    S3ObjectUpload upload = s3.put("documents", "report.pdf", S3Body.ofBytes(bytes));
+    String versionId = upload.versionId();
+
+    // delete a single object and a batch of objects
+    s3.delete("documents", "report.pdf");
+    s3.delete("documents", List.of("a.pdf", "b.pdf"));
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // get a single object and its metadata
+    val obj = s3.get("documents", "report.pdf")
+    val meta = s3.getMeta("documents", "report.pdf")
+
+    // get several objects at once
+    val objects = s3.get("documents", listOf("a.pdf", "b.pdf"))
+
+    // list by prefix with a delimiter and a limit
+    val list = s3.list("documents", "2024/", "/", 100)
+    for (o in list.objects()) {
+        // ...
+    }
+
+    // list several prefixes at once
+    val perPrefix = s3.listMeta("documents", listOf("2023/", "2024/"))
+
+    // add an object
+    val upload = s3.put("documents", "report.pdf", S3Body.ofBytes(bytes))
+    val versionId = upload.versionId()
+
+    // delete a single object and a batch of objects
+    s3.delete("documents", "report.pdf")
+    s3.delete("documents", listOf("a.pdf", "b.pdf"))
+    ```
+
+### Asynchronous client { #client-imperative-async }
+
+The `S3KoraAsyncClient` interface mirrors `S3KoraClient` method-for-method, but every operation returns a
+[CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+(`CompletionStage<Void>` for delete operations):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final S3KoraAsyncClient s3;
+
+        public SomeService(S3KoraAsyncClient s3) {
+            this.s3 = s3;
+        }
+
+        public CompletionStage<byte[]> download(String bucket, String key) {
+            return s3.get(bucket, key)
+                .thenApply(object -> object.body().asBytes());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val s3: S3KoraAsyncClient
+    ) {
+
+        fun download(bucket: String, key: String): CompletionStage<ByteArray> {
+            return s3.get(bucket, key)
+                .thenApply { it.body().asBytes() }
+        }
+    }
+    ```
+
+## Native clients { #native-clients }
+
+Besides the declarative and imperative `Kora` clients, the underlying native `SDK` clients are also available for injection.
+They are useful for advanced operations that are not covered by the declarative/imperative API (for example, bucket management,
+object copying, presigned URLs, and so on).
+
+The [AWS module](#aws) provides:
+
+- `S3Client` — synchronous `AWS` client
+- `S3AsyncClient` — asynchronous `AWS` client
+- `S3AsyncClient` with `@Tag(MultipartUpload.class)` — asynchronous `AWS` client preconfigured for [multipart uploads](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/internal/multipart/MultipartS3AsyncClient.html) according to `upload.partSize` and `upload.bufferSize`
+
+The [Minio module](#minio) provides:
+
+- `MinioClient` — synchronous `Minio` client
+- `MinioAsyncClient` — asynchronous `Minio` client
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class BucketService {
+
+        private final S3Client s3Client; //(1)!
+        private final S3AsyncClient multipartClient;
+
+        public BucketService(S3Client s3Client,
+                             @Tag(MultipartUpload.class) S3AsyncClient multipartClient) { //(2)!
+            this.s3Client = s3Client;
+            this.multipartClient = multipartClient;
+        }
+
+        public void ensureBucket(String bucket) {
+            s3Client.createBucket(b -> b.bucket(bucket));
+        }
+    }
+    ```
+
+    1. Native `AWS` `S3Client` injected directly
+    2. Asynchronous client tagged with `@Tag(MultipartUpload.class)` for multipart uploads
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class BucketService(
+        private val s3Client: S3Client, //(1)!
+        @Tag(MultipartUpload::class) private val multipartClient: S3AsyncClient //(2)!
+    ) {
+
+        fun ensureBucket(bucket: String) {
+            s3Client.createBucket { it.bucket(bucket) }
+        }
+    }
+    ```
+
+    1. Native `AWS` `S3Client` injected directly
+    2. Asynchronous client tagged with `@Tag(MultipartUpload::class)` for multipart uploads
 
 ## Exceptions { #exceptions }
 
-Special errors will be thrown if a client operation error occurs:
+If a client operation fails, one of the `S3` exceptions is thrown. All of them inherit from the base `S3Exception`,
+which itself extends `RuntimeException`, so handling is optional and unchecked.
 
-- `S3NotFoundException` - if a file or bucket was not found
-- `S3DeleteException` - in case of an error while deleting one or more files
-- `S3Exception` - in any other case
+**Exception hierarchy:**
+
+```
+RuntimeException
+└── S3Exception
+    ├── S3NotFoundException
+    └── S3DeleteException
+```
+
+The base `S3Exception` exposes the error code and message reported by the storage:
+
+| Method                      | Description                                          |
+|-----------------------------|------------------------------------------------------|
+| `String getErrorCode()`     | Storage error code (for example, `NoSuchKey`)        |
+| `String getErrorMessage()`  | Storage error message                                |
+
+**Handling example:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final S3KoraClient s3;
+
+        public SomeService(S3KoraClient s3) {
+            this.s3 = s3;
+        }
+
+        public void call(String bucket) {
+            try {
+                s3.delete(bucket, List.of("a.pdf", "b.pdf"));
+            } catch (S3NotFoundException e) {
+                // Object or bucket is missing: getErrorCode() is NoSuchKey or NoSuchBucket
+            } catch (S3DeleteException e) {
+                // One or more objects were not deleted
+                for (S3DeleteException.Error error : e.getErrors()) {
+                    // error.key(), error.bucket(), error.code(), error.message()
+                }
+            } catch (S3Exception e) {
+                // Any other storage error: getErrorCode(), getErrorMessage()
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val s3: S3KoraClient
+    ) {
+
+        fun call(bucket: String) {
+            try {
+                s3.delete(bucket, listOf("a.pdf", "b.pdf"))
+            } catch (e: S3NotFoundException) {
+                // Object or bucket is missing: errorCode is NoSuchKey or NoSuchBucket
+            } catch (e: S3DeleteException) {
+                // One or more objects were not deleted
+                for (error in e.errors) {
+                    // error.key(), error.bucket(), error.code(), error.message()
+                }
+            } catch (e: S3Exception) {
+                // Any other storage error: errorCode, errorMessage
+            }
+        }
+    }
+    ```
+
+### S3NotFoundException { #not-found-exception }
+
+Thrown when a requested object or bucket does not exist.
+
+**Causes:**
+
+- Object key does not exist (`getErrorCode()` returns `NoSuchKey`)
+- Bucket does not exist (`getErrorCode()` returns `NoSuchBucket`)
+
+**Recommendations:**
+
+- Make the `@S3.Get` result [optional](#optional-get) (`Optional`/nullable) if absence of an object is a normal outcome
+- Verify the `bucket` from configuration and the requested `key`
+
+### S3DeleteException { #delete-exception }
+
+Thrown by batch `delete(bucket, keys)` operations when one or more objects could not be deleted.
+It exposes the list of individual failures:
+
+| Method               | Description                                                    |
+|----------------------|----------------------------------------------------------------|
+| `List<Error> getErrors()` | Per-object failures, each with `key()`, `bucket()`, `code()`, `message()` |
+
+**Recommendations:**
+
+- Inspect `getErrors()` to determine which objects failed and why
+- Retry the failed keys separately if the failure is transient
+
+### S3Exception { #base-exception }
+
+Base exception thrown for any other storage or client error that is not a missing object or a batch-delete failure.
+
+**Recommendations:**
+
+- Log `getErrorCode()` and `getErrorMessage()` for diagnostics
+- Enable client [logging](#configuration) at `DEBUG` level to inspect the underlying request/response
+
+## Testing { #testing }
+
+Declarative and imperative `S3` clients can be tested with [@KoraAppTest](junit5.md) together with a real
+`S3`-compatible storage started in a [Testcontainers](https://java.testcontainers.org/) container (for example, `Minio`).
+The storage connection parameters are supplied to the application config via system properties:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @TestcontainersMinio(
+            mode = ContainerMode.PER_RUN,
+            bucket = @Bucket(value = SomeClientTests.BUCKET, create = Bucket.Mode.PER_METHOD, drop = Bucket.Mode.PER_METHOD))
+    @KoraAppTest(Application.class)
+    class SomeClientTests implements KoraAppTestConfigModifier {
+
+        static final String BUCKET = "simple";
+
+        @ConnectionMinio
+        private MinioConnection minioConnection;
+
+        @TestComponent
+        private SomeClient client;
+
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification
+                    .ofSystemProperty("S3_URL", minioConnection.params().uri().toString())
+                    .withSystemProperty("S3_ACCESS_KEY", minioConnection.params().accessKey())
+                    .withSystemProperty("S3_SECRET_KEY", minioConnection.params().secretKey())
+                    .withSystemProperty("S3_BUCKET", BUCKET);
+        }
+
+        @Test
+        void putAndGet() {
+            var value = "value".getBytes(StandardCharsets.UTF_8);
+            client.putObject("k1", S3Body.ofBytes(value));
+
+            var found = client.getObject("k1");
+            assertArrayEquals(value, found.body().asBytes());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @TestcontainersMinio(
+        mode = ContainerMode.PER_RUN,
+        bucket = Bucket(value = [BUCKET], create = Bucket.Mode.PER_METHOD, drop = Bucket.Mode.PER_METHOD))
+    @KoraAppTest(Application::class)
+    class SomeClientTests : KoraAppTestConfigModifier {
+
+        @ConnectionMinio
+        lateinit var minioConnection: MinioConnection
+
+        @TestComponent
+        lateinit var client: SomeClient
+
+        override fun config(): KoraConfigModification = KoraConfigModification
+            .ofSystemProperty("S3_URL", minioConnection.params().uri().toString())
+            .withSystemProperty("S3_ACCESS_KEY", minioConnection.params().accessKey())
+            .withSystemProperty("S3_SECRET_KEY", minioConnection.params().secretKey())
+            .withSystemProperty("S3_BUCKET", BUCKET)
+
+        @Test
+        fun putAndGet() {
+            val value = "value".toByteArray()
+            client.putObject("k1", S3Body.ofBytes(value))
+
+            val found = client.getObject("k1")
+            assertArrayEquals(value, found.body().asBytes())
+        }
+
+        companion object {
+            const val BUCKET = "simple"
+        }
+    }
+    ```

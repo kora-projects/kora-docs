@@ -47,7 +47,7 @@ You also **must provide** the database driver implementation as a dependency.
 
 ## Configuration { #configuration }
 
-Example of the complete configuration described by `JdbcDatabaseConfig` (example values or default values are shown):
+Basic JDBC configuration parameters:
 
 ===! ":material-code-json: `HOCON`"
 
@@ -56,64 +56,16 @@ Example of the complete configuration described by `JdbcDatabaseConfig` (example
         jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
         username = "postgres" //(2)!
         password = "postgres" //(3)!
-        schema = "public" //(4)!
-        poolName = "kora" //(5)!
-        maxPoolSize = 10 //(6)!
-        minIdle = 0 //(7)!
-        connectionTimeout = "10s" //(8)!
-        validationTimeout = "5s" //(9)!
-        idleTimeout = "10m" //(10)!
-        maxLifetime = "15m" //(11)!
-        leakDetectionThreshold = "0s" //(12)!
-        initializationFailTimeout = "0s" //(13)!
-        readinessProbe = false //(14)!
-        dsProperties { //(15)!
-            "hostRecheckSeconds": "2"
-        }
-        telemetry {
-            logging {
-                enabled = false //(16)!
-            }
-            metrics {
-                enabled = true //(17)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                tags = { // (19)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-            tracing {
-                enabled = true //(20)!
-                attributes = { // (21)!
-                    "key1" = "value1"
-                    "key2" = "value2"
-                }
-            }
-        }
+        poolName = "kora" //(4)!
+        maxPoolSize = 10 //(5)!
     }
     ```
 
-    1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Database schema for the connection (default: not specified, optional)
-    5.  `Hikari` connection pool name (`required`, default: not specified)
-    6.  Maximum `Hikari` connection pool size (default: `10`)
-    7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
-    8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
-    9.  Maximum time for `Hikari` connection validation (default: `5s`)
-    10. Maximum idle time for a `Hikari` connection (default: `10m`)
-    11. Maximum lifetime of a `Hikari` connection (default: `15m`)
-    12. Time after which a busy connection is considered a possible leak (default: `0s`)
-    13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
-    14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
-    16. Enables module logging (default: `false`)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  `JDBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  `Hikari` connection pool name (`required`, no default)
+    5.  Maximum `Hikari` connection pool size (default: `10`)
 
 === ":simple-yaml: `YAML`"
 
@@ -122,56 +74,143 @@ Example of the complete configuration described by `JdbcDatabaseConfig` (example
       jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
       username: "postgres" #(2)!
       password: "postgres" #(3)!
-      schema: "public" #(4)!
-      poolName: "kora" #(5)!
-      maxPoolSize: 10 #(6)!
-      minIdle: 0 #(7)!
-      connectionTimeout: "10s" #(8)!
-      validationTimeout: "5s" #(9)!
-      idleTimeout: "10m" #(10)!
-      maxLifetime: "15m" #(11)!
-      leakDetectionThreshold: "0s" #(12)!
-      initializationFailTimeout: "0s" #(13)!
-      readinessProbe: false #(14)!
-      dsProperties: #(15)!
-        hostRecheckSeconds: "1"
-      telemetry:
-        logging:
-          enabled: false #(16)!
-        metrics:
-          enabled: true #(17)!
-          slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-          tags: #(19)!
-            key1: value1
-            key2: value2
-        tracing:
-          enabled: true #(20)!
-          attributes: #(21)!
-            key1: value1
-            key2: value2
+      poolName: "kora" #(4)!
+      maxPoolSize: 10 #(5)!
     ```
 
-    1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-    2.  Username for the connection (`required`, default: not specified)
-    3.  User password for the connection (`required`, default: not specified)
-    4.  Database schema for the connection (default: not specified, optional)
-    5.  `Hikari` connection pool name (`required`, default: not specified)
-    6.  Maximum `Hikari` connection pool size (default: `10`)
-    7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
-    8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
-    9.  Maximum time for `Hikari` connection validation (default: `5s`)
-    10. Maximum idle time for a `Hikari` connection (default: `10m`)
-    11. Maximum lifetime of a `Hikari` connection (default: `15m`)
-    12. Time after which a busy connection is considered a possible leak (default: `0s`)
-    13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
-    14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
-    15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
-    16. Enables module logging (default: `false`)
-    17. Enables module metrics (default: `true`)
-    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    19. Configures metric tags (default: `{}`)
-    20. Enables module tracing (default: `true`)
-    21. Configures tracing attributes (default: `{}`)
+    1.  `JDBC URL` for database connection (`required`, no default)
+    2.  Username for connection (`required`, no default)
+    3.  Password for connection (`required`, no default)
+    4.  `Hikari` connection pool name (`required`, no default)
+    5.  Maximum `Hikari` connection pool size (default: `10`)
+
+??? note "Full Configuration"
+
+    Example of the complete configuration described by `JdbcDatabaseConfig` (example values or default values are shown):
+
+    ===! ":material-code-json: `HOCON`"
+
+        ```javascript
+        db {
+            jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
+            username = "postgres" //(2)!
+            password = "postgres" //(3)!
+            schema = "public" //(4)!
+            poolName = "kora" //(5)!
+            maxPoolSize = 10 //(6)!
+            minIdle = 0 //(7)!
+            connectionTimeout = "10s" //(8)!
+            validationTimeout = "5s" //(9)!
+            idleTimeout = "10m" //(10)!
+            maxLifetime = "15m" //(11)!
+            leakDetectionThreshold = "0s" //(12)!
+            initializationFailTimeout = "0s" //(13)!
+            readinessProbe = false //(14)!
+            dsProperties { //(15)!
+                "hostRecheckSeconds": "2"
+            }
+            telemetry {
+                logging {
+                    enabled = false //(16)!
+                }
+                metrics {
+                    enabled = true //(17)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                    tags = { // (19)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+                tracing {
+                    enabled = true //(20)!
+                    attributes = { // (21)!
+                        "key1" = "value1"
+                        "key2" = "value2"
+                    }
+                }
+            }
+        }
+        ```
+
+        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Database schema for the connection (default: not specified, optional)
+        5.  `Hikari` connection pool name (`required`, default: not specified)
+        6.  Maximum `Hikari` connection pool size (default: `10`)
+        7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
+        8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
+        9.  Maximum time for `Hikari` connection validation (default: `5s`)
+        10. Maximum idle time for a `Hikari` connection (default: `10m`)
+        11. Maximum lifetime of a `Hikari` connection (default: `15m`)
+        12. Time after which a busy connection is considered a possible leak (default: `0s`)
+        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
+        16. Enables module logging (default: `false`)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
+
+    === ":simple-yaml: `YAML`"
+
+        ```yaml
+        db:
+          jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
+          username: "postgres" #(2)!
+          password: "postgres" #(3)!
+          schema: "public" #(4)!
+          poolName: "kora" #(5)!
+          maxPoolSize: 10 #(6)!
+          minIdle: 0 #(7)!
+          connectionTimeout: "10s" #(8)!
+          validationTimeout: "5s" #(9)!
+          idleTimeout: "10m" #(10)!
+          maxLifetime: "15m" #(11)!
+          leakDetectionThreshold: "0s" #(12)!
+          initializationFailTimeout: "0s" #(13)!
+          readinessProbe: false #(14)!
+          dsProperties: #(15)!
+            hostRecheckSeconds: "1"
+          telemetry:
+            logging:
+              enabled: false #(16)!
+            metrics:
+              enabled: true #(17)!
+              slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+              tags: #(19)!
+                key1: value1
+                key2: value2
+            tracing:
+              enabled: true #(20)!
+              attributes: #(21)!
+                key1: value1
+                key2: value2
+        ```
+
+        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
+        2.  Username for the connection (`required`, default: not specified)
+        3.  User password for the connection (`required`, default: not specified)
+        4.  Database schema for the connection (default: not specified, optional)
+        5.  `Hikari` connection pool name (`required`, default: not specified)
+        6.  Maximum `Hikari` connection pool size (default: `10`)
+        7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
+        8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
+        9.  Maximum time for `Hikari` connection validation (default: `5s`)
+        10. Maximum idle time for a `Hikari` connection (default: `10m`)
+        11. Maximum lifetime of a `Hikari` connection (default: `15m`)
+        12. Time after which a busy connection is considered a possible leak (default: `0s`)
+        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
+        15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
+        16. Enables module logging (default: `false`)
+        17. Enables module metrics (default: `true`)
+        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        19. Configures metric tags (default: `{}`)
+        20. Enables module tracing (default: `true`)
+        21. Configures tracing attributes (default: `{}`)
 
 ## Usage { #usage }
 
@@ -179,20 +218,47 @@ A `JDBC` repository is declared as an interface annotated with `@Repository` and
 Each method annotated with `@Query` contains a regular `SQL` query. Method parameters are bound by name with the
 `:parameter` syntax, and object fields can be referenced as `:entity.field`.
 
+Entities are described with the [common database annotations](database-common.md) and marked with `@EntityJdbc`
+so that `Kora` generates the view mapper at compile time (see [View](database-common.md#view)):
+
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        record Entity(@Id long id,
+                      String name,
+                      @Nullable String description) {}
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         @Nullable
         Entity findById(long id);
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("SELECT id, name, description FROM entities") //(2)!
+        List<Entity> findAll();
+
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         UpdateCount insert(Entity entity);
     }
     ```
+
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -200,18 +266,45 @@ Each method annotated with `@Query` contains a regular `SQL` query. Method param
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        @Query("SELECT id, name FROM entities WHERE id = :id")
+        @EntityJdbc
+        @Table("entities")
+        data class Entity(
+            @field:Id val id: Long,
+            val name: String,
+            val description: String?
+        )
+
+        @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: Long): Entity?
 
-        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity): UpdateCount
     }
     ```
 
+    1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
+        ```sql
+        SELECT id, name, description 
+        FROM entities 
+        WHERE id = :id
+        ```
+        Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+    3.  Uses macro `%{entity#inserts}`. Expands to query:
+        ```sql
+        INSERT INTO entities(id, name, description) 
+        VALUES(:entity.id, :entity.name, :entity.description)
+        ```
+        Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
+
 `SQL` remains under the developer's control: you can use database-specific features, while `Kora` only handles safe
 parameter binding, query execution, and result mapping.
 Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, and macros are described in
-[Common database rules](database-common.md).
+[Common database rules](database-common.md#macros).
+
+**Parameter binding:** Kora performs typed injection of arguments into the SQL query at compile time.
+Query parameters (e.g., `:id`, `:entity.name`) are replaced in the generated code with corresponding `PreparedStatement` calls.
+For example, for a `String name` parameter, something like `statement.setString(1, name)` will be generated, where the index corresponds to the parameter order in the query.
+This ensures security (protection against SQL injection) and performance (using prepared statements).
 
 ## Mapping { #mapping }
 
@@ -263,12 +356,16 @@ This mapper receives the whole query result and decides how many rows to read an
     }
     ```
 
-#### Entity { #entity }
+`JdbcResultSetMapper` also exposes static helpers `singleResultSetMapper`, `listResultSetMapper`,
+and `optionalResultSetMapper` that build a full-`ResultSet` mapper from a `JdbcRowMapper<T>`.
 
-Use the `@EntityJdbc` annotation for optimal entity mapping.
-The annotation processor creates a result mapper for such a type ahead of time.
+#### View { #view }
 
-All nested entities are also expected to use this annotation.
+Use the `@EntityJdbc` annotation for optimal view mapping.
+The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
+Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
+
+All nested views are also expected to use this annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -452,7 +549,7 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
     * OffsetTime
     * OffsetDateTime
 
-    Entity fields without an explicit `@Mapping` natively support `boolean` / `Boolean`, `short` / `Short`,
+    View fields without an explicit `@Mapping` natively support `boolean` / `Boolean`, `short` / `Short`,
     `int` / `Integer`, `long` / `Long`, `double` / `Double`, `float` / `Float`, `byte[]`, `String`,
     `BigDecimal`, `LocalDate`, and `LocalDateTime`.
     For other types, use built-in `JdbcResultColumnMapper<T>` / `JdbcParameterColumnMapper<T>` mappers or declare custom mappers.
@@ -510,6 +607,132 @@ The example below shows `Postgres` through a `JDBC Array`:
     }
     ```
 
+## JSON / JSONB { #json }
+
+A `JSON` / `JSONB` column can be mapped to a view field by registering generic
+`JdbcParameterColumnMapper<T>` and `JdbcResultColumnMapper<T>` as default `@Module` components tagged with `@Json`.
+These mappers bridge the [JSON](json.md) module `JsonWriter<T>` / `JsonReader<T>` to a driver-specific value.
+The `Postgres` example below serializes the value into a `PGobject` of type `jsonb` when binding a parameter,
+handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a `String`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface JdbcJsonbMapperModule {
+
+        @Json
+        default <T> JdbcParameterColumnMapper<T> jdbcJsonParameterColumnMapper(JsonWriter<T> writer) {
+            return (stmt, index, value) -> {
+                if (value != null) {
+                    PGobject jsonb = new PGobject();
+                    jsonb.setType("jsonb");
+                    jsonb.setValue(writer.toStringUnchecked(value));
+                    stmt.setObject(index, jsonb);
+                } else {
+                    stmt.setNull(index, Types.NULL);
+                }
+            };
+        }
+
+        @Json
+        default <T> JdbcResultColumnMapper<T> jdbcJsonResultColumnMapper(JsonReader<T> reader) {
+            return (row, index) -> {
+                var value = row.getString(index);
+                if (value == null) {
+                    return null;
+                } else {
+                    return reader.readUnchecked(value);
+                }
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface JdbcJsonbMapperModule {
+
+        @Json
+        fun <T> jdbcJsonParameterColumnMapper(writer: JsonWriter<T>): JdbcParameterColumnMapper<T> {
+            return JdbcParameterColumnMapper { stmt, index, value ->
+                if (value == null) {
+                    stmt.setNull(index, Types.NULL)
+                } else {
+                    val jsonb = PGobject()
+                    jsonb.type = "jsonb"
+                    jsonb.value = writer.toStringUnchecked(value)
+                    stmt.setObject(index, jsonb)
+                }
+            }
+        }
+
+        @Json
+        fun <T> jdbcJsonResultColumnMapper(reader: JsonReader<T>): JdbcResultColumnMapper<T> {
+            return JdbcResultColumnMapper { row, index ->
+                val value = row.getString(index)
+                if (value == null) null else reader.readUnchecked(value)
+            }
+        }
+    }
+    ```
+
+Annotate the view field with `@Json` (and `@Column` if the column name differs), where the field type is itself a `@Json` type.
+The `INSERT` uses the `::jsonb` cast so `Postgres` accepts the serialized string as `JSONB`;
+`findById` reads it back through the same `@Json`-tagged column mapper:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface JdbcJsonbRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(UUID id,
+                      @Column("value") @Json JsonbValue value) {
+
+            @Json
+            record JsonbValue(String name, String surname) {}
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        @Nullable
+        Entity findById(UUID id);
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        void insert(Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface JdbcJsonbRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            val id: UUID,
+            @field:Column("value") @Json val value: JsonbValue
+        ) {
+
+            @Json
+            data class JsonbValue(val name: String, val surname: String)
+        }
+
+        @Query("SELECT * FROM entities_jsonb WHERE id = :id")
+        fun findById(id: UUID): Entity?
+
+        @Query("INSERT INTO entities_jsonb(id, value) VALUES (:entity.id, :entity.value::jsonb)")
+        fun insert(entity: Entity)
+    }
+    ```
+
+The [JSON](json.md) module dependency is required so `Kora` can generate `JsonWriter` / `JsonReader` for the field type,
+and the mapper `@Module` must be added to the [application graph](container.md).
+
 ## Generated Identifier { #generated-identifier }
 
 If you need to return primary keys generated by the database,
@@ -543,6 +766,59 @@ This approach also works for `@Batch` queries.
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
         fun insert(entity: Entity): Long
+    }
+    ```
+
+The generated key can also be returned as the view key type rather than a scalar.
+When the identifier is a composite key described by an [`@Embedded`](database-common.md#embedded-fields) record,
+the `@Id` method returns that record, and a `@Batch` insert returns a `List` of keys, one per inserted row:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @EntityJdbc
+        record Entity(@Id @Embedded EntityId id, @Column("name") String name) {
+
+            @EntityJdbc
+            record EntityId(Long a, Long b) {}
+        }
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        Entity.EntityId insertGenerated(Entity entity);
+
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        @Id
+        List<Entity.EntityId> insertGenerated(@Batch List<Entity> entities);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @EntityJdbc
+        data class Entity(
+            @field:Id @field:Embedded val id: EntityId?,
+            @field:Column("name") val name: String
+        ) {
+
+            @EntityJdbc
+            data class EntityId(val a: Long?, val b: Long?)
+        }
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(entity: Entity): Entity.EntityId
+
+        @Id
+        @Query("INSERT INTO entities_composite(name) VALUES (:entity.name)")
+        fun insertGenerated(@Batch entities: List<Entity>): List<Entity.EntityId>
     }
     ```
 
@@ -712,6 +988,12 @@ The `withConnection` method executes code with a connection, but does not open a
 - if the current `Context` does not contain a connection, the method takes a new connection from the `DataSource`, stores it in `ConnectionContext` for the duration of the lambda, and closes it after completion;
 - nested calls to `withConnection`, `JdbcConnectionFactory#query`, and repository methods inside this lambda use the same current connection;
 - if a `JDBC` exception is a `SQLException`, it is wrapped in `RuntimeSqlException`.
+
+!!! note
+
+    Manual `query`, `withConnection`, and `inTx` calls surface a `JDBC` failure as an unchecked `RuntimeSqlException`
+    that wraps the original `java.sql.SQLException`. Catch `RuntimeSqlException` (not `SQLException`) at the call site,
+    and use `getCause()` to reach the underlying `SQLException`.
 
 The `inTx` method opens a transaction and is built on top of `withConnection`.
 If the current connection is already in an active transaction, meaning `autoCommit = false`, nested `inTx` uses the same transaction.
@@ -909,3 +1191,8 @@ For asynchronous methods, you can specify a separate `Executor` tag through the 
         suspend fun findAll(): List<Entity>
     }
     ```
+
+## Telemetry { #telemetry }
+
+Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

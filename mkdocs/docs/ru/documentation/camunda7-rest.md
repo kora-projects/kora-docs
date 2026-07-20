@@ -45,6 +45,19 @@ agent:
 
 Требует подключения [модуля `Camunda 7 BPMN`](camunda7-bpmn.md).
 
+## HTTP-сервер { #http-server }
+
+Модуль запускает **отдельный** независимый `Undertow` HTTP-сервер, выделенный под `Camunda 7 REST API`.
+Он слушает собственный `port` (по умолчанию: `8081`) и полностью изолирован от основного модуля [HTTP-сервера](http-server.md):
+у него собственный фильтр [CORS](#cors), собственная [телеметрия](#telemetry) и собственное [штатное завершение](container.md#component-lifecycle).
+Таким образом, `Camunda REST API` и собственные контроллеры приложения работают на разных портах и не разделяют обработку запросов или конфигурацию.
+
+`ProcessEngine`, обслуживающий эти запросы, предоставляется [модулем `Camunda 7 BPMN`](camunda7-bpmn.md);
+данный модуль лишь открывает к нему HTTP-доступ по настроенному `path` (по умолчанию: `/engine-rest`).
+
+При завершении работы сервер перестает принимать новые запросы и ждет до `shutdownWait` (по умолчанию: `30s`)
+завершения уже обрабатываемых запросов, прежде чем остановиться.
+
 ## Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `CamundaRestConfig`:
@@ -217,14 +230,115 @@ agent:
     28. Включает трассировку модуля (по умолчанию: `true`).
     29. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
-Если используется стандартный `OpenAPI`-файл `Camunda 7`, модуль при отдаче файла подставляет текущие значения `port` и `path`.
-Так `OpenAPI` остается согласованным с адресом `REST API`, даже если вместо `/engine-rest` или `8081` заданы другие значения.
+В листинге выше показаны все доступные параметры; на практике включают только то, что нужно.
+Типовая настройка публикует `REST API` на произвольном `port` вместе с `OpenAPI`-описанием, `Swagger UI` и логированием запросов:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    camunda {
+        rest {
+            enabled = true
+            port = 8090
+            openapi {
+                enabled = true
+                swaggerui.enabled = true
+            }
+            telemetry.logging.enabled = true
+        }
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    camunda:
+      rest:
+        enabled: true
+        port: 8090
+        openapi:
+          enabled: true
+          swaggerui:
+            enabled: true
+        telemetry:
+          logging:
+            enabled: true
+    ```
+
+## OpenAPI { #openapi }
+
+Помимо самого `REST API`, отдельный сервер может отдавать `OpenAPI`-описание API вместе со
+страницами [Swagger UI](https://swagger.io/tools/swagger-ui/) и [RapiDoc](https://rapidocweb.com/).
+Все три по умолчанию отключены и включаются независимо друг от друга через секцию конфигурации `openapi`.
+
+При включении страницы доступны на `port` `REST`-сервера по настроенным путям:
+
+| Страница             | Флаг конфигурации           | Путь по умолчанию |
+|----------------------|-----------------------------|-------------------|
+| Спецификация OpenAPI | `openapi.enabled`           | `/openapi`        |
+| Swagger UI           | `openapi.swaggerui.enabled` | `/swagger-ui`     |
+| RapiDoc              | `openapi.rapidoc.enabled`   | `/rapidoc`        |
+
+Например, при `port = 8090` и `openapi.enabled = true` спецификация отдается по адресу `http://localhost:8090/openapi`,
+а `Swagger UI` (если включен) — по адресу `http://localhost:8090/swagger-ui`.
+
+По умолчанию модуль отдает `OpenAPI`-спецификацию, поставляемую в составе зависимости
+[`camunda-engine-rest-openapi`](https://mvnrepository.com/artifact/org.camunda.bpm/camunda-engine-rest-openapi).
+Когда используется эта встроенная спецификация, модуль подставляет в нее настроенные `port` и `path`,
+поэтому отдаваемый `OpenAPI` всегда соответствует актуальному адресу `REST API`, даже если заданы значения, отличные от `8081` или `/engine-rest`.
+
+Чтобы вместо этого отдавать собственную спецификацию, укажите в `openapi.file` один или несколько файлов в `resources`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    camunda.rest.openapi {
+        enabled = true
+        file = [ "my-openapi.json" ]
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    camunda:
+      rest:
+        openapi:
+          enabled: true
+          file: [ "my-openapi.json" ]
+    ```
+
+## CORS { #cors }
+
+У `REST`-сервера есть собственный фильтр [CORS](https://developer.mozilla.org/ru/docs/Web/HTTP/CORS), отключенный по умолчанию и включаемый через `cors.enabled`.
+Если `cors.allowOrigin` не задан, фильтр возвращает в ответе заголовок `Origin` из запроса,
+а при отсутствии заголовка `Origin` в запросе использует `*`.
+Остальные параметры `cors.*` управляют разрешенными заголовками и методами, разрешена ли передача учетных данных,
+заголовками, доступными клиенту, и временем кеширования предварительных запросов.
+
+## Телеметрия { #telemetry }
+
+Запросы, обрабатываемые `REST`-сервером, охвачены стандартными сигналами телеметрии Kora — [логированием](logging-slf4j.md),
+[метриками](metrics.md) и [трассировкой](tracing.md) — которые настраиваются в секции `telemetry`.
+Логирование по умолчанию отключено (`telemetry.logging.enabled`), а метрики и трассировка по умолчанию включены.
+
+Параметр `telemetry.logging.pathTemplate` управляет тем, как путь запроса отображается в логах: если он не задан,
+используется шаблон пути, кроме уровня `TRACE`, где логируется полный путь;
+`true` всегда использует шаблон пути, а `false` всегда использует полный путь.
+
+Метрики модуля описаны в разделе [Справочник метрик](metrics.md#camunda-rest).
+
+Стандартную телеметрию можно переопределить, зарегистрировав собственный компонент `CamundaRestLoggerFactory`, `CamundaRestMetricsFactory`
+или `CamundaRestTracerFactory`, который заменяет соответствующий стандартный компонент, предоставленный через `@DefaultComponent`.
 
 ## Приложения { #applications }
 
-Модуль автоматически регистрирует стандартные ресурсы `Camunda 7 REST API`.
-Если нужно добавить свои ресурсы `JAX-RS`, можно зарегистрировать компонент `jakarta.ws.rs.core.Application` с тегом `CamundaRest`.
-Все такие приложения будут объединены со стандартными ресурсами Camunda.
+Модуль уже регистрирует стандартный `@Tag(CamundaRest.class)` `jakarta.ws.rs.core.Application`, который публикует стандартные
+ресурсы `Camunda 7 REST API` (`CamundaRestResources`) вместе с `ResteasyJackson2Provider` для сериализации в `JSON`.
+
+Чтобы добавить собственные ресурсы `JAX-RS`, зарегистрируйте свой компонент `jakarta.ws.rs.core.Application`, помеченный тегом `@Tag(CamundaRest.class)`.
+Все такие приложения собираются и объединяются со стандартным — их `getClasses()` и `getSingletons()` комбинируются —
+поэтому пользовательские ресурсы отдаются на том же `REST`-сервере вместе со стандартными endpoint'ами Camunda.
 
 ===! ":fontawesome-brands-java: `Java`"
 

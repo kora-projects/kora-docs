@@ -84,7 +84,58 @@ Example of the complete configuration described in the `MetricsConfig` class (de
 
     1. Metrics format according to the `OpenTelemetry` standard (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/), default: `V120`).
 
-Metrics collection configuration parameters are described in modules that collect metrics: [HTTP Server](http-server.md), [HTTP Client](http-client.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), and other integrations.
+### Module Metrics { #module-metrics }
+
+The `metrics` block above configures the registry globally. Each metric-collecting module additionally exposes a per-module
+`telemetry.metrics` block described in `TelemetryConfig.MetricsConfig`, letting you toggle metrics, tune histogram buckets,
+and attach extra tags for that module only. The example below uses the [HTTP Server](http-server.md) module as the host, but
+the same `telemetry.metrics` fields apply verbatim to [HTTP Client](http-client.md), [Database](database-common.md),
+[Kafka](kafka.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md),
+[Cache](cache.md), and every other integration that reports metrics:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer {
+        telemetry {
+            metrics {
+                enabled = true //(1)!
+                slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(2)!
+                tags { //(3)!
+                    "key1" = "value1"
+                    "key2" = "value2"
+                }
+            }
+        }
+    }
+    ```
+
+    1.  Enables metrics collection for the module (default: `true`)
+    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `DistributionSummary`/`Timer` metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO` in milliseconds for `V120` / `#DEFAULT_SLO_V123` in seconds for `V123`)
+    3.  Extra common tags added to every metric the module reports (default: `{}`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      telemetry:
+        metrics:
+          enabled: true #(1)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(2)!
+          tags: #(3)!
+            key1: value1
+            key2: value2
+    ```
+
+    1.  Enables metrics collection for the module (default: `true`)
+    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `DistributionSummary`/`Timer` metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO` in milliseconds for `V120` / `#DEFAULT_SLO_V123` in seconds for `V123`)
+    3.  Extra common tags added to every metric the module reports (default: `{}`)
+
+Setting `enabled = false` disables metric creation for that module entirely (the module's `MetricsFactory` returns no
+metrics), which is the recommended way to silence a noisy integration. The default `slo` bucket values per standard are
+listed in the [Personalization](#personalization) section.
+
+Metrics collection configuration parameters are also described in the modules that collect metrics: [HTTP Server](http-server.md), [HTTP Client](http-client.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), and other integrations.
 
 ## Usage { #usage }
 
@@ -119,6 +170,22 @@ The `PrometheusMeterRegistryWrapper` component is a `Root` component and impleme
 
 The registry automatically gets standard `Micrometer` binders: `ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `JvmThreadMetrics`, `ProcessorMetrics`, `FileDescriptorMetrics`, `UptimeMetrics`.
 Kora also registers the `kora.up` metric with value `1` and the `version` tag.
+
+Kora additionally bridges the `Micrometer` registry to an `OpenTelemetry` `MeterProvider` (`MicrometerMeterProvider` from `io.opentelemetry.contrib.metrics.micrometer`), so libraries instrumented with the `OpenTelemetry` metrics API publish through the same `PrometheusMeterRegistry`.
+
+A runnable baseline that wires `MetricsModule` alongside `HoconConfigModule`, `LogbackModule`, `UndertowHttpServerModule`, and the `OpenTelemetry` exporter is available in the [kora-java-telemetry](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-telemetry) example.
+
+### Prometheus Export { #prometheus-export }
+
+Metrics are exposed in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) text format by the [private HTTP server](http-server.md) on the `privateApiHttpMetricsPath` (default `/metrics`) served at `privateApiHttpPort`.
+The private server must have a port configured for the endpoint to be reachable.
+With the example configuration (`privateApiHttpPort = 8085`), the current metric snapshot can be scraped like this:
+
+```shell
+curl http://localhost:8085/metrics
+```
+
+Point your `Prometheus` scrape target (or any compatible collector) at the same host, port, and path.
 
 ### Custom Metric { #custom-metric }
 
@@ -223,8 +290,25 @@ For example, we want to add a common tag for all metrics:
     }
     ```
 
-Standard metrics also have their own settings, for example `slo` for `DistributionSummary` metrics.
-The configuration field names can be viewed in `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
+Standard metrics also have their own settings, for example `slo` histogram buckets for `DistributionSummary`/`Timer` metrics, configured per module under [`telemetry.metrics`](#module-metrics).
+When `slo` is not overridden, the defaults depend on the selected `OpenTelemetry` standard:
+
+- `V120` — `DEFAULT_SLO` in **milliseconds**: `1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000`
+- `V123` — `DEFAULT_SLO_V123` in **seconds**: `0.001, 0.010, 0.050, 0.100, 0.200, 0.500, 1, 2, 5, 10, 20, 30, 60, 90`
+
+Both arrays are declared in `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig`; the global registry field names are in `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
+
+### Tag Providers { #tag-providers }
+
+The tag set attached to framework metrics is produced by per-module tag providers registered as `@DefaultComponent`.
+To change which tags are emitted for a given integration, supply your own implementation of the corresponding interface as a `@DefaultComponent` override:
+
+- `MicrometerHttpServerTagsProvider` (package `ru.tinkoff.kora.micrometer.module.http.server.tag`) — HTTP server metrics
+- `MicrometerHttpClientTagsProvider` (package `ru.tinkoff.kora.micrometer.module.http.client.tag`) — HTTP client metrics
+- `MicrometerGrpcServerTagsProvider` / `MicrometerGrpcClientTagsProvider` (packages `...grpc.server.tag` / `...grpc.client.tag`) — gRPC metrics
+- `MicrometerKafkaConsumerTagsProvider` / `MicrometerKafkaProducerTagsProvider` (packages `...kafka.consumer.tag` / `...kafka.producer.tag`) — Kafka metrics
+
+The default provider is selected from `metrics.opentelemetrySpec`, so an override replaces the tag mapping for both standards.
 
 ## Standard { #standard }
 
