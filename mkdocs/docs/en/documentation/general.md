@@ -139,7 +139,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
 
     dependencies {
         annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.18"
-        implementation platform("ru.tinkoff.kora:kora-parent:1.2.17")
+        implementation platform("ru.tinkoff.kora:kora-parent:1.2.18")
     }
     ```
 
@@ -166,7 +166,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
 
     dependencies {
         ksp("ru.tinkoff.kora:symbol-processors:1.2.18")
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.17"))
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.18"))
     }
     ```
 
