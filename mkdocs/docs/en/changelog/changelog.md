@@ -597,7 +597,7 @@ Added:
 * Added [HTTP Client/Server logging masking](../documentation/http-server.md#configuration)
 * Added HTTP Client & Server metrics enriched
 * Added OpenAPI additional contract annotations for HTTP client/server
-* Added annotation processor for [JDBC result set mappers](../documentation/database-jdbc.md#entity)
+* Added annotation processor for [JDBC result set mappers](../documentation/database-jdbc.md#view)
 * Added [Resilient Retry & Timeout](../documentation/resilient.md#retry) virtual thread support
 
 Fixed:
@@ -767,7 +767,7 @@ Added:
 
 - Added OpenTelemetry metrics [1.23](../documentation/metrics.md#standard) new standard
 - Added GraalVM and GraalVM virtual threads support for most modules
-- Dependencies updated and synchronized across [all modules]((https://github.com/kora-projects/kora/pull/4/files#diff-d979b641bd0ea7c9da3fe113f9657636df1002652c75042cfe3b5203da064215))
+- Dependencies updated and synchronized across [all modules](https://github.com/kora-projects/kora/pull/4/files)
 - Component build message improved
 - Lifecycle logging standardized
 

@@ -251,7 +251,7 @@ Update your Application interface to include JDBC and Flyway modules.
     }
     ```
 
-## Database entity { #entity-db }
+## Database entity { #view-db }
 
 Replace the old in-memory `User` storage model with JDBC DAO model used by repository mappings.
 

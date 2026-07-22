@@ -1,13 +1,16 @@
 ---
-description: "Explains Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server. Use when working with OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+description: "Описывает модуль управления OpenAPI в Kora для публикации сгенерированных спецификаций OpenAPI, а также страниц Swagger UI и RapiDoc через публичный HTTP-сервер. Используйте при работе с OpenApiManagementModule, OpenApiManagementConfig, маршруты OpenAPI, Swagger UI, RapiDoc."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications through the management HTTP server; key triggers include OpenApiManagementModule, OpenAPI, management endpoint, private HTTP server."
+  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications, Swagger UI, and RapiDoc pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenAPI endpoint, Swagger UI, RapiDoc, /openapi, /swagger-ui, /rapidoc."
 ---
 
-Модуль для предоставления OpenAPI файла из приложения, 
-а также [Swagger UI](https://swagger.io/tools/swagger-ui/) и [Rapidoc](https://rapidocweb.com/) для отображения OpenAPI.
+Модуль `openapi-management` предоставляет из приложения готовые файлы `OpenAPI`, а также страницы [Swagger UI](https://swagger.io/tools/swagger-ui/) и [RapiDoc](https://rapidocweb.com/) для их просмотра.
+`OpenAPI` — это машиночитаемый контракт HTTP API: по нему удобно проверять доступные операции, модели данных и параметры запросов.
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [OpenAPI HTTP сервер](../guides/openapi-http-server.md).
+Модуль не создает контракт из кода, а публикует уже существующие файлы из ресурсов приложения.
+Это полезно для локальной разработки, тестовых окружений и служебного доступа к описанию API без отдельного сервера документации.
+
+Если нужен пошаговый разбор перед справочным описанием, смотрите [HTTP-сервер OpenAPI](../guides/openapi-http-server.md).
 
 ## Подключение { #dependency }
 
@@ -37,11 +40,12 @@ agent:
     interface Application : OpenApiManagementModule
     ```
 
-Требует подключения [HTTP сервера](http-server.md).
+Требует подключения модуля [HTTP-сервера](http-server.md), так как регистрирует собственные `GET`-обработчики для выдачи файлов и страниц просмотра.
+Это обычные бины `HttpServerRequestHandler`, которые собирает **публичный** HTTP-сервер, поэтому пути `/openapi`, `/swagger-ui` и `/rapidoc` доступны на публичном HTTP-порту, а не на приватном (management) порту.
 
 ## Конфигурация { #configuration }
 
-Пример конфигурации описанной в классе `OpenApiManagementConfig`:
+Пример конфигурации, описанной в классе `OpenApiManagementConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -63,15 +67,16 @@ agent:
     }
     ```
 
-    1.  Относительный путь до OpenAPI файлов в `resources` директории, можно указывать как один файл, так и несколько файлов
-    2.  Вкл/Выкл контроллера который отдает OpenAPI 
-    3.  Путь по которому будет доступен OpenAPI
-        1. Если указан один OpenAPI файл, является целиком путем по которому доступен файл
-        2. Если указаны несколько OpenAPI файлов, является префиксом к пути перед именем файла `/openapi/{fileName}`, берется указанный путь и к нему добавляется имя файла без диреторий и его расширения, в случае файла `someDirectory/my-openapi-1.yaml` путь к файлу будет `/openapi/my-openapi-1`
-    4.  Вкл/Выкл контроллера который отдает SwaggerUI
-    5.  Путь по которому будет доступен SwaggerUI
-    6.  Вкл/Выкл контроллера который отдает Rapidoc
-    7.  Путь по которому будет доступен Rapidoc
+    1.  Путь к файлу `OpenAPI` или список путей относительно ресурсов приложения (обязательный, по умолчанию не указан).
+    2.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    3.  Путь, по которому доступны файлы `OpenAPI` (по умолчанию: `/openapi`).
+        Если указан один файл, он доступен ровно по этому пути.
+        Если указано несколько файлов, путь становится префиксом вида `/openapi/{file}`.
+        Значение `{file}` берется из имени файла без директорий и без расширения `.json`, `.yml` или `.yaml`: файл `someDirectory/my-openapi-1.yaml` будет доступен по пути `/openapi/my-openapi-1`.
+    4.  Включает страницу `Swagger UI` (по умолчанию: `false`).
+    5.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
+    6.  Включает страницу `RapiDoc` (по умолчанию: `false`).
+    7.  Путь, по которому доступна страница `RapiDoc` (по умолчанию: `/rapidoc`).
 
 === ":simple-yaml: `YAML`"
 
@@ -89,22 +94,45 @@ agent:
           endpoint: "/rapidoc" #(7)!
     ```
 
-    1.  Относительный путь до OpenAPI файлов в `resources` директории, можно указывать как один файл, так и несколько файлов
-    2.  Вкл/Выкл контроллера который отдает OpenAPI 
-    3.  Путь по которому будет доступен OpenAPI
-        1. Если указан один OpenAPI файл, является целиком путем по которому доступен файл
-        2. Если указаны несколько OpenAPI файлов, является префиксом к пути перед именем файла `/openapi/{fileName}`, берется указанный путь и к нему добавляется имя файла без диреторий и его расширения, в случае файла `someDirectory/my-openapi-1.yaml` путь к файлу будет `/openapi/my-openapi-1`
-    4.  Вкл/Выкл контроллера который отдает SwaggerUI
-    5.  Путь по которому будет доступен SwaggerUI
-    6.  Вкл/Выкл контроллера который отдает Rapidoc
-    7.  Путь по которому будет доступен Rapidoc
+    1.  Путь к файлу `OpenAPI` или список путей относительно ресурсов приложения (обязательный, по умолчанию не указан).
+    2.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    3.  Путь, по которому доступны файлы `OpenAPI` (по умолчанию: `/openapi`).
+        Если указан один файл, он доступен ровно по этому пути.
+        Если указано несколько файлов, путь становится префиксом вида `/openapi/{file}`.
+        Значение `{file}` берется из имени файла без директорий и без расширения `.json`, `.yml` или `.yaml`: файл `someDirectory/my-openapi-1.yaml` будет доступен по пути `/openapi/my-openapi-1`.
+    4.  Включает страницу `Swagger UI` (по умолчанию: `false`).
+    5.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
+    6.  Включает страницу `RapiDoc` (по умолчанию: `false`).
+    7.  Путь, по которому доступна страница `RapiDoc` (по умолчанию: `/rapidoc`).
 
-## Совет { #recommendations }
+Файлы читаются из ресурсов приложения при первом обращении и затем кэшируются в памяти (последующие запросы возвращают закэшированные байты).
+Для файлов с расширением `.json` используется тип ответа `text/json; charset=utf-8`, для всех остальных файлов — `text/x-yaml; charset=utf-8`.
 
-???+ warning "Совет"
+При нескольких файлах `Swagger UI` показывает список доступных контрактов, а `RapiDoc` открывает первый файл из списка.
 
-    Мы советуем использовать подход когда первичен [контракт и по нему создается код](openapi-codegen.md), 
-    в таком подходе отображается этот самый файл контракт.
+Когда настроено несколько файлов, запрос к `/openapi/{file}` с неизвестным именем `{file}` возвращает `404` (`OpenAPI file not registered`), а запрос с пустым значением `{file}` возвращает `400` (`OpenAPI file not specified`).
+Если настроенный ресурс не удается найти или прочитать в момент запроса, обработчик возвращает `404` или `500` соответственно, иначе он отвечает `200` и содержимым файла.
 
-    В случае же когда первичен код и по нему предполагается создавать файл контракт, можно использовать [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md)
-    вкупе с [набором Swagger аннотаций](https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Annotations) по которым будет создаваться файл контракт.
+## Маршруты { #endpoints }
+
+При включенной выдаче модуль регистрирует на публичном HTTP-сервере следующие `GET`-маршруты (пути показаны со значениями `endpoint` по умолчанию):
+
+| Маршрут | Обработчик | Включается через |
+|-------|-----------------|------------|
+| `GET /openapi` (один файл) или `GET /openapi/{file}` (несколько файлов) | `OpenApiHttpServerHandler` | `enabled = true` |
+| `GET /swagger-ui` | `SwaggerUIHttpServerHandler` | `swaggerui.enabled = true` |
+| `GET /swagger-ui/oauth2-redirect` | `SwaggerOauthHttpServerHandler` | регистрируется автоматически вместе со `Swagger UI` |
+| `GET /rapidoc` | `RapidocHttpServerHandler` | `rapidoc.enabled = true` |
+
+Каждый маршрут использует значение `endpoint` из своей секции конфигурации, поэтому переопределение `endpoint` переносит соответствующий маршрут.
+Путь `OAuth2`-перенаправления всегда равен `swaggerui.endpoint` с добавленным суффиксом `/oauth2-redirect`.
+
+## Рекомендации { #recommendations }
+
+???+ warning "Рекомендация"
+
+    Мы советуем использовать подход, при котором сначала создается [контракт, а затем по нему генерируется код](openapi-codegen.md).
+    В этом случае модуль публикует тот же файл контракта, который используется для генерации.
+
+    Если сначала пишется код, а контракт должен создаваться по нему, можно использовать [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md)
+    вместе с [аннотациями Swagger](https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Annotations).
