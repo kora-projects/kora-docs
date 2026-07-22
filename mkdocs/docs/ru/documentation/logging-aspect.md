@@ -4,13 +4,16 @@ agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, MDC enrichment, structured parameters, conversion, and signatures; key triggers include @Log, @Log.in, @Log.out, @Log.off, @Mdc, @StructuredArgument, MDC, LogAspect."
 ---
 
-Модуль для декларативного логирования аргументов и результата методов с помощью аннотаций аспектов.
+Модуль декларативного логирования позволяет описывать логирование метода с помощью аннотаций `@Log` и `@Mdc`.
+На этапе компиляции Kora создает аспект-обертку для метода; обертка логирует вход в метод, выход из метода, результат, ошибку и значения `MDC` без ручного кода в бизнес-логике.
+Это удобно для единообразной диагностики вызовов, особенно когда нужно быстро понять, какой метод был вызван, с какими аргументами и как он завершился.
 
-Если нужен пошаговый разбор перед справочным описанием, смотрите [Наблюдаемость](../guides/observability.md).
+Пошаговый разбор перед справочным описанием смотрите в разделе [Наблюдаемость](../guides/observability.md).
 
 ## Подключение { #dependency }
 
-Скорее всего уже транзитивно подключен из других зависимостей либо из [Logback](logging-slf4j.md#logback), в противном случае требуется подключить:
+Аннотации и вспомогательные классы предоставляются зависимостью `logging-common`.
+Обычно она уже приходит через другие модули Kora или через [Logback](logging-slf4j.md#logback), но при использовании аннотаций напрямую зависимость можно добавить явно:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -38,9 +41,23 @@ agent:
     interface Application : LoggingModule
     ```
 
+Для генерации аспектов также должны быть подключены общие [обработчики аннотаций](general.md#annotation-processor) или [`KSP`-обработчики](general.md#ksp).
+В обычном приложении Kora они уже подключены как часть базовой настройки проекта.
+
 ## Логирование { #logging }
 
-Предполагается использовать специальные комбинации аннотаций для настройки логирование методов.
+Логирование метода настраивается комбинациями аннотаций:
+
+- `@Log` - логирует вход и выход метода (по умолчанию: `INFO`).
+- `@Log.in` - логирует только вход в метод (по умолчанию: `INFO`).
+- `@Log.out` - логирует только выход из метода (по умолчанию: `INFO`).
+- `@Log.result` - задает уровень, начиная с которого в лог добавляется значение результата (по умолчанию: `DEBUG`).
+- `@Log.off` - отключает логирование результата метода или отдельного параметра.
+- `@Log(Level)` на параметре - задает уровень, начиная с которого параметр попадает в структурированные данные (по умолчанию: `DEBUG` для параметра без отдельной аннотации).
+
+Само событие входа или выхода пишется на уровне, указанном в `@Log`, `@Log.in` или `@Log.out`.
+Значения аргументов и результата добавляются в структурированные данные только если включен соответствующий уровень детализации.
+Какой уровень детализации активен, зависит от эффективного уровня логгера, настроенного через `logging.level` / `logging.levels` — смотрите [настройку уровней логирования](logging-slf4j.md#configuration).
 
 ### Аргументов { #argument }
 
@@ -64,13 +81,19 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
-        <td>TRACE, DEBUG</td>
+        <td>DEBUG</td>
         <td>
-            <p>DEBUG [main] r.t.e.e.Example.doWork: > {data: {numParam: "4"}}</p>
+            <p>INFO [main] r.t.e.e.Example.doWork: > {data: {numParam: "4"}}</p>
+        </td>
+    </tr>
+    <tr>
+        <td>TRACE</td>
+        <td>
+            <p>INFO [main] r.t.e.e.Example.doWork: > {data: {numParam: "4"}}</p>
         </td>
     </tr>
     <tr>
@@ -103,13 +126,19 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
-        <td>TRACE, DEBUG</td>
+        <td>DEBUG</td>
         <td>
-            <p>DEBUG [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
+            <p>INFO [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
+        </td>
+    </tr>
+    <tr>
+        <td>TRACE</td>
+        <td>
+            <p>INFO [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
         </td>
     </tr>
     <tr>
@@ -142,14 +171,21 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
-        <td>TRACE, DEBUG</td>
+        <td>DEBUG</td>
         <td>
-            <p>DEBUG [main] r.t.e.e.Example.doWork: > {data: {strParam: "s", numParam: "4"}}</p>
-            <p>DEBUG [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
+            <p>INFO [main] r.t.e.e.Example.doWork: > {data: {strParam: "s", numParam: "4"}}</p>
+            <p>INFO [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
+        </td>
+    </tr>
+    <tr>
+        <td>TRACE</td>
+        <td>
+            <p>INFO [main] r.t.e.e.Example.doWork: > {data: {strParam: "s", numParam: "4"}}</p>
+            <p>INFO [main] r.t.e.e.Example.doWork: < {data: {out: "testResult"}}</p>
         </td>
     </tr>
     <tr>
@@ -160,6 +196,9 @@ agent:
         </td>
     </tr>
 </table>
+
+Если метод завершается ошибкой, аспект записывает выход из метода с данными об ошибке: `errorType` и `errorMessage`.
+При включенном `DEBUG` в лог также передается объект исключения.
 
 ### Выборочное логирование { #selective-logging }
 
@@ -185,7 +224,7 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
@@ -202,10 +241,53 @@ agent:
     </tr>
 </table>
 
+В этом примере `@Log.off` на методе отключает запись значения результата, но не отключает само событие выхода из метода.
+Чтобы исключить из лога отдельный аргумент, `@Log.off` ставится на параметр.
+
+Уровень детализации параметров можно задавать отдельно:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Log.in
+    public void doWork(@Log(Level.INFO) String id, @Log(Level.TRACE) String payload) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Log.`in`
+    fun doWork(@Log(Level.INFO) id: String, @Log(Level.TRACE) payload: String) { }
+    ```
+
+При уровне `INFO` в структурированные данные попадет только `id`, а `payload` появится только при включенном `TRACE`.
+
+Значение результата можно вывести уже на уровне `INFO`, если явно указать `@Log.result(Level.INFO)`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Log.out
+    @Log.result(Level.INFO)
+    public String doWork() {
+        return "testResult";
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Log.out
+    @Log.result(Level.INFO)
+    fun doWork(): String {
+        return "testResult"
+    }
+    ```
+
 ### Структурированный параметр { #structured-parameter }
 
-В случае если представление параметра как строкой не является желаемым поведением,
-его можно реализовать интерфейс `StructuredArgument` и параметр научится логировать себя сам:
+Если строковое представление параметра не подходит для лога, тип параметра может реализовать интерфейс `StructuredArgument`.
+В этом случае объект сам задает имя поля через `fieldName()` и записывает значение в `JsonGenerator` через `writeTo(...)`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -247,11 +329,11 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
-        <td>TRACE, DEBUG</td>
+        <td>DEBUG, TRACE</td>
         <td>
             <p>INFO [main] r.t.e.e.Example.doWork: ></p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp; data={"entity":"Bob"}</p>
@@ -261,15 +343,38 @@ agent:
         <td>INFO</td>
         <td>
             <p>INFO [main] r.t.e.e.Example.doWork: ></p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp; data={"entity":"Bob"}</p>
         </td>
     </tr>
 </table>
 
+Когда нужно структурированное значение без введения отдельного типа, интерфейс `StructuredArgument` предоставляет статические фабричные методы:
+`arg(fieldName, value)` / `arg(fieldName, value, JsonWriter)` создают структурированный аргумент (перегрузки принимают `String`, `Integer`, `Long`, `Boolean`, `Map<String, String>`, `JsonWriter` или сырой `StructuredArgumentWriter`),
+а `marker(fieldName, value)` создает `org.slf4j.Marker` для одного вызова лога. Полученный `StructuredArgument` можно также передать напрямую в `MDC.put`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId));
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted");
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // ad-hoc structured value fed into MDC
+    MDC.put("order", StructuredArgument.arg("orderId", orderId))
+
+    // or as an SLF4J marker on a single log line
+    log.info(StructuredArgument.marker("orderId", orderId), "order accepted")
+    ```
+
 ### Конвертация параметров { #parameter-conversion }
 
-В случае если представление параметра как строкой не является желаемым поведением, 
-его можно переназначить через указание `StructuredArgumentMapper` напротив желаемого аргумента:
+Если менять сам тип параметра нельзя, можно описать внешний преобразователь `StructuredArgumentMapper` и указать его через `@Mapping` на нужном аргументе.
+Такой преобразователь получает исходное значение параметра и записывает структурированное значение в `JsonGenerator`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -307,11 +412,11 @@ agent:
 
 <table>
     <thead>
-        <th>Уровень логгирования</th>
+        <th>Уровень логирования</th>
         <th>Лог</th>
     </thead>
     <tr>
-        <td>TRACE, DEBUG</td>
+        <td>DEBUG, TRACE</td>
         <td>
             <p>INFO [main] r.t.e.e.Example.doWork: ></p>
             <p>&nbsp;&nbsp;&nbsp;&nbsp; data={"entity":"Bob"}</p>
@@ -321,23 +426,28 @@ agent:
         <td>INFO</td>
         <td>
             <p>INFO [main] r.t.e.e.Example.doWork: ></p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp; data={"entity":"Bob"}</p>
         </td>
     </tr>
 </table>
 
 ### MDC (Mapped Diagnostic Context) { #mdc-mapped-diagnostic-context }
 
-Аннотация `@Mdc` позволяет добавлять пары ключ-значение в MDC (Mapped Diagnostic Context) для структурированного логирования. 
-MDC позволяет добавлять контекстную информацию к каждому лог-сообщению.
+Аннотация `@Mdc` добавляет пары ключ-значение в `MDC` (`Mapped Diagnostic Context`).
+`MDC` хранит контекст выполнения и позволяет добавлять его к лог-сообщениям: например, идентификатор запроса, пользователя или операции.
 
-Аннотация может применяться к методам и параметрам методов. Поддерживается множественное применение.
+Аннотация может применяться к методам и параметрам методов.
+На методе поддерживается множественное применение `@Mdc`.
+Значения, добавленные без `global = true`, восстанавливаются после выполнения метода.
 
 **Параметры аннотации `@Mdc`:**
 
-- `key()` - Ключ для MDC записи. Если не указано, используется имя аннотированного параметра.
-- `value()` - Значение для MDC записи. Если не указано, используется значение аннотированного параметра.
-- `global()` - Если true, MDC значение будет доступно глобально в рамках потока, а не только во время выполнения метода.
+- `key()` - ключ записи `MDC` (по умолчанию: `""`).
+- `value()` - значение записи `MDC` (по умолчанию: `""`).
+- `global()` - оставлять значение в `MDC` после выхода из метода (по умолчанию: `false`).
+
+Для `@Mdc` на методе обязательны непустые `key` и `value`.
+Для `@Mdc` на параметре ключ берется из `key`, затем из `value`, а если оба значения пустые - из имени параметра.
+Значением записи становится значение параметра.
 
 #### Аннотация параметра { #parameter-annotation }
 
@@ -357,7 +467,7 @@ MDC позволяет добавлять контекстную информа�
     }
     ```
 
-В этом случае ключ MDC будет совпадать с именем параметра ("s"), а значением будет значение параметра.
+В этом случае ключ `MDC` будет совпадать с именем параметра `s`, а значением будет значение параметра.
 
 #### Аннотация параметра с ключом { #parameter-annotation-with-key }
 
@@ -377,7 +487,7 @@ MDC позволяет добавлять контекстную информа�
     }
     ```
 
-Здесь ключ MDC будет "123", а значением - значение параметра "s".
+Здесь ключом `MDC` будет `123`, а значением - значение параметра `s`.
 
 #### Аннотация метода { #method-use }
 
@@ -399,8 +509,8 @@ MDC позволяет добавлять контекстную информа�
     }
     ```
 
-В этом примере демонстрируется:
-- Аннотация метода с локальным MDC значением
+В этом примере перед вызовом метода в `MDC` будет добавлена запись `key1=value2`.
+После завершения метода предыдущее значение `key1` будет восстановлено.
 
 #### Комбинированное { #combined }
 
@@ -424,7 +534,11 @@ MDC позволяет добавлять контекстную информа�
     }
     ```
 
-В этом примере к методу применены две аннотации MDC, а к параметру одна аннотация.
+В этом примере к методу применены две аннотации `@Mdc`, а к параметру - одна.
+Запись `key=value` останется в `MDC` после выполнения метода из-за `global = true`, остальные записи будут восстановлены или удалены.
+
+Под капотом неглобальные записи сохраняются в виде снимка до вызова и восстанавливаются в блоке `finally` после возврата из метода, поэтому они никогда не выходят за пределы области видимости метода.
+Записи, добавленные с `global = true` (а также любое значение, установленное через императивный `MDC.put`, смотрите ниже), остаются в `Context` на протяжении всей области видимости запроса/потока и потому видны в каждой последующей строке лога.
 
 #### Генерация значения из кода { #generated-value-for-mdc-value }
 
@@ -446,35 +560,101 @@ MDC позволяет добавлять контекстную информа�
     }
     ```
 
-При вызове метода в MDC будет добавлена запись с ключом "key" и в данном случае значением будет случайный UUID.
+При вызове метода в `MDC` будет добавлена запись с ключом `key`, а значением будет случайный `UUID`.
+Для `Java` значение в формате `${...}` вставляется в сгенерированный код как выражение.
 
-**Пример лога с MDC:**
+**Пример лога с `MDC`:**
 ```
 INFO [main] r.t.e.e.Example.test: > {data: {s: "testValue"}} key=some-uuid-value key1=value2 123=testValue
 ```
 
-## Сигнатуры { #signatures }
+`@Mdc` не поддерживается для методов, которые возвращают `CompletionStage`, `Mono` или `Flux`.
+Для `Kotlin` поддерживаются обычные методы и `suspend`-методы, но `global = true` нельзя использовать в `suspend`-методах.
 
-Доступные сигнатуры для методов которые поддерживают аннотации из коробки:
+### Императивный MDC { #imperative-mdc }
+
+Там, где аннотация не подходит — внутри перехватчиков, фильтров или обычного кода сервиса — используйте императивный API `ru.tinkoff.kora.logging.common.MDC`.
+Это программный аналог `@Mdc`: записи привязываются к `Context` Kora, поэтому они распространяются через асинхронные границы точно так же, как записи `@Mdc(global = true)`, и появляются в каждой строке лога, выводимой на протяжении оставшейся области видимости текущего `Context`.
+
+Статический метод `put` имеет перегрузки для значений `String`, `Integer`, `Long` и `Boolean`, а также перегрузку с `StructuredArgumentWriter` для структурированных значений.
+`remove(key)` удаляет одну запись, а `get().values()` возвращает текущие записи как неизменяемую `Map<String, StructuredArgumentWriter>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Класс не должен быть `final`, чтобы аспекты работали.
+    ```java
+    import ru.tinkoff.kora.logging.common.MDC;
+
+    @Component
+    public final class OrderService {
+
+        public void process(String orderId) {
+            MDC.put("orderId", orderId);                  // String
+            MDC.put("attempt", 1);                        // Integer
+            MDC.put("bytes", 1024L);                      // Long
+            MDC.put("retryable", true);                   // Boolean
+            MDC.put("payload", gen -> gen.writeString(orderId)); // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt");                        // drop a single key
+            var current = MDC.get().values();             // read current entries
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import ru.tinkoff.kora.logging.common.MDC
+
+    @Component
+    class OrderService {
+
+        fun process(orderId: String) {
+            MDC.put("orderId", orderId)                   // String
+            MDC.put("attempt", 1)                         // Integer
+            MDC.put("bytes", 1024L)                       // Long
+            MDC.put("retryable", true)                    // Boolean
+            MDC.put("payload") { gen -> gen.writeString(orderId) } // StructuredArgumentWriter
+
+            // ... business logic; every log line in this Context now carries the keys
+
+            MDC.remove("attempt")                         // drop a single key
+            val current = MDC.get().values()              // read current entries
+        }
+    }
+    ```
+
+Когда у вас уже есть `Context` (например, внутри перехватчика), обращайтесь к нему явно через `MDC.get(ctx)` и `MDC.put(ctx, key, writer)` вместо сокращений для текущего `Context`.
+В отличие от `@Mdc`, у императивного API нет ограничения на реактивные/`suspend`-методы, поскольку он пишет напрямую в `Context`, а не оборачивает вызов метода.
+
+!!! warning "Используйте `MDC` из Kora, а не из SLF4J"
+
+    Всегда импортируйте `ru.tinkoff.kora.logging.common.MDC` — никогда `org.slf4j.MDC`.
+    Класс SLF4J пишет в отдельный `ThreadLocal`, не связанный с `Context` Kora: помещенные туда значения не появятся в структурированных логах Kora и не будут распространяться через асинхронные границы (реактивные операторы, `suspend`-функции, передача между потоками).
+
+## Сигнатуры { #signatures }
+
+Сигнатуры методов, поддерживаемые для аспектов логирования:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Класс не должен быть `final`, чтобы аспекты могли создать наследника.
 
     Под `T` подразумевается тип возвращаемого значения, либо `Void`.
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (только для `@Log`)
+    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (только для `@Log`, требует [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (только для `@Log`, требует [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
-    Класс должен быть `open`, чтобы аспекты работали.
+    Класс должен быть `open`, чтобы аспекты могли создать наследника.
 
     Под `T` подразумевается тип возвращаемого значения, либо `T?`, либо `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
-    - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `suspend myMethod(): T` [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): Flow<T>` [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (требует [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)

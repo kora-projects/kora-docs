@@ -5,3 +5,10 @@
 **/.project
 **/.settings
 **/bin
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local Kora sources/examples used for docs verification (never commit)
+.kora-agent/

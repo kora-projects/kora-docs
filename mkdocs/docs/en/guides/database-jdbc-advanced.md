@@ -246,7 +246,7 @@ Make sure the application interface includes the JDBC and Flyway modules. The HT
 Repositories do not create database infrastructure themselves. They depend on the `JdbcDatabaseModule` graph components. Flyway is also part of the graph, so migrations run before the application
 starts serving requests.
 
-## New Entity { #new-entity }
+## View { #view-new }
 
 Start with the simplest database model: a task row as the application writes it. Do not add read projections yet. At this point we only need the columns that are supplied during insert.
 
