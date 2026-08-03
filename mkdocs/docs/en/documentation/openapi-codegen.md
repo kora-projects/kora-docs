@@ -1,7 +1,7 @@
 ---
 description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support. Use when working with openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth, prefixPath, requestInDelegateParams, HttpClientTokenProvider, PrincipalWithScopes, ApiSecurity."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support; key triggers include openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth, prefixPath, requestInDelegateParams, HttpClientTokenProvider, PrincipalWithScopes, ApiSecurity."
+    use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, generator options, tags, validation, interceptors, authorization, and JsonNullable support; key triggers include openapi-generator, @HttpClient, @HttpController, @InterceptWith, @Tag, @Validate, JsonNullable, primaryAuth, prefixPath, requestInDelegateParams, HttpClientTokenProvider, PrincipalWithScopes, ApiSecurity."
 ---
 
 This module generates Kora code from an `OpenAPI` contract using [OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle).
@@ -9,7 +9,8 @@ From a single API description, it can create declarative [HTTP server](http-serv
 as well as request and response models, mappers, authorization handling, and additional annotations.
 This approach is useful when `OpenAPI` is the source of truth for the transport contract and application code must follow it automatically.
 
-For a step-by-step walkthrough before the reference documentation, see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI HTTP Server](../guides/openapi-http-server-advanced.md), and [OpenAPI HTTP Client](../guides/openapi-http-client.md).
+For a step-by-step walkthrough before the reference documentation,
+see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI HTTP Server](../guides/openapi-http-server-advanced.md), and [OpenAPI HTTP Client](../guides/openapi-http-client.md).
 
 ## Dependency { #dependency }
 
@@ -19,7 +20,7 @@ For a step-by-step walkthrough before the reference documentation, see [OpenAPI 
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.18")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.19")
         }
     }
     ```
@@ -39,7 +40,7 @@ For a step-by-step walkthrough before the reference documentation, see [OpenAPI 
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.18")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.19")
         }
     }
     ```
@@ -69,22 +70,22 @@ In addition to Kora-specific `configOptions`, `GenerateTask` accepts common `Ope
 They define where to read the contract from, where to put generated files, which packages to use, and how to preprocess the `OpenAPI` description.
 For Kora projects, these parameters are usually set explicitly because generated code is then added to normal project compilation.
 
-| Parameter | Description |
-| -------- | -------- |
-| `generatorName` | Generator name (`required`, no default). Always set it to `kora` for Kora. |
-| `inputSpec` | Path to the `OpenAPI` file (`required`, no default). Usually this is a file under `src/main/resources/openapi`, for example `$projectDir/src/main/resources/openapi/openapi.yaml`. |
-| `outputDir` | Directory for generated files (not specified by default, optional). In Kora projects, this is usually a directory under `build`, for example `$buildDir/generated/openapi`, and it is added to the main source set. |
-| `apiPackage` | Package for generated API interfaces, controllers, `delegate` classes, and mappers (default: `org.openapitools.api`). It is recommended to set it explicitly, for example `ru.tinkoff.kora.example.openapi.api`. |
-| `modelPackage` | Package for models generated from `OpenAPI` schemas (default: `org.openapitools.model`). It is recommended to set it explicitly, for example `ru.tinkoff.kora.example.openapi.model`. |
-| `invokerPackage` | Auxiliary generator package (default: `org.openapitools.api`). It is recommended to set it explicitly next to `apiPackage` and `modelPackage`, for example `ru.tinkoff.kora.example.openapi.invoker`. |
-| `configOptions` | Generator-specific parameters (default: `{}`). For Kora, this is where `mode`, `clientConfigPrefix`, `enableServerValidation`, `interceptors`, and the other parameters described below are set. |
-| `globalProperties` | Limits which entities are generated (default: `{}`). Useful when you need to generate only `apis`, only `models`, or specific models and operations. Use carefully: normal Kora clients and servers usually need API classes, models, and mappers together. |
-| `openapiNormalizer` | Preprocesses the `OpenAPI` contract before generation (default: `{}`). Often used to disable standard transformations with `DISABLE_ALL`, generate only selected operations with `FILTER`, or control rules such as `SIMPLIFY_ONEOF_ANYOF`. |
-| `importMappings` | Maps a schema name to an existing class (default: `{}`). Useful when a model is written manually or comes from another module, for example `Money: "com.example.Money"`. |
-| `typeMappings` | Maps an `OpenAPI Generator` type to a language type (default: `{}`). Used for targeted type replacement, for example replacing `OffsetDateTime` with a project-specific time type. |
-| `schemaMappings` | Maps an `OpenAPI` schema to an external type without generating the model (default: `{}`). Similar to `importMappings`, but configured at schema level and useful for reusing shared DTOs. |
-| `skipValidateSpec` | Skips `OpenAPI` contract validation before generation (default: `false`). In normal builds it is better to keep validation enabled; use `true` only temporarily for external contracts that cannot be fixed quickly. |
-| `cleanupOutput` | Cleans `outputDir` before generation (default: `false`). Useful when the contract changes often and files from removed operations or models must disappear. Do not point `outputDir` to a directory with handwritten code. |
+| Parameter           | Description                                                                                                                                                                                                                                                 |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `generatorName`     | Generator name (`required`, no default). Always set it to `kora` for Kora.                                                                                                                                                                                  |
+| `inputSpec`         | Path to the `OpenAPI` file (`required`, no default). Usually this is a file under `src/main/resources/openapi`, for example `$projectDir/src/main/resources/openapi/openapi.yaml`.                                                                          |
+| `outputDir`         | Directory for generated files (not specified by default, optional). In Kora projects, this is usually a directory under `build`, for example `$buildDir/generated/openapi`, and it is added to the main source set.                                         |
+| `apiPackage`        | Package for generated API interfaces, controllers, `delegate` classes, and mappers (default: `org.openapitools.api`). It is recommended to set it explicitly, for example `ru.tinkoff.kora.example.openapi.api`.                                            |
+| `modelPackage`      | Package for models generated from `OpenAPI` schemas (default: `org.openapitools.model`). It is recommended to set it explicitly, for example `ru.tinkoff.kora.example.openapi.model`.                                                                       |
+| `invokerPackage`    | Auxiliary generator package (default: `org.openapitools.api`). It is recommended to set it explicitly next to `apiPackage` and `modelPackage`, for example `ru.tinkoff.kora.example.openapi.invoker`.                                                       |
+| `configOptions`     | Generator-specific parameters (default: `{}`). For Kora, this is where `mode`, `clientConfigPrefix`, `enableServerValidation`, `interceptors`, and the other parameters described below are set.                                                            |
+| `globalProperties`  | Limits which entities are generated (default: `{}`). Useful when you need to generate only `apis`, only `models`, or specific models and operations. Use carefully: normal Kora clients and servers usually need API classes, models, and mappers together. |
+| `openapiNormalizer` | Preprocesses the `OpenAPI` contract before generation (default: `{}`). Often used to disable standard transformations with `DISABLE_ALL`, generate only selected operations with `FILTER`, or control rules such as `SIMPLIFY_ONEOF_ANYOF`.                 |
+| `importMappings`    | Maps a schema name to an existing class (default: `{}`). Useful when a model is written manually or comes from another module, for example `Money: "com.example.Money"`.                                                                                    |
+| `typeMappings`      | Maps an `OpenAPI Generator` type to a language type (default: `{}`). Used for targeted type replacement, for example replacing `OffsetDateTime` with a project-specific time type.                                                                          |
+| `schemaMappings`    | Maps an `OpenAPI` schema to an external type without generating the model (default: `{}`). Similar to `importMappings`, but configured at schema level and useful for reusing shared DTOs.                                                                  |
+| `skipValidateSpec`  | Skips `OpenAPI` contract validation before generation (default: `false`). In normal builds it is better to keep validation enabled; use `true` only temporarily for external contracts that cannot be fixed quickly.                                        |
+| `cleanupOutput`     | Cleans `outputDir` before generation (default: `false`). Useful when the contract changes often and files from removed operations or models must disappear. Do not point `outputDir` to a directory with handwritten code.                                  |
 
 Example with common options:
 
@@ -169,25 +170,25 @@ Use `globalProperties` only for narrow generation tasks, for example when extrac
 `openapiNormalizer` changes the input `OpenAPI` contract before generation. It is not a Kora parameter, but a general `OpenAPI Generator` mechanism.
 For Kora, it is especially useful when one large contract is used by several applications or when the contract contains ambiguous shapes for code generation.
 
-| Rule | Description |
-| -------- | -------- |
-| `DISABLE_ALL` | Disables standard normalization rules (default: `false`). Starting with `OpenAPI Generator 7`, some rules are enabled by default, so predictable generation often starts with `DISABLE_ALL: "true"` and then enables only the needed rules explicitly. |
-| `FILTER` | Keeps only selected operations for generation (not specified by default, optional). Supports one filter at a time: `operationId:name1\|name2`, `method:get\|post`, or `tag:public\|billing`. Operations that do not match are marked as `x-internal: true` and are not generated. |
-| `KEEP_ONLY_FIRST_TAG_IN_OPERATION` | Keeps only the first tag on an operation (default: `false`). Useful when operations have several tags and are split into several API classes differently from what you expect. |
-| `SET_TAGS_FOR_ALL_OPERATIONS` | Replaces tags on all operations with one provided value (not specified by default, optional). Useful when you want to force one generated API class. |
-| `SET_TAGS_TO_OPERATIONID` | Sets an operation tag to `operationId`, or to `default` when `operationId` is empty (default: `false`). Useful for contracts without usable tags when predictable operation grouping is needed. |
-| `SET_TAGS_TO_VENDOR_EXTENSION` | Reads operation tags from the specified extension, for example `x-tags` (not specified by default, optional). Useful when an external contract cannot be changed but already has custom operation grouping. |
-| `FIX_DUPLICATED_OPERATIONID` | Adds a numeric suffix to duplicated `operationId` values (default: `false`). It is better to fix the contract, but this rule helps generate code for an external description temporarily. |
-| `SET_BEARER_AUTH_FOR_NAME` | Converts the specified security scheme to `bearerAuth` (not specified by default, optional). Useful for external contracts where a bearer token is described in a non-standard way but should be handled as a normal bearer scheme in the application. |
-| `REF_AS_PARENT_IN_ALLOF` | Marks a `$ref` inside `allOf` as a parent schema with `x-parent: true` (default: `false`). Can help contracts that model inheritance through `allOf`. |
-| `SIMPLIFY_ONEOF_ANYOF` | Simplifies some `oneOf`/`anyOf` constructs, for example by moving a `null` variant to `nullable: true` and removing single wrappers (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set). For Kora, this can change generated model shapes, so enable it deliberately. |
-| `SIMPLIFY_ANYOF_STRING_AND_ENUM_STRING` | Simplifies `anyOf` made from `string` and a string enum to `string` (default: `false`). This can help with contracts where the enum restriction is not important for code. |
-| `SIMPLIFY_BOOLEAN_ENUM` | Converts a boolean enum to a plain `boolean` (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set). |
-| `REFACTOR_ALLOF_WITH_PROPERTIES_ONLY` | Moves properties from a schema that has both `allOf` and `properties` into a separate schema inside `allOf` (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set). This can help inheritance, but strict contracts should be checked after generation. |
-| `NORMALIZE_31SPEC` | Normalizes some `OpenAPI 3.1` constructs into a form better understood by the generator (default: `false`). Useful for `3.1` contracts when generation fails on newer schema forms. |
-| `REMOVE_X_INTERNAL` | Removes `x-internal: true` from operations and models (default: `false`). Use only when the contract already contains `x-internal`, but a specific generation task must force such operations back in. |
-| `SET_CONTAINER_TO_NULLABLE` | Marks container types `array`, `set`, or `map` as `nullable` (not specified by default, optional). Use only when an external contract systematically misses `nullable` on such fields. |
-| `SET_PRIMITIVE_TYPES_TO_NULLABLE` | Marks primitive types `string`, `integer`, `number`, or `boolean` as `nullable` (not specified by default, optional). This significantly changes model signatures, so apply it only to problematic external contracts. |
+| Rule                                    | Description                                                                                                                                                                                                                                                                                 |
+|-----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `DISABLE_ALL`                           | Disables standard normalization rules (default: `false`). Starting with `OpenAPI Generator 7`, some rules are enabled by default, so predictable generation often starts with `DISABLE_ALL: "true"` and then enables only the needed rules explicitly.                                      |
+| `FILTER`                                | Keeps only selected operations for generation (not specified by default, optional). Supports one filter at a time: `operationId:name1\|name2`, `method:get\|post`, or `tag:public\|billing`. Operations that do not match are marked as `x-internal: true` and are not generated.           |
+| `KEEP_ONLY_FIRST_TAG_IN_OPERATION`      | Keeps only the first tag on an operation (default: `false`). Useful when operations have several tags and are split into several API classes differently from what you expect.                                                                                                              |
+| `SET_TAGS_FOR_ALL_OPERATIONS`           | Replaces tags on all operations with one provided value (not specified by default, optional). Useful when you want to force one generated API class.                                                                                                                                        |
+| `SET_TAGS_TO_OPERATIONID`               | Sets an operation tag to `operationId`, or to `default` when `operationId` is empty (default: `false`). Useful for contracts without usable tags when predictable operation grouping is needed.                                                                                             |
+| `SET_TAGS_TO_VENDOR_EXTENSION`          | Reads operation tags from the specified extension, for example `x-tags` (not specified by default, optional). Useful when an external contract cannot be changed but already has custom operation grouping.                                                                                 |
+| `FIX_DUPLICATED_OPERATIONID`            | Adds a numeric suffix to duplicated `operationId` values (default: `false`). It is better to fix the contract, but this rule helps generate code for an external description temporarily.                                                                                                   |
+| `SET_BEARER_AUTH_FOR_NAME`              | Converts the specified security scheme to `bearerAuth` (not specified by default, optional). Useful for external contracts where a bearer token is described in a non-standard way but should be handled as a normal bearer scheme in the application.                                      |
+| `REF_AS_PARENT_IN_ALLOF`                | Marks a `$ref` inside `allOf` as a parent schema with `x-parent: true` (default: `false`). Can help contracts that model inheritance through `allOf`.                                                                                                                                       |
+| `SIMPLIFY_ONEOF_ANYOF`                  | Simplifies some `oneOf`/`anyOf` constructs, for example by moving a `null` variant to `nullable: true` and removing single wrappers (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set). For Kora, this can change generated model shapes, so enable it deliberately. |
+| `SIMPLIFY_ANYOF_STRING_AND_ENUM_STRING` | Simplifies `anyOf` made from `string` and a string enum to `string` (default: `false`). This can help with contracts where the enum restriction is not important for code.                                                                                                                  |
+| `SIMPLIFY_BOOLEAN_ENUM`                 | Converts a boolean enum to a plain `boolean` (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set).                                                                                                                                                                     |
+| `REFACTOR_ALLOF_WITH_PROPERTIES_ONLY`   | Moves properties from a schema that has both `allOf` and `properties` into a separate schema inside `allOf` (enabled by default in `OpenAPI Generator 7` unless `DISABLE_ALL` is set). This can help inheritance, but strict contracts should be checked after generation.                  |
+| `NORMALIZE_31SPEC`                      | Normalizes some `OpenAPI 3.1` constructs into a form better understood by the generator (default: `false`). Useful for `3.1` contracts when generation fails on newer schema forms.                                                                                                         |
+| `REMOVE_X_INTERNAL`                     | Removes `x-internal: true` from operations and models (default: `false`). Use only when the contract already contains `x-internal`, but a specific generation task must force such operations back in.                                                                                      |
+| `SET_CONTAINER_TO_NULLABLE`             | Marks container types `array`, `set`, or `map` as `nullable` (not specified by default, optional). Use only when an external contract systematically misses `nullable` on such fields.                                                                                                      |
+| `SET_PRIMITIVE_TYPES_TO_NULLABLE`       | Marks primitive types `string`, `integer`, `number`, or `boolean` as `nullable` (not specified by default, optional). This significantly changes model signatures, so apply it only to problematic external contracts.                                                                      |
 
 Example of generating only the public part of a contract:
 
@@ -247,15 +248,15 @@ Example of normalizing tags for a contract without convenient grouping:
 Kora also supports several `configOptions` that control `JSON` mappers and common model generation.
 They do not depend on whether a client or a server is generated.
 
-| Parameter | Description |
-| -------- | -------- |
-| `jsonAnnotation` | Annotation tag used to inject `JSON` mappers into generated request and response mappers (default: `ru.tinkoff.kora.json.common.annotation.Json`). |
-| `objectType` | Type for `type: object` schemas without a more precise description. `Java` uses `java.lang.Object` by default, and `Kotlin` uses `kotlin.Any`. For example, set it to `com.fasterxml.jackson.databind.JsonNode` if the application wants to handle arbitrary `JSON` as a tree. |
-| `disableHtmlEscaping` | Disables HTML character escaping in `JSON` strings (default: `false`). Usually the default value is kept. |
-| `ignoreAnyOfInEnum` | Ignores `anyOf` when generating enums (default: `false`). Can help with contracts where an enum is described through mixed `anyOf` constructs. |
-| `discriminatorCaseSensitive` | Controls case sensitivity of the discriminator value lookup for polymorphic (`oneOf`) models with a discriminator (default: `true`). Set to `false` when incoming discriminator values may differ in case from the schema definition. |
-| `additionalModelTypeAnnotations` | Additional annotations on model types (not specified by default, optional). Several annotations are separated by `;`, for example `@Deprecated;@MyAnnotation`. |
-| `additionalEnumTypeAnnotations` | Additional annotations on enum types (not specified by default, optional). Several annotations are separated by `;`. |
+| Parameter                        | Description                                                                                                                                                                                                                                                                    |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `jsonAnnotation`                 | Annotation tag used to inject `JSON` mappers into generated request and response mappers (default: `ru.tinkoff.kora.json.common.annotation.Json`).                                                                                                                             |
+| `objectType`                     | Type for `type: object` schemas without a more precise description. `Java` uses `java.lang.Object` by default, and `Kotlin` uses `kotlin.Any`. For example, set it to `com.fasterxml.jackson.databind.JsonNode` if the application wants to handle arbitrary `JSON` as a tree. |
+| `disableHtmlEscaping`            | Disables HTML character escaping in `JSON` strings (default: `false`). Usually the default value is kept.                                                                                                                                                                      |
+| `ignoreAnyOfInEnum`              | Ignores `anyOf` when generating enums (default: `false`). Can help with contracts where an enum is described through mixed `anyOf` constructs.                                                                                                                                 |
+| `discriminatorCaseSensitive`     | Controls case sensitivity of the discriminator value lookup for polymorphic (`oneOf`) models with a discriminator (default: `true`). Set to `false` when incoming discriminator values may differ in case from the schema definition.                                          |
+| `additionalModelTypeAnnotations` | Additional annotations on model types (not specified by default, optional). Several annotations are separated by `;`, for example `@Deprecated;@MyAnnotation`.                                                                                                                 |
+| `additionalEnumTypeAnnotations`  | Additional annotations on enum types (not specified by default, optional). Several annotations are separated by `;`.                                                                                                                                                           |
 
 Example:
 
@@ -507,13 +508,13 @@ The full set of client options (`url`, `requestTimeout`, per-operation blocks, `
 
 The client method signatures depend on the selected `mode`:
 
-| Mode | Return type example |
-| -------- | -------- |
-| `java-client` | `PetApiResponses.GetPetByIdApiResponse` (blocking value) |
-| `java-async-client` | `CompletionStage<PetApiResponses.GetPetByIdApiResponse>` |
-| `java-reactive-client` | `Mono<PetApiResponses.GetPetByIdApiResponse>` (requires `reactor-core`) |
-| `kotlin-client` | `PetApiResponses.GetPetByIdApiResponse` (blocking value) |
-| `kotlin-suspend-client` | `suspend fun ...: PetApiResponses.GetPetByIdApiResponse` |
+| Mode                    | Return type example                                                     |
+|-------------------------|-------------------------------------------------------------------------|
+| `java-client`           | `PetApiResponses.GetPetByIdApiResponse` (blocking value)                |
+| `java-async-client`     | `CompletionStage<PetApiResponses.GetPetByIdApiResponse>`                |
+| `java-reactive-client`  | `Mono<PetApiResponses.GetPetByIdApiResponse>` (requires `reactor-core`) |
+| `kotlin-client`         | `PetApiResponses.GetPetByIdApiResponse` (blocking value)                |
+| `kotlin-suspend-client` | `suspend fun ...: PetApiResponses.GetPetByIdApiResponse`                |
 
 Every method returns a sealed `*ApiResponses` envelope whose subtypes encode the HTTP status, the same way [server delegates](#delegate-response-types) do.
 

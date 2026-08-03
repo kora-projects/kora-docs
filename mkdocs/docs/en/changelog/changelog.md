@@ -5,7 +5,21 @@ hide:
   - navigation
 ---
 
-## 1.2.18
+## 1.2.19
+
+Fixed:
+
+- Fixed KSP match interceptor tags strictly
+- Fixed OpenAPI generator handle multipart byte fields
+- Fixed `SchedulingLogger` component provisioning and correct logging levels
+- Fixed Cassandra apply `advanced.coalescer.rescheduleInterval` to the driver
+- Fixed potential HTTP Client telemetry tags NPE on undefined hosts
+- Fixed Jackson downgrade to 2.19.4 due to Kotlin dependencies through BOM
+- Fixed Javadoc default retry predicate reference in `RetryConfig`
+- Fixed Javadoc for configuration classes from documentation
+- Updated Cache annotation retention from class to runtime
+
+### 1.2.18
 
 Added:
 
