@@ -844,6 +844,34 @@
         .token-string { color: #95e6a8; }
         .token-muted { color: #8f887d; }
 
+        .snippet-language-strip {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .snippet-language {
+            min-height: 38px;
+            border: 0;
+            background: rgba(13, 13, 13, 0.98);
+            color: var(--soft);
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .snippet-language.is-active {
+            background:
+                linear-gradient(135deg, rgba(80, 216, 144, 0.16), rgba(13, 13, 13, 0.98) 64%),
+                rgba(13, 13, 13, 0.98);
+            color: var(--green);
+        }
+
         .build-strip {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -995,6 +1023,8 @@
             min-height: 260px;
             padding: 24px;
             background: rgba(10, 10, 10, 0.92);
+            display: flex;
+            flex-direction: column;
         }
 
         .feature + .feature {
@@ -1022,7 +1052,7 @@
         }
 
         .diagram {
-            margin-top: 18px;
+            margin-top: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius);
             background: #070707;
@@ -1031,7 +1061,7 @@
 
         .diagram-row {
             display: grid;
-            grid-template-columns: 118px 1fr;
+            grid-template-columns: 108px 1fr;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
@@ -1040,7 +1070,7 @@
         }
 
         .diagram-label {
-            padding: 13px 14px;
+            padding: 12px 14px;
             color: var(--soft);
             font-size: 12px;
             font-weight: 800;
@@ -1048,7 +1078,7 @@
         }
 
         .diagram-value {
-            padding: 13px 14px;
+            padding: 12px 14px;
             color: #d9d2c8;
             font-size: 13px;
         }
@@ -1172,6 +1202,34 @@
 
         .benchmark-note a {
             color: var(--brand-strong);
+        }
+
+        .philosophy-panel {
+            margin-top: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.07), transparent 34%),
+                rgba(10, 10, 10, 0.86);
+        }
+
+        .philosophy-copy {
+            padding: 26px;
+        }
+
+        .philosophy-copy p {
+            max-width: 760px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .philosophy-copy p + p {
+            margin-top: 14px;
+        }
+
+        .philosophy-copy strong {
+            color: var(--text);
         }
 
         .startup-panel {
@@ -1897,6 +1955,7 @@
                 border-left: 0;
                 border-top: 1px solid var(--line);
             }
+
         }
 
         @media (max-width: 680px) {
@@ -2071,6 +2130,10 @@
                         <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
                         <span class="console-title" id="snippet-title">Application.java</span>
                     </div>
+                    <div class="snippet-language-strip" aria-label="Code example language">
+                        <button class="snippet-language is-active" type="button" data-snippet-language="java" aria-label="Show Java examples">Java</button>
+                        <button class="snippet-language" type="button" data-snippet-language="kotlin" aria-label="Show Kotlin examples">Kotlin</button>
+                    </div>
                     <pre><code class="console-code" id="snippet-code"></code></pre>
                     <div class="snippet-dots" aria-label="Code example progress">
                         <button class="snippet-dot is-active" type="button" aria-label="Show controller example"></button>
@@ -2101,38 +2164,38 @@
             <div class="feature-grid">
                 <article class="feature">
                     <span class="feature-index">01</span>
-                    <h3>Compile-time DI</h3>
-                    <p>The container graph is generated and validated during compilation, with eager and parallel initialization at startup.</p>
+                    <h3>Compile-Time Certainty, No Runtime Magic</h3>
+                    <p>Kora checks the application graph, contracts, and generated code at compile time. Precise diagnostics and readable source replace late runtime surprises.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Source</span><span class="diagram-value">@KoraApp, @Component, @Module</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Build</span><span class="diagram-value">ApplicationGraph</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Checks</span><span class="diagram-value">dependencies, injections, cycles, aspects</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Generates</span><span class="diagram-value">wiring, handlers, repositories, mappers</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">02</span>
-                    <h3>Transparent code</h3>
-                    <p>No black-box runtime wiring. Kora generates source code that can be inspected, debugged, and reasoned about by the team and AI.</p>
+                    <h3>Simple. Coherent. Familiar.</h3>
+                    <p>Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Avoids</span><span class="diagram-value">reflection, dynamic proxies</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Keeps</span><span class="diagram-value">plain Java and Kotlin</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Familiar</span><span class="diagram-value">modules, clients, repositories, abstractions</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Coherent</span><span class="diagram-value">one approach across modules</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">03</span>
-                    <h3>Contract-first APIs</h3>
-                    <p>OpenAPI can be the source of truth for HTTP servers and clients, with generated handlers, models, validation, and security hooks.</p>
+                    <h3>Peak Performance by Design</h3>
+                    <p>Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Spec</span><span class="diagram-value">openapi.yaml</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Output</span><span class="diagram-value">server or client code</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Startup</span><span class="diagram-value">prebuilt graph, parallel init</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Runtime</span><span class="diagram-value">thin abstractions, fast integrations</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">04</span>
-                    <h3>Cloud-native by default</h3>
-                    <p>HTTP management ports, probes, metrics, tracing, logging, graceful shutdown, and database telemetry are part of the standard path.</p>
+                    <h3>Production-Grade, Cloud-Ready</h3>
+                    <p>Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.</p>
                     <div class="diagram" aria-hidden="true">
-                        <div class="diagram-row"><span class="diagram-label">Private</span><span class="diagram-value">/metrics, /system/readiness</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Signal</span><span class="diagram-value">OpenTelemetry</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Operate</span><span class="diagram-value">metrics, traces, logs, probes</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Scale</span><span class="diagram-value">fast readiness, graceful shutdown</span></div>
                     </div>
                 </article>
             </div>
@@ -2209,6 +2272,14 @@
                 <div class="benchmark-note">
                     <span>Values use the "Single query" interval from the linked external results.</span>
                     <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fstatic.squiry.xyz%2Fresults%2F20240124114707.json&hw=ph&test=db">Open TechEmpower snapshot</a>
+                </div>
+            </div>
+            <div class="philosophy-panel">
+                <div class="philosophy-copy">
+                    <p>Kora does not pursue breadth for its own sake or wrap every possible technology behind a framework-specific abstraction or replace every functionality of other frameworks. Kora takes proven, widely used backend practices and pushes them further: less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
+                    <p>Kora focuses on essentials of production backend development-HTTP, data access, messaging, configuration, resilience, telemetry, scheduling, and integrations-and aims to make that path exceptionally direct, transparent, and as efficient as possible.</p>
+                    <p>Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.</p>
+                    <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens at the table-where a good knife, fork, and spoon cover nearly everything.</p>
                 </div>
             </div>
         </section>
@@ -2464,25 +2535,30 @@
             "Generated human-readable source code": "Сгенерированный читаемый исходный код",
             "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и простота.",
             "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
-            "Compile-time DI": "Внедрение во время компиляции",
-            "The container graph is generated and validated during compilation, with eager and parallel initialization at startup.": "Граф контейнера генерируется и проверяется во время компиляции, а при запуске инициализируется максимально параллельно.",
-            "Source": "Исходники",
-            "Build": "Сборка",
-            "Transparent code": "Прозрачный код",
-            "No black-box runtime wiring. Kora generates source code that can be inspected, debugged, and reasoned about by the team and AI.": "Никакой черной магии при связывании компонентов во время выполнения. Kora генерирует исходный код, который как команда так и нейросеть могут читать, отлаживать и понимать.",
-            "Avoids": "Без",
-            "reflection, dynamic proxies": "рефлексии, динамических прокси",
-            "Keeps": "Сохраняет",
-            "plain Java and Kotlin": "обычные Java и Kotlin",
-            "Contract-first APIs": "OpenAPI контракты",
-            "OpenAPI can be the source of truth for HTTP servers and clients, with generated handlers, models, validation, and security hooks.": "OpenAPI может быть источником правды для HTTP-серверов и клиентов: с сгенерированными обработчиками, моделями, проверками и security hooks.",
-            "Spec": "Спецификация",
-            "Output": "Результат",
-            "server or client code": "код сервера или клиента",
-            "Cloud-native by default": "Облачно ориентирован",
-            "HTTP management ports, probes, metrics, tracing, logging, graceful shutdown, and database telemetry are part of the standard path.": "Порты управления HTTP, health checks, метрики, трассировка, логирование, корректное завершение работы и телеметрия баз данных входят в стандартный путь.",
-            "Private": "Private",
-            "Signal": "Сигнал",
+            "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без runtime-магии",
+            "Kora checks the application graph, contracts, and generated code at compile time. Precise diagnostics and readable source replace late runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Точная диагностика и читаемые исходники заменяют поздние runtime-сюрпризы.",
+            "Checks": "Проверяет",
+            "dependencies, injections, cycles, aspects": "зависимости, внедрения, циклы, аспекты",
+            "Generates": "Генерирует",
+            "wiring, handlers, repositories, mappers": "связи, обработчики, репозитории, мапперы",
+            "Simple. Coherent. Familiar.": "Просто. Цельно. Знакомо.",
+            "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые Java и Kotlin паттерны остаются, но становятся строже, типизированнее, сгенерированными и прозрачными для HTTP, OpenAPI, gRPC, данных, messaging, resilience и config.",
+            "Familiar": "Знакомо",
+            "modules, clients, repositories, abstractions": "модули, клиенты, репозитории, абстракции",
+            "Coherent": "Цельно",
+            "one approach across modules": "один подход во всех модулях",
+            "Peak Performance by Design": "Пиковая производительность по дизайну",
+            "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.": "Производительность следует из compile-time решений, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов.",
+            "Startup": "Старт",
+            "prebuilt graph, parallel init": "готовый граф, parallel init",
+            "Runtime": "Runtime",
+            "thin abstractions, fast integrations": "тонкие абстракции, быстрые интеграции",
+            "Production-Grade, Cloud-Ready": "Production-grade, готово для cloud",
+            "Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.": "Production defaults покрывают OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown и resilience policies, чтобы сервисы оставались предсказуемыми под нагрузкой.",
+            "Operate": "Operate",
+            "metrics, traces, logs, probes": "metrics, traces, logs, probes",
+            "Scale": "Scale",
+            "fast readiness, graceful shutdown": "fast readiness, graceful shutdown",
             "Benchmark pressure, visible in motion.": "Высокие нагрузки, не предел.",
             "A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.": "TechEmpower Single query (external): число ответов в секунду при одном запросе к базе данных на HTTP-запрос. Чем больше, тем лучше.",
             "Snapshot": "Срез",
@@ -3483,9 +3559,286 @@ public final class $ResilientService__AopProxy extends ResilientService {
             }
         ];
 
+        const kotlinSourceSnippets = [
+            {
+                title: "HelloController.kt",
+                code: `@Component
+@HttpController
+class HelloController {
+    @HttpRoute(method = HttpMethod.GET, path = "/hello/{name}")
+    fun hello(@Path name: String): String {
+        return "Hello, $name!"
+    }
+}`
+            },
+            {
+                title: "UserRepository.kt",
+                code: `@Repository
+interface UserRepository : JdbcRepository {
+
+    @EntityJdbc
+    @Table("users")
+    data class User(
+        @Id val id: UUID,
+        @Column("email") val email: String,
+        @Column("created_at") val createdAt: OffsetDateTime
+    )
+
+    @Query("""
+        SELECT %{return#selects}
+        FROM %{return#table}
+        WHERE id = :id
+    """)
+    fun findById(id: UUID): User?
+
+    @Query("INSERT INTO %{user#inserts}")
+    fun insert(user: User): UpdateCount
+}`
+            },
+            {
+                title: "HttpClient.kt",
+                code: `@HttpClient(configPath = "httpClient.payments")
+interface PaymentClient {
+
+    @HttpRoute(method = HttpMethod.POST, path = "/payments")
+    fun create(@Json request: PaymentRequest): PaymentResponse
+
+    @Json
+    @HttpRoute(method = HttpMethod.GET, path = "/payments/{id}")
+    fun findById(@Path id: UUID): PaymentFindResponse
+}`
+            },
+            {
+                title: "KafkaConsumer.kt",
+                code: `@Component
+class EventsConsumer {
+
+    @KafkaListener("kafka.consumer.events")
+    fun process(
+        key: Long?,
+        @Json value: Payment?,
+        exception: Exception?
+    ) {
+        when (exception) {
+            is RecordKeyDeserializationException -> {
+                println("Invalid key!")
+                return
+            }
+            is RecordValueDeserializationException -> {
+                println("Invalid value!")
+                return
+            }
+            null -> Unit
+            else -> {
+                println("Failed!")
+                return
+            }
+        }
+
+        handleEvent(key, value)
+    }
+}`
+            },
+            {
+                title: "ResilientService.kt",
+                code: `@Component
+open class ResilientService(
+    private val client: PaymentClient
+) {
+    @Fallback(value = "payments", method = "fallback(request)")
+    @CircuitBreaker("payments")
+    @Retry("payments")
+    @Timeout("payments")
+    open fun charge(request: PaymentRequest): PaymentResponse {
+        return client.create(request)
+    }
+
+    protected open fun fallback(request: PaymentRequest): PaymentResponse {
+        return PaymentResponse.pending(request.id())
+    }
+}`
+            }
+        ];
+
+        const kotlinGeneratedSnippets = [
+            {
+                title: "HelloController_Route.kt",
+                code: `@Generated("HttpServerSymbolProcessor")
+class HelloController_Route(
+    private val controller: HelloController,
+    private val executor: BlockingRequestExecutor,
+    private val responseMapper: HttpServerResponseMapper<String>
+) : HttpServerRequestHandler {
+
+    override fun handle(
+        ctx: Context,
+        request: HttpServerRequest
+    ): CompletionStage<HttpServerResponse> {
+        val name = request.pathParams()["name"]
+        return executor.execute(ctx) {
+            val result = controller.hello(name)
+            responseMapper.apply(ctx, request, result)
+        }
+    }
+}`
+            },
+            {
+                title: "UserRepository_Impl.kt",
+                code: `@Generated("RepositorySymbolProcessor")
+class UserRepository_Impl(
+    private val connectionFactory: JdbcConnectionFactory,
+    private val uuidMapper: JdbcParameterColumnMapper<UUID>,
+    private val userMapper: JdbcRowMapper<UserRepository.User>
+) : UserRepository {
+    private val findById = QueryContext(
+        "SELECT id, email, created_at\\nFROM users\\nWHERE id = :id",
+        "SELECT id, email, created_at\\nFROM users\\nWHERE id = ?",
+        "UserRepository.findById"
+    )
+
+    override fun findById(id: UUID): UserRepository.User? {
+        val ctx = Context.current()
+        val telemetry = connectionFactory.telemetry()
+            .createContext(ctx, findById)
+
+        try {
+            connectionFactory.newConnection().use { con ->
+                con.prepareStatement(findById.sql()).use { stmt ->
+                    uuidMapper.set(stmt, 1, id)
+                    return userMapper.apply(stmt.executeQuery())
+                }
+            }
+        } catch (e: Exception) {
+            telemetry.close(e)
+            throw e
+        }
+    }
+}`
+            },
+            {
+                title: "PaymentClient_Impl.kt",
+                code: `@Generated("HttpClientSymbolProcessor")
+class PaymentClient_Impl(
+    private val client: HttpClient,
+    private val requestMapper: HttpClientRequestMapper<PaymentRequest>,
+    private val responseMapper: HttpClientResponseMapper<PaymentResponse>
+) : PaymentClient {
+
+    override fun create(request: PaymentRequest): PaymentResponse {
+        val body = try {
+            requestMapper.apply(Context.current(), request)
+        } catch (e: Exception) {
+            throw HttpClientEncoderException(e)
+        }
+
+        val httpRequest = HttpClientRequest.of(
+            "POST",
+            "/payments",
+            "/payments",
+            HttpHeaders.of(),
+            body,
+            null
+        )
+
+        try {
+            client.execute(httpRequest).toCompletableFuture().get().use { response ->
+                if (response.code() in 200..299) {
+                    return responseMapper.apply(response)
+                }
+                throw HttpClientResponseException.fromResponseFuture(response).get()
+            }
+        } catch (e: Exception) {
+            throw HttpClientUnknownException(e)
+        }
+    }
+}`
+            },
+            {
+                title: "KafkaConsumer_Handler.kt",
+                code: `@Generated("KafkaSymbolProcessor")
+class KafkaConsumer_Handler(
+    private val consumer: EventsConsumer,
+    private val telemetry: KafkaConsumerTelemetry,
+    private val keyDeserializer: KafkaRecordKeyDeserializer<Long>,
+    private val valueDeserializer: KafkaRecordValueDeserializer<Payment>
+) : KafkaRecordHandler<Long, Payment> {
+
+    override fun handle(record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception?) {
+        val ctx = telemetry.get(record)
+        var key: Long? = null
+        var value: Payment? = null
+        var error = exception
+
+        try {
+            if (error == null && record.key() != null) {
+                key = keyDeserializer.deserialize(record.key())
+            }
+            if (error == null && record.value() != null) {
+                value = valueDeserializer.deserialize(record.value())
+            }
+        } catch (e: Exception) {
+            error = e
+        }
+
+        try {
+            consumer.process(key, value, error)
+            ctx.close(null)
+        } catch (e: Exception) {
+            ctx.close(e)
+            throw e
+        }
+    }
+}`
+            },
+            {
+                title: "ResilientService_AopProxy.kt",
+                code: `@AopProxy
+@Generated("AopSymbolProcessor")
+class ResilientService_AopProxy(
+    client: PaymentClient,
+    private val timeout: Timeout,
+    private val retry: Retry,
+    private val circuitBreaker: CircuitBreaker
+) : ResilientService(client) {
+
+    private fun timeout(request: PaymentRequest): PaymentResponse {
+        return timeout.execute { super.charge(request) }
+    }
+
+    private fun retry(request: PaymentRequest): PaymentResponse {
+        return retry.retry { timeout(request) }
+    }
+
+    override fun charge(request: PaymentRequest): PaymentResponse {
+        return try {
+            circuitBreaker.acquire()
+            val result = retry(request)
+            circuitBreaker.releaseOnSuccess()
+            result
+        } catch (e: Throwable) {
+            circuitBreaker.releaseOnError(e)
+            fallback(request)
+        }
+    }
+}`
+            }
+        ];
+
+        const snippetSets = {
+            java: {
+                source: sourceSnippets,
+                generated: generatedSnippets
+            },
+            kotlin: {
+                source: kotlinSourceSnippets,
+                generated: kotlinGeneratedSnippets
+            }
+        };
+
         const title = document.getElementById("snippet-title");
         const code = document.getElementById("snippet-code");
         const dots = Array.from(document.querySelectorAll(".snippet-dot"));
+        const languageButtons = Array.from(document.querySelectorAll("[data-snippet-language]"));
         const modeButtons = Array.from(document.querySelectorAll("[data-snippet-mode]"));
         const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
         const typeDuration = 3000;
@@ -3493,7 +3846,9 @@ public final class $ResilientService__AopProxy extends ResilientService {
         let index = 0;
         let sequence = 0;
         let restartTimer = 0;
-        let snippets = sourceSnippets;
+        let language = "java";
+        let mode = "source";
+        let snippets = snippetSets[language][mode];
 
         const escapeHtml = (value) => value
             .replace(/&/g, "&amp;")
@@ -3513,8 +3868,8 @@ public final class $ResilientService__AopProxy extends ResilientService {
                 .replace(/\/\/[^\n]*/g, stash("token-muted"))
                 .replace(/@\w+(?:\([^)]*\))?/g, stash("token-anno"))
                 .replace(/"[^"\n]*"/g, stash("token-string"))
-                .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof)\b/g, '<span class="token-key">$1</span>')
-                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|V)\b/g, '<span class="token-type">$1</span>');
+                .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof|fun|val|override|open|when|is|else|null|in|data)\b/g, '<span class="token-key">$1</span>')
+                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V)\b/g, '<span class="token-type">$1</span>');
 
             return html.replace(/\u0000(\d+)\u0000/g, (_, id) => tokens[Number(id)]);
         };
@@ -3523,6 +3878,17 @@ public final class $ResilientService__AopProxy extends ResilientService {
             index = nextIndex;
             title.textContent = snippets[index].title;
             dots.forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === index));
+        };
+
+        const selectSnippets = () => {
+            snippets = snippetSets[language][mode];
+            index = Math.min(index, snippets.length - 1);
+            languageButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.snippetLanguage === language));
+            modeButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.snippetMode === mode));
+            dots.forEach((dot, dotIndex) => {
+                dot.hidden = dotIndex >= snippets.length;
+                dot.classList.toggle("is-active", dotIndex === index);
+            });
         };
 
         const typeSnippet = async (snippet, token) => {
@@ -3567,17 +3933,18 @@ public final class $ResilientService__AopProxy extends ResilientService {
             });
         });
 
+        languageButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                language = button.dataset.snippetLanguage;
+                selectSnippets();
+                restart();
+            });
+        });
+
         modeButtons.forEach((button) => {
             button.addEventListener("click", () => {
-                snippets = button.dataset.snippetMode === "generated"
-                    ? generatedSnippets
-                    : sourceSnippets;
-                index = Math.min(index, snippets.length - 1);
-                modeButtons.forEach((item) => item.classList.toggle("is-active", item === button));
-                dots.forEach((dot, dotIndex) => {
-                    dot.hidden = dotIndex >= snippets.length;
-                    dot.classList.toggle("is-active", dotIndex === index);
-                });
+                mode = button.dataset.snippetMode;
+                selectSnippets();
                 restart();
             });
         });
