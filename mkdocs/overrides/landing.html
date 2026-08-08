@@ -89,6 +89,42 @@
             overflow: hidden;
         }
 
+        .grid-signals {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .signal {
+            position: absolute;
+            opacity: 0;
+            filter: drop-shadow(0 0 3px rgba(255, 176, 46, 0.75));
+        }
+
+        .signal-x {
+            top: 0;
+            height: 2px;
+            width: 120px;
+            background: linear-gradient(90deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        }
+
+        .signal-x.is-rev {
+            background: linear-gradient(270deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        }
+
+        .signal-y {
+            left: 0;
+            width: 2px;
+            height: 120px;
+            background: linear-gradient(180deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        }
+
+        .signal-y.is-rev {
+            background: linear-gradient(0deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        }
+
         .topbar {
             position: sticky;
             top: 0;
@@ -2283,6 +2319,10 @@
 </head>
 <body>
 <div class="page-shell">
+    <div class="grid-signals" aria-hidden="true" id="grid-signals">
+        <span class="signal signal-x"></span>
+        <span class="signal signal-y"></span>
+    </div>
     <header class="topbar">
         <nav class="nav" aria-label="Primary navigation">
             <a class="brand" href="/kora-docs/">
@@ -2488,7 +2528,7 @@
                     <aside class="philosophy-aside">
                         <div>
                             <span class="philosophy-kicker">Philosophy</span>
-                            <h3>Not a tool for every situation.<br><span class="philosophy-subline">But the <em>best tool</em> for the job.</span></h3>
+                            <h3>Not a tool for every situation.<br><span class="philosophy-subline">But a <em>great tool</em> for the job.</span></h3>
                         </div>
                     </aside>
                     <div class="philosophy-main">
@@ -2804,8 +2844,8 @@
             "Guides": "Руководства",
             "Philosophy": "Философия",
             "Not a tool for every situation.": "Не инструмент на все случаи.",
-            "But the": "Но",
-            "best tool": "лучший инструмент",
+            "But a": "Но",
+            "great tool": "отличный инструмент",
             "for the job.": "для конкретной задачи.",
             "Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks.": "Kora не стремится к охвату ради охвата, не оборачивает каждую технологию в собственную абстракцию и не заменяет собой всю функциональность других фреймворков.",
             "It takes proven, widely used backend practices and pushes them further:": "Она берет проверенные, широко используемые практики серверной разработки и доводит их до предела:",
@@ -2836,7 +2876,7 @@
             "workarounds,": "костылей,",
             "dirty hacks": "грязных хаков",
             "and kludges.": "и обходных путей.",
-            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services a fastest production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высоко-производительный исходный код и сразу готова к использовать в облачно-ориентированной среде как наиболее производительный стек на JVM.",
+            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services a fastest production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высоко-производительный исходный код и сразу готова к использовать в облачно-ориентированной среде как максимально производительный стек на JVM.",
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
             "runtime reflections": "рефлексии в runtime",
@@ -5125,6 +5165,65 @@ class ResilientService_AopProxy(
         });
 
         run();
+    })();
+</script>
+<script>
+    (() => {
+        const container = document.getElementById("grid-signals");
+        if (!container) return;
+
+        const CELL = 72;
+        const TRAIL = 120;
+        const signals = Array.from(container.querySelectorAll(".signal"));
+
+        const randomBetween = (min, max) => min + Math.random() * (max - min);
+
+        const gridLine = (span) => {
+            const lines = Math.max(1, Math.floor(span / CELL));
+            return Math.floor(Math.random() * lines) * CELL;
+        };
+
+        const launch = (el) => {
+            const isX = el.classList.contains("signal-x");
+            const docWidth = container.offsetWidth || window.innerWidth;
+            const docHeight = container.offsetHeight || document.documentElement.scrollHeight;
+            const reverse = Math.random() < 0.5;
+            const duration = randomBetween(9000, 16000);
+            const delay = randomBetween(0, 4000);
+
+            el.classList.toggle("is-rev", reverse);
+
+            let axisProp, from, to, crossProp, crossValue;
+            if (isX) {
+                axisProp = "left";
+                crossProp = "top";
+                crossValue = gridLine(docHeight);
+                from = reverse ? docWidth + TRAIL : -TRAIL;
+                to = reverse ? -TRAIL : docWidth + TRAIL;
+            } else {
+                axisProp = "top";
+                crossProp = "left";
+                crossValue = gridLine(docWidth);
+                from = reverse ? docHeight + TRAIL : -TRAIL;
+                to = reverse ? -TRAIL : docHeight + TRAIL;
+            }
+
+            el.style[crossProp] = crossValue + "px";
+
+            const anim = el.animate(
+                [
+                    { [axisProp]: from + "px", opacity: 0 },
+                    { opacity: 0.6, offset: 0.08 },
+                    { opacity: 0.6, offset: 0.88 },
+                    { [axisProp]: to + "px", opacity: 0 }
+                ],
+                { duration, delay, easing: "linear", fill: "forwards" }
+            );
+
+            anim.onfinish = () => launch(el);
+        };
+
+        signals.forEach((el) => launch(el));
     })();
 </script>
 </body>
