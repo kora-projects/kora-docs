@@ -11,6 +11,9 @@
     <meta property="og:image" content="/kora-docs/en/assets/img/kora-long.png">
     <title>Kora Framework - Compile-time Java and Kotlin services</title>
     <link rel="icon" href="/kora-docs/en/assets/img/kora.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Commissioner:FLAR,wght@0..100,100..900&display=swap" rel="stylesheet">
     <style>
         :root {
             color-scheme: dark;
@@ -36,7 +39,11 @@
         }
 
         html {
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
+        }
+
+        [id] {
+            scroll-margin-top: 88px;
         }
 
         body {
@@ -51,6 +58,11 @@
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             line-height: 1.5;
             letter-spacing: 0;
+        }
+
+        h1, h2, h3 {
+            font-family: "Commissioner", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-variation-settings: "FLAR" 100;
         }
 
         a {
@@ -196,6 +208,22 @@
 
         .button.primary:hover {
             background: var(--brand-strong);
+        }
+
+        .button.accent {
+            border-color: rgba(80, 216, 144, 0.5);
+            color: var(--green);
+        }
+
+        .button.accent:hover {
+            border-color: rgba(80, 216, 144, 0.75);
+            background: rgba(80, 216, 144, 0.1);
+        }
+
+        .docs-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+            gap: 10px;
         }
 
         .hero {
@@ -863,6 +891,11 @@
             font-weight: 900;
             letter-spacing: 0;
             text-transform: uppercase;
+            transition: background 160ms ease;
+        }
+
+        .snippet-language:not(.is-active):hover {
+            background: rgba(255, 255, 255, 0.035);
         }
 
         .snippet-language.is-active {
@@ -892,6 +925,11 @@
             cursor: pointer;
             overflow: hidden;
             text-align: left;
+            transition: background 160ms ease;
+        }
+
+        .build-step:not(.is-active):hover {
+            background: rgba(255, 255, 255, 0.035);
         }
 
         .build-step:not(.is-active)::after {
@@ -1044,11 +1082,20 @@
             letter-spacing: 0;
         }
 
+        .nowrap-heading {
+            white-space: nowrap;
+            font-size: clamp(15px, 1.5vw, 20px);
+        }
+
         .feature p,
         .module p {
             margin: 0;
             color: var(--muted);
             font-size: 14px;
+        }
+
+        .feature p {
+            margin-bottom: 20px;
         }
 
         .diagram {
@@ -1062,6 +1109,7 @@
         .diagram-row {
             display: grid;
             grid-template-columns: 108px 1fr;
+            align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
@@ -1085,7 +1133,7 @@
 
         .module-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
         }
 
@@ -1205,7 +1253,7 @@
         }
 
         .philosophy-panel {
-            margin-top: 18px;
+            margin-top: 140px;
             border: 1px solid var(--line);
             border-radius: var(--radius);
             background:
@@ -1214,21 +1262,109 @@
         }
 
         .philosophy-copy {
-            padding: 26px;
+            padding: 32px;
         }
 
-        .philosophy-copy p {
+        .philosophy-aside {
+            max-width: 620px;
+            margin-bottom: 22px;
+        }
+
+        .philosophy-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--brand-strong);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .philosophy-kicker::before {
+            content: "";
+            width: 22px;
+            height: 1px;
+            background: currentColor;
+            opacity: 0.55;
+        }
+
+        .philosophy-aside h3 {
+            margin: 16px 0 0;
+            font-size: clamp(22px, 2.3vw, 30px);
+            line-height: 1.16;
+            letter-spacing: -0.02em;
+        }
+
+        .philosophy-aside h3 em {
+            color: var(--brand-strong);
+            font-style: normal;
+        }
+
+        .philosophy-quote {
+            margin: 18px 0 0;
+            padding: 4px 0 0 16px;
+            border-left: 2px solid var(--brand);
+        }
+
+        .philosophy-main .philosophy-quote {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .philosophy-quote p {
+            margin: 0;
+            color: #ded7cc;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .philosophy-quote strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .philosophy-main p.philosophy-lead {
+            margin: 0;
+            color: var(--text);
+            font-size: clamp(16px, 1.5vw, 18px);
+            line-height: 1.55;
+            letter-spacing: -0.005em;
+        }
+
+        .philosophy-lead .muted {
+            color: var(--muted);
+        }
+
+        .philosophy-main p {
             max-width: 760px;
             margin: 0;
             color: var(--muted);
             font-size: 15px;
         }
 
-        .philosophy-copy p + p {
-            margin-top: 14px;
+        .philosophy-main p + p {
+            margin-top: 16px;
         }
 
-        .philosophy-copy strong {
+        .philosophy-scope {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin: 20px 0 22px;
+        }
+
+        .philosophy-scope span {
+            padding: 6px 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.045);
+            color: #d9d2c8;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .philosophy-main strong {
             color: var(--text);
         }
 
@@ -1665,10 +1801,10 @@
         .module-detail {
             position: relative;
             display: grid;
-            grid-template-columns: minmax(0, 0.74fr) minmax(280px, 0.26fr);
-            gap: 24px;
+            grid-template-columns: minmax(0, 0.42fr) minmax(360px, 0.58fr);
+            gap: 36px;
             margin-top: 14px;
-            padding: 24px;
+            padding: 40px;
             border: 1px solid rgba(255, 176, 46, 0.28);
             border-radius: var(--radius);
             background:
@@ -1678,6 +1814,32 @@
             opacity: 0;
             transform: translateY(-8px);
             transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        .module-detail-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .module-detail-points-label {
+            display: block;
+            margin: 22px 0 10px;
+            color: var(--soft);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .module-detail-console {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .module-detail-console .console-code {
+            min-height: 520px;
         }
 
         .module-detail[hidden] {
@@ -1829,6 +1991,29 @@
             color: #c7c0b6;
         }
 
+        .docs-band h2 {
+            font-size: clamp(24px, 2.6vw, 34px);
+        }
+
+        .docs-band p a {
+            color: var(--brand-strong);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .docs-band .docs-stats {
+            margin-top: 18px;
+        }
+
+        .docs-band .docs-stats .metric {
+            min-height: 0;
+            padding: 12px 14px;
+        }
+
+        .docs-band .docs-stats strong {
+            font-size: 18px;
+        }
+
         footer {
             width: min(1180px, calc(100% - 40px));
             margin: 0 auto;
@@ -1956,6 +2141,11 @@
                 border-top: 1px solid var(--line);
             }
 
+            .philosophy-aside {
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
         }
 
         @media (max-width: 680px) {
@@ -1976,6 +2166,10 @@
             .nav-actions {
                 width: 100%;
                 justify-content: space-between;
+            }
+
+            .philosophy-copy {
+                padding: 22px;
             }
 
             .button {
@@ -2080,9 +2274,8 @@
                 <span class="brand-mark">Kora <span class="brand-version">1.2.5</span></span>
             </a>
             <div class="nav-links" aria-label="Page sections">
-                <a href="#principles">Principles</a>
-                <a href="#modules">Modules</a>
-                <a href="/kora-docs/en/guides/getting-started/">Guide</a>
+                <a href="#philosophy">Principles</a>
+                <a href="/kora-docs/en/guides/getting-started/">Guides</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
             </div>
             <div class="nav-actions">
@@ -2099,7 +2292,7 @@
         <section class="hero">
             <div class="hero-grid">
                 <div>
-                    <p class="eyebrow">Java and Kotlin general-purpose backend framework</p>
+                    <p class="eyebrow">Java and Kotlin comprehensive backend framework</p>
                     <h1>Ship <span class="speed-word">fast</span> services without <span class="magic-word" data-final="workarounds, dirty hacks and kludges"><span class="magic-label">magic</span><span class="magic-final" aria-hidden="true"><span>workarounds,</span><span>dirty hacks</span><span>and kludges.</span></span><span class="magic-dot">.</span></span></h1>
                     <p class="hero-copy">
                         Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services a fastest production JVM stack from day one.
@@ -2115,8 +2308,8 @@
                             <span>runtime reflections</span>
                         </div>
                         <div class="metric">
-                            <strong>JDK 17+</strong>
-                            <span>modern Java baseline with Kotlin support</span>
+                            <strong>95%+</strong>
+                            <span>of functionality covered by docs, guides, and examples</span>
                         </div>
                         <div class="metric">
                             <strong>OTel</strong>
@@ -2165,15 +2358,15 @@
                 <article class="feature">
                     <span class="feature-index">01</span>
                     <h3>Compile-Time Certainty, No Runtime Magic</h3>
-                    <p>Kora checks the application graph, contracts, and generated code at compile time. Precise diagnostics and readable source replace late runtime surprises.</p>
+                    <p>Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.</p>
                     <div class="diagram" aria-hidden="true">
                         <div class="diagram-row"><span class="diagram-label">Checks</span><span class="diagram-value">dependencies, injections, cycles, aspects</span></div>
-                        <div class="diagram-row"><span class="diagram-label">Generates</span><span class="diagram-value">wiring, handlers, repositories, mappers</span></div>
+                        <div class="diagram-row"><span class="diagram-label">Generates</span><span class="diagram-value">wiring, mappers, repositories</span></div>
                     </div>
                 </article>
                 <article class="feature">
                     <span class="feature-index">02</span>
-                    <h3>Simple. Coherent. Familiar.</h3>
+                    <h3 class="nowrap-heading">Simple. Coherent. Familiar.</h3>
                     <p>Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.</p>
                     <div class="diagram" aria-hidden="true">
                         <div class="diagram-row"><span class="diagram-label">Familiar</span><span class="diagram-value">modules, clients, repositories, abstractions</span></div>
@@ -2182,7 +2375,7 @@
                 </article>
                 <article class="feature">
                     <span class="feature-index">03</span>
-                    <h3>Peak Performance by Design</h3>
+                    <h3>Peak Performance<br>by Design</h3>
                     <p>Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.</p>
                     <div class="diagram" aria-hidden="true">
                         <div class="diagram-row"><span class="diagram-label">Startup</span><span class="diagram-value">prebuilt graph, parallel init</span></div>
@@ -2191,7 +2384,7 @@
                 </article>
                 <article class="feature">
                     <span class="feature-index">04</span>
-                    <h3>Production-Grade, Cloud-Ready</h3>
+                    <h3>Production-Grade,<br>Cloud-Ready</h3>
                     <p>Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.</p>
                     <div class="diagram" aria-hidden="true">
                         <div class="diagram-row"><span class="diagram-label">Operate</span><span class="diagram-value">metrics, traces, logs, probes</span></div>
@@ -2203,7 +2396,7 @@
 
         <section class="section" id="performance">
             <div class="section-header">
-                <h2>Benchmark pressure, visible in motion.</h2>
+                <h2>More throughput per core, fewer machines to pay for.</h2>
                 <p class="section-lead">A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.</p>
             </div>
             <div class="benchmark-panel" aria-label="TechEmpower query benchmark comparison">
@@ -2274,62 +2467,143 @@
                     <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fstatic.squiry.xyz%2Fresults%2F20240124114707.json&hw=ph&test=db">Open TechEmpower snapshot</a>
                 </div>
             </div>
-            <div class="philosophy-panel">
+            <div class="philosophy-panel" id="philosophy">
                 <div class="philosophy-copy">
-                    <p>Kora does not pursue breadth for its own sake or wrap every possible technology behind a framework-specific abstraction or replace every functionality of other frameworks. Kora takes proven, widely used backend practices and pushes them further: less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
-                    <p>Kora focuses on essentials of production backend development-HTTP, data access, messaging, configuration, resilience, telemetry, scheduling, and integrations-and aims to make that path exceptionally direct, transparent, and as efficient as possible.</p>
-                    <p>Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.</p>
-                    <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens at the table-where a good knife, fork, and spoon cover nearly everything.</p>
+                    <aside class="philosophy-aside">
+                        <div>
+                            <span class="philosophy-kicker">Philosophy</span>
+                            <h3>Not a tool for every situation.<br>But the <em>best tool</em> for the job.</h3>
+                        </div>
+                    </aside>
+                    <div class="philosophy-main">
+                        <p class="philosophy-lead">Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks. <span class="muted">It takes proven, widely used backend practices and pushes them further:</span> less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
+                        <figure class="philosophy-quote">
+                            <p>Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.</p>
+                        </figure>
+                        <p>Kora focuses on essentials of production backend development and aims to make that path <strong>exceptionally direct, transparent, and as efficient as possible</strong>.</p>
+                        <p>That same discipline is what makes Kora <strong>easier for engineers to develop, debug, and maintain</strong>: components are wired explicitly, mistakes are caught by the compiler as readable errors instead of runtime surprises, and every generated class reads like code an engineer would write by hand. That same clarity is why it also fits naturally into AI-assisted development&mdash;nothing hides behind reflection or dynamic proxies, so a model can open the generated sources, trace a request end to end, and trust what it sees just as easily as a person can.</p>
+                        <div class="philosophy-scope">
+                            <span>HTTP</span>
+                            <span>Data access</span>
+                            <span>Messaging</span>
+                            <span>Configuration</span>
+                            <span>Resilience</span>
+                            <span>Telemetry</span>
+                            <span>Integrations</span>
+                        </div>
+                        <figure class="philosophy-quote">
+                            <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens <strong>at the table</strong>&#8202;&mdash;&#8202;where a good knife, fork, and spoon cover nearly everything.</p>
+                        </figure>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="interest-band docs-band">
+                <div>
+                    <small>Learn by example</small>
+                    <h2>Docs without the bloat.</h2>
+                    <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples&mdash;no 40-tab detective work required. There is also <a href="https://github.com/kora-projects/kora-skills">kora-skills</a>, an official AI skill that makes working with Kora even easier.</p>
+                    <div class="hero-note docs-stats">
+                        <div class="metric">
+                            <strong>95%+</strong>
+                            <span>functionality documented</span>
+                        </div>
+                        <div class="metric">
+                            <strong>39+</strong>
+                            <span>step-by-step guides</span>
+                        </div>
+                        <div class="metric">
+                            <strong>35+</strong>
+                            <span>module references</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="docs-actions">
+                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Guides</a>
+                    <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
+                    <a class="button" href="/kora-docs/en/">Docs</a>
+                    <a class="button" href="/kora-docs/en/examples/kora-examples/">Examples</a>
                 </div>
             </div>
         </section>
 
         <section class="section" id="modules">
             <div class="section-header">
-                <h2>A controlled stack, one module at a time.</h2>
+                <h2>A controlled stack,<br>one module at a time.</h2>
                 <p class="section-lead">Start small, add only integrations your service needs, and keep every dependency in controll.</p>
             </div>
             <div class="module-grid">
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="runtime">
+                    <small>Concurrency</small>
+                    <h3>Simple, easy, familiar</h3>
+                    <p>Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up&mdash;so blocking code stays simple at high concurrency.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="compiler">
+                    <small>Compiler</small>
+                    <h3>Transparent, no runtime magic</h3>
+                    <p>Wiring is checked and generated at compile time, so mistakes surface as clear compiler errors instead of runtime surprises&mdash;explicit, typed code with a fast feedback loop for engineers and AI tools alike.</p>
+                </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="http">
                     <small>HTTP</small>
                     <h3>Servers, clients, OpenAPI</h3>
-                    <p>Undertow-based HTTP server, declarative clients, management API, request mapping, interceptors, and OpenAPI generation.</p>
+                    <p>HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="data">
                     <small>Data</small>
-                    <h3>SQL-first repositories</h3>
-                    <p>JDBC, Cassandra, migrations, query macros, generated mappers, and explicit database access.</p>
+                    <h3>Kora repositories</h3>
+                    <p>One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="integration">
+                    <small>Integration</small>
+                    <h3>Kafka, gRPC, S3, and more</h3>
+                    <p>Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.</p>
+                </article>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="aop">
+                    <small>AOP</small>
+                    <h3>Production essentials</h3>
+                    <p>Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="ops">
                     <small>Ops</small>
                     <h3>Observability by design</h3>
-                    <p>Micrometer metrics, OpenTelemetry tracing, structured logging, liveness and readiness probes, and graceful shutdown.</p>
+                    <p>Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.</p>
                 </article>
-                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="integration">
-                    <small>Integration</small>
-                    <h3>Kafka, gRPC, S3</h3>
-                    <p>Messaging, RPC, storage, SOAP, Camunda, and infrastructure integrations with the same explicit module style.</p>
-                </article>
-                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="aop">
-                    <small>AOP</small>
-                    <h3>Aspects without runtime cost</h3>
-                    <p>Validation, cache, resilience, scheduling, and logging aspects generated around clear annotations and interfaces.</p>
-                </article>
-                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="deploy">
-                    <small>Deploy</small>
-                    <h3>Ready for containers</h3>
-                    <p>Fast startup, low overhead, GraalVM native support, HOCON configuration, and test patterns for real services.</p>
+                <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="extend">
+                    <small>Modules</small>
+                    <h3>Built to be extended</h3>
+                    <p>Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.</p>
                 </article>
             </div>
             <div class="module-detail" id="module-detail" hidden>
                 <button class="module-detail-close" type="button" aria-label="Close module details">&times;</button>
-                <div>
+                <div class="module-detail-info">
                     <small id="module-detail-kicker">HTTP</small>
                     <h3 id="module-detail-title">Servers, clients, OpenAPI</h3>
                     <p id="module-detail-copy">Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.</p>
                     <div class="module-detail-tags" id="module-detail-tags"></div>
+                    <span class="module-detail-points-label" id="module-detail-points-label">What this gets you</span>
+                    <ul id="module-detail-points"></ul>
                 </div>
-                <ul id="module-detail-points"></ul>
+                <div class="module-detail-console console" aria-label="Code example for this module">
+                    <div class="console-header">
+                        <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+                        <span class="console-title" id="module-detail-code-title">Example.java</span>
+                    </div>
+                    <pre><code class="console-code" id="module-detail-code"></code></pre>
+                    <div class="snippet-dots" id="module-detail-dots" aria-label="Code example variants" hidden></div>
+                    <div class="build-strip">
+                        <button class="build-step is-active" type="button" data-detail-mode="source">
+                            <span id="module-detail-source-caption">High-level API</span>
+                            <strong id="module-detail-source-headline">Familiar top-level abstractions</strong>
+                        </button>
+                        <button class="build-step" type="button" data-detail-mode="generated">
+                            <span id="module-detail-generated-caption">Generated sources</span>
+                            <strong id="module-detail-generated-headline">Generated human-readable source code</strong>
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -2511,10 +2785,10 @@
         const ru = {
             "Principles": "Принципы",
             "Modules": "Модули",
-            "Guide": "Гайд",
+            "Guides": "Гайды",
             "GitHub": "GitHub",
             "Docs": "Документация",
-            "Java and Kotlin general-purpose backend framework": "Серверный-фреймворк общего назначения для Java и Kotlin",
+            "Java and Kotlin comprehensive backend framework": "Комплексный серверный фреймворк для Java и Kotlin",
             "Ship": "Создавай",
             "fast": "быстрые",
             "services without": "сервисы без",
@@ -2527,7 +2801,7 @@
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
             "runtime reflections": "рефлексии в runtime",
-            "modern Java baseline with Kotlin support": "современная Java-база с поддержкой Kotlin",
+            "of functionality covered by docs, guides, and examples": "функциональности покрыто документацией, гайдами и примерами",
             "metrics and tracing across modules": "метрики и трассировка во всех модулях",
             "High-level API": "Высокоуровневый API",
             "Familiar top-level abstractions": "Знакомые верхнеуровневые абстракции",
@@ -2536,30 +2810,32 @@
             "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и простота.",
             "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
             "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без runtime-магии",
-            "Kora checks the application graph, contracts, and generated code at compile time. Precise diagnostics and readable source replace late runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Точная диагностика и читаемые исходники заменяют поздние runtime-сюрпризы.",
+            "Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Диагностика и читаемые исходники — без runtime-сюрпризов.",
             "Checks": "Проверяет",
             "dependencies, injections, cycles, aspects": "зависимости, внедрения, циклы, аспекты",
             "Generates": "Генерирует",
-            "wiring, handlers, repositories, mappers": "связи, обработчики, репозитории, мапперы",
-            "Simple. Coherent. Familiar.": "Просто. Цельно. Знакомо.",
+            "wiring, mappers, repositories": "связи, мапперы, репозитории",
+            "Simple. Coherent. Familiar.": "Просто. Понятно. Знакомо.",
             "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые Java и Kotlin паттерны остаются, но становятся строже, типизированнее, сгенерированными и прозрачными для HTTP, OpenAPI, gRPC, данных, messaging, resilience и config.",
             "Familiar": "Знакомо",
             "modules, clients, repositories, abstractions": "модули, клиенты, репозитории, абстракции",
             "Coherent": "Цельно",
             "one approach across modules": "один подход во всех модулях",
-            "Peak Performance by Design": "Пиковая производительность по дизайну",
+            "Peak Performance": "Заложенная пиковая",
+            "by Design": "производительность",
             "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.": "Производительность следует из compile-time решений, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов.",
             "Startup": "Старт",
             "prebuilt graph, parallel init": "готовый граф, parallel init",
             "Runtime": "Runtime",
             "thin abstractions, fast integrations": "тонкие абстракции, быстрые интеграции",
-            "Production-Grade, Cloud-Ready": "Production-grade, готово для cloud",
+            "Production-Grade,": "Production-grade,",
+            "Cloud-Ready": "готово для cloud",
             "Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.": "Production defaults покрывают OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown и resilience policies, чтобы сервисы оставались предсказуемыми под нагрузкой.",
             "Operate": "Operate",
             "metrics, traces, logs, probes": "metrics, traces, logs, probes",
             "Scale": "Scale",
             "fast readiness, graceful shutdown": "fast readiness, graceful shutdown",
-            "Benchmark pressure, visible in motion.": "Высокие нагрузки, не предел.",
+            "More throughput per core, fewer machines to pay for.": "Больше производительности на ядро — меньше расходов, больше стабильности.",
             "A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.": "TechEmpower Single query (external): число ответов в секунду при одном запросе к базе данных на HTTP-запрос. Чем больше, тем лучше.",
             "Snapshot": "Срез",
             "Single query": "Single query",
@@ -2567,24 +2843,32 @@
             "Responses / sec": "Ответов / сек",
             "Values use the \"Single query\" interval from the linked external results.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке.",
             "Open TechEmpower snapshot": "Открыть срез TechEmpower",
-            "A controlled stack, one module at a time.": "Контролируемый стек, по одному модулю за раз.",
+            "A controlled stack,": "Контролируемый стек,",
+            "one module at a time.": "по одному модулю за раз.",
             "Start small, add only integrations your service needs, and keep every dependency in controll.": "Начинайте с малого, добавляйте только те интеграции, которые нужны сервису, и держите каждую зависимость под контролем.",
             "Servers, clients, OpenAPI": "Серверы, клиенты, OpenAPI",
-            "Undertow-based HTTP server, declarative clients, management API, request mapping, interceptors, and OpenAPI generation.": "HTTP-сервер на Undertow, декларативные клиенты, management API, request mapping, interceptors и генерация OpenAPI.",
+            "HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.": "HTTP-серверы, декларативные клиенты, request mapping, interceptors, служебные эндпоинты и строго типизированная генерация OpenAPI.",
             "Data": "Данные",
-            "SQL-first repositories": "SQL репозитории",
-            "JDBC, Cassandra, migrations, query macros, generated mappers, and explicit database access.": "JDBC, Cassandra, миграции, макросы запросов, сгенерированные мапперы и явный доступ к базе данных.",
+            "Kora repositories": "Репозитории Kora",
+            "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, маппинги во время компиляции, макросы запросов и явный контроль над доступом к данным.",
             "Ops": "Ops",
             "Observability by design": "Наблюдаемость включена",
-            "Micrometer metrics, OpenTelemetry tracing, structured logging, liveness and readiness probes, and graceful shutdown.": "Метрики Micrometer, трассировка OpenTelemetry, структурное логирование, проверки liveness/readiness и корректное завершение работы.",
+            "Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики, трассировка, структурное логирование, распространение контекста, health-проверки и корректное завершение работы встроены с самого начала.",
             "Integration": "Интеграции",
-            "Kafka, gRPC, S3": "Kafka, gRPC, S3",
-            "Messaging, RPC, storage, SOAP, Camunda, and infrastructure integrations with the same explicit module style.": "Сообщения, RPC, хранилища, SOAP, Camunda и инфраструктурные интеграции в том же явном модульном стиле.",
-            "Aspects without runtime cost": "Бесплатный механизм аспектов",
-            "Validation, cache, resilience, scheduling, and logging aspects generated around clear annotations and interfaces.": "Проверки, кэш, отказоустойчивость, планировщик и аспекты логирования генерируются вокруг понятных аннотаций и интерфейсов.",
-            "Deploy": "Deploy",
-            "Ready for containers": "Готово для контейнеров",
-            "Fast startup, low overhead, GraalVM native support, HOCON configuration, and test patterns for real services.": "Быстрый запуск, низкие накладные расходы, поддержка GraalVM Native Image, конфигурация HOCON и шаблоны тестирования для реальных сервисов.",
+            "Kafka, gRPC, S3, and more": "Kafka, gRPC, S3 и не только",
+            "Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.": "Обмен сообщениями, RPC, хранилища, workflow-движки и инфраструктурные интеграции, построенные вокруг той же явной модели программирования.",
+            "AOP": "AOP",
+            "Production essentials": "Всё необходимое для продакшена",
+            "Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.": "Валидация, кэш, отказоустойчивость, транзакции, планировщик, безопасность и логирование генерируются во время компиляции без runtime-прокси.",
+            "Built to be extended": "Создана, чтобы расширяться",
+            "Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.": "Используйте только нужные модули, заменяйте отдельные компоненты или пишите полноценные модули Kora для любой библиотеки — без борьбы с фреймворком.",
+            "Concurrency": "Конкурентность",
+            "Simple, easy, familiar": "Просто, легко, знакомо",
+            "Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up—so blocking code stays simple at high concurrency.": "Знакомые идиомы Java и Kotlin, dependency injection во время компиляции, один понятный способ решить задачу и виртуальные потоки, встроенные с нуля — поэтому блокирующий код остается простым даже при высокой конкурентности.",
+            "What this gets you": "Что вы получаете",
+            "Compiler": "Компилятор",
+            "Transparent, no runtime magic": "Прозрачность, никакой runtime-магии",
+            "Wiring is checked and generated at compile time, so mistakes surface as clear compiler errors instead of runtime surprises—explicit, typed code with a fast feedback loop for engineers and AI tools alike.": "Связывание проверяется и генерируется во время компиляции, поэтому ошибки становятся понятными сообщениями компилятора, а не runtime-сюрпризами — явный типизированный код с быстрым feedback loop как для инженеров, так и для нейросетей.",
             "Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.": "Kora держит HTTP-контракты явными, сгенерированными и наблюдаемыми, не пряча обработку запросов за runtime-рефлексией.",
             "Already curious?": "Уже интересно?",
             "Would you like to know more?": "Хотите узнать больше?",
@@ -2609,7 +2893,7 @@
             "JVM abstractions that look familiar": "JVM-абстракции, которые выглядят знакомо",
             "Kora uses native Java and Kotlin language constructs to declare framework mechanisms instead of forcing developers into a foreign programming model. HTTP handlers, Kafka listeners, repositories, config interfaces, and aspects feel natural in the language you already use, while compile-time generation handles the repetitive work.": "Kora использует нативные конструкции Java и Kotlin для объявления механизмов фреймворка и не заставляет разработчиков переходить на чужеродную модель программирования. HTTP-обработчики, Kafka-listeners, репозитории, интерфейсы конфигурации и аспекты выглядят естественно в языке, которым вы уже пользуетесь, а генерация во время компиляции забирает на себя повторяющуюся работу.",
             "Get context out of your head": "Выгрузите контекст из головы",
-            "Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.": "Читаемые сгенерированные исходники, ошибки на этапе компиляции, сфокусированная документация и примеры упрощают погружение в проект. Новые разработчики могут посмотреть, что сделал фреймворк, быстро проверить поведение и попросить AI пройтись по реальному коду вместо угадывания скрытого состояния runtime.",
+            "Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.": "Читаемые сгенерированные исходники, ошибки на этапе компиляции, сфокусированная документация и примеры упрощают погружение в проект. Новые разработчики могут посмотреть, что сделал фреймворк, быстро проверить поведение и попросить нейросеть пройтись по реальному коду вместо угадывания скрытого состояния runtime.",
             "No magic, no frustration": "Нет магии, нет фрустрации",
             "Proxy-heavy frameworks can make annotations feel simple until behavior depends on hidden runtime proxy rules, self-invocation, reflection, or container-specific conventions that change from one version to another. Kora keeps the mechanism transparent: generated source and docs hold the context, so developers do not need to memorize annotation folklore or keep invisible framework state in their heads.": "Фреймворки, завязанные на прокси, могут казаться простыми, пока поведение не начинает зависеть от скрытых правил runtime-прокси, self-invocation, рефлексии или контейнерных соглашений, которые меняются от версии к версии. Kora держит механизм прозрачным: сгенерированный код и документация хранят контекст, поэтому разработчикам не нужно заучивать фольклор вокруг аннотаций или держать невидимое состояние фреймворка в голове.",
             "Highload-grade optimized out of the box": "Highload-grade оптимизация из коробки",
@@ -2617,7 +2901,7 @@
             "One problem, one solution": "Одна проблема, одно решение",
             "Kora favors one recommended solution based on JVM best practices instead of many competing framework styles. Teams spend less time writing internal rules, preparing talks about correct usage, or debating which abstraction should be allowed.": "Kora предпочитает одно рекомендуемое решение на базе лучших практик JVM вместо множества конкурирующих стилей внутри одного фреймворка. Команды тратят меньше времени на внутренние правила, доклады о правильном использовании и споры о том, какую абстракцию разрешить.",
             "No lore required, Kora just works": "Без folklore, Kora просто работает",
-            "You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.": "Вам не нужно огромное сообщество, которое годами спотыкается о миллионы крайних случаев, ищет миллионы нерабочих ответов, пишет миллионы вопросов и выпускает бесконечные доклады о том, как фреймворк работает на самом деле и почему этого нет в документации. Kora просто работает: документация прямая, примеры практичные, сгенерированный код читаемый, а AI может объяснить реальную реализацию вместо обратного разбора скрытой магии.",
+            "You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.": "Вам не нужно огромное сообщество, которое годами спотыкается о миллионы крайних случаев, ищет миллионы нерабочих ответов, пишет миллионы вопросов и выпускает бесконечные доклады о том, как фреймворк работает на самом деле и почему этого нет в документации. Kora просто работает: документация прямая, примеры практичные, сгенерированный код читаемый, а нейросеть может объяснить реальную реализацию вместо обратного разбора скрытой магии.",
             "Simple and fast testing": "Простое и быстрое тестирование",
             "Test the service through the same explicit component graph it uses in production. Inject test components, replace dependencies, override configuration, keep component tests fast, and add Testcontainers-backed integration tests when real infrastructure matters.": "Тестируйте сервис через тот же явный граф компонентов, который используется в production. Подставляйте тестовые компоненты, заменяйте зависимости, переопределяйте конфигурацию, держите компонентные тесты быстрыми и добавляйте интеграционные тесты на Testcontainers там, где нужна реальная инфраструктура.",
             "Enterprise-grade by design": "Enterprise-grade по замыслу",
@@ -2634,6 +2918,14 @@
             "Operate": "Эксплуатация",
             "Run fast, reliable and predictable services without": "Запускайте быстрые, надежные и предсказуемые сервисы без",
             "in production.": "в production.",
+            "Learn by example": "Учитесь на примерах",
+            "Docs without the bloat.": "Документация без воды.",
+            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми гайдами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. Также есть",
+            ", an official AI skill that makes working with Kora even easier.": ", официальный нейро-навык, который делает работу с Kora еще проще.",
+            "Kora Skills": "Kora Skills",
+            "functionality documented": "функциональности задокументировано",
+            "step-by-step guides": "пошаговых гайдов",
+            "module references": "справочников по модулям",
             "Build your first Kora service.": "Соберите свой первый сервис на Kora.",
             "Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.": "Пройдите пошаговую настройку, используйте официальные примеры или сразу откройте документацию по модулям для стека, который вам уже нужен.",
             "Kora Framework documentation.": "Документация Kora Framework.",
@@ -2756,6 +3048,63 @@
     })();
 
     (() => {
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        // Symmetric ease: gentle start, quick middle, gentle stop.
+        const easeInOutCubic = (t) => (t < 0.5
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+        let activeScroll = 0;
+
+        const scrollToY = (targetY) => {
+            const maxY = document.documentElement.scrollHeight - window.innerHeight;
+            targetY = Math.max(0, Math.min(targetY, maxY));
+
+            if (prefersReducedMotion.matches) {
+                window.scrollTo(0, targetY);
+                return;
+            }
+
+            const startY = window.scrollY;
+            const distance = targetY - startY;
+            if (Math.abs(distance) < 2) return;
+
+            // Longer trips get proportionally more time, so speed stays readable.
+            const duration = Math.min(300 + Math.abs(distance) * 0.18, 700);
+            const startTime = performance.now();
+            const token = ++activeScroll;
+
+            const step = (now) => {
+                if (token !== activeScroll) return;
+                const progress = Math.min((now - startTime) / duration, 1);
+                window.scrollTo(0, startY + distance * easeInOutCubic(progress));
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        };
+
+        window.koraScrollToY = scrollToY;
+
+        // Let manual input take over instantly instead of fighting the animation.
+        const cancelScroll = () => { activeScroll += 1; };
+        window.addEventListener("wheel", cancelScroll, { passive: true });
+        window.addEventListener("touchstart", cancelScroll, { passive: true });
+
+        document.addEventListener("click", (event) => {
+            const link = event.target.closest('a[href^="#"]');
+            if (!link) return;
+            const id = link.getAttribute("href").slice(1);
+            if (!id) return;
+            const target = document.getElementById(id);
+            if (!target) return;
+            event.preventDefault();
+            const offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+            scrollToY(target.getBoundingClientRect().top + window.scrollY - offset);
+            history.replaceState(null, "", `#${id}`);
+        });
+    })();
+
+    (() => {
         const backToTop = document.querySelector(".back-to-top");
         if (!backToTop) return;
 
@@ -2764,7 +3113,11 @@
         };
 
         backToTop.addEventListener("click", () => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            if (window.koraScrollToY) {
+                window.koraScrollToY(0);
+            } else {
+                window.scrollTo(0, 0);
+            }
         });
         window.addEventListener("scroll", updateBackToTop, { passive: true });
         updateBackToTop();
@@ -2777,6 +3130,10 @@
                 title: "Servers, clients, OpenAPI",
                 copy: "Build contract-first APIs where the OpenAPI file can be the source of truth and the generated handlers become ordinary Java or Kotlin source. Kora keeps the HTTP layer thin over Undertow, with public and private ports, request mappers, response mappers, interceptors, telemetry, and graceful shutdown configured explicitly.",
                 tags: ["OpenAPI-first", "Undertow", "Private API", "Virtual threads", "Typed mappers"],
+                sourceCaption: "High-level API",
+                sourceHeadline: "Familiar top-level abstractions",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Generated human-readable source code",
                 points: [
                     "Use declarative controllers for simple services or generate server and client contracts from the same OpenAPI specification.",
                     "Separate public traffic from private management endpoints such as /metrics, /system/readiness, and /system/liveness.",
@@ -2787,9 +3144,13 @@
             },
             data: {
                 kicker: "Data",
-                title: "SQL-first repositories",
-                copy: "Keep database access honest: the developer writes the query, Kora generates the implementation, and the resulting source shows parameter binding, row mapping, telemetry, and error handling. This gives teams familiar repository productivity without hiding the query plan.",
+                title: "Kora repositories",
+                copy: "One consistent repository model covers JDBC and Cassandra: the developer writes the query, Kora generates the implementation, and the resulting source shows parameter binding, row mapping, telemetry, and error handling. This gives teams familiar repository productivity without hiding the query plan.",
                 tags: ["Repository pattern", "SQL visible", "Compile-time mappers", "Batch queries", "Telemetry"],
+                sourceCaption: "High-level API",
+                sourceHeadline: "Familiar top-level abstractions",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Generated human-readable source code",
                 points: [
                     "Repository interfaces annotated with @Repository and @Query compile into concrete implementations before runtime.",
                     "SQL stays in the source, while macros can expand model columns and reduce repetitive field lists.",
@@ -2803,6 +3164,10 @@
                 title: "Observability by design",
                 copy: "Production telemetry are not an afterthought. Metrics, tracing, logging, readiness, liveness, masking, and graceful shutdown are wired as ordinary Kora modules, cause full coverage of all integrations and components is the initial design of the system.",
                 tags: ["Prometheus", "Micrometer", "OpenTelemetry", "Readiness", "Tracing"],
+                sourceCaption: "Configuration",
+                sourceHeadline: "Declared once, in HOCON",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Telemetry wired automatically",
                 points: [
                     "Micrometer registers a PrometheusMeterRegistry and exposes metrics through the private HTTP server.",
                     "OpenTelemetry traces can be exported through OTLP over gRPC or HTTP with endpoint, batching, retry, and resource attributes configured.",
@@ -2813,9 +3178,13 @@
             },
             integration: {
                 kicker: "Integration",
-                title: "Kafka, gRPC, S3",
-                copy: "Infrastructure adapters follow the same source-first style as HTTP and data access. Kafka listeners, publishers, gRPC clients, S3 clients, SOAP integrations, and Camunda modules are typed, configured, observable, are lifecycle-managed by the application graph as well as other modules.",
+                title: "Kafka, gRPC, S3, and more",
+                copy: "Infrastructure adapters follow the same source-first style as HTTP and data access. Kafka listeners, publishers, gRPC clients, S3 clients, SOAP integrations, and Camunda workflow modules are typed, configured, observable, and lifecycle-managed by the application graph like every other module.",
                 tags: ["Kafka listeners", "Publishers", "gRPC", "S3", "Lifecycle"],
+                sourceCaption: "High-level API",
+                sourceHeadline: "Familiar top-level abstractions",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Generated human-readable source code",
                 points: [
                     "Kafka consumers are declared with @KafkaListener and can use separate config paths for different topics or topic patterns.",
                     "Typed keys and values, JSON mapping, empty-record handling, deserialization errors, and consumer threading are part of the listener contract.",
@@ -2826,28 +3195,72 @@
             },
             aop: {
                 kicker: "AOP",
-                title: "Aspects without runtime cost",
-                copy: "Use annotations for cross-cutting behavior without accepting a runtime proxy maze. Kora generates wrappers that can be inspected, reasoned about, and tuned through configuration, so resilience and policy remain visible to engineers and AI tooling.",
-                tags: ["Retry", "Timeout", "Circuit breaker", "Fallback", "Cache"],
+                title: "Production essentials",
+                copy: "Validation, caching, resilience, transactions, scheduling, security, and logging are cross-cutting concerns every production service needs. Kora generates them at compile time from annotations instead of a runtime proxy maze, so the resulting policy code can be inspected, reasoned about, and tuned through configuration.",
+                tags: ["Retry", "Timeout", "Circuit breaker", "Validation", "Scheduler", "Transactions", "Cache"],
+                sourceCaption: "High-level API",
+                sourceHeadline: "Familiar top-level abstractions",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Generated human-readable source code",
                 points: [
+                    "Every one of these is a free aspect: the generated wrapper is a plain method call compiled at build time, with zero reflection and zero runtime overhead versus hand-written code.",
                     "@Timeout limits execution time, @Retry repeats failed calls, @CircuitBreaker protects dependencies, and @Fallback provides recovery.",
                     "Aspect order is explicit and documented, so teams can understand how timeout, retry, breaker, and fallback interact.",
                     "Defaults can be shared globally, while named configurations tune policies for specific clients or operations.",
-                    "Validation, cache, scheduling, and logging aspects use the same compile-time generation model.",
+                    "Validation, caching, transactions, scheduling, security, and logging aspects use the same compile-time generation model.",
                     "The result is policy code that reads like normal source instead of disappearing into runtime reflection and dynamic proxies."
                 ]
             },
-            deploy: {
-                kicker: "Deploy",
-                title: "Ready for containers",
-                copy: "Kora is designed for services that need to start quickly, expose the right private endpoints, and remain predictable under orchestration. Compile-time helper classes, no runtime reflection for the graph, and tested native-image modules make deployment less fragile.",
-                tags: ["Fast readiness", "HOCON", "No runtime reflection", "Native-image", "Graceful shutdown"],
+            extend: {
+                kicker: "Modules",
+                title: "Built to be extended",
+                copy: "Kora is not a closed box. Pull in only the modules a service actually needs, replace any component with your own implementation, or write a first-class Kora module for a library that is not covered yet—all through the same explicit application model instead of fighting the framework's internals.",
+                tags: ["Explicit graph", "Swap any component", "Custom modules", "No lock-in", "SPI"],
+                sourceCaption: "Your module",
+                sourceHeadline: "Written like any other Kora module",
+                generatedCaption: "Application graph",
+                generatedHeadline: "Joins the same graph as built-ins",
                 points: [
-                    "Application graph creation is generated and validated during compilation, reducing startup work in the container.",
-                    "HOCON configuration supports required and optional environment substitutions, defaults, references, lists, maps, and typed config interfaces.",
-                    "Private HTTP endpoints provide metrics, readiness, and liveness without mixing them with public API traffic.",
-                    "GraalVM native-image support is documented for configuration, JSON, probes, metrics, tracing, HTTP, JDBC, Cassandra, Kafka, gRPC, resilient, cache, validation, scheduling, and logging modules.",
-                    "Lifecycle and graceful shutdown settings are explicit, helping services behave well during rolling deploys and restarts."
+                    "Every module is opt-in: nothing is pulled in transitively that the service does not declare and configure.",
+                    "Any generated component can be replaced by providing your own bean of the same contract—no framework fork required.",
+                    "Writing a new Kora module follows the same annotation-processor pattern the built-in modules use, so it feels native, not bolted on.",
+                    "The dependency graph stays a single explicit structure, so custom and built-in modules are indistinguishable at compile time.",
+                    "Teams can start with a handful of modules and grow the stack module by module as real requirements appear."
+                ]
+            },
+            runtime: {
+                kicker: "Concurrency",
+                title: "Simple, easy, familiar",
+                copy: "Kora keeps the programming model close to plain Java and Kotlin: compile-time dependency injection instead of a runtime container, and one clear, supported way to solve each problem instead of five competing patterns. Concurrency is built around virtual threads from the ground up, not retrofitted later, so services can stay simple.",
+                tags: ["Virtual threads", "Compile-time DI", "One way to do it", "Blocking code", "Predictable resources"],
+                sourceCaption: "Your code",
+                sourceHeadline: "A controller that reads like plain Java",
+                generatedCaption: "Generated sources",
+                generatedHeadline: "Validation and config wired automatically",
+                points: [
+                    "The application graph is built and validated at compile time, so there is no runtime container, no classpath scanning, and no proxy magic to learn.",
+                    "Where other frameworks offer several competing ways to solve the same problem, Kora ships one clear, well-supported path.",
+                    "HTTP handlers, repositories, and clients run on virtual threads from Java 21+, so blocking code stays straightforward to write and read.",
+                    "High concurrency comes from the platform's scheduler, not from reactive operators or callback chains layered on top of business logic.",
+                    "Thread-per-request semantics keep stack traces, debuggers, and profilers meaningful, and resource usage predictable under load."
+                ]
+            },
+            compiler: {
+                kicker: "Compiler",
+                title: "Transparent, no runtime magic",
+                copy: "Every wiring decision is checked and generated at compile time, so mistakes surface as a readable compiler error instead of a 2 a.m. stack trace. There is no reflection, no dynamic proxies, and no hidden code generation—just explicit, typed source that is as easy for a new engineer to read as it is for an AI tool to reason about.",
+                tags: ["Compile-time checks", "No reflection", "Readable errors", "Fast test loop", "AI-friendly source"],
+                sourceCaption: "Your code",
+                sourceHeadline: "Nothing unusual—just a missing binding",
+                generatedCaption: "Compiler feedback",
+                generatedHeadline: "Readable error, not a runtime surprise",
+                points: [
+                    "You control the graph, not the other way around: every module and component in the final application is one you explicitly declared on your @KoraApp interface—nothing is auto-scanned, auto-wired, or silently pulled in behind your back.",
+                    "Dependency wiring, configuration, and aspect generation are resolved during compilation, so broken wiring fails the build instead of production.",
+                    "Generated sources are ordinary, readable Java or Kotlin—open the file, and the behavior you see is the behavior that runs.",
+                    "Compiler errors point at the exact missing dependency or misconfigured binding, the same detailed feedback loop developers value in strongly typed languages.",
+                    "Fast unit and component tests close the write-compile-fail-fix loop quickly, which matters as much for human developers as for AI coding agents.",
+                    "Minimal magic means fewer implicit decisions for anyone—human or model—to guess at when extending or debugging a service."
                 ]
             }
         };
@@ -2858,6 +3271,10 @@
                 title: "Серверы, клиенты, OpenAPI",
                 copy: "Стройте API от контракта: OpenAPI-файл может быть источником правды, а сгенерированные обработчики становятся обычным Java или Kotlin-кодом. Kora держит HTTP-слой тонким поверх Undertow: публичные и служебные порты, мапперы запросов и ответов, перехватчики, телеметрия и корректное завершение работы настраиваются явно.",
                 tags: ["OpenAPI-first", "Undertow", "Служебный API", "Виртуальные потоки", "Типизированные мапперы"],
+                sourceCaption: "Высокоуровневый API",
+                sourceHeadline: "Знакомые верхнеуровневые абстракции",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Используйте декларативные контроллеры для простых сервисов или генерируйте серверные и клиентские контракты из одной спецификации OpenAPI.",
                     "Разделяйте пользовательский трафик и служебные эндпоинты управления: /metrics, /system/readiness и /system/liveness.",
@@ -2868,9 +3285,13 @@
             },
             data: {
                 kicker: "Данные",
-                title: "SQL репозитории",
-                copy: "Держите доступ к базе данных честным и прозрачным: разработчик пишет запрос, Kora генерирует реализацию, а итоговый код показывает привязку параметров, маппинг строк, телеметрию и обработку ошибок. Это дает продуктивность уровня привычных репозиториев без скрытия плана запроса.",
+                title: "Репозитории Kora",
+                copy: "Единая модель репозиториев для JDBC и Cassandra: разработчик пишет запрос, Kora генерирует реализацию, а итоговый код показывает привязку параметров, маппинг строк, телеметрию и обработку ошибок. Это дает продуктивность уровня привычных репозиториев без скрытия плана запроса.",
                 tags: ["Паттерн Repository", "SQL виден", "Мапперы при компиляции", "Пакетные запросы", "Телеметрия"],
+                sourceCaption: "Высокоуровневый API",
+                sourceHeadline: "Знакомые верхнеуровневые абстракции",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Интерфейсы репозиториев с @Repository и @Query компилируются в конкретные реализации до запуска приложения.",
                     "SQL остается в исходниках, а макросы могут разворачивать колонки моделей и сокращать повторяющиеся списки полей.",
@@ -2884,6 +3305,10 @@
                 title: "Наблюдаемость включена",
                 copy: "Телеметрия не является побочной доработкой сбоку. Метрики, трассировка, логирование, readiness, liveness, маскирование и корректное завершение работы подключаются как обычные модули Kora, поскольку полное покрытие всех интеграций и операций является изначальным дизайном системы.",
                 tags: ["Prometheus", "Micrometer", "OpenTelemetry", "Readiness", "Трассировка"],
+                sourceCaption: "Конфигурация",
+                sourceHeadline: "Задается один раз, в HOCON",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Телеметрия подключается автоматически",
                 points: [
                     "Micrometer регистрирует PrometheusMeterRegistry и отдает метрики через служебный HTTP-сервер.",
                     "Трассы OpenTelemetry можно экспортировать через OTLP поверх gRPC или HTTP с настройками endpoint, batching, retry и resource attributes.",
@@ -2894,9 +3319,13 @@
             },
             integration: {
                 kicker: "Интеграции",
-                title: "Kafka, gRPC, S3",
-                copy: "Инфраструктурные адаптеры следуют тому же подходу, что HTTP и доступ к данным. Потребители и продюсеры Kafka, gRPC-клиенты, S3-клиенты, SOAP-интеграции и модули Camunda типизированы, настраиваемы, наблюдаемы и управляются жизненным циклом через граф приложения как и другие интеграции.",
+                title: "Kafka, gRPC, S3 и не только",
+                copy: "Инфраструктурные адаптеры следуют тому же подходу, что HTTP и доступ к данным. Потребители и продюсеры Kafka, gRPC-клиенты, S3-клиенты, SOAP-интеграции и модули workflow-движка Camunda типизированы, настраиваемы, наблюдаемы и управляются жизненным циклом через граф приложения как и другие модули.",
                 tags: ["Kafka listeners", "Publishers", "gRPC", "S3", "Жизненный цикл"],
+                sourceCaption: "Высокоуровневый API",
+                sourceHeadline: "Знакомые верхнеуровневые абстракции",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Kafka consumers объявляются через @KafkaListener и могут использовать отдельные пути конфигурации для разных topics или topic patterns.",
                     "Типизированные ключи и значения, JSON-маппинг, обработка пустых записей, ошибки десериализации и потоки consumer являются частью контракта listener.",
@@ -2907,29 +3336,526 @@
             },
             aop: {
                 kicker: "AOP",
-                title: "Бесплатный механизм аспектов",
-                copy: "Используйте аннотации для сквозного поведения без лабиринта runtime-прокси. Kora генерирует обертки, которые можно изучать, понимать и настраивать через конфигурацию, поэтому отказоустойчивость и политики остаются видимыми инженерам и нейро-инструментам.",
-                tags: ["Retry", "Timeout", "Circuit breaker", "Fallback", "Cache"],
+                title: "Всё необходимое для продакшена",
+                copy: "Валидация, кэш, отказоустойчивость, транзакции, планировщик, безопасность и логирование — сквозные задачи, которые нужны любому боевому сервису. Kora генерирует их во время компиляции из аннотаций вместо лабиринта runtime-прокси, поэтому итоговый код политик можно изучать, понимать и настраивать через конфигурацию.",
+                tags: ["Retry", "Timeout", "Circuit breaker", "Валидация", "Планировщик", "Транзакции", "Cache"],
+                sourceCaption: "Высокоуровневый API",
+                sourceHeadline: "Знакомые верхнеуровневые абстракции",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
+                    "Каждый такой аспект бесплатный: сгенерированная обертка — это обычный вызов метода, скомпилированный на этапе сборки, без рефлексии и без runtime-накладных расходов по сравнению с кодом, написанным вручную.",
                     "@Timeout ограничивает время выполнения, @Retry повторяет неудачные вызовы, @CircuitBreaker защищает зависимости, а @Fallback дает восстановление.",
                     "Порядок аспектов явный и задокументированный, поэтому команды понимают, как взаимодействуют timeout, retry, breaker и fallback.",
                     "Значения по умолчанию можно разделять глобально, а named configurations настраивают политики для конкретных клиентов или операций.",
-                    "Validation, cache, scheduling и logging aspects используют ту же модель генерации во время компиляции.",
+                    "Validation, cache, транзакции, scheduling, безопасность и logging aspects используют ту же модель генерации во время компиляции.",
                     "В итоге получается код политик, который читается как обычный исходный код, а не исчезает в runtime-рефлексии и динамических прокси."
                 ]
             },
-            deploy: {
-                kicker: "Deploy",
-                title: "Готово для контейнеров",
-                copy: "Kora спроектирована для сервисов, которым нужно быстро стартовать, отдавать правильные служебные методы и оставаться предсказуемыми под оркестрацией. Вспомогательные классы, сгенерированные во время компиляции, отсутствие runtime-рефлексии для графа и проверенные делают выпуск новых версий менее хрупким.",
-                tags: ["Быстрый readiness", "HOCON", "Без runtime-рефлексии", "Native Image", "Graceful shutdown"],
+            extend: {
+                kicker: "Модули",
+                title: "Создана, чтобы расширяться",
+                copy: "Kora — не закрытая коробка. Подключайте только те модули, которые реально нужны сервису, заменяйте любой компонент собственной реализацией или пишите полноценный модуль Kora для библиотеки, которой еще нет в экосистеме — все через ту же явную модель приложения, без борьбы с внутренностями фреймворка.",
+                tags: ["Явный граф", "Замена компонента", "Свои модули", "Без lock-in", "SPI"],
+                sourceCaption: "Ваш модуль",
+                sourceHeadline: "Написан как любой другой модуль Kora",
+                generatedCaption: "Граф приложения",
+                generatedHeadline: "Встраивается в тот же граф, что и встроенные модули",
                 points: [
-                    "Создание графа приложения генерируется и проверяется во время компиляции, уменьшая работу при старте контейнера.",
-                    "Конфигурация HOCON поддерживает обязательные и опциональные подстановки из окружения, значения по умолчанию, ссылки, списки, словари и типизированные интерфейсы конфигурации.",
-                    "Служебные HTTP-endpoints дают метрики, readiness и liveness, не смешивая их с пользовательским API-трафиком.",
-                    "Поддержка GraalVM Native Image задокументирована для модулей configuration, JSON, probes, metrics, tracing, HTTP, JDBC, Cassandra, Kafka, gRPC, resilient, cache, validation, scheduling и logging.",
-                    "Настройки жизненного цикла и корректного завершения работы явные, поэтому сервисы лучше ведут себя во время rolling deploys и перезапусков."
+                    "Каждый модуль подключается по желанию: ничего не тянется транзитивно, если сервис это явно не объявил и не сконфигурировал.",
+                    "Любой сгенерированный компонент можно заменить, предоставив свой бин с тем же контрактом — без форка фреймворка.",
+                    "Новый модуль Kora пишется по тому же паттерну annotation processor, что и встроенные модули, поэтому ощущается органично, а не как надстройка.",
+                    "Граф зависимостей остается единой явной структурой, поэтому свои и встроенные модули неотличимы друг от друга во время компиляции.",
+                    "Команда может начать с горстки модулей и наращивать стек модуль за модулем по мере появления реальных потребностей."
                 ]
+            },
+            runtime: {
+                kicker: "Конкурентность",
+                title: "Просто, легко, знакомо",
+                copy: "Kora держит модель программирования близкой к обычному Java и Kotlin: dependency injection во время компиляции вместо runtime-контейнера и один понятный, поддерживаемый способ решить задачу вместо пяти конкурирующих паттернов. Конкурентность изначально построена на виртуальных потоках, а не прикручена позже, поэтому сервисы остаются простыми.",
+                tags: ["Виртуальные потоки", "DI при компиляции", "Один способ", "Блокирующий код", "Предсказуемые ресурсы"],
+                sourceCaption: "Ваш код",
+                sourceHeadline: "Контроллер, который читается как обычный Java-код",
+                generatedCaption: "Сгенерированный код",
+                generatedHeadline: "Валидация и конфигурация подключаются автоматически",
+                points: [
+                    "Граф приложения строится и проверяется во время компиляции — не нужно учить runtime-контейнер, classpath scanning или магию прокси.",
+                    "Там, где другие фреймворки предлагают несколько конкурирующих способов решить одну задачу, Kora дает один понятный и поддерживаемый путь.",
+                    "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 21+, поэтому блокирующий код остается простым в написании и чтении.",
+                    "Высокая конкурентность обеспечивается планировщиком платформы, а не реактивными операторами или цепочками колбэков поверх бизнес-логики.",
+                    "Семантика thread-per-request сохраняет осмысленность стектрейсов, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой."
+                ]
+            },
+            compiler: {
+                kicker: "Компилятор",
+                title: "Прозрачность, никакой runtime-магии",
+                copy: "Каждое решение о связывании зависимостей проверяется и генерируется во время компиляции, поэтому ошибки становятся понятным сообщением компилятора, а не стектрейсом в два часа ночи. Никакой рефлексии, никаких динамических прокси и скрытой генерации кода — только явный типизированный код, который одинаково легко читать и новому инженеру, и нейросети.",
+                tags: ["Проверки при компиляции", "Без рефлексии", "Понятные ошибки", "Быстрый цикл тестов", "Понятно нейросетям"],
+                sourceCaption: "Ваш код",
+                sourceHeadline: "Ничего необычного — просто нет реализации",
+                generatedCaption: "Ответ компилятора",
+                generatedHeadline: "Понятная ошибка, а не runtime-сюрприз",
+                points: [
+                    "Графом управляете вы, а не наоборот: каждый модуль и компонент в итоговом приложении явно объявлен на вашем интерфейсе @KoraApp — ничего не сканируется автоматически, не связывается само и не подключается незаметно за вашей спиной.",
+                    "Связывание зависимостей, конфигурация и генерация аспектов разрешаются во время компиляции, поэтому сломанное связывание валит сборку, а не продакшен.",
+                    "Сгенерированные исходники — это обычный читаемый Java или Kotlin: открываете файл, и видите именно то поведение, которое выполняется.",
+                    "Ошибки компилятора указывают на конкретную отсутствующую зависимость или неверный биндинг — тот же подробный feedback loop, который ценят в строго типизированных языках.",
+                    "Быстрые unit- и component-тесты замыкают цикл написал-скомпилировал-получил ошибку-исправил, и это важно как для разработчиков, так и для нейро-агентов.",
+                    "Минимум магии означает меньше неявных решений, которые приходится угадывать — что человеку, что модели — при доработке или отладке сервиса."
+                ]
+            }
+        };
+
+        const moduleCode = {
+            http: {
+                examples: [
+                    {
+                        label: "Client",
+                        sourceTitle: "PaymentClient.java",
+                        sourceCode: `@HttpClient(configPath = "httpClient.payments")
+public interface PaymentClient {
+
+    @HttpRoute(method = HttpMethod.POST, path = "/payments")
+    void create(@Json PaymentRequest request);
+
+    @Json
+    @HttpRoute(method = HttpMethod.GET, path = "/payments/{id}")
+    PaymentFindResponse findById(@Path UUID id);
+}`,
+                        generatedTitle: "$PaymentClient_Impl.java",
+                        generatedCode: `@Generated("HttpClientAnnotationProcessor")
+public final class $PaymentClient_Impl implements PaymentClient {
+    private final HttpClient _client;
+    private final HttpClientRequestMapper<PaymentRequest> _requestMapper;
+    private final HttpClientResponseMapper<PaymentResponse> _responseMapper;
+
+    public PaymentResponse create(PaymentRequest request) {
+        final HttpBodyOutput _body;
+        try {
+            _body = _requestMapper.apply(Context.current(), request);
+        } catch (Exception e) {
+            throw new HttpClientEncoderException(e);
+        }
+
+        var _request = HttpClientRequest.of("POST", "/payments", "/payments",
+            HttpHeaders.of(), _body, null);
+        var _future = _client.execute(_request).toCompletableFuture();
+        try (var _response = _future.get()) {
+            if (_response.code() >= 200 && _response.code() < 300) {
+                return _responseMapper.apply(_response);
+            }
+            throw HttpClientResponseException
+                .fromResponseFuture(_response).get();
+        } catch (Exception e) {
+            throw new HttpClientUnknownException(e);
+        }
+    }
+}`
+                    },
+                    {
+                        label: "Controller",
+                        sourceTitle: "HelloController.java",
+                        sourceCode: `@Component
+@HttpController
+public final class HelloController {
+    @HttpRoute(method = HttpMethod.GET, path = "/hello/{name}")
+    public String hello(@Path String name) {
+        return "Hello, " + name + "!";
+    }
+}`,
+                        generatedTitle: "$HelloController_Route.java",
+                        generatedCode: `@Generated("HttpServerAnnotationProcessor")
+public final class $HelloController_Route
+        implements HttpServerRequestHandler {
+
+    private final HelloController _controller;
+    private final BlockingRequestExecutor _executor;
+    private final HttpServerResponseMapper<String> _responseMapper;
+
+    public CompletionStage<HttpServerResponse> handle(
+                    Context _ctx,
+                    HttpServerRequest _request) {
+        var name = _request.pathParams().get("name");
+        return _executor.execute(_ctx, () -> {
+            var _result = _controller.hello(name);
+            return _responseMapper.apply(_ctx, _request, _result);
+        });
+    }
+}`
+                    }
+                ]
+            },
+            data: {
+                examples: [{
+                    sourceTitle: "UserRepository.java",
+                    sourceCode: `@Repository
+public interface UserRepository extends JdbcRepository {
+
+    @EntityJdbc
+    @Table("users")
+    record User(@Id UUID id,
+                @Column("email") String email,
+                @Column("created_at") OffsetDateTime createdAt) {}
+
+    @Query("""
+        SELECT %{return#selects}
+        FROM %{return#table}
+        WHERE id = :id""")
+    @Nullable
+    User findById(UUID id);
+
+    @Query("INSERT INTO %{user#inserts}")
+    UpdateCount insert(User user);
+}`,
+                    generatedTitle: "$UserRepository_Impl.java",
+                    generatedCode: `@Generated("RepositoryAnnotationProcessor")
+public final class $UserRepository_Impl implements UserRepository {
+    private static final QueryContext FIND_BY_ID = new QueryContext(
+        "SELECT id, email, created_at\\nFROM users\\nWHERE id = :id",
+        "SELECT id, email, created_at\\nFROM users\\nWHERE id = ?",
+        "UserRepository.findById"
+    );
+
+    public User findById(UUID id) {
+        var _ctxCurrent = Context.current();
+        var _telemetry = connectionFactory.telemetry()
+            .createContext(_ctxCurrent, FIND_BY_ID);
+
+        try (var con = connectionFactory.newConnection();
+             var stmt = con.prepareStatement(FIND_BY_ID.sql())) {
+            uuidMapper.set(stmt, 1, id);
+            var result = userMapper.apply(stmt.executeQuery());
+            _telemetry.close(null);
+            return result;
+        } catch (Exception e) {
+            _telemetry.close(e);
+            throw e;
+        }
+    }
+}`
+                }]
+            },
+            ops: {
+                examples: [{
+                    sourceTitle: "application.conf",
+                    sourceCode: `httpServer {
+  privateApiHttpPort = 8085
+  privateApiHttpMetricsPath = "/metrics"
+  privateApiHttpReadinessPath = "/system/readiness"
+  privateApiHttpLivenessPath = "/system/liveness"
+
+  telemetry {
+    logging.enabled = true
+    metrics.enabled = true
+    tracing.enabled = true
+  }
+}
+
+metrics.opentelemetrySpec = "V120"
+
+tracing {
+  exporter.endpoint = "http://otel-collector:4317"
+  attributes."service.name" = "payment-service"
+}`,
+                    generatedTitle: "$Application_TelemetryModule.java",
+                    generatedCode: `@Generated("TelemetryAnnotationProcessor")
+final class $Application_TelemetryModule {
+
+    PrometheusMeterRegistry prometheusMeterRegistry() {
+        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    }
+
+    SpanExporter otlpSpanExporter(TracingConfig config) {
+        return OtlpGrpcSpanExporter.builder()
+            .setEndpoint(config.exporter().endpoint())
+            .build();
+    }
+
+    PrivateApiHandler readinessRoute(ReadinessProbe probe) {
+        return new ReadinessHttpHandler(probe);
+    }
+}`
+                }]
+            },
+            integration: {
+                examples: [{
+                    sourceTitle: "EventsConsumer.java",
+                    sourceCode: `@Component
+public final class EventsConsumer {
+
+    @KafkaListener("kafka.consumer.events")
+    public void process(
+                    @Nullable Long key,
+                    @Nullable @Json Payment value,
+                    @Nullable Exception ex) {
+        if (ex instanceof RecordKeyDeserializationException) {
+            System.out.println("Invalid key!");
+            return;
+        } else if (ex instanceof RecordValueDeserializationException) {
+            System.out.println("Invalid value!");
+            return;
+        } else if (ex != null) {
+            System.out.println("Failed!");
+            return;
+        }
+
+        handleEvent(key, value);
+    }
+}`,
+                    generatedTitle: "$KafkaConsumer_Handler.java",
+                    generatedCode: `@Generated("KafkaAnnotationProcessor")
+public final class $KafkaConsumer_Handler
+        implements KafkaRecordHandler<Long, Payment> {
+    private final EventsConsumer consumer;
+    private final KafkaConsumerTelemetry telemetry;
+    private final KafkaRecordKeyDeserializer<Long> keyDeserializer;
+    private final KafkaRecordValueDeserializer<Payment> valueDeserializer;
+
+    public void handle(
+                    ConsumerRecord<byte[], byte[]> record,
+                    @Nullable Exception ex) {
+        var ctx = telemetry.get(record);
+        Long key = null;
+        Payment value = null;
+        Exception error = ex;
+
+        try {
+            if (error == null && record.key() != null) {
+                key = keyDeserializer.deserialize(record.key());
+            }
+            if (error == null && record.value() != null) {
+                value = valueDeserializer.deserialize(record.value());
+            }
+        } catch (RecordKeyDeserializationException
+                | RecordValueDeserializationException e) {
+            error = e;
+        }
+
+        try {
+            consumer.process(key, value, error);
+            ctx.close(null);
+        } catch (Exception e) {
+            ctx.close(e);
+            throw e;
+        }
+    }
+}`
+                }]
+            },
+            aop: {
+                examples: [{
+                    sourceTitle: "ResilientService.java",
+                    sourceCode: `@Component
+public final class ResilientService {
+    private final PaymentClient client;
+
+    public ResilientService(PaymentClient client) {
+        this.client = client;
+    }
+
+    @Fallback(value = "payments", method = "fallback(request)")
+    @CircuitBreaker("payments")
+    @Retry("payments")
+    @Timeout("payments")
+    public PaymentResponse charge(PaymentRequest request) {
+        return client.create(request);
+    }
+
+    protected PaymentResponse fallback(PaymentRequest request) {
+        return PaymentResponse.pending(request.id());
+    }
+}`,
+                    generatedTitle: "$ResilientService__AopProxy.java",
+                    generatedCode: `@AopProxy
+@Generated("AopAnnotationProcessor")
+public final class $ResilientService__AopProxy extends ResilientService {
+    // Every aspect below compiles to a plain method call -
+    // zero reflection, zero dynamic proxy, zero runtime overhead.
+
+    private PaymentResponse timeout(PaymentRequest request) {
+        return timeout.execute(() -> super.charge(request));
+    }
+
+    private PaymentResponse retry(PaymentRequest request) {
+        return retry.retry(() -> timeout(request));
+    }
+
+    public PaymentResponse charge(PaymentRequest request) {
+        try {
+            circuitBreaker.acquire();
+            var result = retry(request);
+            circuitBreaker.releaseOnSuccess();
+            return result;
+        } catch (Throwable e) {
+            circuitBreaker.releaseOnError(e);
+            return fallback(request);
+        }
+    }
+}`
+                }]
+            },
+            extend: {
+                examples: [
+                    {
+                        label: "New database",
+                        sourceTitle: "Application.java",
+                        sourceCode: `@KoraApp
+public interface Application extends JdbcDatabaseModule {
+
+    final class OtherDatabase { }
+
+    @Tag(OtherDatabase.class)
+    default JdbcDatabaseConfig otherJdbcDataBaseConfig(
+                    Config config,
+                    ConfigValueExtractor<JdbcDatabaseConfig> extractor) {
+        var value = config.get("db.other");
+        return extractor.extract(value);
+    }
+
+    @Tag(OtherDatabase.class)
+    default JdbcDatabase otherJdbcDataBase(
+                    @Tag(OtherDatabase.class) JdbcDatabaseConfig config,
+                    DataBaseTelemetryFactory telemetryFactory,
+                    @Tag(OtherDatabase.class) @Nullable Executor executor) {
+        return new JdbcDatabase(config, telemetryFactory, executor);
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+
+    final Node<JdbcDatabase> jdbcDatabase = graph.registerNode(
+        JdbcDatabaseModule::jdbcDatabase, defaultConfig, telemetryFactory);
+
+    @Tag(Application.OtherDatabase.class)
+    final Node<JdbcDatabase> otherJdbcDataBase = graph.registerNode(
+        Application::otherJdbcDataBase, otherConfig, telemetryFactory);
+
+    // Two databases, two explicit nodes, one graph -
+    // nothing auto-discovered, nothing hidden by reflection.
+}`
+                    },
+                    {
+                        label: "New client library",
+                        sourceTitle: "JedisModule.java",
+                        sourceCode: `@Module
+interface JedisModule {
+
+    @ConfigMapper
+    interface JedisConfig extends JedisClientConfig {
+
+        URI uri();
+    }
+
+    default JedisConfig jedisConfig(
+                    Config config,
+                    ConfigValueMapper<JedisConfig> mapper) {
+        return mapper.mapOrThrow(config.get("jedis"));
+    }
+
+    default Jedis jedis(JedisConfig jedisConfig) {
+        return new Jedis(jedisConfig.uri(), jedisConfig);
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+
+    final Node<JedisModule.JedisConfig> jedisConfig = graph.registerNode(
+        JedisModule::jedisConfig, config, configValueMapper);
+
+    final Node<Jedis> jedis = graph.registerNode(
+        JedisModule::jedis, jedisConfig);
+
+    // Jedis was never a built-in module - it is wired
+    // exactly like one, in the same explicit graph.
+}`
+                    }
+                ]
+            },
+            runtime: {
+                examples: [{
+                    sourceTitle: "GreetingController.java",
+                    sourceCode: `// greeting.name = "Kora"
+@ConfigSource("greeting")
+interface GreetingConfig {
+    String name();
+}
+
+@Component
+@HttpController
+public final class GreetingController {
+    private final GreetingConfig config;
+
+    public GreetingController(GreetingConfig config) {
+        this.config = config;
+    }
+
+    @Validate
+    @HttpRoute(method = HttpMethod.GET, path = "/hello/{visitor}")
+    public String hello(@Path @Pattern("[A-Za-z ]{1,40}") String visitor) {
+        return "Hello, " + config.name() + "! Nice to meet you, " + visitor + ".";
+    }
+}`,
+                    generatedTitle: "$GreetingController_Route.java",
+                    generatedCode: `@Generated("ValidationAnnotationProcessor")
+final class GreetingController__AopProxy extends GreetingController {
+    private final Validator<String> visitorValidator;
+
+    public String hello(String visitor) {
+        var violations = visitorValidator.validate(visitor);
+        if (!violations.isEmpty()) {
+            throw new ViolationException(violations);
+        }
+        return super.hello(visitor);
+    }
+}
+
+@Generated("HttpServerAnnotationProcessor")
+public final class $GreetingController_Route implements HttpServerRequestHandler {
+    private final GreetingController__AopProxy controller;
+    private final BlockingRequestExecutor executor;
+
+    public CompletionStage<HttpServerResponse> handle(
+                    Context ctx,
+                    HttpServerRequest request) {
+        var visitor = request.pathParams().get("visitor");
+        return executor.execute(ctx, () -> {
+            var result = controller.hello(visitor);
+            return responseMapper.apply(ctx, request, result);
+        });
+    }
+}`
+                }]
+            },
+            compiler: {
+                examples: [{
+                    sourceTitle: "PaymentService.java",
+                    sourceCode: `@Component
+public final class PaymentService {
+    private final FraudDetector fraudDetector;
+
+    public PaymentService(FraudDetector fraudDetector) {
+        this.fraudDetector = fraudDetector;
+    }
+}
+
+// FraudDetector has no @Component implementation
+// and no @Module binding anywhere in the graph.`,
+                    generatedTitle: "Build output",
+                    generatedCode: `error: Kora dependency graph is unsatisfied
+
+  Component required: FraudDetector
+  Requested by:        PaymentService(FraudDetector fraudDetector)
+
+  No @Component, @Module method, or explicit binding
+  produces FraudDetector.
+
+  help: annotate an implementation with @Component,
+        or add a producing method to a @Module interface.
+
+BUILD FAILED in 1s`
+                }]
             }
         };
 
@@ -2945,6 +3871,72 @@
         const tags = document.getElementById("module-detail-tags");
         const points = document.getElementById("module-detail-points");
         const close = detail.querySelector(".module-detail-close");
+        const codeTitle = document.getElementById("module-detail-code-title");
+        const codeBody = document.getElementById("module-detail-code");
+        const sourceCaption = document.getElementById("module-detail-source-caption");
+        const sourceHeadline = document.getElementById("module-detail-source-headline");
+        const generatedCaption = document.getElementById("module-detail-generated-caption");
+        const generatedHeadline = document.getElementById("module-detail-generated-headline");
+        const detailModeButtons = Array.from(detail.querySelectorAll("[data-detail-mode]"));
+        const exampleDots = document.getElementById("module-detail-dots");
+        let detailMode = "source";
+        let currentModuleKey = null;
+        let exampleIndex = 0;
+        let autoAdvanceTimer = 0;
+        const autoAdvanceDelay = 10000;
+
+        const escapeCode = (value) => value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        const highlightCode = (value) => (window.koraHighlightCode ? window.koraHighlightCode(value) : escapeCode(value));
+
+        const renderCode = () => {
+            const codeData = currentModuleKey && moduleCode[currentModuleKey];
+            if (!codeData || !codeTitle || !codeBody) {
+                return;
+            }
+            const examples = codeData.examples;
+            exampleIndex = Math.min(exampleIndex, examples.length - 1);
+            const example = examples[exampleIndex];
+            const activeData = (window.koraLanguage === "ru" ? modulesRu : modules)[currentModuleKey];
+            if (detailMode === "generated") {
+                codeTitle.textContent = example.generatedTitle;
+                codeBody.innerHTML = highlightCode(example.generatedCode);
+            } else {
+                codeTitle.textContent = example.sourceTitle;
+                codeBody.innerHTML = highlightCode(example.sourceCode);
+            }
+            if (activeData) {
+                if (sourceCaption) sourceCaption.textContent = activeData.sourceCaption;
+                if (sourceHeadline) sourceHeadline.textContent = activeData.sourceHeadline;
+                if (generatedCaption) generatedCaption.textContent = activeData.generatedCaption;
+                if (generatedHeadline) generatedHeadline.textContent = activeData.generatedHeadline;
+            }
+            detailModeButtons.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.detailMode === detailMode));
+
+            if (exampleDots) {
+                exampleDots.hidden = examples.length < 2;
+                exampleDots.innerHTML = examples
+                    .map((ex, i) => `<button class="snippet-dot${i === exampleIndex ? " is-active" : ""}" type="button" data-example-index="${i}" aria-label="Show ${ex.label || `example ${i + 1}`}"></button>`)
+                    .join("");
+                Array.from(exampleDots.querySelectorAll("button")).forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        exampleIndex = Number(btn.dataset.exampleIndex);
+                        renderCode();
+                    });
+                });
+            }
+
+            window.clearTimeout(autoAdvanceTimer);
+            if (examples.length > 1) {
+                autoAdvanceTimer = window.setTimeout(() => {
+                    exampleIndex = (exampleIndex + 1) % examples.length;
+                    renderCode();
+                }, autoAdvanceDelay);
+            }
+        };
 
         const openDetail = (card) => {
             const data = (window.koraLanguage === "ru" ? modulesRu : modules)[card.dataset.module];
@@ -2963,11 +3955,16 @@
             copy.textContent = data.copy;
             tags.innerHTML = data.tags.map((tag) => `<span>${tag}</span>`).join("");
             points.innerHTML = data.points.map((point) => `<li>${point}</li>`).join("");
+            currentModuleKey = card.dataset.module;
+            detailMode = "source";
+            exampleIndex = 0;
+            renderCode();
             detail.hidden = false;
             detail.classList.add("is-open");
         };
 
         const closeDetail = () => {
+            window.clearTimeout(autoAdvanceTimer);
             detail.classList.remove("is-open");
             cards.forEach((item) => {
                 item.classList.remove("is-active");
@@ -2990,6 +3987,13 @@
                     event.preventDefault();
                     openDetail(card);
                 }
+            });
+        });
+
+        detailModeButtons.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                detailMode = btn.dataset.detailMode;
+                renderCode();
             });
         });
 
@@ -3370,16 +4374,17 @@ public interface PaymentClient {
 public final class EventsConsumer {
 
     @KafkaListener("kafka.consumer.events")
-    public void process(@Nullable Long key,
-                        @Nullable @Json Payment value,
-                        @Nullable Exception exception) {
-        if (exception instanceof RecordKeyDeserializationException) {
+    public void process(
+                    @Nullable Long key,
+                    @Nullable @Json Payment value,
+                    @Nullable Exception ex) {
+        if (ex instanceof RecordKeyDeserializationException) {
             System.out.println("Invalid key!");
             return;
-        } else if (exception instanceof RecordValueDeserializationException) {
+        } else if (ex instanceof RecordValueDeserializationException) {
             System.out.println("Invalid value!");
             return;
-        } else if (exception != null) {
+        } else if (ex != null) {
             System.out.println("Failed!");
             return;
         }
@@ -3424,8 +4429,9 @@ public final class $HelloController_Route
     private final BlockingRequestExecutor _executor;
     private final HttpServerResponseMapper<String> _responseMapper;
 
-    public CompletionStage<HttpServerResponse> handle(Context _ctx,
-                                                      HttpServerRequest _request) {
+    public CompletionStage<HttpServerResponse> handle(
+                    Context _ctx,
+                    HttpServerRequest _request) {
         var name = _request.pathParams().get("name");
         return _executor.execute(_ctx, () -> {
             var _result = _controller.hello(name);
@@ -3482,12 +4488,15 @@ public final class $PaymentClient_Impl implements PaymentClient {
             throw new HttpClientEncoderException(e);
         }
 
-        var _request = HttpClientRequest.of("POST", "/payments", "/payments", HttpHeaders.of(), _body, null);
-        try (var _response = _client.execute(_request).toCompletableFuture().get()) {
+        var _request = HttpClientRequest.of("POST", "/payments", "/payments",
+            HttpHeaders.of(), _body, null);
+        var _future = _client.execute(_request).toCompletableFuture();
+        try (var _response = _future.get()) {
             if (_response.code() >= 200 && _response.code() < 300) {
                 return _responseMapper.apply(_response);
             }
-            throw HttpClientResponseException.fromResponseFuture(_response).get();
+            throw HttpClientResponseException
+                .fromResponseFuture(_response).get();
         } catch (Exception e) {
             throw new HttpClientUnknownException(e);
         }
@@ -3497,17 +4506,20 @@ public final class $PaymentClient_Impl implements PaymentClient {
             {
                 title: "$KafkaConsumer_Handler.java",
                 code: `@Generated("KafkaAnnotationProcessor")
-public final class $KafkaConsumer_Handler implements KafkaRecordHandler<Long, Payment> {
+public final class $KafkaConsumer_Handler
+        implements KafkaRecordHandler<Long, Payment> {
     private final EventsConsumer consumer;
     private final KafkaConsumerTelemetry telemetry;
     private final KafkaRecordKeyDeserializer<Long> keyDeserializer;
     private final KafkaRecordValueDeserializer<Payment> valueDeserializer;
 
-    public void handle(ConsumerRecord<byte[], byte[]> record, @Nullable Exception exception) {
+    public void handle(
+                    ConsumerRecord<byte[], byte[]> record,
+                    @Nullable Exception ex) {
         var ctx = telemetry.get(record);
         Long key = null;
         Payment value = null;
-        Exception error = exception;
+        Exception error = ex;
 
         try {
             if (error == null && record.key() != null) {
@@ -3516,7 +4528,8 @@ public final class $KafkaConsumer_Handler implements KafkaRecordHandler<Long, Pa
             if (error == null && record.value() != null) {
                 value = valueDeserializer.deserialize(record.value());
             }
-        } catch (RecordKeyDeserializationException | RecordValueDeserializationException e) {
+        } catch (RecordKeyDeserializationException
+                | RecordValueDeserializationException e) {
             error = e;
         }
 
@@ -3763,7 +4776,10 @@ class KafkaConsumer_Handler(
     private val valueDeserializer: KafkaRecordValueDeserializer<Payment>
 ) : KafkaRecordHandler<Long, Payment> {
 
-    override fun handle(record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception?) {
+    override fun handle(
+                    record: ConsumerRecord<ByteArray, ByteArray>,
+                    exception: Exception?
+    ) {
         val ctx = telemetry.get(record)
         var key: Long? = null
         var value: Payment? = null
@@ -3869,10 +4885,12 @@ class ResilientService_AopProxy(
                 .replace(/@\w+(?:\([^)]*\))?/g, stash("token-anno"))
                 .replace(/"[^"\n]*"/g, stash("token-string"))
                 .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof|fun|val|override|open|when|is|else|null|in|data)\b/g, '<span class="token-key">$1</span>')
-                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V)\b/g, '<span class="token-type">$1</span>');
+                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V|FraudDetector|PaymentService|OrderService|OrderRequest|OrderResult|InventoryRepository|VirtualThreadExecutor|CompletionStage|S3Client|S3StorageConfig|S3StorageModule|FileStorage|S3FileStorage|Region|Node|PrometheusMeterRegistry|PrometheusConfig|SpanExporter|OtlpGrpcSpanExporter|TelemetryConfig|PrivateApiHandler|ReadinessProbe|ReadinessHttpHandler|GreetingController|GreetingConfig|Validator|ViolationException|JdbcDatabase|JdbcDatabaseConfig|JdbcDatabaseModule|DataBaseTelemetryFactory|ConfigValueExtractor|ConfigValueMapper|TracingConfig|JedisClientConfig|JedisConfig|Jedis|URI|Config|Executor|OtherDatabase|Application)\b/g, '<span class="token-type">$1</span>');
 
             return html.replace(/\u0000(\d+)\u0000/g, (_, id) => tokens[Number(id)]);
         };
+
+        window.koraHighlightCode = highlight;
 
         const setActive = (nextIndex) => {
             index = nextIndex;
