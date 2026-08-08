@@ -38,6 +38,16 @@
             box-sizing: border-box;
         }
 
+        ::selection {
+            background: var(--brand);
+            color: #100b02;
+        }
+
+        ::-moz-selection {
+            background: var(--brand);
+            color: #100b02;
+        }
+
         html {
             scroll-behavior: auto;
         }
@@ -1301,6 +1311,12 @@
             font-style: normal;
         }
 
+        .philosophy-subline {
+            display: block;
+            white-space: nowrap;
+            font-size: clamp(16px, 2.1vw, 30px);
+        }
+
         .philosophy-quote {
             margin: 18px 0 0;
             padding: 4px 0 0 16px;
@@ -2472,7 +2488,7 @@
                     <aside class="philosophy-aside">
                         <div>
                             <span class="philosophy-kicker">Philosophy</span>
-                            <h3>Not a tool for every situation.<br>But the <em>best tool</em> for the job.</h3>
+                            <h3>Not a tool for every situation.<br><span class="philosophy-subline">But the <em>best tool</em> for the job.</span></h3>
                         </div>
                     </aside>
                     <div class="philosophy-main">
@@ -2492,7 +2508,7 @@
                             <span>Integrations</span>
                         </div>
                         <figure class="philosophy-quote">
-                            <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens <strong>at the table</strong>&#8202;&mdash;&#8202;where a good knife, fork, and spoon cover nearly everything.</p>
+                            <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens <strong>at the table</strong> &mdash; where a good knife, fork, and spoon cover nearly everything.</p>
                         </figure>
                     </div>
                 </div>
@@ -2637,7 +2653,7 @@
                     <div class="startup-bar" style="--startup-score: 70.4; --startup-duration: 21130ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
                         <span class="startup-value-wrap"><span class="startup-value" data-target="21.13" data-duration="21130">0.00s</span></span>
                         <span class="startup-column"></span>
-                        <span class="startup-label">Spring Max Optimized</span>
+                        <span class="startup-label">Spring Heavy Optimized</span>
                     </div>
                     <div class="startup-bar" style="--startup-score: 88.4; --startup-duration: 26530ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
                         <span class="startup-value-wrap"><span class="startup-value" data-target="26.53" data-duration="26530">0.00s</span></span>
@@ -2785,7 +2801,30 @@
         const ru = {
             "Principles": "Принципы",
             "Modules": "Модули",
-            "Guides": "Гайды",
+            "Guides": "Руководства",
+            "Philosophy": "Философия",
+            "Not a tool for every situation.": "Не инструмент на все случаи.",
+            "But the": "Но",
+            "best tool": "лучший инструмент",
+            "for the job.": "для конкретной задачи.",
+            "Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks.": "Kora не стремится к охвату ради охвата, не оборачивает каждую технологию в собственную абстракцию и не заменяет собой всю функциональность других фреймворков.",
+            "It takes proven, widely used backend practices and pushes them further:": "Она берет проверенные, широко используемые практики серверной разработки и доводит их до предела:",
+            "less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.": "меньше механики во время выполнения, меньше конкурирующих стилей, понятнее контракты и ниже когнитивная нагрузка.",
+            "Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.": "Используйте только нужные вам модули, заменяйте или настраивайте их компоненты и добавляйте свои модули и интеграции через ту же явную модель приложения.",
+            "Kora focuses on essentials of production backend development and aims to make that path": "Kora сосредоточена на главном в промышленной серверной разработке и делает этот путь",
+            "exceptionally direct, transparent, and as efficient as possible": "исключительно прямым, прозрачным и максимально эффективным",
+            "That same discipline is what makes Kora": "Такие же подходы делают Kora",
+            "easier for engineers to develop, debug, and maintain": "проще для разработки, отладки и поддержки инженерами",
+            ": components are wired explicitly, mistakes are caught by the compiler as readable errors instead of runtime surprises, and every generated class reads like code an engineer would write by hand. That same clarity is why it also fits naturally into AI-assisted development—nothing hides behind reflection or dynamic proxies, so a model can open the generated sources, trace a request end to end, and trust what it sees just as easily as a person can.": ": компоненты связываются явно, ошибки компилятор ловит как понятные сообщения вместо сюрпризов во время выполнения, а каждый сгенерированный класс читается как код, который инженер написал бы сам. Та же ясность делает Kora естественной и для разработки с участием нейросетей — ничего не скрыто за рефлексией или динамическими прокси, поэтому нейросеть может открыть сгенерированные исходники, проследить запрос от начала до конца и доверять увиденному так же легко, как человек.",
+            "Data access": "Доступ к данным",
+            "Messaging": "Обмен сообщениями",
+            "Configuration": "Конфигурация",
+            "Resilience": "Отказоустойчивость",
+            "Telemetry": "Телеметрия",
+            "Integrations": "Интеграции",
+            "A Swiss Army knife offers a tool for almost every situation. But most backend development happens": "Швейцарский нож предлагает инструмент почти на любой случай. Но большая часть серверной разработки происходит",
+            "at the table": "за столом",
+            "— where a good knife, fork, and spoon cover nearly everything.": "— где хороший нож, вилка и ложка справляются практически со всем.",
             "GitHub": "GitHub",
             "Docs": "Документация",
             "Java and Kotlin comprehensive backend framework": "Комплексный серверный фреймворк для Java и Kotlin",
@@ -2801,7 +2840,7 @@
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
             "runtime reflections": "рефлексии в runtime",
-            "of functionality covered by docs, guides, and examples": "функциональности покрыто документацией, гайдами и примерами",
+            "of functionality covered by docs, guides, and examples": "функциональности покрыто документацией, Руководствами и примерами",
             "metrics and tracing across modules": "метрики и трассировка во всех модулях",
             "High-level API": "Высокоуровневый API",
             "Familiar top-level abstractions": "Знакомые верхнеуровневые абстракции",
@@ -2814,27 +2853,27 @@
             "Checks": "Проверяет",
             "dependencies, injections, cycles, aspects": "зависимости, внедрения, циклы, аспекты",
             "Generates": "Генерирует",
-            "wiring, mappers, repositories": "связи, мапперы, репозитории",
+            "wiring, mappers, repositories": "связи, преобразователи, репозитории",
             "Simple. Coherent. Familiar.": "Просто. Понятно. Знакомо.",
-            "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые Java и Kotlin паттерны остаются, но становятся строже, типизированнее, сгенерированными и прозрачными для HTTP, OpenAPI, gRPC, данных, messaging, resilience и config.",
+            "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые паттерны Java и Kotlin остаются, но становятся более строгими, типизированными и прозрачными для HTTP, OpenAPI, gRPC, работы с данными, обмена сообщениями, отказоустойчивости и конфигурации.",
             "Familiar": "Знакомо",
             "modules, clients, repositories, abstractions": "модули, клиенты, репозитории, абстракции",
-            "Coherent": "Цельно",
+            "Coherent": "Предсказуемо",
             "one approach across modules": "один подход во всех модулях",
             "Peak Performance": "Заложенная пиковая",
             "by Design": "производительность",
             "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.": "Производительность следует из compile-time решений, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов.",
             "Startup": "Старт",
-            "prebuilt graph, parallel init": "готовый граф, parallel init",
-            "Runtime": "Runtime",
+            "prebuilt graph, parallel init": "готовый граф, параллелизация запуска",
+            "Runtime": "Работа",
             "thin abstractions, fast integrations": "тонкие абстракции, быстрые интеграции",
-            "Production-Grade,": "Production-grade,",
-            "Cloud-Ready": "готово для cloud",
-            "Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.": "Production defaults покрывают OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown и resilience policies, чтобы сервисы оставались предсказуемыми под нагрузкой.",
+            "Production-Grade,": "Промышленная",
+            "Cloud-Ready": "облачная разработка",
+            "Production defaults cover OpenTelemetry, structured logs, probes, lifecycle, graceful shutdown, and resilience policies for predictable services under load.": "Готовые промышленные настройки включают системы мониторинга, структурированное логирование, проверки работоспособности, управление жизненным циклом, корректное завершение и политики отказоустойчивости — всё это обеспечивает надёжную работу сервисов при высоких нагрузках.",
             "Operate": "Operate",
-            "metrics, traces, logs, probes": "metrics, traces, logs, probes",
-            "Scale": "Scale",
-            "fast readiness, graceful shutdown": "fast readiness, graceful shutdown",
+            "metrics, traces, logs, probes": "метрики, логи, трассировка, пробы",
+            "Scale": "Контейнер",
+            "fast readiness, graceful shutdown": "быстрая готовность, корректное завершение",
             "More throughput per core, fewer machines to pay for.": "Больше производительности на ядро — меньше расходов, больше стабильности.",
             "A TechEmpower Single query (external): responses per second for one database query per request. Higher is better.": "TechEmpower Single query (external): число ответов в секунду при одном запросе к базе данных на HTTP-запрос. Чем больше, тем лучше.",
             "Snapshot": "Срез",
@@ -2852,14 +2891,14 @@
             "Kora repositories": "Репозитории Kora",
             "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, маппинги во время компиляции, макросы запросов и явный контроль над доступом к данным.",
             "Ops": "Ops",
-            "Observability by design": "Наблюдаемость включена",
-            "Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики, трассировка, структурное логирование, распространение контекста, health-проверки и корректное завершение работы встроены с самого начала.",
+            "Observability by design": "Наблюдаемость из коробки",
+            "Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики, трассировка, структурированное логирование, распространение контекста, проверки работоспособности и корректное завершение встроены с самого начала.",
             "Integration": "Интеграции",
             "Kafka, gRPC, S3, and more": "Kafka, gRPC, S3 и не только",
             "Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.": "Обмен сообщениями, RPC, хранилища, workflow-движки и инфраструктурные интеграции, построенные вокруг той же явной модели программирования.",
             "AOP": "AOP",
-            "Production essentials": "Всё необходимое для продакшена",
-            "Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.": "Валидация, кэш, отказоустойчивость, транзакции, планировщик, безопасность и логирование генерируются во время компиляции без runtime-прокси.",
+            "Production essentials": "Всё необходимое для промышленной разработки",
+            "Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.": "Проверка данных, кэширование, отказоустойчивость, транзакции, планирование, безопасность и логирование генерируются во время компиляции без прокси-объектов времени выполнения.",
             "Built to be extended": "Создана, чтобы расширяться",
             "Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.": "Используйте только нужные модули, заменяйте отдельные компоненты или пишите полноценные модули Kora для любой библиотеки — без борьбы с фреймворком.",
             "Concurrency": "Конкурентность",
@@ -2868,16 +2907,16 @@
             "What this gets you": "Что вы получаете",
             "Compiler": "Компилятор",
             "Transparent, no runtime magic": "Прозрачность, никакой runtime-магии",
-            "Wiring is checked and generated at compile time, so mistakes surface as clear compiler errors instead of runtime surprises—explicit, typed code with a fast feedback loop for engineers and AI tools alike.": "Связывание проверяется и генерируется во время компиляции, поэтому ошибки становятся понятными сообщениями компилятора, а не runtime-сюрпризами — явный типизированный код с быстрым feedback loop как для инженеров, так и для нейросетей.",
+            "Wiring is checked and generated at compile time, so mistakes surface as clear compiler errors instead of runtime surprises—explicit, typed code with a fast feedback loop for engineers and AI tools alike.": "Связывание проверяется и генерируется во время компиляции, поэтому ошибки становятся понятными сообщениями компилятора, а не сюрпризами во время выполнения — явный типизированный код с быстрым циклом обратной связи как для инженеров, так и для нейросетей.",
             "Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.": "Kora держит HTTP-контракты явными, сгенерированными и наблюдаемыми, не пряча обработку запросов за runtime-рефлексией.",
             "Already curious?": "Уже интересно?",
             "Would you like to know more?": "Хотите узнать больше?",
             "Start with readable examples, inspect generated source, and follow the same compile-time path from annotations to explicit runtime code.": "Начните с читаемых примеров, изучите сгенерированный код и пройдите тот же путь во время компиляции: от аннотаций к явному коду выполнения.",
-            "Read the guide": "Читать гайд",
+            "Read the guide": "Читать Руководство",
             "Examples": "Примеры",
             "Fastest to boot,": "Быстрее всех стартует,",
-            "fastest to serve.": "быстрее всех обслуживает.",
-            "Fast readiness helps horizontal scaling absorb peak load faster and thin framework internals avoids heavy startup SLA spikes during rolling deployments. Lower is better.": "Быстрая готовность помогает горизонтальному масштабированию лучша справляться с пиковой нагрузкой, а тонкий слой фреймворка до бизнес кода снижает стартовые просадки SLA во время развертываний. (Меньше значит лучше.)",
+            "fastest to serve.": "быстрее всех работает.",
+            "Fast readiness helps horizontal scaling absorb peak load faster and thin framework internals avoids heavy startup SLA spikes during rolling deployments. Lower is better.": "Быстрая готовность помогает горизонтальному масштабированию лучше справляться с пиковой нагрузкой, а тонкий слой фреймворка до бизнес кода снижает стартовые просадки SLA во время развертываний. (Меньше значит лучше.)",
             "Serving traffic": "Обслуживает трафик",
             "10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.": "10x PetClinic-сервисы с полным набором боевых интеграций в Docker-контейнере: 1 CPU, 1 GB памяти, запуск и готовность к обслуживанию.",
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
@@ -2896,35 +2935,35 @@
             "Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.": "Читаемые сгенерированные исходники, ошибки на этапе компиляции, сфокусированная документация и примеры упрощают погружение в проект. Новые разработчики могут посмотреть, что сделал фреймворк, быстро проверить поведение и попросить нейросеть пройтись по реальному коду вместо угадывания скрытого состояния runtime.",
             "No magic, no frustration": "Нет магии, нет фрустрации",
             "Proxy-heavy frameworks can make annotations feel simple until behavior depends on hidden runtime proxy rules, self-invocation, reflection, or container-specific conventions that change from one version to another. Kora keeps the mechanism transparent: generated source and docs hold the context, so developers do not need to memorize annotation folklore or keep invisible framework state in their heads.": "Фреймворки, завязанные на прокси, могут казаться простыми, пока поведение не начинает зависеть от скрытых правил runtime-прокси, self-invocation, рефлексии или контейнерных соглашений, которые меняются от версии к версии. Kora держит механизм прозрачным: сгенерированный код и документация хранят контекст, поэтому разработчикам не нужно заучивать фольклор вокруг аннотаций или держать невидимое состояние фреймворка в голове.",
-            "Highload-grade optimized out of the box": "Highload-grade оптимизация из коробки",
+            "Highload-grade optimized out of the box": "Высоко-производительные оптимизации из коробки",
             "Kora is based on highload-grade production optimizations from the first request: fast startup, explicit dependency graphs, generated adapters, and lean module integrations. Developers do not need to read hundreds of articles, watch hundreds of talks, spend thousands of hours benchmarking framework internals, or tune the framework itself before shipping. It is already done inside Kora. Just start writing services.": "Kora с первого запроса опирается на production-оптимизации для высоких нагрузок: быстрый запуск, явные графы зависимостей, сгенерированные адаптеры и легкие модульные интеграции. Разработчикам не нужно читать сотни статей, смотреть сотни докладов, тратить тысячи часов на бенчмарки внутренностей фреймворка или тюнить сам фреймворк перед релизом. Это уже сделано внутри Kora. Просто начинайте писать сервисы.",
             "One problem, one solution": "Одна проблема, одно решение",
             "Kora favors one recommended solution based on JVM best practices instead of many competing framework styles. Teams spend less time writing internal rules, preparing talks about correct usage, or debating which abstraction should be allowed.": "Kora предпочитает одно рекомендуемое решение на базе лучших практик JVM вместо множества конкурирующих стилей внутри одного фреймворка. Команды тратят меньше времени на внутренние правила, доклады о правильном использовании и споры о том, какую абстракцию разрешить.",
-            "No lore required, Kora just works": "Без folklore, Kora просто работает",
-            "You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.": "Вам не нужно огромное сообщество, которое годами спотыкается о миллионы крайних случаев, ищет миллионы нерабочих ответов, пишет миллионы вопросов и выпускает бесконечные доклады о том, как фреймворк работает на самом деле и почему этого нет в документации. Kora просто работает: документация прямая, примеры практичные, сгенерированный код читаемый, а нейросеть может объяснить реальную реализацию вместо обратного разбора скрытой магии.",
+            "No lore required, Kora just works": "Без тайных знаний, Kora просто работает",
+            "You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.": "Вам не нужно огромное сообщество, чтобы разобраться, как работает фреймворк. Не нужно искать ответы среди тысяч обсуждений, сверять противоречивые советы, смотреть десятки докладов или выяснять, почему реальное поведение отличается от документации. Kora просто работает. Документация соответствует реализации, примеры отражают реальные практики, сгенерированный код остаётся читаемым, а нейросеть может объяснить, что происходит внутри, потому что механизмы фреймворка открыты и прозрачны.",
             "Simple and fast testing": "Простое и быстрое тестирование",
             "Test the service through the same explicit component graph it uses in production. Inject test components, replace dependencies, override configuration, keep component tests fast, and add Testcontainers-backed integration tests when real infrastructure matters.": "Тестируйте сервис через тот же явный граф компонентов, который используется в production. Подставляйте тестовые компоненты, заменяйте зависимости, переопределяйте конфигурацию, держите компонентные тесты быстрыми и добавляйте интеграционные тесты на Testcontainers там, где нужна реальная инфраструктура.",
-            "Enterprise-grade by design": "Enterprise-grade по замыслу",
-            "Tracing, metrics, structured logging, probes, resilience, and graceful shutdown for all modules are designed as framework capabilities rather than late add-ons. The operational contract remains visible in generated and handwritten code.": "Трассировка, метрики, структурное логирование, проверки состояния, отказоустойчивость и корректное завершение работы для всех модулей спроектированы как возможности фреймворка, а не поздние надстройки. Эксплуатационный контракт остается видимым в сгенерированном и рукописном коде.",
+            "Enterprise-grade by design": "Создано с опытом промышленных высоконагруженных систем",
+            "Tracing, metrics, structured logging, probes, resilience, and graceful shutdown for all modules are designed as framework capabilities rather than late add-ons. The operational contract remains visible in generated and handwritten code.": "Трассировка, метрики, структурированное логирование, проверки работоспособности, отказоустойчивость и корректное завершение для всех модулей спроектированы как возможности фреймворка, а не поздние надстройки. Эксплуатационный контракт остается видимым в сгенерированном и рукописном коде.",
             "Kora contract": "Контракт Kora",
-            "Stop fighting the framework. Start shipping services.": "Хватит бороться с фреймворком. Начинайте выпускать сервисы.",
+            "Stop fighting the framework. Start shipping services.": "Хватит бороться с фреймворком. Начинайте просто создавать сервисы.",
             "Keep business code direct and focused while Kora makes framework mechanics simple and predictable for you. Runtime becomes code that just works as expected.": "Держите бизнес-код прямым и сфокусированным, а Kora сделает механику фреймворка простой и предсказуемой. Поведение во время выполнения превращается в код, который просто работает как ожидается.",
             "Declare": "Опишите",
             "Controllers, repositories, listeners, config, and resilience policy.": "Контроллеры, репозитории, слушатели, конфигурацию и правила отказоустойчивости.",
             "Compile": "Скомпилируйте",
             "Validate wiring and generate implementations.": "Проверьте связи и сгенерируйте реализации.",
-            "Test": "Test",
+            "Test": "Протестируйте",
             "Cover every side with fast, component and integration tests that are easy to write.": "Покройте все стороны быстрыми компонентными и интеграционными тестами, которые легко писать.",
-            "Operate": "Эксплуатация",
+            "Operate": "Телеметрия",
             "Run fast, reliable and predictable services without": "Запускайте быстрые, надежные и предсказуемые сервисы без",
-            "in production.": "в production.",
+            "in production.": "в эксплуатации.",
             "Learn by example": "Учитесь на примерах",
             "Docs without the bloat.": "Документация без воды.",
-            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми гайдами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. Также есть",
+            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. Также есть",
             ", an official AI skill that makes working with Kora even easier.": ", официальный нейро-навык, который делает работу с Kora еще проще.",
             "Kora Skills": "Kora Skills",
             "functionality documented": "функциональности задокументировано",
-            "step-by-step guides": "пошаговых гайдов",
+            "step-by-step guides": "пошаговых Руководств",
             "module references": "справочников по модулям",
             "Build your first Kora service.": "Соберите свой первый сервис на Kora.",
             "Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.": "Пройдите пошаговую настройку, используйте официальные примеры или сразу откройте документацию по модулям для стека, который вам уже нужен.",
@@ -3153,6 +3192,7 @@
                 generatedHeadline: "Generated human-readable source code",
                 points: [
                     "Repository interfaces annotated with @Repository and @Query compile into concrete implementations before runtime.",
+                    "Query parameter correctness is verified at compile time: parameter types, counts, and bindings are checked before the service starts, preventing runtime surprises.",
                     "SQL stays in the source, while macros can expand model columns and reduce repetitive field lists.",
                     "Generated binders and mappers remove boilerplate but remain readable when debugging production behavior.",
                     "JDBC and Cassandra modules expose driver-specific power without forcing a generic abstraction over every database.",
@@ -3269,8 +3309,8 @@
             http: {
                 kicker: "HTTP",
                 title: "Серверы, клиенты, OpenAPI",
-                copy: "Стройте API от контракта: OpenAPI-файл может быть источником правды, а сгенерированные обработчики становятся обычным Java или Kotlin-кодом. Kora держит HTTP-слой тонким поверх Undertow: публичные и служебные порты, мапперы запросов и ответов, перехватчики, телеметрия и корректное завершение работы настраиваются явно.",
-                tags: ["OpenAPI-first", "Undertow", "Служебный API", "Виртуальные потоки", "Типизированные мапперы"],
+                copy: "Стройте API от контракта: OpenAPI-файл может быть источником правды, а сгенерированные обработчики становятся обычным Java или Kotlin-кодом. Kora держит HTTP-слой тонким поверх Undertow: публичные и служебные порты, преобразователи запросов и ответов, перехватчики, телеметрия и корректное завершение работы настраиваются явно.",
+                tags: ["OpenAPI-first", "Undertow", "Служебный API", "Виртуальные потоки", "Типизированные преобразователи"],
                 sourceCaption: "Высокоуровневый API",
                 sourceHeadline: "Знакомые верхнеуровневые абстракции",
                 generatedCaption: "Сгенерированный код",
@@ -3279,7 +3319,7 @@
                     "Используйте декларативные контроллеры для простых сервисов или генерируйте серверные и клиентские контракты из одной спецификации OpenAPI.",
                     "Разделяйте пользовательский трафик и служебные эндпоинты управления: /metrics, /system/readiness и /system/liveness.",
                     "Настраивайте логирование, SLO-бакеты, трассировку, маскирование заголовков, шаблоны путей и корректное завершение работы в HOCON или YAML.",
-                    "Обработка запросов остается понятной: классы маршрутов, мапперы тела, мапперы ответов и перехватчики видны как сгенерированный код.",
+                    "Обработка запросов остается понятной: классы маршрутов, преобразователи тела, преобразователи ответов и перехватчики видны как сгенерированный код.",
                     "Запускайтесь на легковестном и производительном Undertow с поддержкой виртуальных потоков Java 24+ для блокирующих обработчиков."
                 ]
             },
@@ -3294,15 +3334,16 @@
                 generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Интерфейсы репозиториев с @Repository и @Query компилируются в конкретные реализации до запуска приложения.",
+                    "Корректность параметров запроса проверяется на этапе компиляции: типы, количество и привязка параметров сверяются еще до старта сервиса, что исключает неожиданности во время выполнения.",
                     "SQL остается в исходниках, а макросы могут разворачивать колонки моделей и сокращать повторяющиеся списки полей.",
-                    "Сгенерированные binders и mappers убирают шаблонный код, но остаются читаемыми при отладке поведения в production.",
+                    "Сгенерированные преобразователи убирают шаблонный код, но остаются читаемыми при отладке поведения в эксплуатации.",
                     "Модули JDBC и Cassandra дают возможности конкретных драйверов без попытки натянуть универсальную абстракцию на любую базу.",
-                    "Пакетные запросы, сгенерированные идентификаторы, пользовательские мапперы и телеметрия базы данных живут в той же модели репозиториев."
+                    "Пакетные запросы, сгенерированные идентификаторы, пользовательские преобразователи и телеметрия базы данных живут в той же модели репозиториев."
                 ]
             },
             ops: {
                 kicker: "Ops",
-                title: "Наблюдаемость включена",
+                title: "Наблюдаемость из коробки",
                 copy: "Телеметрия не является побочной доработкой сбоку. Метрики, трассировка, логирование, readiness, liveness, маскирование и корректное завершение работы подключаются как обычные модули Kora, поскольку полное покрытие всех интеграций и операций является изначальным дизайном системы.",
                 tags: ["Prometheus", "Micrometer", "OpenTelemetry", "Readiness", "Трассировка"],
                 sourceCaption: "Конфигурация",
@@ -3336,7 +3377,7 @@
             },
             aop: {
                 kicker: "AOP",
-                title: "Всё необходимое для продакшена",
+                title: "Всё необходимое для промышленной разработки",
                 copy: "Валидация, кэш, отказоустойчивость, транзакции, планировщик, безопасность и логирование — сквозные задачи, которые нужны любому боевому сервису. Kora генерирует их во время компиляции из аннотаций вместо лабиринта runtime-прокси, поэтому итоговый код политик можно изучать, понимать и настраивать через конфигурацию.",
                 tags: ["Retry", "Timeout", "Circuit breaker", "Валидация", "Планировщик", "Транзакции", "Cache"],
                 sourceCaption: "Высокоуровневый API",
@@ -3399,7 +3440,7 @@
                     "Графом управляете вы, а не наоборот: каждый модуль и компонент в итоговом приложении явно объявлен на вашем интерфейсе @KoraApp — ничего не сканируется автоматически, не связывается само и не подключается незаметно за вашей спиной.",
                     "Связывание зависимостей, конфигурация и генерация аспектов разрешаются во время компиляции, поэтому сломанное связывание валит сборку, а не продакшен.",
                     "Сгенерированные исходники — это обычный читаемый Java или Kotlin: открываете файл, и видите именно то поведение, которое выполняется.",
-                    "Ошибки компилятора указывают на конкретную отсутствующую зависимость или неверный биндинг — тот же подробный feedback loop, который ценят в строго типизированных языках.",
+                    "Ошибки компилятора указывают на конкретную отсутствующую зависимость или неверный биндинг — тот же подробный цикл обратной связи, который ценят в строго типизированных языках.",
                     "Быстрые unit- и component-тесты замыкают цикл написал-скомпилировал-получил ошибку-исправил, и это важно как для разработчиков, так и для нейро-агентов.",
                     "Минимум магии означает меньше неявных решений, которые приходится угадывать — что человеку, что модели — при доработке или отладке сервиса."
                 ]
@@ -3769,6 +3810,122 @@ final class $Application_Graph {
 
     // Jedis was never a built-in module - it is wired
     // exactly like one, in the same explicit graph.
+}`
+                    },
+                    {
+                        label: "Search engine",
+                        sourceTitle: "ElasticsearchModule.java",
+                        sourceCode: `@Module
+interface ElasticsearchModule {
+
+    @ConfigMapper
+    interface ElasticsearchConfig {
+
+        String uri();
+    }
+
+    default ElasticsearchConfig elasticsearchConfig(
+                    Config config,
+                    ConfigValueMapper<ElasticsearchConfig> mapper) {
+        return mapper.mapOrThrow(config.get("elasticsearch"));
+    }
+
+    default ElasticsearchClient elasticsearchClient(ElasticsearchConfig elasticsearchConfig) {
+        var restClient = RestClient.builder(HttpHost.create(elasticsearchConfig.uri())).build();
+        var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        return new ElasticsearchClient(transport);
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+
+    final Node<ElasticsearchModule.ElasticsearchConfig> elasticsearchConfig = graph.registerNode(
+        ElasticsearchModule::elasticsearchConfig, config, configValueMapper);
+
+    final Node<ElasticsearchClient> elasticsearchClient = graph.registerNode(
+        ElasticsearchModule::elasticsearchClient, elasticsearchConfig);
+
+    // The official client wires in as-is - no custom
+    // Elasticsearch starter, no extra abstraction layer.
+}`
+                    },
+                    {
+                        label: "Document database",
+                        sourceTitle: "MongoModule.java",
+                        sourceCode: `@Module
+interface MongoModule {
+
+    @ConfigMapper
+    interface MongoConfig {
+
+        String connectionString();
+    }
+
+    default MongoConfig mongoConfig(
+                    Config config,
+                    ConfigValueMapper<MongoConfig> mapper) {
+        return mapper.mapOrThrow(config.get("mongo"));
+    }
+
+    default MongoClient mongoClient(MongoConfig mongoConfig) {
+        return MongoClients.create(mongoConfig.connectionString());
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+
+    final Node<MongoModule.MongoConfig> mongoConfig = graph.registerNode(
+        MongoModule::mongoConfig, config, configValueMapper);
+
+    final Node<MongoClient> mongoClient = graph.registerNode(
+        MongoModule::mongoClient, mongoConfig);
+
+    // MongoClients.create() becomes one explicit node -
+    // same lifecycle as every built-in database module.
+}`
+                    },
+                    {
+                        label: "Secrets management",
+                        sourceTitle: "VaultModule.java",
+                        sourceCode: `@Module
+interface VaultModule {
+
+    @ConfigMapper
+    interface VaultClientConfig {
+
+        String address();
+
+        String token();
+    }
+
+    default VaultClientConfig vaultClientConfig(
+                    Config config,
+                    ConfigValueMapper<VaultClientConfig> mapper) {
+        return mapper.mapOrThrow(config.get("vault"));
+    }
+
+    default Vault vault(VaultClientConfig vaultClientConfig) throws VaultException {
+        var config = new VaultConfig()
+            .address(vaultClientConfig.address())
+            .token(vaultClientConfig.token())
+            .build();
+        return new Vault(config);
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+
+    final Node<VaultModule.VaultClientConfig> vaultClientConfig = graph.registerNode(
+        VaultModule::vaultClientConfig, config, configValueMapper);
+
+    final Node<Vault> vault = graph.registerNode(
+        VaultModule::vault, vaultClientConfig);
+
+    // Secrets client, config, and lifecycle - all explicit,
+    // all visible in the same graph as everything else.
 }`
                     }
                 ]
