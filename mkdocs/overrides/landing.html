@@ -3112,6 +3112,7 @@
 
             window.koraLanguage = lang;
             window.localStorage?.setItem("kora-home-language", lang);
+            document.cookie = "kora_lang=" + lang + "; path=/; max-age=31536000; SameSite=Lax";
             window.dispatchEvent(new CustomEvent("kora:languagechange", { detail: { lang } }));
         };
 

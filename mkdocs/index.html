@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirect</title>
+    <style>
+        .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
+    </style>
+    <script>
+        (function () {
+            // 1. Returning visitor: send them back to whichever language they
+            //    were last actually reading (cookie is set by every docs page
+            //    and by the landing page's language toggle).
+            var match = document.cookie.match(/(?:^|; )kora_lang=(ru|en)(?:;|$)/);
+            var lang = match ? match[1] : null;
+
+            // 2. First-time visitor: fall back to browser language rather than
+            //    IP geolocation. Geo-IP needs either a server (this is static
+            //    GitHub Pages hosting, so there is none) or a third-party
+            //    client-side API call, which adds latency, a privacy-sensitive
+            //    external request, and is a weaker signal anyway - someone
+            //    browsing from an unexpected country (travel, VPN, corporate
+            //    proxy) still reads in their own language, not their IP's.
+            //    navigator.language is free, instant, and directly reflects
+            //    what the visitor actually reads.
+            if (!lang) {
+                var nav = ((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
+                lang = nav.indexOf("ru") === 0 ? "ru" : "en";
+            }
+
+            location.replace("/kora-docs/" + lang + "/");
+        })();
+    </script>
+    <!-- non-JS / crawler fallback -->
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=/kora-docs/en/">
+    </noscript>
+</head>
+<body>
+<div class="centralizedContainer">
+    <div><a href="/kora-docs/en/">Redirect</a> to landing page.</div>
+</div>
+</body>
+</html>

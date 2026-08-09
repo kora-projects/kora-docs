@@ -45,6 +45,12 @@
 
 {% block scripts %}
 {{ super() }}
+<script>
+    /* Remember which language the visitor is actually reading, so the site
+       entry point (mkdocs/index.html) can send returning visitors straight
+       back to it instead of always defaulting to one language. */
+    document.cookie = "kora_lang={{ config.theme.language }}; path=/; max-age=31536000; SameSite=Lax";
+</script>
 <div class="grid-signals" aria-hidden="true" id="grid-signals">
     <span class="signal signal-x"></span>
     <span class="signal signal-y"></span>
