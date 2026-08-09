@@ -73,6 +73,65 @@
 }
 
 /* ---------------------------------------------------------------------- */
+/* Light ("default") scheme palette                                       */
+/* Nearly every rule below reads var(--kora-*)/var(--md-*) rather than a
+   literal color, so redefining those two variable sets here is enough to
+   make the whole theme (nav, TOC, code, admonitions, tables...) readable in
+   light mode too - without having to touch each rule individually. Without
+   this block those variables fell through to the dark values defined on
+   :root above, which is what made light mode unreadable (near-white text on
+   a near-white page). */
+[data-md-color-scheme="default"] {
+    --kora-bg: #f2ecd9;
+    --kora-content: #f7f3ea;
+    --kora-sidebar: #ece4cd;
+    --kora-panel: #ece4cd;
+    --kora-panel-strong: #e3dabd;
+    --kora-line: rgba(26, 21, 9, 0.14);
+    --kora-line-soft: rgba(26, 21, 9, 0.09);
+    --kora-line-strong: rgba(180, 95, 0, 0.5);
+    --kora-text: #1a1509;
+    --kora-muted: #4d473e;
+    --kora-soft: #746d61;
+    --kora-brand: #b45f00;
+    --kora-brand-strong: #8a4600;
+    --kora-green: #1f7a4d;
+    --kora-blue: #2c5fbe;
+    --kora-red: #b3261e;
+
+    --md-default-bg-color: var(--kora-bg);
+    --md-default-fg-color: var(--kora-text);
+    --md-default-fg-color--light: var(--kora-muted);
+    --md-default-fg-color--lighter: var(--kora-soft);
+    --md-default-fg-color--lightest: rgba(26, 21, 9, 0.07);
+
+    --md-primary-fg-color: #ffb02e;
+    --md-primary-bg-color: #1a1509;
+    --md-primary-fg-color--dark: #1a1509;
+
+    --md-accent-fg-color: var(--kora-brand);
+    --md-accent-fg-color--transparent: rgba(180, 95, 0, 0.1);
+    --md-accent-bg-color: #fff8ec;
+
+    --md-typeset-color: var(--kora-text);
+    --md-typeset-a-color: var(--kora-brand);
+
+    --md-code-fg-color: #33301f;
+    --md-code-bg-color: #e9e0c7;
+
+    --md-footer-fg-color: #f7f3ea;
+    --md-footer-fg-color--light: #c2bcb1;
+    --md-footer-bg-color: #1a1509;
+    --md-footer-bg-color--dark: #100f0b;
+
+    --md-typeset-table-color: var(--kora-line);
+    --md-typeset-mark-color: rgba(180, 95, 0, 0.22);
+
+    --md-text-font: "IBM Plex Mono";
+    --md-code-font: "IBM Plex Mono";
+}
+
+/* ---------------------------------------------------------------------- */
 /* Background grid + signals (ported from the landing page)                */
 /* ---------------------------------------------------------------------- */
 
@@ -95,6 +154,23 @@ body[data-md-color-scheme="slate"] {
    the text (opaque code blocks / cards still sit on top, like the landing) */
 [data-md-color-scheme="slate"] .md-main,
 [data-md-color-scheme="slate"] .md-content {
+    background: transparent;
+}
+
+body[data-md-color-scheme="default"] {
+    background-color: var(--kora-bg);
+    background-image:
+        linear-gradient(90deg, rgba(26, 21, 9, 0.035) 1px, transparent 1px),
+        linear-gradient(rgba(26, 21, 9, 0.03) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 0, rgba(180, 95, 0, 0.05), transparent 42%);
+    background-size: 72px 72px, 72px 72px, 100% 900px;
+    background-position: 0 0, 0 0, 50% 0;
+    background-repeat: repeat, repeat, no-repeat;
+    background-attachment: scroll, scroll, scroll;
+}
+
+[data-md-color-scheme="default"] .md-main,
+[data-md-color-scheme="default"] .md-content {
     background: transparent;
 }
 
@@ -256,51 +332,64 @@ input {
     color: var(--kora-brand);
 }
 
-/* search box sits on the orange header -> dark translucent field */
-[data-md-color-scheme="slate"] .md-search__form {
+/* search box sits on the orange header (orange + dark text in BOTH schemes,
+   since the header always uses --md-primary-fg-color/--md-primary-bg-color)
+   -> dark translucent field works for slate and default alike */
+[data-md-color-scheme="slate"] .md-search__form,
+[data-md-color-scheme="default"] .md-search__form {
     background: rgba(26, 21, 9, 0.16);
     border-radius: var(--kora-radius);
     box-shadow: none;
 }
 
-[data-md-color-scheme="slate"] .md-search__form:hover {
+[data-md-color-scheme="slate"] .md-search__form:hover,
+[data-md-color-scheme="default"] .md-search__form:hover {
     background: rgba(26, 21, 9, 0.26);
 }
 
-[data-md-color-scheme="slate"] .md-search__input {
+[data-md-color-scheme="slate"] .md-search__input,
+[data-md-color-scheme="default"] .md-search__input {
     color: #1a1509;
 }
 
-[data-md-color-scheme="slate"] .md-search__input::placeholder {
+[data-md-color-scheme="slate"] .md-search__input::placeholder,
+[data-md-color-scheme="default"] .md-search__input::placeholder {
     color: rgba(26, 21, 9, 0.6);
 }
 
-[data-md-color-scheme="slate"] .md-search__icon {
+[data-md-color-scheme="slate"] .md-search__icon,
+[data-md-color-scheme="default"] .md-search__icon {
     color: #1a1509;
 }
 
-/* when search is OPEN it expands into a dark overlay, so the typed text, caret,
-   placeholder and icon must switch to light — dark-on-dark was unreadable */
-[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+/* when search is OPEN it expands into a scheme-colored overlay, so the typed
+   text, caret, placeholder and icon must switch to match that scheme */
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__form,
+[data-md-color-scheme="default"] [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
     background: var(--kora-panel-strong);
     box-shadow: 0 0 0 1px var(--kora-line);
 }
 
-[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input {
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input,
+[data-md-color-scheme="default"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input {
     color: var(--kora-text);
     caret-color: var(--kora-brand);
 }
 
-[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input::placeholder {
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input::placeholder,
+[data-md-color-scheme="default"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input::placeholder {
     color: var(--kora-soft);
 }
 
-[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__icon {
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__icon,
+[data-md-color-scheme="default"] [data-md-toggle="search"]:checked ~ .md-header .md-search__icon {
     color: var(--kora-muted);
 }
 
 [data-md-color-scheme="slate"] .md-search-result__meta,
-[data-md-color-scheme="slate"] .md-search__output {
+[data-md-color-scheme="slate"] .md-search__output,
+[data-md-color-scheme="default"] .md-search-result__meta,
+[data-md-color-scheme="default"] .md-search__output {
     background: var(--kora-panel);
     border: 1px solid var(--kora-line);
 }
@@ -322,21 +411,24 @@ input {
     width: 15.5%;
 }
 
-[data-md-color-scheme="slate"] .md-sidebar--primary {
+[data-md-color-scheme="slate"] .md-sidebar--primary,
+[data-md-color-scheme="default"] .md-sidebar--primary {
     background: transparent;
 }
 
-/* the nav column only needs a divider from content, not its own dark surface
-   (a distinct sidebar shade reads as a floating black block on the page) */
+/* the nav column only needs a divider from content, not its own surface
+   (a distinct sidebar shade reads as a floating block on the page) */
 @media screen and (min-width: 76.25em) {
-    [data-md-color-scheme="slate"] .md-sidebar--primary {
+    [data-md-color-scheme="slate"] .md-sidebar--primary,
+    [data-md-color-scheme="default"] .md-sidebar--primary {
         border-right: 1px solid var(--kora-line);
     }
 }
 
 /* mobile slide-out drawer still needs a solid backing */
 @media screen and (max-width: 76.234em) {
-    [data-md-color-scheme="slate"] .md-sidebar--primary {
+    [data-md-color-scheme="slate"] .md-sidebar--primary,
+    [data-md-color-scheme="default"] .md-sidebar--primary {
         background: var(--kora-bg);
     }
 }
@@ -362,10 +454,14 @@ input {
 
 /* Material gives the sticky/"lifted" nav title & active top-level item an opaque
    bg + a spread box-shadow (both = --md-default-bg-color) to mask scrolled items.
-   Over our transparent sidebar that halo reads as a dark rectangle -> kill it. */
+   Over our transparent sidebar that halo reads as a dark/light rectangle -> kill
+   it in both schemes. */
 [data-md-color-scheme="slate"] .md-nav--primary > .md-nav__title,
 [data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title,
-[data-md-color-scheme="slate"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+[data-md-color-scheme="slate"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link,
+[data-md-color-scheme="default"] .md-nav--primary > .md-nav__title,
+[data-md-color-scheme="default"] .md-nav--secondary .md-nav__title,
+[data-md-color-scheme="default"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
     background: transparent;
     box-shadow: none;
 }
@@ -492,7 +588,13 @@ input {
 [data-md-color-scheme="slate"] .md-typeset pre > code,
 [data-md-color-scheme="slate"] .md-typeset .highlighttable,
 [data-md-color-scheme="slate"] .md-typeset .highlighttable .linenos,
-[data-md-color-scheme="slate"] .md-typeset .highlighttable .code {
+[data-md-color-scheme="slate"] .md-typeset .highlighttable .code,
+[data-md-color-scheme="default"] .md-typeset .highlight,
+[data-md-color-scheme="default"] .highlight pre,
+[data-md-color-scheme="default"] .md-typeset pre > code,
+[data-md-color-scheme="default"] .md-typeset .highlighttable,
+[data-md-color-scheme="default"] .md-typeset .highlighttable .linenos,
+[data-md-color-scheme="default"] .md-typeset .highlighttable .code {
     background: var(--md-code-bg-color);
 }
 
@@ -733,6 +835,7 @@ input {
     color: var(--kora-text);
 }
 
+/* footer stays dark in both schemes, like the landing page footer */
 [data-md-color-scheme="slate"] .md-footer {
     background: #050505;
     border-top: 1px solid var(--kora-line);
@@ -740,6 +843,15 @@ input {
 
 [data-md-color-scheme="slate"] .md-footer-meta {
     background: #030303;
+}
+
+[data-md-color-scheme="default"] .md-footer {
+    background: #1a1509;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="default"] .md-footer-meta {
+    background: #100d06;
 }
 
 .md-footer__link:hover {
