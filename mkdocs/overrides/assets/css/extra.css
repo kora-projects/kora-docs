@@ -1,7 +1,794 @@
+/* =========================================================================
+   Kora docs theme — restyles Material for MkDocs to match the landing page
+   (dark, near-black background, warm orange brand accent, Commissioner
+   headings + Inter body, card-style panels).
+   ========================================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
+
+/* ---------------------------------------------------------------------- */
+/* Palette                                                                */
+/* ---------------------------------------------------------------------- */
+
+:root,
+[data-md-color-scheme="slate"] {
+    --kora-bg: #14140f;
+    --kora-content: #17160f;
+    --kora-sidebar: #100f0b;
+    --kora-panel: #1e1d16;
+    --kora-panel-strong: #24231b;
+    --kora-line: rgba(255, 255, 255, 0.12);
+    --kora-line-soft: rgba(255, 255, 255, 0.07);
+    --kora-line-strong: rgba(255, 176, 46, 0.45);
+    --kora-text: #f7f3ea;
+    --kora-muted: #c2bcb1;
+    --kora-soft: #8b857b;
+    --kora-brand: #ffb02e;
+    --kora-brand-strong: #ffcf6b;
+    --kora-green: #50d890;
+    --kora-blue: #72a7ff;
+    --kora-red: #ff726f;
+    --kora-radius: 8px;
+    --kora-font-heading: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+    --kora-font-body: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+    --kora-font-code: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+}
+
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: var(--kora-bg);
+    --md-default-fg-color: var(--kora-text);
+    --md-default-fg-color--light: var(--kora-muted);
+    --md-default-fg-color--lighter: var(--kora-soft);
+    --md-default-fg-color--lightest: rgba(255, 255, 255, 0.08);
+
+    --md-primary-fg-color: var(--kora-brand);
+    --md-primary-bg-color: #1a1509;
+    --md-primary-fg-color--dark: var(--kora-brand);
+
+    --md-accent-fg-color: var(--kora-brand);
+    --md-accent-fg-color--transparent: rgba(255, 176, 46, 0.12);
+    --md-accent-bg-color: #0a0a0a;
+
+    --md-typeset-color: var(--kora-text);
+    --md-typeset-a-color: var(--kora-brand);
+
+    --md-code-fg-color: #d9d2c8;
+    --md-code-bg-color: #0c0c08;
+
+    --md-footer-fg-color: var(--kora-muted);
+    --md-footer-fg-color--light: var(--kora-soft);
+    --md-footer-bg-color: #0c0b07;
+    --md-footer-bg-color--dark: #080704;
+
+    --md-typeset-table-color: var(--kora-line);
+    --md-typeset-mark-color: rgba(255, 176, 46, 0.32);
+
+    --md-text-font: "IBM Plex Mono";
+    --md-code-font: "IBM Plex Mono";
+}
+
+:root {
+    --md-text-font: "IBM Plex Mono";
+    --md-code-font: "IBM Plex Mono";
+}
+
+/* ---------------------------------------------------------------------- */
+/* Background grid + signals (ported from the landing page)                */
+/* ---------------------------------------------------------------------- */
+
+/* full-page fixed grid, same 72px cell as the landing page. Fixed so the
+   moving signals stay aligned to the grid lines while the page scrolls. */
+body[data-md-color-scheme="slate"] {
+    background-color: var(--kora-bg);
+    background-image:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 0, rgba(255, 176, 46, 0.04), transparent 42%);
+    background-size: 72px 72px, 72px 72px, 100% 900px;
+    background-position: 0 0, 0 0, 50% 0;
+    background-repeat: repeat, repeat, no-repeat;
+    /* scroll (default) so the grid rides with the page, like the landing page */
+    background-attachment: scroll, scroll, scroll;
+}
+
+/* content + main surfaces stay transparent so the grid & signals read behind
+   the text (opaque code blocks / cards still sit on top, like the landing) */
+[data-md-color-scheme="slate"] .md-main,
+[data-md-color-scheme="slate"] .md-content {
+    background: transparent;
+}
+
+/* the signal overlay: ABSOLUTE (document-anchored) so the comets scroll WITH the
+   page and ride the grid lines - fixed made them static on scroll, which was the
+   wrong tradeoff. To avoid the earlier self-inflating-height bug: this element is
+   a SIBLING of .md-container (not a descendant), so its own overflow can never
+   pollute .md-container's height, and we size it from .md-container's height
+   (a source that is structurally immune to pollution from this overlay) rather
+   than document.scrollHeight (which the overlay itself contributes to). overflow
+   :hidden then clips any signal overshoot so nothing leaks past this box either. */
+.grid-signals {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.grid-signals .signal {
+    position: absolute;
+    opacity: 0;
+    filter: drop-shadow(0 0 2px rgba(255, 176, 46, 0.35));
+}
+
+.grid-signals .signal-x {
+    top: 0;
+    height: 1px;
+    width: 90px;
+    background: linear-gradient(90deg, transparent, rgba(255, 176, 46, 0.4) 70%, rgba(255, 199, 120, 0.55) 100%);
+}
+
+.grid-signals .signal-x.is-rev {
+    background: linear-gradient(270deg, transparent, rgba(255, 176, 46, 0.4) 70%, rgba(255, 199, 120, 0.55) 100%);
+}
+
+.grid-signals .signal-y {
+    left: 0;
+    width: 1px;
+    height: 90px;
+    background: linear-gradient(180deg, transparent, rgba(255, 176, 46, 0.4) 70%, rgba(255, 199, 120, 0.55) 100%);
+}
+
+.grid-signals .signal-y.is-rev {
+    background: linear-gradient(0deg, transparent, rgba(255, 176, 46, 0.4) 70%, rgba(255, 199, 120, 0.55) 100%);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Base typography                                                        */
+/* ---------------------------------------------------------------------- */
+
+body,
+input {
+    font-family: var(--kora-font-body);
+}
+
+.md-typeset {
+    font-size: 0.72rem;
+    line-height: 1.7;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+    font-family: var(--kora-font-heading);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--kora-text);
+}
+
+.md-typeset h1 {
+    font-weight: 900;
+    font-size: 2rem;
+    margin: 0 0 1.2em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--kora-line);
+}
+
+.md-typeset h2 {
+    font-size: 1.4rem;
+    margin: 1.8em 0 0.8em;
+}
+
+.md-typeset h3 {
+    font-size: 1.1rem;
+    margin: 1.6em 0 0.6em;
+}
+
+.md-typeset a {
+    color: var(--kora-brand);
+    text-decoration-color: rgba(255, 176, 46, 0.35);
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+    color: var(--kora-brand-strong);
+}
+
+.md-typeset code {
+    font-size: 0.85em;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+}
+
+.md-typeset hr {
+    border-bottom: 1px solid var(--kora-line);
+}
+
+.md-typeset blockquote {
+    border-left: 3px solid var(--kora-brand);
+    color: var(--kora-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Header + tabs                                                          */
+/* ---------------------------------------------------------------------- */
+
+[data-md-color-scheme="slate"] .md-header {
+    background: linear-gradient(120deg, #ffb02e 0%, #ffc24d 55%, #ffb02e 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.28);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    color: #1a1509;
+}
+
+.md-header__title,
+.md-header__topic {
+    font-family: var(--kora-font-heading);
+    font-weight: 800;
+    color: #1a1509;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+    height: 1.4rem;
+    width: 1.4rem;
+}
+
+/* tabs bar: dark strip below the orange header, orange active accent */
+[data-md-color-scheme="slate"] .md-tabs {
+    background: var(--kora-sidebar);
+    border-bottom: 1px solid var(--kora-line);
+    color: var(--kora-text);
+}
+
+.md-tabs__link {
+    font-weight: 600;
+    opacity: 0.72;
+    color: var(--kora-text);
+}
+
+.md-tabs__link:hover,
+.md-tabs__link--active {
+    opacity: 1;
+    color: var(--kora-brand);
+}
+
+/* search box sits on the orange header -> dark translucent field */
+[data-md-color-scheme="slate"] .md-search__form {
+    background: rgba(26, 21, 9, 0.16);
+    border-radius: var(--kora-radius);
+    box-shadow: none;
+}
+
+[data-md-color-scheme="slate"] .md-search__form:hover {
+    background: rgba(26, 21, 9, 0.26);
+}
+
+[data-md-color-scheme="slate"] .md-search__input {
+    color: #1a1509;
+}
+
+[data-md-color-scheme="slate"] .md-search__input::placeholder {
+    color: rgba(26, 21, 9, 0.6);
+}
+
+[data-md-color-scheme="slate"] .md-search__icon {
+    color: #1a1509;
+}
+
+/* when search is OPEN it expands into a dark overlay, so the typed text, caret,
+   placeholder and icon must switch to light — dark-on-dark was unreadable */
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    background: var(--kora-panel-strong);
+    box-shadow: 0 0 0 1px var(--kora-line);
+}
+
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input {
+    color: var(--kora-text);
+    caret-color: var(--kora-brand);
+}
+
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__input::placeholder {
+    color: var(--kora-soft);
+}
+
+[data-md-color-scheme="slate"] [data-md-toggle="search"]:checked ~ .md-header .md-search__icon {
+    color: var(--kora-muted);
+}
+
+[data-md-color-scheme="slate"] .md-search-result__meta,
+[data-md-color-scheme="slate"] .md-search__output {
+    background: var(--kora-panel);
+    border: 1px solid var(--kora-line);
+}
+
+[data-md-color-scheme="slate"] .md-search-result__meta {
+    color: var(--kora-muted);
+}
+
+/* highlighted matches in results use the brand color */
+[data-md-color-scheme="slate"] .md-search-result mark {
+    color: var(--kora-brand);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Primary sidebar (left navigation)                                      */
+/* ---------------------------------------------------------------------- */
+
+.md-sidebar--primary {
+    width: 15.5%;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar--primary {
+    background: transparent;
+}
+
+/* the nav column only needs a divider from content, not its own dark surface
+   (a distinct sidebar shade reads as a floating black block on the page) */
+@media screen and (min-width: 76.25em) {
+    [data-md-color-scheme="slate"] .md-sidebar--primary {
+        border-right: 1px solid var(--kora-line);
+    }
+}
+
+/* mobile slide-out drawer still needs a solid backing */
+@media screen and (max-width: 76.234em) {
+    [data-md-color-scheme="slate"] .md-sidebar--primary {
+        background: var(--kora-bg);
+    }
+}
+
 .md-grid {
     max-width: 99%;
 }
 
-.md-sidebar--primary {
-    width: 15.5%;
+.md-nav {
+    font-size: 0.68rem;
+}
+
+.md-nav__title {
+    font-family: var(--kora-font-heading);
+    font-weight: 800;
+    color: var(--kora-text);
+    box-shadow: none;
+}
+
+.md-nav--primary .md-nav__title {
+    background: transparent;
+}
+
+/* Material gives the sticky/"lifted" nav title & active top-level item an opaque
+   bg + a spread box-shadow (both = --md-default-bg-color) to mask scrolled items.
+   Over our transparent sidebar that halo reads as a dark rectangle -> kill it. */
+[data-md-color-scheme="slate"] .md-nav--primary > .md-nav__title,
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title,
+[data-md-color-scheme="slate"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* leaf links (actual pages) */
+.md-nav__item .md-nav__link {
+    border-radius: 6px;
+    padding: 0.34em 0.7em;
+    margin: 1px 0;
+    color: var(--kora-muted);
+    transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.md-nav__item .md-nav__link:hover {
+    color: var(--kora-text);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.md-nav__link--active,
+.md-nav__link--active code {
+    color: var(--kora-brand) !important;
+    background: rgba(255, 176, 46, 0.13);
+    box-shadow: inset 2px 0 0 var(--kora-brand);
+    font-weight: 700;
+}
+
+/* section headers ("БАЗА ДАННЫХ", "РАСШИРЕННЫЕ ВОЗМОЖНОСТИ" ...) —
+   clear dividers + brand-tinted uppercase labels so groups stand apart */
+.md-nav--primary .md-nav__item--section {
+    margin-top: 1.1em;
+    padding-top: 0.9em;
+    border-top: 1px solid var(--kora-line-soft);
+}
+
+.md-nav--primary .md-nav__item--section:first-child {
+    margin-top: 0.2em;
+    padding-top: 0;
+    border-top: 0;
+}
+
+.md-nav__item--section > .md-nav__link,
+.md-nav--primary .md-nav__item--section > .md-nav__link[for] {
+    font-family: var(--kora-font-heading);
+    font-weight: 800;
+    color: var(--kora-soft) !important;
+    text-transform: uppercase;
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+    opacity: 1;
+    cursor: default;
+}
+
+.md-nav__item--section > .md-nav__link:hover {
+    background: transparent;
+}
+
+/* the active chapter (innermost section that holds the current page) gets a
+   faint orange wash + orange header so you can see which group you are in;
+   the :not() keeps parent/wrapper sections (e.g. the top-level tab group)
+   from tinting the whole sidebar, and every other chapter stays neutral gray */
+.md-nav--primary .md-nav__item--section:has(.md-nav__link--active):not(:has(.md-nav__item--section .md-nav__link--active)) {
+    background: rgba(255, 176, 46, 0.055);
+    border-radius: var(--kora-radius);
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    padding-bottom: 0.5em;
+}
+
+.md-nav--primary .md-nav__item--section:has(.md-nav__link--active):not(:has(.md-nav__item--section .md-nav__link--active)) > .md-nav__link {
+    color: var(--kora-brand-strong) !important;
+}
+
+/* nested groups get a subtle indent guide so hierarchy is visible */
+.md-nav--primary .md-nav__item--nested > .md-nav .md-nav {
+    margin-left: 0.5em;
+    padding-left: 0.35em;
+    border-left: 1px solid var(--kora-line-soft);
+}
+
+.md-nav__link[for] {
+    font-weight: 700;
+    color: var(--kora-text);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Secondary sidebar (table of contents)                                  */
+/* ---------------------------------------------------------------------- */
+
+.md-sidebar--secondary .md-nav__title {
+    color: var(--kora-soft);
+    text-transform: uppercase;
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    font-weight: 800;
+}
+
+.md-nav--secondary .md-nav__link {
+    border-left: 2px solid transparent;
+    padding: 0.22em 0.6em;
+    color: var(--kora-muted);
+}
+
+.md-nav--secondary .md-nav__link:hover {
+    color: var(--kora-text);
+}
+
+.md-nav--secondary .md-nav__link--active {
+    border-left-color: var(--kora-brand);
+    background: transparent;
+    font-weight: 700;
+}
+
+.md-nav--secondary .md-nav__list .md-nav__list {
+    border-left: 1px solid var(--kora-line);
+    margin-left: 0.4em;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Code blocks                                                            */
+/* ---------------------------------------------------------------------- */
+
+[data-md-color-scheme="slate"] .md-typeset .highlight,
+[data-md-color-scheme="slate"] .highlight pre,
+[data-md-color-scheme="slate"] .md-typeset pre > code,
+[data-md-color-scheme="slate"] .md-typeset .highlighttable,
+[data-md-color-scheme="slate"] .md-typeset .highlighttable .linenos,
+[data-md-color-scheme="slate"] .md-typeset .highlighttable .code {
+    background: var(--md-code-bg-color);
+}
+
+.md-typeset .highlight {
+    border: 1px solid var(--kora-line);
+    border-radius: var(--kora-radius);
+    /* NO overflow:hidden here - it clips code-annotation tooltips. An element's
+       own background is still clipped to its border-radius, so we just round the
+       inner bg-carrying elements to keep the corners clean. */
+}
+
+.md-typeset .highlight > pre,
+.md-typeset .highlight > pre > code,
+.md-typeset .highlight > .highlighttable {
+    border-radius: var(--kora-radius);
+}
+
+.md-typeset pre {
+    margin: 0;
+}
+
+.md-clipboard {
+    color: var(--kora-soft);
+}
+
+.md-clipboard:hover {
+    color: var(--kora-brand);
+}
+
+.md-typeset .filename,
+.md-code__filename {
+    font-family: var(--kora-font-body);
+    color: var(--kora-soft);
+    border-bottom: 1px solid var(--kora-line);
+}
+
+/* content tabs (Java / Kotlin, OS pickers, etc.).
+   No overflow:hidden - it would clip code-annotation tooltips; corners are
+   rounded on the inner label/content edges instead. */
+.md-typeset .tabbed-set {
+    border: 1px solid var(--kora-line);
+    border-radius: var(--kora-radius);
+}
+
+.md-typeset .tabbed-labels {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--kora-line);
+    border-radius: calc(var(--kora-radius) - 1px) calc(var(--kora-radius) - 1px) 0 0;
+}
+
+/* code inside a tab: square top (flush under the labels), rounded bottom (flush
+   with the tab-set's bottom border). Applies to every tab since only one shows. */
+.md-typeset .tabbed-content .highlight,
+.md-typeset .tabbed-content .highlight > pre,
+.md-typeset .tabbed-content .highlight > pre > code,
+.md-typeset .tabbed-content .highlight > .highlighttable {
+    border-radius: 0 0 calc(var(--kora-radius) - 1px) calc(var(--kora-radius) - 1px);
+}
+
+/* inactive modes: dim gray text */
+.md-typeset .tabbed-labels > label,
+.md-typeset .tabbed-labels > label > a {
+    font-weight: 600;
+    color: var(--kora-soft);
+    transition: color 140ms ease, background 140ms ease;
+}
+
+.md-typeset .tabbed-labels > label:hover,
+.md-typeset .tabbed-labels > label:hover > a {
+    color: var(--kora-brand-strong);
+}
+
+/* brand color for the sliding underline indicator */
+.md-typeset .tabbed-labels {
+    --md-accent-fg-color: var(--kora-brand);
+}
+
+/* selected mode: orange text + faint tinted pill.
+   Inputs precede the .tabbed-labels block, so the active label is matched by
+   position (this is the pattern pymdownx "alternate/linked" tabs rely on). */
+.md-typeset .tabbed-set > input:nth-child(1):checked ~ .tabbed-labels > :nth-child(1),
+.md-typeset .tabbed-set > input:nth-child(2):checked ~ .tabbed-labels > :nth-child(2),
+.md-typeset .tabbed-set > input:nth-child(3):checked ~ .tabbed-labels > :nth-child(3),
+.md-typeset .tabbed-set > input:nth-child(4):checked ~ .tabbed-labels > :nth-child(4),
+.md-typeset .tabbed-set > input:nth-child(5):checked ~ .tabbed-labels > :nth-child(5),
+.md-typeset .tabbed-set > input:nth-child(6):checked ~ .tabbed-labels > :nth-child(6) {
+    background: rgba(255, 176, 46, 0.1);
+}
+
+.md-typeset .tabbed-set > input:nth-child(1):checked ~ .tabbed-labels > :nth-child(1) > a,
+.md-typeset .tabbed-set > input:nth-child(2):checked ~ .tabbed-labels > :nth-child(2) > a,
+.md-typeset .tabbed-set > input:nth-child(3):checked ~ .tabbed-labels > :nth-child(3) > a,
+.md-typeset .tabbed-set > input:nth-child(4):checked ~ .tabbed-labels > :nth-child(4) > a,
+.md-typeset .tabbed-set > input:nth-child(5):checked ~ .tabbed-labels > :nth-child(5) > a,
+.md-typeset .tabbed-set > input:nth-child(6):checked ~ .tabbed-labels > :nth-child(6) > a {
+    color: var(--kora-brand);
+}
+
+.md-typeset .tabbed-content {
+    border: 0;
+}
+
+/* text inside a tab needs breathing room from the container border */
+.md-typeset .tabbed-block {
+    padding: 0.55rem 0.9rem;
+}
+
+/* ...but a code block should still run edge-to-edge inside the tab */
+.md-typeset .tabbed-block:has(> .highlight),
+.md-typeset .tabbed-block:has(> .highlighttable) {
+    padding: 0;
+}
+
+.md-typeset .tabbed-set .highlight,
+.md-typeset .tabbed-block > .highlight:first-child {
+    border: 0;
+    /* radius handled by the tabbed-content rounding rule above (square top,
+       rounded bottom) - do not reset it to 0 here */
+}
+
+/* trim the stray top/bottom margins so padded text tabs stay balanced */
+.md-typeset .tabbed-block > :first-child {
+    margin-top: 0;
+}
+
+.md-typeset .tabbed-block > :last-child {
+    margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Admonitions                                                            */
+/* ---------------------------------------------------------------------- */
+
+.md-typeset .admonition,
+.md-typeset details {
+    border-radius: var(--kora-radius);
+    border: 1px solid var(--kora-line);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+    background: rgba(255, 255, 255, 0.04);
+    font-family: var(--kora-font-heading);
+    font-weight: 700;
+}
+
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+    background-color: var(--kora-brand);
+}
+
+.md-typeset .note > .admonition-title,
+.md-typeset .info > .admonition-title {
+    border-color: var(--kora-blue);
+}
+
+.md-typeset .note > .admonition-title::before,
+.md-typeset .info > .admonition-title::before {
+    background-color: var(--kora-blue);
+}
+
+.md-typeset .tip > .admonition-title,
+.md-typeset .success > .admonition-title {
+    border-color: var(--kora-green);
+}
+
+.md-typeset .tip > .admonition-title::before,
+.md-typeset .success > .admonition-title::before {
+    background-color: var(--kora-green);
+}
+
+.md-typeset .warning > .admonition-title,
+.md-typeset .danger > .admonition-title,
+.md-typeset .failure > .admonition-title {
+    border-color: var(--kora-red);
+}
+
+.md-typeset .warning > .admonition-title::before,
+.md-typeset .danger > .admonition-title::before,
+.md-typeset .failure > .admonition-title::before {
+    background-color: var(--kora-red);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Tables                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.md-typeset table:not([class]) {
+    border: 1px solid var(--kora-line);
+    border-radius: var(--kora-radius);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.md-typeset table:not([class]) th {
+    font-family: var(--kora-font-heading);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--kora-text);
+}
+
+.md-typeset table:not([class]) tr:hover {
+    background: rgba(255, 176, 46, 0.05);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons / misc components                                              */
+/* ---------------------------------------------------------------------- */
+
+.md-typeset .md-button {
+    border-radius: var(--kora-radius);
+    border-color: var(--kora-line);
+    font-weight: 700;
+    color: var(--kora-text);
+}
+
+.md-typeset .md-button:hover {
+    background: var(--kora-brand);
+    border-color: var(--kora-brand);
+    color: #0a0a0a;
+}
+
+.md-typeset .md-button--primary {
+    background: var(--kora-brand);
+    border-color: var(--kora-brand);
+    color: #0a0a0a;
+}
+
+.md-typeset .md-button--primary:hover {
+    background: var(--kora-brand-strong);
+    border-color: var(--kora-brand-strong);
+}
+
+.md-typeset kbd {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    box-shadow: none;
+    color: var(--kora-text);
+}
+
+[data-md-color-scheme="slate"] .md-footer {
+    background: #050505;
+    border-top: 1px solid var(--kora-line);
+}
+
+[data-md-color-scheme="slate"] .md-footer-meta {
+    background: #030303;
+}
+
+.md-footer__link:hover {
+    opacity: 1;
+    color: var(--kora-brand);
+}
+
+/* scroll-to-top + edit/view source buttons */
+.md-content__button {
+    color: var(--kora-soft);
+}
+
+.md-content__button:hover {
+    color: var(--kora-brand);
+}
+
+.md-top {
+    background: var(--kora-panel);
+    border: 1px solid var(--kora-line);
+    color: var(--kora-text);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Scrollbar                                                              */
+/* ---------------------------------------------------------------------- */
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-track {
+    background: var(--kora-bg);
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 6px;
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--kora-brand);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Selection color, matching the landing page                             */
+/* ---------------------------------------------------------------------- */
+
+[data-md-color-scheme="slate"] ::selection {
+    background: var(--kora-brand);
+    color: #100b02;
 }

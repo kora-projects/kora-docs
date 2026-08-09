@@ -7,8 +7,8 @@ site_name: Kora фреймворк 1.2.20
 site_url: https://kora-projects.github.io/kora-docs/ru/
 nav:
   - Руководства:
-      - Вступление: guides/home.md
       - Основы:
+          - Вступление: guides/home.md
           - Ознакомительные приложение: guides/getting-started.md
           - Введение в Kora: guides/dependency-injection-introduction.md
           - Внедрение зависимостей: guides/dependency-injection.md
@@ -48,9 +48,10 @@ nav:
           - Интеграционное тестирование: guides/testing-integration.md
           - Тестирование черным ящиком: guides/testing-black-box.md
   - Документация:
-      - Основное: documentation/general.md
-      - Контейнер: documentation/container.md
-      - Конфигурация: documentation/config.md
+      - Основное:
+        - Основы и сборка: documentation/general.md
+        - Контейнер зависимостей: documentation/container.md
+        - Конфигурация: documentation/config.md
       - Конвертация:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md
@@ -133,8 +134,8 @@ theme:
         icon: material/lightbulb-outline
         name: Switch to system preference
   font:
-    text: JetBrains Mono
-    code: JetBrains Mono
+    text: IBM Plex Mono
+    code: IBM Plex Mono
   features:
     - navigation.tabs
     - navigation.sections

@@ -3638,22 +3638,35 @@ tracing {
   exporter.endpoint = "http://otel-collector:4317"
   attributes."service.name" = "payment-service"
 }`,
-                    generatedTitle: "$Application_TelemetryModule.java",
-                    generatedCode: `@Generated("TelemetryAnnotationProcessor")
-final class $Application_TelemetryModule {
+                    generatedTitle: "TelemetryInterceptor.java",
+                    generatedCode: `public class TelemetryInterceptor implements HttpClientInterceptor {
 
-    PrometheusMeterRegistry prometheusMeterRegistry() {
-        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    private final HttpClientTelemetry telemetry;
+
+    public TelemetryInterceptor(HttpClientTelemetry telemetry) {
+        this.telemetry = telemetry;
     }
 
-    SpanExporter otlpSpanExporter(TracingConfig config) {
-        return OtlpGrpcSpanExporter.builder()
-            .setEndpoint(config.exporter().endpoint())
-            .build();
-    }
-
-    PrivateApiHandler readinessRoute(ReadinessProbe probe) {
-        return new ReadinessHttpHandler(probe);
+    @Override
+    public HttpClientResponse processRequest(
+            InterceptChain chain,
+            HttpClientRequest request) throws Exception {
+        var observation = this.telemetry.observe(request);
+        var context = Context.current().with(observation.span());
+        return ScopedValue.where(OpentelemetryContext.VALUE, context)
+                .where(Observation.VALUE, observation)
+                .call(() -> {
+                    try {
+                        var observedRequest = observation.observeRequest(request);
+                        var rs = chain.process(observedRequest);
+                        return observation.observeResponse(rs);
+                    } catch (Throwable t) {
+                        observation.observeError(t);
+                        throw t;
+                    } finally {
+                        observation.end();
+                    }
+                });
     }
 }`
                 }]

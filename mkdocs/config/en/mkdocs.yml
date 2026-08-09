@@ -133,8 +133,8 @@ theme:
         icon: material/lightbulb-outline
         name: Switch to system preference
   font:
-    text: JetBrains Mono
-    code: JetBrains Mono
+    text: IBM Plex Mono
+    code: IBM Plex Mono
   features:
     - navigation.tabs
     - navigation.sections

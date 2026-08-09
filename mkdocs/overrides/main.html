@@ -42,3 +42,128 @@
 <p style="display: none">Kora облачно ориентированный серверный фреймворк написанный на Java для написания Java / Kotlin приложений с упором на производительность, эффективность, прозрачность сделанный выходцами из Т-Банк / Тинькофф</p>
 <p style="display: none">Kora is a cloud-oriented server-side Java framework for writing Java / Kotlin applications with a focus on performance, efficiency and transparency</p>
 {% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<div class="grid-signals" aria-hidden="true" id="grid-signals">
+    <span class="signal signal-x"></span>
+    <span class="signal signal-y"></span>
+</div>
+<script>
+    (() => {
+        const container = document.getElementById("grid-signals");
+        if (!container) return;
+
+        const CELL = 72;
+        const TRAIL = 90;
+        const SPEED = 90;         /* px per second - slow & subtle */
+        const PEAK_OPACITY = 0.3; /* muted so it never fights the text */
+        const signals = Array.from(container.querySelectorAll(".signal"));
+
+        const randomBetween = (min, max) => min + Math.random() * (max - min);
+        /* a 72px grid line that falls inside [start, end] (document coords) */
+        const gridLineInRange = (start, end) => {
+            const first = Math.ceil(start / CELL) * CELL;
+            const count = Math.max(1, Math.floor((end - first) / CELL) + 1);
+            return first + Math.floor(Math.random() * count) * CELL;
+        };
+
+        /* Size the overlay from .md-container - a SIBLING of this overlay, so its
+           height is structurally immune to pollution from our own (possibly
+           overflowing) signals. This is what actually fixes the earlier
+           self-inflating-height bug; using document.scrollHeight here would not,
+           since this overlay's own overflow feeds into that measurement. */
+        const heightSource =
+            document.querySelector(".md-container") ||
+            document.querySelector(".md-main") ||
+            document.body;
+
+        const sizeContainer = () => {
+            const h = Math.max(heightSource.scrollHeight, window.innerHeight);
+            container.style.height = h + "px";
+        };
+        sizeContainer();
+        window.addEventListener("resize", sizeContainer);
+
+        const launch = (el) => {
+            const isX = el.classList.contains("signal-x");
+            const w = container.offsetWidth || window.innerWidth;
+            const h = container.offsetHeight || window.innerHeight;
+            const reverse = Math.random() < 0.5;
+            const delay = randomBetween(0, 4000);
+
+            el.classList.toggle("is-rev", reverse);
+
+            /* launch onto a grid line within the CURRENT viewport (document coords)
+               so the comet is always visible on load AND aligned to the grid */
+            const sy = window.scrollY || window.pageYOffset || 0;
+            const vh = window.innerHeight;
+            const vw = window.innerWidth;
+
+            let axisProp, from, to, crossProp, crossValue, distance;
+            if (isX) {
+                axisProp = "left";
+                crossProp = "top";
+                crossValue = gridLineInRange(sy, sy + vh);
+                from = reverse ? w + TRAIL : -TRAIL;
+                to = reverse ? -TRAIL : w + TRAIL;
+                distance = w + TRAIL * 2;
+            } else {
+                axisProp = "top";
+                crossProp = "left";
+                crossValue = gridLineInRange(0, vw);
+                from = reverse ? h + TRAIL : -TRAIL;
+                to = reverse ? -TRAIL : h + TRAIL;
+                distance = h + TRAIL * 2;
+            }
+
+            const duration = Math.min(60000, Math.max(8000, (distance / SPEED) * 1000));
+            el.style[crossProp] = crossValue + "px";
+
+            const anim = el.animate(
+                [
+                    { [axisProp]: from + "px", opacity: 0 },
+                    { opacity: PEAK_OPACITY, offset: 0.08 },
+                    { opacity: PEAK_OPACITY, offset: 0.88 },
+                    { [axisProp]: to + "px", opacity: 0 }
+                ],
+                { duration, delay, easing: "linear", fill: "forwards" }
+            );
+
+            anim.onfinish = () => { sizeContainer(); launch(el); };
+        };
+
+        signals.forEach((el) => launch(el));
+    })();
+</script>
+<script>
+    /* Open code annotations on hover as well as on click. Material activates an
+       annotation when its (tabindex=0) .md-annotation element receives focus and
+       positions the tooltip from that, so we focus on hover / blur on leave. */
+    (() => {
+        const bind = (ann) => {
+            if (ann.dataset.hoverBound) return;
+            ann.dataset.hoverBound = "1";
+
+            ann.addEventListener("mouseenter", () => {
+                try { ann.focus({ preventScroll: true }); }
+                catch (e) { ann.focus(); }
+            });
+
+            ann.addEventListener("mouseleave", () => {
+                if (document.activeElement === ann) ann.blur();
+            });
+        };
+
+        const bindAll = () =>
+            document.querySelectorAll(".md-annotation").forEach(bind);
+
+        bindAll();
+        /* re-bind for annotations revealed later (e.g. switching code tabs) */
+        new MutationObserver(bindAll).observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    })();
+</script>
+{% endblock %}
