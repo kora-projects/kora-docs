@@ -2066,6 +2066,322 @@
             font-size: 18px;
         }
 
+        /* AI-agents banner: a <details> whose <summary> is the interest-band */
+        .ai-band {
+            display: block;
+        }
+
+        .ai-summary {
+            cursor: pointer;
+            list-style: none;
+            transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease, transform 200ms ease;
+        }
+
+        .ai-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .ai-summary::marker {
+            content: "";
+        }
+
+        .ai-summary:hover {
+            border-color: rgba(80, 216, 144, 0.55);
+            background:
+                linear-gradient(135deg, rgba(80, 216, 144, 0.08), transparent 52%),
+                rgba(255, 255, 255, 0.02);
+            box-shadow:
+                0 0 0 1px rgba(80, 216, 144, 0.2),
+                0 14px 40px rgba(80, 216, 144, 0.14),
+                inset 0 0 34px rgba(80, 216, 144, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .ai-summary:hover .ai-toggle {
+            box-shadow: 0 0 22px rgba(255, 176, 46, 0.4);
+        }
+
+        .ai-toggle {
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .ai-toggle-close {
+            display: none;
+        }
+
+        .ai-band[open] .ai-toggle-open {
+            display: none;
+        }
+
+        .ai-band[open] .ai-toggle-close {
+            display: inline;
+        }
+
+        .ai-band[open] .ai-summary {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        /* explicitly hide when collapsed - do not rely on the UA details default */
+        .ai-band:not([open]) .ai-reveal {
+            display: none;
+        }
+
+        .ai-reveal {
+            padding: 22px 30px 28px;
+            border: 1px solid rgba(80, 216, 144, 0.28);
+            border-top: 0;
+            border-radius: 0 0 var(--radius) var(--radius);
+            background:
+                linear-gradient(135deg, rgba(80, 216, 144, 0.05), transparent 46%),
+                rgba(255, 255, 255, 0.02);
+            animation: aiReveal 260ms ease;
+        }
+
+        @keyframes aiReveal {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .ai-pillars {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ai-closing {
+            margin: 20px 0 0;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+            color: var(--soft);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Claude Code (Opus) session emulator */
+        .ai-demo {
+            margin: 4px 0 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #0a0a0a;
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 44px rgba(0, 0, 0, 0.34);
+        }
+
+        .ai-demo-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--line);
+            background: #121212;
+        }
+
+        .ai-demo-head .lights {
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .ai-demo-head .lights span {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #2c2c2c;
+        }
+
+        .ai-demo-head .lights span:nth-child(1) { background: #ff5f57; }
+        .ai-demo-head .lights span:nth-child(2) { background: #febc2e; }
+        .ai-demo-head .lights span:nth-child(3) { background: #28c840; }
+
+        .ai-demo-title {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12.5px;
+            letter-spacing: 0.2px;
+        }
+
+        .ai-demo-model {
+            margin-left: auto;
+            padding: 2px 9px;
+            border: 1px solid rgba(255, 176, 46, 0.4);
+            border-radius: 999px;
+            color: var(--brand-strong);
+            font-family: "IBM Plex Mono", ui-monospace, monospace;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .ai-demo-replay {
+            padding: 3px 10px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--muted);
+            font-family: "IBM Plex Mono", ui-monospace, monospace;
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 140ms ease, border-color 140ms ease;
+        }
+
+        .ai-demo-replay:hover {
+            color: var(--text);
+            border-color: rgba(255, 176, 46, 0.5);
+        }
+
+        .ai-demo-body {
+            height: 380px;
+            overflow-y: auto;
+            padding: 16px 18px 20px;
+            font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            line-height: 1.62;
+            scroll-behavior: smooth;
+        }
+
+        .ai-demo-body::-webkit-scrollbar { width: 8px; }
+        .ai-demo-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+        }
+
+        .ai-line { margin: 0 0 4px; white-space: pre-wrap; word-break: break-word; }
+        .ai-line + .ai-line { margin-top: 0; }
+        .ai-block { margin: 10px 0; }
+        .ai-block:first-child { margin-top: 0; }
+
+        /* user prompt */
+        .ai-user {
+            display: flex;
+            gap: 8px;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.025);
+            color: var(--text);
+        }
+        .ai-user .ai-caret { color: var(--brand); flex: none; }
+
+        /* assistant text */
+        .ai-assistant { display: flex; gap: 9px; color: #ece7dd; }
+        .ai-assistant .ai-dot { color: var(--green); flex: none; }
+        .ai-assistant .ai-dot.is-run { color: var(--brand); }
+
+        /* thinking */
+        .ai-think { display: flex; gap: 9px; color: var(--soft); font-style: italic; }
+        .ai-think .ai-dot { color: var(--soft); flex: none; font-style: normal; }
+
+        /* tool call + output */
+        .ai-tool { color: var(--text); }
+        .ai-tool .ai-toolname { color: var(--brand-strong); }
+        .ai-tool .ai-toolarg { color: var(--muted); }
+        .ai-out {
+            margin: 5px 0 0 9px;
+            padding: 4px 0 4px 12px;
+            border-left: 2px solid var(--line);
+            color: var(--muted);
+            font-size: 12.5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border-radius: 0 6px 6px 0;
+        }
+        .ai-out .ai-branch { color: var(--soft); }
+
+        /* failed build/run output: red-tinted panel with a bold banner line */
+        .ai-out.is-error {
+            border-left: 3px solid var(--red);
+            padding: 8px 12px 9px;
+            color: #d8b7b4;
+            background:
+                linear-gradient(90deg, rgba(255, 114, 111, 0.12), rgba(255, 114, 111, 0.03) 62%, transparent);
+        }
+        .ai-out.is-error .ai-branch { color: var(--red); }
+        .ai-out.is-error .ai-hl {
+            color: #ffb3b0;
+            font-weight: 600;
+        }
+        /* the offending symbol Kora points at */
+        .ai-err {
+            color: #ffdad8;
+            font-weight: 600;
+            background: rgba(255, 114, 111, 0.18);
+            border-bottom: 1px solid rgba(255, 114, 111, 0.6);
+            border-radius: 3px;
+            padding: 0 3px;
+        }
+        .ai-tag {
+            color: var(--red);
+            border: 1px solid rgba(255, 114, 111, 0.5);
+            border-radius: 3px;
+            padding: 0 4px;
+            font-weight: 600;
+        }
+
+        /* successful output: green-tinted panel */
+        .ai-out.is-ok {
+            border-left: 3px solid var(--green);
+            padding: 8px 12px 9px;
+            background:
+                linear-gradient(90deg, rgba(80, 216, 144, 0.10), rgba(80, 216, 144, 0.02) 62%, transparent);
+        }
+        .ai-out.is-ok .ai-branch { color: var(--green); }
+        .ai-out.is-ok .ai-hl { color: var(--green); font-weight: 600; }
+
+        .ai-pass {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* auto-discovered skill block */
+        .ai-tool .ai-toolname.is-skill { color: var(--green); }
+        .ai-out.is-skill {
+            border-left: 3px solid var(--green);
+            padding: 8px 12px 9px;
+            background:
+                linear-gradient(90deg, rgba(80, 216, 144, 0.12), rgba(80, 216, 144, 0.03) 62%, transparent);
+        }
+        .ai-out.is-skill .ai-branch { color: var(--green); }
+        .ai-skill-name {
+            color: var(--green);
+            font-weight: 600;
+        }
+        .ai-skill-path { color: var(--soft); }
+        .ai-diff-add { color: var(--green); }
+        .ai-diff-del { color: var(--red); font-weight: 600; }
+        .ai-muted { color: var(--soft); }
+        .ai-count { color: var(--soft); font-style: italic; }
+
+        /* blinking cursor while typing */
+        .ai-cursor {
+            display: inline-block;
+            width: 7px;
+            height: 14px;
+            margin-left: 1px;
+            vertical-align: text-bottom;
+            background: var(--brand);
+            animation: aiBlink 1s steps(2) infinite;
+        }
+        @keyframes aiBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
+        .ai-spin { color: var(--brand); }
+
+        .ai-demo-caption {
+            margin: 0 0 20px;
+            color: var(--soft);
+            font-size: 12.5px;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 760px) {
+            .ai-pillars {
+                grid-template-columns: 1fr;
+            }
+            .ai-demo-body { height: 340px; font-size: 12px; }
+            .ai-demo-title { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ai-cursor { animation: none; }
+        }
+
         footer {
             width: min(1180px, calc(100% - 40px));
             margin: 0 auto;
@@ -2664,17 +2980,76 @@
         </section>
 
         <section class="section">
-            <div class="interest-band">
-                <div>
-                    <small>Already curious?</small>
-                    <h2>Would you like to know more?</h2>
-                    <p>Start with readable examples, inspect generated source, and follow the same compile-time path from annotations to explicit runtime code.</p>
+            <details class="ai-band">
+                <summary class="interest-band ai-summary">
+                    <div>
+                        <small>Easy to reason about, easy to maintain</small>
+                        <h2>A stack you can reason about.</h2>
+                        <p>Explicit code, strong types, precise compiler feedback, and almost no magic — the same qualities that make a codebase approachable for a junior joining the team make it tractable for an AI agent. Kora brings them to Java and Kotlin, so building services gets easier — both for people and for the new AI tools that help them.</p>
+                    </div>
+                    <span class="button primary ai-toggle" aria-hidden="true">
+                        <span class="ai-toggle-open">Know more</span>
+                        <span class="ai-toggle-close">Show less</span>
+                    </span>
+                </summary>
+                <div class="ai-reveal">
+                    <div class="ai-demo" id="ai-demo">
+                        <div class="ai-demo-head">
+                            <span class="lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="ai-demo-title">claude&nbsp;code&nbsp;&mdash;&nbsp;kora-shop</span>
+                            <span class="ai-demo-model">Opus&nbsp;4.8</span>
+                            <button class="ai-demo-replay" type="button" hidden>&#8635;&nbsp;Replay</button>
+                        </div>
+                        <div class="ai-demo-body" id="ai-demo-body" aria-live="polite"></div>
+                    </div>
+                    <p class="ai-demo-caption">A real iteration loop: the agent writes code, the compiler answers, it fixes and moves on &mdash; most mistakes caught before anything runs.</p>
+                    <div class="pillar-list ai-pillars">
+                        <article class="pillar">
+                            <span class="pillar-index">01</span>
+                            <div>
+                                <h3>Fast, strict feedback loop</h3>
+                                <p>Every change is checked on two levels. First, compile-time DI, annotation processors, and typing catch structural errors already at build time. Then, thanks to very fast application-context startup, you can run full component and integration tests cheaply and often. The loop stays short: change → compile → get precise errors → start the context → verify real behavior → fix. A shorter loop helps a newcomer learn quickly and an autonomous agent work effectively.</p>
+                            </div>
+                        </article>
+                        <article class="pillar">
+                            <span class="pillar-index">02</span>
+                            <div>
+                                <h3>No runtime magic</h3>
+                                <p>DI, HTTP handlers, repositories, AOP, and the rest of Kora's infrastructure turn into ordinary Java/Kotlin code. You can open the generated sources, read them, and follow the real execution path. Less reflection, fewer runtime proxies, and less hidden behavior means less context to keep in your head — or for an LLM to guess. And because the whole path is transparent and direct, it's easy to trace and debug — you can just ask an AI to explain how the stack works from any point, and it reads the real code to do it.</p>
+                            </div>
+                        </article>
+                        <article class="pillar">
+                            <span class="pillar-index">03</span>
+                            <div>
+                                <h3>Strong typing, end to end</h3>
+                                <p>Java/Kotlin plus compile-time DI give well-defined internal contracts, and Kora's OpenAPI Generator extends that to the external API: strongly typed server/client APIs, models, parameters, requests, and responses. A wrong assumption is more likely to turn into a compile error than a runtime bug.</p>
+                            </div>
+                        </article>
+                        <article class="pillar">
+                            <span class="pillar-index">04</span>
+                            <div>
+                                <h3>Explicit architecture</h3>
+                                <p>Constructors, interfaces, @Component, @Module, and @KoraApp describe the application graph directly in the source. It's easier to see what depends on what, where a component is created, and which contract it implements — without reconstructing the state of a runtime container in your head.</p>
+                            </div>
+                        </article>
+                        <article class="pillar">
+                            <span class="pillar-index">05</span>
+                            <div>
+                                <h3>One clear way</h3>
+                                <p>A small set of direct, orthogonal abstractions shrinks the space of possible solutions. That matters for a newcomer and for an LLM alike: less chance of mixing different API generations, programming models, and incompatible framework approaches.</p>
+                            </div>
+                        </article>
+                        <article class="pillar">
+                            <span class="pillar-index">06</span>
+                            <div>
+                                <h3>Thin abstractions</h3>
+                                <p>Kora tries to stay close to JDBC, Kafka, gRPC, HTTP, and other core technologies instead of building a separate framework-specific world. These are abstractions familiar to most Java developers — proven in production for years and already second nature. So most of what you — or a model — already know about Java/Kotlin and standard technologies applies directly to Kora code.</p>
+                            </div>
+                        </article>
+                    </div>
+                    <p class="ai-closing">The same explicitness, strong typing, precise compiler feedback, and minimal magic make Kora approachable for an engineer joining the project and predictable for the tools working alongside them.</p>
                 </div>
-                <div class="hero-actions">
-                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Read the guide</a>
-                    <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
-                </div>
-            </div>
+            </details>
         </section>
 
         <section class="section" id="startup">
@@ -2877,10 +3252,10 @@
             "workarounds,": "костылей,",
             "dirty hacks": "грязных хаков",
             "and kludges.": "и обходных путей.",
-            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services a fastest production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высоко-производительный исходный код и сразу готова к использовать в облачно-ориентированной среде как максимально производительный стек на JVM.",
+            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services a fastest production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высокопроизводительный исходный код и сразу готова к использованию в облачно-ориентированной среде как максимально производительный стек на JVM.",
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
-            "runtime reflections": "рефлексии в runtime",
+            "runtime reflections": "рефлексии во время выполнения",
             "of functionality covered by docs, guides, and examples": "функциональности покрыто документацией, Руководствами и примерами",
             "metrics and tracing across modules": "метрики и трассировка во всех модулях",
             "High-level API": "Высокоуровневый API",
@@ -2889,21 +3264,21 @@
             "Generated human-readable source code": "Сгенерированный читаемый исходный код",
             "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и простота.",
             "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
-            "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без runtime-магии",
-            "Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Диагностика и читаемые исходники — без runtime-сюрпризов.",
+            "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без магии во время выполнения",
+            "Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Диагностика и читаемые исходники — без неожиданностей во время выполнения.",
             "Checks": "Проверяет",
             "dependencies, injections, cycles, aspects": "зависимости, внедрения, циклы, аспекты",
             "Generates": "Генерирует",
             "wiring, mappers, repositories": "связи, преобразователи, репозитории",
             "Simple. Coherent. Familiar.": "Просто. Понятно. Знакомо.",
-            "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые паттерны Java и Kotlin остаются, но становятся более строгими, типизированными и прозрачными для HTTP, OpenAPI, gRPC, работы с данными, обмена сообщениями, отказоустойчивости и конфигурации.",
+            "Familiar Java and Kotlin patterns stay, but become stricter, typed, generated, and transparent across HTTP, OpenAPI, gRPC, data, messaging, resilience, and config.": "Знакомые приёмы Java и Kotlin остаются, но становятся более строгими, типизированными и прозрачными для HTTP, OpenAPI, gRPC, работы с данными, обмена сообщениями, отказоустойчивости и конфигурации.",
             "Familiar": "Знакомо",
             "modules, clients, repositories, abstractions": "модули, клиенты, репозитории, абстракции",
             "Coherent": "Предсказуемо",
             "one approach across modules": "один подход во всех модулях",
             "Peak Performance": "Заложенная пиковая",
             "by Design": "производительность",
-            "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.": "Производительность следует из compile-time решений, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов.",
+            "Performance follows from compile-time decisions, generated code, thin abstractions, and selected high-performance integrations from startup to request processing.": "Производительность следует из решений во время компиляции, сгенерированного кода, тонких абстракций и производительных интеграций: от старта до обработки запросов.",
             "Startup": "Старт",
             "prebuilt graph, parallel init": "готовый граф, параллелизация запуска",
             "Runtime": "Работа",
@@ -2930,13 +3305,13 @@
             "HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.": "HTTP-серверы, декларативные клиенты, request mapping, interceptors, служебные эндпоинты и строго типизированная генерация OpenAPI.",
             "Data": "Данные",
             "Kora repositories": "Репозитории Kora",
-            "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, маппинги во время компиляции, макросы запросов и явный контроль над доступом к данным.",
+            "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, преобразования во время компиляции, макросы запросов и явный контроль над доступом к данным.",
             "Ops": "Ops",
             "Observability by design": "Наблюдаемость из коробки",
             "Metrics, tracing, structured logging, context propagation, health probes, and graceful shutdown integrated from the start.": "Метрики, трассировка, структурированное логирование, распространение контекста, проверки работоспособности и корректное завершение встроены с самого начала.",
             "Integration": "Интеграции",
             "Kafka, gRPC, S3, and more": "Kafka, gRPC, S3 и не только",
-            "Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.": "Обмен сообщениями, RPC, хранилища, workflow-движки и инфраструктурные интеграции, построенные вокруг той же явной модели программирования.",
+            "Messaging, RPC, storage, workflow engines, and infrastructure integrations built around the same explicit programming model.": "Обмен сообщениями, RPC, хранилища, движки бизнес-процессов и инфраструктурные интеграции, построенные вокруг той же явной модели программирования.",
             "AOP": "AOP",
             "Production essentials": "Всё необходимое для промышленной разработки",
             "Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.": "Проверка данных, кэширование, отказоустойчивость, транзакции, планирование, безопасность и логирование генерируются во время компиляции без прокси-объектов времени выполнения.",
@@ -2944,15 +3319,34 @@
             "Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.": "Используйте только нужные модули, заменяйте отдельные компоненты или пишите полноценные модули Kora для любой библиотеки — без борьбы с фреймворком.",
             "Concurrency": "Конкурентность",
             "Simple, easy, familiar": "Просто, легко, знакомо",
-            "Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up—so blocking code stays simple at high concurrency.": "Знакомые идиомы Java и Kotlin, dependency injection во время компиляции, один понятный способ решить задачу и виртуальные потоки, встроенные с нуля — поэтому блокирующий код остается простым даже при высокой конкурентности.",
+            "Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up—so blocking code stays simple at high concurrency.": "Знакомые идиомы Java и Kotlin, внедрение зависимостей во время компиляции, один понятный способ решить задачу и виртуальные потоки, встроенные с нуля — поэтому блокирующий код остается простым даже при высокой конкурентности.",
             "What this gets you": "Что вы получаете",
             "Compiler": "Компилятор",
-            "Transparent, no runtime magic": "Прозрачность, никакой runtime-магии",
+            "Transparent, no runtime magic": "Прозрачность, никакой магии во время выполнения",
             "Wiring is checked and generated at compile time, so mistakes surface as clear compiler errors instead of runtime surprises—explicit, typed code with a fast feedback loop for engineers and AI tools alike.": "Связывание проверяется и генерируется во время компиляции, поэтому ошибки становятся понятными сообщениями компилятора, а не сюрпризами во время выполнения — явный типизированный код с быстрым циклом обратной связи как для инженеров, так и для нейросетей.",
-            "Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.": "Kora держит HTTP-контракты явными, сгенерированными и наблюдаемыми, не пряча обработку запросов за runtime-рефлексией.",
+            "Kora keeps HTTP contracts explicit, generated, and observable without hiding request handling behind runtime reflection.": "Kora держит HTTP-контракты явными, сгенерированными и наблюдаемыми, не пряча обработку запросов за рефлексией во время выполнения.",
             "Already curious?": "Уже интересно?",
             "Would you like to know more?": "Хотите узнать больше?",
             "Start with readable examples, inspect generated source, and follow the same compile-time path from annotations to explicit runtime code.": "Начните с читаемых примеров, изучите сгенерированный код и пройдите тот же путь во время компиляции: от аннотаций к явному коду выполнения.",
+            "Easy to reason about, easy to maintain": "Легко понять, просто поддерживать",
+            "A stack you can reason about.": "Стек, в котором легко разобраться.",
+            "Explicit code, strong types, precise compiler feedback, and almost no magic — the same qualities that make a codebase approachable for a junior joining the team make it tractable for an AI agent. Kora brings them to Java and Kotlin, so building services gets easier — both for people and for the new AI tools that help them.": "Явный код, строгие типы, точная обратная связь компилятора и почти полное отсутствие магии — те же качества, что делают код понятным для новичка в команде, делают его посильным и для нейро-агента. Kora привносит эти качества в Java и Kotlin, поэтому разрабатывать сервисы становится удобнее как человеку, так и с помощью новых нейро-инструментов.",
+            "Know more": "Узнать больше",
+            "Show less": "Свернуть",
+            "Fast, strict feedback loop": "Быстрые и отзывчивые итерации",
+            "Every change is checked on two levels. First, compile-time DI, annotation processors, and typing catch structural errors already at build time. Then, thanks to very fast application-context startup, you can run full component and integration tests cheaply and often. The loop stays short: change → compile → get precise errors → start the context → verify real behavior → fix. A shorter loop helps a newcomer learn quickly and an autonomous agent work effectively.": "Kora позволяет очень быстро проверять каждое изменение на двух уровнях. Сначала внедрение зависимостей на этапе компиляции, обработчики аннотаций и типизация ловят структурные ошибки ещё при сборке. Затем благодаря очень быстрому старту контекста приложения можно дёшево и часто запускать полноценные компонентные и интеграционные тесты. Цикл остаётся коротким: изменил → скомпилировал → получил точные ошибки → поднял контекст → проверил реальное поведение → исправил. Чем короче такой цикл, тем быстрее новичок разбирается в проекте и тем эффективнее работает автономный агент.",
+            "No runtime magic": "Без магии в работе",
+            "DI, HTTP handlers, repositories, AOP, and the rest of Kora's infrastructure turn into ordinary Java/Kotlin code. You can open the generated sources, read them, and follow the real execution path. Less reflection, fewer runtime proxies, and less hidden behavior means less context to keep in your head — or for an LLM to guess. And because the whole path is transparent and direct, it's easy to trace and debug — you can just ask an AI to explain how the stack works from any point, and it reads the real code to do it.": "Внедрение зависимостей, HTTP-обработчики, репозитории, AOP и остальная инфраструктура Kora превращаются в обычный код на Java и Kotlin. Сгенерированный исходный код можно открыть, прочитать и проследить реальный путь выполнения. Меньше рефлексии, динамических прокси и скрытого поведения — меньше того, что нужно держать в голове или угадывать нейросети. А поскольку весь путь прозрачен и ведёт напрямую, его легко проследить и отладить — можно просто попросить нейросеть объяснить, как отсюда работает вся цепочка, и она разберёт её по реальному коду.",
+            "Strong typing, end to end": "Сквозная типизация",
+            "Java/Kotlin plus compile-time DI give well-defined internal contracts, and Kora's OpenAPI Generator extends that to the external API: strongly typed server/client APIs, models, parameters, requests, and responses. A wrong assumption is more likely to turn into a compile error than a runtime bug.": "Java и Kotlin вместе с внедрением зависимостей на этапе компиляции дают чётко определённые внутренние контракты, а OpenAPI Generator в Kora распространяет этот подход и на внешнее API: строго типизированные серверные и клиентские API, модели, параметры, запросы и ответы. Ошибочное предположение скорее превратится в ошибку компиляции, чем в ошибку во время выполнения.",
+            "Explicit architecture": "Явная архитектура",
+            "Constructors, interfaces, @Component, @Module, and @KoraApp describe the application graph directly in the source. It's easier to see what depends on what, where a component is created, and which contract it implements — without reconstructing the state of a runtime container in your head.": "Конструкторы, интерфейсы, @Component, @Module и @KoraApp прямо в исходном коде описывают граф приложения. Проще увидеть, что от чего зависит, где создаётся компонент и какой контракт он реализует, — не восстанавливая в голове состояние контейнера во время выполнения.",
+            "One clear way": "Один понятный путь",
+            "A small set of direct, orthogonal abstractions shrinks the space of possible solutions. That matters for a newcomer and for an LLM alike: less chance of mixing different API generations, programming models, and incompatible framework approaches.": "Небольшой набор прямых и независимых абстракций сужает пространство возможных решений. Это одинаково важно и для новичка, и для нейросети: меньше шансов смешать разные поколения API, модели программирования и несовместимые подходы фреймворков.",
+            "Thin abstractions": "Тонкие абстракции",
+            "Kora tries to stay close to JDBC, Kafka, gRPC, HTTP, and other core technologies instead of building a separate framework-specific world. These are abstractions familiar to most Java developers — proven in production for years and already second nature. So most of what you — or a model — already know about Java/Kotlin and standard technologies applies directly to Kora code.": "Kora старается держаться близко к JDBC, Kafka, gRPC, HTTP и другим базовым технологиям, а не строить отдельный мир вокруг фреймворка. Это привычные большинству Java-разработчиков абстракции, которые годами работают в промышленной эксплуатации и знакомы всем. Поэтому почти всё, что вы — или модель — уже знаете о Java, Kotlin и стандартных технологиях, напрямую применимо к коду на Kora.",
+            "The same explicitness, strong typing, precise compiler feedback, and minimal magic make Kora approachable for an engineer joining the project and predictable for the tools working alongside them.": "Явность, прозрачность, строгая типизация, точная обратная связь компилятора и минимум магии делают Kora понятной инженеру, который приходит в проект, и предсказуемой для его инструментов.",
+            "A real iteration loop: the agent writes code, the compiler answers, it fixes and moves on — most mistakes caught before anything runs.": "Настоящий цикл итераций: агент пишет код, компилятор отвечает, агент исправляет и идёт дальше — большинство ошибок ловится ещё до запуска.",
             "Read the guide": "Читать Руководство",
             "Examples": "Примеры",
             "Fastest to boot,": "Быстрее всех стартует,",
@@ -2966,26 +3360,26 @@
             "Base principals of Kora engineering decisions keeps services transparent, fast to start, easy to maintain.": "Базовые принципы инженерных решений Kora делают сервисы прозрачными, быстрыми на старте и простыми в поддержке.",
             "Compile-time dependency injection": "Внедрение зависимостей во время компиляции",
             "The dependency container is built and validated during compilation from @KoraApp, @Component, @Module, and submodule declarations. Missing or ambiguous dependencies fail before the service starts.": "Контейнер зависимостей строится и проверяется во время компиляции из объявлений @KoraApp, @Component, @Module и подмодулей. Отсутствующие или неоднозначные зависимости становятся ошибкой еще до старта сервиса.",
-            "Generated source code, not runtime magic": "Сгенерированный исходный код вместо runtime-магии",
+            "Generated source code, not runtime magic": "Сгенерированный исходный код вместо магии во время выполнения",
             "Kora avoids runtime Reflection API, dynamic proxies, and runtime bytecode generation for the graph. Generated readable source that can be inspected, maintained, debugged, and reviewed by human or AI.": "Kora не использует Reflection API, динамические прокси и генерацию байткода во время выполнения для графа приложения. Вместо этого появляется читаемый исходный код, который может изучать, поддерживать, отлаживать и проверять человек или нейросеть",
             "Fine-grained and best-performant modules": "Точные и максимально производительные модули",
             "Kora uses carefully selected, fast, optimized integrations and asks you to enable only the modules your service needs. Teams do not have to research which web server, HTTP client, database approach, Redis client, or messaging integration should become the internal standard before building the service.": "Kora использует тщательно выбранные, быстрые и оптимизированные интеграции и просит включать только те модули, которые нужны сервису. Командам не нужно заранее исследовать, какой веб-сервер, HTTP-клиент, подход к базе данных, Redis-клиент или интеграцию с очередями сделать внутренним стандартом.",
             "JVM abstractions that look familiar": "JVM-абстракции, которые выглядят знакомо",
-            "Kora uses native Java and Kotlin language constructs to declare framework mechanisms instead of forcing developers into a foreign programming model. HTTP handlers, Kafka listeners, repositories, config interfaces, and aspects feel natural in the language you already use, while compile-time generation handles the repetitive work.": "Kora использует нативные конструкции Java и Kotlin для объявления механизмов фреймворка и не заставляет разработчиков переходить на чужеродную модель программирования. HTTP-обработчики, Kafka-listeners, репозитории, интерфейсы конфигурации и аспекты выглядят естественно в языке, которым вы уже пользуетесь, а генерация во время компиляции забирает на себя повторяющуюся работу.",
+            "Kora uses native Java and Kotlin language constructs to declare framework mechanisms instead of forcing developers into a foreign programming model. HTTP handlers, Kafka listeners, repositories, config interfaces, and aspects feel natural in the language you already use, while compile-time generation handles the repetitive work.": "Kora использует нативные конструкции Java и Kotlin для объявления механизмов фреймворка и не заставляет разработчиков переходить на чужеродную модель программирования. HTTP-обработчики, слушатели Kafka, репозитории, интерфейсы конфигурации и аспекты выглядят естественно в языке, которым вы уже пользуетесь, а генерация во время компиляции забирает на себя повторяющуюся работу.",
             "Get context out of your head": "Выгрузите контекст из головы",
-            "Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.": "Читаемые сгенерированные исходники, ошибки на этапе компиляции, сфокусированная документация и примеры упрощают погружение в проект. Новые разработчики могут посмотреть, что сделал фреймворк, быстро проверить поведение и попросить нейросеть пройтись по реальному коду вместо угадывания скрытого состояния runtime.",
-            "No magic, no frustration": "Нет магии, нет фрустрации",
-            "Proxy-heavy frameworks can make annotations feel simple until behavior depends on hidden runtime proxy rules, self-invocation, reflection, or container-specific conventions that change from one version to another. Kora keeps the mechanism transparent: generated source and docs hold the context, so developers do not need to memorize annotation folklore or keep invisible framework state in their heads.": "Фреймворки, завязанные на прокси, могут казаться простыми, пока поведение не начинает зависеть от скрытых правил runtime-прокси, self-invocation, рефлексии или контейнерных соглашений, которые меняются от версии к версии. Kora держит механизм прозрачным: сгенерированный код и документация хранят контекст, поэтому разработчикам не нужно заучивать фольклор вокруг аннотаций или держать невидимое состояние фреймворка в голове.",
-            "Highload-grade optimized out of the box": "Высоко-производительные оптимизации из коробки",
-            "Kora is based on highload-grade production optimizations from the first request: fast startup, explicit dependency graphs, generated adapters, and lean module integrations. Developers do not need to read hundreds of articles, watch hundreds of talks, spend thousands of hours benchmarking framework internals, or tune the framework itself before shipping. It is already done inside Kora. Just start writing services.": "Kora с первого запроса опирается на production-оптимизации для высоких нагрузок: быстрый запуск, явные графы зависимостей, сгенерированные адаптеры и легкие модульные интеграции. Разработчикам не нужно читать сотни статей, смотреть сотни докладов, тратить тысячи часов на бенчмарки внутренностей фреймворка или тюнить сам фреймворк перед релизом. Это уже сделано внутри Kora. Просто начинайте писать сервисы.",
+            "Readable generated sources, compile-time errors, focused documentation, and examples make onboarding easier. New developers can inspect what the framework did, verify behavior quickly, and ask AI to navigate real implementation code instead of guessing hidden runtime state.": "Читаемые сгенерированные исходники, ошибки на этапе компиляции, сфокусированная документация и примеры упрощают погружение в проект. Новые разработчики могут посмотреть, что сделал фреймворк, быстро проверить поведение и попросить нейросеть пройтись по реальному коду вместо угадывания скрытого состояния во время выполнения.",
+            "No magic, no frustration": "Нет магии, нет разочарований",
+            "Proxy-heavy frameworks can make annotations feel simple until behavior depends on hidden runtime proxy rules, self-invocation, reflection, or container-specific conventions that change from one version to another. Kora keeps the mechanism transparent: generated source and docs hold the context, so developers do not need to memorize annotation folklore or keep invisible framework state in their heads.": "Фреймворки, завязанные на прокси, могут казаться простыми, пока поведение не начинает зависеть от скрытых правил прокси во время выполнения, самовызовов методов, рефлексии или контейнерных соглашений, которые меняются от версии к версии. Kora держит механизм прозрачным: сгенерированный код и документация хранят контекст, поэтому разработчикам не нужно заучивать фольклор вокруг аннотаций или держать невидимое состояние фреймворка в голове.",
+            "Highload-grade optimized out of the box": "Высокопроизводительные оптимизации из коробки",
+            "Kora is based on highload-grade production optimizations from the first request: fast startup, explicit dependency graphs, generated adapters, and lean module integrations. Developers do not need to read hundreds of articles, watch hundreds of talks, spend thousands of hours benchmarking framework internals, or tune the framework itself before shipping. It is already done inside Kora. Just start writing services.": "Kora с первого запроса опирается на оптимизации для высоких нагрузок, проверенные в промышленной эксплуатации: быстрый запуск, явные графы зависимостей, сгенерированные адаптеры и легкие модульные интеграции. Разработчикам не нужно читать сотни статей, смотреть сотни докладов, тратить тысячи часов на замеры производительности внутренностей фреймворка или настраивать сам фреймворк перед выпуском. Это уже сделано внутри Kora. Просто начинайте писать сервисы.",
             "One problem, one solution": "Одна проблема, одно решение",
             "Kora favors one recommended solution based on JVM best practices instead of many competing framework styles. Teams spend less time writing internal rules, preparing talks about correct usage, or debating which abstraction should be allowed.": "Kora предпочитает одно рекомендуемое решение на базе лучших практик JVM вместо множества конкурирующих стилей внутри одного фреймворка. Команды тратят меньше времени на внутренние правила, доклады о правильном использовании и споры о том, какую абстракцию разрешить.",
             "No lore required, Kora just works": "Без тайных знаний, Kora просто работает",
             "You do not need a giant community to trip over millions of edge cases, search through millions of non-working answers, write millions of questions, and produce endless conference talks explaining how the framework really works and why it is not in the documentation. Kora just works: the docs are direct, examples are practical, generated code is readable, and AI can explain the actual implementation instead of reverse-engineering hidden magic.": "Вам не нужно огромное сообщество, чтобы разобраться, как работает фреймворк. Не нужно искать ответы среди тысяч обсуждений, сверять противоречивые советы, смотреть десятки докладов или выяснять, почему реальное поведение отличается от документации. Kora просто работает. Документация соответствует реализации, примеры отражают реальные практики, сгенерированный код остаётся читаемым, а нейросеть может объяснить, что происходит внутри, потому что механизмы фреймворка открыты и прозрачны.",
             "Simple and fast testing": "Простое и быстрое тестирование",
-            "Test the service through the same explicit component graph it uses in production. Inject test components, replace dependencies, override configuration, keep component tests fast, and add Testcontainers-backed integration tests when real infrastructure matters.": "Тестируйте сервис через тот же явный граф компонентов, который используется в production. Подставляйте тестовые компоненты, заменяйте зависимости, переопределяйте конфигурацию, держите компонентные тесты быстрыми и добавляйте интеграционные тесты на Testcontainers там, где нужна реальная инфраструктура.",
+            "Test the service through the same explicit component graph it uses in production. Inject test components, replace dependencies, override configuration, keep component tests fast, and add Testcontainers-backed integration tests when real infrastructure matters.": "Тестируйте сервис через тот же явный граф компонентов, который используется в промышленной эксплуатации. Подставляйте тестовые компоненты, заменяйте зависимости, переопределяйте конфигурацию, держите компонентные тесты быстрыми и добавляйте интеграционные тесты на Testcontainers там, где нужна реальная инфраструктура.",
             "Enterprise-grade by design": "Создано с опытом промышленных высоконагруженных систем",
-            "Tracing, metrics, structured logging, probes, resilience, and graceful shutdown for all modules are designed as framework capabilities rather than late add-ons. The operational contract remains visible in generated and handwritten code.": "Трассировка, метрики, структурированное логирование, проверки работоспособности, отказоустойчивость и корректное завершение для всех модулей спроектированы как возможности фреймворка, а не поздние надстройки. Эксплуатационный контракт остается видимым в сгенерированном и рукописном коде.",
+            "Tracing, metrics, structured logging, probes, resilience, and graceful shutdown for all modules are designed as framework capabilities rather than late add-ons. The operational contract remains visible in generated and handwritten code.": "Трассировка, метрики, структурированное логирование, проверки работоспособности, отказоустойчивость и корректное завершение для всех модулей спроектированы как возможности фреймворка, а не поздние надстройки. Эксплуатационный контракт остается видимым в сгенерированном и написанном вручную коде.",
             "Kora contract": "Контракт Kora",
             "Stop fighting the framework. Start shipping services.": "Хватит бороться с фреймворком. Начинайте просто создавать сервисы.",
             "Keep business code direct and focused while Kora makes framework mechanics simple and predictable for you. Runtime becomes code that just works as expected.": "Держите бизнес-код прямым и сфокусированным, а Kora сделает механику фреймворка простой и предсказуемой. Поведение во время выполнения превращается в код, который просто работает как ожидается.",
@@ -3000,13 +3394,13 @@
             "in production.": "в эксплуатации.",
             "Learn by example": "Учитесь на примерах",
             "Docs without the bloat.": "Документация без воды.",
-            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. Также есть",
-            ", an official AI skill that makes working with Kora even easier.": ", официальный нейро-навык, который делает работу с Kora еще проще.",
+            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. А официальный нейро-навык",
+            ", an official AI skill that makes working with Kora even easier.": ", делает работу с Kora еще проще.",
             "Kora Skills": "Kora Skills",
             "functionality documented": "функциональности задокументировано",
             "step-by-step guides": "пошаговых Руководств",
             "module references": "справочников по модулям",
-            "Build your first Kora service.": "Соберите свой первый сервис на Kora.",
+            "Build your first Kora service.": "Соберите первый сервис на Kora.",
             "Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.": "Пройдите пошаговую настройку, используйте официальные примеры или сразу откройте документацию по модулям для стека, который вам уже нужен.",
             "Kora Framework documentation.": "Документация Kora Framework.",
             "English docs": "Документация EN",
@@ -3022,7 +3416,7 @@
             "Show controller example": "Показать пример контроллера",
             "Show repository example": "Показать пример репозитория",
             "Show HTTP client example": "Показать пример HTTP-клиента",
-            "Show Kafka consumer example": "Показать пример Kafka-consumer",
+            "Show Kafka consumer example": "Показать пример потребителя Kafka",
             "Show resilient service example": "Показать пример отказоустойчивого сервиса",
             "TechEmpower query benchmark comparison": "Сравнение бенчмарка TechEmpower",
             "Application startup time comparison": "Сравнение времени старта приложения",
@@ -3368,7 +3762,7 @@
             data: {
                 kicker: "Данные",
                 title: "Репозитории Kora",
-                copy: "Единая модель репозиториев для JDBC и Cassandra: разработчик пишет запрос, Kora генерирует реализацию, а итоговый код показывает привязку параметров, маппинг строк, телеметрию и обработку ошибок. Это дает продуктивность уровня привычных репозиториев без скрытия плана запроса.",
+                copy: "Единая модель репозиториев для JDBC и Cassandra: разработчик пишет запрос, Kora генерирует реализацию, а итоговый код показывает привязку параметров, преобразование строк, телеметрию и обработку ошибок. Это дает продуктивность уровня привычных репозиториев без скрытия плана запроса.",
                 tags: ["Паттерн Repository", "SQL виден", "Мапперы при компиляции", "Пакетные запросы", "Телеметрия"],
                 sourceCaption: "Высокоуровневый API",
                 sourceHeadline: "Знакомые верхнеуровневые абстракции",
@@ -3394,7 +3788,7 @@
                 generatedHeadline: "Телеметрия подключается автоматически",
                 points: [
                     "Micrometer регистрирует PrometheusMeterRegistry и отдает метрики через служебный HTTP-сервер.",
-                    "Трассы OpenTelemetry можно экспортировать через OTLP поверх gRPC или HTTP с настройками endpoint, batching, retry и resource attributes.",
+                    "Трассы OpenTelemetry можно экспортировать через OTLP поверх gRPC или HTTP с настройками адреса, пакетной отправки, повторных попыток и атрибутов ресурса.",
                     "HTTP, HTTP-клиент, база данных, Kafka и другие модули создают контексты телеметрии вокруг реальных операций.",
                     "Readiness и liveness endpoints являются полноценными служебными маршрутами для Kubernetes и контейнерных платформ.",
                     "Чувствительные заголовки и значения query-параметров можно маскировать в логах, сохраняя наблюдаемость полезной без утечки секретов."
@@ -3411,7 +3805,7 @@
                 generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
                     "Kafka consumers объявляются через @KafkaListener и могут использовать отдельные пути конфигурации для разных topics или topic patterns.",
-                    "Типизированные ключи и значения, JSON-маппинг, обработка пустых записей, ошибки десериализации и потоки consumer являются частью контракта listener.",
+                    "Типизированные ключи и значения, преобразование JSON, обработка пустых записей, ошибки десериализации и потоки потребителя являются частью контракта слушателя.",
                     "Kafka publishers поддерживают аннотации topics, пользовательские сигнатуры, ошибки публикации и транзакционные producers, когда это нужно.",
                     "Конфигурация телеметрии следует той же модели: логирование, метрики, трассировка, SLO-бакеты и ожидание завершения работы.",
                     "gRPC, S3, SOAP и Camunda-интеграции подключаются в тот же граф зависимостей, а не превращаются в скрытую боковую проводку."
@@ -3427,12 +3821,12 @@
                 generatedCaption: "Сгенерированный код",
                 generatedHeadline: "Читаемый сгенерированный исходный код",
                 points: [
-                    "Каждый такой аспект бесплатный: сгенерированная обертка — это обычный вызов метода, скомпилированный на этапе сборки, без рефлексии и без runtime-накладных расходов по сравнению с кодом, написанным вручную.",
+                    "Каждый такой аспект бесплатный: сгенерированная обертка — это обычный вызов метода, скомпилированный на этапе сборки, без рефлексии и без накладных расходов во время выполнения по сравнению с кодом, написанным вручную.",
                     "@Timeout ограничивает время выполнения, @Retry повторяет неудачные вызовы, @CircuitBreaker защищает зависимости, а @Fallback дает восстановление.",
                     "Порядок аспектов явный и задокументированный, поэтому команды понимают, как взаимодействуют timeout, retry, breaker и fallback.",
                     "Значения по умолчанию можно разделять глобально, а named configurations настраивают политики для конкретных клиентов или операций.",
                     "Validation, cache, транзакции, scheduling, безопасность и logging aspects используют ту же модель генерации во время компиляции.",
-                    "В итоге получается код политик, который читается как обычный исходный код, а не исчезает в runtime-рефлексии и динамических прокси."
+                    "В итоге получается код политик, который читается как обычный исходный код, а не растворяется в рефлексии во время выполнения и динамических прокси."
                 ]
             },
             extend: {
@@ -3447,7 +3841,7 @@
                 points: [
                     "Каждый модуль подключается по желанию: ничего не тянется транзитивно, если сервис это явно не объявил и не сконфигурировал.",
                     "Любой сгенерированный компонент можно заменить, предоставив свой бин с тем же контрактом — без форка фреймворка.",
-                    "Новый модуль Kora пишется по тому же паттерну annotation processor, что и встроенные модули, поэтому ощущается органично, а не как надстройка.",
+                    "Новый модуль Kora пишется по тому же принципу через обработчик аннотаций, что и встроенные модули, поэтому ощущается органично, а не как надстройка.",
                     "Граф зависимостей остается единой явной структурой, поэтому свои и встроенные модули неотличимы друг от друга во время компиляции.",
                     "Команда может начать с горстки модулей и наращивать стек модуль за модулем по мере появления реальных потребностей."
                 ]
@@ -3455,35 +3849,35 @@
             runtime: {
                 kicker: "Конкурентность",
                 title: "Просто, легко, знакомо",
-                copy: "Kora держит модель программирования близкой к обычному Java и Kotlin: dependency injection во время компиляции вместо runtime-контейнера и один понятный, поддерживаемый способ решить задачу вместо пяти конкурирующих паттернов. Конкурентность изначально построена на виртуальных потоках, а не прикручена позже, поэтому сервисы остаются простыми.",
-                tags: ["Виртуальные потоки", "DI при компиляции", "Один способ", "Блокирующий код", "Предсказуемые ресурсы"],
+                copy: "Kora держит модель программирования близкой к обычному Java и Kotlin: внедрение зависимостей во время компиляции вместо контейнера во время выполнения и один понятный, поддерживаемый способ решить задачу вместо пяти конкурирующих подходов. Конкурентность изначально построена на виртуальных потоках, а не прикручена позже, поэтому сервисы остаются простыми.",
+                tags: ["Виртуальные потоки", "Внедрение при компиляции", "Один способ", "Блокирующий код", "Предсказуемые ресурсы"],
                 sourceCaption: "Ваш код",
                 sourceHeadline: "Контроллер, который читается как обычный Java-код",
                 generatedCaption: "Сгенерированный код",
                 generatedHeadline: "Валидация и конфигурация подключаются автоматически",
                 points: [
-                    "Граф приложения строится и проверяется во время компиляции — не нужно учить runtime-контейнер, classpath scanning или магию прокси.",
+                    "Граф приложения строится и проверяется во время компиляции — не нужно изучать контейнер во время выполнения, сканирование пути классов или магию прокси.",
                     "Там, где другие фреймворки предлагают несколько конкурирующих способов решить одну задачу, Kora дает один понятный и поддерживаемый путь.",
                     "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 21+, поэтому блокирующий код остается простым в написании и чтении.",
                     "Высокая конкурентность обеспечивается планировщиком платформы, а не реактивными операторами или цепочками колбэков поверх бизнес-логики.",
-                    "Семантика thread-per-request сохраняет осмысленность стектрейсов, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой."
+                    "Модель «один поток на запрос» сохраняет осмысленность трассировок стека, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой."
                 ]
             },
             compiler: {
                 kicker: "Компилятор",
-                title: "Прозрачность, никакой runtime-магии",
-                copy: "Каждое решение о связывании зависимостей проверяется и генерируется во время компиляции, поэтому ошибки становятся понятным сообщением компилятора, а не стектрейсом в два часа ночи. Никакой рефлексии, никаких динамических прокси и скрытой генерации кода — только явный типизированный код, который одинаково легко читать и новому инженеру, и нейросети.",
+                title: "Прозрачность, никакой магии во время выполнения",
+                copy: "Каждое решение о связывании зависимостей проверяется и генерируется во время компиляции, поэтому ошибки становятся понятным сообщением компилятора, а не трассировкой стека в два часа ночи. Никакой рефлексии, никаких динамических прокси и скрытой генерации кода — только явный типизированный код, который одинаково легко читать и новому инженеру, и нейросети.",
                 tags: ["Проверки при компиляции", "Без рефлексии", "Понятные ошибки", "Быстрый цикл тестов", "Понятно нейросетям"],
                 sourceCaption: "Ваш код",
                 sourceHeadline: "Ничего необычного — просто нет реализации",
                 generatedCaption: "Ответ компилятора",
-                generatedHeadline: "Понятная ошибка, а не runtime-сюрприз",
+                generatedHeadline: "Понятная ошибка, а не сюрприз во время выполнения",
                 points: [
                     "Графом управляете вы, а не наоборот: каждый модуль и компонент в итоговом приложении явно объявлен на вашем интерфейсе @KoraApp — ничего не сканируется автоматически, не связывается само и не подключается незаметно за вашей спиной.",
-                    "Связывание зависимостей, конфигурация и генерация аспектов разрешаются во время компиляции, поэтому сломанное связывание валит сборку, а не продакшен.",
+                    "Связывание зависимостей, конфигурация и генерация аспектов разрешаются во время компиляции, поэтому сломанное связывание валит сборку, а не работающий сервис.",
                     "Сгенерированные исходники — это обычный читаемый Java или Kotlin: открываете файл, и видите именно то поведение, которое выполняется.",
-                    "Ошибки компилятора указывают на конкретную отсутствующую зависимость или неверный биндинг — тот же подробный цикл обратной связи, который ценят в строго типизированных языках.",
-                    "Быстрые unit- и component-тесты замыкают цикл написал-скомпилировал-получил ошибку-исправил, и это важно как для разработчиков, так и для нейро-агентов.",
+                    "Ошибки компилятора указывают на конкретную отсутствующую зависимость или неверную привязку — тот же подробный цикл обратной связи, который ценят в строго типизированных языках.",
+                    "Быстрые модульные и компонентные тесты замыкают цикл написал-скомпилировал-получил ошибку-исправил, и это важно как для разработчиков, так и для нейро-агентов.",
                     "Минимум магии означает меньше неявных решений, которые приходится угадывать — что человеку, что модели — при доработке или отладке сервиса."
                 ]
             }
@@ -5094,7 +5488,7 @@ class ResilientService_AopProxy(
 
             html = html
                 .replace(/\/\/[^\n]*/g, stash("token-muted"))
-                .replace(/@\w+(?:\([^)]*\))?/g, stash("token-anno"))
+                .replace(/@\w+/g, stash("token-anno"))
                 .replace(/"[^"\n]*"/g, stash("token-string"))
                 .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof|fun|val|override|open|when|is|else|null|in|data)\b/g, '<span class="token-key">$1</span>')
                 .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V|FraudDetector|PaymentService|OrderService|OrderRequest|OrderResult|InventoryRepository|VirtualThreadExecutor|CompletionStage|S3Client|S3StorageConfig|S3StorageModule|FileStorage|S3FileStorage|Region|Node|PrometheusMeterRegistry|PrometheusConfig|SpanExporter|OtlpGrpcSpanExporter|TelemetryConfig|PrivateApiHandler|ReadinessProbe|ReadinessHttpHandler|GreetingController|GreetingConfig|Validator|ViolationException|JdbcDatabase|JdbcDatabaseConfig|JdbcDatabaseModule|DataBaseTelemetryFactory|ConfigValueExtractor|ConfigValueMapper|TracingConfig|JedisClientConfig|JedisConfig|Jedis|URI|Config|Executor|OtherDatabase|Application)\b/g, '<span class="token-type">$1</span>');
@@ -5239,6 +5633,338 @@ class ResilientService_AopProxy(
         };
 
         signals.forEach((el) => launch(el));
+    })();
+</script>
+<script>
+    /* Claude Code (Opus) session emulator inside the AI-agents reveal.
+       Plays a realistic build/fix/iterate loop against real Kora diagnostics
+       the first time the <details> opens; replayable via the header button.
+       Language-agnostic: the surrounding page translation walker skips it,
+       so the transcript stays in the coding-agent's own English. */
+    (() => {
+        const band = document.querySelector(".ai-band");
+        const demo = document.getElementById("ai-demo");
+        const body = document.getElementById("ai-demo-body");
+        if (!band || !demo || !body) return;
+
+        const replay = demo.querySelector(".ai-demo-replay");
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const scroll = () => { body.scrollTop = body.scrollHeight; };
+
+        let token = 0;
+        let loopTimer = null;
+
+        /* --- realistic transcript ------------------------------------------ */
+        const SCRIPT = [
+            { t: "user", text: "build the checkout flow: an OrderService that charges the customer, emails a confirmation, loads the customer by id, and publishes an OrderPlaced event to Kafka", after: 6000 },
+            { t: "think", text: "This is a Kora project. Before writing anything, let me check whether the repo ships a Kora skill I should follow for its conventions.", after: 900 },
+            {
+                t: "skill", after: 1100,
+                out: '<span class="ai-branch">⎿</span>  Scanning .claude/skills … found <span class="ai-skill-name">kora</span>\n'
+                    + '   <span class="ai-skill-path">.claude/skills/kora/SKILL.md</span>\n'
+                    + '   Loaded <span class="ai-skill-name">Kora</span> — modules, compile-time DI, repositories, OpenAPI codegen, testing conventions.'
+            },
+            { t: "say", text: "Found the project's Kora skill and loaded it — I'll follow its conventions for modules, DI, and repositories as I build.", after: 800 },
+            { t: "think", text: "This touches DI, a repository, a payment client, JSON, and Kafka. Kora resolves the whole graph at compile time, so any missing or ambiguous wiring fails the build, not the boot. I'll scaffold it, then lean on the compiler to tell me what's wrong.", after: 800 },
+            { t: "say", text: "Scaffolded OrderService, wired it into OrderController, added a findById query on CustomerRepository, a PaymentClient, and an EventPublisher for Kafka. Compiling to check the graph.", after: 700 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 2000, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   No component found for dependency:\n"
+                    + '     <span class="ai-err">com.example.mail.EmailSender</span> (no tags)\n\n'
+                    + "   ^--- com.example.orders.OrderService(EmailSender emailSender)\n"
+                    + '   ^--- com.example.mail.EmailSender   <span class="ai-diff-del">[MISSING]</span>\n\n'
+                    + '   <span class="ai-hl">BUILD FAILED in 3s</span>',
+                after: 950
+            },
+            { t: "say", text: "Compile-time DI caught it before anything ran. EmailSender has no @Component and no module provides it, so it never entered the graph. The mail module just isn't included in @KoraApp.", after: 700 },
+            {
+                t: "diff", file: "Application.java", after: 900,
+                lines: ["  @KoraApp", "- public interface Application {", "+ public interface Application extends MailModule {"]
+            },
+            { t: "say", text: "Rebuilding.", after: 600 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   More than one component matches dependency:\n"
+                    + '     <span class="ai-err">com.example.payment.PaymentClient</span> (no tags)\n\n'
+                    + "   Candidates:\n"
+                    + '     - <span class="ai-diff-del">com.example.payment.RealPaymentClient</span>\n'
+                    + '     - <span class="ai-diff-del">com.example.payment.MockPaymentClient</span>\n\n'
+                    + '   <span class="ai-hl">BUILD FAILED in 3s</span>',
+                after: 950
+            },
+            { t: "say", text: "Ambiguous binding — both PaymentClient implementations are @Component, so the graph can't pick one. I'll mark the real one as the default; the mock can stay for tests.", after: 750 },
+            {
+                t: "diff", file: "RealPaymentClient.java", after: 900,
+                lines: ["  @Component", "+ @DefaultComponent", "  public final class RealPaymentClient implements PaymentClient {"]
+            },
+            { t: "user", text: "right, the mock is only for tests", after: 800 },
+            { t: "say", text: "Exactly — @DefaultComponent makes RealPaymentClient win in the application graph, while tests still pull MockPaymentClient explicitly by @Tag. Compiling again.", after: 700 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   No component found for dependency:\n"
+                    + '     <span class="ai-err">com.example.json.EventJsonWriter</span> <span class="ai-tag">@Tag(Json.class)</span>\n\n'
+                    + "   Note: found a component with the same type but a different tag:\n"
+                    + "     - com.example.json.EventJsonWriter (no tags)\n\n"
+                    + '   <span class="ai-hl">BUILD FAILED in 2s</span>',
+                after: 950
+            },
+            { t: "say", text: "The JSON writer exists, but the publisher asks for it with @Tag(Json.class) and the provider is untagged. The tag was just forgotten at the injection point — adding it.", after: 750 },
+            {
+                t: "diff", file: "EventPublisherModule.java", after: 900,
+                lines: ["  default EventPublisher eventPublisher(", "-         EventJsonWriter writer) {", "+         @Tag(Json.class) EventJsonWriter writer) {"]
+            },
+            { t: "say", text: "Rebuilding.", after: 600 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   SQL query placeholder has no matching method parameter:\n"
+                    + '     <span class="ai-err">:customerId</span>\n\n'
+                    + "   Available parameters: id, status\n"
+                    + "   Hint: parameters are matched by ':name'\n\n"
+                    + '   <span class="ai-hl">BUILD FAILED in 2s</span>',
+                after: 950
+            },
+            { t: "say", text: "The query binds :customerId but the method parameter is id — a compile error today, not a 3 a.m. runtime failure. Renaming the placeholder.", after: 750 },
+            {
+                t: "diff", file: "CustomerRepository.java", after: 900,
+                lines: ['  @Query("SELECT %{return#selects} FROM customers', '-         WHERE id = :customerId")', '+         WHERE id = :id")', "  Customer findById(long id);"]
+            },
+            { t: "say", text: "Rebuilding.", after: 600 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   Query parameter is unused:\n"
+                    + '     <span class="ai-err">status</span>\n\n'
+                    + "   Method parameter wasn't found in SQL query placeholders.\n"
+                    + '   Hint: parameters are matched by ":name".\n\n'
+                    + '   <span class="ai-hl">BUILD FAILED in 2s</span>',
+                after: 950
+            },
+            { t: "say", text: "The findActive query takes a status parameter it never uses. I actually want to filter on it, so I'll reference it in the WHERE clause rather than drop it.", after: 750 },
+            {
+                t: "diff", file: "OrderRepository.java", after: 900,
+                lines: ['  @Query("SELECT %{return#selects} FROM orders', '-         WHERE customer_id = :id")', '+         WHERE customer_id = :id AND status = :status")', "  List<Order> findActive(long id, String status);"]
+            },
+            { t: "say", text: "Rebuilding.", after: 600 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + '   Unknown query macro command: <span class="ai-err">entity#columns_all</span>\n\n'
+                    + "   Available macros:\n"
+                    + "     table, columns, columns_without_id, values, id, ids …\n\n"
+                    + '   <span class="ai-hl">BUILD FAILED in 2s</span>',
+                after: 950
+            },
+            { t: "say", text: "Typo in the macro — there's no columns_all. The processor even lists the valid commands; I want plain columns here.", after: 750 },
+            {
+                t: "diff", file: "OrderRepository.java", after: 900,
+                lines: ['  @Query("INSERT INTO orders(', '-         %{entity#columns_all}) VALUES (%{entity#values})")', '+         %{entity#columns}) VALUES (%{entity#values})")', "  void insert(Order order);"]
+            },
+            { t: "say", text: "Rebuilding.", after: 600 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew build", wait: 1900, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :compileJava FAILED</span>\n'
+                    + "   Circular dependency found:\n"
+                    + '     <span class="ai-err">com.example.orders.OrderService</span> (no tags)\n\n'
+                    + "   @--- OrderService(UserService users)\n"
+                    + "   ^--- UserService(OrderService orders)\n"
+                    + '   ^--- OrderService   <span class="ai-diff-del">[CYCLE]</span>\n\n'
+                    + '   <span class="ai-hl">BUILD FAILED in 3s</span>',
+                after: 950
+            },
+            { t: "think", text: "OrderService and UserService depend on each other directly. UserService only needs OrderService lazily, so I can break the cycle by injecting ValueOf<OrderService> and resolving it on use instead of at construction.", after: 800 },
+            { t: "say", text: "Real cyclic dependency, and it's caught at compile time instead of blowing up during context init. UserService only touches OrderService lazily, so I'll wrap that edge in ValueOf<T>.", after: 750 },
+            {
+                t: "diff", file: "UserService.java", after: 900,
+                lines: ["  public UserService(", "-         OrderService orders) {", "+         ValueOf<OrderService> orders) {"]
+            },
+            { t: "say", text: "Compiles clean now. Let me start the app to check the config.", after: 650 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew run", wait: 2100, variant: "error",
+                out: '<span class="ai-branch">⎿</span>  <span class="ai-hl">&gt; Task :run FAILED</span>\n'
+                    + "   Config value parsing failed:\n"
+                    + '     path:   <span class="ai-err">httpServer.port</span>\n'
+                    + "     origin: application.yaml\n"
+                    + '     value:  <span class="ai-err">"five"</span>\n\n'
+                    + "   Value cannot be parsed as the target field type (Integer).\n\n"
+                    + '   <span class="ai-hl">APPLICATION FAILED TO START</span>',
+                after: 950
+            },
+            { t: "say", text: "Config is validated against the typed field on startup, so a bad value fails fast with the exact path and origin. httpServer.port is the string \"five\" — setting a real port.", after: 800 },
+            {
+                t: "diff", file: "application.yaml", after: 900,
+                lines: ["  httpServer:", '-   port: "five"', "+   port: 8080"]
+            },
+            { t: "say", text: "Now the full loop — build and tests.", after: 650 },
+            {
+                t: "cmd", name: "Bash", arg: "./gradlew test", wait: 2300, variant: "ok",
+                out: '<span class="ai-branch">⎿</span>  OrderServiceTest &gt; chargesAndConfirms()    <span class="ai-pass">✓ PASSED</span>\n'
+                    + '   OrderServiceTest &gt; publishesOrderPlaced()  <span class="ai-pass">✓ PASSED</span>\n'
+                    + '   CustomerRepositoryTest &gt; findById()        <span class="ai-pass">✓ PASSED</span>\n'
+                    + '   OrderRepositoryTest &gt; findActive()         <span class="ai-pass">✓ PASSED</span>\n\n'
+                    + '   <span class="ai-hl">BUILD SUCCESSFUL in 8s</span>',
+                after: 900
+            },
+            { t: "say", text: "Green. Every one of those bugs — missing binding, ambiguous component, forgotten tag, wrong SQL placeholder, unused parameter, bad macro, dependency cycle, bad config — surfaced statically with the exact location. No reflection to trace, nothing to reproduce at runtime. That's the loop that makes Kora fast to iterate on, for a person or an agent.", after: 0 }
+        ];
+
+        /* --- rendering ------------------------------------------------------ */
+        const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+        const block = (cls) => {
+            const el = document.createElement("div");
+            el.className = "ai-block " + cls;
+            body.appendChild(el);
+            scroll();
+            return el;
+        };
+
+        async function typeInto(container, text, myToken) {
+            const span = document.createElement("span");
+            container.appendChild(span);
+            if (reduce) { span.textContent = text; scroll(); return; }
+            const cursor = document.createElement("span");
+            cursor.className = "ai-cursor";
+            container.appendChild(cursor);
+            for (let i = 0; i < text.length; i++) {
+                if (myToken !== token) { cursor.remove(); return; }
+                const ch = text[i];
+                span.textContent += ch;
+                scroll();
+                let d = 30 + Math.random() * 30;
+                if (ch === " ") d *= 0.5;
+                if (".,:".indexOf(ch) !== -1) d += 160;
+                await sleep(d);
+            }
+            cursor.remove();
+        }
+
+        async function evUser(ev, myToken) {
+            const el = block("ai-user");
+            const caret = document.createElement("span");
+            caret.className = "ai-caret";
+            caret.textContent = ">";
+            el.appendChild(caret);
+            await typeInto(el.appendChild(document.createElement("span")), ev.text, myToken);
+        }
+
+        async function evSay(ev, myToken) {
+            const el = block("ai-assistant");
+            const dot = document.createElement("span");
+            dot.className = "ai-dot";
+            dot.textContent = "⏺";
+            el.appendChild(dot);
+            await typeInto(el.appendChild(document.createElement("span")), ev.text, myToken);
+        }
+
+        async function evThink(ev, myToken) {
+            const el = block("ai-think");
+            const dot = document.createElement("span");
+            dot.className = "ai-dot";
+            dot.textContent = "✻";
+            el.appendChild(dot);
+            await typeInto(el.appendChild(document.createElement("span")), ev.text, myToken);
+        }
+
+        async function evCmd(ev, myToken) {
+            const el = block("ai-tool");
+            const head = document.createElement("div");
+            head.className = "ai-line";
+            head.innerHTML = '<span class="ai-dot is-run">⏺</span> <span class="ai-toolname">'
+                + esc(ev.name) + '</span>(<span class="ai-toolarg">' + esc(ev.arg) + "</span>)";
+            el.appendChild(head);
+            const out = document.createElement("div");
+            out.className = "ai-out";
+            out.innerHTML = '<span class="ai-branch">⎿</span>  <span class="ai-spin">running…</span>';
+            el.appendChild(out);
+            scroll();
+            await sleep(ev.wait || 1000);
+            if (myToken !== token) return;
+            out.className = "ai-out is-" + (ev.variant || "plain");
+            out.innerHTML = ev.out;
+            scroll();
+        }
+
+        function evDiff(ev) {
+            const el = block("ai-tool");
+            const head = document.createElement("div");
+            head.className = "ai-line";
+            head.innerHTML = '<span class="ai-dot is-run">⏺</span> <span class="ai-toolname">Update</span>('
+                + '<span class="ai-toolarg">' + esc(ev.file) + "</span>)";
+            el.appendChild(head);
+            const out = document.createElement("div");
+            out.className = "ai-out is-ok";
+            const rendered = ev.lines.map((l) => {
+                const cls = l.charAt(0) === "+" ? "ai-diff-add" : l.charAt(0) === "-" ? "ai-diff-del" : "ai-muted";
+                return '<span class="' + cls + '">' + esc(l) + "</span>";
+            }).join("\n   ");
+            out.innerHTML = '<span class="ai-branch">⎿</span>  ' + rendered;
+            el.appendChild(out);
+            scroll();
+        }
+
+        async function evSkill(ev, myToken) {
+            const el = block("ai-tool");
+            const head = document.createElement("div");
+            head.className = "ai-line";
+            head.innerHTML = '<span class="ai-dot" style="color:var(--green)">⚡</span> '
+                + '<span class="ai-toolname is-skill">Skill</span>(<span class="ai-toolarg">kora</span>)';
+            el.appendChild(head);
+            const out = document.createElement("div");
+            out.className = "ai-out";
+            out.innerHTML = '<span class="ai-branch">⎿</span>  <span class="ai-spin">scanning…</span>';
+            el.appendChild(out);
+            scroll();
+            await sleep(ev.wait || 1200);
+            if (myToken !== token) return;
+            out.className = "ai-out is-skill";
+            out.innerHTML = ev.out;
+            scroll();
+        }
+
+        async function runEvent(ev, myToken) {
+            if (ev.t === "user") return evUser(ev, myToken);
+            if (ev.t === "say") return evSay(ev, myToken);
+            if (ev.t === "think") return evThink(ev, myToken);
+            if (ev.t === "cmd") return evCmd(ev, myToken);
+            if (ev.t === "diff") return evDiff(ev);
+            if (ev.t === "skill") return evSkill(ev, myToken);
+        }
+
+        async function play() {
+            clearTimeout(loopTimer);
+            token += 1;
+            const myToken = token;
+            body.innerHTML = "";
+            if (replay) replay.hidden = true;
+            for (let i = 0; i < SCRIPT.length; i++) {
+                if (myToken !== token) return;
+                const ev = SCRIPT[i];
+                await runEvent(ev, myToken);
+                if (myToken !== token) return;
+                await sleep(reduce ? 160 : (ev.after != null ? ev.after : 560));
+            }
+            if (myToken !== token) return;
+            if (replay) replay.hidden = false;
+            /* auto-retry the whole session after a readable pause, looping
+               as long as the reveal stays open */
+            loopTimer = setTimeout(() => { if (band.open) play(); }, 15000);
+        }
+
+        band.addEventListener("toggle", () => {
+            if (band.open) {
+                play();
+            } else {
+                /* cancel any running playback and the pending auto-retry */
+                token += 1;
+                clearTimeout(loopTimer);
+            }
+        });
+        if (replay) replay.addEventListener("click", () => { play(); });
     })();
 </script>
 </body>
