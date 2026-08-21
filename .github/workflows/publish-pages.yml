@@ -31,11 +31,15 @@ jobs:
       - name: Build mkdocs
         run: |
           pip install mkdocs-glightbox
-          mkdocs build --strict --verbose -f mkdocs/config/ru/mkdocs.yml
-          mkdocs build --strict --verbose -f mkdocs/config/en/mkdocs.yml
+          mkdocs build --strict --verbose -f mkdocs/config/v1/ru/mkdocs.yml
+          mkdocs build --strict --verbose -f mkdocs/config/v1/en/mkdocs.yml
+          mkdocs build --strict --verbose -f mkdocs/config/v2/ru/mkdocs.yml
+          mkdocs build --strict --verbose -f mkdocs/config/v2/en/mkdocs.yml
           mkdir public
-          mv mkdocs/generated/ru public/ru
-          mv mkdocs/generated/en public/en
+          mv mkdocs/generated/v1 public/v1
+          mv mkdocs/generated/v2 public/v2
+          cp -r public/v1/ru public/ru
+          cp -r public/v1/en public/en
           mv mkdocs/index.html public
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4

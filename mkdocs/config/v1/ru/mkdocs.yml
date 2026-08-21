@@ -1,10 +1,10 @@
-docs_dir: "../../docs/ru"
-site_dir: "../../generated/ru"
+docs_dir: "../../../docs/v1/ru"
+site_dir: "../../../generated/v1/ru"
 
 
 # Project information
 site_name: Kora фреймворк 1.2.20
-site_url: https://kora-projects.github.io/kora-docs/ru/
+site_url: https://kora-projects.github.io/kora-docs/v1/ru/
 nav:
   - Руководства:
       - Вступление: guides/home.md
@@ -100,13 +100,13 @@ nav:
 # Repository
 repo_name: Kora
 repo_url: https://github.com/kora-projects/kora
-edit_uri: /kora-projects/kora-docs/tree/master/mkdocs/docs/ru
+edit_uri: /kora-projects/kora-docs/tree/master/mkdocs/docs/v1/ru
 
 
 # Configuration
 theme:
   name: material
-  custom_dir: ../../overrides/
+  custom_dir: ../../../overrides/
   favicon: assets/img/kora.ico
   logo: assets/img/kora-big.png
   language: ru
@@ -167,11 +167,17 @@ extra:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
   alternate:
     - name: Русский
-      link: /kora-docs/ru/
+      link: /kora-docs/v1/ru/
       lang: ru
     - name: English
-      link: /kora-docs/en/
+      link: /kora-docs/v1/en/
       lang: en
+  docs_version: v1
+  versions:
+    - name: V1
+      link: /kora-docs/v1/ru/
+    - name: V2
+      link: /kora-docs/v2/ru/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora
