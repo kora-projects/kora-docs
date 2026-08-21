@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
+description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, custom mappings, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @Mapping, JsonNullable, JacksonModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, custom mappings, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @Mapping, JsonNullable, JacksonModule."
 ---
 
 The `JSON` module creates efficient `JsonReader` and `JsonWriter` implementations for application classes at compile time and without using `Reflection` at runtime.
@@ -664,6 +664,35 @@ When written, `RawJson` is passed to the output `JSON` as is, so the value must 
 
     val dto = Dto("1", RawJson("""{"status":"ok"}"""))
     ```
+
+## Custom Field Mappers { #custom-field-mappers }
+
+To use specific mappers only for one field, annotate the field with `@Mapping`.
+The annotation can be repeated to specify both a `JsonReader` and a `JsonWriter`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(
+        @Mapping(HexReader.class)
+        @Mapping(HexWriter.class)
+        Integer code
+    ) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(
+        @Mapping(HexReader::class)
+        @Mapping(HexWriter::class)
+        val code: Int
+    )
+    ```
+
+Here, `HexReader` implements `JsonReader<Integer>` (`JsonReader<Int>` in `Kotlin`), and `HexWriter` implements the corresponding `JsonWriter`.
 
 ## Supported Types { #supported-types }
 
