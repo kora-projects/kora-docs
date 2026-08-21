@@ -5,6 +5,23 @@ hide:
   - navigation
 ---
 
+### 1.2.20
+
+Added:
+
+- Added simple `Either#fold` method for more func cases
+
+Fixed:
+
+- Fixed use strict boolean parsing for Forms in OpenAPI generator
+- Fixed client writes multipart form arrays as repeated same-named parts in OpenAPI generator
+- Fixed generate custom request mappers for non-standard body content-types in OpenAPI
+- Fixed multipart form-data enum/model/primitive/array type handling in OpenAPI generator
+- Fixed Enum form import missing in OpenAPI
+- Fixed `ResilientConfigs` default predicate name
+- Fixed TagUtils fallback for manual split if possible in KSP
+- Fixed KSP listener with Headers + deserialization exception argument in Kafka
+
 ## 1.2.19
 
 Fixed:
