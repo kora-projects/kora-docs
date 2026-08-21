@@ -20,7 +20,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.19")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.20")
         }
     }
     ```
@@ -40,7 +40,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     ```groovy
     buildscript {
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:1.2.19")
+            classpath("ru.tinkoff.kora:openapi-generator:1.2.20")
         }
     }
     ```
