@@ -2344,6 +2344,62 @@
             font-weight: 600;
         }
         .ai-skill-path { color: var(--soft); }
+
+        /* docs learning demo: work line + rich answer card */
+        .ai-work .ai-work-label { color: var(--soft); font-style: italic; }
+        .ai-work .ai-spin { color: var(--green); }
+
+        .ai-answer {
+            flex: 1;
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-left: 3px solid rgba(80, 216, 144, 0.55);
+            border-radius: 0 7px 7px 0;
+            padding: 12px 14px 4px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .ai-answer p { margin: 0 0 9px; color: #e8e3d9; line-height: 1.6; }
+        .ai-answer p code {
+            color: var(--brand-strong);
+            background: rgba(255, 176, 46, 0.1);
+            padding: 0 3px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .ai-answer em { color: var(--green); font-style: normal; }
+        .ai-answer pre {
+            margin: 0 0 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            overflow-x: auto;
+        }
+        .ai-answer pre code { color: #d7e0ea; font-size: 12px; line-height: 1.55; }
+        .ai-plan { margin: 0 0 9px; padding-left: 20px; }
+        .ai-plan li { margin: 0 0 7px; color: #e8e3d9; line-height: 1.55; }
+        .ai-plan li strong { color: var(--green); }
+        .ai-plan li code {
+            color: var(--brand-strong);
+            background: rgba(255, 176, 46, 0.1);
+            padding: 0 3px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .ai-learn-hint {
+            display: inline-block;
+            margin-top: 16px;
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .ai-learn-intro {
+            margin: 0 0 14px;
+            color: var(--soft);
+            font-size: 13px;
+            line-height: 1.6;
+        }
         .ai-diff-add { color: var(--green); }
         .ai-diff-del { color: var(--red); font-weight: 600; }
         .ai-muted { color: var(--soft); }
@@ -2872,33 +2928,51 @@
         </section>
 
         <section class="section">
-            <div class="interest-band docs-band">
-                <div>
-                    <small>Learn by example</small>
-                    <h2>Docs without the bloat.</h2>
-                    <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples&mdash;no 40-tab detective work required. There is also <a href="https://github.com/kora-projects/kora-skills">kora-skills</a>, an official AI skill that makes working with Kora even easier.</p>
-                    <div class="hero-note docs-stats">
-                        <div class="metric">
-                            <strong>95%+</strong>
-                            <span>functionality documented</span>
+            <details class="ai-band docs-detail">
+                <summary class="interest-band docs-band ai-summary">
+                    <div>
+                        <small>Learn by example</small>
+                        <h2>Docs without the bloat.</h2>
+                        <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples&mdash;no 40-tab detective work required. There is also <a href="https://github.com/kora-projects/kora-skills">kora-skills</a>, an official AI skill that makes working with Kora even easier.</p>
+                        <div class="hero-note docs-stats">
+                            <div class="metric">
+                                <strong>95%+</strong>
+                                <span>functionality documented</span>
+                            </div>
+                            <div class="metric">
+                                <strong>39+</strong>
+                                <span>step-by-step guides</span>
+                            </div>
+                            <div class="metric">
+                                <strong>35+</strong>
+                                <span>module references</span>
+                            </div>
                         </div>
-                        <div class="metric">
-                            <strong>39+</strong>
-                            <span>step-by-step guides</span>
+                        <span class="ai-learn-hint">
+                            <span class="ai-toggle-open">&#9662; See how an AI agent teaches you Kora</span>
+                            <span class="ai-toggle-close">&#9652; Hide the walkthrough</span>
+                        </span>
+                    </div>
+                    <div class="docs-actions">
+                        <a class="button primary" href="/kora-docs/en/guides/getting-started/">Guides</a>
+                        <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
+                        <a class="button" href="/kora-docs/en/documentation/general/">Docs</a>
+                        <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
+                    </div>
+                </summary>
+                <div class="ai-reveal">
+                    <p class="ai-learn-intro">Learning Kora today can be as simple as installing the official kora-skills skill and asking your agent &mdash; it consults the skill, then teaches straight from the official guides and examples.</p>
+                    <div class="ai-demo" id="docs-demo">
+                        <div class="ai-demo-head">
+                            <span class="lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="ai-demo-title">claude&nbsp;code&nbsp;&mdash;&nbsp;learning-kora</span>
+                            <span class="ai-demo-model">Opus&nbsp;4.8</span>
+                            <button class="ai-demo-replay" type="button" hidden>&#8635;&nbsp;Replay</button>
                         </div>
-                        <div class="metric">
-                            <strong>35+</strong>
-                            <span>module references</span>
-                        </div>
+                        <div class="ai-demo-body" id="docs-demo-body" aria-live="polite"></div>
                     </div>
                 </div>
-                <div class="docs-actions">
-                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Guides</a>
-                    <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
-                    <a class="button" href="/kora-docs/en/documentation/general/">Docs</a>
-                    <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
-                </div>
-            </div>
+            </details>
         </section>
 
         <section class="section" id="modules">
@@ -3396,6 +3470,9 @@
             "Docs without the bloat.": "Документация без воды.",
             "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. А официальный нейро-навык",
             ", an official AI skill that makes working with Kora even easier.": ", делает работу с Kora еще проще.",
+            "▾ See how an AI agent teaches you Kora": "▾ Посмотрите, как ИИ-агент учит вас Kora",
+            "▴ Hide the walkthrough": "▴ Скрыть демонстрацию",
+            "Learning Kora today can be as simple as installing the official kora-skills skill and asking your agent — it consults the skill, then teaches straight from the official guides and examples.": "Учиться Kora сегодня можно просто: установите официальный навык kora-skills и задайте вопрос своему агенту — он сверяется с навыком и объясняет прямо по официальным руководствам и примерам.",
             "Kora Skills": "Kora Skills",
             "functionality documented": "функциональности задокументировано",
             "step-by-step guides": "пошаговых Руководств",
@@ -3716,9 +3793,9 @@
                 points: [
                     "The application graph is built and validated at compile time, so there is no runtime container, no classpath scanning, and no proxy magic to learn.",
                     "Where other frameworks offer several competing ways to solve the same problem, Kora ships one clear, well-supported path.",
-                    "HTTP handlers, repositories, and clients run on virtual threads from Java 21+, so blocking code stays straightforward to write and read.",
+                    "HTTP handlers, repositories, and clients run on virtual threads from Java 24+, so blocking code stays straightforward to write and read.",
                     "High concurrency comes from the platform's scheduler, not from reactive operators or callback chains layered on top of business logic.",
-                    "Thread-per-request semantics keep stack traces, debuggers, and profilers meaningful, and resource usage predictable under load."
+                    "Thread-per-connection semantics keep stack traces, debuggers, and profilers meaningful, and resource usage predictable under load."
                 ]
             },
             compiler: {
@@ -3858,9 +3935,9 @@
                 points: [
                     "Граф приложения строится и проверяется во время компиляции — не нужно изучать контейнер во время выполнения, сканирование пути классов или магию прокси.",
                     "Там, где другие фреймворки предлагают несколько конкурирующих способов решить одну задачу, Kora дает один понятный и поддерживаемый путь.",
-                    "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 21+, поэтому блокирующий код остается простым в написании и чтении.",
+                    "HTTP-обработчики, репозитории и клиенты работают на виртуальных потоках Java 24+, поэтому блокирующий код остается простым в написании и чтении.",
                     "Высокая конкурентность обеспечивается планировщиком платформы, а не реактивными операторами или цепочками колбэков поверх бизнес-логики.",
-                    "Модель «один поток на запрос» сохраняет осмысленность трассировок стека, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой."
+                    "Модель «один поток на соединение» сохраняет осмысленность трассировок стека, отладчиков и профилировщиков, а расход ресурсов предсказуем под нагрузкой."
                 ]
             },
             compiler: {
@@ -5642,21 +5719,12 @@ class ResilientService_AopProxy(
        Language-agnostic: the surrounding page translation walker skips it,
        so the transcript stays in the coding-agent's own English. */
     (() => {
-        const band = document.querySelector(".ai-band");
-        const demo = document.getElementById("ai-demo");
-        const body = document.getElementById("ai-demo-body");
-        if (!band || !demo || !body) return;
-
-        const replay = demo.querySelector(".ai-demo-replay");
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const scroll = () => { body.scrollTop = body.scrollHeight; };
+        const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
-        let token = 0;
-        let loopTimer = null;
-
-        /* --- realistic transcript ------------------------------------------ */
-        const SCRIPT = [
+        /* --- build / fix / iterate transcript (AI-agents section) --------- */
+        const BUILD_SCRIPT = [
             { t: "user", text: "build the checkout flow: an OrderService that charges the customer, emails a confirmation, loads the customer by id, and publishes an OrderPlaced event to Kafka", after: 6000 },
             { t: "think", text: "This is a Kora project. Before writing anything, let me check whether the repo ships a Kora skill I should follow for its conventions.", after: 900 },
             {
@@ -5812,8 +5880,119 @@ class ResilientService_AopProxy(
             { t: "say", text: "Green. Every one of those bugs — missing binding, ambiguous component, forgotten tag, wrong SQL placeholder, unused parameter, bad macro, dependency cycle, bad config — surfaced statically with the exact location. No reflection to trace, nothing to reproduce at runtime. That's the loop that makes Kora fast to iterate on, for a person or an agent.", after: 0 }
         ];
 
-        /* --- rendering ------------------------------------------------------ */
-        const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+        /* --- learn-with-an-agent transcript (docs section) ---------------- */
+        const EXPLAIN_HTML = `
+<p><strong>Kora</strong> is a compile-time JVM framework for Java and Kotlin. You declare components and their dependencies, and at compile time Kora generates a type-safe application graph &mdash; no runtime reflection.</p>
+<pre><code>@KoraApp
+public interface Application extends
+        HoconConfigModule, JsonModule,
+        LogbackModule, UndertowHttpServerModule {
+    static void main(String[] args) {
+        KoraApplication.run(ApplicationGraph::graph);
+    }
+}</code></pre>
+<p>Components join the graph with <code>@Component</code>; dependencies are plain constructor parameters &mdash; no field injection, no service locator:</p>
+<pre><code>@Component
+@HttpController
+public final class HelloController {
+    @HttpRoute(method = GET, path = "/hello")
+    public HttpServerResponse hello() {
+        return HttpServerResponse.of(200,
+            HttpBody.plaintext("Hello, Kora!"));
+    }
+}</code></pre>
+<p>On <code>./gradlew classes</code> Kora checks every dependency exists, isn't ambiguous, has no cycles, and the whole graph builds &mdash; so a DI mistake is a <em>compile error</em>, not a surprise after startup. Generated sources land in <code>build/generated/…</code>.</p>`;
+
+        const PLAN_HTML = `
+<p>Here's a lesson-by-lesson track for a Java developer (Kotlin is identical, with KSP instead of annotation processors). About 2&ndash;3 lessons a week; the running project is a small task REST service that gradually gains a database, an HTTP client, observability and tests.</p>
+<ol class="ai-plan">
+    <li><strong>Basics</strong> &mdash; <code>@KoraApp</code> &amp; the graph, <code>@Component</code> + constructor injection, <code>@Module</code>/<code>@Tag</code>, typed <code>@ConfigSource</code> (HOCON or YAML).</li>
+    <li><strong>HTTP API</strong> &mdash; <code>@HttpController</code>/<code>@HttpRoute</code> CRUD, <code>@Path</code>/<code>@Query</code>/<code>@Header</code> + body, <code>@Json</code> DTOs, declarative <code>@HttpClient</code>, OpenAPI.</li>
+    <li><strong>Data &amp; messaging</strong> &mdash; JDBC <code>@Repository</code>/<code>@Query</code>, transactions &amp; pooling, Flyway/Liquibase migrations, Kafka producer/consumer.</li>
+    <li><strong>Reliability</strong> &mdash; <code>@Retry</code>/<code>@Timeout</code>/<code>@CircuitBreaker</code>/<code>@Fallback</code>, caching, validation, scheduling.</li>
+    <li><strong>Observability</strong> &mdash; Logback + MDC, Micrometer/Prometheus metrics, OpenTelemetry tracing, readiness/liveness probes.</li>
+    <li><strong>Testing</strong> &mdash; <code>@KoraAppTest</code> graph tests, Testcontainers integration, black-box HTTP tests.</li>
+</ol>
+<p>Fast track to shipping REST services: 1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 7 &rarr; 8 &rarr; 11 &rarr; 13 &rarr; 18 &rarr; 20 &rarr; 23 &rarr; 24 &mdash; add the rest once that core feels comfortable.</p>`;
+
+        const LEARN_SCRIPT_EN = [
+            { t: "user", text: "@Kora 1.x  explain the Kora framework basics for a beginner", after: 5000 },
+            {
+                t: "skill", after: 1200,
+                out: '<span class="ai-branch">⎿</span>  Loaded <span class="ai-skill-name">Kora 1.x</span> beginner-teaching guidance\n'
+                    + "   Explanation stays aligned with the official Kora guides and examples."
+            },
+            { t: "work", label: "Reading the official Getting Started guide and examples…", done: "Consulted Kora guides + examples", wait: 2400, after: 600 },
+            { t: "say", text: "Here are the basics, straight from the official guides:", after: 500 },
+            { t: "answer", html: EXPLAIN_HTML, after: 900 },
+            { t: "user", text: "can you build me a lesson-by-lesson learning plan?", after: 4500 },
+            { t: "work", label: "Assembling a track from the current official guides…", done: "Built lesson sequence · Java · beginner", wait: 2000, after: 600 },
+            { t: "answer", html: PLAN_HTML, after: 900 },
+            { t: "say", text: "Start with Getting Started, then Dependency Injection Introduction — the rest of the track builds on those two. Install kora-skills and your agent can walk you through each lesson against the real code.", after: 0 }
+        ];
+
+        const EXPLAIN_HTML_RU = `
+<p><strong>Kora</strong> — JVM-фреймворк для Java и Kotlin, построенный вокруг генерации кода во время компиляции. Вы описываете компоненты и их зависимости, а Kora на этапе компиляции создаёт типобезопасный граф приложения &mdash; без рефлексии во время выполнения.</p>
+<pre><code>@KoraApp
+public interface Application extends
+        HoconConfigModule, JsonModule,
+        LogbackModule, UndertowHttpServerModule {
+    static void main(String[] args) {
+        KoraApplication.run(ApplicationGraph::graph);
+    }
+}</code></pre>
+<p>Компоненты попадают в граф через <code>@Component</code>, а зависимости — это обычные параметры конструктора: без внедрения в поля и без сервис-локатора:</p>
+<pre><code>@Component
+@HttpController
+public final class HelloController {
+    @HttpRoute(method = GET, path = "/hello")
+    public HttpServerResponse hello() {
+        return HttpServerResponse.of(200,
+            HttpBody.plaintext("Hello, Kora!"));
+    }
+}</code></pre>
+<p>При <code>./gradlew classes</code> Kora проверяет, что каждая зависимость существует, не является неоднозначной, не образует циклов и весь граф собирается &mdash; поэтому ошибка внедрения зависимостей становится <em>ошибкой компиляции</em>, а не сюрпризом после запуска. Сгенерированные исходники появляются в <code>build/generated/…</code>.</p>`;
+
+        const PLAN_HTML_RU = `
+<p>Вот программа обучения по урокам для Java-разработчика (для Kotlin всё то же самое, но вместо обработчиков аннотаций используется KSP). Примерно 2&ndash;3 урока в неделю; сквозной проект — небольшой REST-сервис задач, который постепенно получает базу данных, HTTP-клиент, наблюдаемость и тесты.</p>
+<ol class="ai-plan">
+    <li><strong>Основы</strong> &mdash; <code>@KoraApp</code> и граф, <code>@Component</code> + внедрение через конструктор, <code>@Module</code>/<code>@Tag</code>, типизированная <code>@ConfigSource</code> (HOCON или YAML).</li>
+    <li><strong>HTTP API</strong> &mdash; CRUD на <code>@HttpController</code>/<code>@HttpRoute</code>, <code>@Path</code>/<code>@Query</code>/<code>@Header</code> и тело запроса, DTO с <code>@Json</code>, декларативный <code>@HttpClient</code>, OpenAPI.</li>
+    <li><strong>Данные и сообщения</strong> &mdash; JDBC <code>@Repository</code>/<code>@Query</code>, транзакции и пул соединений, миграции Flyway/Liquibase, издатель и потребитель Kafka.</li>
+    <li><strong>Надёжность</strong> &mdash; <code>@Retry</code>/<code>@Timeout</code>/<code>@CircuitBreaker</code>/<code>@Fallback</code>, кеширование, валидация, планировщик.</li>
+    <li><strong>Наблюдаемость</strong> &mdash; Logback и MDC, метрики Micrometer/Prometheus, трассировка OpenTelemetry, пробы готовности и живучести.</li>
+    <li><strong>Тестирование</strong> &mdash; тесты графа через <code>@KoraAppTest</code>, интеграционные тесты на Testcontainers, тесты HTTP по принципу чёрного ящика.</li>
+</ol>
+<p>Быстрый путь к рабочим REST-сервисам: 1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 7 &rarr; 8 &rarr; 11 &rarr; 13 &rarr; 18 &rarr; 20 &rarr; 23 &rarr; 24 &mdash; остальные темы подключайте, когда освоите это ядро.</p>`;
+
+        const LEARN_SCRIPT_RU = [
+            { t: "user", text: "@Kora 1.x  объясни основы фреймворка Kora для новичка", after: 5000 },
+            {
+                t: "skill", after: 1200,
+                out: '<span class="ai-branch">⎿</span>  Загружено обучающее руководство <span class="ai-skill-name">Kora 1.x</span> для новичков\n'
+                    + "   Объяснение соответствует официальным руководствам и примерам Kora."
+            },
+            { t: "work", label: "Читаю официальное руководство Getting Started и примеры…", done: "Сверился с руководствами и примерами Kora", wait: 2400, after: 600 },
+            { t: "say", text: "Вот основы — прямо из официальных руководств:", after: 500 },
+            { t: "answer", html: EXPLAIN_HTML_RU, after: 900 },
+            { t: "user", text: "можешь составить план обучения по урокам?", after: 4500 },
+            { t: "work", label: "Собираю программу по текущим официальным руководствам…", done: "Составил последовательность уроков · Java · новичок", wait: 2000, after: 600 },
+            { t: "answer", html: PLAN_HTML_RU, after: 900 },
+            { t: "say", text: "Начните с Getting Started, затем Dependency Injection Introduction — остальная программа строится на этих двух. Установите kora-skills, и агент проведёт вас по каждому уроку на реальном коде.", after: 0 }
+        ];
+
+        /* --- reusable player: one instance per demo ----------------------- */
+        function createKoraDemo(demoId, script) {
+            const demo = document.getElementById(demoId);
+            if (!demo) return;
+            const body = demo.querySelector(".ai-demo-body");
+            const band = demo.closest("details");
+            if (!body || !band) return;
+
+            const replay = demo.querySelector(".ai-demo-replay");
+            const scroll = () => { body.scrollTop = body.scrollHeight; };
+            let token = 0;
+            let loopTimer = null;
 
         const block = (cls) => {
             const el = document.createElement("div");
@@ -5926,6 +6105,43 @@ class ResilientService_AopProxy(
             scroll();
         }
 
+        async function evWork(ev, myToken) {
+            const el = block("ai-tool ai-work");
+            const line = document.createElement("div");
+            line.className = "ai-line";
+            line.innerHTML = '<span class="ai-dot ai-spin">✻</span> <span class="ai-work-label">' + esc(ev.label) + "</span>";
+            el.appendChild(line);
+            scroll();
+            await sleep(ev.wait || 1600);
+            if (myToken !== token) return;
+            line.innerHTML = '<span class="ai-dot" style="color:var(--green)">✓</span> <span class="ai-muted">' + esc(ev.done) + "</span>";
+            scroll();
+        }
+
+        async function evAnswer(ev, myToken) {
+            const el = block("ai-assistant");
+            const dot = document.createElement("span");
+            dot.className = "ai-dot";
+            dot.textContent = "⏺";
+            el.appendChild(dot);
+            const card = document.createElement("div");
+            card.className = "ai-answer";
+            el.appendChild(card);
+            scroll();
+            const tmp = document.createElement("div");
+            tmp.innerHTML = ev.html;
+            const nodes = Array.from(tmp.childNodes);
+            for (const n of nodes) {
+                if (myToken !== token) return;
+                card.appendChild(n);
+                if (n.nodeType === 1) {
+                    n.style.animation = "aiReveal 260ms ease";
+                    scroll();
+                    await sleep(reduce ? 60 : 260);
+                }
+            }
+        }
+
         async function runEvent(ev, myToken) {
             if (ev.t === "user") return evUser(ev, myToken);
             if (ev.t === "say") return evSay(ev, myToken);
@@ -5933,17 +6149,20 @@ class ResilientService_AopProxy(
             if (ev.t === "cmd") return evCmd(ev, myToken);
             if (ev.t === "diff") return evDiff(ev);
             if (ev.t === "skill") return evSkill(ev, myToken);
+            if (ev.t === "work") return evWork(ev, myToken);
+            if (ev.t === "answer") return evAnswer(ev, myToken);
         }
 
         async function play() {
             clearTimeout(loopTimer);
             token += 1;
             const myToken = token;
+            const seq = typeof script === "function" ? script() : script;
             body.innerHTML = "";
             if (replay) replay.hidden = true;
-            for (let i = 0; i < SCRIPT.length; i++) {
+            for (let i = 0; i < seq.length; i++) {
                 if (myToken !== token) return;
-                const ev = SCRIPT[i];
+                const ev = seq[i];
                 await runEvent(ev, myToken);
                 if (myToken !== token) return;
                 await sleep(reduce ? 160 : (ev.after != null ? ev.after : 560));
@@ -5955,16 +6174,22 @@ class ResilientService_AopProxy(
             loopTimer = setTimeout(() => { if (band.open) play(); }, 15000);
         }
 
-        band.addEventListener("toggle", () => {
-            if (band.open) {
-                play();
-            } else {
-                /* cancel any running playback and the pending auto-retry */
-                token += 1;
-                clearTimeout(loopTimer);
-            }
-        });
-        if (replay) replay.addEventListener("click", () => { play(); });
+            band.addEventListener("toggle", () => {
+                if (band.open) {
+                    play();
+                } else {
+                    /* cancel any running playback and the pending auto-retry */
+                    token += 1;
+                    clearTimeout(loopTimer);
+                }
+            });
+            if (replay) replay.addEventListener("click", () => { play(); });
+            /* restart in the new language if the visitor switches while open */
+            window.addEventListener("kora:languagechange", () => { if (band.open) play(); });
+        }
+
+        createKoraDemo("ai-demo", BUILD_SCRIPT);
+        createKoraDemo("docs-demo", () => (window.koraLanguage === "ru" ? LEARN_SCRIPT_RU : LEARN_SCRIPT_EN));
     })();
 </script>
 </body>
