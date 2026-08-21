@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
+description: "Explains Kora JSON reader and writer generation, field requirements, naming, ignores, custom mappings, serialization levels, JsonNullable, sealed types, and Jackson integration. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @Mapping, JsonNullable, JacksonModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, JsonNullable, JacksonModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora JSON reader and writer generation, field requirements, naming, ignores, custom mappings, serialization levels, JsonNullable, sealed types, and Jackson integration; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @Mapping, JsonNullable, JacksonModule."
 ---
 
 Модуль `JSON` создает эффективные реализации `JsonReader` и `JsonWriter` для классов приложения во время компиляции и без использования `Reflection` во время выполнения.
@@ -664,6 +664,35 @@ Sealed-типы поддерживаются двумя аннотациями:
 
     val dto = Dto("1", RawJson("""{"status":"ok"}"""))
     ```
+
+## Пользовательские преобразователи полей { #custom-field-mappers }
+
+Чтобы использовать конкретные преобразователи только для одного поля, пометьте поле аннотацией `@Mapping`.
+Аннотацию можно повторить, чтобы указать одновременно `JsonReader` и `JsonWriter`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Json
+    public record Dto(
+        @Mapping(HexReader.class)
+        @Mapping(HexWriter.class)
+        Integer code
+    ) { }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Json
+    data class Dto(
+        @Mapping(HexReader::class)
+        @Mapping(HexWriter::class)
+        val code: Int
+    )
+    ```
+
+Здесь `HexReader` реализует `JsonReader<Integer>` (`JsonReader<Int>` в `Kotlin`), а `HexWriter` — соответствующий `JsonWriter`.
 
 ## Поддерживаемые типы { #supported-types }
 

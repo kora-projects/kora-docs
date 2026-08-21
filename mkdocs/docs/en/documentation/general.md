@@ -138,8 +138,8 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.19"
-        implementation platform("ru.tinkoff.kora:kora-parent:1.2.19")
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.20"
+        implementation platform("ru.tinkoff.kora:kora-parent:1.2.20")
     }
     ```
 
@@ -165,8 +165,8 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors:1.2.19")
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.19"))
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.20")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.20"))
     }
     ```
 
@@ -199,8 +199,8 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.19"
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.19"))
+        annotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.20"
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.20"))
     }
     ```
 
@@ -210,8 +210,8 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors:1.2.19")
-        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.19"))
+        ksp("ru.tinkoff.kora:symbol-processors:1.2.20")
+        implementation(platform("ru.tinkoff.kora:kora-parent:1.2.20"))
     }
     ```
 
