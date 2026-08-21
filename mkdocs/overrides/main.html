@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block header %}
+{{ super() }}
+{% include "partials/version-selector.html" %}
+{% endblock %}
+
 {% block extrahead %}
 {% set title = config.site_name %}
 {% set titleConfig = config.site_name %}
