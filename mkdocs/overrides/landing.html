@@ -1465,7 +1465,7 @@
             transform-origin: bottom center;
         }
 
-        #startup.is-running .startup-column {
+        .startup-chart.is-running .startup-column {
             animation: startup-grow var(--startup-duration) linear forwards;
         }
 
@@ -1595,6 +1595,52 @@
         .startup-caption-break {
             display: block;
             white-space: nowrap;
+        }
+
+        /* startup / build chart switcher */
+        .startup-toggle {
+            display: flex;
+            gap: 6px;
+            padding: 16px 18px 0;
+        }
+
+        .startup-tab {
+            padding: 7px 15px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .startup-tab:hover {
+            color: var(--text);
+            border-color: rgba(255, 176, 46, 0.42);
+        }
+
+        .startup-tab.is-active {
+            color: #1a1509;
+            background: linear-gradient(135deg, var(--brand-strong), var(--brand));
+            border-color: transparent;
+        }
+
+        .startup-view[hidden] {
+            display: none;
+        }
+
+        .startup-view-title {
+            margin: 0;
+            padding: 18px 34px 0;
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .startup-view-title .startup-mult {
+            color: var(--brand-strong);
         }
 
         .architecture-panel {
@@ -2699,7 +2745,7 @@
         <nav class="nav" aria-label="Primary navigation">
             <a class="brand" href="/kora-docs/">
                 <span class="brand-icon" aria-hidden="true">K</span>
-                <span class="brand-mark">Kora <span class="brand-version">1.2.5</span></span>
+                <span class="brand-mark">Kora <span class="brand-version">2.0.0.RC1</span></span>
             </a>
             <div class="nav-links" aria-label="Page sections">
                 <a href="#philosophy">Principles</a>
@@ -2728,7 +2774,7 @@
                     <div class="hero-actions" id="start">
                         <a class="button primary" href="/kora-docs/en/guides/getting-started/">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
-                        <div class="command" aria-label="Gradle dependency example"><code><span>ru.tinkoff.kora</span>:kora-parent:1.2.5</code></div>
+                        <div class="command" aria-label="Gradle dependency example"><code><span>ru.tinkoff.kora</span>:kora-bom:2.0.0.RC1</code></div>
                     </div>
                     <div class="hero-note" aria-label="Framework highlights">
                         <div class="metric">
@@ -3131,28 +3177,60 @@
                 <h2>Fastest to boot,<br>fastest to serve.</h2>
                 <p class="section-lead">Fast readiness helps horizontal scaling absorb peak load faster and thin framework internals avoids heavy startup SLA spikes during rolling deployments. Lower is better.</p>
             </div>
-            <div class="startup-panel" aria-label="Application startup time comparison">
-                <div class="startup-chart">
-                    <div class="startup-bar is-kora" style="--startup-score: 16.3; --startup-duration: 4890ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
-                        <span class="startup-ready">Serving traffic</span>
-                        <span class="startup-value-wrap"><span class="startup-value" data-target="4.89" data-duration="4890">0.00s</span></span>
-                        <span class="startup-column"></span>
-                        <span class="startup-label">Kora</span>
+            <div class="startup-panel" aria-label="Kora startup and build time comparison">
+                <div class="startup-toggle" role="tablist" aria-label="Choose benchmark">
+                    <button type="button" class="startup-tab is-active" data-chart="boot" aria-selected="true">Startup &amp; readiness</button>
+                    <button type="button" class="startup-tab" data-chart="build" aria-selected="false">Build time</button>
+                </div>
+
+                <div class="startup-view" data-chart="boot">
+                    <div class="startup-chart">
+                        <div class="startup-bar is-kora" style="--startup-score: 16.3; --startup-duration: 4890ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
+                            <span class="startup-ready">Serving traffic</span>
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="4.89" data-duration="4890">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Kora</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 70.4; --startup-duration: 21130ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="21.13" data-duration="21130">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Heavy Optimized</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 88.4; --startup-duration: 26530ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="26.53" data-duration="26530">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Stock</span>
+                        </div>
                     </div>
-                    <div class="startup-bar" style="--startup-score: 70.4; --startup-duration: 21130ms; --startup-row: 1; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
-                        <span class="startup-value-wrap"><span class="startup-value" data-target="21.13" data-duration="21130">0.00s</span></span>
-                        <span class="startup-column"></span>
-                        <span class="startup-label">Spring Heavy Optimized</span>
-                    </div>
-                    <div class="startup-bar" style="--startup-score: 88.4; --startup-duration: 26530ms; --startup-row: 2; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
-                        <span class="startup-value-wrap"><span class="startup-value" data-target="26.53" data-duration="26530">0.00s</span></span>
-                        <span class="startup-column"></span>
-                        <span class="startup-label">Spring Stock</span>
+                    <div class="startup-caption">
+                        <span>10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.</span>
+                        <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
                     </div>
                 </div>
-                <div class="startup-caption">
-                    <span>10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.</span>
-                    <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
+
+                <div class="startup-view" data-chart="build" hidden>
+                    <div class="startup-chart">
+                        <div class="startup-bar is-kora" style="--startup-score: 54.8; --startup-duration: 11630ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
+                            <span class="startup-ready">Artifact built</span>
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="11.63" data-duration="11630">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Kora</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 43.9; --startup-duration: 9330ms; --startup-row: 1; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="9.33" data-duration="9330">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 88.0; --startup-duration: 18690ms; --startup-row: 2; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="18.69" data-duration="18690">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Heavy Optimized</span>
+                        </div>
+                    </div>
+                    <div class="startup-caption">
+                        <span>10x PetClinic services with full production integrations. Clean artifact build: ./gradlew clean distTar (Kora) / bootJar (Spring — layered jar in the Docker image), run with --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.</span>
+                        <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -3430,6 +3508,10 @@
             "10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.": "10x PetClinic-сервисы с полным набором боевых интеграций в Docker-контейнере: 1 CPU, 1 GB памяти, запуск и готовность к обслуживанию.",
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
             "(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).": "(схож с EPYC 7763 согласно GeekBench 5 Single-Core Benchmark).",
+            "Startup & readiness": "Запуск и готовность",
+            "Build time": "Время сборки",
+            "Artifact built": "Артефакт собран",
+            "10x PetClinic services with full production integrations. Clean artifact build: ./gradlew clean distTar (Kora) / bootJar (Spring — layered jar in the Docker image), run with --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.": "10x PetClinic-сервисов с полным набором боевых интеграций. Чистая сборка артефакта: ./gradlew clean distTar (Kora) / bootJar (Spring — послойный jar в Docker-образе), запуск с --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.",
             "Kora is based.": "База по Kora.",
             "Base principals of Kora engineering decisions keeps services transparent, fast to start, easy to maintain.": "Базовые принципы инженерных решений Kora делают сервисы прозрачными, быстрыми на старте и простыми в поддержке.",
             "Compile-time dependency injection": "Внедрение зависимостей во время компиляции",
@@ -4692,51 +4774,65 @@ BUILD FAILED in 1s`
     })();
 
     (() => {
-        const values = Array.from(document.querySelectorAll(".startup-value[data-target]"));
-        if (values.length === 0) {
+        const section = document.querySelector("#startup");
+        if (!section) {
+            return;
+        }
+        const charts = Array.from(section.querySelectorAll(".startup-chart"));
+        if (charts.length === 0) {
             return;
         }
 
-        const maxDuration = Math.max(...values.map((item) => Number(item.dataset.duration) || 0));
-        const section = document.querySelector("#startup");
-        const koraBar = document.querySelector(".startup-bar.is-kora");
-        let started = false;
-        let koraReady = false;
+        /* one animation at a time across both charts */
+        let playToken = 0;
 
-        const burstKora = () => {
+        const burstKora = (koraBar) => {
             if (!koraBar) {
                 return;
             }
-
             const timings = [0, 70, 128, 178, 226, 268];
             timings.forEach((delay) => {
                 window.setTimeout(() => {
                     const bolt = document.createElement("span");
                     bolt.className = "startup-bolt";
-
                     bolt.style.setProperty("--bolt-left", `${22 + Math.random() * 58}%`);
                     bolt.style.setProperty("--bolt-top", `${28 + Math.random() * 42}%`);
                     bolt.style.setProperty("--bolt-width", `${18 + Math.random() * 34}px`);
                     bolt.style.setProperty("--bolt-height", `${7 + Math.random() * 15}px`);
                     bolt.style.setProperty("--bolt-rotate", `${-36 + Math.random() * 72}deg`);
-
                     koraBar.appendChild(bolt);
                     window.setTimeout(() => bolt.remove(), 520);
                 }, delay);
             });
         };
 
-        const run = () => {
-            if (started) {
+        const playChart = (chartEl) => {
+            const values = Array.from(chartEl.querySelectorAll(".startup-value[data-target]"));
+            if (values.length === 0) {
                 return;
             }
-            started = true;
-            section?.classList.add("is-running");
+            const maxDuration = Math.max(...values.map((item) => Number(item.dataset.duration) || 0));
+            const koraBar = chartEl.querySelector(".startup-bar.is-kora");
+            let koraReady = false;
 
+            /* reset bars, then restart the CSS column-grow via reflow */
+            chartEl.querySelectorAll(".startup-bar").forEach((bar) => {
+                bar.classList.remove("is-ready");
+                bar.style.setProperty("--startup-progress", 0);
+            });
+            values.forEach((item) => { item.textContent = "0.00s"; });
+            chartEl.classList.remove("is-running");
+            void chartEl.offsetWidth;
+            chartEl.classList.add("is-running");
+
+            playToken += 1;
+            const myToken = playToken;
             const start = performance.now();
             const tick = (now) => {
+                if (myToken !== playToken) {
+                    return;
+                }
                 const elapsed = now - start;
-
                 values.forEach((item) => {
                     const target = Number(item.dataset.target);
                     const duration = Number(item.dataset.duration) || maxDuration;
@@ -4747,16 +4843,48 @@ BUILD FAILED in 1s`
                     if (!koraReady && item.closest(".startup-bar")?.classList.contains("is-kora") && progress >= 1) {
                         koraReady = true;
                         koraBar?.classList.add("is-ready");
-                        burstKora();
+                        burstKora(koraBar);
                     }
                 });
-
                 if (elapsed < maxDuration) {
                     window.requestAnimationFrame(tick);
                 }
             };
-
             window.requestAnimationFrame(tick);
+        };
+
+        /* tab switching */
+        const views = Array.from(section.querySelectorAll(".startup-view"));
+        const tabs = Array.from(section.querySelectorAll(".startup-tab"));
+        const chartFor = (key) =>
+            section.querySelector(`.startup-view[data-chart="${key}"] .startup-chart`);
+
+        const showChart = (key, replay) => {
+            views.forEach((view) => { view.hidden = view.dataset.chart !== key; });
+            tabs.forEach((tab) => {
+                const active = tab.dataset.chart === key;
+                tab.classList.toggle("is-active", active);
+                tab.setAttribute("aria-selected", active ? "true" : "false");
+            });
+            if (replay) {
+                const chart = chartFor(key);
+                if (chart) playChart(chart);
+            }
+        };
+
+        tabs.forEach((tab) => {
+            tab.addEventListener("click", () => showChart(tab.dataset.chart, true));
+        });
+
+        /* play the default (startup) chart the first time the section is seen */
+        let started = false;
+        const run = () => {
+            if (started) {
+                return;
+            }
+            started = true;
+            const boot = chartFor("boot");
+            if (boot) playChart(boot);
         };
 
         if ("IntersectionObserver" in window) {
@@ -4766,16 +4894,14 @@ BUILD FAILED in 1s`
                     run();
                 }
             }, { threshold: 0.28 });
-            if (section) {
-                observer.observe(section);
-                window.requestAnimationFrame(() => {
-                    const rect = section.getBoundingClientRect();
-                    if (rect.top < window.innerHeight && rect.bottom > 0) {
-                        observer.disconnect();
-                        run();
-                    }
-                });
-            }
+            observer.observe(section);
+            window.requestAnimationFrame(() => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    observer.disconnect();
+                    run();
+                }
+            });
         } else {
             run();
         }
