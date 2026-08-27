@@ -977,6 +977,88 @@ or you can change it manually through `java.sql.Connection` before executing que
 connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 ```
 
+### Multi-repository Transactions
+
+When your application uses multiple repositories, you can combine their operations in a single transaction.
+All repositories that `extend JdbcRepository` share the same `JdbcConnectionFactory` (unless a separate `@Tag` for a different database is specified).
+`JdbcConnectionFactory` stores the connection in the `Context` of the current thread.
+When entering `inTx`, the connection is saved to the context.
+Any `@Query` method of any repository called inside `inTx` checks the context and uses the existing connection instead of creating a new one.
+Thus, all operations in the lambda execute on the same connection and in the same transaction.
+
+If any of the calls throws an exception — all changes are rolled back.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface OrderRepository extends JdbcRepository {
+
+        @Query("INSERT INTO orders(customer_id, total) VALUES (:customerId, :total)")
+        UpdateCount create(long customerId, long total);
+    }
+
+    @Repository
+    public interface StockRepository extends JdbcRepository {
+
+        @Query("UPDATE stock SET quantity = quantity - :quantity WHERE product_id = :productId")
+        UpdateCount reserve(long productId, long quantity);
+    }
+
+    @Component
+    public class OrderService {
+
+        private final OrderRepository orderRepo;
+        private final StockRepository stockRepo;
+
+        public OrderService(OrderRepository orderRepo, StockRepository stockRepo) {
+            this.orderRepo = orderRepo;
+            this.stockRepo = stockRepo;
+        }
+
+        public void placeOrder(long customerId, long productId, long total, long quantity) {
+            orderRepo.getJdbcConnectionFactory().inTx(() -> {
+                stockRepo.reserve(productId, quantity);
+                orderRepo.create(customerId, total);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface OrderRepository : JdbcRepository {
+
+        @Query("INSERT INTO orders(customer_id, total) VALUES (:customerId, :total)")
+        fun create(customerId: Long, total: Long): UpdateCount
+    }
+
+    @Repository
+    interface StockRepository : JdbcRepository {
+
+        @Query("UPDATE stock SET quantity = quantity - :quantity WHERE product_id = :productId")
+        fun reserve(productId: Long, quantity: Long): UpdateCount
+    }
+
+    @Component
+    class OrderService(
+        private val orderRepo: OrderRepository,
+        private val stockRepo: StockRepository
+    ) {
+
+        fun placeOrder(customerId: Long, productId: Long, total: Long, quantity: Long) {
+            orderRepo.jdbcConnectionFactory.inTx {
+                stockRepo.reserve(productId, quantity)
+                orderRepo.create(customerId, total)
+            }
+        }
+    }
+    ```
+
+**Limitation:** If repositories are connected to different databases (via `@Tag(OtherDatabase.class)`), they use different `JdbcConnectionFactory` instances — the transaction does NOT propagate between them.
+
 ### Manual Connection Management { #connection }
 
 If a query needs more complex logic or queries outside a repository, you can use `java.sql.Connection`.
