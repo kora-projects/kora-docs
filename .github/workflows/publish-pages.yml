@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - 'master'
+      - 'feature/homepage'
     paths:
       - 'mkdocs/**'
       - '.github/workflows/**'
