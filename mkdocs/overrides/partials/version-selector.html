@@ -1,0 +1,43 @@
+{#-
+  Documentation version switcher.
+
+  Rendered in the Material header next to the language selector. Both the option
+  list and the currently selected entry come from mkdocs.yml, so a new docs
+  version only needs `extra.versions` + `extra.docs_version` in each config:
+
+    extra:
+      docs_version: v2
+      versions:
+        - name: V1
+          link: /kora-docs/v1/en/
+        - name: V2
+          link: /kora-docs/v2/en/
+
+  `link` is already language-scoped in every config, so switching version keeps
+  the reader in their current language. Styling lives in
+  overrides/assets/css/extra.css under `.kora-version-switcher`.
+-#}
+{% if config.extra.versions %}
+  {% set current = (config.extra.docs_version | default('', true)) | lower %}
+  <div class="kora-version-switcher">
+    <label class="md-visually-hidden" for="kora-version-select">
+      {{ lang.t("select.version") | default("Select version", true) }}
+    </label>
+    <select id="kora-version-select"
+            name="kora-version-select"
+            aria-label="{{ lang.t('select.version') | default('Select version', true) }}"
+            onchange="if (this.value) { window.location.href = this.value; }">
+      {% for version in config.extra.versions %}
+        <option value="{{ version.link }}"{% if (version.name | lower) == current %} selected{% endif %}>
+          {{ version.name }}
+        </option>
+      {% endfor %}
+    </select>
+    {#- A <select> needs JS to navigate; keep the versions reachable without it. -#}
+    <noscript>
+      {% for version in config.extra.versions %}
+        <a href="{{ version.link }}">{{ version.name }}</a>{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </noscript>
+  </div>
+{% endif %}
