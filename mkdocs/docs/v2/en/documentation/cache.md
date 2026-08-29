@@ -1,13 +1,15 @@
 ---
-description: "Explains Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures. Use when working with @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+description: "Explains Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, execution modes and supported method signatures. Use when working with @Cache, @Cacheable, @CachePut, @CacheInvalidate, @CacheInvalidateAll, @CacheMode, CaffeineCacheModule, LettuceRedisCacheModule, CacheKeyMapper, LoadableCache."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, and async cache signatures; key triggers include @Cache, @Cacheable, @CachePut, @CacheInvalidate, CaffeineCacheModule, RedisCacheModule, CacheKeyMapper, LoadableCache."
+  use_when: "Use this file for Kora docs or implementation questions about Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, execution modes and supported method signatures; key triggers include @Cache, @Cacheable, @CachePut, @CacheInvalidate, @CacheInvalidateAll, CacheMode, CaffeineCacheModule, LettuceRedisCacheModule, RedisCacheClient, CacheKeyMapper, LoadableCache."
 ---
 
 The module provides typed caches for storing computation results and reusable data,
 so expensive operations do not have to run on every access. A cache can be used declaratively through method annotations
 or imperatively through an injected interface, with local `Caffeine` and external `Redis` available as storage backends.
 Local `Caffeine` is useful for fast in-process storage, while `Redis` is suitable for a shared cache used by several application instances.
+
+The whole cache contract is synchronous: `Cache<K, V>` returns values directly, and cache aspects are applied to synchronous methods.
 
 For a step-by-step walkthrough before the reference details, see [Cache](../guides/cache.md) and [Multi-Level Cache](../guides/cache-multi-level.md).
 
@@ -21,7 +23,7 @@ Implementation based on the [Caffeine](https://github.com/ben-manes/caffeine) li
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:cache-caffeine"
+    implementation "io.koraframework:cache-caffeine"
     ```
 
     Module:
@@ -34,7 +36,7 @@ Implementation based on the [Caffeine](https://github.com/ben-manes/caffeine) li
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:cache-caffeine")
+    implementation("io.koraframework:cache-caffeine")
     ```
 
     Module:
@@ -47,39 +49,85 @@ Implementation based on the [Caffeine](https://github.com/ben-manes/caffeine) li
 
 Example of a complete configuration for a cache at `mycache.config`; parameters are described in the `CaffeineCacheConfig` class (example values or default values are shown):
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     mycache {
         config {
-            expireAfterWrite = "10s" //(1)!
-            expireAfterAccess = "10s" //(2)!
-            initialSize = 10 //(3)!
-            maximumSize = 100000 //(4)!
+            enabled = true //(1)!
+            expireAfterWrite = "10s" //(2)!
+            expireAfterAccess = "10s" //(3)!
+            initialSize = 10 //(4)!
+            maximumSize = 100000 //(5)!
+            telemetry {
+                logging {
+                    enabled = false //(6)!
+                }
+                metrics {
+                    enabled = false //(7)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
+                    tags = { //(9)!
+                        "key1" = "value1"
+                    }
+                }
+                tracing {
+                    enabled = true //(10)!
+                    attributes = { //(11)!
+                        "key1" = "value1"
+                    }
+                }
+            }
         }
     }
     ```
 
-    1.  Time after which the value is removed from the cache; counted after the value is written (default not specified, optional)
-    2.  Time after which the value is removed from the cache; counted after the value is read (default not specified, optional)
-    3.  Initial cache size, helps avoid resizing when the number of values grows quickly (default not specified, optional)
-    4.  Maximum cache size; when the boundary is reached **or slightly earlier**, [least relevant values](https://blog.skillfactory.ru/glossary/lru/) are evicted (default: `100000`)
+    1.  Enables the cache; when `false` every cache operation becomes a no-op and `computeIfAbsent` always calls the loader (default: `true`)
+    2.  Time after which the value is removed from the cache; counted after the value is written (default not specified, optional)
+    3.  Time after which the value is removed from the cache; counted after the value is read (default not specified, optional)
+    4.  Initial cache size, helps avoid resizing when the number of values grows quickly (default not specified, optional)
+    5.  Maximum cache size; when the boundary is reached **or slightly earlier**, [least relevant values](https://blog.skillfactory.ru/glossary/lru/) are evicted (default: `100000`)
+    6.  Enables cache logging (default: `false`)
+    7.  Enables cache metrics; also controls whether the standard `Micrometer` `Caffeine` metrics are registered (default: `false`)
+    8.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics, values are durations and bare numbers mean milliseconds (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    9.  Tags configuration for metrics (default: `{}`)
+    10. Enables cache tracing (default: `true`)
+    11. Attributes configuration for tracing (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     mycache:
       config:
-        expireAfterWrite: "10s" #(1)!
-        expireAfterAccess: "10s" #(2)!
-        initialSize: 10 #(3)!
-        maximumSize: 100000 #(4)!
+        enabled: true #(1)!
+        expireAfterWrite: "10s" #(2)!
+        expireAfterAccess: "10s" #(3)!
+        initialSize: 10 #(4)!
+        maximumSize: 100000 #(5)!
+        telemetry:
+          logging:
+            enabled: false #(6)!
+          metrics:
+            enabled: false #(7)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
+            tags: #(9)!
+              key1: value1
+          tracing:
+            enabled: true #(10)!
+            attributes: #(11)!
+              key1: value1
     ```
 
-    1.  Time after which the value is removed from the cache; counted after the value is written (default not specified, optional)
-    2.  Time after which the value is removed from the cache; counted after the value is read (default not specified, optional)
-    3.  Initial cache size, helps avoid resizing when the number of values grows quickly (default not specified, optional)
-    4.  Maximum cache size; when the boundary is reached **or slightly earlier**, [least relevant values](https://blog.skillfactory.ru/glossary/lru/) are evicted (default: `100000`)
+    1.  Enables the cache; when `false` every cache operation becomes a no-op and `computeIfAbsent` always calls the loader (default: `true`)
+    2.  Time after which the value is removed from the cache; counted after the value is written (default not specified, optional)
+    3.  Time after which the value is removed from the cache; counted after the value is read (default not specified, optional)
+    4.  Initial cache size, helps avoid resizing when the number of values grows quickly (default not specified, optional)
+    5.  Maximum cache size; when the boundary is reached **or slightly earlier**, [least relevant values](https://blog.skillfactory.ru/glossary/lru/) are evicted (default: `100000`)
+    6.  Enables cache logging (default: `false`)
+    7.  Enables cache metrics; also controls whether the standard `Micrometer` `Caffeine` metrics are registered (default: `false`)
+    8.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics, values are durations and bare numbers mean milliseconds (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    9.  Tags configuration for metrics (default: `{}`)
+    10. Enables cache tracing (default: `true`)
+    11. Attributes configuration for tracing (default: `{}`)
 
 The underlying `Caffeine` cache is built by a `CaffeineCacheFactory` supplied as a `@DefaultComponent`.
 If tuning beyond the configuration options above is required (for example custom eviction, weak keys, or a custom weigher),
@@ -91,9 +139,8 @@ register your own `CaffeineCacheFactory` component to override the default and c
     @Component
     public final class MyCaffeineCacheFactory implements CaffeineCacheFactory {
 
-        @Nonnull
         @Override
-        public <K, V> Cache<K, V> build(@Nonnull String name, @Nonnull CaffeineCacheConfig config) {
+        public <K, V> Cache<K, V> build(String name, CaffeineCacheConfig config) {
             var builder = Caffeine.newBuilder().weakKeys();
             if (config.expireAfterWrite() != null) {
                 builder.expireAfterWrite(config.expireAfterWrite());
@@ -119,6 +166,9 @@ register your own `CaffeineCacheFactory` component to override the default and c
     }
     ```
 
+Overriding the factory also replaces the default metric registration, so the standard `Micrometer` `Caffeine` metrics
+have to be wired manually if they are still required.
+
 ## Redis { #redis }
 
 Implementation based on in-memory database [Redis](https://redis.io/docs/about/) and connection driver [Lettuce](https://github.com/lettuce-io/lettuce-core).
@@ -129,27 +179,34 @@ Implementation based on in-memory database [Redis](https://redis.io/docs/about/)
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:cache-redis"
+    implementation "io.koraframework:cache-redis-lettuce"
     ```
 
     Module:
     ```java
     @KoraApp
-    public interface Application extends RedisCacheModule { }
+    public interface Application extends LettuceRedisCacheModule { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:cache-redis")
+    implementation("io.koraframework:cache-redis-lettuce")
     ```
 
     Module:
     ```kotlin
     @KoraApp
-    interface Application : RedisCacheModule
+    interface Application : LettuceRedisCacheModule
     ```
+
+`LettuceRedisCacheModule` is the entry point for the `Redis` cache: it extends `RedisCacheModule` and `LettuceModule`,
+and provides the `RedisCacheClient` on top of the shared `Lettuce` connection.
+
+The `RedisCacheModule` from the `cache-redis-common` artifact is transport-neutral: it contributes the cache telemetry factory,
+key mappers, and value mappers, but does **not** provide a `RedisCacheClient`. It is useful only when a different `Redis` transport
+is plugged in by supplying an own `RedisCacheClient` implementation.
 
 ### Configuration { #configuration-2 }
 
@@ -158,34 +215,34 @@ A single connection is used for all `Redis` caches.
 
 Basic Lettuce configuration parameters:
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     lettuce {
         uri = "redis://localhost:6379" //(1)!
-        commandTimeout = "60s" //(2)!
+        commandTimeout = "30s" //(2)!
     }
     ```
 
     1.  `URI` for connecting to `Redis` (`required`, no default)
-    2.  Command execution timeout (default: `60s`)
+    2.  Command execution timeout (default: `30s`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     lettuce:
       uri: "redis://localhost:6379" #(1)!
-      commandTimeout: "60s" #(2)!
+      commandTimeout: "30s" #(2)!
     ```
 
     1.  `URI` for connecting to `Redis` (`required`, no default)
-    2.  Command execution timeout (default: `60s`)
+    2.  Command execution timeout (default: `30s`)
 
 ??? note "Full Configuration"
 
-    Example of a complete configuration for the `Lettuce` driver; parameters are described in the `LettuceClientConfig` class (example values or default values are shown):
+    Example of a complete configuration for the `Lettuce` driver; parameters are described in the `LettuceConfig` class (example values or default values are shown):
 
-    ===! ":material-code-json: `HOCON`"
+    ===! ":material-code-json: `Hocon`"
 
         ```javascript
         lettuce {
@@ -195,7 +252,7 @@ Basic Lettuce configuration parameters:
             database = 0 //(4)!
             protocol = "RESP3" //(5)!
             socketTimeout = "10s" //(6)!
-            commandTimeout = "60s" //(7)!
+            commandTimeout = "30s" //(7)!
             forceClusterClient = false //(8)!
             ssl {
                 ciphers = [ "TLS_CHACHA20_POLY1305_SHA256" ] //(9)!
@@ -206,16 +263,9 @@ Basic Lettuce configuration parameters:
                     enabled = false //(11)!
                 }
                 metrics {
-                    enabled = true //(12)!
+                    enabled = false //(12)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(13)!
-                    tags = { // (14)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(15)!
-                    attributes = { // (16)!
+                    tags = { //(14)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -224,27 +274,24 @@ Basic Lettuce configuration parameters:
         }
         ```
 
-        1.  `URI` for connecting to `Redis` (`required`, default not specified).
+        1.  `URI` for connecting to `Redis` (`required`, no default).
             Single-server connection: `redis://localhost:6379`.
             Multi-server connection: `redis://localhost:6379,localhost:6380`.
-            Connection with `SSL`: `rediss://localhost:6380`.
-            Connection with `TLS`: `redis+tls://localhost:6380`.
+            Connection with `SSL`/`TLS`: `rediss://localhost:6380`.
         2.  Username for the connection (default not specified, optional)
         3.  User password for the connection (default not specified, optional)
         4.  Database number for the connection (default not specified, optional)
         5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
         6.  Socket connection timeout (default: `10s`)
-        7.  Command execution timeout (default: `60s`)
+        7.  Command execution timeout (default: `30s`)
         8.  Create a cluster client even with a single connection `URI` (default: `false`)
         9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
         10. Timeout for establishing a secure connection with the server (default: `10s`)
-        11. Enables module logging (default: `false`)
-        12. Enables module metrics (default: `true`)
-        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Enables driver logging (default: `false`)
+        12. Enables driver metrics (default: `false`)
+        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
         14. Tags configuration for metrics (default: `{}`)
-        15. Enables module tracing (default: `true`)
-        16. Attributes configuration for tracing (default: `{}`)
-     
+
     === ":simple-yaml: `YAML`"
 
         ```yaml
@@ -255,7 +302,7 @@ Basic Lettuce configuration parameters:
           database: 0 #(4)!
           protocol: "RESP3" #(5)!
           socketTimeout: "10s" #(6)!
-          commandTimeout: "60s" #(7)!
+          commandTimeout: "30s" #(7)!
           forceClusterClient: false #(8)!
           ssl:
             ciphers:
@@ -265,76 +312,123 @@ Basic Lettuce configuration parameters:
             logging:
               enabled: false #(11)!
             metrics:
-              enabled: true #(12)!
+              enabled: false #(12)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(13)!
               tags: #(14)!
                 key1: value1
                 key2: value2
-            tracing:
-              enabled: true #(15)!
-              attributes: #(16)!
-                key1: value1
-                key2: value2
         ```
 
-        1.  `URI` for connecting to `Redis` (`required`, default not specified).
+        1.  `URI` for connecting to `Redis` (`required`, no default).
             Single-server connection: `redis://localhost:6379`.
             Multi-server connection: `redis://localhost:6379,localhost:6380`.
-            Connection with `SSL`: `rediss://localhost:6380`.
-            Connection with `TLS`: `redis+tls://localhost:6380`.
+            Connection with `SSL`/`TLS`: `rediss://localhost:6380`.
         2.  Username for the connection (default not specified, optional)
         3.  User password for the connection (default not specified, optional)
         4.  Database number for the connection (default not specified, optional)
         5.  Connection protocol, can be `RESP2` or `RESP3` (default: `RESP3`)
         6.  Socket connection timeout (default: `10s`)
-        7.  Command execution timeout (default: `60s`)
+        7.  Command execution timeout (default: `30s`)
         8.  Create a cluster client even with a single connection `URI` (default: `false`)
         9.  Cipher algorithms for a secure connection between client and server (default: `[]`)
         10. Timeout for establishing a secure connection with the server (default: `10s`)
-        11. Enables module logging (default: `false`)
-        12. Enables module metrics (default: `true`)
-        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Enables driver logging (default: `false`)
+        12. Enables driver metrics (default: `false`)
+        13. [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
         14. Tags configuration for metrics (default: `{}`)
-        15. Enables module tracing (default: `true`)
-        16. Attributes configuration for tracing (default: `{}`)
+
+If a single `URI` is configured and `forceClusterClient` is `false`, a standalone `RedisClient` is created;
+otherwise a `RedisClusterClient` is created for the list of `URI`s.
 
 The `Redis` cache configuration defines behavior for a specific cache.
 
 Example of a complete configuration for a cache at `mycache.config`; parameters are described in the `RedisCacheConfig` class (example values are shown):
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     mycache {
-        config {    
-            expireAfterWrite = "10s" //(1)!
-            expireAfterAccess = "10s" //(2)!
-            keyPrefix = "mykey" //(3)!
+        config {
+            enabled = true //(1)!
+            keyPrefix = "mykey" //(2)!
+            expireAfterWrite = "10s" //(3)!
+            expireAfterAccess = "10s" //(4)!
+            telemetry {
+                logging {
+                    enabled = false //(5)!
+                }
+                metrics {
+                    enabled = false //(6)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(7)!
+                    tags = { //(8)!
+                        "key1" = "value1"
+                    }
+                }
+                tracing {
+                    enabled = true //(9)!
+                    attributes = { //(10)!
+                        "key1" = "value1"
+                    }
+                }
+            }
         }
     }
     ```
 
-    1.  Sets the value [expiration](https://redis.io/commands/psetex/) time on write (default not specified, optional)
-    2.  Sets the value [expiration](https://redis.io/commands/getex/) time on read (default not specified, optional)
-    3.  Key prefix for the specific cache, used to avoid key collisions in one `Redis` database; can be an empty string, then keys will have no prefix (`required`, default not specified)
+    1.  Enables the cache; when `false` every cache operation becomes a no-op and `computeIfAbsent` always calls the loader (default: `true`)
+    2.  Key prefix for the specific cache, used to avoid key collisions in one `Redis` database; can be an empty string, then keys will have no prefix (`required`, no default)
+    3.  Sets the value [expiration](https://redis.io/commands/psetex/) time on write (default not specified, optional)
+    4.  Sets the value [expiration](https://redis.io/commands/getex/) time on read (default not specified, optional)
+    5.  Enables cache logging (default: `false`)
+    6.  Enables cache metrics (default: `false`)
+    7.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    8.  Tags configuration for metrics (default: `{}`)
+    9.  Enables cache tracing (default: `true`)
+    10. Attributes configuration for tracing (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     mycache:
       config:
-        expireAfterWrite: "10s" #(1)!
-        expireAfterAccess: "10s" #(2)!
-        keyPrefix: "mykey" #(3)!
+        enabled: true #(1)!
+        keyPrefix: "mykey" #(2)!
+        expireAfterWrite: "10s" #(3)!
+        expireAfterAccess: "10s" #(4)!
+        telemetry:
+          logging:
+            enabled: false #(5)!
+          metrics:
+            enabled: false #(6)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(7)!
+            tags: #(8)!
+              key1: value1
+          tracing:
+            enabled: true #(9)!
+            attributes: #(10)!
+              key1: value1
     ```
 
-    1.  Sets the value [expiration](https://redis.io/commands/psetex/) time on write (default not specified, optional)
-    2.  Sets the value [expiration](https://redis.io/commands/getex/) time on read (default not specified, optional)
-    3.  Key prefix for the specific cache, used to avoid key collisions in one `Redis` database; can be an empty string, then keys will have no prefix (`required`, default not specified)
+    1.  Enables the cache; when `false` every cache operation becomes a no-op and `computeIfAbsent` always calls the loader (default: `true`)
+    2.  Key prefix for the specific cache, used to avoid key collisions in one `Redis` database; can be an empty string, then keys will have no prefix (`required`, no default)
+    3.  Sets the value [expiration](https://redis.io/commands/psetex/) time on write (default not specified, optional)
+    4.  Sets the value [expiration](https://redis.io/commands/getex/) time on read (default not specified, optional)
+    5.  Enables cache logging (default: `false`)
+    6.  Enables cache metrics (default: `false`)
+    7.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) configuration for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    8.  Tags configuration for metrics (default: `{}`)
+    9.  Enables cache tracing (default: `true`)
+    10. Attributes configuration for tracing (default: `{}`)
 
-Module metrics are described in the [Metrics Reference](metrics.md#cache) section.
-Custom cache telemetry for both backends can be plugged by registering the nullable `CacheMetrics` and `CacheTracer` components,
-which receive a `CacheTelemetryOperation` describing the operation name, cache name, and origin.
+`keyPrefix` is required but may be an empty string. An empty prefix is reported with a warning at startup, because in that case
+`invalidateAll()` cannot scan a prefix and falls back to `FLUSHALL`, which wipes the whole `Redis` database.
+
+Module metrics are described in the [Metrics Reference](metrics.md#cache) section, and the driver metrics
+in the [Redis / Lettuce](metrics.md#redis-lettuce) section.
+Custom cache telemetry is plugged in by registering your own `RedisCacheTelemetryFactory` or `CaffeineCacheTelemetryFactory` component,
+which overrides the `@DefaultComponent` supplied by the module. To keep the default behavior and change only one part of it,
+register a subclass of `DefaultRedisCacheLoggerFactory` / `DefaultRedisCacheMetricsFactory`
+(or their `Caffeine` counterparts) — the default telemetry factory picks such components up as optional dependencies.
 
 ### Key and Value Mappers { #redis-mappers }
 
@@ -349,8 +443,8 @@ numbers, `BigInteger`, `BigDecimal`, `UUID`, `Boolean`, `Character`, `Instant`, 
 For `Enum`, `toString()` is used, so it can be overridden when another key format is needed.
 
 For values, built-in `RedisCacheValueMapper` implementations are available for the same simple types, date/time types, `Enum`, and `byte[]`.
-For other types, a mapper based on `JsonWriter<V>` and `JsonReader<V>` is used when JSON serialization is available for the type.
 If another representation is needed, register your own `RedisCacheValueMapper<V>` or `RedisCacheKeyMapper<K>` component.
+Both contracts are graph components, so a custom mapper must be annotated with `@Component`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -358,7 +452,6 @@ If another representation is needed, register your own `RedisCacheValueMapper<V>
     @Component
     public final class UserIdRedisKeyMapper implements RedisCacheKeyMapper<UserId> {
 
-        @Nonnull
         @Override
         public byte[] apply(@Nullable UserId key) {
             return key == null
@@ -381,9 +474,9 @@ If another representation is needed, register your own `RedisCacheValueMapper<V>
     }
     ```
 
-The common case is storing an object value as `JSON`. Annotate the value type with `@Json`: `Kora` generates a `JsonWriter` and `JsonReader` for it,
-and `RedisCacheModule` provides a matching `RedisCacheValueMapper<V>` (`jsonRedisValueMapper`) automatically, so no manual mapper is needed for `JSON`-serializable types.
-To use a different representation for such a type, register your own `RedisCacheValueMapper<V>` component, which overrides the default `JSON` mapper.
+The common case is storing an object value as `JSON`. Annotate the value type with `@Json` so that `Kora` generates a `JsonWriter`
+and `JsonReader` for it, and mark the value type argument of the cache contract with `@Json` as well: the built-in `JSON` value mapper
+is registered under the `@Json` tag, so it is only injected where the value type argument carries that tag.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -392,7 +485,7 @@ To use a different representation for such a type, register your own `RedisCache
     public record UserData(String id, String name) { }
 
     @Cache("mycache.config")
-    public interface MyCache extends RedisCache<String, UserData> { }
+    public interface MyCache extends RedisCache<String, @Json UserData> { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -402,40 +495,47 @@ To use a different representation for such a type, register your own `RedisCache
     data class UserData(val id: String, val name: String)
 
     @Cache("mycache.config")
-    interface MyCache : RedisCache<String, UserData>
+    interface MyCache : RedisCache<String, @Json UserData>
     ```
 
-For a composite key based on a `record` or `data class`, Kora generates a separate `RedisCacheKeyMapper` for the whole key.
-It receives a mapper for each field, converts every field to `byte[]`, and joins the parts with `RedisCacheKeyMapper.DELIMITER`.
+To use a different representation for such a type, drop the `@Json` tag from the type argument and register your own
+`RedisCacheValueMapper<V>` component instead.
+
+For a composite key based on a `record` or `data class`, Kora generates a separate `RedisCacheKeyMapper` for the whole key as a `@DefaultComponent`.
+It receives a mapper for each field, converts every field to `byte[]`, and joins the parts with `RedisCacheKeyMapper.DELIMITER` (`:`).
 The part order matches the order of `record` components or `data class` properties.
+For a key type that is not a `record` or `data class`, no mapper is generated and a `RedisCacheKeyMapper` for the key type has to be provided.
 
 For a single key, built-in `RedisCacheKeyMapper` implementations can encode `null` as a special byte value.
 In a composite key, each field mapping result must be non-`null`: if a custom `RedisCacheKeyMapper` for a field returns `null`,
 key creation fails. For optional fields in a composite key, a custom mapper must explicitly encode `null`
 as a stable byte value.
 
-#### Configurator { #configurator }
+#### Configurer { #configurator }
 
-You can register `LettuceConfigurator` to customize the `Lettuce` client before it is created.
+The `Lettuce` client is assembled by `LettuceFactory` and can be customized before creation by registering `Configurer` components.
+`Configurer` is `io.koraframework.common.Configurer`, a single-method contract `T configure(T t)`.
+Three builders can be customized: `DefaultClientResources.Builder` for shared client resources,
+`ClientOptions.Builder` for a standalone client, and `ClusterClientOptions.Builder` for a cluster client.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyLettuceConfigurator implements LettuceConfigurator {
-        @Override
-        public DefaultClientResources.Builder configure(DefaultClientResources.Builder resourceBuilder) {
-            return resourceBuilder;
-        }
+    public final class MyLettuceResourcesConfigurer implements Configurer<DefaultClientResources.Builder> {
 
         @Override
-        public ClusterClientOptions.Builder configure(ClusterClientOptions.Builder clusterBuilder) {
-            return clusterBuilder;
+        public DefaultClientResources.Builder configure(DefaultClientResources.Builder builder) {
+            return builder.commandLatencyRecorder(CommandLatencyRecorder.disabled());
         }
+    }
+
+    @Component
+    public final class MyLettuceOptionsConfigurer implements Configurer<ClientOptions.Builder> {
 
         @Override
-        public ClientOptions.Builder configure(ClientOptions.Builder clientBuilder) {
-            return clientBuilder;
+        public ClientOptions.Builder configure(ClientOptions.Builder builder) {
+            return builder.autoReconnect(true);
         }
     }
     ```
@@ -443,18 +543,19 @@ You can register `LettuceConfigurator` to customize the `Lettuce` client before 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    class MyLettuceConfigurator : LettuceConfigurator {
+    @Component
+    class MyLettuceResourcesConfigurer : Configurer<DefaultClientResources.Builder> {
 
-        override fun configure(resourceBuilder: DefaultClientResources.Builder): DefaultClientResources.Builder {
-            return resourceBuilder
+        override fun configure(builder: DefaultClientResources.Builder): DefaultClientResources.Builder {
+            return builder.commandLatencyRecorder(CommandLatencyRecorder.disabled())
         }
+    }
 
-        override fun configure(clusterBuilder: ClusterClientOptions.Builder): ClusterClientOptions.Builder {
-            return clusterBuilder
-        }
+    @Component
+    class MyLettuceOptionsConfigurer : Configurer<ClientOptions.Builder> {
 
-        override fun configure(clientBuilder: ClientOptions.Builder): ClientOptions.Builder {
-            return clientBuilder
+        override fun configure(builder: ClientOptions.Builder): ClientOptions.Builder {
+            return builder.autoReconnect(true)
         }
     }
     ```
@@ -468,9 +569,13 @@ Creating a cache will require registering a typed `@Cache` contract.
 The contract interface must extend one of the `Kora` implementations: `CaffeineCache` or `RedisCache`.
 For such an `@Cache`, an implementation is generated and added to the graph, so it can be injected as a dependency.
 
+`@Cache` can only be applied to an interface, and that interface must extend exactly one of the two contracts —
+extending both `CaffeineCache` and `RedisCache` is a compilation error.
+
 The `value` argument in `@Cache` defines the full path to the configuration of the specific cache.
 It points at the configuration object of that cache, so the config keys can live under a nested path such as `mycache.config { ... }`,
 or flat directly under the path such as `my-cache { ... }` as used in the example projects. Both forms are valid; pick one and keep the config keys under it.
+The path must start with a letter, otherwise application generation fails.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -489,7 +594,6 @@ or flat directly under the path such as `my-cache { ... }` as used in the exampl
 ### Optional Values { #optional-values }
 
 If a `Java` method returns `Optional<T>`, the caching aspect can work with that signature directly.
-The same rule applies to asynchronous wrappers, for example `CompletionStage<Optional<T>>` and `Mono<Optional<T>>`.
 The cache value type itself can be either `T` or `Optional<T>`:
 
 - `CaffeineCache<String, String>` and method `Optional<String> get(String key)`;
@@ -500,16 +604,21 @@ For `@Cacheable`, this makes it possible to distinguish a missing cache entry fr
 For `@CachePut`, the `Optional<T>` result is handled according to the cache value type: if the cache stores `Optional<T>`, the `Optional` itself is stored,
 and if the cache stores `T`, only a present value is stored.
 
+In `Kotlin` the same distinction is expressed with a nullable return type `T?`, and no `Optional` wrapper is used.
+
 ### Imperative { #imperative }
 
 Caches are available for injection as dependencies on the interface and can be used in conjunction with declarative operations.
 
-`CaffeineCache` provides the `Cache` contract for synchronous operations and the additional `getAll()` method.
-`RedisCache` provides `Cache` and `AsyncCache`: it can be used synchronously and asynchronously through `CompletionStage`.
-
-`Cache` provides `get(...)`, `put(...)`, `computeIfAbsent(...)`, `invalidate(...)`, `invalidateAll(...)`,
-as well as batch variants for a collection of keys or a map of values. `AsyncCache` provides the same operations with the `Async` suffix.
+`Cache` provides `get(...)`, `put(...)`, `computeIfAbsent(...)`, `invalidate(...)`, `invalidateAll()`,
+as well as batch variants for a collection of keys or a map of values.
 `computeIfAbsent(...)` methods first try to get a value from the cache; on a miss, they call the provided loader function and store the result.
+
+`CaffeineCache` additionally provides `getAll()`, which returns every key and value currently held in memory.
+`RedisCache` additionally provides the manual expiration methods described [below](#redis-expiration-override).
+
+`RedisCache` never propagates transport errors to the caller: a failed operation is recorded in telemetry and degrades
+to a cache miss on read or to a silent no-op on write, so a `Redis` outage does not break the business method.
 
 #### Composite Cache With `Cache.Builder` { #builder-composite-cache }
 
@@ -532,7 +641,7 @@ and a more shared cache, such as `Redis`, is added after it.
     public interface MyRedisCache extends RedisCache<String, String> { }
 
     @KoraApp
-    public interface Application extends CaffeineCacheModule, RedisCacheModule {
+    public interface Application extends CaffeineCacheModule, LettuceRedisCacheModule {
 
         default Cache<String, String> compositeCache(MyCaffeineCache caffeineCache, MyRedisCache redisCache) {
             return Cache.builder(caffeineCache)
@@ -552,7 +661,7 @@ and a more shared cache, such as `Redis`, is added after it.
     interface MyRedisCache : RedisCache<String, String>
 
     @KoraApp
-    interface Application : CaffeineCacheModule, RedisCacheModule {
+    interface Application : CaffeineCacheModule, LettuceRedisCacheModule {
 
         fun compositeCache(
             caffeineCache: MyCaffeineCache,
@@ -565,38 +674,14 @@ and a more shared cache, such as `Redis`, is added after it.
     }
     ```
 
-For an asynchronous facade, use `AsyncCache.builder(...)`; only `AsyncCache` instances can be added to it.
-This is suitable, for example, for several `RedisCache` instances or other asynchronous implementations with the same key and value types.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    default AsyncCache<String, String> compositeAsyncCache(MyRedisCache redisCache1, MyRedisCache redisCache2) {
-        return AsyncCache.builder(redisCache1)
-            .addCache(redisCache2)
-            .build();
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    fun compositeAsyncCache(redisCache1: MyRedisCache, redisCache2: MyRedisCache): AsyncCache<String, String> {
-        return AsyncCache.builder(redisCache1)
-            .addCache(redisCache2)
-            .build()
-    }
-    ```
-
-The facade built through `Cache.Builder` does not support direct `get(Collection<K>)`, and the facade built through `AsyncCache.Builder` does not support direct `getAsync(Collection<K>)`.
-For batch loading, use `computeIfAbsent(Collection<K>, ...)` or `computeIfAbsentAsync(Collection<K>, ...)`.
+The facade built through `Cache.Builder` does not support direct `get(Collection<K>)` and throws `UnsupportedOperationException` for it.
+For batch loading, use `computeIfAbsent(Collection<K>, Function<Set<K>, Map<K, V>>)`.
 
 #### Manual Redis expiration { #redis-expiration-override }
 
-Beyond the shared `Cache`/`AsyncCache` surface, `RedisCache` adds methods to override the configured `expireAfterWrite` for a single write.
-`putExpireAfterWrite(key, value, Duration)` and its `Map` batch overload write synchronously, while `putAsyncExpireAfterWrite(...)`
-(single and `Map` batch) return `CompletionStage`. The provided `Duration` is applied to that specific write instead of the value from configuration.
-These methods are `Redis`-only, since `RedisCache` extends `AsyncCache`.
+Beyond the shared `Cache` surface, `RedisCache` adds methods to override the configured `expireAfterWrite` for a single write.
+`putExpireAfterWrite(key, value, Duration)` and its `Map` batch overload apply the provided `Duration` to that specific write
+instead of the value from configuration. These methods are `Redis`-only.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -638,6 +723,9 @@ These methods are `Redis`-only, since `RedisCache` extends `AsyncCache`.
 
 All aspect examples below assume the cache implementation above.
 
+One method carries exactly one kind of cache operation. Mixing `@Cacheable` with `@CachePut`,
+or `@CacheInvalidate` with `@CacheInvalidateAll`, on the same method is a compilation error.
+
 #### Get { #get }
 
 To cache and retrieve a value from the cache for the `get()` method, annotate it with `@Cacheable`.
@@ -662,14 +750,16 @@ The cache key is built from method arguments, and argument order matters. In thi
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
         @Cacheable(MyCache::class)
-        fun get(arg1: String): String {
+        open fun get(arg1: String): String {
             // do something
         }
     }
     ```
+
+`@Cacheable` requires at least one method argument for the key; a method without arguments fails at compile time.
 
 #### Put { #put }
 
@@ -695,10 +785,10 @@ The cache key is built from method arguments, and argument order matters. In thi
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
         @CachePut(MyCache::class)
-        fun put(arg1: String): String {
+        open fun put(arg1: String): String {
             // do something
         }
     }
@@ -728,10 +818,10 @@ The cache key is built from method arguments, and argument order matters. In thi
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
         @CacheInvalidate(MyCache::class)
-        fun evict(arg1: String) {
+        open fun evict(arg1: String) {
             // do something
         }
     }
@@ -739,10 +829,10 @@ The cache key is built from method arguments, and argument order matters. In thi
 
 #### Invalidate all { #invalidate-all }
 
-To remove all values from the cache via the `evictAll()` method, annotate it with `@CacheInvalidate`
-and specify the `invalidateAll = true` parameter.
+To remove all values from the cache via the `evictAll()` method, annotate it with `@CacheInvalidateAll`.
 
-The method with `@CacheInvalidate` is called, and then all values are removed from the cache defined in `value`.
+The method with `@CacheInvalidateAll` is called, and then all values are removed from the cache defined in `value`.
+No cache key is built, so the method may take any arguments or none at all.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -750,8 +840,8 @@ The method with `@CacheInvalidate` is called, and then all values are removed fr
     @Component
     public class SomeService {
 
-        @CacheInvalidate(value = MyCache.class, invalidateAll = true)
-        public void evictAll(String arg1) {
+        @CacheInvalidateAll(MyCache.class)
+        public void evictAll() {
             // do something
         }
     }
@@ -761,14 +851,70 @@ The method with `@CacheInvalidate` is called, and then all values are removed fr
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
-        @CacheInvalidate(value = MyCache::class, invalidateAll = true)
-        fun evict(arg1: String) {
+        @CacheInvalidateAll(MyCache::class)
+        open fun evictAll() {
             // do something
         }
     }
     ```
+
+For a `Redis` cache, `invalidateAll()` scans the keys with the configured `keyPrefix` and deletes them.
+If `keyPrefix` is an empty string, it falls back to `FLUSHALL` for the whole database.
+
+#### Execution mode { #cache-mode }
+
+Every cache annotation has a `mode` attribute of type `CacheMode` with two values:
+
+- `CacheMode.SYNC` (default) — the cache write happens on the calling thread before the method returns.
+- `CacheMode.ASYNC` — the cache write is submitted to a dedicated `Executor` and the method returns without waiting for it.
+
+`ASYNC` affects only the write side of the operation: `put` for `@Cacheable` and `@CachePut`,
+`invalidate` for `@CacheInvalidate`, and `invalidateAll` for `@CacheInvalidateAll`.
+The cache read performed by `@Cacheable` stays synchronous, because its result determines whether the original method is called.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @Cacheable(value = MyCache.class, mode = CacheMode.ASYNC)
+        public String get(String arg1) {
+            // do something
+        }
+
+        @CacheInvalidateAll(value = MyCache.class, mode = CacheMode.ASYNC)
+        public void evictAll() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    open class SomeService {
+
+        @Cacheable(value = MyCache::class, mode = CacheMode.ASYNC)
+        open fun get(arg1: String): String {
+            // do something
+        }
+
+        @CacheInvalidateAll(value = MyCache::class, mode = CacheMode.ASYNC)
+        open fun evictAll() {
+            // do something
+        }
+    }
+    ```
+
+The asynchronous operation runs on an `Executor` bound with `@Tag(CacheMode.class)`.
+`CacheCommonModule` provides it as a `@DefaultComponent` that starts a virtual thread per operation and logs a failed operation at `WARN`.
+A custom `@Tag(CacheMode.class) Executor` component overrides that default.
+
+`ASYNC` is ignored for `CaffeineCache`, since an in-memory write is not worth offloading; the processor reports it with a compilation warning.
 
 #### Composite cache { #composite-cache }
 
@@ -779,13 +925,13 @@ For example, this can combine a fast local layer on `Caffeine` and a shared laye
 
     ```java
     @KoraApp
-    public interface Application extends RedisCacheModule, CaffeineCacheModule {
+    public interface Application extends LettuceRedisCacheModule, CaffeineCacheModule {
 
         @Cache("mycache.caffeine.config")
-        public interface MyCaffeineCache extends CaffeineCache<String, String> { }
+        interface MyCaffeineCache extends CaffeineCache<String, String> { }
 
         @Cache("mycache.redis.config")
-        public interface MyRedisCache extends RedisCache<String, String> { }
+        interface MyRedisCache extends RedisCache<String, String> { }
     }
     ```
 
@@ -793,13 +939,13 @@ For example, this can combine a fast local layer on `Caffeine` and a shared laye
 
     ```kotlin
     @KoraApp
-    interface Application : RedisCacheModule, CaffeineCacheModule { 
+    interface Application : LettuceRedisCacheModule, CaffeineCacheModule {
 
         @Cache("mycache.caffeine.config")
-        interface MyCaffeineCache : CaffeineCache<String, String> { }
+        interface MyCaffeineCache : CaffeineCache<String, String>
 
         @Cache("mycache.redis.config")
-        interface MyRedisCache : RedisCache<String, String> { }
+        interface MyRedisCache : RedisCache<String, String>
     }
     ```
 
@@ -823,11 +969,11 @@ And the annotated class itself:
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
         @Cacheable(MyCaffeineCache::class)
         @Cacheable(MyRedisCache::class)
-        fun get(arg1: String): String {
+        open fun get(arg1: String): String {
             // do something
         }
     }
@@ -835,10 +981,13 @@ And the annotated class itself:
 
 The call order follows the order of annotations on the method from top to bottom.
 For `@Cacheable`, this means the upper cache is checked first; on a miss, the next cache is checked,
-and after the value is loaded, the result is stored back into the checked caches.
-The same composition model works for repeatable `@CachePut` and `@CacheInvalidate`: the method is called once,
+and after the value is found in a lower layer it is written back into all previously checked layers.
+If no layer holds the value, the original method is called and the result is written into every listed cache.
+The same composition model works for repeatable `@CachePut`, `@CacheInvalidate`, and `@CacheInvalidateAll`: the method is called once,
 and then the result is written to all listed caches or invalidation is executed in all listed caches.
-The container annotations `@Cacheables`, `@CachePuts`, and `@CacheInvalidates` can also be used when that form is more convenient.
+The container annotations `@Cacheables`, `@CachePuts`, `@CacheInvalidates`, and `@CacheInvalidateAlls` can also be used when that form is more convenient.
+
+All repeated annotations on one method must declare the same `args` list; different key argument lists on one method are a compilation error.
 
 ## Key { #key }
 
@@ -862,8 +1011,11 @@ If the cache key consists of one argument, register `Cache` with a signature tha
 
 If an argument cannot be used directly as a cache key, the implementation requires a mapper
 with the `CacheKeyMapper` interface. If there are two arguments for the key, `CacheKeyMapper2` is required; if there are three, `CacheKeyMapper3` is required, and so on up to `CacheKeyMapper9`.
+More than nine key arguments are not supported.
 
-Such a mapper can be provided manually with `@Mapping`.
+Such a mapper can be provided manually with `@Mapping`. The mapper is injected into the generated aspect from the dependency graph,
+so its class must be registered as a component with `@Component` — nested classes included.
+
 Example of converting a complex object into a simple cache key:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -874,9 +1026,9 @@ Example of converting a complex object into a simple cache key:
 
         public record UserContext(String userId, String traceId) { }
 
+        @Component
         public static final class UserContextMapping implements CacheKeyMapper<String, UserContext> {
 
-            @Nonnull
             @Override
             public String map(UserContext arg) {
                 return arg.userId();
@@ -895,10 +1047,11 @@ Example of converting a complex object into a simple cache key:
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
         data class UserContext(val userId: String, val traceId: String)
 
+        @Component
         class UserContextMapping : CacheKeyMapper<String, UserContext> {
             override fun map(arg: UserContext): String {
                 return arg.userId
@@ -907,11 +1060,14 @@ Example of converting a complex object into a simple cache key:
 
         @Mapping(UserContextMapping::class)
         @Cacheable(MyCache::class)
-        fun get(context: UserContext): String {
+        open fun get(context: UserContext): String {
             // do something
         }
     }
     ```
+
+If several methods need different mappers with the same signature, the mapper components can be disambiguated
+by adding `@Tag` next to `@Mapping` on the method and on the mapper component.
 
 ### Composite key { #composite-key }
 
@@ -927,7 +1083,7 @@ Example for `Cache` where the composite key consists of two elements:
     ```java
     @Cache("mycache.config")
     public interface MyCache extends CaffeineCache<MyCache.Key, String> {
-        
+
         record Key(String k1, Long k2) { }
     }
     ```
@@ -944,6 +1100,8 @@ Example for `Cache` where the composite key consists of two elements:
     }
     ```
 
+The key is built by calling the public constructor of the key type whose parameter types match the method arguments in order.
+
 If `RedisCache` is used, a `RedisCacheKeyMapper` is generated for the composite key.
 It uses a mapper for each key field and expects the mapping result for every field to be non-`null`.
 Built-in mappers can encode `null` with a special value, while custom mappers must do this explicitly.
@@ -951,13 +1109,13 @@ Built-in mappers can encode `null` with a special value, while custom mappers mu
 ### Argument ordering { #argument-ordering }
 
 If the method accepts arguments that should be excluded from the composite key, or the argument order does not match
-the order of the composite-key constructor arguments, use the `parameters` attribute and specify
+the order of the composite-key constructor arguments, use the `args` attribute and specify
 which method arguments to use and in what order.
 
-`parameters` defines the full set of method arguments used to build the key. Each name must match a method argument name,
-and the order must match the key type: for a single argument, the `Cache<K, V>` key type; for a composite key,
+`args` defines the full set of method arguments used to build the key. Each name must match a method argument name,
+and the order should match the key type: for a single argument, the `Cache<K, V>` key type; for a composite key,
 the constructor argument order of the `record` or `data class`.
-If a name is missing, a type does not match, or the order does not fit the key, application generation fails.
+If a name does not match any method argument, application generation fails.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -965,7 +1123,7 @@ If a name is missing, a type does not match, or the order does not fit the key, 
     @Component
     public class SomeService {
 
-        @Cacheable(value = MyCache.class, parameters = {"arg1", "arg2"})
+        @Cacheable(value = MyCache.class, args = {"arg1", "arg2"})
         public String get(Long arg2, String arg3, String arg1) {
             // do something
         }
@@ -976,20 +1134,28 @@ If a name is missing, a type does not match, or the order does not fit the key, 
 
     ```kotlin
     @Component
-    class SomeService {
+    open class SomeService {
 
-        @Cacheable(value = MyCache::class, parameters = ["arg1", "arg2"])
-        fun get(arg2: Long, arg3: String, arg1: String): String {
+        @Cacheable(value = MyCache::class, args = ["arg1", "arg2"])
+        open fun get(arg2: Long, arg3: String, arg1: String): String {
             // do something
         }
     }
     ```
+
+If the listed arguments do not fit any constructor of the key type — the order or the types differ —
+the aspect falls back to a `CacheKeyMapperN` for that exact argument list and expects it in the dependency graph.
+The build then fails at graph resolution unless such a mapper is registered, so either fix the argument order or supply a mapper with `@Mapping`.
 
 ## Loadable Cache { #loadable-cache }
 
 The library provides the `LoadableCache` component, which combines `get` and `put` operations without using aspects.
 It is useful when value loading must be controlled manually while keeping the standard logic: first check the cache,
 and on a miss load the data and store it.
+
+`Cache.asLoadable(Function<Collection<K>, Map<K, V>>)` builds a `LoadableCache` around a batch loader, and
+`Cache.asLoadableSimple(Function<K, V>)` builds one around a single-key loader.
+`LoadableCache` exposes `get(K)` and `get(Collection<K>)`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1001,7 +1167,7 @@ and on a miss load the data and store it.
     public interface Application extends CaffeineCacheModule {
 
         default LoadableCache<String, String> loadableCache(MyCache cache, SomeService someService) {
-            return cache.asLoadable(someService::loadEntity);
+            return cache.asLoadable(someService::loadEntities);
         }
     }
     ```
@@ -1019,47 +1185,12 @@ and on a miss load the data and store it.
             cache: MyCache,
             someService: SomeService,
         ): LoadableCache<String, String> {
-            return cache.asLoadable(someService::loadEntity)
+            return cache.asLoadable(someService::loadEntities)
         }
     }
     ```
 
-For an asynchronous cache, use `AsyncLoadableCache`. It is created through `asLoadableAsyncSimple(...)`
-for loading one key or through `asLoadableAsync(...)` for batch loading several keys.
-Both variants return `CompletionStage` and are suitable for `RedisCache`, because it implements `AsyncCache`.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Cache("mycache.config")
-    public interface MyCache extends RedisCache<String, String> { }
-
-    @KoraApp
-    public interface Application extends RedisCacheModule {
-
-        default AsyncLoadableCache<String, String> loadableCache(MyCache cache, SomeService someService) {
-            return cache.asLoadableAsync(someService::loadEntities);
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Cache("mycache.config")
-    interface MyCache : RedisCache<String, String>
-
-    @KoraApp
-    interface Application : RedisCacheModule {
-
-        fun loadableCache(
-            cache: MyCache,
-            someService: SomeService,
-        ): AsyncLoadableCache<String, String> {
-            return cache.asLoadableAsync(someService::loadEntities)
-        }
-    }
-    ```
+The same applies to `RedisCache`, since both cache contracts extend the common `Cache` interface.
 
 ## Signatures { #signatures }
 
@@ -1073,20 +1204,23 @@ Available signatures for methods supported by annotations:
 
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
-    `@Cacheable` and `@CachePut` require a return value and cannot be applied to `void`, `Mono<Void>`, `CompletionStage<Void>`, `Flux<T>`, or `Publisher<T>`.
-    `@CacheInvalidate` can be applied to methods without a result, but cannot be applied to `Flux<T>` or `Publisher<T>`.
+    `@Cacheable` and `@CachePut` require a return value and cannot be applied to `void`.
+    `@CacheInvalidate` and `@CacheInvalidateAll` can be applied to methods without a result.
+
+    Asynchronous and reactive return types are not supported by cache aspects:
+    `CompletionStage<T>`, `Future<T>`, `Publisher<T>`, `Mono<T>`, and `Flux<T>` are rejected at compile time.
 
 === ":simple-kotlin: `Kotlin`"
 
     The class must be `open` for aspects to work.
 
-    By `T` we mean the type of the return value, either `T?`, or `Unit`.
+    By `T` we mean the type of the return value, either `T`, `T?`, or `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
 
     `@Cacheable` and `@CachePut` require a return value and cannot be applied to `Unit`.
-    `@CacheInvalidate` can be applied to methods without a result.
+    `@CacheInvalidate` and `@CacheInvalidateAll` can be applied to methods without a result.
+
+    Asynchronous and reactive return types are not supported by cache aspects:
+    `CompletionStage<T>`, `Future<T>`, and `Publisher<T>` are rejected at compile time.

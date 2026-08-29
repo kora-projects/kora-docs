@@ -1,14 +1,22 @@
 ---
-description: "Explains Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references. Use when working with MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+description: "Explains Kora metrics with Micrometer, Prometheus export through the system HTTP server, per-module telemetry.metrics configuration, registry and metric factory customization, and a full metric reference. Use when working with MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, telemetry.metrics.enabled, httpServer.system.metricsPath, Metrics Reference."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export, OpenTelemetry metric standards, registry customization, and module-specific metric references; key triggers include MetricsModule, Micrometer, PrometheusMeterRegistry, MetricsConfig, PrometheusMeterRegistryInitializer, OpenTelemetry, Metrics Reference."
+  use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export through the system HTTP server, the per-module telemetry.metrics block, registry and metric factory customization, and module-specific metric names and tags; key triggers include MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, DefaultHttpServerMetricsFactory, telemetry.metrics.enabled, telemetry.metrics.slo, httpServer.system.metricsPath, Metrics Reference."
 ---
 
 Module for collecting application metrics using [Micrometer](https://micrometer.io/docs/concepts#_purpose).
-It creates a `PrometheusMeterRegistry`, connects Kora component metrics to it, and exposes the result in the `Prometheus` format through the private `HTTP` server.
+It creates a `PrometheusMeterRegistry`, registers it in the dependency container as a `MeterRegistry`, and exposes the collected values in the `Prometheus` format through the [system HTTP server](http-server.md#system-server).
 This lets you collect application, `JVM`, process, and built-in integration metrics in one place and scrape them with an external observability system.
 
-Publishing metrics requires the [private HTTP server](http-server.md), which exposes them in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) format.
+Publishing metrics requires the [system HTTP server](http-server.md#system-server), which exposes them in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) format.
+
+!!! warning "Module metrics are disabled by default"
+
+    `TelemetryConfig.MetricsConfig#enabled` returns `false`, and every module inherits that default.
+    An application that only connects `MetricsModule` starts fine and answers `/metrics` with `200`,
+    but the response contains only `JVM`, process, and `kora.up` values — no `http_server_*`, `http_client_*`,
+    `db_*` or any other component metric. Enable metrics explicitly per module with
+    `<module>.telemetry.metrics.enabled = true`, see [Module metrics](#module-metrics).
 
 For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
 
@@ -18,7 +26,7 @@ For a step-by-step walkthrough before the reference details, see [Observability]
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:micrometer-module"
+    implementation "io.koraframework:micrometer-module"
     ```
 
     Module:
@@ -31,7 +39,7 @@ For a step-by-step walkthrough before the reference details, see [Observability]
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:micrometer-module")
+    implementation("io.koraframework:micrometer-module")
     ```
 
     Module:
@@ -40,58 +48,52 @@ For a step-by-step walkthrough before the reference details, see [Observability]
     interface Application : MetricsModule
     ```
 
+`MetricsModule` lives in the `io.koraframework.micrometer.module` package.
+It only provides the registry and the scrape endpoint contract — the metric values themselves are produced by the modules you connect
+([HTTP server](http-server.md), [HTTP client](http-client.md), [Database](database-common.md), [Kafka](kafka.md) and so on).
+
 ## Configuration { #configuration }
 
-Example of private `HTTP` server path configuration for retrieving metrics described in the `HttpServerConfig` class (default values are specified):
+The module itself has no configuration section: in Kora 2.0 there is no global `metrics { }` block.
+Everything is configured in two places — the path and port of the scrape endpoint on the system server,
+and a `telemetry.metrics` block inside each module that reports metrics.
+
+Example of the system `HTTP` server path configuration described in the `SystemHttpServerConfig` class (default values are specified):
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-        privateApiHttpMetricsPath = "/metrics" //(1)!
+        system {
+            port = 8085 //(1)!
+            metricsPath = "/metrics" //(2)!
+        }
     }
     ```
 
-    1. Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
+    1.  Port of the system `HTTP` server that serves the metrics endpoint (default: `8085`).
+    2.  Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      privateApiHttpMetricsPath: "/metrics" #(1)!
+      system:
+        port: 8085 #(1)!
+        metricsPath: "/metrics" #(2)!
     ```
 
-    1. Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
+    1.  Port of the system `HTTP` server that serves the metrics endpoint (default: `8085`).
+    2.  Path for retrieving metrics in the `Prometheus` format (default: `"/metrics"`).
 
-Example of the complete configuration described in the `MetricsConfig` class (default values are specified):
+### Module metrics { #module-metrics }
 
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    metrics {
-        opentelemetrySpec = "V120" //(1)!
-    }
-    ```
-
-    1. Metrics format according to the `OpenTelemetry` standard (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/), default: `V120`).
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    metrics:
-      opentelemetrySpec: "V120" #(1)!
-    ```
-
-    1. Metrics format according to the `OpenTelemetry` standard (available values: [V120](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/#migrating-from-a-version-prior-to-v1200) / [V123](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/), default: `V120`).
-
-### Module Metrics { #module-metrics }
-
-The `metrics` block above configures the registry globally. Each metric-collecting module additionally exposes a per-module
-`telemetry.metrics` block described in `TelemetryConfig.MetricsConfig`, letting you toggle metrics, tune histogram buckets,
-and attach extra tags for that module only. The example below uses the [HTTP Server](http-server.md) module as the host, but
-the same `telemetry.metrics` fields apply verbatim to [HTTP Client](http-client.md), [Database](database-common.md),
-[Kafka](kafka.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md),
-[Cache](cache.md), and every other integration that reports metrics:
+Each metric-collecting module exposes a `telemetry.metrics` block described in `TelemetryConfig.MetricsConfig`,
+letting you turn metrics on, tune histogram buckets, and attach extra tags for that module only.
+The example below uses the [HTTP server](http-server.md) module as the host, but the same `telemetry.metrics` fields apply verbatim to
+[HTTP client](http-client.md), [Database](database-common.md), [Kafka](kafka.md), [gRPC server](grpc-server.md),
+[gRPC client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), [Resilience](resilient.md),
+and every other integration that reports metrics:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -100,7 +102,7 @@ the same `telemetry.metrics` fields apply verbatim to [HTTP Client](http-client.
         telemetry {
             metrics {
                 enabled = true //(1)!
-                slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(2)!
+                slo = ["1ms", "10ms", "50ms", "100ms", "200ms", "500ms", "1s", "2s", "5s", "10s", "20s", "30s", "60s", "90s"] //(2)!
                 tags { //(3)!
                     "key1" = "value1"
                     "key2" = "value2"
@@ -110,8 +112,8 @@ the same `telemetry.metrics` fields apply verbatim to [HTTP Client](http-client.
     }
     ```
 
-    1.  Enables metrics collection for the module (default: `true`)
-    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `DistributionSummary`/`Timer` metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO` in milliseconds for `V120` / `#DEFAULT_SLO_V123` in seconds for `V123`)
+    1.  Enables metric collection for the module (default: `false`)
+    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `Timer` metrics, a list of durations (default: `TelemetryConfig.MetricsConfig#DEFAULT_SLO`, listed in [Personalization](#personalization))
     3.  Extra common tags added to every metric the module reports (default: `{}`)
 
 === ":simple-yaml: `YAML`"
@@ -121,36 +123,72 @@ the same `telemetry.metrics` fields apply verbatim to [HTTP Client](http-client.
       telemetry:
         metrics:
           enabled: true #(1)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(2)!
+          slo: [ "1ms", "10ms", "50ms", "100ms", "200ms", "500ms", "1s", "2s", "5s", "10s", "20s", "30s", "60s", "90s" ] #(2)!
           tags: #(3)!
             key1: value1
             key2: value2
     ```
 
-    1.  Enables metrics collection for the module (default: `true`)
-    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `DistributionSummary`/`Timer` metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO` in milliseconds for `V120` / `#DEFAULT_SLO_V123` in seconds for `V123`)
+    1.  Enables metric collection for the module (default: `false`)
+    2.  [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) histogram buckets for `Timer` metrics, a list of durations (default: `TelemetryConfig.MetricsConfig#DEFAULT_SLO`, listed in [Personalization](#personalization))
     3.  Extra common tags added to every metric the module reports (default: `{}`)
 
-Setting `enabled = false` disables metric creation for that module entirely (the module's `MetricsFactory` returns no
-metrics), which is the recommended way to silence a noisy integration. The default `slo` bucket values per standard are
-listed in the [Personalization](#personalization) section.
+`slo` values are durations: a string carries its unit (`"1ms"`, `"250ms"`, `"1s"`, `PT1S`), a bare number is read as milliseconds,
+so `slo = [1, 10, 50]` and `slo = ["1ms", "10ms", "50ms"]` are the same list.
 
-Metrics collection configuration parameters are also described in the modules that collect metrics: [HTTP Server](http-server.md), [HTTP Client](http-client.md), [gRPC Server](grpc-server.md), [gRPC Client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), and other integrations.
+Leaving `enabled = false` (the default) means the module's telemetry uses a `Noop` metrics factory: no `Meter` is created and nothing is registered in the registry.
+That is also the way to silence a noisy integration after you have enabled metrics globally.
+
+Metrics are only produced when **both** conditions hold: `MetricsModule` is connected (so a `MeterRegistry` exists in the container)
+and the module's `telemetry.metrics.enabled` is `true`. If either is missing, the module falls back to a no-op telemetry implementation.
+
+### Configuration paths { #configuration-paths }
+
+The `telemetry.metrics` block is nested under the module's own configuration section:
+
+| Module | Configuration path |
+|--------|--------------------|
+| [HTTP server](http-server.md) (public) | `httpServer.telemetry.metrics` |
+| [HTTP server](http-server.md#system-server) (system) | `httpServer.system.telemetry.metrics` |
+| [HTTP client](http-client.md) | `httpClient.telemetry.metrics` and the client's own `@HttpClient` configuration path |
+| [JDBC database](database-jdbc.md) | `jdbc.telemetry.metrics` |
+| [Cassandra database](database-cassandra.md) | `cassandra.telemetry.metrics` |
+| [gRPC server](grpc-server.md) | `grpcServer.telemetry.metrics` |
+| [gRPC client](grpc-client.md) | `grpcClient.<ServiceName>.telemetry.metrics` |
+| [Scheduling](scheduling.md) | `scheduling.telemetry.metrics` |
+| [Resilience](resilient.md) | `resilient.telemetry.{circuitBreaker,retry,timeout,fallback,rateLimiter}.metrics` |
+| [Kafka](kafka.md) | the consumer's or publisher's own configuration path plus `.telemetry.metrics` |
+| [Cache](cache.md) | the cache's `@Cache` configuration path plus `.telemetry.metrics` |
+| [S3 client](s3-client.md) | `s3client.aws.telemetry.metrics` |
+| Redis (`Lettuce`) | `lettuce.telemetry.metrics` |
+| [Camunda 7 BPMN](camunda7-bpmn.md) | `camunda.engine.bpmn.telemetry.metrics` |
+| [Camunda 7 REST](camunda7-rest.md) | `camunda.rest.telemetry.metrics` |
+| [Camunda 8 worker](camunda8-worker.md) | `zeebe.worker.telemetry.metrics` |
+
+Some modules add their own keys next to `enabled` / `slo` / `tags`:
+
+- [Database](database-common.md) — `driverMetrics` (default: `true`) registers the `HikariCP` pool metrics of the connection pool in the same registry.
+- [Kafka](kafka.md) — `driverMetrics` (default: `false`) registers the native `Kafka` client metrics through Micrometer's `KafkaClientMetrics` binder, under the `kafka.*` name prefix.
+- [Camunda 7 BPMN](camunda7-bpmn.md) — `engineMetrics` (default: `false`) enables the `Camunda` engine's own metrics.
+
+Metric collection parameters are also described in the modules that collect metrics: [HTTP server](http-server.md), [HTTP client](http-client.md), [gRPC server](grpc-server.md), [gRPC client](grpc-client.md), [Scheduling](scheduling.md), [Cache](cache.md), and other integrations.
 
 ## Usage { #usage }
 
 Kora follows the notation described in the [`Prometheus` specification](https://prometheus.io/docs/concepts/data_model/).
 
-After the module is connected, `PrometheusMeterRegistry` is registered in `Metrics.globalRegistry` and used by all components that collect metrics.
+After the module is connected, `PrometheusMeterRegistry` is created, registered in `Metrics.globalRegistry`, and used by all components that collect metrics.
 When the application stops, this registry is removed from `Metrics.globalRegistry` and closed.
 
-The `PrometheusMeterRegistryWrapper` component is a `Root` component and implements `Wrapped<PrometheusMeterRegistry>`, so user code can inject either the generic `MeterRegistry` or the concrete `PrometheusMeterRegistry`:
+The registry is provided by the `PrometheusMeterRegistryWrapper` component, which is a `Root` component and implements `Wrapped<MeterRegistry>`,
+so user code injects the `MeterRegistry` contract:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     public final class SomeService {
+
         private final MeterRegistry meterRegistry;
 
         public SomeService(MeterRegistry meterRegistry) {
@@ -168,18 +206,18 @@ The `PrometheusMeterRegistryWrapper` component is a `Root` component and impleme
     )
     ```
 
-The registry automatically gets standard `Micrometer` binders: `ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `JvmThreadMetrics`, `ProcessorMetrics`, `FileDescriptorMetrics`, `UptimeMetrics`.
+The registry automatically gets standard `Micrometer` binders: `ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `ProcessorMetrics`, `JvmThreadMetrics`, `FileDescriptorMetrics`, `UptimeMetrics`.
+These are bound when the registry is created and do **not** depend on any `telemetry.metrics.enabled` flag.
 Kora also registers the `kora.up` metric with value `1` and the `version` tag.
 
-Kora additionally bridges the `Micrometer` registry to an `OpenTelemetry` `MeterProvider` (`MicrometerMeterProvider` from `io.opentelemetry.contrib.metrics.micrometer`), so libraries instrumented with the `OpenTelemetry` metrics API publish through the same `PrometheusMeterRegistry`.
+Kora additionally bridges the `Micrometer` registry to an `OpenTelemetry` `MeterProvider` (`MicrometerMeterProvider` from `io.opentelemetry.contrib.metrics.micrometer`), so libraries instrumented with the `OpenTelemetry` metrics API publish through the same registry.
+The bridge is a `@DefaultComponent` and accepts an optional `CallbackRegistrar` component if you need to control how asynchronous instruments are polled.
 
-A runnable baseline that wires `MetricsModule` alongside `HoconConfigModule`, `LogbackModule`, `UndertowHttpServerModule`, and the `OpenTelemetry` exporter is available in the [kora-java-telemetry](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-telemetry) example.
+A runnable baseline that wires `MetricsModule` alongside `HoconConfigModule`, `LogbackModule`, `JdbcDatabaseModule`, `UndertowPublicHttpServerModule`, and the `OpenTelemetry` tracing exporter is available in the [kora-java-telemetry](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-telemetry) example.
 
-### Prometheus Export { #prometheus-export }
+### Prometheus export { #prometheus-export }
 
-Metrics are exposed in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) text format by the [private HTTP server](http-server.md) on the `privateApiHttpMetricsPath` (default `/metrics`) served at `privateApiHttpPort`.
-The private server must have a port configured for the endpoint to be reachable.
-With the example configuration (`privateApiHttpPort = 8085`), the current metric snapshot can be scraped like this:
+Metrics are exposed in the [Prometheus](https://prometheus.io/docs/concepts/data_model/) text format by the [system HTTP server](http-server.md#system-server) on `httpServer.system.metricsPath` (default `/metrics`) served at `httpServer.system.port` (default `8085`):
 
 ```shell
 curl http://localhost:8085/metrics
@@ -187,7 +225,40 @@ curl http://localhost:8085/metrics
 
 Point your `Prometheus` scrape target (or any compatible collector) at the same host, port, and path.
 
-### Custom Metric { #custom-metric }
+The endpoint always answers `200`. What it returns depends on what is bound in the container:
+
+- `MetricsModule` connected — the `Prometheus` text exposition of the registry snapshot.
+- `MetricsModule` not connected — the body `# Metric Scraper disabled`, because no `MetricsScraper` component exists.
+- A custom `MeterRegistry` that is not a `PrometheusMeterRegistry` — an empty body, because that registry cannot be scraped in the `Prometheus` format.
+  Provide your own `MetricsScraper` implementation in that case: it overrides the `@DefaultComponent` supplied by `MetricsModule`.
+
+`MetricsScraper` is a single-method contract from the `io.koraframework.telemetry.common` package:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface MetricsScraperModule {
+
+        default MetricsScraper metricsScraper(MeterRegistry registry) {
+            return os -> os.write(renderMyFormat(registry).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface MetricsScraperModule {
+
+        fun metricsScraper(registry: MeterRegistry): MetricsScraper {
+            return MetricsScraper { os -> os.write(renderMyFormat(registry).toByteArray()) }
+        }
+    }
+    ```
+
+### Custom metric { #custom-metric }
 
 For a custom metric, it is better to create a separate component, inject `MeterRegistry`, and reuse created `Meter` instances.
 Do not create a new metric on every method call: if the tag set depends on the operation, use a key with limited cardinality and cache the metric in `ConcurrentHashMap`.
@@ -201,6 +272,7 @@ For example, a duration metric for an external operation:
     ```java
     @Component
     public final class ExternalOperationMetrics {
+
         private record Key(String operation, String status) {}
 
         private final MeterRegistry meterRegistry;
@@ -229,6 +301,7 @@ For example, a duration metric for an external operation:
     class ExternalOperationMetrics(
         private val meterRegistry: MeterRegistry
     ) {
+
         private data class Key(
             val operation: String,
             val status: String
@@ -257,6 +330,7 @@ Do not use user identifiers, request numbers, full error text, or other high-car
 
 To change `PrometheusMeterRegistry` configuration, add a `PrometheusMeterRegistryInitializer` to the container.
 The initializer receives the created registry before standard system metrics are registered, so it can add common tags, `MeterFilter`, renaming rules, or custom `PrometheusMeterRegistry` settings.
+All initializers found in the container are applied in sequence, each receiving the result of the previous one.
 
 **Important**, `PrometheusMeterRegistryInitializer` is applied only once when the application is initialized.
 
@@ -267,6 +341,7 @@ For example, we want to add a common tag for all metrics:
     ```java
     @Module
     public interface MetricsConfigModule {
+
         default PrometheusMeterRegistryInitializer commonTagsInit() {
             return registry -> {
                 registry.config().commonTags("tag", "value");
@@ -281,7 +356,8 @@ For example, we want to add a common tag for all metrics:
     ```kotlin
     @Module
     interface MetricsConfigModule {
-        fun commonTagsInit(): PrometheusMeterRegistryInitializer? {
+
+        fun commonTagsInit(): PrometheusMeterRegistryInitializer {
             return PrometheusMeterRegistryInitializer {
                 it.config().commonTags("tag", "value")
                 it
@@ -290,69 +366,151 @@ For example, we want to add a common tag for all metrics:
     }
     ```
 
-Standard metrics also have their own settings, for example `slo` histogram buckets for `DistributionSummary`/`Timer` metrics, configured per module under [`telemetry.metrics`](#module-metrics).
-When `slo` is not overridden, the defaults depend on the selected `OpenTelemetry` standard:
+Standard metrics also have their own settings, for example the `slo` histogram buckets for `Timer` metrics, configured per module under [`telemetry.metrics`](#module-metrics).
+When `slo` is not overridden, `TelemetryConfig.MetricsConfig#DEFAULT_SLO` is used — 14 buckets:
 
-- `V120` — `DEFAULT_SLO` in **milliseconds**: `1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000`
-- `V123` — `DEFAULT_SLO_V123` in **seconds**: `0.001, 0.010, 0.050, 0.100, 0.200, 0.500, 1, 2, 5, 10, 20, 30, 60, 90`
+`1ms`, `10ms`, `50ms`, `100ms`, `200ms`, `500ms`, `1s`, `2s`, `5s`, `10s`, `20s`, `30s`, `60s`, `90s`
 
-Both arrays are declared in `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig`; the global registry field names are in `ru.tinkoff.kora.micrometer.module.MetricsConfig`.
+The array is declared in `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig` and shared by every module that builds a `Timer`.
 
-### Tag Providers { #tag-providers }
+### Metric factories { #metrics-factory }
 
-The tag set attached to framework metrics is produced by per-module tag providers registered as `@DefaultComponent`.
-To change which tags are emitted for a given integration, supply your own implementation of the corresponding interface as a `@DefaultComponent` override:
+The names and tags of framework metrics are produced by per-module metric factories, one `Default<Module>MetricsFactory` class per integration
+(package `<module>.telemetry.impl`). Each module's telemetry factory accepts that class as an **optional** dependency,
+so supplying your own subclass as a container component replaces the default one:
 
-- `MicrometerHttpServerTagsProvider` (package `ru.tinkoff.kora.micrometer.module.http.server.tag`) — HTTP server metrics
-- `MicrometerHttpClientTagsProvider` (package `ru.tinkoff.kora.micrometer.module.http.client.tag`) — HTTP client metrics
-- `MicrometerGrpcServerTagsProvider` / `MicrometerGrpcClientTagsProvider` (packages `...grpc.server.tag` / `...grpc.client.tag`) — gRPC metrics
-- `MicrometerKafkaConsumerTagsProvider` / `MicrometerKafkaProducerTagsProvider` (packages `...kafka.consumer.tag` / `...kafka.producer.tag`) — Kafka metrics
+===! ":fontawesome-brands-java: `Java`"
 
-The default provider is selected from `metrics.opentelemetrySpec`, so an override replaces the tag mapping for both standards.
+    ```java
+    @Component
+    public final class TenantHttpServerMetricsFactory extends DefaultHttpServerMetricsFactory { //(1)!
+
+        @Override
+        public DefaultHttpServerMetrics create(DefaultHttpServerTelemetry.TelemetryContext context) {
+            return new TenantHttpServerMetrics(context);
+        }
+
+        private static final class TenantHttpServerMetrics extends DefaultHttpServerMetrics {
+
+            private TenantHttpServerMetrics(DefaultHttpServerTelemetry.TelemetryContext context) {
+                super(context);
+            }
+
+            @Override
+            protected Timer.Builder createMetricServerDuration(DurationKey metricKey, //(2)!
+                                                               HttpServerRequest request,
+                                                               HttpServerResponse response,
+                                                               @Nullable Throwable throwable) {
+                return super.createMetricServerDuration(metricKey, request, response, throwable)
+                    .tag("tenant", "default");
+            }
+        }
+    }
+    ```
+
+    1.  The factory is picked up by `HttpServerModule#defaultHttpServerTelemetryFactory` in place of the built-in `DefaultHttpServerMetricsFactory`
+    2.  Only static tags may be added in the builder — a tag whose value varies per request must be part of the metric key, otherwise different tag sets collide on one `Meter`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class TenantHttpServerMetricsFactory : DefaultHttpServerMetricsFactory() { //(1)!
+
+        override fun create(context: DefaultHttpServerTelemetry.TelemetryContext): DefaultHttpServerMetrics {
+            return TenantHttpServerMetrics(context)
+        }
+
+        private class TenantHttpServerMetrics(
+            context: DefaultHttpServerTelemetry.TelemetryContext
+        ) : DefaultHttpServerMetrics(context) {
+
+            override fun createMetricServerDuration( //(2)!
+                metricKey: DurationKey,
+                request: HttpServerRequest,
+                response: HttpServerResponse,
+                throwable: Throwable?
+            ): Timer.Builder {
+                return super.createMetricServerDuration(metricKey, request, response, throwable)
+                    .tag("tenant", "default")
+            }
+        }
+    }
+    ```
+
+    1.  The factory is picked up by `HttpServerModule#defaultHttpServerTelemetryFactory` in place of the built-in `DefaultHttpServerMetricsFactory`
+    2.  Only static tags may be added in the builder — a tag whose value varies per request must be part of the metric key, otherwise different tag sets collide on one `Meter`
+
+The same pattern applies to every integration, the class name follows the module:
+`DefaultHttpClientMetricsFactory`, `DefaultDatabaseMetricsFactory`, `DefaultKafkaConsumerMetricsFactory`, `DefaultKafkaPublisherMetricsFactory`,
+`DefaultGrpcServerMetricsFactory`, `DefaultGrpcClientMetricsFactory`, `DefaultSoapClientMetricsFactory`, `DefaultSchedulingMetricsFactory`,
+`DefaultCaffeineCacheMetricsFactory`, `DefaultRedisCacheMetricsFactory`, `DefaultCircuitBreakerMetricsFactory`, `DefaultRetryMetricsFactory`,
+`DefaultTimeoutMetricsFactory`, `DefaultFallbackMetricsFactory`, `DefaultRateLimiterMetricsFactory`, `DefaultAwsS3ClientMetricsFactory`,
+`DefaultJmsConsumerMetricsFactory`.
+
+When a tag has to depend on the current request, add it to the metric key instead of the builder:
+every factory exposes `create<Metric>Key(...)` methods and key records with a `withExtraTags(Tags)` copy method for exactly that purpose.
+
+If the extra tags are the same for every metric of a module, do not write a factory at all — use the [`telemetry.metrics.tags`](#module-metrics) configuration key.
 
 ## Standard { #standard }
 
-The original metrics format used the `OpenTelemetry` `V120` standard; after Kora `1.1.0`, metrics can also be provided
-in the `OpenTelemetry` `V123` standard. A partial list of changes is available in the [OpenTelemetry documentation](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/)
-and [OpenTelemetry migration guidelines](https://opentelemetry.io/docs/specs/semconv/http/migration-guide/).
+All Kora metrics follow the [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for names and tags,
+and each module uses exactly one naming scheme — there is no configurable specification version.
+Tag keys come from the `io.opentelemetry.semconv` attribute constants, so for example an `HTTP` server metric carries
+`http.request.method`, `http.route`, `url.scheme`, `server.address` and `error.type`.
 
-The `metrics.opentelemetrySpec` parameter affects some metric names, units, and tag sets.
-The reference below lists both `V120` and `V123` variants for such metrics; if no variant is specified, the name is the same for both standards.
+The `Prometheus` exposition names are derived from the `Micrometer` name by the `Prometheus` naming convention:
 
-## Metrics Reference { #metrics-reference }
+- `.` is replaced with `_`;
+- a `Timer` gets the `_seconds` suffix, and the histogram is exposed as `_bucket` / `_count` / `_sum` series plus a separate `_max` gauge;
+- a `Counter` gets its base unit and the `_total` suffix (metrics built with `BaseUnits.OPERATIONS` therefore end with `_operations_total`);
+- a `Gauge` gets its base unit as the suffix, if the metric declares one.
 
-All Kora metrics use [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for naming and tags.
+The `error.type` tag is always present on metrics that can fail — it holds the canonical exception class name, or an empty string on success.
+
+## Metrics reference { #metrics-reference }
 
 [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html) metric types used:
 
-- [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) — used for collecting distributions of arbitrary values.
-This metric type enables efficient data visualization across buckets and percentile calculation.
+- [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) — operation duration with count, sum, max, and histogram bucket support
 - [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) — monotonically increasing counter
 - [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) — current metric value
-- [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) — operation duration with count, sum, max, and buckets support
 
-### HTTP Server { #http-server }
+Every metric listed below additionally carries the tags configured in that module's [`telemetry.metrics.tags`](#module-metrics).
 
-| Metric | Prometheus | Type | Description | Tags |
-|--------|------------|------|-------------|------|
-| `http.server.duration` (`V120`), `http.server.request.duration` (`V123`) | `http_server_duration_milliseconds` (`V120`) / `http_server_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `HTTP` server request processing duration | `V120`: `http.request.method`, `http.response.status_code`, `http.route`, `server.address`, `url.scheme`, `http.target`, `http.method`, `http.status_code`; `V123`: `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
-| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `V120`: `http.route`, `http.request.method`, `server.address`, `url.scheme`, `http.target`, `http.method`; `V123`: `http.route`, `http.request.method`, `server.address`, `url.scheme` |
-
-See [HTTP Server](http-server.md) module documentation for more details.
-
-### HTTP Client { #http-client }
+### HTTP server { #http-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `http.client.duration` (`V120`), `http.client.request.duration` (`V123`) | `http_client_duration_milliseconds` (`V120`) / `http_client_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `HTTP` client request duration | `V120`: `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `http.status_code`, `http.method`, `http.target`, `error.type`; `V123`: `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `http.status_code`, `error.type` |
+| `http.server.request.duration` | `http_server_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` server request processing duration | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address`, `error.type` |
+| `http.server.active_requests` | `http_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active `HTTP` requests | `server.name`, `server.port`, `http.request.method`, `http.route`, `url.scheme`, `server.address` |
 
-See [HTTP Client](http-client.md) module documentation for more details.
+`server.name` distinguishes the public server (`kora-undertow`) from the system one (`kora-undertow-system`); a request that matched no route reports `http.route` as `UNKNOWN_ROUTE`.
+
+See [HTTP server](http-server.md) module documentation for more details.
+
+### HTTP client { #http-client }
+
+| Metric | Prometheus | Type | Description | Tags |
+|--------|------------|------|-------------|------|
+| `http.client.request.duration` | `http_client_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `HTTP` client request duration | `http.request.method`, `http.response.status_code`, `server.address`, `url.scheme`, `http.route`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+
+`system.config` is the client's configuration path, `system.name.simple` and `system.name.canonical` are the simple and canonical names of the declarative client interface.
+
+See [HTTP client](http-client.md) module documentation for more details.
 
 ### Database { #database }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `database.client.request.duration` (`V120`), `db.client.request.duration` (`V123`) | `database_client_request_duration_milliseconds` (`V120`) / `db_client_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Database operation/query duration | `V120`: `pool`, `query.id`, `query.operation`, `error`; `V123`: `db.pool.name`, `db.statement`, `db.operation`, `error.type` |
+| `db.client.operation.duration` | `db_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Database operation/query duration | `db.client.connection.pool.name`, `db.system.name`, `db.query.text`, `db.operation.name`, `error.type` |
+
+`db.system.name` is taken from the connection string for [JDBC](database-jdbc.md) (`postgresql`, `mysql`, ...) and is `cassandra` for [Cassandra](database-cassandra.md).
+`db.query.text` holds the query identifier, not the raw `SQL` text.
+
+With `telemetry.metrics.driverMetrics = true` (the default), the connection pool also registers its own metrics in the same registry:
+`HikariCP` pool metrics for [JDBC](database-jdbc.md), and the `DataStax` driver metrics selected by `cassandra.telemetry.metrics` for [Cassandra](database-cassandra.md).
 
 See [Database](database-common.md) module documentation for more details.
 
@@ -360,65 +518,76 @@ See [Database](database-common.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `messaging.receive.duration` | `messaging_receive_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Single message processing duration | `messaging.system`, `messaging.destination`, `messaging.operation`, `error.type` |
-| `messaging.publish.duration` | `messaging_publish_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Message send duration | `messaging.system`, `messaging.destination`, `messaging.partition_id`, `error.type` |
-| `messaging.process.batch.duration` | `messaging_process_batch_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Message batch processing duration | `messaging.system`, `messaging.destination`, `error.type` |
-| `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Consumer lag per partition | `messaging.system`, `messaging.destination`, `messaging.partition_id`, `messaging.consumer_group` |
+| `messaging.process.duration` | `messaging_process_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Single message processing duration | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.process.batch.duration` | `messaging_process_batch_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message batch processing duration | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.kafka.consumer.lag` | `messaging_kafka_consumer_lag` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Consumer lag per partition | `messaging.system`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.operation.duration` | `messaging_client_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Message send duration | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `messaging.client.sent.messages` | `messaging_client_sent_messages_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of sent messages | `messaging.system`, `messaging.client.id`, `messaging.operation.type`, `messaging.destination.name`, `messaging.destination.partition.id`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+
+`messaging.system` is always `kafka`; `messaging.operation.type` on the publisher side is `send`.
 
 See [Kafka](kafka.md) module documentation for more details.
 
-### gRPC Server { #grpc-server }
+### gRPC server { #grpc-server }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.server.duration` | `rpc_server_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | gRPC server call processing duration | `rpc.service`, `rpc.method`, `rpc.status`, `error.type` |
-| `rpc.server.requests_per_rpc` | `rpc_server_requests_per_rpc_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of requests received per RPC | `rpc.service`, `rpc.method` |
-| `rpc.server.responses_per_rpc` | `rpc_server_responses_per_rpc_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of responses sent per RPC | `rpc.service`, `rpc.method` |
+| `rpc.server.duration` | `rpc_server_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC server call processing duration | `server.name`, `server.port`, `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code` |
 
-See [gRPC Server](grpc-server.md) module documentation for more details.
+See [gRPC server](grpc-server.md) module documentation for more details.
 
-### gRPC Client { #grpc-client }
+### gRPC client { #grpc-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | gRPC client call duration | `rpc.service`, `rpc.method`, `rpc.status`, `error.type`, `server.address` |
-| `rpc.client.requests_per_rpc` | `rpc_client_requests_per_rpc_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of requests sent per RPC | `rpc.service`, `rpc.method`, `server.address` |
-| `rpc.client.responses_per_rpc` | `rpc_client_responses_per_rpc_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of responses received per RPC | `rpc.service`, `rpc.method`, `server.address` |
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | gRPC client call duration | `rpc.system`, `rpc.service`, `rpc.method`, `rpc.grpc.status_code`, `server.address`, `server.port`, `error.type` |
 
-See [gRPC Client](grpc-client.md) module documentation for more details.
+`rpc.system` is `grpc` for both the gRPC server and the gRPC client.
 
-### SOAP Client { #soap-client }
+See [gRPC client](grpc-client.md) module documentation for more details.
+
+### SOAP client { #soap-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `rpc.client.duration` | `rpc_client_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | SOAP client call duration | `rpc.system`, `rpc.service`, `rpc.method`, `rpc.result`, `server.address`, `server.port` |
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | SOAP client call duration | `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type`, `fault.code`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-See [SOAP Client](soap-client.md) module documentation for more details.
+`rpc.system` is `soap`; `fault.code` holds the `SOAP` fault code and is empty when the call did not return a fault.
+
+See [SOAP client](soap-client.md) module documentation for more details.
 
 ### Scheduling { #scheduling }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `scheduling.job.duration` | `scheduling_job_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Scheduled job execution duration | `code.class`, `code.function`, `error.type` |
+| `scheduling.job.duration` | `scheduling_job_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Scheduled job execution duration | `code.function.name`, `system.name.simple`, `system.name.canonical`, `error.type`, and `system.config` when the job declares a configuration path |
 
 See [Scheduling](scheduling.md) module documentation for more details.
 
 ### Cache { #cache }
 
+Distributed `Redis` caches report their own operation metrics:
+
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `cache.duration` | `cache_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache operation duration (`GET`, `SET`, `DELETE`, and others) | `cache`, `operation`, `origin`, `status` |
-| `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Cache hit/miss counter | `cache`, `origin`, `type` |
-| `cache.hit`, `cache.miss` | `cache_hit_total`, `cache_miss_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Deprecated hit/miss counters kept for compatibility | `cache`, `origin` |
+| `cache.operation.duration` | `cache_operation_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache operation duration (`GET`, `PUT`, `INVALIDATE`, and others) | `origin`, `operation`, `error.type`, `system.config`, `system.name.simple`, `system.name.canonical` |
+| `cache.ratio` | `cache_ratio_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Cache hit/miss counter | `origin`, `operation`, `type`, `system.config`, `system.name.simple`, `system.name.canonical` |
 
-Standard `Micrometer` metrics are automatically registered when using `Caffeine`:
+`origin` is `redis`, `operation` is the `Cache` contract operation name, and `type` on `cache.ratio` is `hit` or `miss`.
 
-| Metric | Prometheus | Type | Description |
-|--------|------------|------|-------------|
-| `cache.gets` | `cache_gets_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache requests |
-| `cache.puts` | `cache_puts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache writes |
-| `cache.evictions` | `cache_evictions_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache evictions |
-| `cache.size` | `cache_size` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Current cache size |
+`Caffeine` caches do not report `cache.operation.duration` and `cache.ratio` — their telemetry delegates to the standard `Micrometer` cache binders,
+which are attached to the underlying cache when `telemetry.metrics.enabled = true`:
+
+| Metric | Prometheus | Type | Description | Tags |
+|--------|------------|------|-------------|------|
+| `cache.gets` | `cache_gets_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache lookups | `cache`, `result` (`hit` / `miss`) |
+| `cache.puts` | `cache_puts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of cache writes | `cache` |
+| `cache.evictions` | `cache_evictions_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of evicted entries | `cache` |
+| `cache.eviction.weight` | `cache_eviction_weight_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Total weight of evicted entries | `cache` |
+| `cache.loads` | `cache_loads_seconds` / `_count` / `_sum` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Cache value load duration | `cache`, `result` (`success` / `failure`) |
+| `cache.size` | `cache_size` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Current cache size | `cache` |
+
+All `Caffeine` metrics carry the `cache` tag holding the cache name plus the tags from `telemetry.metrics.tags`.
 
 See [Cache](cache.md) module documentation for more details.
 
@@ -426,20 +595,28 @@ See [Cache](cache.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Redis command completion duration | `type`, `remote`, `local`, `command`, `error.type` |
-| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Redis command first response duration | `type`, `remote`, `local`, `command`, `error.type` |
+| `lettuce.command.completion.duration` | `lettuce_command_completion_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command completion duration | `type`, `remote`, `command`, `error.type` |
+| `lettuce.command.firstresponse.duration` | `lettuce_command_firstresponse_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Redis command first response duration | `type`, `remote`, `command`, `error.type` |
+
+`type` distinguishes the client kind, `remote` is the address of the `Redis` node, `command` is the `Redis` command name.
+On these two metrics `error.type` holds the `Redis` error text rather than an exception class name.
 
 ### Resilience { #resilience }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
 | `resilient.circuitbreaker.state` | `resilient_circuitbreaker_state` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Circuit breaker state (0=CLOSED, 1=HALF_OPEN, 2=OPEN) | `name` |
-| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Circuit breaker state transitions | `name`, `state` |
-| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Circuit breaker call acquire attempts/rejections | `name`, `state`, `status` |
-| `resilient.retry.attempts` | `resilient_retry_attempts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of retry attempts | `name` |
-| `resilient.retry.exhausted` | `resilient_retry_exhausted_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of exhausted retries | `name` |
-| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of timeouts | `name` |
-| `resilient.fallback.attempts` | `resilient_fallback_attempts_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of fallback invocations | `name`, `type` |
+| `resilient.circuitbreaker.transition` | `resilient_circuitbreaker_transition_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Transitions into `OPEN` and `HALF_OPEN` | `name`, `state` |
+| `resilient.circuitbreaker.call.acquire` | `resilient_circuitbreaker_call_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Calls admitted in `HALF_OPEN` and calls rejected in `OPEN` | `name`, `state`, `status` |
+| `resilient.circuitbreaker.call.result` | `resilient_circuitbreaker_call_result_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Call outcomes registered by the circuit breaker | `name`, `state`, `status` |
+| `resilient.retry.attempts` | `resilient_retry_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of retry attempts | `name` |
+| `resilient.retry.exhausted` | `resilient_retry_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of exhausted retries | `name`, `reason` |
+| `resilient.timeout.exhausted` | `resilient_timeout_exhausted_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of timeouts | `name` |
+| `resilient.fallback.attempts` | `resilient_fallback_attempts_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of fallback invocations | `name`, `type` |
+| `resilient.ratelimiter.acquire` | `resilient_ratelimiter_acquire_operations_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Rate limiter permit acquisitions | `name`, `status` |
+
+Tag values: `status` is `PERMITTED` / `REJECTED` / `DISABLED` on `call.acquire` and `SUCCESS` / `FAILURE` / `IGNORED_FAILURE` / `FALLBACK` on `call.result`;
+`reason` is `EXHAUSTED_ATTEMPTS` or `EXHAUSTED_BUDGET`; the rate limiter's `status` is `acquired` or `rejected`; the fallback's `type` is `executed`.
 
 See [Resilience](resilient.md) module documentation for more details.
 
@@ -447,23 +624,27 @@ See [Resilience](resilient.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `messaging.receive.duration` | `messaging_receive_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | JMS message receive duration | `messaging.system`, `messaging.destination.name`, `error.type` |
+| `messaging.receive.duration` | `messaging_receive_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | JMS message receive duration | `messaging.system`, `messaging.destination.name`, `error.type` |
 
-### S3 Client { #s3-client }
+`messaging.system` is always `jms`.
+
+### S3 client { #s3-client }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `s3.client.duration` | `s3_client_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | S3 HTTP request duration | `aws.s3.bucket`, `aws.operation.name`, `error.type` |
-| `s3.kora.client.duration` | `s3_kora_client_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Kora S3 client operation duration | `aws.client.name`, `aws.s3.bucket`, `aws.operation.name`, `error.type` |
+| `rpc.client.duration` | `rpc_client_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | S3 client operation duration | `rpc.system`, `rpc.method`, `aws.s3.bucket`, `error.type`, `system.path`, `system.name.simple`, `system.name.canonical` |
 
-See [S3 Client](s3-client.md) module documentation for more details.
+`rpc.system` is `s3-aws` for the `AWS` based client. `rpc.method` is the S3 operation name and `system.path` is the client's configuration path.
+
+See [S3 client](s3-client.md) module documentation for more details.
 
 ### Camunda 7 BPMN { #camunda-7-bpmn }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_milliseconds` / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | Camunda BPMN Java delegate execution duration | `delegate`, `business.key`, `error.type` |
-| `camunda.engine.delegate.active_requests` | `camunda_engine_delegate_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active delegate executions | `delegate`, `business.key` |
+| `camunda.engine.delegate.duration` | `camunda_engine_delegate_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Camunda BPMN Java delegate execution duration | `delegate`, `error.type` |
+
+The engine's own metrics are published separately and require `camunda.engine.bpmn.telemetry.metrics.engineMetrics = true`.
 
 See [Camunda 7 BPMN](camunda7-bpmn.md) module documentation for more details.
 
@@ -471,20 +652,20 @@ See [Camunda 7 BPMN](camunda7-bpmn.md) module documentation for more details.
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `camunda.rest.server.duration` (`V120`), `camunda.rest.server.request.duration` (`V123`) | `camunda_rest_server_duration_milliseconds` (`V120`) / `camunda_rest_server_request_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `Camunda REST` request duration | `V120`: `http.request.method`, `http.response.status_code`, `http.route`, `server.address`, `url.scheme`, `http.target`, `http.method`, `http.status_code`; `V123`: `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `error.type` |
-| `camunda.rest.server.active_requests` | `camunda_rest_server_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active Camunda REST requests | `http.route`, `http.request.method`, `server.address`, `url.scheme` |
+| `camunda.rest.request.duration` | `camunda_rest_request_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `Camunda REST` request duration | `http.request.method`, `http.response.status_code`, `http.route`, `url.scheme`, `server.address`, `http.response.result_code`, `error.type` |
+| `camunda.rest.active_requests` | `camunda_rest_active_requests` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of active Camunda REST requests | `http.request.method`, `http.route`, `url.scheme`, `server.address` |
 
 See [Camunda 7 REST](camunda7-rest.md) module documentation for more details.
 
-### Camunda 8 Worker { #camunda-8-worker }
+### Camunda 8 worker { #camunda-8-worker }
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `zeebe.worker.handler` (`V120`), `zeebe.worker.handler.duration` (`V123`) | `zeebe_worker_handler_seconds` (`V120`) / `zeebe_worker_handler_duration_seconds` (`V123`) / `_count` / `_sum` / `_bucket` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | `Zeebe Worker` job handler duration | `job.name`, `job.type`, `status`, `error`, `error.code` |
-| `zeebe.worker.handler` | `zeebe_worker_handler_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | `Zeebe Worker` error counter | `job.name`, `job.type`, `status`, `error.code` |
-| `zeebe.client.worker.job` | `zeebe_client_worker_job_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of activated and handled `Zeebe` jobs | `action`, `type` |
+| `zeebe.worker.handler.duration` | `zeebe_worker_handler_duration_seconds` / `_count` / `_sum` / `_bucket` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | `Zeebe Worker` job handler duration | `job.name`, `job.type`, `error.type` |
 
-See [Camunda 8 Worker](camunda8-worker.md) module documentation for more details.
+The `Camunda` client additionally publishes its own worker job metrics into the same registry, tagged with the job `type`.
+
+See [Camunda 8 worker](camunda8-worker.md) module documentation for more details.
 
 ### System { #system }
 
@@ -494,28 +675,38 @@ See [Camunda 8 Worker](camunda8-worker.md) module documentation for more details
 
 ### JVM { #jvm }
 
-Standard JVM metrics are collected automatically via [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html):
+Standard `JVM` and process metrics are collected automatically by the [Micrometer](https://docs.micrometer.io/micrometer/reference/concepts.html) binders bound to the registry at startup.
+They do not depend on any module's `telemetry.metrics.enabled` setting:
 
 | Metric | Prometheus | Type | Description | Tags |
 |--------|------------|------|-------------|------|
-| `jvm.gc.pause` | `jvm_gc_pause_milliseconds` / `_count` / `_sum` / `_max` | [DistributionSummary](https://docs.micrometer.io/micrometer/reference/concepts/distribution-summaries.html) | GC pause duration | `action`, `cause` |
-| `jvm.gc.memory.allocated` | `jvm_gc_memory_allocated_bytes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Allocated memory size | — |
-| `jvm.gc.memory.promoted` | `jvm_gc_memory_promoted_bytes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Memory promoted to old gen | — |
-| `jvm.gc.max.data.size` | `jvm_gc_max_data_size_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Max old gen size | — |
-| `jvm.gc.live.data.size` | `jvm_gc_live_data_size_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Old gen size after full GC | — |
 | `jvm.memory.used` | `jvm_memory_used_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Used memory | `area`, `id` |
 | `jvm.memory.committed` | `jvm_memory_committed_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Committed JVM memory | `area`, `id` |
 | `jvm.memory.max` | `jvm_memory_max_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Max available memory | `area`, `id` |
+| `jvm.buffer.count` | `jvm_buffer_count_buffers` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of buffers in the pool | `id` |
+| `jvm.buffer.memory.used` | `jvm_buffer_memory_used_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Memory used by buffers | `id` |
+| `jvm.buffer.total.capacity` | `jvm_buffer_total_capacity_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Total buffer pool capacity | `id` |
+| `jvm.gc.pause` | `jvm_gc_pause_seconds` / `_count` / `_sum` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | GC pause duration | `gc`, `action`, `cause` |
+| `jvm.gc.concurrent.phase.time` | `jvm_gc_concurrent_phase_time_seconds` / `_count` / `_sum` / `_max` | [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) | Concurrent GC phase duration | `gc`, `action`, `cause` |
+| `jvm.gc.memory.allocated` | `jvm_gc_memory_allocated_bytes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Allocated memory size | — |
+| `jvm.gc.memory.promoted` | `jvm_gc_memory_promoted_bytes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Memory promoted to old gen (generational collectors only) | — |
+| `jvm.gc.max.data.size` | `jvm_gc_max_data_size_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Max old gen size | — |
+| `jvm.gc.live.data.size` | `jvm_gc_live_data_size_bytes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Old gen size after full GC | — |
 | `jvm.threads.live` | `jvm_threads_live_threads` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of live threads | — |
 | `jvm.threads.daemon` | `jvm_threads_daemon_threads` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of daemon threads | — |
 | `jvm.threads.peak` | `jvm_threads_peak_threads` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Peak thread count | — |
+| `jvm.threads.started` | `jvm_threads_started_threads_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of started threads | — |
 | `jvm.threads.states` | `jvm_threads_states_threads` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Thread count by state | `state` |
+| `jvm.classes.loaded` | `jvm_classes_loaded_classes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of currently loaded classes | — |
+| `jvm.classes.loaded.count` | `jvm_classes_loaded_count_classes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of classes loaded since start | — |
+| `jvm.classes.unloaded` | `jvm_classes_unloaded_classes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of unloaded classes | — |
 | `process.cpu.usage` | `process_cpu_usage` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Process CPU usage | — |
 | `system.cpu.usage` | `system_cpu_usage` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | System CPU usage | — |
 | `system.cpu.count` | `system_cpu_count` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of available processors | — |
-| `logback.events` | `logback_events_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Logging event count | `level` |
-| `jvm.classes.loaded` | `jvm_classes_loaded_classes` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of loaded classes | — |
-| `jvm.classes.unloaded` | `jvm_classes_unloaded_classes_total` | [Counter](https://docs.micrometer.io/micrometer/reference/concepts/counters.html) | Number of unloaded classes | — |
+| `system.load.average.1m` | `system_load_average_1m` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | System load average over one minute | — |
 | `process.files.open` | `process_files_open_files` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Number of open file descriptors | — |
 | `process.files.max` | `process_files_max_files` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Max file descriptors | — |
-| `process.uptime` | `process_uptime_milliseconds` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Process uptime | — |
+| `process.uptime` | `process_uptime_seconds` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Process uptime | — |
+| `process.start.time` | `process_start_time_seconds` | [Gauge](https://docs.micrometer.io/micrometer/reference/concepts/gauges.html) | Process start time since the Unix epoch | — |
+
+Some of these are registered only when the running `JVM` and operating system expose the corresponding `MXBean` value, so the exact set of series in a scrape depends on the platform.

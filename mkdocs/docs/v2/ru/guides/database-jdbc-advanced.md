@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Продвинутый JDBC с Kora
 summary: Learn advanced Kora JDBC repository patterns with related tables, nullable foreign keys, entity macros, batch inserts, transactions, projections, and custom mappers
+description: "Advanced Kora JDBC repository patterns on PostgreSQL: a second table with a nullable foreign key, @EntityJdbc insert models, the %{entity#inserts} macro, @Batch inserts with @Id generated keys, custom JdbcParameterColumnMapper and JdbcResultColumnMapper components, PostgreSQL array parameters with ANY(:ids), nested @Embedded projections and transactions through JdbcRepository.executor().inTx(...)."
+agent:
+  use_when: "Use this file for questions about advanced Kora JDBC repositories: %{entity#inserts} and other SQL macros, @Batch with @Id generated keys, UpdateCount, custom JdbcParameterColumnMapper / JdbcResultColumnMapper, passing a List into ANY(:ids), @Embedded projections with a column prefix, JdbcExecutor.inTx and its SqlSupplier / SqlRunnable SAM types in Kotlin, TxIsolation and ConnectionContext post-commit actions."
 tags: database, jdbc, postgres, transactions, batch, macros
 ---
 
@@ -37,9 +40,9 @@ SQL-запросу выбирать только те поля, которые �
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
+- JDK 25 или новее
 - Docker или другой локальный экземпляр PostgreSQL
-- Gradle 7+
+- Gradle 9+
 - текстовый редактор или среда разработки
 - пройденное руководство [База данных JDBC](database-jdbc.md)
 
@@ -154,10 +157,11 @@ PostgreSQL может сравнить значение с SQL-массивом 
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
 
-        implementation("ru.tinkoff.kora:database-flyway")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
 
@@ -169,15 +173,17 @@ PostgreSQL может сравнить значение с SQL-массивом 
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
 
-        implementation("ru.tinkoff.kora:database-flyway")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
 
-`database-jdbc` предоставляет инфраструктуру репозиториев и фабрику соединений. `database-flyway` применяет миграции схемы до использования репозиториев. Драйвер PostgreSQL позволяет приложению
-подключиться к базе данных.
+`database-jdbc` предоставляет инфраструктуру репозиториев, исполнитель `JdbcExecutor` для ручных запросов и транзакций, а также пул соединений Hikari. `database-flyway` применяет миграции схемы до
+использования репозиториев; он приносит только `flyway-core`, поэтому артефакт диалекта PostgreSQL `org.flywaydb:flyway-database-postgresql` нужно объявить явно и держать в той же версии, что и
+`flyway-core`, который разрешает Kora `2.0.0.RC1`, — это `13.3.0`. Драйвер PostgreSQL нужен приложению во время выполнения.
 
 ## Модули { #modules }
 
@@ -185,28 +191,28 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/databasejdbc/advanced/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced;
+    package io.koraframework.guide.databasejdbc.advanced;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule;
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule;
+    import io.koraframework.database.jdbc.JdbcDatabaseModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            JdbcDatabaseModule,  // <----- Подключили модуль
-            FlywayJdbcDatabaseModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            JdbcDatabaseModule,  // <----- Connected module
+            FlywayJdbcDatabaseModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -216,28 +222,28 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced
+    package io.koraframework.guide.databasejdbc.advanced
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule
+    import io.koraframework.database.jdbc.JdbcDatabaseModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        JdbcDatabaseModule,  // <----- Подключили модуль
-        FlywayJdbcDatabaseModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        JdbcDatabaseModule,  // <----- Connected module
+        FlywayJdbcDatabaseModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -257,12 +263,12 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskStatus.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskStatus.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto;
+    package io.koraframework.guide.databasejdbc.advanced.task.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public enum TaskStatus {
@@ -274,12 +280,12 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskStatus.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskStatus.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto
+    package io.koraframework.guide.databasejdbc.advanced.task.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     enum class TaskStatus {
@@ -293,16 +299,16 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskDAO.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskDAO.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository;
 
-    import jakarta.annotation.Nullable;
-    import ru.tinkoff.kora.database.common.annotation.Column;
-    import ru.tinkoff.kora.database.common.annotation.Table;
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import org.jspecify.annotations.Nullable;
+    import io.koraframework.database.common.annotation.Column;
+    import io.koraframework.database.common.annotation.Table;
+    import io.koraframework.database.jdbc.annotation.EntityJdbc;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @EntityJdbc
     @Table("tasks")
@@ -315,15 +321,15 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskDAO.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskDAO.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository
+    package io.koraframework.guide.databasejdbc.advanced.task.repository
 
-    import ru.tinkoff.kora.database.common.annotation.Column
-    import ru.tinkoff.kora.database.common.annotation.Table
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.database.common.annotation.Column
+    import io.koraframework.database.common.annotation.Table
+    import io.koraframework.database.jdbc.annotation.EntityJdbc
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @EntityJdbc
     @Table("tasks")
@@ -368,16 +374,16 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusResultMapper.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusResultMapper.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper;
 
     import java.sql.ResultSet;
     import java.sql.SQLException;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.database.jdbc.mapper.result.JdbcResultColumnMapper;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.database.jdbc.mapper.result.JdbcResultColumnMapper;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @Component
     public final class TaskStatusResultMapper implements JdbcResultColumnMapper<TaskStatus> {
@@ -390,17 +396,17 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     }
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusParameterMapper.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusParameterMapper.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper;
 
     import java.sql.PreparedStatement;
     import java.sql.SQLException;
     import java.sql.Types;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.database.jdbc.mapper.parameter.JdbcParameterColumnMapper;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.database.jdbc.mapper.parameter.JdbcParameterColumnMapper;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @Component
     public final class TaskStatusParameterMapper implements JdbcParameterColumnMapper<TaskStatus> {
@@ -418,15 +424,15 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusResultMapper.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusResultMapper.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper
 
     import java.sql.ResultSet
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.database.jdbc.mapper.result.JdbcResultColumnMapper
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.database.jdbc.mapper.result.JdbcResultColumnMapper
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @Component
     class TaskStatusResultMapper : JdbcResultColumnMapper<TaskStatus> {
@@ -438,19 +444,19 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     }
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusParameterMapper.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/TaskStatusParameterMapper.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper
 
     import java.sql.PreparedStatement
     import java.sql.Types
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.database.jdbc.mapper.parameter.JdbcParameterColumnMapper
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.database.jdbc.mapper.parameter.JdbcParameterColumnMapper
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @Component
-    class TaskStatusParameterMapper : JdbcParameterColumnMapper<TaskStatus?> {
+    class TaskStatusParameterMapper : JdbcParameterColumnMapper<TaskStatus> {
 
         override fun set(stmt: PreparedStatement, index: Int, value: TaskStatus?) {
             if (value == null) {
@@ -473,17 +479,17 @@ Kora находит эти преобразователи по их обобще
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/ListOfLongJdbcParameterMapper.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/ListOfLongJdbcParameterMapper.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper;
 
     import java.sql.PreparedStatement;
     import java.sql.SQLException;
     import java.sql.Types;
     import java.util.List;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.database.jdbc.mapper.parameter.JdbcParameterColumnMapper;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.database.jdbc.mapper.parameter.JdbcParameterColumnMapper;
 
     @Component
     public final class ListOfLongJdbcParameterMapper implements JdbcParameterColumnMapper<List<Long>> {
@@ -503,20 +509,25 @@ Kora находит эти преобразователи по их обобще
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/mapper/ListOfLongJdbcParameterMapper.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/mapper/ListOfLongJdbcParameterMapper.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.mapper
+    package io.koraframework.guide.databasejdbc.advanced.task.repository.mapper
 
     import java.sql.PreparedStatement
     import java.sql.Types
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.database.jdbc.mapper.parameter.JdbcParameterColumnMapper
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.database.jdbc.mapper.parameter.JdbcParameterColumnMapper
 
     @Component
     class ListOfLongJdbcParameterMapper : JdbcParameterColumnMapper<List<Long>> {
 
-        override fun set(stmt: PreparedStatement, index: Int, value: List<Long>) {
+        override fun set(stmt: PreparedStatement, index: Int, value: List<Long>?) {
+            if (value == null) {
+                stmt.setNull(index, Types.ARRAY)
+                return
+            }
+
             val sqlArray = stmt.connection.createArrayOf("BIGINT", value.toTypedArray())
             stmt.setArray(index, sqlArray)
         }
@@ -524,6 +535,10 @@ Kora находит эти преобразователи по их обобще
     ```
 
 Преобразователь небольшой, но он централизует преобразование массивов. Методы репозитория остаются декларативными, а сгенерированная реализация делегирует привязку этому компоненту.
+
+Контракт `JdbcParameterColumnMapper.set(...)` помечает значение как `@Nullable` через JSpecify, поэтому реализация на Kotlin обязана принимать `List<Long>?` и сама обрабатывать ветку `null`. Объявить
+параметр переопределения как non-null `List<Long>` не получится — код не скомпилируется. При этом обобщенный аргумент интерфейса остается non-null: `JdbcParameterColumnMapper<List<Long>>`, потому что
+именно по этому типу Kora подбирает преобразователь для параметров репозитория.
 
 ## Новый репозиторий { #new-repository }
 
@@ -534,20 +549,20 @@ Kora находит эти преобразователи по их обобще
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskRepository.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.util.List;
-    import ru.tinkoff.kora.database.common.UpdateCount;
-    import ru.tinkoff.kora.database.common.annotation.Batch;
-    import ru.tinkoff.kora.database.common.annotation.Id;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.database.common.UpdateCount;
+    import io.koraframework.database.common.annotation.Batch;
+    import io.koraframework.database.common.annotation.Id;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
+    import io.koraframework.database.jdbc.JdbcRepository;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @Repository
     public interface TaskRepository extends JdbcRepository {
@@ -581,18 +596,18 @@ Kora находит эти преобразователи по их обобще
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskRepository.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository
+    package io.koraframework.guide.databasejdbc.advanced.task.repository
 
-    import ru.tinkoff.kora.database.common.UpdateCount
-    import ru.tinkoff.kora.database.common.annotation.Batch
-    import ru.tinkoff.kora.database.common.annotation.Id
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.database.common.UpdateCount
+    import io.koraframework.database.common.annotation.Batch
+    import io.koraframework.database.common.annotation.Id
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+    import io.koraframework.database.jdbc.JdbcRepository
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @Repository
     interface TaskRepository : JdbcRepository {
@@ -663,20 +678,20 @@ SQL-текст во время обработки аннотаций.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskRepository.java`:
+    Обновите `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.util.List;
-    import ru.tinkoff.kora.database.common.UpdateCount;
-    import ru.tinkoff.kora.database.common.annotation.Batch;
-    import ru.tinkoff.kora.database.common.annotation.Id;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.database.common.UpdateCount;
+    import io.koraframework.database.common.annotation.Batch;
+    import io.koraframework.database.common.annotation.Id;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
+    import io.koraframework.database.jdbc.JdbcRepository;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @Repository
     public interface TaskRepository extends JdbcRepository {
@@ -706,18 +721,18 @@ SQL-текст во время обработки аннотаций.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/TaskRepository.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/TaskRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository
+    package io.koraframework.guide.databasejdbc.advanced.task.repository
 
-    import ru.tinkoff.kora.database.common.UpdateCount
-    import ru.tinkoff.kora.database.common.annotation.Batch
-    import ru.tinkoff.kora.database.common.annotation.Id
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.database.common.UpdateCount
+    import io.koraframework.database.common.annotation.Batch
+    import io.koraframework.database.common.annotation.Id
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+    import io.koraframework.database.jdbc.JdbcRepository
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @Repository
     interface TaskRepository : JdbcRepository {
@@ -758,10 +773,10 @@ SQL-текст во время обработки аннотаций.
 
 ```java
 private static final QueryContext QUERY_CONTEXT_2 = new QueryContext(
-  "INSERT INTO tasks(title, status, description, user_assignee_id) VALUES (:entity.title, :entity.status, :entity.description, :entity.userAssigneeId) RETURNING id",
-  "INSERT INTO tasks(title, status, description, user_assignee_id) VALUES (?, ?, ?, ?) RETURNING id",
-  "TaskRepository.insert"
-);
+      "INSERT INTO tasks(title, status, description, user_assignee_id) VALUES (:entity.title, :entity.status, :entity.description, :entity.userAssigneeId) RETURNING id",
+      "INSERT INTO tasks(title, status, description, user_assignee_id) VALUES (?, ?, ?, ?) RETURNING id",
+      "TaskRepository.insert"
+    );
 ```
 
 Он также показывает, как именно Kora реализует пакетную вставку и сгенерированные ключи:
@@ -788,6 +803,14 @@ try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql(), Statement
     var _result = _result_mapper_1.apply(_rs);
     return Objects.requireNonNull(_result, "Result mapping is expected non-null, but was null");
   }
+} catch (java.sql.SQLException e) {
+  _observation.observeError(e);
+  throw new io.koraframework.database.jdbc.exception.UncheckedSqlException(e);
+} catch (Exception e) {
+  _observation.observeError(e);
+  throw e;
+} finally {
+  _observation.end();
 }
 ```
 
@@ -851,17 +874,17 @@ try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql(), Statement
     Обновите `TaskDAO.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository;
+    package io.koraframework.guide.databasejdbc.advanced.task.repository;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.database.common.annotation.Column;
-    import ru.tinkoff.kora.database.common.annotation.Embedded;
-    import ru.tinkoff.kora.database.common.annotation.Id;
-    import ru.tinkoff.kora.database.common.annotation.Table;
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.repository.UserDAO;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.database.common.annotation.Column;
+    import io.koraframework.database.common.annotation.Embedded;
+    import io.koraframework.database.common.annotation.Id;
+    import io.koraframework.database.common.annotation.Table;
+    import io.koraframework.database.jdbc.annotation.EntityJdbc;
+    import io.koraframework.guide.databasejdbc.advanced.repository.UserDAO;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
 
     @EntityJdbc
     @Table("tasks")
@@ -886,16 +909,16 @@ try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql(), Statement
     Обновите `TaskDAO.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository
+    package io.koraframework.guide.databasejdbc.advanced.task.repository
 
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.database.common.annotation.Column
-    import ru.tinkoff.kora.database.common.annotation.Embedded
-    import ru.tinkoff.kora.database.common.annotation.Id
-    import ru.tinkoff.kora.database.common.annotation.Table
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.repository.UserDAO
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.database.common.annotation.Column
+    import io.koraframework.database.common.annotation.Embedded
+    import io.koraframework.database.common.annotation.Id
+    import io.koraframework.database.common.annotation.Table
+    import io.koraframework.database.jdbc.annotation.EntityJdbc
+    import io.koraframework.guide.databasejdbc.advanced.repository.UserDAO
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
 
     @EntityJdbc
     @Table("tasks")
@@ -991,13 +1014,13 @@ try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql(), Statement
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-database-jdbc-advanced-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/$TaskDAO_SelectAssigned_JdbcRowMapper.java
+    guides/java/kora-java-guide-database-jdbc-advanced-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/advanced/task/repository/$TaskDAO_SelectAssigned_JdbcRowMapper.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-database-jdbc-advanced-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/repository/$TaskDAO_SelectAssigned_JdbcRowMapper.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-advanced-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/repository/$TaskDAO_SelectAssigned_JdbcRowMapper.kt
     ```
 
 Сгенерированный преобразователь показывает, как Kora применяет префикс, читает столбцы с алиасами, применяет преобразователь enum, обрабатывает nullable-поля и собирает вложенные объекты:
@@ -1141,14 +1164,14 @@ JDBC-преобразования строк.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskRequest.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto;
+    package io.koraframework.guide.databasejdbc.advanced.task.dto;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.util.List;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record TaskRequest(List<TaskCreate> tasks) {
@@ -1161,16 +1184,16 @@ JDBC-преобразования строк.
     }
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskResponse.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto;
+    package io.koraframework.guide.databasejdbc.advanced.task.dto;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.time.LocalDateTime;
     import java.util.List;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.dto.UserRequest;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.guide.databasejdbc.advanced.dto.UserRequest;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record TaskResponse(List<TaskCreated> tasks) {
@@ -1195,23 +1218,23 @@ JDBC-преобразования строк.
     }
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskStatusRequest.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskStatusRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto;
+    package io.koraframework.guide.databasejdbc.advanced.task.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record TaskStatusRequest(TaskStatus status) {}
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/MessageResponse.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/dto/MessageResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto;
+    package io.koraframework.guide.databasejdbc.advanced.task.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record MessageResponse(String message) {}
@@ -1219,12 +1242,12 @@ JDBC-преобразования строк.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskRequest.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto
+    package io.koraframework.guide.databasejdbc.advanced.task.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class TaskRequest(
@@ -1239,14 +1262,14 @@ JDBC-преобразования строк.
     }
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskResponse.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto
+    package io.koraframework.guide.databasejdbc.advanced.task.dto
 
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.dto.UserRequest
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.guide.databasejdbc.advanced.dto.UserRequest
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class TaskResponse(
@@ -1274,12 +1297,12 @@ JDBC-преобразования строк.
     }
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/TaskStatusRequest.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/dto/TaskStatusRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto
+    package io.koraframework.guide.databasejdbc.advanced.task.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class TaskStatusRequest(
@@ -1287,12 +1310,12 @@ JDBC-преобразования строк.
     )
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/dto/MessageResponse.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/dto/MessageResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto
+    package io.koraframework.guide.databasejdbc.advanced.task.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class MessageResponse(
@@ -1311,23 +1334,23 @@ JDBC-преобразования строк.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/service/TaskService.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/service/TaskService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.service;
+    package io.koraframework.guide.databasejdbc.advanced.task.service;
 
     import java.time.LocalDateTime;
     import java.util.ArrayList;
     import java.util.List;
     import java.util.Objects;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.dto.UserRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskResponse;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.TaskDAO;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.TaskRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.databasejdbc.advanced.dto.UserRequest;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskRequest;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskResponse;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus;
+    import io.koraframework.guide.databasejdbc.advanced.task.repository.TaskDAO;
+    import io.koraframework.guide.databasejdbc.advanced.task.repository.TaskRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class TaskService {
@@ -1339,7 +1362,7 @@ JDBC-преобразования строк.
         }
 
         public List<TaskResponse.TaskCreated> createTasks(List<TaskRequest.TaskCreate> taskCreates) {
-            return taskRepository.getJdbcConnectionFactory().inTx(() -> {
+            return taskRepository.executor().inTx(() -> {
                 var assigneeIds = taskCreates.stream()
                         .map(TaskRequest.TaskCreate::userAssigneeId)
                         .filter(Objects::nonNull)
@@ -1392,7 +1415,7 @@ JDBC-преобразования строк.
         }
 
         public void assignTask(long taskId, Long userId) {
-            taskRepository.getJdbcConnectionFactory().inTx(() -> {
+            taskRepository.executor().inTx(() -> {
                 var updated = taskRepository.updateAssignee(taskId, userId);
                 if (updated.value() < 1) {
                     throw HttpServerResponseException.of(404, "Task not found");
@@ -1421,21 +1444,21 @@ JDBC-преобразования строк.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/service/TaskService.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/service/TaskService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.service
+    package io.koraframework.guide.databasejdbc.advanced.task.service
 
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.database.jdbc.JdbcHelper.SqlFunction1
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.dto.UserRequest
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskRequest
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskResponse
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatus
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.TaskDAO
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.repository.TaskRepository
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.database.jdbc.JdbcExecutor
+    import io.koraframework.guide.databasejdbc.advanced.dto.UserRequest
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskRequest
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskResponse
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatus
+    import io.koraframework.guide.databasejdbc.advanced.task.repository.TaskDAO
+    import io.koraframework.guide.databasejdbc.advanced.task.repository.TaskRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
 
     @Component
     class TaskService(
@@ -1443,7 +1466,7 @@ JDBC-преобразования строк.
     ) {
 
         fun createTasks(taskCreates: List<TaskRequest.TaskCreate>): List<TaskResponse.TaskCreated> {
-            return taskRepository.jdbcConnectionFactory.inTx(SqlFunction1 {
+            return taskRepository.executor().inTx(JdbcExecutor.SqlSupplier {
                 val assigneeIds = taskCreates
                     .mapNotNull { it.userAssigneeId }
                     .distinct()
@@ -1488,7 +1511,7 @@ JDBC-преобразования строк.
         }
 
         fun assignTask(taskId: Long, userId: Long) {
-            taskRepository.jdbcConnectionFactory.inTx(SqlFunction1 {
+            taskRepository.executor().inTx(JdbcExecutor.SqlRunnable {
                 val updated = taskRepository.updateAssignee(taskId, userId)
                 if (updated.value() < 1) {
                     throw HttpServerResponseException.of(404, "Task not found")
@@ -1522,8 +1545,8 @@ JDBC-преобразования строк.
 У метода есть одно важное правило согласованности: либо создаются все запрошенные задачи, либо не создается ни одна. Это правило важно, потому что запрос пакетный. Если первая задача содержит
 корректного исполнителя, вторая — отсутствующего исполнителя, а третья вообще без исполнителя, сохранение только части запроса оставило бы клиента API с неожиданным частичным результатом.
 
-`taskRepository.getJdbcConnectionFactory().inTx(...)` открывает JDBC-транзакцию вокруг лямбды. Каждый метод репозитория, вызванный внутри этой лямбды, использует одно и то же транзакционное
-соединение:
+`JdbcRepository` отдает исполнитель через `executor()`, и вызов `taskRepository.executor().inTx(...)` открывает JDBC-транзакцию вокруг лямбды. Каждый метод репозитория, вызванный внутри этой лямбды,
+использует одно и то же транзакционное соединение:
 
 1. `findExistingAssigneeId(assigneeIds)` проверяет уникальные non-`null` идентификаторы исполнителей.
 2. Если какие-то исполнители отсутствуют, сервис выбрасывает `HttpServerResponseException`.
@@ -1541,33 +1564,62 @@ JDBC-преобразования строк.
 
 `UpdateCount` используется для операций обновления, потому что SQL-обновления могут затронуть ноль строк. Сервис превращает этот факт базы данных в HTTP-facing `404`.
 
+### Выбор перегрузки `inTx` { #choosing-intx-overload }
+
+У `JdbcExecutor.inTx(...)` восемь перегрузок. Четыре из них описывают форму обратного вызова — `SqlFunction<ConnectionContext, T>`, `SqlSupplier<T>`, `SqlConsumer<ConnectionContext>`, `SqlRunnable`, — и
+у каждой есть вариант с ведущим параметром `TxIsolation`:
+
+```java
+var created = taskRepository.executor().inTx(JdbcExecutor.TxIsolation.REPEATABLE_READ, () -> {
+    // repository calls that need a stronger isolation level
+    return result;
+});
+```
+
+В Java компилятор выбирает перегрузку по форме лямбды, поэтому достаточно `inTx(() -> { ... })`. В Kotlin голая лямбда неоднозначна для такого набора перегрузок, и компилятор сообщает
+`Overload resolution ambiguity`. Поэтому сервис на Kotlin создает SAM явно: `JdbcExecutor.SqlSupplier { ... }`, когда блок возвращает значение, и `JdbcExecutor.SqlRunnable { ... }`, когда не возвращает.
+
+Перегрузка `SqlFunction<ConnectionContext, T>` дает доступ к `ConnectionContext`, через который можно зарегистрировать действия, выполняемые после того, как исход транзакции известен:
+
+```java
+taskRepository.executor().inTx(ctx -> {
+    var taskIds = taskRepository.insert(tasks);
+    ctx.afterCommit(connection -> log.info("committed {} tasks", taskIds.size()));
+    ctx.afterRollback((connection, error) -> log.warn("task batch rolled back", error));
+    return taskIds;
+});
+```
+
+Зарегистрировать `afterCommit(...)` и `afterRollback(...)` можно только внутри активной транзакции, иначе будет выброшено `IllegalStateException`. Это подходящее место для побочных эффектов, которые не
+должны происходить при откате, например для публикации события о строках, которые действительно сохранены.
+
 ## Новый контроллер { #new-controller }
 
 Контроллер остается тонким. Он сопоставляет HTTP-маршруты с методами сервиса, управляет кодами состояния и возвращает JSON DTO. В нем нет SQL или правил транзакций.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/databasejdbc/advanced/task/controller/TaskController.java`:
+    Создайте `src/main/java/io/koraframework/guide/databasejdbc/advanced/task/controller/TaskController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.controller;
+    package io.koraframework.guide.databasejdbc.advanced.task.controller;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.util.List;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.MessageResponse;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskResponse;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatusRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.service.TaskService;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.HttpResponseEntity;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.common.annotation.Query;
-    import ru.tinkoff.kora.http.common.header.HttpHeaders;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.MessageResponse;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskRequest;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskResponse;
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatusRequest;
+    import io.koraframework.guide.databasejdbc.advanced.task.service.TaskService;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.HttpResponseEntity;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.common.annotation.Query;
+    import io.koraframework.http.common.header.HttpHeaders;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -1617,25 +1669,25 @@ JDBC-преобразования строк.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/advanced/task/controller/TaskController.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/databasejdbc/advanced/task/controller/TaskController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.advanced.task.controller
+    package io.koraframework.guide.databasejdbc.advanced.task.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.MessageResponse
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskRequest
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskResponse
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.dto.TaskStatusRequest
-    import ru.tinkoff.kora.guide.databasejdbc.advanced.task.service.TaskService
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.HttpResponseEntity
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.common.annotation.Query
-    import ru.tinkoff.kora.http.common.header.HttpHeaders
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.MessageResponse
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskRequest
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskResponse
+    import io.koraframework.guide.databasejdbc.advanced.task.dto.TaskStatusRequest
+    import io.koraframework.guide.databasejdbc.advanced.task.service.TaskService
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.HttpResponseEntity
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.common.annotation.Query
+    import io.koraframework.http.common.header.HttpHeaders
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -1691,16 +1743,16 @@ JDBC-преобразования строк.
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    db {
-      jdbcUrl = ${POSTGRES_JDBC_URL} //(1)!
-      username = ${POSTGRES_USER} //(2)!
-      password = ${POSTGRES_PASS} //(3)!
-      maxPoolSize = 10 //(4)!
-      poolName = "guide-jdbc-advanced" //(5)!
+    jdbc { //(1)!
+      jdbcUrl = ${POSTGRES_JDBC_URL} //(2)!
+      username = ${POSTGRES_USER} //(3)!
+      password = ${POSTGRES_PASS} //(4)!
+      maxPoolSize = 10 //(5)!
+      poolName = "guide-jdbc-advanced" //(6)!
     }
 
     flyway {
-      locations = "db/migration" //(6)!
+      locations = "db/migration" //(7)!
     }
     ```
 
@@ -1714,14 +1766,14 @@ JDBC-преобразования строк.
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    db:
-      jdbcUrl: ${POSTGRES_JDBC_URL} #(1)!
-      username: ${POSTGRES_USER} #(2)!
-      password: ${POSTGRES_PASS} #(3)!
-      maxPoolSize: 10 #(4)!
-      poolName: "guide-jdbc-advanced" #(5)!
+    jdbc: #(1)!
+      jdbcUrl: ${POSTGRES_JDBC_URL} #(2)!
+      username: ${POSTGRES_USER} #(3)!
+      password: ${POSTGRES_PASS} #(4)!
+      maxPoolSize: 10 #(5)!
+      poolName: "guide-jdbc-advanced" #(6)!
     flyway:
-      locations: "db/migration" #(6)!
+      locations: "db/migration" #(7)!
     ```
 
     1. URL JDBC-соединения. Необязательное переопределение через `POSTGRES_JDBC_URL`.
@@ -1789,7 +1841,7 @@ user_assignee_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL
 POSTGRES_JDBC_URL=jdbc:postgresql://localhost:5432/postgres \
 POSTGRES_USER=postgres \
 POSTGRES_PASS=postgres \
-./gradlew :guides-apps:guide-database-jdbc-advanced-app:run
+./gradlew run
 ```
 
 В Windows PowerShell:
@@ -1798,7 +1850,7 @@ POSTGRES_PASS=postgres \
 $env:POSTGRES_JDBC_URL="jdbc:postgresql://localhost:5432/postgres"
 $env:POSTGRES_USER="postgres"
 $env:POSTGRES_PASS="postgres"
-.\gradlew.bat :guides-apps:guide-database-jdbc-advanced-app:run
+.\gradlew.bat run
 ```
 
 Во время запуска Kora строит граф приложения, инициализирует JDBC-пул, запускает Flyway, а затем поднимает HTTP-сервер на порту `8080`.
@@ -1808,8 +1860,8 @@ $env:POSTGRES_PASS="postgres"
 Соберите дистрибутив приложения и Docker-образ:
 
 ```bash
-./gradlew :guides-apps:guide-database-jdbc-advanced-app:distTar
-docker build -t guide-database-jdbc-advanced-app guides/guide-database-jdbc-advanced-app
+./gradlew distTar
+docker build -t guide-database-jdbc-advanced-app .
 ```
 
 Запустите контейнер против PostgreSQL, запущенного через Docker Compose:
@@ -1958,15 +2010,21 @@ curl -X POST http://localhost:8080/tasks \
 - как пользовательские преобразователи разрешаются по обобщенному типу преобразователя
 - как `@Batch` превращается в сгенерированный код `addBatch()` / `executeBatch()`
 - как один репозиторий может возвращать разные проекции для разных SQL-запросов
-- как `inTx(...)` разделяет одно соединение между вызовами репозитория
+- как `executor().inTx(...)` разделяет одно соединение между вызовами репозитория и почему в Kotlin нужен явный `JdbcExecutor.SqlSupplier` / `JdbcExecutor.SqlRunnable`
 - как передать список Java/Kotlin в PostgreSQL через `ANY(:ids)`
 
 ## Устранение неполадок { #troubleshooting }
 
 **Преобразователь состояния задачи не используется:**
 
-Убедитесь, что `TaskStatusParameterMapper` и `TaskStatusResultMapper` являются классами `@Component` и реализуют точные обобщенные типы преобразователей. В Java это `JdbcParameterColumnMapper<TaskStatus>`
-и `JdbcResultColumnMapper<TaskStatus>`; в Kotlin преобразователь параметра обычно должен быть `JdbcParameterColumnMapper<TaskStatus?>`.
+Убедитесь, что `TaskStatusParameterMapper` и `TaskStatusResultMapper` являются классами `@Component` и реализуют точные обобщенные типы преобразователей: `JdbcParameterColumnMapper<TaskStatus>`
+и `JdbcResultColumnMapper<TaskStatus>` в обоих языках. Обобщенный аргумент остается non-null, nullable в Kotlin становится только параметр переопределенного метода, потому что контракт JSpecify
+объявлен как `set(PreparedStatement, int, @Nullable T)`.
+
+**Kotlin сообщает `Overload resolution ambiguity` на `inTx`:**
+
+У `JdbcExecutor.inTx(...)` восемь перегрузок, поэтому Kotlin не может вывести, какой функциональный интерфейс реализует голая лямбда. Создайте SAM явно: `JdbcExecutor.SqlSupplier { ... }` для блока,
+возвращающего значение, или `JdbcExecutor.SqlRunnable { ... }` для блока без результата.
 
 **Запрос назначенных задач сопоставляет неправильные столбцы:**
 

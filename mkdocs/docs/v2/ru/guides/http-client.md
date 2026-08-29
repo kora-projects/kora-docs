@@ -2,107 +2,155 @@
 search:
   exclude: true
 title: Руководство по HTTP-клиенту
-summary: Build a separate Kora application that calls the user endpoints from the HTTP Server guide with declarative clients
-tags: http-client, http-server, declarative-client, integration
+summary: Build a separate Kora application that calls the user endpoints from the HTTP Server guide with declarative synchronous clients
+description: "Step-by-step declarative HTTP client for a Kora 2.0 service: the io.koraframework:http-client-ok artifact and OkHttpClientModule, a @HttpClient interface whose @HttpRoute methods bind @Path, @Query, @Header and @Cookie parameters and @Json request and response DTOs, HttpResponseEntity returns and a custom HttpClientResponseMapper, HttpClientResponseException on non-2xx answers, the httpClient.userApi url, requestTimeout and telemetry configuration next to httpServer.port and httpServer.system.port, and a @KoraAppTest check of the client against the running server application."
+agent:
+  use_when: "Use this file for questions about calling another service from Kora 2.0 with a declarative client: io.koraframework:http-client-ok, OkHttpClientModule, @HttpClient with a config path, @HttpRoute with HttpMethod, @Path, @Query, @Header, @Cookie, @Json bodies, HttpResponseEntity, writing an HttpClientResponseMapper for a type Kora has no ready mapper for, HttpClientResponseException and its code, headers and bytes, the httpClient.userApi.url and requestTimeout keys versus the transport-wide httpClient.connectTimeout, readTimeout and proxy, why suspend and CompletionStage client methods are rejected, and running the client and server applications side by side."
+tags: http-client, http-server, declarative-client, okhttp, integration
 ---
 
 # Руководство по HTTP-клиенту { #http-client-guide }
 
-Это руководство знакомит с декларативными HTTP-клиентами в Kora. В нем рассматривается, как аннотированные Java-интерфейсы описывают исходящие HTTP-вызовы, как JSON-тела запросов и ответов
-преобразуются на границе клиента, и как Kora связывает сгенерированную реализацию клиента в отдельный граф приложения. Вы также увидите, как небольшая служба оборачивает транспортный клиент, чтобы код
-приложения оставался сосредоточен на сценариях использования, а не на HTTP-деталях.
+Это руководство знакомит с декларативными HTTP-клиентами в Kora. В нём разбирается, как аннотированные интерфейсы на Java и Kotlin описывают исходящие HTTP-вызовы, как JSON-тела запросов и ответов
+преобразуются на границе клиента и как Kora связывает сгенерированную реализацию клиента с отдельным графом приложения. Вы также увидите, как клиентское приложение удерживает детали HTTP у транспортной
+границы, чтобы остальной код оставался сосредоточен на сценариях использования.
+
+HTTP-клиенты Kora **синхронные**. Декларативный метод отправляет запрос, дожидается ответа и сразу возвращает преобразованный результат. Здесь нет клиентских методов с `CompletionStage`, `Mono`, `Flux`
+или `suspend`: параллелизм обеспечивают виртуальные потоки и структурированная многозадачность, а не тип возвращаемого значения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Java HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-client-app).
+    Если хотите сверяться с готовым результатом по ходу дела, используйте рабочий пример: [Kora Java HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-client-app).
 
 === ":simple-kotlin: `Kotlin`"
 
-    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Kotlin HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-client-app).
+    Если хотите сверяться с готовым результатом по ходу дела, используйте рабочий пример: [Kora Kotlin HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-client-app).
 
 ## Что вы создадите { #youll-build }
 
 Вы создадите второе приложение Kora, которое:
 
 - объявляет типизированный `UserApiClient`
-- вызывает конечные точки `/users` из руководства по HTTP-серверу
-- открывает одну агрегирующую конечную точку `POST /client/test-all-user-endpoints` для удобной ручной проверки
-- также может тестироваться на контейнеризованной копии серверного приложения
+- вызывает эндпоинты `/users` из руководства по HTTP-серверу
+- предоставляет один сводный эндпоинт `POST /client/test-all-user-endpoints` для быстрой ручной проверки
+- покрыт тестом JUnit 5, работающим против серверного приложения в контейнере
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- Docker Desktop или другое локальное Docker-окружение для тестов на основе контейнеров
-- текстовый редактор или среда разработки
-- два терминала, если вы хотите запускать сервер и клиент вручную
+- JDK 25 или новее
+- Gradle 9+ (эталонные приложения используют Gradle Wrapper `9.5.1`)
+- Docker Desktop или другое локальное окружение Docker для тестов с контейнерами
+- Текстовый редактор или IDE
+- Два терминала, если хотите запускать сервер и клиент вручную
+
+Артефакты Kora собраны под Java 25, поэтому JDK, которым компилируется ваш код, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
 !!! note "Обязательно: пройдите руководство по HTTP-серверу"
 
-    Это руководство предполагает, что вы уже прошли **[руководство по HTTP-серверу](http-server.md)** и понимаете конечные точки пользовательского CRUD API.
+    Это руководство предполагает, что вы прошли **[Руководство по HTTP-серверу](http-server.md)** и уже понимаете эндпоинты CRUD-API пользователей.
 
-    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что здесь создается отдельное клиентское приложение, которое вызывает уже существующий API.
+    Если руководство по HTTP-серверу ещё не пройдено, начните с него: здесь мы создаём отдельное клиентское приложение, которое обращается к уже существующему API.
 
 ## Обзор { #overview }
 
-[HTTP](https://www.rfc-editor.org/rfc/rfc9110)-клиент - это исходящая граница приложения. Он представляет API другой службы внутри вашей кодовой базы. Модель декларативного клиента Kora позволяет
-описать этот удаленный API как Java- или Kotlin-интерфейс вместо ручной сборки URL, заголовков, тел запросов и логики разбора ответов.
+[HTTP](https://www.rfc-editor.org/rfc/rfc9110)-клиент — это исходящая граница приложения. Он представляет API другого сервиса внутри вашей кодовой базы. Декларативная модель клиентов Kora позволяет
+описать этот удалённый API как интерфейс на Java или Kotlin вместо ручной сборки URL, заголовков, тел запросов и логики разбора ответов.
 
-Это похоже на то, как контроллер описывает входящий HTTP API, но направление обратное. Контроллер адаптирует входящие HTTP-запросы в вызовы приложения. Клиент адаптирует вызовы приложения в исходящие
+Идея похожа на то, как контроллер описывает входящий HTTP-API, но направление обратное. Контроллер превращает входящие HTTP-запросы в вызовы приложения. Клиент превращает вызовы приложения в исходящие
 HTTP-запросы.
 
 ### Декларативные клиенты { #declarative-clients }
 
-Подробную модель декларативных клиентов, `@HttpClient`, маршрутов и конфигурации смотрите в разделе [декларативного HTTP-клиента](../documentation/http-client.md#client-declarative).
+Полное описание модели декларативных клиентов, `@HttpClient`, маршрутов и конфигурации смотрите в разделе [Декларативный HTTP-клиент](../documentation/http-client.md#client-declarative).
 
-Декларативные клиенты используют ту же общую идею, что и серверные контроллеры, но в обратном направлении:
+Декларативные клиенты используют ту же идею, что и контроллеры сервера, только в обратную сторону:
 
-- аннотации методов описывают удаленный HTTP-метод и путь
-- параметры становятся переменными пути, параметрами запроса или JSON-телами
+- аннотации метода описывают удалённый HTTP-метод и путь
+- параметры становятся переменными пути, параметрами запроса, заголовками, куками или телом
 - возвращаемые типы описывают ожидаемый ответ
-- Kora создает реализацию во время компиляции
+- Kora генерирует реализацию во время компиляции
 
-В результате получается типизированный клиент, который можно внедрять как любой другой компонент Kora.
+В результате получается типизированный клиент, который внедряется как любой другой компонент Kora. Ничего не разрешается через рефлексию во время выполнения: процессор аннотаций пишет обычный класс,
+который собирает запрос и преобразует ответ.
 
 ### Транспортная граница и служба приложения { #transport-boundary-application-service }
 
-Сгенерированные клиенты ориентированы на транспорт. Они знают, как вызывать HTTP-конечные точки, но не должны сами определять каждый сценарий использования приложения. В этом руководстве
-сгенерированный клиент оборачивается небольшой службой, чтобы остальная часть приложения могла вызывать методы, соответствующие бизнес-намерению, а не сырым транспортным деталям.
+Сгенерированные клиенты ориентированы на транспорт. Они знают, как вызвать HTTP-эндпоинты, но не должны сами описывать все сценарии приложения. Держите сгенерированный интерфейс близко к удалённому
+контракту, а компоненты приложения пусть вызывают его так же, как любую другую зависимость.
 
-Такая обертка также является правильным местом для обработки ошибок на уровне приложения, повторов в последующих руководствах или небольших преобразований между внешними DTO и внутренними моделями.
+Эта граница — правильное место и для обработки ошибок уровня приложения, и для аннотаций отказоустойчивости из последующих руководств, и для небольших преобразований между внешними DTO и внутренними
+моделями.
 
 ### Конфигурация и вызовы { #configuration-calls }
 
-HTTP-клиенту также нужна конфигурация времени выполнения: базовый URL, тайм-ауты и другие транспортные настройки. Kora хранит эти настройки в конфигурации и связывает настроенный клиент с графом
-зависимостей. Так код остается стабильным при локальной разработке, в тестах и в настоящих окружениях.
+HTTP-клиенту также нужна конфигурация времени выполнения: базовый URL, таймауты и настройки телеметрии. Kora хранит их в конфигурации и связывает настроенный клиент с графом зависимостей. Благодаря
+этому код не меняется при переходе между локальной разработкой, тестами и реальными окружениями.
 
-Практический ход такой:
+Практический порядок действий такой:
 
-1. описать удаленный API как аннотированный интерфейс
-2. настроить цель клиента в HOCON
+1. описать удалённый API как аннотированный интерфейс
+2. настроить адрес клиента в HOCON
 3. позволить Kora сгенерировать и внедрить реализацию
-4. обернуть сгенерированный клиент в службу приложения
-5. открыть локальные маршруты, которые выполняют исходящие вызовы
+4. вызывать сгенерированный клиент из компонентов приложения
+5. открыть локальные маршруты, которые задействуют исходящие вызовы
 
 ## Зависимости { #dependencies }
 
 Клиентскому приложению нужны:
 
-- зависимости HTTP-клиента, чтобы Kora могла генерировать и запускать декларативные клиенты
-- зависимости HTTP-сервера, потому что это клиентское приложение все равно открывает собственную небольшую конечную точку для проверки
+- транспорт HTTP-клиента, чтобы Kora могла сгенерировать и выполнять декларативные клиенты
+- зависимости HTTP-сервера, потому что это клиентское приложение всё же предоставляет один собственный проверочный эндпоинт
+
+В Kora 2.0 есть три транспорта, и ровно один из них должен присутствовать в classpath:
+
+| Артефакт | Транспорт |
+|---|---|
+| `io.koraframework:http-client-ok` | [OkHttp](https://square.github.io/okhttp/) |
+| `io.koraframework:http-client-apache` | [Apache HttpClient](https://hc.apache.org/) |
+| `io.koraframework:http-client-jdk` | `java.net.http.HttpClient` из JDK |
+
+В этом руководстве используется OkHttp.
+
+Версии берутся из BOM `io.koraframework:kora-bom`, поэтому отдельные модули Kora объявляются без версии:
+
+```properties title="gradle.properties"
+koraVersion=2.0.0.RC1
+junitVersion=6.1.3
+```
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy title="build.gradle"
+    configurations {
+        koraBom
+        annotationProcessor.extendsFrom(koraBom)
+        compileOnly.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        testImplementation.extendsFrom(koraBom)
+        testAnnotationProcessor.extendsFrom(koraBom)
+    }
+
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-client-common")
-        implementation("ru.tinkoff.kora:http-client-ok")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
+        koraBom platform("io.koraframework:kora-bom:$koraVersion")
+
+        annotationProcessor "io.koraframework:annotation-processors"
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:http-client-common"
+        implementation "io.koraframework:http-client-ok"
+        implementation "io.koraframework:http-server-undertow"
+        implementation "io.koraframework:json-common"
+        implementation "io.koraframework:logging-logback"
+
+        testAnnotationProcessor "io.koraframework:annotation-processors"
+
+        testImplementation platform("org.junit:junit-bom:$junitVersion")
+        testImplementation "org.junit.jupiter:junit-jupiter"
+        testImplementation "io.koraframework:test-junit5"
+        testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5"
+        testImplementation "org.testcontainers:testcontainers:2.0.5"
     }
     ```
 
@@ -110,14 +158,27 @@ HTTP-клиенту также нужна конфигурация времен�
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-client-common")
-        implementation("ru.tinkoff.kora:http-client-ok")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-client-common")
+        implementation("io.koraframework:http-client-ok")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("io.koraframework:test-junit5")
+        testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+        testImplementation("org.testcontainers:testcontainers:2.0.5")
     }
     ```
+
+Генерация кода для Java выполняется процессором аннотаций `io.koraframework:annotation-processors`, для Kotlin — KSP-процессором `io.koraframework:symbol-processors`. Без одного из них интерфейс
+`@HttpClient` так и останется интерфейсом, и граф не найдёт для него реализацию.
 
 ## Модули { #modules }
 
@@ -125,30 +186,30 @@ HTTP-клиенту также нужна конфигурация времен�
 
 - `HoconConfigModule` для `application.conf`
 - `JsonModule` для сериализации запросов и ответов
-- `LogbackModule` для журналов
-- `OkHttpClientModule` для сгенерированных клиентов
-- `UndertowHttpServerModule`, потому что это клиентское приложение открывает собственную конечную точку
+- `LogbackModule` для логов
+- `OkHttpClientModule` как транспорт клиента
+- `UndertowPublicHttpServerModule`, потому что это клиентское приложение предоставляет собственный эндпоинт
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/Application.java"
-    package ru.tinkoff.kora.guide.httpclient;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/Application.java"
+    package io.koraframework.guide.httpclient;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.client.ok.OkHttpClientModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.client.ok.OkHttpClientModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            OkHttpClientModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            OkHttpClientModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -158,53 +219,56 @@ HTTP-клиенту также нужна конфигурация времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/Application.kt"
-    package ru.tinkoff.kora.guide.httpclient
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/Application.kt"
+    package io.koraframework.guide.httpclient
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.client.ok.OkHttpClientModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.client.ok.OkHttpClientModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        OkHttpClientModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        OkHttpClientModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
+`OkHttpClientModule` добавляет в граф транспортный компонент `HttpClient`, а вместе с ним преобразователи запросов и ответов, на которые опирается любой сгенерированный клиент. Замена его на
+`ApacheHttpClientModule` или `JdkHttpClientModule` меняет транспорт, не затрагивая ни одного интерфейса клиента.
+
 ## DTO-модели { #dto-models }
 
-Первое понятие клиента вообще не является специфичным для клиента: клиенту по-прежнему нужны те же формы данных, которые сервер отправляет и получает.
+Первое понятие клиента вовсе не специфично для клиента: клиенту нужны те же структуры данных, которые сервер отправляет и принимает.
 
-Поэтому мы начинаем с переиспользования того же договора `UserRequest` и `UserResponse` из серверного руководства. Это сохраняет клиент и сервер согласованными и дает сгенерированному клиенту
-типизированный интерфейс для работы.
+Поэтому начнём с повторного использования контракта `UserRequest` и `UserResponse` из руководства по серверу. Это держит клиент и сервер согласованными и даёт сгенерированному клиенту типизированный
+интерфейс для работы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/dto/UserRequest.java"
-    package ru.tinkoff.kora.guide.httpclient.dto;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/dto/UserRequest.java"
+    package io.koraframework.guide.httpclient.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserRequest(String name, String email) {}
     ```
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/dto/UserResponse.java"
-    package ru.tinkoff.kora.guide.httpclient.dto;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/dto/UserResponse.java"
+    package io.koraframework.guide.httpclient.dto;
 
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserResponse(String id, String name, String email, LocalDateTime createdAt) {}
@@ -212,20 +276,20 @@ HTTP-клиенту также нужна конфигурация времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/dto/UserRequest.kt"
-    package ru.tinkoff.kora.guide.httpclient.dto
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/dto/UserRequest.kt"
+    package io.koraframework.guide.httpclient.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class UserRequest(val name: String, val email: String)
     ```
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/dto/UserResponse.kt"
-    package ru.tinkoff.kora.guide.httpclient.dto
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/dto/UserResponse.kt"
+    package io.koraframework.guide.httpclient.dto
 
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Json
     data class UserResponse(
@@ -236,39 +300,45 @@ HTTP-клиенту также нужна конфигурация времен�
     )
     ```
 
+`@Json` заставляет компилятор сгенерировать `JsonReader` и `JsonWriter` для каждого типа — именно эти компоненты сгенерированный клиент запрашивает у графа, когда метод или параметр помечен `@Json`.
+
 ## HTTP-клиент { #http-client }
 
-Теперь мы описываем удаленный HTTP API как интерфейс.
+Теперь опишем удалённый HTTP-API в виде интерфейса.
 
-Это ключевая абстракция руководства. Вместо написания императивного клиентского кода мы объявляем удаленный договор с помощью аннотаций:
+Это ключевая абстракция руководства. Вместо императивного клиентского кода мы объявляем удалённый контракт аннотациями:
 
-- `@HttpClient`, чтобы пометить весь интерфейс как декларативный клиент
-- `@HttpRoute`, чтобы описать удаленный метод и путь
-- `@Path`, `@Query`, `@Header` и `@Cookie`, чтобы сопоставить отдельные аргументы
-- `@Json`, чтобы указать, что для тела должны использоваться JSON-преобразователи
+- `@HttpClient` помечает весь интерфейс как декларативный клиент, а значением указывает путь конфигурации
+- `@HttpRoute` описывает удалённый метод и путь
+- `@Path`, `@Query`, `@Header` и `@Cookie` отображают отдельные аргументы
+- `@Json` говорит, что для тела нужно использовать JSON-преобразователи
 
-Этот интерфейс повторяет пользовательские конечные точки из `http-server.md`.
+Этот интерфейс повторяет эндпоинты пользователей из `http-server.md`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/UserApiClient.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/client/UserApiClient.java"
+    package io.koraframework.guide.httpclient.client;
 
-    import jakarta.annotation.Nullable;
+    import java.io.IOException;
     import java.util.List;
-    import ru.tinkoff.kora.guide.httpclient.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpclient.dto.UserResponse;
-    import ru.tinkoff.kora.http.client.common.annotation.HttpClient;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.HttpResponseEntity;
-    import ru.tinkoff.kora.http.common.annotation.Cookie;
-    import ru.tinkoff.kora.http.common.annotation.Header;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.common.annotation.Query;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpclient.dto.UserRequest;
+    import io.koraframework.guide.httpclient.dto.UserResponse;
+    import io.koraframework.http.client.common.annotation.HttpClient;
+    import io.koraframework.http.client.common.response.HttpClientResponse;
+    import io.koraframework.http.client.common.response.HttpClientResponseMapper;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.HttpResponseEntity;
+    import io.koraframework.http.common.annotation.Cookie;
+    import io.koraframework.http.common.annotation.Header;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.common.annotation.Query;
+    import io.koraframework.json.common.annotation.Json;
+    import org.jspecify.annotations.Nullable;
 
-    @HttpClient(configPath = "httpClient.userApi")
+    @HttpClient("httpClient.userApi")
     public interface UserApiClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
@@ -292,27 +362,42 @@ HTTP-клиенту также нужна конфигурация времен�
 
         @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
         HttpResponseEntity<Void> deleteUser(@Path String userId);
+
+        @Component
+        final class VoidResponseMapper implements HttpClientResponseMapper<Void> {
+
+            @Override
+            public Void apply(HttpClientResponse response) throws IOException {
+                try (var body = response.body()) {
+                    body.asInputStream().readAllBytes();
+                }
+                return null;
+            }
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/UserApiClient.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/client/UserApiClient.kt"
+    package io.koraframework.guide.httpclient.client
 
-    import ru.tinkoff.kora.guide.httpclient.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpclient.dto.UserResponse
-    import ru.tinkoff.kora.http.client.common.annotation.HttpClient
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.HttpResponseEntity
-    import ru.tinkoff.kora.http.common.annotation.Cookie
-    import ru.tinkoff.kora.http.common.annotation.Header
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.common.annotation.Query
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpclient.dto.UserRequest
+    import io.koraframework.guide.httpclient.dto.UserResponse
+    import io.koraframework.http.client.common.annotation.HttpClient
+    import io.koraframework.http.client.common.response.HttpClientResponse
+    import io.koraframework.http.client.common.response.HttpClientResponseMapper
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.HttpResponseEntity
+    import io.koraframework.http.common.annotation.Cookie
+    import io.koraframework.http.common.annotation.Header
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.common.annotation.Query
+    import io.koraframework.json.common.annotation.Json
 
-    @HttpClient(configPath = "httpClient.userApi")
+    @HttpClient("httpClient.userApi")
     interface UserApiClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
@@ -338,29 +423,64 @@ HTTP-клиенту также нужна конфигурация времен�
 
         @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
         fun deleteUser(@Path userId: String): HttpResponseEntity<Void>
+
+        @Component
+        class VoidResponseMapper : HttpClientResponseMapper<Void> {
+
+            override fun apply(response: HttpClientResponse): Void? {
+                response.body().use { body ->
+                    body.asInputStream().readAllBytes()
+                }
+                return null
+            }
+        }
     }
     ```
 
+Несколько деталей этого интерфейса стоит разобрать не спеша.
+
+**Путь конфигурации — это значение аннотации.** `@HttpClient("httpClient.userApi")` привязывает клиент к разделу конфигурации `httpClient.userApi`. Значение позиционное; у аннотации объявлены только
+`value`, `telemetryTag` и `httpClientTag`. Если значение опустить, Kora выведет путь из имени интерфейса: `UserApiClient` превратится в `httpClient.userApiClient`.
+
+**Nullable-параметры необязательны.** Заголовок, параметр запроса или кука с `@Nullable` просто не попадает в запрос, если аргумент равен `null`. В Kotlin тот же смысл несёт nullable-тип `String?`, и
+аннотация не нужна. Ненулевой параметр записывается в запрос всегда.
+
+**Методы синхронные.** `getUser` возвращает `UserResponse`, а не future. Kotlin-функции с `suspend` отклоняются символьным процессором с ошибкой компиляции, а Java-клиенты, возвращающие
+`CompletionStage`, вызывают предупреждение `Method has async signature, this might not work correctly`. Пишите обычные блокирующие сигнатуры.
+
+**Успех и ошибка разделены по статус-коду.** Для метода, возвращающего обычное тело, Kora преобразует ответ только при статусах `2xx`; любой другой статус приводит к `HttpClientResponseException`. Если
+нужен сам статус-код, возвращайте `HttpResponseEntity<T>` — так делают `createUser` и `deleteUser`.
+
+**Для `HttpResponseEntity<Void>` нужен собственный преобразователь.** Kora предоставляет готовые преобразователи ответа для `String`, `byte[]`, `ByteBuffer` и `HttpBodyInput`, а также шаблонную фабрику,
+которая оборачивает любой `HttpClientResponseMapper<T>` в `HttpClientResponseMapper<HttpResponseEntity<T>>`. Встроенного преобразователя для `Void` нет, поэтому сборка графа для `deleteUser` упала бы с
+`No component found for dependency:`, если бы приложение его не предоставило. `VoidResponseMapper` и есть этот компонент: он вычитывает тело и возвращает `null`, а обёртку в сущность делает сам
+фреймворк. Обратите внимание: он зарегистрирован как `@Component` и **не** указывается через `@Mapping` — с `@Mapping` преобразователь должен был бы возвращать целиком `HttpResponseEntity<Void>`, а не
+только полезную нагрузку.
+
+!!! tip "Более простой вариант"
+
+    Если статус-код ответа без тела вам не нужен, объявите `void deleteUser(@Path String userId)`. Методу с типом `void` преобразователь ответа не требуется вовсе, а статус вне `2xx` по-прежнему
+    приведёт к `HttpClientResponseException`.
+
 ## Конфигурация { #config }
 
-Это приложение является самостоятельной службой Kora, поэтому ему нужны собственные порты.
+Это приложение — самостоятельный сервис Kora, поэтому ему нужны собственные порты.
 
 Мы будем использовать:
 
 - `8080` для серверного приложения из `http-server.md`
-- `8081` для открытого API клиентского приложения
-- `8086` для закрытого API клиентского приложения
+- `8081` для публичного HTTP-сервера клиентского приложения
+- `8086` для системного HTTP-сервера клиентского приложения (пробы, метрики)
 - `httpClient.userApi.url` как базовый URL для сгенерированного клиента
 
-Полный справочник по конфигурации смотрите в разделах [HTTP-сервер](../documentation/http-server.md), [HTTP-клиент](../documentation/http-client.md)
-и [Журналирование SLF4J](../documentation/logging-slf4j.md).
+Полный справочник по конфигурации смотрите в разделах [HTTP-сервер](../documentation/http-server.md), [HTTP-клиент](../documentation/http-client.md) и [Логирование SLF4J](../documentation/logging-slf4j.md).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript title="src/main/resources/application.conf"
     httpServer {
-      userApiHttpPort = 8081 //(1)!
-      privateApiHttpPort = 8086 //(2)!
+      port = 8081 //(1)!
+      system.port = 8086 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
@@ -369,83 +489,88 @@ HTTP-клиенту также нужна конфигурация времен�
         url = "http://localhost:8080" //(4)!
         url = ${?USER_API_URL} //(5)!
         requestTimeout = 10s //(6)!
+        telemetry.logging.enabled = true //(7)!
       }
-      telemetry.logging.enabled = true //(7)!
     }
 
     logging {
       levels {
         "ROOT": "INFO" //(8)!
-        "ru.tinkoff.kora": "INFO" //(9)!
+        "io.koraframework": "INFO" //(9)!
       }
     }
     ```
 
-    1. Именованный открытый HTTP-порт, который использует локальная конечная точка руководства.
-    2. Закрытый HTTP-порт по умолчанию, который используют пробы, метрики и управляющие конечные точки.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Базовый URL, который использует настроенный клиент.
-    5. Базовый URL, который использует настроенный клиент. Необязательное переопределение из `USER_API_URL`.
-    6. Максимальное время, разрешенное для клиентского запроса.
-    7. Включает возможность для этого раздела конфигурации.
-    8. Уровень журналирования для `ROOT`.
-    9. Уровень журналирования для `ru.tinkoff.kora`.
+    1. Порт публичного HTTP-сервера, на котором работает локальный эндпоинт руководства (по умолчанию: `8080`).
+    2. Порт системного HTTP-сервера для проб и метрик (по умолчанию: `8085`).
+    3. Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4. Базовый URL, который использует настроенный клиент (обязательно, без значения по умолчанию).
+    5. Необязательное переопределение базового URL из переменной окружения `USER_API_URL`.
+    6. Максимальное время одного запроса клиента (опционально, без значения по умолчанию).
+    7. Включает логирование запросов этого клиента (по умолчанию: `false`).
+    8. Уровень логирования для `ROOT`.
+    9. Уровень логирования для `io.koraframework`.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml title="src/main/resources/application.yaml"
     httpServer:
-      userApiHttpPort: 8081 #(1)!
-      privateApiHttpPort: 8086 #(2)!
+      port: 8081 #(1)!
+      system:
+        port: 8086 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     httpClient:
       userApi:
-        url: ${?USER_API_URL:"http://localhost:8080"} #(4)!
+        url: ${USER_API_URL:http://localhost:8080} #(4)!
         requestTimeout: 10s #(5)!
-      telemetry:
-        logging:
-          enabled: true #(6)!
+        telemetry:
+          logging:
+            enabled: true #(6)!
     logging:
       levels:
         ROOT: "INFO" #(7)!
-        "ru.tinkoff.kora": "INFO" #(8)!
+        "io.koraframework": "INFO" #(8)!
     ```
 
-    1. Именованный открытый HTTP-порт, который использует локальная конечная точка руководства.
-    2. Закрытый HTTP-порт по умолчанию, который используют пробы, метрики и управляющие конечные точки.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Базовый URL, который использует настроенный клиент. Использует показанное значение по умолчанию и позволяет `USER_API_URL` переопределить его.
-    5. Максимальное время, разрешенное для клиентского запроса.
-    6. Включает возможность для этого раздела конфигурации.
-    7. Уровень журналирования для `ROOT`.
-    8. Уровень журналирования для `ru.tinkoff.kora`.
+    1. Порт публичного HTTP-сервера, на котором работает локальный эндпоинт руководства (по умолчанию: `8080`).
+    2. Порт системного HTTP-сервера для проб и метрик (по умолчанию: `8085`).
+    3. Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4. Базовый URL, который использует настроенный клиент (обязательно, без значения по умолчанию). Используется показанное значение, а `USER_API_URL` может его переопределить.
+    5. Максимальное время одного запроса клиента (опционально, без значения по умолчанию).
+    6. Включает логирование запросов этого клиента (по умолчанию: `false`).
+    7. Уровень логирования для `ROOT`.
+    8. Уровень логирования для `io.koraframework`.
 
-Необязательное переопределение `USER_API_URL` особенно полезно в тестах, где целевой сервер может работать внутри контейнера на случайно сопоставленном порту.
+Телеметрия относится к разделу конкретного клиента, а не к общему корню `httpClient`: декларативный клиент читает ровно то поддерево, которое названо в `@HttpClient`, поэтому на `UserApiClient` влияет
+путь `httpClient.userApi.telemetry`. Общие настройки транспорта вроде `httpClient.connectTimeout`, `httpClient.readTimeout` и `httpClient.proxy` действительно живут в корне, потому что настраивают
+общий транспорт.
+
+Необязательное переопределение `USER_API_URL` особенно полезно в тестах, где целевой сервер может работать в контейнере на случайном пробрасываемом порту.
 
 ## Контроллер проверки { #check-controller }
 
-Клиентскому приложению не нужно снова повторять весь сервер. Для этого у нас уже есть серверное приложение. Вместо этого мы открываем один небольшой контроллер, который выполняет полный сценарий через
-сгенерированный клиент.
+Клиентскому приложению не нужно повторно воспроизводить весь сервер — для этого у нас уже есть серверное приложение. Вместо этого мы открываем один небольшой контроллер, который прогоняет полный
+сценарий через сгенерированный клиент.
 
 Это полезно по двум причинам:
 
-- дает одну ручную конечную точку, которую можно вызвать во время обучения
-- сохраняет сгенерированные клиентские интерфейсы главной темой руководства
+- даёт один ручной эндпоинт, который можно дёрнуть в процессе обучения
+- оставляет главным предметом руководства сами интерфейсы сгенерированного клиента
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/controller/ClientTestController.java"
-    package ru.tinkoff.kora.guide.httpclient.controller;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/controller/ClientTestController.java"
+    package io.koraframework.guide.httpclient.controller;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpclient.client.UserApiClient;
-    import ru.tinkoff.kora.guide.httpclient.dto.UserRequest;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpclient.client.UserApiClient;
+    import io.koraframework.guide.httpclient.dto.UserRequest;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -496,16 +621,16 @@ HTTP-клиенту также нужна конфигурация времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/controller/ClientTestController.kt"
-    package ru.tinkoff.kora.guide.httpclient.controller
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/controller/ClientTestController.kt"
+    package io.koraframework.guide.httpclient.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpclient.client.UserApiClient
-    import ru.tinkoff.kora.guide.httpclient.dto.UserRequest
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpclient.client.UserApiClient
+    import io.koraframework.guide.httpclient.dto.UserRequest
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -551,9 +676,12 @@ HTTP-клиенту также нужна конфигурация времен�
     }
     ```
 
+Обратите внимание, насколько обычно выглядит вызывающий код. Клиент синхронный, поэтому сценарий читается сверху вниз: создать, получить, перечислить, удалить. Единственная деталь, специфичная для
+клиента, — `HttpResponseEntity`, который даёт доступ к `code()` и `body()`, когда важен статус-код.
+
 ## Проверка приложения { #check-app }
 
-Если вы хотите проверить сценарий вручную, запустите оба приложения в отдельных терминалах.
+Если хотите проверить сценарий вручную, запустите оба приложения в отдельных терминалах.
 
 ### Терминал 1: сервер { #terminal-1-server }
 
@@ -562,7 +690,7 @@ HTTP-клиенту также нужна конфигурация времен�
 ./gradlew run
 ```
 
-Серверное приложение должно открыть свой открытый API на `http://localhost:8080`.
+Серверное приложение должно отдавать публичный API по адресу `http://localhost:8080`.
 
 ### Терминал 2: клиент { #terminal-2-client }
 
@@ -571,7 +699,7 @@ HTTP-клиенту также нужна конфигурация времен�
 ./gradlew run
 ```
 
-Клиентское приложение должно открыть свой открытый API на `http://localhost:8081`.
+Клиентское приложение должно отдавать публичный API по адресу `http://localhost:8081`.
 
 ### Клиентский сценарий { #client-scenario }
 
@@ -579,70 +707,249 @@ HTTP-клиенту также нужна конфигурация времен�
 curl -X POST http://localhost:8081/client/test-all-user-endpoints
 ```
 
-Ожидаемый результат: JSON-объект, где `allTestsPassed` равен `true`.
+Ожидаемый результат: JSON-объект, в котором `allTestsPassed` равно `true`.
+
+### Тест с контейнером { #container-test }
+
+Ручные проверки хороши на этапе обучения, но тот же сценарий несложно автоматизировать. `@KoraAppTest` поднимает граф клиентского приложения внутри JUnit 5, `@TestComponent` внедряет сгенерированный
+клиент, а `KoraAppTestConfigModifier` направляет `USER_API_URL` на копию серверного приложения в контейнере.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/test/java/io/koraframework/guide/httpclient/HttpClientAppTest.java"
+    package io.koraframework.guide.httpclient;
+
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
+    import static org.junit.jupiter.api.Assertions.assertThrows;
+
+    import java.util.UUID;
+    import org.junit.jupiter.api.Test;
+    import org.testcontainers.junit.jupiter.Container;
+    import org.testcontainers.junit.jupiter.Testcontainers;
+    import io.koraframework.guide.httpclient.client.UserApiClient;
+    import io.koraframework.guide.httpclient.dto.UserRequest;
+    import io.koraframework.http.client.common.exception.HttpClientResponseException;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.KoraAppTestConfigModifier;
+    import io.koraframework.test.extension.junit5.KoraConfigModification;
+    import io.koraframework.test.extension.junit5.TestComponent;
+
+    @Testcontainers
+    @KoraAppTest(Application.class)
+    class HttpClientAppTest implements KoraAppTestConfigModifier {
+
+        @Container
+        static final AppContainer APP = new AppContainer();
+
+        @TestComponent
+        private UserApiClient userApiClient;
+
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification.ofResourceFile("application.conf")
+                    .withSystemProperty("USER_API_URL", APP.getURI().toString());
+        }
+
+        @Test
+        void createUserReturnsCreatedUser() {
+            String unique = UUID.randomUUID().toString().substring(0, 8);
+
+            var response = this.userApiClient.createUser(
+                    new UserRequest("Client User " + unique, "client-" + unique + "@example.com"),
+                    "request-1",
+                    "test-agent",
+                    "session-1");
+
+            assertEquals(201, response.code());
+            assertNotNull(response.body());
+        }
+
+        @Test
+        void getMissingUserThrows() {
+            assertThrows(HttpClientResponseException.class, () -> this.userApiClient.getUser("999999"));
+        }
+
+        @Test
+        void deleteUserReturnsNoContent() {
+            String unique = UUID.randomUUID().toString().substring(0, 8);
+            var created = this.userApiClient.createUser(
+                    new UserRequest("Delete Me " + unique, "delete-" + unique + "@example.com"),
+                    "request-3",
+                    "test-agent",
+                    "session-3").body();
+
+            var response = this.userApiClient.deleteUser(created.id());
+
+            assertEquals(204, response.code());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/test/kotlin/io/koraframework/guide/httpclient/HttpClientAppTest.kt"
+    package io.koraframework.guide.httpclient
+
+    import org.junit.jupiter.api.Assertions.assertEquals
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Assertions.assertThrows
+    import org.junit.jupiter.api.Test
+    import org.testcontainers.junit.jupiter.Container
+    import org.testcontainers.junit.jupiter.Testcontainers
+    import io.koraframework.guide.httpclient.client.UserApiClient
+    import io.koraframework.guide.httpclient.dto.UserRequest
+    import io.koraframework.http.client.common.exception.HttpClientResponseException
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.KoraAppTestConfigModifier
+    import io.koraframework.test.extension.junit5.KoraConfigModification
+    import io.koraframework.test.extension.junit5.TestComponent
+    import java.util.UUID
+
+    @Testcontainers
+    @KoraAppTest(Application::class)
+    class HttpClientAppTest : KoraAppTestConfigModifier {
+
+        @TestComponent
+        lateinit var userApiClient: UserApiClient
+
+        override fun config(): KoraConfigModification =
+            KoraConfigModification.ofResourceFile("application.conf")
+                .withSystemProperty("USER_API_URL", APP.getURI().toString())
+
+        @Test
+        fun createUserReturnsCreatedUser() {
+            val unique = UUID.randomUUID().toString().substring(0, 8)
+
+            val response = userApiClient.createUser(
+                UserRequest("Client User $unique", "client-$unique@example.com"),
+                "request-1",
+                "test-agent",
+                "session-1"
+            )
+
+            assertEquals(201, response.code())
+            assertNotNull(response.body())
+        }
+
+        @Test
+        fun getMissingUserThrows() {
+            assertThrows(HttpClientResponseException::class.java) { userApiClient.getUser("999999") }
+        }
+
+        @Test
+        fun deleteUserReturnsNoContent() {
+            val unique = UUID.randomUUID().toString().substring(0, 8)
+            val created = userApiClient.createUser(
+                UserRequest("Delete Me $unique", "delete-$unique@example.com"),
+                "request-3",
+                "test-agent",
+                "session-3"
+            ).body()!!
+
+            val response = userApiClient.deleteUser(created.id)
+
+            assertEquals(204, response.code())
+        }
+
+        companion object {
+            @Container
+            @JvmStatic
+            val APP: AppContainer = AppContainer()
+        }
+    }
+    ```
+
+`AppContainer` — это обычный `GenericContainer` из Testcontainers: он собирает образ серверного приложения из `Dockerfile` руководства по серверу, публикует порты `8080` и `8085` и ждёт ответа
+`/system/readiness` на системном порту перед запуском теста. Подробности работы с контейнерами разобраны в руководстве [Интеграционное тестирование](testing-integration.md).
 
 ## Лучшие практики { #best-practices }
 
-- Держите клиентские интерфейсы небольшими и организованными по областям удаленного API.
-- Переиспользуйте DTO-договор из серверного руководства, где это возможно, чтобы клиент и сервер оставались согласованными.
-- Предпочитайте `HttpResponseEntity<T>` только тогда, когда нужны коды статуса или заголовки; иначе возвращайте DTO напрямую.
-- Используйте один небольшой агрегирующий контроллер для ручных учебных сценариев вместо повторного создания всего сервера внутри клиентского приложения.
-- Добавляйте продвинутые возможности клиента только тогда, когда базовый договор уже легко понять.
+- Держите интерфейсы клиентов небольшими и разбивайте их по областям удалённого API.
+- По возможности переиспользуйте контракт DTO из руководства по серверу, чтобы клиент и сервер оставались согласованными.
+- Возвращайте `HttpResponseEntity<T>` только тогда, когда нужны статус-коды или заголовки; в остальных случаях возвращайте DTO напрямую.
+- Оставляйте методы клиента блокирующими. Если нужны параллельные вызовы, выполняйте блокирующие вызовы на виртуальных потоках или в структурированной области задач, а не меняйте тип результата.
+- Давайте каждому клиенту собственный раздел конфигурации, чтобы таймауты и телеметрию можно было настраивать для каждого удалённого сервиса отдельно.
+- Для учебных сценариев используйте один небольшой сводный контроллер вместо воспроизведения всего сервера внутри клиентского приложения.
+- Добавляйте продвинутые возможности клиента только после того, как базовый контракт стал понятным.
 
 ## Итоги { #summary }
 
-Вы создали самостоятельное клиентское приложение Kora, которое использует пользовательский API из руководства по HTTP-серверу.
+Вы создали самостоятельное клиентское приложение Kora, которое обращается к API пользователей из руководства по HTTP-серверу.
 
-По пути вы:
+По ходу дела вы:
 
-- переиспользовали серверный DTO-договор
+- переиспользовали контракт DTO сервера
 - объявили `UserApiClient`, сгенерированный во время компиляции
-- настроили удаленный базовый URL
-- открыли одну агрегирующую конечную точку для удобной ручной проверки
+- предоставили `HttpClientResponseMapper<Void>`, который нужен ответу без тела `HttpResponseEntity<Void>`
+- настроили базовый URL, таймаут запроса и телеметрию клиента
+- открыли один сводный эндпоинт для быстрой ручной проверки
+- покрыли клиент тестом JUnit 5 против сервера в контейнере
 
 ## Ключевые понятия { #key-concepts }
 
-- `@HttpClient(configPath = ...)` связывает декларативный клиент с конкретным разделом конфигурации
-- `@HttpRoute`, `@Path`, `@Query`, `@Header` и `@Cookie` типобезопасно описывают удаленный договор
-- `HttpResponseEntity<T>` полезен, когда нужны и тело, и HTTP-метаданные
-- одного небольшого агрегирующего контроллера достаточно для базового учебного клиентского приложения
+- `@HttpClient("httpClient.userApi")` привязывает декларативный клиент к конкретному разделу конфигурации через позиционное значение
+- `@HttpRoute`, `@Path`, `@Query`, `@Header` и `@Cookie` типобезопасно описывают удалённый контракт
+- методы декларативного клиента синхронные и сразу возвращают преобразованный результат
+- `HttpResponseEntity<T>` полезен, когда нужны и тело, и метаданные HTTP
+- ответы вне `2xx` приводят к `HttpClientResponseException`, если метод не описывает их явно
+- транспорт выбирается модулем (`OkHttpClientModule`, `ApacheHttpClientModule`, `JdkHttpClientModule`), а не интерфейсом клиента
 
 ## Устранение неполадок { #troubleshooting }
 
 **Клиент не может подключиться к серверу:**
 
-- Убедитесь, что серверное приложение запущено на `8080` для ручных проверок
-- Убедитесь, что `httpClient.userApi.url` указывает на настоящий URL сервера
-- Если вы переопределяете `USER_API_URL`, убедитесь, что он все еще указывает на открытый API серверного приложения
+- Убедитесь, что серверное приложение работает на порту `8080` для ручных проверок
+- Убедитесь, что `httpClient.userApi.url` указывает на реальный URL сервера
+- Если вы переопределяете `USER_API_URL`, проверьте, что значение по-прежнему указывает на публичный API серверного приложения
 
-**Сборка Gradle зависает или удерживает файловые блокировки в Windows:**
+**Сборка падает с `No component found for dependency:` и типом `HttpClientResponseMapper`:**
 
-- Запустите `./gradlew --stop` и повторите попытку
-- Если видите `AccessDeniedException` вокруг кеша Gradle или каталогов `build/`, закройте запущенные Java-процессы, терминалы или редакторы, которые все еще удерживают файловые дескрипторы
+- Метод возвращает тип, для которого у Kora нет готового преобразователя. Добавьте `@Component`, реализующий `HttpClientResponseMapper<T>` для типа полезной нагрузки, как это делает `VoidResponseMapper` для `Void`
+- Для JSON-нагрузок убедитесь, что DTO помечен `@Json`, а метод или параметр тоже помечен `@Json`
 
-**Журналы телеметрии клиента слишком шумные:**
+**Компиляция Kotlin падает с `Suspend methods are not supported by the HTTP client generator`:**
 
-- Отключите или настройте `httpClient.telemetry.logging.enabled` в `application.conf`, когда закончите отладку
+- Уберите `suspend` из метода клиента. HTTP-клиенты Kora блокирующие по замыслу
 
-**Проверки готовности закрытого API не работают:**
+**Сборка Java печатает `Method has async signature, this might not work correctly`:**
 
-- В этом руководстве `8086` используется как порт закрытого API клиентского приложения, чтобы он не пересекался с портами серверного приложения
-- Стандартный путь готовности - `/system/readiness`
-- Если меняете любое из этих значений, согласованно обновите стратегию ожидания и примечания по устранению неполадок
+- Метод возвращает `CompletionStage` или `Mono`. Замените тип на обычный синхронный
+
+**Вызовы падают с `HttpClientResponseException`:**
+
+- Удалённый сервис ответил статусом вне `2xx`. Методы `getCode()`, `getHeaders()` и `getBytes()` исключения содержат детали ответа
+- Если статус вне `2xx` — нормальная часть контракта, возвращайте `HttpResponseEntity<T>` или описывайте обе ветки, как показано в [Продвинутом HTTP-клиенте](http-client-advanced.md#response-code-mapping)
+
+**Сборка Gradle зависает или удерживает блокировки файлов в Windows:**
+
+- Выполните `./gradlew --stop` и повторите
+- Если появляется `AccessDeniedException` вокруг кеша Gradle или каталогов `build/`, закройте запущенные Java-процессы, терминалы и редакторы, которые ещё держат файловые дескрипторы
+
+**Телеметрия клиента слишком шумная:**
+
+- Отключите или настройте `httpClient.userApi.telemetry.logging.enabled` в `application.conf`, когда закончите отладку
+- Чувствительные заголовки уже маскируются: `authorization`, `cookie` и `set-cookie` по умолчанию заменяются на `***`
+
+**Системные эндпоинты не отвечают:**
+
+- В этом руководстве системный HTTP-порт клиентского приложения — `8086`, чтобы он не пересекался с портами серверного приложения
+- Стандартный путь готовности — `/system/readiness`, живости — `/system/liveness`
+- Если меняете любое из значений, согласованно обновите стратегию ожидания и заметки по устранению неполадок
 
 ## Что дальше? { #whats-next }
 
-- [Продвинутый HTTP-сервер](http-server-advanced.md), если хотите подготовить продвинутые серверные маршруты, которые используются в продвинутом руководстве по клиенту.
-- [Продвинутый HTTP-клиент](http-client-advanced.md) после продвинутого HTTP-сервера, чтобы добавить формы, multipart, перехватчики, пользовательское преобразование и ручные низкоуровневые вызовы.
-- [OpenAPI HTTP-сервер](openapi-http-server.md) перед [OpenAPI HTTP-клиентом](openapi-http-client.md), потому что сгенерированному клиенту нужен сгенерированный серверный договор.
-- [Шаблоны устойчивости](resilient.md), чтобы сделать исходящие вызовы безопаснее при медленных или нестабильных службах.
-- [Наблюдаемость](observability.md), чтобы трассировать и измерять вызовы между службами.
+- [Продвинутый HTTP-сервер](http-server-advanced.md), если хотите подготовить продвинутые серверные маршруты, которые использует руководство по продвинутому клиенту.
+- [Продвинутый HTTP-клиент](http-client-advanced.md) после продвинутого HTTP-сервера — добавить формы, multipart, перехватчики, собственные преобразования и низкоуровневые вызовы вручную.
+- [OpenAPI HTTP-сервер](openapi-http-server.md) перед [OpenAPI HTTP-клиентом](openapi-http-client.md), потому что сгенерированному клиенту нужен сгенерированный контракт сервера.
+- [Шаблоны отказоустойчивости](resilient.md), чтобы сделать исходящие вызовы безопаснее при медленных или нестабильных сервисах.
+- [Наблюдаемость](observability.md), чтобы трассировать и измерять вызовы между сервисами.
 
 ## Помощь { #help }
 
-Если застряли:
+Если вы застряли:
 
 - сравните с [Kora Java HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-client-app) и [Kora Kotlin HTTP Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-client-app)
-- вернитесь к [HTTP-серверу](http-server.md) и запустите серверное приложение перед запуском клиента
-- проверьте [документацию HTTP-клиента](../documentation/http-client.md)
-- проверьте [документацию HTTP-сервера](../documentation/http-server.md)
+- вернитесь к [HTTP-серверу](http-server.md) и запустите серверное приложение перед стартом клиента
+- посмотрите [документацию по HTTP-клиенту](../documentation/http-client.md)
+- посмотрите [документацию по HTTP-серверу](../documentation/http-server.md)

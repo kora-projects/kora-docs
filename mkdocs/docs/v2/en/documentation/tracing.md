@@ -1,20 +1,20 @@
 ---
-description: "Explains Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing. Use when working with OpentelemetryTracingModule, OpenTelemetry, OpentelemetryContext, Span, OTLP."
+description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenTelemetry tracing over gRPC and HTTP, tracing configuration, trace context propagation, synchronous tracing, and asynchronous tracing; key triggers include OpentelemetryTracingModule, OpenTelemetry, OpentelemetryContext, Span, OTLP."
+  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
 ---
 
 Tracing helps link separate application operations into a single execution chain and understand where a request spent time or failed.
-Kora uses [`OpenTelemetry`](https://opentelemetry.io/docs/what-is-opentelemetry/) to create `Span`, store the current tracing context in `OpentelemetryContext`, and export data in the `OTLP` format.
+Kora uses [`OpenTelemetry`](https://opentelemetry.io/docs/what-is-opentelemetry/) to create `Span` and to export them in the `OTLP` format.
 
-The current `Span` is stored in the Kora context, so it can be propagated between application components and used when manually creating nested `Span`.
-When `OpentelemetryContext` is set, Kora also adds `traceId` and `spanId` to `MDC` so these identifiers appear in logs when the logging module is used.
+Kora registers its own `ContextStorage` implementation for `OpenTelemetry`, so the current trace context is carried by a `ScopedValue` rather than by a thread local.
+Because of that, `io.opentelemetry.context.Context.current()` and `io.opentelemetry.api.trace.Span.current()` return the correct values anywhere inside a traced operation, including on virtual threads.
 
-Most `Span` are created automatically: the module instruments the HTTP server and client, database, `Kafka` consumer and producer, gRPC server and client, and other subsystems out of the box,
-and propagates the trace context between services over the [W3C traceparent](https://www.w3.org/TR/trace-context/) standard.
+Most `Span` are created for you: the HTTP server and client, the database, the `Kafka` consumer and producer, the gRPC server and client and other subsystems create their own spans through their telemetry,
+and the trace context is carried between services with the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard.
 
 Kora provides two mutually exclusive exporter modules, `OTLP/gRPC` and `OTLP/HTTP`; choose exactly one depending on the protocol your collector accepts.
-Either exporter module transitively provides the core tracing wiring (`OpentelemetryTracingModule`) and the automatic instrumentation (`OpentelemetryModule`), so no other tracing dependency is required.
+Either exporter module transitively provides the core tracing wiring (`OpentelemetryTracingModule`), so no other tracing dependency is required.
 
 For a step-by-step walkthrough before the reference details, see [Observability](../guides/observability.md).
 
@@ -27,7 +27,7 @@ It builds an `OtlpGrpcSpanExporter` behind a `BatchSpanProcessor`, and the typic
 
     [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc"
+    implementation "io.koraframework:opentelemetry-tracing-exporter-grpc"
     ```
 
     Module:
@@ -40,7 +40,7 @@ It builds an `OtlpGrpcSpanExporter` behind a `BatchSpanProcessor`, and the typic
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-grpc")
+    implementation("io.koraframework:opentelemetry-tracing-exporter-grpc")
     ```
 
     Module:
@@ -48,6 +48,8 @@ It builds an `OtlpGrpcSpanExporter` behind a `BatchSpanProcessor`, and the typic
     @KoraApp
     interface Application : OpentelemetryGrpcExporterModule
     ```
+
+The module is `io.koraframework.opentelemetry.tracing.exporter.grpc.OpentelemetryGrpcExporterModule` and it ships the `OkHttp` sender that the `OTLP/gRPC` exporter uses.
 
 ## HTTP { #http }
 
@@ -58,7 +60,7 @@ It builds an `OtlpHttpSpanExporter` behind a `BatchSpanProcessor`, and the typic
 
     [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:opentelemetry-tracing-exporter-http"
+    implementation "io.koraframework:opentelemetry-tracing-exporter-http"
     ```
 
     Module:
@@ -71,7 +73,7 @@ It builds an `OtlpHttpSpanExporter` behind a `BatchSpanProcessor`, and the typic
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
+    implementation("io.koraframework:opentelemetry-tracing-exporter-http")
     ```
 
     Module:
@@ -80,97 +82,112 @@ It builds an `OtlpHttpSpanExporter` behind a `BatchSpanProcessor`, and the typic
     interface Application : OpentelemetryHttpExporterModule
     ```
 
+The module is `io.koraframework.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule`.
+Unlike the `OTLP/gRPC` module it sends over the `JDK` HTTP client sender and does not pull `OkHttp` into the application.
+
 ## Configuration { #configuration }
 
-Export parameters under `tracing.exporter` are described by `OpentelemetryGrpcExporterConfig` (for `OTLP/gRPC`) and `OpentelemetryHttpExporterConfig` (for `OTLP/HTTP`); both classes share the same field set.
-Resource attributes under `tracing.attributes` are described by `OpentelemetryResourceConfig`.
-If `tracing.exporter.endpoint` is not specified, no exporter is created (the config resolves to the internal `Empty` value and a no-op `SpanExporter`/`SpanProcessor` is used), and the application starts without sending traces to an external collector.
+Tracing is described by two configuration sections.
+
+The `tracing` section is described by `OpentelemetryTracingConfig` and is provided by `OpentelemetryTracingModule`:
+
+- `enabled` — the global tracing switch (default: `true`). With `false` Kora installs a no-op `TracerProvider`, so no `Span` are recorded and nothing is exported.
+- `attributes` — `OpenTelemetry Resource` attributes (default: `{}`).
+
+The `tracing.exporter` section is described by `OpentelemetryGrpcExporterConfig` (for `OTLP/gRPC`) and `OpentelemetryHttpExporterConfig` (for `OTLP/HTTP`); both interfaces have the same field set, so switching the exporter module does not change the configuration.
+If `tracing.exporter.endpoint` is not specified, no exporter and no span processor are created — the application starts and spans are still created and propagated, they are simply never sent to an external collector.
 
 The `tracing.attributes` field defines `OpenTelemetry Resource` attributes that are attached to **every** exported `Span` of the whole service.
-It usually contains the service name and namespace, for example `service.name` and `service.namespace`.
+It is empty by default, so set at least the service name and namespace there, for example `service.name` and `service.namespace`, otherwise the collector receives spans without service identity.
 These service-wide `Resource` attributes are different from per-module span attributes configured under `<module>.telemetry.tracing.attributes`, which are added only to the spans of a specific subsystem — see [Module tracing configuration](#module-config).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     tracing {
+      enabled = true //(1)!
       exporter {
-        endpoint = "http://localhost:4317" //(1)!
-        connectTimeout = "60s" //(2)!
-        exportTimeout = "3s" //(3)!
-        scheduleDelay = "2s" //(4)!
-        maxExportBatchSize = 512 //(5)!
-        maxQueueSize = 2048 //(6)!
-        batchExportTimeout = "30s" //(7)!
-        compression = "gzip" //(8)!
-        exportUnsampledSpans = false //(9)!
-        retryPolicy {
-          maxAttempts = 5 //(10)!
-          initialBackoff = "1s" //(11)!
-          maxBackoff = "5s" //(12)!
-          backoffMultiplier = 1.5 //(13)!
+        endpoint = "http://localhost:4317" //(2)!
+        connectTimeout = "60s" //(3)!
+        exportTimeout = "3s" //(4)!
+        scheduleDelay = "2s" //(5)!
+        maxExportBatchSize = 512 //(6)!
+        maxQueueSize = 2048 //(7)!
+        batchExportTimeout = "30s" //(8)!
+        compression = "gzip" //(9)!
+        exportUnsampledSpans = false //(10)!
+        retryPolicy { //(11)!
+          maxAttempts = 5 //(12)!
+          initialBackoff = "1s" //(13)!
+          maxBackoff = "5s" //(14)!
+          backoffMultiplier = 1.5 //(15)!
         }
       }
-      attributes { //(14)!
+      attributes { //(16)!
         "service.name" = "example-service"
         "service.namespace" = "kora"
       }
     }
     ```
 
-    1. `OpenTelemetry Collector` endpoint for exporting traces (default: not specified, optional). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
-    2. Timeout for establishing a connection to the exporter (default: not specified, optional).
-    3. Maximum time to wait while the exporter sends data (default: `3s`).
-    4. Delay between sending accumulated `Span` to the collector (default: `2s`).
-    5. Maximum number of `Span` in one export batch (default: `512`).
-    6. Maximum queue size for `Span` waiting to be sent (default: `2048`).
-    7. Maximum time the `BatchSpanProcessor` waits for one accumulated batch to be exported; this is distinct from `exportTimeout`, which bounds a single `OTLP` request (default: `30s`).
-    8. Data compression used during export, `gzip` or `none` (default: `gzip`).
-    9. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
-    10. Maximum number of retry attempts (default: `5`).
-    11. Initial delay before a retry attempt (default: `1s`).
-    12. Maximum delay before a retry attempt (default: `5s`).
-    13. Delay multiplier between retry attempts (default: `1.5`).
-    14. `OpenTelemetry Resource` attributes added to exported `Span` (default: `{}`).
+    1. Enables tracing for the whole application (default: `true`).
+    2. `OpenTelemetry Collector` endpoint for exporting traces (optional, no default). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
+    3. Timeout for establishing a connection to the exporter (optional, no default — the `OpenTelemetry` exporter default applies).
+    4. Maximum time to wait while the exporter sends one `OTLP` request (default: `3s`).
+    5. Delay between sending accumulated `Span` to the collector (default: `2s`).
+    6. Maximum number of `Span` in one export batch (default: `512`).
+    7. Maximum queue size for `Span` waiting to be sent (default: `2048`).
+    8. Maximum time the `BatchSpanProcessor` waits for one accumulated batch to be exported; this is distinct from `exportTimeout`, which bounds a single `OTLP` request (default: `30s`).
+    9. Data compression used during export, `gzip` or `none` (default: `gzip`).
+    10. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
+    11. Retry policy applied to failed export attempts (optional, the whole block may be omitted and every value below then takes its default).
+    12. Maximum number of retry attempts (default: `5`).
+    13. Initial delay before a retry attempt (default: `1s`).
+    14. Maximum delay before a retry attempt (default: `5s`).
+    15. Delay multiplier between retry attempts (default: `1.5`).
+    16. `OpenTelemetry Resource` attributes added to every exported `Span` (default: `{}`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     tracing:
+      enabled: true #(1)!
       exporter:
-        endpoint: http://localhost:4317 #(1)!
-        connectTimeout: 60s #(2)!
-        exportTimeout: 3s #(3)!
-        scheduleDelay: 2s #(4)!
-        maxExportBatchSize: 512 #(5)!
-        maxQueueSize: 2048 #(6)!
-        batchExportTimeout: 30s #(7)!
-        compression: gzip #(8)!
-        exportUnsampledSpans: false #(9)!
-        retryPolicy:
-          maxAttempts: 5 #(10)!
-          initialBackoff: 1s #(11)!
-          maxBackoff: 5s #(12)!
-          backoffMultiplier: 1.5 #(13)!
-      attributes: #(14)!
+        endpoint: http://localhost:4317 #(2)!
+        connectTimeout: 60s #(3)!
+        exportTimeout: 3s #(4)!
+        scheduleDelay: 2s #(5)!
+        maxExportBatchSize: 512 #(6)!
+        maxQueueSize: 2048 #(7)!
+        batchExportTimeout: 30s #(8)!
+        compression: gzip #(9)!
+        exportUnsampledSpans: false #(10)!
+        retryPolicy: #(11)!
+          maxAttempts: 5 #(12)!
+          initialBackoff: 1s #(13)!
+          maxBackoff: 5s #(14)!
+          backoffMultiplier: 1.5 #(15)!
+      attributes: #(16)!
         service.name: example-service
         service.namespace: kora
     ```
 
-    1. `OpenTelemetry Collector` endpoint for exporting traces (default: not specified, optional). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
-    2. Timeout for establishing a connection to the exporter (default: not specified, optional).
-    3. Maximum time to wait while the exporter sends data (default: `3s`).
-    4. Delay between sending accumulated `Span` to the collector (default: `2s`).
-    5. Maximum number of `Span` in one export batch (default: `512`).
-    6. Maximum queue size for `Span` waiting to be sent (default: `2048`).
-    7. Maximum time the `BatchSpanProcessor` waits for one accumulated batch to be exported; this is distinct from `exportTimeout`, which bounds a single `OTLP` request (default: `30s`).
-    8. Data compression used during export, `gzip` or `none` (default: `gzip`).
-    9. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
-    10. Maximum number of retry attempts (default: `5`).
-    11. Initial delay before a retry attempt (default: `1s`).
-    12. Maximum delay before a retry attempt (default: `5s`).
-    13. Delay multiplier between retry attempts (default: `1.5`).
-    14. `OpenTelemetry Resource` attributes added to exported `Span` (default: `{}`).
+    1. Enables tracing for the whole application (default: `true`).
+    2. `OpenTelemetry Collector` endpoint for exporting traces (optional, no default). `gRPC` usually uses `http://localhost:4317`, and `HTTP` usually uses `http://localhost:4318/v1/traces`.
+    3. Timeout for establishing a connection to the exporter (optional, no default — the `OpenTelemetry` exporter default applies).
+    4. Maximum time to wait while the exporter sends one `OTLP` request (default: `3s`).
+    5. Delay between sending accumulated `Span` to the collector (default: `2s`).
+    6. Maximum number of `Span` in one export batch (default: `512`).
+    7. Maximum queue size for `Span` waiting to be sent (default: `2048`).
+    8. Maximum time the `BatchSpanProcessor` waits for one accumulated batch to be exported; this is distinct from `exportTimeout`, which bounds a single `OTLP` request (default: `30s`).
+    9. Data compression used during export, `gzip` or `none` (default: `gzip`).
+    10. Whether to export `Span` that were not selected by `Sampler` (default: `false`).
+    11. Retry policy applied to failed export attempts (optional, the whole block may be omitted and every value below then takes its default).
+    12. Maximum number of retry attempts (default: `5`).
+    13. Initial delay before a retry attempt (default: `1s`).
+    14. Maximum delay before a retry attempt (default: `5s`).
+    15. Delay multiplier between retry attempts (default: `1.5`).
+    16. `OpenTelemetry Resource` attributes added to every exported `Span` (default: `{}`).
 
 The example project uses environment substitution for the endpoint and overrides a few export parameters:
 
@@ -209,23 +226,40 @@ The example project uses environment substitution for the endpoint and overrides
 
     1. Resolved from the `METRIC_COLLECTOR_ENDPOINT` environment variable, see [environment substitution](config.md#environment-variables).
 
+If the application also has the [metrics](metrics.md) module, its `MeterProvider` is handed to the exporter and the span processor, and they report their own internal metrics through the same registry.
+
 ## Automatic tracing { #automatic }
 
-Once one exporter module is added, Kora instruments its subsystems automatically: for every incoming request, outgoing call, message, query, or scheduled run it creates a `Span`, attaches it to the current `OpentelemetryContext`, nests it under the currently active `Span`, and propagates the trace context across service boundaries.
+A tracing module in the application graph provides a `Tracer` component.
+Every Kora subsystem that has telemetry picks that `Tracer` up and starts creating `Span` for its own operations: for every incoming request, outgoing call, message, query or scheduled run it opens a `Span`, binds it to the current context, nests it under the currently active `Span` and closes it when the operation ends.
 No annotations or manual code are required for these `Span`.
 
-For example, the `GET /text` controller from the telemetry example produces a `SERVER` span named `GET /text` automatically:
+For example, the `GET /text` controller from the telemetry example produces a `SERVER` span named `GET /text`, with the repository query nested inside it as a `CLIENT` span:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Repository
+    public interface TraceRepository extends JdbcRepository {
+
+        @Query("SELECT 1")
+        int selectOne();
+    }
+
     @Component
     @HttpController
     public final class SimpleController {
 
+        private final TraceRepository repository;
+
+        public SimpleController(TraceRepository repository) {
+            this.repository = repository;
+        }
+
         @HttpRoute(method = HttpMethod.GET, path = "/text")
         public HttpServerResponse get() {
-            return HttpServerResponse.of(200, HttpBody.plaintext("Hello world"));
+            var databaseValue = repository.selectOne();
+            return HttpServerResponse.of(200, HttpBody.plaintext("Hello world: " + databaseValue));
         }
     }
     ```
@@ -233,48 +267,88 @@ For example, the `GET /text` controller from the telemetry example produces a `S
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Repository
+    interface TraceRepository : JdbcRepository {
+
+        @Query("SELECT 1")
+        fun selectOne(): Int
+    }
+
     @Component
     @HttpController
-    class SimpleController {
+    class SimpleController(private val repository: TraceRepository) {
 
         @HttpRoute(method = HttpMethod.GET, path = "/text")
         fun get(): HttpServerResponse {
-            return HttpServerResponse.of(200, HttpBody.plaintext("Hello world"))
+            val databaseValue = repository.selectOne()
+            return HttpServerResponse.of(200, HttpBody.plaintext("Hello world: $databaseValue"))
         }
     }
     ```
 
-The table below lists the subsystems instrumented by `OpentelemetryModule`, the resulting `Span` name and [kind](https://opentelemetry.io/docs/specs/otel/trace/api/#spankind), and the main attributes.
+The table below lists the subsystems that create `Span`, the resulting span name and [kind](https://opentelemetry.io/docs/specs/otel/trace/api/#spankind), and the main attributes.
 Attribute names follow the [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/).
 
-| Subsystem              | Span name                                      | Kind       | Key attributes                                                                                                            |
-|------------------------|------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------|
-| HTTP server            | `<METHOD> <route>`, e.g. `GET /text`           | `SERVER`   | `http.request.method`, `url.scheme`, `url.path`, `http.route`, `server.address`, `http.response.status_code`            |
-| HTTP client            | `<METHOD> <uriTemplate>`                       | `CLIENT`   | `http.request.method`, `server.address`, `server.port`, `url.scheme`, `url.full`, `http.response.status_code`          |
-| Database               | query operation name                           | `CLIENT`   | `db.system`, `db.user`, `db.statement`                                                                                   |
-| Kafka consumer         | `kafka.poll`, `<topic> receive`, `<topic> process` | `CONSUMER` | `messaging.system` = `kafka`, `messaging.operation`, `messaging.destination.name`, `messaging.kafka.message.offset`   |
-| Kafka producer         | `<topic> send`, `producer transaction`         | `PRODUCER` / `INTERNAL` | `messaging.system` = `kafka`, `messaging.operation` = `publish`, `messaging.destination.name`                |
-| gRPC server            | `<service>/<method>`                           | `SERVER`   | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `network.peer.address`                                               |
-| gRPC client            | `<fullMethodName>`                             | `CLIENT`   | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `server.address`, `server.port`                                      |
-| S3 client              | `S3 <client> <method>`                         | `CLIENT`   | `client.name`, `http.request.method`, `aws.s3.bucket`, `aws.s3.key`, `http.response.status_code`                        |
-| SOAP client            | `SOAP <service> <method>`                      | `CLIENT`   | `rpc.service`, `rpc.method`, `rpc.system`                                                                                |
-| JMS consumer           | `<destination> receive`                        | `CONSUMER` | `messaging.system` = `jms`, `messaging.destination.name`, `messaging.message.id`                                        |
-| Scheduling             | `<class> <method>`                             | `INTERNAL` | `code.function`, `code.filepath`                                                                                         |
-| Cache                  | `cache.call`                                   | `INTERNAL` | `operation`, `cache`, `origin`                                                                                           |
+| Subsystem      | Span name                                        | Kind                    | Key attributes                                                                                                                                                     |
+|----------------|--------------------------------------------------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| HTTP server    | `<METHOD> <route>`, e.g. `GET /text`             | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`, `server.port`, `server.name`, `http.response.status_code`, `http.response.result_code` |
+| HTTP client    | `<METHOD> <uriTemplate>`                         | `CLIENT`                | `http.request.method`, `http.route`, `server.address`, `server.port`, `url.scheme`, `url.path`, `url.full`, `http.response.status_code`, `http.response.result_code`    |
+| Database       | `<Repository>.<method>`                          | `CLIENT`                | `db.system.name`, `db.query.text`                                                                                                                                    |
+| Kafka consumer | `kafka.poll`, `<topic> process record`           | `CONSUMER`              | `messaging.system` = `kafka`, `messaging.client.id`, `messaging.consumer.group.name`, `messaging.destination.name`, `messaging.destination.partition.id`, `messaging.kafka.offset` |
+| Kafka producer | `<topic> send`, `producer transaction`           | `PRODUCER` / `INTERNAL` | `messaging.system` = `kafka`, `messaging.operation.type` = `send`, `messaging.destination.name`                                                                       |
+| gRPC server    | `<service>/<method>`                             | `SERVER`                | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `server.port`, `server.name`, `network.peer.address`                                                              |
+| gRPC client    | `<fullMethodName>`                               | `CLIENT`                | `rpc.system` = `grpc`, `rpc.service`, `rpc.method`, `server.address`, `server.port`                                                                                  |
+| SOAP client    | `SOAP <service> <method>`                        | `CLIENT`                | `rpc.system` = `soap`, `rpc.service`, `rpc.method`, `server.address`, `server.port`                                                                                  |
+| S3 client      | `S3.<operation>`                                 | `CLIENT`                | `rpc.system` = `s3`, `rpc.method`, `aws.s3.bucket`                                                                                                                   |
+| JMS consumer   | `<destination> receive`                          | `CONSUMER`              | `messaging.system` = `jms`, `messaging.destination.name`, `messaging.message.id`                                                                                    |
+| Scheduling     | `scheduling <class>`                             | `INTERNAL`              | `code.function.name`                                                                                                                                                 |
+| Redis cache    | `cache.operation`                                | `INTERNAL`              | `operation`, `origin` = `redis`                                                                                                                                      |
+| Camunda BPMN   | `Camunda Delegate <name>`                        | `INTERNAL`              | `delegate`                                                                                                                                                           |
+| Camunda REST   | `<METHOD> <route>`                               | `SERVER`                | `http.request.method`, `http.route`, `url.scheme`, `url.path`, `server.address`                                                                                      |
+| Zeebe worker   | `Zeebe Worker <type>`                            | `INTERNAL`              | `jobType`, `jobName`, `jobKey`, `jobWorker`, `processKey`, `elementId`                                                                                              |
 
-`Camunda` (BPMN engine, REST) and `Zeebe` worker subsystems are also instrumented when their modules are present.
+Spans produced by a *named* component also carry attributes that say which declaration they came from: `system.config` (the configuration path of the component), `system.name.simple` and `system.name.canonical` (the simple and canonical class name of the declaration).
+They are set by the HTTP client, the `Kafka` consumer and producer, the SOAP and S3 clients, caches and scheduled jobs; the AWS S3 client names the first one `system.path` instead of `system.config`.
 
-On failure Kora sets the span status to `ERROR` and records the exception via `Span#recordException`; on success the status is set to `OK`.
+A few more details worth knowing:
+
+- The HTTP server creates a span only for a request that matched a route, because the span name is built from the route template. Requests that end in `404` because no route matched produce no span.
+- `url.path` and `url.full` are only added when `tracePathFull` (server) or `pathFull` (client) is enabled, which is the default — turn them off to keep identifiers out of the trace.
+- The `Kafka` consumer opens a `kafka.poll` span for the whole poll and one `<topic> process record` span per record; the per-record span is parented to the context extracted from the record headers and is *linked* to the `kafka.poll` span.
+- The `Caffeine` cache and the [resilience](resilient.md) aspects report metrics and logs but do not create spans.
+- On failure Kora sets the span status to `ERROR` and records the exception via `Span#recordException`. Most subsystems also set `OK` on success; the HTTP server and HTTP client leave a successful span `UNSET` and only mark `ERROR` for a `4xx`/`5xx` status or a connection failure.
 
 ## Module tracing configuration { #module-config }
 
-Tracing of each instrumented subsystem is configured under that module's `telemetry.tracing` section, described by `ru.tinkoff.kora.telemetry.common.TelemetryConfig.TracingConfig`.
+Tracing of each subsystem is configured under that module's `telemetry.tracing` section, described by `io.koraframework.telemetry.common.TelemetryConfig.TracingConfig`.
 Two options are available for every subsystem:
 
 - `enabled` (default: `true`) — turns the subsystem's spans on or off. Set to `false` to stop creating spans for a specific module without removing the exporter.
 - `attributes` (default: `{}`) — a map of key/value pairs added to every span produced **by that module only**. These per-span attributes differ from the service-wide `tracing.attributes` (`Resource` attributes) that apply to all spans.
 
-The `telemetry.tracing` section lives at the same path as the module's own configuration, for example `httpServer.telemetry.tracing`, `db.telemetry.tracing`, `grpcServer.telemetry.tracing`, or `kafka.<consumer>.telemetry.tracing`.
+Note that `enabled` defaults to `true` here, unlike `telemetry.logging.enabled` and `telemetry.metrics.enabled`, which default to `false`.
+Two groups of modules override that default to `false`: the [system HTTP server](http-server.md) (`httpServer.system.telemetry.tracing`) and the [resilience](resilient.md) aspects.
+
+The `telemetry.tracing` section lives at the same path as the module's own configuration:
+
+| Subsystem            | Configuration path                                                       |
+|----------------------|--------------------------------------------------------------------------|
+| HTTP server          | `httpServer.telemetry.tracing`                                            |
+| System HTTP server   | `httpServer.system.telemetry.tracing`                                     |
+| HTTP client          | `httpClient.<name>.telemetry.tracing`                                     |
+| JDBC database        | `jdbc.telemetry.tracing`                                                  |
+| Cassandra database   | `cassandra.telemetry.tracing`                                             |
+| gRPC server          | `grpcServer.telemetry.tracing`                                            |
+| gRPC client          | `grpcClient.<ServiceName>.telemetry.tracing`                              |
+| Kafka consumer       | `kafka.consumer.<name>.telemetry.tracing`                                 |
+| Kafka producer       | `kafka.producer.<name>.telemetry.tracing`                                 |
+| Scheduling           | `scheduling.telemetry.tracing`                                            |
+| Cache                | `<cache config path>.telemetry.tracing`                                   |
+
+Two subsystems add an option of their own on top of `enabled` and `attributes`:
+
+- `httpServer.telemetry.tracing.tracePathFull` (default: `true`) — adds `url.path` with the real request path to the server span.
+- `httpClient.<name>.telemetry.tracing.pathFull` (default: `true`) — adds `url.path` and `url.full` with the real request URI to the client span.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -283,24 +357,26 @@ The `telemetry.tracing` section lives at the same path as the module's own confi
       telemetry {
         tracing {
           enabled = true //(1)!
-          attributes { //(2)!
+          tracePathFull = true //(2)!
+          attributes { //(3)!
             "component" = "gateway"
           }
         }
       }
     }
-    db {
+    jdbc {
       telemetry {
         tracing {
-          enabled = false //(3)!
+          enabled = false //(4)!
         }
       }
     }
     ```
 
     1. Enables tracing for the HTTP server (default: `true`).
-    2. Per-span attributes added only to HTTP server spans (default: `{}`).
-    3. Disables tracing for database queries (default: `true`).
+    2. Adds the real request path as `url.path` to the HTTP server span (default: `true`).
+    3. Per-span attributes added only to HTTP server spans (default: `{}`).
+    4. Disables tracing for database queries (default: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -309,39 +385,50 @@ The `telemetry.tracing` section lives at the same path as the module's own confi
       telemetry:
         tracing:
           enabled: true #(1)!
-          attributes: #(2)!
+          tracePathFull: true #(2)!
+          attributes: #(3)!
             component: "gateway"
-    db:
+    jdbc:
       telemetry:
         tracing:
-          enabled: false #(3)!
+          enabled: false #(4)!
     ```
 
     1. Enables tracing for the HTTP server (default: `true`).
-    2. Per-span attributes added only to HTTP server spans (default: `{}`).
-    3. Disables tracing for database queries (default: `true`).
+    2. Adds the real request path as `url.path` to the HTTP server span (default: `true`).
+    3. Per-span attributes added only to HTTP server spans (default: `{}`).
+    4. Disables tracing for database queries (default: `true`).
 
 Module-specific tracing parameters are also described in those modules' own documentation, for example [HTTP server](http-server.md), [HTTP client](http-client.md), [gRPC server](grpc-server.md), [gRPC client](grpc-client.md), and [Kafka](kafka.md).
 
 ## Context propagation { #propagation }
 
-Kora stitches distributed traces together with the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard: every instrumented client injects the current `traceparent` into the outgoing carrier, and every instrumented server extracts it to establish the parent of the new `Span`.
+Kora stitches distributed traces together with the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard through `W3CTraceContextPropagator`.
 This happens automatically and requires no configuration:
 
-- **HTTP** — `traceparent` is injected into request headers by the HTTP client and extracted from request headers by the HTTP server.
-- **Kafka** — `traceparent` is injected into record headers by the producer and extracted from record headers by the consumer (the per-record `process` span also links back to the batch `receive` span).
-- **gRPC** — `traceparent` is injected into call metadata by the client and extracted from metadata by the server.
-- **JMS** — `traceparent` is extracted from message properties by the consumer.
+- **HTTP server** — `traceparent` is extracted from the request headers and becomes the parent of the server `Span`; the identifiers of that span are then written back into the **response** headers, so a caller can correlate the response with the trace.
+- **Kafka** — `traceparent` is injected into the record headers by the producer and extracted from the record headers by the consumer, so each `<topic> process record` span continues the producer's trace.
+- **gRPC client** — `traceparent` is injected into the call metadata.
+- **gRPC server** — `traceparent` is extracted from the call metadata and injected back into the response headers metadata.
+- **JMS consumer** — `traceparent` is extracted from the message properties.
+- **Camunda REST and Zeebe worker** — `traceparent` is extracted from the request headers and the job headers respectively.
 
-Because the current `Span` lives in the Kora `Context`, any span you create manually (see [Synchronous tracing](#tracing-sync)) is automatically picked up and propagated by the instrumented clients called within the same context — you do not need to pass headers yourself.
+The Kora HTTP client is the exception: it opens a `CLIENT` span for the outgoing call so the call is visible in your own trace, but it does **not** write `traceparent` into the outgoing request.
+If a downstream service has to continue the same trace, add the header yourself in an `HttpServerInterceptor`-style [HTTP client interceptor](http-client.md).
+
+Within one service nothing has to be propagated by hand: the current `Span` lives in a `ScopedValue`, so a span you create manually (see [Synchronous tracing](#tracing-sync)) automatically becomes the parent of everything called inside it, in the same thread.
+Crossing a thread boundary is the one case that needs explicit work — see [Asynchronous tracing](#async-tracing).
 
 ## Sampling { #sampling }
 
-The core tracing components are provided by `OpentelemetryTracingModule` as `@DefaultComponent`, which means each of them can be overridden by declaring your own component of the same type:
+The core tracing components are provided by `OpentelemetryTracingModule` as `@DefaultComponent`, which means each of them can be replaced by declaring your own component of the same type:
 
 - `Sampler` — decides which `Span` are recorded. The default is `Sampler.parentBased(Sampler.alwaysOn())`, i.e. record every root `Span` and follow the parent's decision for child `Span`.
 - `IdGenerator` — generates trace and span identifiers. The default is `IdGenerator.random()`.
 - `Supplier<SpanLimits>` — limits on attributes, events, and links per `Span`. The default is `SpanLimits.getDefault()`.
+- `KoraTracer` — the helper used for [manual spans](#tracing-sync).
+
+The exporter modules declare `SpanExporter` and `SpanProcessor` as `@DefaultComponent` too, so an application can send spans somewhere else entirely by providing its own.
 
 To apply head-based sampling, override the `Sampler` factory method in your application, for example to record roughly 10% of root traces:
 
@@ -374,55 +461,73 @@ The `exportUnsampledSpans` export option controls whether `Span` that were **not
 
 ## Tracing context { #tracing-context }
 
-To get the current `Span`, use the `getSpan` method on `OpentelemetryContext`:
+The current trace context is read through the standard `OpenTelemetry` API — Kora plugs its own storage behind it, so no Kora-specific accessor is needed.
+
+To get the current `Span`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var span = OpentelemetryContext.getSpan();
+    var span = io.opentelemetry.api.trace.Span.current();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val span = OpentelemetryContext.getSpan()
+    val span = io.opentelemetry.api.trace.Span.current()
     ```
 
-To get the current trace identifier, use the `getTraceId()` method on `OpentelemetryContext`:
+To get the current trace identifier:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var traceId = OpentelemetryContext.getTraceId();
+    var traceId = io.opentelemetry.api.trace.Span.current().getSpanContext().getTraceId();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val traceId = OpentelemetryContext.getTraceId()
+    val traceId = io.opentelemetry.api.trace.Span.current().getSpanContext().getTraceId()
     ```
 
-If there is no current `Span`, both methods return `null`.
-If you need an invalid placeholder value from `OpenTelemetry`, use `getSpanOrInvalid()` and `getTraceIdOrInvalid()`, which return `Span.getInvalid()` and its all-zero trace identifier instead of `null`.
+When there is no current `Span`, `Span.current()` returns `Span.getInvalid()` and its `SpanContext` reports `isValid() == false` with an all-zero trace identifier, so these calls never return `null` and never throw.
 
-For manual span management, `OpentelemetryContext` also exposes an instance API used together with the Kora `Context`:
+The pieces that make this work live in `io.koraframework.common.telemetry`:
 
-- `OpentelemetryContext.get(ctx)` — returns the `OpentelemetryContext` stored in the given Kora `Context` (creating an empty one if absent).
-- `OpentelemetryContext.set(ctx, otctx)` — stores the `OpentelemetryContext` in the Kora `Context` and updates the `traceId`/`spanId` in `MDC`.
-- `otctx.add(span)` — returns a new `OpentelemetryContext` with the given `Span` (or any `ImplicitContextKeyed`) added as the current one.
-- `otctx.getContext()` — returns the underlying `io.opentelemetry.context.Context`, used as the parent when building a nested `Span`.
+- `OpentelemetryContext` — an implementation of `io.opentelemetry.context.Context` backed by `ScopedValue`. Kora registers it as an `OpenTelemetry` `ContextStorageProvider`, which is why `Context.current()` and `Span.current()` work on any thread that Kora entered, virtual threads included.
+- `OpentelemetryContext.VALUE` — the `ScopedValue<Context>` itself. Binding it with `ScopedValue.where(OpentelemetryContext.VALUE, ctx)` is how a context is made current; `Context#makeCurrent()` is deliberately unsupported and throws `IllegalStateException`, because a scoped value cannot be attached and detached imperatively.
+- `Observation` — the per-operation telemetry object of the module that is currently running, also bound to a `ScopedValue`. `Observation.current(HttpServerObservation.class)` returns it and `observation.span()` gives the module's own span; it throws if there is no bound observation of that type.
 
 ## Log correlation { #mdc }
 
-When `OpentelemetryContext.set` is called (by the automatic instrumentation or by your manual tracing code), Kora writes the current `traceId` and `spanId` into the [MDC](logging-slf4j.md).
-When there is no current `Span`, these keys are removed from the `MDC` again.
+Log correlation is done by the [Logback module](logging-slf4j.md#logback): `KoraAsyncAppender` captures `Span.current().getSpanContext()` at the moment the event is queued, and `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into the log line whenever that span context is valid.
 
-As a result, if the [logging module](logging-slf4j.md) is used, every log line emitted within a traced operation carries the `traceId` and `spanId`, which lets you jump from a log entry to the corresponding trace in your observability backend and back.
+```xml
+<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+</appender>
+
+<appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
+    <appender-ref ref="STDOUT"/>
+</appender>
+```
+
+As a result every log line emitted within a traced operation carries the `traceId` and `spanId`, which lets you jump from a log entry to the corresponding trace in your observability backend and back.
+Lines logged outside any traced operation simply have no such fields.
+
+The Kora [MDC](logging-slf4j.md#mdc) is a separate mechanism for your own structured fields — the trace identifiers do not go through it, so nothing has to be put into or removed from `MDC` around a span.
 
 ## Synchronous tracing { #tracing-sync }
 
-In addition to `Span` automatically created by the framework, you can use the `Tracer` object from the application graph and create custom nested `Span`.
-When tracing manually, it is important to save the current `OpentelemetryContext`, set the new context for the duration of the operation, and restore the original context in `finally`.
+In addition to `Span` created by the framework, you can create your own.
+The simplest way is the `KoraTracer` component: it builds the `Span`, binds it as the current context for the duration of the call, sets the status, records an exception if one is thrown, and ends the span — all in one call.
+
+- `traceParent(name, …)` — creates a `Span` nested under the currently active one.
+- `traceNew(name, …)` — creates a root `Span` with no parent, for work that must start its own trace.
+- `tracer()` — returns the underlying `io.opentelemetry.api.trace.Tracer` when you need full control.
+
+Each of them accepts either a `TraceCallable`, which returns a value, or a `TraceRunnable`, which does not; both receive the created `Span` so that attributes and events can be added to it.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -430,117 +535,83 @@ When tracing manually, it is important to save the current `OpentelemetryContext
     @Component
     public final class MyService {
 
-        private final io.opentelemetry.api.trace.Tracer tracer;
+        private final KoraTracer tracer;
+
+        public MyService(KoraTracer tracer) {
+            this.tracer = tracer;
+        }
+
+        public String doTraceWork(String userId) {
+            return tracer.traceParent("myOperation", span -> {
+                span.setAttribute("user.id", userId);
+                return doWork(userId);
+            });
+        }
+
+        private String doWork(String userId) {
+            // do some work
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyService(private val tracer: KoraTracer) {
+
+        fun doTraceWork(userId: String): String {
+            return tracer.traceParent("myOperation", KoraTracer.TraceCallable<String, RuntimeException> { span -> //(1)!
+                span.setAttribute("user.id", userId)
+                doWork(userId)
+            })
+        }
+
+        private fun doWork(userId: String): String {
+            // do some work
+        }
+    }
+    ```
+
+    1. `traceParent` is overloaded for `TraceCallable` and `TraceRunnable`, and `Kotlin` cannot choose between two functional interfaces on its own — pass the explicit SAM constructor.
+
+If you need something `KoraTracer` does not cover, such as a custom span kind or a link to another trace, build the `Span` from the `Tracer` yourself and bind it as the current context for the duration of the operation:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyService {
+
+        private final Tracer tracer;
 
         public MyService(Tracer tracer) {
             this.tracer = tracer;
         }
 
         public String doTraceWork() {
-            var ctx = ru.tinkoff.kora.common.Context.current();
-            var otctx = OpentelemetryContext.get(ctx);
             var span = tracer.spanBuilder("myOperation")
-                .setParent(otctx.getContext())
+                .setSpanKind(SpanKind.INTERNAL)
+                .setParent(io.opentelemetry.context.Context.current())
                 .startSpan();
 
-            OpentelemetryContext.set(ctx, otctx.add(span));
-            try {
-                var result = doWork();
-                span.setStatus(StatusCode.OK);
-                return result;
-            } catch (Exception e) {
-                span.recordException(e);
-                span.setStatus(StatusCode.ERROR, e.getMessage());
-                throw e;
-            } finally {
-                span.end();
-                OpentelemetryContext.set(ctx, otctx);
-            }
-        }
-
-        public String doWork() {
-            // do some work
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
-
-        fun doTraceWork(): String {
-            val ctx = ru.tinkoff.kora.common.Context.current()
-            val otctx = OpentelemetryContext.get(ctx)
-            val span = tracer.spanBuilder("myOperation")
-                .setParent(otctx.getContext())
-                .startSpan()
-
-            OpentelemetryContext.set(ctx, otctx.add(span))
-            try {
-                val result = doWork()
-                span.setStatus(StatusCode.OK)
-                return result
-            } catch (e: Exception) {
-                span.recordException(e)
-                span.setStatus(StatusCode.ERROR, e.message)
-                throw e
-            } finally {
-                span.end()
-                OpentelemetryContext.set(ctx, otctx)
-            }
-        }
-
-        fun doWork(): String {
-            // do some work
-        }
-    }
-    ```
-
-## Asynchronous tracing { #async-tracing }
-
-When switching to another execution thread, pass not only `Span`, but also the Kora context.
-Use `Context.fork()` for `CompletionStage` and `Context.Kotlin.asCoroutineContext(ctx)` for `suspend` code.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Example for asynchronous code with `CompletionStage`:
-
-    ```java
-    @Component
-    public final class MyService {
-
-        private final io.opentelemetry.api.trace.Tracer tracer;
-
-        public MyService(Tracer tracer) {
-            this.tracer = tracer;
-        }
-
-        public CompletionStage<String> doTraceWork() {
-            var ctx = ru.tinkoff.kora.common.Context.current().fork();
-            var otctx = OpentelemetryContext.get(ctx);
-            var span = tracer.spanBuilder("myOperation")
-                .setParent(otctx.getContext())
-                .startSpan();
-
-            return CompletableFuture.supplyAsync(() -> {
-                    OpentelemetryContext.set(ctx, otctx.add(span));
-                    return doWork();
-                })
-                .whenComplete((r, e) -> {
-                    if (e != null) {
+            return ScopedValue.where(OpentelemetryContext.VALUE, io.opentelemetry.context.Context.current().with(span))
+                .call(() -> {
+                    try {
+                        var result = doWork();
+                        span.setStatus(StatusCode.OK);
+                        return result;
+                    } catch (Exception e) {
                         span.recordException(e);
                         span.setStatus(StatusCode.ERROR, e.getMessage());
-                    } else {
-                        span.setStatus(StatusCode.OK);
+                        throw e;
+                    } finally {
+                        span.end();
                     }
-                    span.end();
-                    OpentelemetryContext.set(ctx, otctx);
                 });
         }
 
-        public String doWork() {
+        private String doWork() {
             // do some work
         }
     }
@@ -548,21 +619,21 @@ Use `Context.fork()` for `CompletionStage` and `Context.Kotlin.asCoroutineContex
 
 === ":simple-kotlin: `Kotlin`"
 
-    Example for asynchronous `suspend` code:
-
     ```kotlin
     @Component
-    class MyService(private val tracer: io.opentelemetry.api.trace.Tracer) {
+    class MyService(private val tracer: Tracer) {
 
-        suspend fun doTraceWork(): String {
-            val ctx = ru.tinkoff.kora.common.Context.current()
-            val otctx = OpentelemetryContext.get(ctx)
+        fun doTraceWork(): String {
             val span = tracer.spanBuilder("myOperation")
-                .setParent(otctx.getContext())
+                .setSpanKind(SpanKind.INTERNAL)
+                .setParent(io.opentelemetry.context.Context.current())
                 .startSpan()
 
-            OpentelemetryContext.set(ctx, otctx.add(span))
-            return withContext(Context.Kotlin.asCoroutineContext(ctx)) {
+            val carrier = ScopedValue.where(
+                OpentelemetryContext.VALUE,
+                io.opentelemetry.context.Context.current().with(span)
+            )
+            return carrier.call<String, RuntimeException> {
                 try {
                     val result = doWork()
                     span.setStatus(StatusCode.OK)
@@ -573,13 +644,74 @@ Use `Context.fork()` for `CompletionStage` and `Context.Kotlin.asCoroutineContex
                     throw e
                 } finally {
                     span.end()
-                    OpentelemetryContext.set(ctx, otctx)
                 }
             }
         }
 
-        fun doWork(): String {
+        private fun doWork(): String {
             // do some work
         }
     }
     ```
+
+## Asynchronous tracing { #async-tracing }
+
+The trace context is a `ScopedValue`, and a scoped value is visible only inside the dynamic scope that bound it.
+Handing work to another thread therefore drops the context unless you carry it over explicitly: capture `io.opentelemetry.context.Context.current()` in the calling thread and re-bind it in the worker thread.
+
+`OpentelemetryContext` implements the `wrap` family of the `OpenTelemetry` `Context` interface on top of `ScopedValue`, so wrapping the task is usually all that is needed — `wrap(Runnable)`, `wrap(Callable)`, `wrapSupplier`, `wrapFunction` and `wrapConsumer` are all available.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyService {
+
+        private final KoraTracer tracer;
+        private final ExecutorService executor;
+
+        public MyService(KoraTracer tracer, ExecutorService executor) {
+            this.tracer = tracer;
+            this.executor = executor;
+        }
+
+        public CompletableFuture<String> doTraceWork() {
+            return tracer.traceParent("myOperation", span -> {
+                var ctx = io.opentelemetry.context.Context.current(); //(1)!
+                return CompletableFuture.supplyAsync(ctx.wrapSupplier(this::doWork), executor); //(2)!
+            });
+        }
+
+        private String doWork() {
+            // runs on another thread, but Span.current() is still the "myOperation" span
+        }
+    }
+    ```
+
+    1. Captured while the span is still current, so it already contains the `myOperation` span.
+    2. `wrapSupplier` re-binds that context around the call in the worker thread.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyService(private val tracer: KoraTracer, private val executor: ExecutorService) {
+
+        fun doTraceWork(): CompletableFuture<String> {
+            return tracer.traceParent("myOperation", KoraTracer.TraceCallable<CompletableFuture<String>, RuntimeException> { span ->
+                val ctx = io.opentelemetry.context.Context.current() //(1)!
+                CompletableFuture.supplyAsync(ctx.wrapSupplier { doWork() }, executor) //(2)!
+            })
+        }
+
+        private fun doWork(): String {
+            // runs on another thread, but Span.current() is still the "myOperation" span
+        }
+    }
+    ```
+
+    1. Captured while the span is still current, so it already contains the `myOperation` span.
+    2. `wrapSupplier` re-binds that context around the call in the worker thread.
+
+Note that `KoraTracer` ends the span as soon as its callback returns, which for the example above is before the future completes.
+When the span has to cover the whole asynchronous operation, build it from the `Tracer` yourself as shown in [Synchronous tracing](#tracing-sync) and call `span.end()` from the completion callback.

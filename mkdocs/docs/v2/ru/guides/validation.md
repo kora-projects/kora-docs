@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Валидация с Kora
 summary: Continue the HTTP Server guide and add body, path, and query validation with structured JSON validation errors
+description: "Step-by-step request validation for a Kora 2.0 HTTP API: the io.koraframework:validation-module artifact and ValidationModule, Kora's own constraint annotations in io.koraframework.validation.common.annotation, @Valid on a record and on a parameter, @Validate for method argument and result validation, the generated $UserRequest_Validator and $UserController__AopProxy sources, ViolationException and Violation.path().full(), and a global ViolationExceptionHttpServerResponseMapper plus ValidationHttpServerInterceptor tagged with @Tag(HttpServer.class)."
+agent:
+  use_when: "Use this file for questions about validating HTTP input in a Kora 2.0 service: io.koraframework:validation-module, ValidationModule, the Kora constraint annotations (@NotBlank, @NotEmpty, @Pattern, @Size, @Range, @Min, @Max, @Positive, @Negative, @Digits, @OneOf, @UUID, @Uri, @Url, @Past, @Future, @AssertTrue, @AssertFalse), @Valid on types and parameters, @Validate and its failFast attribute, @ValidatedBy custom constraints, Validator and ValidatorFactory, ViolationException, Violation.path().full(), turning violations into HTTP 400 with ViolationExceptionHttpServerResponseMapper and ValidationHttpServerInterceptor bound with @Tag(HttpServer.class), and why Kora validation is not Jakarta Bean Validation."
 tags: validation, http-server, json, api
 ---
 
@@ -25,38 +28,43 @@ tags: validation, http-server, json, api
 Вы расширите существующий HTTP-сервер:
 
 - валидацией тела запроса для `createUser` и `updateUser`
-- валидацией path-параметра для `userId`
-- валидацией query-параметров для `page`, `size` и `sort`
-- AOP-валидацией методов через `@Validate`
-- структурированными JSON-ответами для ошибок валидации
+- валидацией path-параметра `userId`
+- валидацией query-параметров `page`, `size` и `sort`
+- валидацией методов на основе AOP через `@Validate`
+- структурированными JSON-ответами при ошибках валидации
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+
 - текстовый редактор или среда разработки
-- пройденное [руководство по HTTP-серверу](http-server.md)
+- пройденное руководство [HTTP-сервер](http-server.md)
 
 ## Требования { #prerequisites }
 
 !!! note "Обязательная основа"
 
-    Это руководство предполагает, что вы уже прошли **[HTTP-сервер](http-server.md)** и у вас есть готовое CRUD-приложение с `UserController`, `UserService`, `UserRepository` и `InMemoryUserRepository`.
+    Это руководство предполагает, что вы прошли **[HTTP-сервер](http-server.md)** и у вас уже есть готовое CRUD-приложение с `UserController`, `UserService`, `UserRepository` и `InMemoryUserRepository`.
 
-    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что валидация наиболее полезна, когда тело запроса, path-параметры, query-параметры и сервисный поток уже существуют.
+    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что валидация полезнее всего тогда, когда тело запроса, path-параметры, query-параметры и поток сервиса уже существуют.
 
 ## Обзор { #overview }
 
-[Jakarta Bean Validation](https://jakarta.ee/specifications/bean-validation/) защищает границу между внешним вводом и поведением приложения. Контроллер может десериализовать JSON в DTO, но
-десериализация доказывает только то, что полезная нагрузка имеет правильную общую форму. Она не доказывает, что email похож на email, имя не пустое, размер страницы находится в допустимых пределах или
-path-параметр соответствует ожидаемому формату.
+Валидация защищает границу между внешним входом и поведением приложения. Контроллер может десериализовать JSON в DTO, но десериализация доказывает лишь то, что у полезной нагрузки правильная общая
+форма. Она не доказывает, что email выглядит как email, что имя не пустое, что размер страницы в допустимых пределах или что path-параметр имеет ожидаемый формат.
 
-Без валидации приложение принимает плохой ввод и позволяет более глубоким слоям обнаруживать проблему позже. Обычно это приводит к более слабым ошибкам, большему количеству защитного кода в сервисах и
-правилам данных, разбросанным по кодовой базе. С валидацией API может отклонить неправильный ввод рано и вернуть ответ, который явно относится к запросу клиента.
+Без валидации приложение принимает плохой вход и оставляет обнаружение проблемы более глубоким слоям. Обычно это дает менее внятные ошибки, более оборонительный код сервисов и правила данных,
+разбросанные по всей кодовой базе. С валидацией API может отклонить неверный вход рано и вернуть ответ, который явно относится к запросу клиента.
+
+!!! warning "Валидация Kora — это не Jakarta Bean Validation"
+
+    Kora поставляет собственный API валидации в `io.koraframework.validation.common.annotation`. Имена аннотаций намеренно выглядят знакомо, но это собственные типы Kora, они обеспечиваются
+    сгенерированным на этапе компиляции кодом, а не рефлексивным рантаймом, и они **не** взаимозаменяемы с `jakarta.validation.constraints`. Импорт одноименной Jakarta-аннотации дает класс, который
+    компилируется и молча ничего не валидирует.
 
 ### Как валидация вписывается в HTTP API { #validation-fits-http-api }
 
-В слоистом HTTP-приложении валидация обычно защищает границу, через которую внешний ввод попадает в систему.
+В слоеном HTTP-приложении валидация обычно защищает границу, через которую внешний вход попадает в систему.
 
 Это значит:
 
@@ -64,60 +72,79 @@ path-параметр соответствует ожидаемому форма
 - сервис продолжает заниматься бизнес-логикой
 - репозиторий продолжает заниматься хранением
 
-Такое разделение полезно, потому что некорректный HTTP-ввод обычно нужно отклонить до того, как он попадет в более глубокие слои. Оно также делает правила валидации проще для поиска и понимания.
+Такое разделение полезно, потому что неверный HTTP-вход обычно нужно отклонять до того, как он дойдет до более глубоких слоев. Оно же делает правила валидации проще для поиска и понимания.
 
 Kora поддерживает здесь два стиля:
 
 - декларативную валидацию через аннотации вроде `@Valid` и `@Validate`
-- императивное использование через компоненты валидации, описанные в [документации Kora по валидации](../documentation/validation.md)
+- императивное использование через внедрение сгенерированного `Validator<T>` и самостоятельный вызов `validate(...)` или `validateAndThrow(...)`, как описано в [Ручной валидации](../documentation/validation.md#manual-validation)
 
-В этом руководстве мы используем декларативный подход на основе контроллера, потому что он естественнее всего продолжает `http-server.md`.
+В этом руководстве мы используем декларативный подход на контроллере, потому что он — самое естественное продолжение `http-server.md`.
 
 ### Валидация на границе { #validation-at-boundary }
 
-Лучшее место для базовой валидации входа — граница API. Если некорректные данные отклоняются до попадания в сервисный слой, остальная часть приложения может работать с более сильными предположениями.
-В этом руководстве валидация появляется в трех местах:
+Лучшее место для базовой валидации входа — граница API. Если неверные данные отклоняются до того, как дойдут до слоя сервиса, остальная часть приложения может работать с более сильными допущениями. В
+этом руководстве валидация появляется в трех местах:
 
 - DTO тела запроса, где можно ограничить поля вроде `name` и `email`
 - path-параметры, где можно проверить значения маршрута вроде `userId`
-- query-параметры, где можно ограничить ввод для постраничной выдачи и сортировки
+- query-параметры, где можно ограничить вход постраничной выдачи и сортировки
 
-Это не заменяет бизнес-валидацию. Правило DTO может сказать «email должен быть синтаксически корректным»; правило сервиса может сказать «этот email должен быть уникальным». Это разные слои валидации.
+Это не заменяет бизнес-валидацию. Правило DTO может сказать «email должен быть синтаксически корректным», а правило сервиса — «этот email должен быть уникальным». Это разные слои валидации.
+
+### Аннотации ограничений { #constraint-annotations }
+
+Набор заметно шире тех четырех ограничений, которые понадобились этому руководству. Все они живут в `io.koraframework.validation.common.annotation` и могут стоять на поле, методе или параметре метода:
+
+| Группа     | Аннотации                                                                            |
+|------------|--------------------------------------------------------------------------------------|
+| Текст      | `@NotBlank`, `@Pattern`, `@Size`, `@OneOf`, `@UUID`, `@Uri`, `@Url`                   |
+| Числа      | `@Min`, `@Max`, `@Range`, `@Positive`, `@PositiveOrZero`, `@Negative`, `@NegativeOrZero`, `@Digits` |
+| Время      | `@Past`, `@PastOrPresent`, `@Future`, `@FutureOrPresent`                              |
+| Логические | `@AssertTrue`, `@AssertFalse`                                                         |
+| Коллекции  | `@NotEmpty`, `@Size`                                                                  |
+| Структура  | `@Valid`, `@Validate`, `@ValidatedBy`                                                 |
+
+`@Valid` и `@Validate` — не ограничения: `@Valid` говорит «спустись внутрь этого типа и примени его собственные правила», а `@Validate` включает валидацию методов. `@ValidatedBy` — точка расширения,
+через которую вы строите собственное ограничение поверх своей `ValidatorFactory`. Полный справочник, включая точные сообщения о нарушениях для каждого ограничения, — в
+[Аннотациях валидации](../documentation/validation.md#validation-annotations).
 
 ### Сгенерированная валидация и `@Validate` { #generated-validation-validate }
 
-Полные правила генерации валидаторов, валидации классов и методов описаны в разделах [валидации класса](../documentation/validation.md#class-validation) и [валидации метода](../documentation/validation.md#method-validation).
+Полные правила для сгенерированных валидаторов, валидации классов и валидации методов описаны в [Валидации класса](../documentation/validation.md#class-validation) и [Валидации метода](../documentation/validation.md#method-validation).
 
-Валидация Kora использует аннотации для описания ограничений и сгенерированный код для их применения. `@Validate` включает валидацию методов, а модуль валидации добавляет нужные компоненты графа.
-Поскольку связка валидации генерируется, отсутствующие валидаторы или неподдерживаемые формы обнаруживаются во время сборки, а не только после того, как плохой запрос попадет в промышленную среду.
+Валидация Kora использует аннотации для описания ограничений и сгенерированный код для их применения. `@Valid` на типе генерирует реализацию `Validator<T>` для него, `@Validate` включает валидацию
+методов, а модуль валидации добавляет необходимые компоненты графа. Поскольку обвязка валидации генерируется, отсутствующие валидаторы или неподдерживаемые формы обнаруживаются на этапе сборки, а не
+только после того, как плохой запрос доберется до промышленной среды.
 
-В этом руководстве также рассматривается сгенерированный AOP-код, чтобы вы могли увидеть, где валидация действительно выполняется. Это важно, потому что валидация — не магия, спрятанная внутри разбора
-JSON. Это сгенерированная проверка границы вокруг методов контроллера.
+Это руководство также заглядывает в сгенерированный AOP-код, чтобы вы видели, где валидация действительно выполняется. Это важно, потому что валидация — не магия, спрятанная внутри разбора JSON. Это
+сгенерированная граничная проверка вокруг методов контроллера.
 
-Практический поток:
+Практический порядок такой:
 
-1. включить модуль валидации в графе Kora
+1. включить модуль валидации в граф Kora
 2. добавить ограничения в DTO запросов
 3. включить валидацию методов через `@Validate`
-4. валидировать тело, path- и query-входы
+4. провалидировать тело, path- и query-вход
 5. изучить сгенерированную обертку валидации
-6. сопоставить ошибки валидации со стабильным JSON-ответом
+6. отобразить ошибки валидации на стабильный JSON-ответ
 
 ### Контракты ошибок { #error-contracts }
 
-Ошибки валидации являются клиентскими ошибками, но клиентам нужно больше, чем сырое сообщение исключения. Полезный API возвращает предсказуемую форму ответа, которая говорит клиенту, какой ввод не
-прошел проверку и почему. Финальная часть этого руководства добавляет JSON-контракт ошибки, чтобы ошибки валидации стали частью публичного HTTP-поведения, а не случайным выводом фреймворка.
+Ошибки валидации — это клиентские ошибки, но клиентам нужно больше, чем сырое сообщение исключения. Полезный API возвращает предсказуемую форму ответа, которая говорит клиенту, какой вход не прошел и
+почему. Последняя часть этого руководства добавляет JSON-контракт ошибок, чтобы ошибки валидации стали частью публичного HTTP-поведения, а не случайным выводом фреймворка.
 
 ## Зависимости { #dependencies }
 
-Валидация в этом руководстве опирается на совместную работу нескольких модулей Kora:
+Валидация в этом руководстве опирается на несколько совместно работающих модулей Kora:
 
-- `validation-module` включает генерацию валидаторов и валидацию методов
-- `http-server-undertow` открывает контроллер как HTTP-конечные точки
-- `json-module` сериализует DTO запросов и ответов
-- `config-hocon` и `logging-logback` дают стандартную настройку времени выполнения, используемую во всех руководствах
+- `validation-module` включает генерацию валидаторов, валидацию методов и HTTP-перехватчик, превращающий нарушения в ответы
+- `http-server-undertow` публикует контроллер как HTTP-эндпоинты
+- `json-common` сериализует DTO запросов и ответов
+- `config-hocon` и `logging-logback` дают стандартную рантайм-обвязку, используемую во всех руководствах
 
-Подробнее смотрите в [документации Kora по валидации](../documentation/validation.md), [документации HTTP-сервера](../documentation/http-server.md) и [документации JSON](../documentation/json.md).
+Для более широкого контекста смотрите документацию Kora по [Валидации](../documentation/validation.md), [HTTP-серверу](../documentation/http-server.md)
+и [JSON](../documentation/json.md).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -127,11 +154,11 @@ JSON. Это сгенерированная проверка границы во
     dependencies {
         // ... existing dependencies from http-server.md ...
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:validation-module")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.koraframework:validation-module")
     }
     ```
 
@@ -143,42 +170,45 @@ JSON. Это сгенерированная проверка границы во
     dependencies {
         // ... existing dependencies from http-server.md ...
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:validation-module")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.koraframework:validation-module")
     }
     ```
 
+Артефакт валидации один, а не два. `validation-module` приносит с собой `validation-common`, а генератор кода живет в артефакте `annotation-processors` / `symbol-processors`, который вы уже
+подключили.
+
 ## Модули { #modules }
 
-Перед тем как любые аннотации валидации смогут работать, графу приложения нужен `ValidationModule`.
+Прежде чем заработают любые аннотации валидации, графу приложения нужен `ValidationModule`.
 
-На этом этапе мы включаем только сам модуль. Пользовательскую HTTP-обработку ошибок валидации добавим позже, когда фактический поток валидации уже будет понятен.
+На этом шаге мы включаем только сам модуль. Собственную HTTP-обработку ошибок валидации мы добавим позже, когда сам поток валидации уже станет понятен.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/validation/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/validation/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation;
+    package io.koraframework.guide.validation;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.validation.module.ValidationModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.validation.module.ValidationModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            ValidationModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            ValidationModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -188,26 +218,26 @@ JSON. Это сгенерированная проверка границы во
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/validation/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/validation/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation
+    package io.koraframework.guide.validation
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.validation.module.ValidationModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.validation.module.ValidationModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        ValidationModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        ValidationModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -216,30 +246,32 @@ JSON. Это сгенерированная проверка границы во
 
 ## Валидация модели { #model-validation }
 
-Проще всего начать с того же тела запроса, которое уже используется в `createUser` и `updateUser`.
+Проще всего начать с того же тела запроса, которое уже используют `createUser` и `updateUser`.
 
-Это объектная валидация. Вместо того чтобы валидировать каждое JSON-поле прямо в методе контроллера, мы один раз описываем правила внутри `UserRequest`.
+Это валидация объекта. Вместо того чтобы проверять каждое JSON-поле прямо в методе контроллера, мы описываем правила один раз внутри `UserRequest`.
 
 В этом руководстве:
 
-- `name` должен присутствовать, не быть пустым и иметь разумный размер
+- `name` должно присутствовать, быть непустым и разумного размера
 - `email` должен присутствовать и соответствовать простому шаблону email
 
-Так мы получаем хороший первый пример валидации DTO без изменения общего CRUD-проектирования из предыдущего руководства.
+Это дает хороший первый пример валидации DTO без изменения общего CRUD-дизайна из предыдущего руководства.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте или обновите `src/main/java/ru/tinkoff/kora/guide/validation/dto/UserRequest.java`:
+    Создайте или обновите `src/main/java/io/koraframework/guide/validation/dto/UserRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
-    import ru.tinkoff.kora.validation.common.annotation.NotBlank;
-    import ru.tinkoff.kora.validation.common.annotation.Pattern;
-    import ru.tinkoff.kora.validation.common.annotation.Size;
+    import io.koraframework.json.common.annotation.Json;
+    import io.koraframework.validation.common.annotation.NotBlank;
+    import io.koraframework.validation.common.annotation.Valid;
+    import io.koraframework.validation.common.annotation.Pattern;
+    import io.koraframework.validation.common.annotation.Size;
 
     @Json
+    @Valid
     public record UserRequest(
         @NotBlank @Size(min = 2, max = 100) String name,
         @NotBlank @Pattern("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") String email
@@ -248,17 +280,19 @@ JSON. Это сгенерированная проверка границы во
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте или обновите `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/UserRequest.kt`:
+    Создайте или обновите `src/main/kotlin/io/koraframework/guide/validation/dto/UserRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
-    import ru.tinkoff.kora.validation.common.annotation.NotBlank
-    import ru.tinkoff.kora.validation.common.annotation.Pattern
-    import ru.tinkoff.kora.validation.common.annotation.Size
+    import io.koraframework.json.common.annotation.Json
+    import io.koraframework.validation.common.annotation.NotBlank
+    import io.koraframework.validation.common.annotation.Pattern
+    import io.koraframework.validation.common.annotation.Size
+    import io.koraframework.validation.common.annotation.Valid
 
     @Json
+    @Valid
     data class UserRequest(
         @field:NotBlank
         @field:Size(min = 2, max = 100)
@@ -269,25 +303,30 @@ JSON. Это сгенерированная проверка границы во
     )
     ```
 
-Обратите внимание, что на этом шаге мы только описали правила. Их еще нужно применить на границе контроллера, что мы и сделаем дальше.
+Именно `@Valid` на самом типе заставляет обработчик аннотаций выпустить компонент `Validator<UserRequest>` с именем `$UserRequest_Validator`. Без него ограничения полей бездействуют: валидатор никто
+не генерирует, и в графе нечего внедрить, чтобы их выполнить.
+
+В Kotlin обязателен use-site target `@field:`. Голая `@NotBlank` на свойстве конструктора попадет на параметр конструктора, а не на поле, и обработчик ее не увидит.
+
+Обратите внимание, что на этом шаге мы только описали правила. Их еще нужно применить на границе контроллера, чем мы и займемся дальше.
 
 ## Валидация контроллера { #controller-validation }
 
-Связка `@Valid` и `@Validate` опирается на правила [валидации класса](../documentation/validation.md#class-validation) и [валидации метода](../documentation/validation.md#method-validation).
+Связка `@Valid` и `@Validate` опирается на правила из [Валидации класса](../documentation/validation.md#class-validation) и [Валидации метода](../documentation/validation.md#method-validation).
 
-Теперь мы связываем эти правила DTO с настоящими HTTP-конечными точками из `http-server.md`.
+Теперь мы подключаем эти правила DTO к настоящим HTTP-эндпоинтам из `http-server.md`.
 
 Здесь важнее всего две аннотации:
 
-- `@Valid` говорит, что сложный объектный аргумент должен быть провалидирован с помощью сгенерированного валидатора для этого DTO
-- `@Validate` включает валидацию уровня метода для самого метода контроллера
+- `@Valid` на параметре говорит, что аргумент-составной объект нужно провалидировать сгенерированным валидатором этого DTO
+- `@Validate` включает валидацию на уровне самого метода контроллера
 
-`@Validate` важна, потому что говорит Kora сгенерировать логику валидации вокруг вызова метода. `@Valid` важна, потому что говорит этой сгенерированной логике спуститься внутрь объекта `UserRequest` и
-проверить его поля.
+`@Validate` важна, потому что она велит Kora сгенерировать логику валидации вокруг вызова метода. `@Valid` важна, потому что она велит этой сгенерированной логике спуститься внутрь объекта
+`UserRequest` и провалидировать его поля.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите методы `POST` и `PUT` в `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Обновите методы `POST` и `PUT` в `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.POST, path = "/users")
@@ -311,13 +350,13 @@ JSON. Это сгенерированная проверка границы во
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите те же методы в `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Обновите те же методы в `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.POST, path = "/users")
     @Json
     @Validate
-    open fun createUser(@Json @Valid request: UserRequest): HttpResponseEntity<UserResponse> {
+    open fun createUser(@Valid @Json request: UserRequest): HttpResponseEntity<UserResponse> {
         val user = userService.createUser(request)
         return HttpResponseEntity.of(201, HttpHeaders.of(), user)
     }
@@ -327,7 +366,7 @@ JSON. Это сгенерированная проверка границы во
     @Validate
     open fun updateUser(
         @Path userId: String,
-        @Json @Valid request: UserRequest
+        @Valid @Json request: UserRequest
     ): HttpResponseEntity<UserResponse> {
         val updated = userService.updateUser(userId, request)
         return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
@@ -336,16 +375,19 @@ JSON. Это сгенерированная проверка границы во
 
 На этом этапе:
 
-- некорректный JSON по-прежнему падает во время разбора JSON
-- корректный по форме JSON с недопустимыми значениями полей теперь падает во время валидации
-- допустимый JSON продолжает попадать в тот же поток сервиса и репозитория, который вы уже построили раньше
+- некорректный JSON по-прежнему падает на этапе разбора JSON
+- корректный JSON с неверными значениями полей теперь падает на этапе валидации
+- корректный JSON продолжает идти в тот же поток сервиса и репозитория, который вы построили раньше
 
-После компиляции сгенерированный AOP-заместитель показывает, как `@Valid` делегирует работу в сгенерированный валидатор `UserRequest` до вызова метода контроллера:
+По умолчанию `@Validate` собирает все нарушения перед тем, как выбросить исключение. Если вы предпочитаете останавливаться на первом, используйте `@Validate(failFast = true)`: сгенерированный код тогда
+выбрасывает исключение, как только не прошло одно ограничение, — это дешевле, но сообщает лишь об одной проблеме на запрос.
+
+После компиляции сгенерированный AOP-прокси показывает, как `@Valid` делегирует сгенерированному валидатору `UserRequest` до вызова метода контроллера:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -375,7 +417,7 @@ JSON. Это сгенерированная проверка границы во
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -396,22 +438,23 @@ JSON. Это сгенерированная проверка границы во
     }
     ```
 
-Важная деталь в том, что `validator6.validate(request, ...)` выполняется до `super.createUser(request)`, поэтому недопустимые поля DTO никогда не попадают в тело контроллера.
+Важная деталь: `validator6.validate(request, ...)` выполняется до `super.createUser(request)`, поэтому неверные поля DTO никогда не доходят до тела вашего контроллера. `validator6` — это внедренный
+`$UserRequest_Validator`; нумерация лишь отражает порядок, в котором прокси выделил поля валидаторов.
 
 ### Path-параметры { #path-parameters }
 
-Тела запросов — не единственный источник недопустимого ввода. Path-параметры тоже могут быть неверными.
+Тела запросов — не единственный источник неверного входа. Path-параметры тоже могут быть неправильными.
 
-В этом руководстве `userId` приходит из репозитория в памяти, который использует числовые строковые идентификаторы вроде `1`, `2` и `3`. Поэтому мы можем явно выразить это предположение в контроллере:
+В этом руководстве `userId` приходит из репозитория в памяти, который использует числовые строковые идентификаторы вроде `1`, `2` и `3`. Так что это допущение можно выразить в контроллере явно:
 
-- `@NotBlank` отклоняет пустые идентификатор
+- `@NotBlank` отклоняет пустые идентификаторы
 - `@Pattern("^\\d+$")` говорит, что значение пути должно состоять только из цифр
 
-Это валидация аргумента метода, а не валидация DTO. Она полезна, когда данные простые и не оправдывают создание отдельного объекта только ради валидации.
+Это валидация аргументов метода, а не DTO. Она полезна, когда данные простые и не оправдывают создание отдельного объекта только ради валидации.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите методы `GET`, `PUT` и `DELETE` в `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Обновите методы `GET`, `PUT` и `DELETE` в `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
@@ -442,7 +485,7 @@ JSON. Это сгенерированная проверка границы во
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите те же методы в `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Обновите те же методы в `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
@@ -450,7 +493,7 @@ JSON. Это сгенерированная проверка границы во
     @Validate
     open fun getUser(@Path @NotBlank @Pattern("^\\d+$") userId: String): UserResponse {
         return userService.getUser(userId)
-            .orElseThrow { HttpServerResponseException.of(404, "User not found") }
+            ?: throw HttpServerResponseException.of(404, "User not found")
     }
 
     @HttpRoute(method = HttpMethod.PUT, path = "/users/{userId}")
@@ -458,7 +501,7 @@ JSON. Это сгенерированная проверка границы во
     @Validate
     open fun updateUser(
         @Path @NotBlank @Pattern("^\\d+$") userId: String,
-        @Json @Valid request: UserRequest
+        @Valid @Json request: UserRequest
     ): HttpResponseEntity<UserResponse> {
         val updated = userService.updateUser(userId, request)
         return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
@@ -472,14 +515,16 @@ JSON. Это сгенерированная проверка границы во
     }
     ```
 
-Такая валидация особенно полезна для path-переменных, заголовков, файлы cookie и других простых параметров, которые естественно не живут внутри DTO запроса.
+Ограничениям на параметрах не нужен target `@field:`, который понадобился свойствам DTO: здесь аннотация уже стоит на параметре, а это один из целевых элементов, объявленных каждым ограничением Kora.
 
-После компиляции сгенерированный заместитель показывает, как ограничения path-параметра становятся обычными вызовами валидаторов:
+Такая валидация особенно полезна для переменных пути, заголовков, cookie и других простых параметров, которым не место внутри DTO запроса.
+
+После компиляции сгенерированный прокси показывает, как ограничения path-параметра превращаются в обычные вызовы валидаторов:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -513,7 +558,7 @@ JSON. Это сгенерированная проверка границы во
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -534,23 +579,24 @@ JSON. Это сгенерированная проверка границы во
     }
     ```
 
-Это делает границу метода видимой: Kora сначала валидирует `userId`, а затем делегирует вызов вашей исходной реализации `getUser(...)`.
+Это делает границу метода наглядной: Kora сначала валидирует `userId`, а затем делегирует вашей исходной реализации `getUser(...)`. Каждое ограничение становится отдельным вызовом `validate(...)`,
+поэтому две аннотации на одном параметре дают `_argConstResult_userId_1` и `_argConstResult_userId_2`.
 
 ### Query-параметры { #query-parameters }
 
-Следующая распространенная цель валидации — строка запроса.
+Следующая частая цель валидации — строка запроса.
 
-Наша конечная точка `GET /users` уже поддерживает постраничную выдачу и сортировку. Это делает ее хорошим местом для демонстрации валидации параметров метода для необязательных значений:
+Наш эндпоинт `GET /users` уже поддерживает постраничную выдачу и сортировку. Это делает его хорошим местом для демонстрации валидации параметров метода для необязательных значений:
 
-- `page` необязателен, но если присутствует, должен быть `0` или больше
+- `page` необязателен, но если присутствует, должен быть не меньше `0`
 - `size` необязателен, но если присутствует, должен оставаться в безопасном диапазоне
 - `sort` необязателен, но если присутствует, должен быть одним из поддерживаемых полей сортировки
 
-Такая валидация защищает API от неправильных запросов постраничной выдачи до запуска бизнес-логики или логики хранения.
+Такая валидация защищает API от неверных запросов постраничной выдачи до того, как выполнится любая бизнес-логика или логика хранения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `getUsers` в `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Обновите `getUsers` в `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.GET, path = "/users")
@@ -569,15 +615,15 @@ JSON. Это сгенерированная проверка границы во
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `getUsers` в `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Обновите `getUsers` в `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.GET, path = "/users")
     @Json
     @Validate
     open fun getUsers(
-        @Query("page") @Range(from = 0, to = 1_000) page: Int?,
-        @Query("size") @Range(from = 1, to = 100) size: Int?,
+        @Query("page") @Range(from = 0.0, to = 1_000.0) page: Int?,
+        @Query("size") @Range(from = 1.0, to = 100.0) size: Int?,
         @Query("sort") @Pattern("^(?i)(name|email|createdat)$") sort: String?
     ): List<UserResponse> {
         val pageNum = page ?: 0
@@ -587,20 +633,26 @@ JSON. Это сгенерированная проверка границы во
     }
     ```
 
-После этого шага руководство покрывает три разные цели валидации в отдельных главах:
+`@Range` объявляет `from` и `to` как `double`. Java расширяет целочисленные литералы за вас, а Kotlin — нет, поэтому в версии на Kotlin написано `0.0` и `1_000.0`. У `@Range` есть еще атрибут
+`boundary` (по умолчанию `INCLUSIVE_INCLUSIVE`, плюс три другие комбинации), когда границу нужно исключить.
 
-- сложные JSON-объекты
+Необязательными эти параметры делает допустимость `null`. В Java параметр помечен `@Nullable`, в Kotlin у него тип `Int?`. Сгенерированный код проверяет `null` перед валидацией, так что пропущенный
+query-параметр никогда не становится нарушением.
+
+После этого шага руководство охватывает три разные цели валидации в отдельных главах:
+
+- составные JSON-объекты
 - простые path-параметры
 - простые query-параметры
 
-Такое разделение полезно, потому что каждый вид входа в настоящих API обычно развивается по-своему.
+Такое разделение полезно, потому что каждый вид входа в реальных API развивается по-своему.
 
-После компиляции сгенерированный заместитель показывает, что необязательные query-параметры валидируются только когда присутствуют:
+После компиляции сгенерированный прокси показывает, что необязательные query-параметры валидируются только при наличии значения:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -641,7 +693,7 @@ JSON. Это сгенерированная проверка границы во
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -675,14 +727,17 @@ JSON. Это сгенерированная проверка границы во
     }
     ```
 
-Этот сгенерированный код точно объясняет необязательное поведение: `null` означает «параметр не передан», а присутствующее значение проверяется по своему ограничению.
+Этот сгенерированный код точно объясняет поведение с необязательными значениями: `null` означает «параметр не передан», а присутствующее значение проверяется своим ограничением.
 
 ## Сгенерированный код { #generated-code }
 
-`@Validate` — это AOP-аннотация.
+Валидация порождает два вида сгенерированных исходников, и их полезно различать.
 
-Это значит, что Kora не изменяет исходный файл вашего контроллера напрямую. Вместо этого она генерирует подкласс вокруг валидируемого компонента и помещает логику валидации в этот сгенерированный
-класс. Ваш код по-прежнему выглядит простым, но сгенерированный заместитель выполняет проверки до того, как вызов попадет в тело метода.
+`@Valid` на типе порождает **класс-валидатор**. Для `UserRequest` это `$UserRequest_Validator` — `Validator<UserRequest>`, опубликованный в графе. Это обычный компонент: его можно внедрить куда угодно
+и вызвать `validate(value)` или `validateAndThrow(value)` вообще без участия AOP.
+
+`@Validate` на методе порождает **AOP-прокси**. Kora не меняет исходник вашего контроллера напрямую. Вместо этого она генерирует класс-наследник вокруг валидируемого компонента и помещает логику
+валидации в этот сгенерированный класс. Ваш код по-прежнему выглядит просто, но сгенерированный прокси выполняет проверки до того, как вызов дойдет до тела метода.
 
 Именно поэтому:
 
@@ -690,72 +745,74 @@ JSON. Это сгенерированная проверка границы во
 - валидируемые Kotlin-классы должны быть `open`
 - валидируемые Kotlin-методы тоже должны быть `open`
 
-После компиляции вы можете посмотреть сгенерированный исходник здесь:
+После компиляции сгенерированный исходник можно посмотреть здесь:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
-Этот файл — самое простое место, где можно увидеть настоящий поток валидации. Вы увидите, что Kora:
+Этот файл — самое простое место, чтобы увидеть реальный поток валидации. Вы обнаружите, что Kora:
 
 - читает входящие аргументы метода
-- валидирует простые параметры метода, например `userId`, `page`, `size` и `sort`
-- валидирует вложенные объекты, например `UserRequest`
-- выбрасывает `ViolationException`, когда правила нарушены
-- вызывает исходный метод контроллера только если валидация успешна
+- валидирует простые параметры метода вроде `userId`, `page`, `size` и `sort`
+- валидирует вложенные объекты вроде `UserRequest`
+- выбрасывает `ViolationException`, когда правила не выполнены
+- вызывает ваш исходный метод контроллера только при успешной валидации
 
-В предыдущих главах сгенерированные фрагменты были показаны рядом с целью валидации, которая их породила: валидацией DTO тела, валидацией path-параметра и валидацией query-параметра. Важный урок везде
-одинаков: валидация происходит до логики вашего контроллера, а вызов `super...` появляется только после сбора нарушений. Этот сгенерированный код также является хорошей целью отладки для
-нейро-ассистентов, потому что он раскрывает конкретные валидаторы и имена параметров, которые Kora вывела из ваших аннотаций.
+В предыдущих главах сгенерированные фрагменты показывались рядом с той целью валидации, которая их породила: валидация DTO тела, валидация path-параметров и валидация query-параметров. Урок во всех
+случаях один: валидация происходит до логики вашего контроллера, а вызов `super...` появляется только после того, как нарушения собраны. Этот сгенерированный код — еще и хорошая цель для отладки
+AI-ассистентами, потому что он раскрывает конкретные валидаторы и имена параметров, которые Kora вывела из ваших аннотаций.
 
-Это полезно, когда вы учитесь, отлаживаете или просто хотите подтвердить, что именно фреймворк сгенерировал для вас. Более широкие детали смотрите
-в [документации Kora по валидации](../documentation/validation.md) и [документации по контейнеру](../documentation/container.md).
+Это помогает, когда вы учитесь, отлаживаете или просто хотите подтвердить, что именно фреймворк вам сгенерировал. Более широкие подробности — в документации Kora по
+[Валидации](../documentation/validation.md) и [Контейнеру](../documentation/container.md).
 
 ## Обработка ошибок валидации { #validation-errors }
 
-Настройка HTTP-ответа здесь соединяет валидацию с общими правилами [обработки ошибок HTTP-сервера](../documentation/http-server.md#error-handling).
+Настройка HTTP-ответа здесь связывает валидацию с общими правилами [обработки ошибок HTTP-сервера](../documentation/http-server.md#error-handling) и полностью описана в разделе
+[HTTP-ответ валидации](../documentation/validation.md#validation-response-http).
 
-Пока валидация работает, но опыт HTTP-клиента все еще можно улучшить.
+Пока что валидация работает, но опыт HTTP-клиента можно улучшить.
 
-По умолчанию вы можете увидеть только ошибки уровня фреймворка. В настоящем API часто лучше возвращать стабильный JSON-контракт ошибки, который клиенты могут разобрать и отобразить.
+`ValidationModule` уже добавляет `ValidationHttpServerInterceptor` как `@DefaultComponent`, и этот перехватчик уже превращает `ViolationException` в `400` с сообщением исключения. Чего он не делает —
+так это не привязывает себя к серверу и не формирует машиночитаемое тело. В реальном API обычно лучше возвращать стабильный JSON-контракт ошибок, который клиенты могут разобрать и показать.
 
-Kora дает здесь гибкость. Можно определить такую обработку только для выбранных конечных точек или зарегистрировать ее глобально для всего HTTP-приложения. В этом руководстве используется глобальный
-подход, потому что это самый простой способ сохранить все контроллеры единообразными.
+Kora дает здесь гибкость. Такую обработку можно определить только для выбранных эндпоинтов или зарегистрировать глобально для всего HTTP-приложения. В этом руководстве мы используем глобальный подход,
+потому что так проще всего сохранить согласованность всех контроллеров.
 
 Мы добавим:
 
-- `ValidationErrorDetails` и `ValidationErrorResponse` как явные JSON DTO
-- `ViolationExceptionHttpServerResponseMapper`, чтобы превращать `ViolationException` в этот DTO
-- `ValidationHttpServerInterceptor`, чтобы применять это сопоставление в HTTP-конвейере
+- `ValidationErrorDetails` и `ValidationErrorResponse` как явные JSON-DTO
+- `ViolationExceptionHttpServerResponseMapper`, чтобы превратить `ViolationException` в это DTO
+- `ValidationHttpServerInterceptor` с меткой `@Tag(HttpServer.class)`, чтобы применить это отображение в HTTP-конвейере
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/validation/dto/ValidationErrorDetails.java`:
+    Создайте `src/main/java/io/koraframework/guide/validation/dto/ValidationErrorDetails.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record ValidationErrorDetails(String field, String message) {}
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/validation/dto/ValidationErrorResponse.java`:
+    Создайте `src/main/java/io/koraframework/guide/validation/dto/ValidationErrorResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
     import java.util.List;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record ValidationErrorResponse(String code, String message, List<ValidationErrorDetails> errors) {
@@ -766,38 +823,38 @@ Kora дает здесь гибкость. Можно определить та�
     }
     ```
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/validation/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/validation/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation;
+    package io.koraframework.guide.validation;
 
     import java.util.List;
     import java.util.stream.Collectors;
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorDetails;
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorResponse;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.server.common.HttpServerModule;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.common.JsonWriter;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.validation.common.Violation;
-    import ru.tinkoff.kora.validation.module.ValidationModule;
-    import ru.tinkoff.kora.validation.module.http.server.ValidationHttpServerInterceptor;
-    import ru.tinkoff.kora.validation.module.http.server.ViolationExceptionHttpServerResponseMapper;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.guide.validation.dto.ValidationErrorDetails;
+    import io.koraframework.guide.validation.dto.ValidationErrorResponse;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.server.common.HttpServer;
+    import io.koraframework.http.server.common.response.HttpServerResponse;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonWriter;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.validation.common.Violation;
+    import io.koraframework.validation.module.ValidationModule;
+    import io.koraframework.validation.module.http.server.ValidationHttpServerInterceptor;
+    import io.koraframework.validation.module.http.server.ViolationExceptionHttpServerResponseMapper;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            ValidationModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            ValidationModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -807,11 +864,11 @@ Kora дает здесь гибкость. Можно определить та�
                 JsonWriter<ValidationErrorResponse> errorResponseJsonWriter) {
             return (request, exception) -> HttpServerResponse.of(
                     400,
-                    HttpBody.json(errorResponseJsonWriter.toByteArrayUnchecked(
+                    HttpBody.json(errorResponseJsonWriter.toByteArray(
                             ValidationErrorResponse.of(toValidationErrors(exception.getViolations())))));
         }
 
-        @Tag(HttpServerModule.class)
+        @Tag(HttpServer.class)
         default ValidationHttpServerInterceptor validationHttpServerInterceptor(
                 ViolationExceptionHttpServerResponseMapper violationExceptionHttpServerResponseMapper) {
             return new ValidationHttpServerInterceptor(violationExceptionHttpServerResponseMapper);
@@ -833,12 +890,12 @@ Kora дает здесь гибкость. Можно определить та�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/ValidationErrorDetails.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/validation/dto/ValidationErrorDetails.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class ValidationErrorDetails(
@@ -847,12 +904,12 @@ Kora дает здесь гибкость. Можно определить та�
     )
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/ValidationErrorResponse.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/validation/dto/ValidationErrorResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class ValidationErrorResponse(
@@ -872,36 +929,36 @@ Kora дает здесь гибкость. Можно определить та�
     }
     ```
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/validation/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/validation/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation
+    package io.koraframework.guide.validation
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorDetails
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorResponse
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.server.common.HttpServerModule
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.common.JsonWriter
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.validation.common.Violation
-    import ru.tinkoff.kora.validation.module.ValidationModule
-    import ru.tinkoff.kora.validation.module.http.server.ValidationHttpServerInterceptor
-    import ru.tinkoff.kora.validation.module.http.server.ViolationExceptionHttpServerResponseMapper
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.guide.validation.dto.ValidationErrorDetails
+    import io.koraframework.guide.validation.dto.ValidationErrorResponse
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.server.common.HttpServer
+    import io.koraframework.http.server.common.response.HttpServerResponse
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonWriter
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.validation.common.Violation
+    import io.koraframework.validation.module.ValidationModule
+    import io.koraframework.validation.module.http.server.ValidationHttpServerInterceptor
+    import io.koraframework.validation.module.http.server.ViolationExceptionHttpServerResponseMapper
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        ValidationModule,  // <----- Подключили модуль
-        UndertowHttpServerModule {
+        ValidationModule,  // <----- Connected module
+        UndertowPublicHttpServerModule {
 
         fun violationExceptionHttpServerResponseMapper(
             errorResponseJsonWriter: JsonWriter<ValidationErrorResponse>
@@ -910,7 +967,7 @@ Kora дает здесь гибкость. Можно определить та�
                 HttpServerResponse.of(
                     400,
                     HttpBody.json(
-                        errorResponseJsonWriter.toByteArrayUnchecked(
+                        errorResponseJsonWriter.toByteArray(
                             ValidationErrorResponse.of(toValidationErrors(exception.violations))
                         )
                     )
@@ -918,39 +975,52 @@ Kora дает здесь гибкость. Можно определить та�
             }
         }
 
-        @Tag(HttpServerModule::class)
-        fun validationHttpServerInterceptor(
-            violationExceptionHttpServerResponseMapper: ViolationExceptionHttpServerResponseMapper
+        // the module default is untagged, so it is overridden only to bind the interceptor to the server;
+        // 2.0 declares the mapper parameter as @Nullable, which Kotlin enforces on the override
+        @Tag(HttpServer::class)
+        override fun validationHttpServerInterceptor(
+            violationExceptionHttpServerResponseMapper: ViolationExceptionHttpServerResponseMapper?
         ): ValidationHttpServerInterceptor {
             return ValidationHttpServerInterceptor(violationExceptionHttpServerResponseMapper)
+        }
+
+        private fun toValidationErrors(violations: List<Violation>): List<ValidationErrorDetails> {
+            return violations.map { violation ->
+                ValidationErrorDetails(normalizeField(violation), violation.message())
+            }
+        }
+
+        private fun normalizeField(violation: Violation): String {
+            val fullPath = violation.path().full()
+            val lastDot = fullPath.lastIndexOf('.')
+            return if (lastDot >= 0) fullPath.substring(lastDot + 1) else fullPath
         }
     }
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
-
-    private fun toValidationErrors(violations: List<Violation>): List<ValidationErrorDetails> {
-        return violations.map { violation ->
-            ValidationErrorDetails(normalizeField(violation), violation.message())
-        }
-    }
-
-    private fun normalizeField(violation: Violation): String {
-        val fullPath = violation.path().full()
-        val lastDot = fullPath.lastIndexOf('.')
-        return if (lastDot >= 0) fullPath.substring(lastDot + 1) else fullPath
-    }
     ```
+
+В этой обвязке стоит выделить три детали.
+
+Метка — это `HttpServer` из `io.koraframework.http.server.common`, маркер, по которому модуль Undertow собирает глобальные перехватчики. Непомеченный `ValidationHttpServerInterceptor` компилируется и
+собирается нормально, но никогда не выполняется — ровно таков и собственный `@DefaultComponent` модуля: доступен, но ни к какому серверу не подключен.
+
+`ViolationExceptionHttpServerResponseMapper` — функциональный интерфейс, возвращающий `@Nullable HttpServerResponse`. Возврат `null` из него — осознанный отказ от обработки этого запроса: перехватчик
+откатывается к простому `400` с сообщением исключения.
+
+`Violation.path().full()` дает полный точечный путь к неверному значению, например `request.email`. В этом примере он обрезается до последнего сегмента, чтобы в JSON попало `email`; оставьте полный
+путь, если вашим клиентам нужно находить значение внутри вложенного объекта.
 
 Важное разделение здесь такое:
 
-- AOP-валидация решает, допустим ли вызов метода
-- перехватчик и преобразователь решают, как HTTP-клиент увидит ошибку
+- AOP-валидация решает, корректен ли вызов метода
+- перехватчик и маппер решают, как сбой видит HTTP-клиент
 
 ## Запуск приложения { #run-app }
 
-Используйте стандартный процесс запуска:
+Используйте стандартный порядок из руководств:
 
 ```bash
 ./gradlew clean classes
@@ -980,18 +1050,18 @@ curl -X POST http://localhost:8080/users \
 
 ```json
 {
-  "code": "VALIDATION_ERROR",
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "name",
-      "message": "Should be not blank"
-    },
-    {
-      "field": "email",
-      "message": "Should match RegEx ..."
-    }
-  ]
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "errors": [
+        {
+            "field": "name",
+            "message": "Should be not blank"
+        },
+        {
+            "field": "email",
+            "message": "Should match RegEx ..."
+        }
+    ]
 }
 ```
 
@@ -1005,14 +1075,14 @@ curl http://localhost:8080/users/abc
 
 ```json
 {
-  "code": "VALIDATION_ERROR",
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "userId",
-      "message": "Should match RegEx ..."
-    }
-  ]
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "errors": [
+        {
+            "field": "userId",
+            "message": "Should match RegEx ..."
+        }
+    ]
 }
 ```
 
@@ -1026,100 +1096,116 @@ curl "http://localhost:8080/users?page=-1&size=0&sort=nickname"
 
 ```json
 {
-  "code": "VALIDATION_ERROR",
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "page",
-      "message": "Should be in range ..."
-    },
-    {
-      "field": "size",
-      "message": "Should be in range ..."
-    },
-    {
-      "field": "sort",
-      "message": "Should match RegEx ..."
-    }
-  ]
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "errors": [
+        {
+            "field": "page",
+            "message": "Should be in range ..."
+        },
+        {
+            "field": "size",
+            "message": "Should be in range ..."
+        },
+        {
+            "field": "sort",
+            "message": "Should match RegEx ..."
+        }
+    ]
 }
 ```
 
 ## Лучшие практики { #best-practices }
 
-- Добавляйте валидацию на границе контроллера, когда цель — защитить HTTP-ввод.
+- Добавляйте валидацию на границе контроллера, когда цель — защитить HTTP-вход.
 - Используйте валидацию DTO для структурированных JSON-тел и валидацию параметров метода для простых path- или query-значений.
-- Держите `UserService` и `UserRepository` сосредоточенными на бизнес-логике и хранении, а не дублируйте там правила HTTP-ввода.
+- Импортируйте ограничения из `io.koraframework.validation.common.annotation`, но не из `jakarta.validation.constraints`. Имена пересекаются, поведение — нет.
+- Ставьте `@Valid` и на тип DTO, и на параметр: аннотация на типе генерирует валидатор, а аннотация на параметре его вызывает.
+- Держите `UserService` и `UserRepository` сосредоточенными на бизнес-логике и хранении, а не дублируйте там правила HTTP-входа.
 - Помните, что `@Validate` основана на AOP. В Java валидируемый класс не должен быть `final`. В Kotlin класс и валидируемые методы должны быть `open`.
-- Когда ошибка валидации должна стать стабильным контрактом API, определяйте явный DTO ошибки вместо утечки сырых исключений фреймворка.
-- В Kotlin продолжайте использовать `@field:` для аннотаций свойств, например `@field:NotBlank`, `@field:Size` и `@field:Pattern`.
+- Когда ошибка валидации должна стать стабильным контрактом API, определите явное DTO ошибки вместо утечки сырых исключений фреймворка.
+- В Kotlin продолжайте использовать `@field:` для аннотаций свойств вроде `@field:NotBlank`, `@field:Size` и `@field:Pattern`.
 
 ## Итоги { #summary }
 
 Вы постепенно расширили CRUD-приложение из `http-server.md` валидацией.
 
-Сначала вы включили `ValidationModule` в графе приложения. Затем провалидировали тело `UserRequest`, используемое в `createUser` и `updateUser`. После этого провалидировали path-параметры `userId` и
+Сначала вы включили `ValidationModule` в граф приложения. Затем провалидировали тело `UserRequest`, используемое `createUser` и `updateUser`. После этого провалидировали path-параметры `userId` и
 query-параметры постраничной выдачи и сортировки в `getUsers`. Затем изучили сгенерированный AOP-исходник, чтобы увидеть, где на самом деле выполняется валидация методов. Наконец, вы ввели глобальную
-стратегию сопоставления HTTP-ошибок валидации через `ViolationExceptionHttpServerResponseMapper` и `ValidationHttpServerInterceptor`.
+стратегию отображения ошибок валидации с `ViolationExceptionHttpServerResponseMapper` и `ValidationHttpServerInterceptor` с меткой `@Tag(HttpServer.class)`.
 
 ## Ключевые понятия { #key-concepts }
 
+- Валидация Kora — это собственный API Kora в `io.koraframework.validation.common.annotation`, генерируемый на этапе компиляции, а не Jakarta Bean Validation.
 - `ValidationModule` включает поддержку валидации Kora в графе приложения.
-- `@Valid` валидирует вложенные объекты, например DTO запросов.
-- `@Validate` включает валидацию аргументов метода и возвращаемого значения через сгенерированный AOP-код.
+- `@Valid` на типе генерирует `Validator<T>`; `@Valid` на параметре велит валидации метода его использовать.
+- `@Validate` включает валидацию аргументов и результата метода через сгенерированный AOP-код, а `@Validate(failFast = true)` останавливается на первом нарушении.
 - Валидация DTO и валидация параметров метода решают разные задачи и часто используются вместе.
 - `ViolationExceptionHttpServerResponseMapper` определяет, как ошибки валидации становятся HTTP-ответами.
-- `ValidationHttpServerInterceptor` применяет этот преобразователь глобально в HTTP-конвейере.
+- `ValidationHttpServerInterceptor` применяет этот маппер глобально, но только когда он помечен `@Tag(HttpServer.class)`.
 
 ## Устранение неполадок { #troubleshooting }
 
 **Валидация не срабатывает:**
 
 - Убедитесь, что `ValidationModule` включен в граф приложения.
-- Убедитесь, что сам метод контроллера аннотирован `@Validate`.
-- Для DTO запросов убедитесь, что параметр метода аннотирован `@Valid`.
+- Убедитесь, что сам метод контроллера помечен `@Validate`.
+- Для DTO запросов убедитесь, что параметр метода помечен `@Valid`, а тип DTO — тоже `@Valid`.
+- Проверьте импорты: `io.koraframework.validation.common.annotation.NotBlank`, а не `jakarta.validation.constraints.NotBlank`.
 - Помните, что `@Validate` работает через сгенерированный AOP-код. В Java валидируемый класс не должен быть `final`.
-- В Kotlin валидируемый класс и валидируемые методы должны быть `open`.
+- В Kotlin валидируемый класс и валидируемые методы должны быть `open`, а ограничениям свойств нужен target `@field:`.
 
-**Я хочу увидеть, где валидация действительно происходит:**
+**`Validator<UserRequest> not found` при сборке графа:**
 
-- Запустите `./gradlew clean classes`.
-- Откройте сгенерированный исходник:
+- У типа DTO нет собственной `@Valid`. Только аннотация `@Valid` на типе заставляет обработчик выпустить `$UserRequest_Validator`.
+
+**Хочу увидеть, где валидация выполняется на самом деле:**
+
+- Выполните `./gradlew clean classes`.
+- Откройте сгенерированный исходник по пути:
 
   ```text
-  guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
-  guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+  guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
+  guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
   ```
 
-- Изучите, как заместитель валидирует аргументы перед делегированием в исходный метод контроллера.
+- Посмотрите, как прокси валидирует аргументы, прежде чем делегировать вашему исходному методу контроллера.
 
-**HTTP возвращает исключение вместо JSON:**
+**HTTP возвращает простой текстовый 400 вместо JSON:**
 
-- Убедитесь, что зарегистрированы и `ViolationExceptionHttpServerResponseMapper`, и `ValidationHttpServerInterceptor`.
-- Убедитесь, что перехватчик помечен `@Tag(HttpServerModule.class)` в Java или `@Tag(HttpServerModule::class)` в Kotlin.
+- Это работает `ValidationHttpServerInterceptor` из модуля по умолчанию, без маппера. Убедитесь, что ваш собственный `ViolationExceptionHttpServerResponseMapper` зарегистрирован.
+- Убедитесь, что перехватчик помечен `@Tag(HttpServer.class)` в Java или `@Tag(HttpServer::class)` в Kotlin. Без метки он никогда не подключается к серверу.
 
-**Валидация кажется правильной, но конечная точка все равно возвращает 404:**
+**Kotlin отказывается компилировать переопределение перехватчика:**
 
-- Обычно это означает, что валидация прошла и запрос дошел до обычной логики приложения.
-- Например, в этом руководстве `updateUser("999", ...)` все еще может вернуть `404 User not found`, потому что формат пути допустим, хотя пользователь не существует.
+- `ValidationModule` объявляет параметр маппера как `@Nullable`, поэтому переопределение в Kotlin должно принимать `ViolationExceptionHttpServerResponseMapper?`.
+
+**Kotlin отвергает `@Range(from = 0, to = 1_000)`:**
+
+- `from` и `to` имеют тип `double`. Пишите `0.0` и `1_000.0`.
+
+**Валидация выглядит корректной, но эндпоинт все равно возвращает 404:**
+
+- Обычно это значит, что валидация прошла и запрос дошел до обычной логики приложения.
+- Например, в этом руководстве `updateUser("999", ...)` может по-прежнему вернуть `404 User not found`, потому что формат пути корректен, хотя пользователя и не существует.
 
 **Сборка Gradle зависает или блокирует файлы в Windows:**
 
-- Запустите `./gradlew --stop` и повторите попытку.
-- Если вы видите `AccessDeniedException` на кэшах Gradle или выходных каталогах сборки, закройте среда разработки или тестовые процессы, которые еще могут удерживать файловые дескрипторы.
+- Выполните `./gradlew --stop` и повторите.
+- Если видите `AccessDeniedException` на кешах Gradle или выходных каталогах сборки, закройте процессы IDE или тестов, которые могут держать файловые дескрипторы.
 
 ## Что дальше? { #whats-next }
 
 - [База данных JDBC](database-jdbc.md) или [База данных Cassandra](database-cassandra.md), чтобы сохранять провалидированные запросы.
-- [Тестирование с JUnit](testing-junit.md), чтобы тестировать валидацию и сопоставление ошибок на уровне компонентов.
-- [Тестирование как черный ящик](testing-black-box.md) после добавления хранения данных, чтобы валидацию можно было проверить через упакованное HTTP-приложение.
-- [Шаблоны отказоустойчивости](resilient.md), чтобы добавить отказоустойчивость уровня сервиса вокруг провалидированных операций.
+- [Тестирование с JUnit](testing-junit.md), чтобы протестировать валидацию и отображение ошибок на уровне компонентов.
+- [Черноящичное тестирование](testing-black-box.md) после добавления хранения, чтобы валидацию можно было проверить через собранное HTTP-приложение.
+- [Шаблоны отказоустойчивости](resilient.md), чтобы добавить отказоустойчивость на уровне сервиса вокруг провалидированных операций.
 
 ## Помощь { #help }
 
-Если вы застряли:
+Если застряли:
 
 - сравните с [Kora Java Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-validation-app) и [Kora Kotlin Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-validation-app)
-- изучите [документацию по валидации](../documentation/validation.md)
-- изучите [документацию HTTP-сервера](../documentation/http-server.md)
-- изучите [документацию JSON](../documentation/json.md)
+- посмотрите [документацию по Валидации](../documentation/validation.md)
+- посмотрите [документацию по HTTP-серверу](../documentation/http-server.md)
+- посмотрите [документацию по JSON](../documentation/json.md)

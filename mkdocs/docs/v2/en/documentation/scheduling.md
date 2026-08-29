@@ -1,21 +1,23 @@
 ---
-description: "Explains Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+description: "Explains Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for native and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, SchedulingModule, QuartzModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."
 ---
 
 The Kora scheduling module allows application methods to run on a schedule in a declarative style through annotations.
 At compile time, Kora generates task components and connects them to the selected scheduling mechanism.
 
-Two options are available: the native scheduler based on `ScheduledExecutorService` from the `JDK`, and the scheduler based on `Quartz`.
-The native option is suitable for simple periodic tasks inside one application, while `Quartz` is useful for `cron` expressions, custom `Trigger` instances, and additional task execution rules.
+Two options are available: the `JDK` scheduler based on `ScheduledExecutorService`, and the scheduler based on `Quartz`.
+Both support `cron` expressions.
+The `JDK` scheduler covers periodic and `cron` tasks inside a single application without extra dependencies,
+while `Quartz` adds custom `Trigger` instances, a pluggable `JobStore`, per-task execution rules, and the Quartz `cron` dialect with its `L`, `W` and `#` modifiers.
 
-## Native Scheduler { #native }
+## JDK Scheduler { #native }
 
-The native scheduler uses the standard [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) that comes with the `JDK`.
+The `JDK` scheduler uses the standard [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) that comes with the `JDK`.
 
-Special annotations are used to create tasks through aspects, and they correspond to `ScheduledExecutorService` methods.
-Annotation parameters match the parameters of the `scheduleAtFixedRate`, `scheduleWithFixedDelay`, and `schedule` methods.
+Special annotations from the `io.koraframework.scheduling.jdk.annotation` package are used to create tasks:
+`@ScheduleAtFixedRate`, `@ScheduleWithFixedDelay`, `@ScheduleOnce` and `@ScheduleWithCron`.
 
 All annotations have the `config` parameter.
 If it is specified, parameter values are taken from the configuration at that path and have priority over annotation values.
@@ -24,15 +26,20 @@ The configuration of a specific task can also contain the `telemetry` section; i
 Scheduled methods must satisfy the following requirements:
 
 - The enclosing class must be a component in the [dependency graph](container.md), for example annotated with `@Component`.
-- The native scheduler method must have no arguments (the `Quartz` scheduler additionally allows an optional [JobExecutionContext](#job-context) argument).
+- The `JDK` scheduler method must have no arguments (the `Quartz` scheduler additionally allows an optional [JobExecutionContext](#job-context) argument).
 - The method return value is ignored.
-- In `Kotlin` the method must not be a `suspend` function.
+- In `Kotlin` the method must be a member function of a class and must not be a `suspend` function.
 
-!!! warning "Interval is required"
+!!! warning "Schedule parameter is required"
 
-    `@ScheduleAtFixedRate` requires `period` and `@ScheduleWithFixedDelay` requires `delay`.
-    If neither the annotation attribute (its default is `0`) nor a `config` path providing the value is set,
-    compilation fails with `Either period() or config() annotation parameter must be provided`.
+    Every `JDK` annotation needs a schedule either from its own attributes or from a `config` path.
+    If neither is present, compilation fails:
+
+    - `@ScheduleAtFixedRate` — `Either period() or config() annotation parameter must be provided`
+    - `@ScheduleWithFixedDelay` and `@ScheduleOnce` — `Either delay() or config() annotation parameter must be provided`
+    - `@ScheduleWithCron` — `Either value() or config() annotation parameter must be provided`
+
+    The default value of `period()` and `delay()` is `0`, which counts as "not provided".
 
 ### Dependency { #dependency }
 
@@ -40,7 +47,7 @@ Scheduled methods must satisfy the following requirements:
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:scheduling-jdk"
+    implementation "io.koraframework:scheduling-jdk"
     ```
 
     Module:
@@ -53,7 +60,7 @@ Scheduled methods must satisfy the following requirements:
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```kotlin
-    implementation("ru.tinkoff.kora:scheduling-jdk")
+    implementation("io.koraframework:scheduling-jdk")
     ```
 
     Module:
@@ -64,29 +71,31 @@ Scheduled methods must satisfy the following requirements:
 
 ### Configuration { #configuration }
 
-Complete configuration example described by the `ScheduledExecutorServiceConfig` class with default values:
+Scheduler options are described by the `SchedulingJdkConfig` class and live in the `scheduling.jdk` section,
+telemetry options are shared by both schedulers and live in the `scheduling.telemetry` section:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     scheduling {
-        threads = 2 //(1)!
-        shutdownWait = "30s" //(2)!
+        jdk {
+            shutdownWait = "30s" //(1)!
+        }
         telemetry {
             logging {
-                enabled = false //(3)!
+                enabled = false //(2)!
             }
             metrics {
-                enabled = true //(4)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                tags = { // (6)!
+                enabled = false //(3)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
+                tags = { //(5)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
             }
             tracing {
-                enabled = true //(7)!
-                attributes = { // (8)!
+                enabled = true //(6)!
+                attributes = { //(7)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
@@ -95,45 +104,46 @@ Complete configuration example described by the `ScheduledExecutorServiceConfig`
     }
     ```
 
-    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) (default: `2`)
-    2. Time to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
-    3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    6. Configures metric tags (default: `{}`)
-    7. Enables module tracing (default: `true`)
-    8. Configures tracing attributes (default: `{}`)
+    1. Time the thread pool is given to finish its tasks before it is stopped forcibly during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    2. Enables module logging (default: `false`)
+    3. Enables module metrics (default: `false`)
+    4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    5. Configures metric tags (default: `{}`)
+    6. Enables module tracing (default: `true`)
+    7. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     scheduling:
-      threads: 2 #(1)!
-      shutdownWait: "30s" #(2)!
+      jdk:
+        shutdownWait: "30s" #(1)!
       telemetry:
         logging:
-          enabled: false #(3)!
+          enabled: false #(2)!
         metrics:
-          enabled: true #(4)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-          tags: #(6)!
+          enabled: false #(3)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
+          tags: #(5)!
             key1: value1
             key2: value2
         tracing:
-          enabled: true #(7)!
-          attributes: #(8)!
+          enabled: true #(6)!
+          attributes: #(7)!
             key1: value1
             key2: value2
     ```
 
-    1. Maximum number of threads in [ScheduledExecutorService](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html) (default: `2`)
-    2. Time to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
-    3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    6. Configures metric tags (default: `{}`)
-    7. Enables module tracing (default: `true`)
-    8. Configures tracing attributes (default: `{}`)
+    1. Time the thread pool is given to finish its tasks before it is stopped forcibly during [graceful shutdown](container.md#component-lifecycle) (default: `30s`)
+    2. Enables module logging (default: `false`)
+    3. Enables module metrics (default: `false`)
+    4. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    5. Configures metric tags (default: `{}`)
+    6. Enables module tracing (default: `true`)
+    7. Configures tracing attributes (default: `{}`)
+
+The thread pool is not configurable: Kora creates a `ScheduledThreadPoolExecutor` whose core size equals the number of scheduled jobs registered in the graph.
+Its threads are named `kora-scheduler-N`, are not daemon threads, are released after 30 seconds of idling, and cancelled tasks are removed from the queue immediately.
 
 Module metrics are described in the [Metrics Reference](metrics.md#scheduling) section.
 
@@ -176,16 +186,16 @@ Unset values fall back to the common configuration, so it is enough to specify o
     1. Overrides `scheduling.telemetry.logging.enabled` for this task only
     2. Overrides `scheduling.telemetry.metrics.enabled` for this task only
 
-Observability of scheduled tasks can also be customized in code by registering a component that implements
-`SchedulingLoggerFactory`, `SchedulingMetricsFactory`, `SchedulingTracerFactory`, or the whole `SchedulingTelemetryFactory`.
+Observability of scheduled tasks can also be customized in code.
+Registering a component that extends `DefaultSchedulingLoggerFactory` or `DefaultSchedulingMetricsFactory` changes how jobs are logged or measured,
+and registering a `SchedulingTelemetryFactory` component replaces the default implementation entirely.
 
 ### Fixed Rate { #fixed-rate }
 
-Scheduling with tasks started at a fixed time interval, regardless of whether the previous execution has completed.
-This can lead to concurrent execution of several tasks.
+Scheduling with tasks started at a fixed time interval measured between the starts of consecutive executions.
 
-For example, if the period is 10 seconds and each task execution takes 5 seconds,
-the next task starts 5 seconds after the previous one completes.
+If an execution takes longer than the period, the next one starts as soon as the previous one finishes:
+executions of the same task never overlap, they only start late.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -275,6 +285,9 @@ Configuration file example:
 
     1. Initial delay before the first task (default: `0ms`)
     2. Periodic interval between tasks (`required`, no default)
+
+If the annotation already provides `period` and `initialDelay`, the values from the annotation become the defaults of the generated
+configuration and the configuration only has to override what should differ.
 
 ### Fixed Delay { #fixed-delay }
 
@@ -458,15 +471,13 @@ Configuration file example:
 
     1. Delay before the task (`required`, no default)
 
-### Graceful Shutdown { #graceful-shutdown }
+### Cron { #jdk-cron }
 
-During [graceful shutdown](container.md#component-lifecycle), the native scheduler waits for tasks to complete for `scheduling.shutdownWait`.
-If a task needs to stop earlier, check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
+The `JDK` scheduler runs `cron` tasks without any external scheduler.
+Expressions are parsed and evaluated by the `CronExpression` class that ships with the `scheduling-jdk` artifact.
 
-### Programmatic Scheduling { #programmatic }
-
-For scheduling tasks in imperative style, the `JdkSchedulingExecutor` component can be injected.
-It wraps the same `ScheduledExecutorService` as the annotations and exposes the `scheduleAtFixedRate`, `scheduleWithFixedDelay`, and `schedule` methods:
+After every execution the job computes the next fire time from the current moment in the default time zone of the `JVM`
+and schedules itself again, so a slow execution never causes a burst of catch-up runs.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -474,9 +485,178 @@ It wraps the same `ScheduledExecutorService` as the annotations and exposes the 
     @Component
     public class SomeService {
 
-        private final JdkSchedulingExecutor executor;
+        @ScheduleWithCron("*/10 * * * * *") //(1)!
+        void schedule() {
+            // do something
+        }
+    }
+    ```
 
-        public SomeService(JdkSchedulingExecutor executor) {
+    1. `cron` expression that runs the task every ten seconds
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron("*/10 * * * * *") //(1)!
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task every ten seconds
+
+#### Expression Format { #jdk-cron-format }
+
+An expression may contain five, six or seven space-separated fields.
+The five-field form omits the seconds field and is evaluated with `0` seconds:
+
+| Field        | Allowed values                | Required                      |
+|--------------|-------------------------------|-------------------------------|
+| Seconds      | `0-59`                        | in the six- and seven-field form |
+| Minutes      | `0-59`                        | yes                           |
+| Hours        | `0-23`                        | yes                           |
+| Day of month | `1-31`                        | yes                           |
+| Month        | `1-12` or `JAN-DEC`           | yes                           |
+| Day of week  | `1-7` or `SUN-SAT`            | yes                           |
+| Year         | empty or `1970-2099`          | no                            |
+
+In the day-of-week field `1` is Sunday and `7` is Saturday; `0` is also accepted as Sunday.
+When the year field is omitted, all years from `1970` through `2099` are allowed.
+
+Besides plain numbers the following special characters are supported:
+
+| Character | Meaning                                                                                                        |
+|-----------|----------------------------------------------------------------------------------------------------------------|
+| `*`       | All values of the field (for example `*` in the minute field means "every minute")                             |
+| `?`       | No specific value, allowed only in the day-of-month, day-of-week and year fields, where it is equivalent to `*` |
+| `,`       | List of values, for example `6,19` in the hour field                                                           |
+| `-`       | Inclusive range, for example `MON-FRI` or `9-17`                                                               |
+| `/`       | Step, for example `*/10` in the seconds field or `5/10`                                                        |
+
+The day-of-month and day-of-week fields are combined with a logical `AND`, so `0 0 9-17 * * MON-FRI` fires on weekdays only.
+
+Expression examples:
+
+| Expression                | Meaning                                                     |
+|---------------------------|-------------------------------------------------------------|
+| `0 * * * * *`             | The top of every minute                                     |
+| `*/10 * * * * *`          | Every ten seconds                                           |
+| `0 0 * * * ?`             | The top of every hour                                       |
+| `0 0 6,19 * * ?`          | 6:00 and 19:00 every day                                    |
+| `0 0/30 8-10 * * ?`       | Every 30 minutes from 8:00 through 10:30 every day          |
+| `0 0 9-17 ? * MON-FRI`    | Every hour from 9:00 through 17:00 on weekdays              |
+| `*/15 9-17 * * MON-FRI`   | Five-field form: every 15 minutes from 9:00 through 17:00 on weekdays |
+| `0 0 0 25 DEC ?`          | Every Christmas Day at midnight                             |
+| `0 0 0 29 FEB ?`          | Every leap day at midnight                                  |
+| `0 0 0 1 JAN ? 2027`      | January 1, 2027 at midnight                                 |
+
+!!! warning "Quartz modifiers are not supported"
+
+    The `JDK` evaluator rejects the Quartz-specific `L`, `W`, `#` and `C` modifiers with
+    `Cron field doesn't support L, W, # or C modifiers`.
+    Expressions that need them must run on the [Quartz](#quartz) scheduler.
+
+The expression is parsed when the dependency graph is built, not at compile time,
+so an invalid expression fails application startup with an `IllegalArgumentException` describing the offending field.
+If an expression can never fire again — for example a fixed year in the past — the job logs a warning and stops scheduling itself.
+
+#### Configuration { #configuration-jdk-cron }
+
+The expression can be passed through configuration; the configuration has priority over the annotation value:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.cron")
+        void schedule() {
+            // do something
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService {
+
+        @ScheduleWithCron(config = "scheduling.jobs.cron")
+        fun schedule() {
+            // do something
+        }
+    }
+    ```
+
+The configuration path accepts either an object with the `cron` key and an optional `telemetry` section, or a plain string with the expression:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    scheduling {
+        jobs {
+            cron {
+                cron = "*/10 * * * * *" //(1)!
+            }
+            cron-short = "*/10 * * * * *" //(2)!
+        }
+    }
+    ```
+
+    1. `cron` expression that runs the task every ten seconds (`required`, no default)
+    2. Short form: the value of the `config` path itself is the `cron` expression
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    scheduling:
+      jobs:
+        cron:
+          cron: "*/10 * * * * *" #(1)!
+        cron-short: "*/10 * * * * *" #(2)!
+    ```
+
+    1. `cron` expression that runs the task every ten seconds (`required`, no default)
+    2. Short form: the value of the `config` path itself is the `cron` expression
+
+When the annotation also carries an expression, that expression becomes the default of the generated configuration,
+so the configuration path may be absent entirely and is only needed to override the schedule.
+
+### Graceful Shutdown { #graceful-shutdown }
+
+During [graceful shutdown](container.md#component-lifecycle) components are released in reverse dependency order,
+so every job is released before the executor it depends on.
+
+Releasing a job waits for the execution that is in progress at that moment and then cancels the schedule without interrupting anything,
+so no new execution is started and a job that never returns blocks the shutdown.
+Afterwards the executor stops accepting work and waits up to `scheduling.jdk.shutdownWait` for the thread pool to drain;
+when the wait expires the pool is stopped forcibly, running threads are interrupted, and
+`SchedulingJdkExecutor failed completing graceful shutdown in ...` is logged.
+
+Long-running tasks should therefore be written so that they finish on their own,
+and may additionally check [Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()) to stop earlier.
+
+### Programmatic Scheduling { #programmatic }
+
+For scheduling tasks in imperative style, the `SchedulingJdkExecutor` component can be injected.
+It wraps the same thread pool as the annotations and exposes the `scheduleAtFixedRate`, `scheduleWithFixedDelay` and `scheduleOnce` methods,
+each returning a `ScheduledFuture`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        private final SchedulingJdkExecutor executor;
+
+        public SomeService(SchedulingJdkExecutor executor) {
             this.executor = executor;
         }
 
@@ -492,7 +672,7 @@ It wraps the same `ScheduledExecutorService` as the annotations and exposes the 
 
     ```kotlin
     @Component
-    class SomeService(private val executor: JdkSchedulingExecutor) {
+    class SomeService(private val executor: SchedulingJdkExecutor) {
 
         fun start() {
             executor.scheduleAtFixedRate({
@@ -502,9 +682,13 @@ It wraps the same `ScheduledExecutorService` as the annotations and exposes the 
     }
     ```
 
+Tasks scheduled this way are plain `Runnable` instances: they share the pool with annotated jobs
+but are not wrapped in scheduling telemetry and are not cancelled individually on shutdown.
+
 ## Quartz { #quartz }
 
-The implementation based on the [Quartz](https://www.quartz-scheduler.org/) library is used for tasks with `cron` schedules, custom `Trigger` instances, and `Quartz` execution rules.
+The implementation based on the [Quartz](https://www.quartz-scheduler.org/) library is used for tasks with custom `Trigger` instances,
+Quartz execution rules, and the Quartz `cron` dialect.
 
 ### Dependency { #dependency-2 }
 
@@ -512,7 +696,7 @@ The implementation based on the [Quartz](https://www.quartz-scheduler.org/) libr
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:scheduling-quartz"
+    implementation "io.koraframework:scheduling-quartz"
     ```
 
     Module:
@@ -525,7 +709,7 @@ The implementation based on the [Quartz](https://www.quartz-scheduler.org/) libr
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```kotlin
-    implementation("ru.tinkoff.kora:scheduling-quartz")
+    implementation("io.koraframework:scheduling-quartz")
     ```
 
     Module:
@@ -536,33 +720,35 @@ The implementation based on the [Quartz](https://www.quartz-scheduler.org/) libr
 
 ### Configuration { #configuration-5 }
 
-`Quartz` configuration is specified as [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) values in key-value format.
-Kora settings for graceful shutdown and telemetry are configured in the `scheduling` section.
-The configuration of a specific `cron` task can also contain the `telemetry` section; its values override the common scheduler telemetry for that task.
+`Quartz` itself is configured with [Properties](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/configuration/) values in key-value format
+under the `scheduling.quartz.properties` section.
+Kora settings for graceful shutdown live in `scheduling.quartz`, and telemetry is shared with the `JDK` scheduler in the `scheduling.telemetry` section.
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    quartz { //(1)!
-        "org.quartz.threadPool.threadCount" = "10"
-    }
     scheduling {
-        waitForJobComplete = true //(2)!
+        quartz {
+            waitForJobComplete = true //(1)!
+            properties { //(2)!
+                "org.quartz.threadPool.threadCount" = "10"
+            }
+        }
         telemetry {
             logging {
                 enabled = false //(3)!
             }
             metrics {
-                enabled = true //(4)!
+                enabled = false //(4)!
                 slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                tags = { // (6)!
+                tags = { //(6)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
             }
             tracing {
                 enabled = true //(7)!
-                attributes = { // (8)!
+                attributes = { //(8)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
@@ -571,11 +757,11 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
     }
     ```
 
-    1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
-    2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    1. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    2. `Quartz` scheduler configuration parameters, merged over the defaults below (optional)
     3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    4. Enables module metrics (default: `false`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
     6. Configures metric tags (default: `{}`)
     7. Enables module tracing (default: `true`)
     8. Configures tracing attributes (default: `{}`)
@@ -583,15 +769,16 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    quartz: #(1)!
-      org.quartz.threadPool.threadCount: "10"
     scheduling:
-      waitForJobComplete: true #(2)!
+      quartz:
+        waitForJobComplete: true #(1)!
+        properties: #(2)!
+          org.quartz.threadPool.threadCount: "10"
       telemetry:
         logging:
           enabled: false #(3)!
         metrics:
-          enabled: true #(4)!
+          enabled: false #(4)!
           slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
           tags: #(6)!
             key1: value1
@@ -603,34 +790,27 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
             key2: value2
     ```
 
-    1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
-    2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    1. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
+    2. `Quartz` scheduler configuration parameters, merged over the defaults below (optional)
     3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    4. Enables module metrics (default: `false`)
+    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
     6. Configures metric tags (default: `{}`)
     7. Enables module tracing (default: `true`)
     8. Configures tracing attributes (default: `{}`)
 
-Default settings are used from:
+Defaults are read from the `org/quartz/quartz.properties` resource shipped with the `Quartz` library and are then adjusted by Kora.
+Any key present in `scheduling.quartz.properties` wins over both.
 
-??? abstract "quartz.properties"
+??? abstract "Properties set by Kora"
 
     ```properties
-    org.quartz.scheduler.instanceName: DefaultQuartzScheduler
-    org.quartz.scheduler.rmi.export: false
-    org.quartz.scheduler.rmi.proxy: false
-    org.quartz.scheduler.wrapJobExecutionInUserTransaction: false
-
-    org.quartz.threadPool.class: org.quartz.simpl.SimpleThreadPool
-    org.quartz.threadPool.threadCount: 10
-    org.quartz.threadPool.threadPriority: 5
-    org.quartz.threadPool.threadsInheritContextClassLoaderOfInitializingThread: true
-
-    org.quartz.jobStore.misfireThreshold: 60000
-
-    org.quartz.jobStore.class: org.quartz.simpl.RAMJobStore
+    org.quartz.scheduler.instanceName: kora-quartz-scheduler
+    org.quartz.scheduler.instanceId: AUTO
     ```
+
+The configuration of a specific `cron` task can also contain the `telemetry` section; its values override the common scheduler telemetry for that task,
+exactly as described for the [JDK scheduler](#configuration).
 
 ### Cron { #cron }
 
@@ -701,7 +881,8 @@ Expression examples:
     1. `cron` expression that runs the task every second
 
 The `identity` attribute sets the [Quartz Trigger identity](https://www.quartz-scheduler.org/api/2.3.0/org/quartz/TriggerBuilder.html)
-used to name the task, which is useful for identifying and replacing tasks, especially with clustered or persistent `JobStore` implementations:
+used to name the task, which is useful for identifying and replacing tasks, especially with clustered or persistent `JobStore` implementations.
+When it is not set, the identity defaults to the fully qualified class name and method name of the task, for example `com.example.SomeService#schedule`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -733,10 +914,15 @@ used to name the task, which is useful for identifying and replacing tasks, espe
 
     1. `cron` expression that runs the task at the top of every hour, registered under the trigger identity `my-hourly-job`
 
+!!! warning "Cron source is required"
+
+    `@ScheduleWithCron` must get its expression either from `value()` or from `config()`.
+    If neither is set, compilation fails with `Quartz @ScheduleWithCron on '...' has no cron source.`
+
 #### Configuration { #configuration-6 }
 
 Parameters can be passed through configuration; the configuration has priority over annotation values.
-As with the native scheduler, the `config` path is arbitrary and by convention is nested under the `scheduling` section
+As with the `JDK` scheduler, the `config` path is arbitrary and by convention is nested under the `scheduling` section
 (as in the [example project](https://github.com/kora-projects/kora-examples), `scheduling.jobs.quartz`):
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -765,7 +951,7 @@ As with the native scheduler, the `config` path is arbitrary and by convention i
     }
     ```
 
-Configuration example:
+The configuration path accepts either an object with the `cron` key and an optional `telemetry` section, or a plain string with the expression:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -775,11 +961,13 @@ Configuration example:
             quartz {
                 cron = "* * * ? * * *" //(1)!
             }
+            quartz-short = "* * * ? * * *" //(2)!
         }
     }
     ```
 
     1. `cron` expression that runs the task every second (`required`, no default)
+    2. Short form: the value of the `config` path itself is the `cron` expression
 
 === ":simple-yaml: `YAML`"
 
@@ -788,13 +976,16 @@ Configuration example:
       jobs:
         quartz:
           cron: "* * * ? * * *" #(1)!
+        quartz-short: "* * * ? * * *" #(2)!
     ```
 
     1. `cron` expression that runs the task every second (`required`, no default)
+    2. Short form: the value of the `config` path itself is the `cron` expression
 
 ### Trigger { #trigger }
 
-For a custom schedule, you can create a `Trigger` from the `Quartz` library, register it in the dependency graph with a tag, and then use this tag in the `@ScheduleWithTrigger` annotation.
+For a custom schedule, you can create a `Trigger` from the `Quartz` library, register it in the dependency graph with a tag,
+and then pass that tag class to the `@ScheduleWithTrigger` annotation.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -817,7 +1008,7 @@ For a custom schedule, you can create a `Trigger` from the `Quartz` library, reg
     @Component
     public class SomeService {
 
-        @ScheduleWithTrigger(@Tag(SomeService.class)) //(2)!
+        @ScheduleWithTrigger(SomeService.class) //(2)!
         void schedule() {
             // do something
         }
@@ -850,7 +1041,7 @@ For a custom schedule, you can create a `Trigger` from the `Quartz` library, reg
     @Component
     class SomeService {
 
-        @ScheduleWithTrigger(@Tag(SomeService::class)) //(2)!
+        @ScheduleWithTrigger(SomeService::class) //(2)!
         fun schedule() {
             // do something
         }
@@ -860,10 +1051,13 @@ For a custom schedule, you can create a `Trigger` from the `Quartz` library, reg
     1. Tag used to register the `Trigger` in the dependency graph.
     2. The same tag used by the task to receive the `Trigger`.
 
+`@ScheduleWithTrigger` has no `config` attribute: everything about the schedule is expressed by the `Trigger` component itself.
+
 ### Non-Concurrent Execution { #non-concurrent-execution }
 
 The `@DisallowConcurrentExecution` annotation prevents concurrent execution of the same method by the `Quartz` scheduler.
-It is the `Kora` counterpart of `org.quartz.DisallowConcurrentExecution` and can be placed on any `@Schedule*`-annotated method.
+It is the `Kora` counterpart of `org.quartz.DisallowConcurrentExecution` and is placed on a `@Schedule*`-annotated method;
+placing the original `org.quartz.DisallowConcurrentExecution` on the enclosing class has the same effect for all its tasks.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -977,10 +1171,10 @@ to avoid data storage conflicts during concurrent task execution.
 
 ### Graceful Shutdown { #graceful-shutdown-quartz }
 
-During [graceful shutdown](container.md#component-lifecycle), the `scheduling.waitForJobComplete` option controls how the `Quartz` scheduler stops.
+During [graceful shutdown](container.md#component-lifecycle), the `scheduling.quartz.waitForJobComplete` option controls how the `Quartz` scheduler stops.
 With `true` (default) it calls `scheduler.shutdown(true)` and blocks until running tasks finish; with `false` it stops without waiting.
-As with the native scheduler, long-running tasks should still cooperatively check
-[Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
+As with the `JDK` scheduler, long-running tasks should still cooperatively check
+[Thread.currentThread().isInterrupted()](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html#isInterrupted()) and stop the work manually.
 
 ### Scheduler { #scheduler }
 
@@ -1007,3 +1201,7 @@ such as registering tasks programmatically or inspecting the scheduler state:
     @Component
     class SomeService(private val scheduler: Scheduler)
     ```
+
+Every declared task is registered as a durable `JobDetail` whose identity is the canonical name of the generated job class.
+Registration is repeated when the dependency graph is refreshed: triggers whose definition changed are rescheduled,
+and triggers that no longer exist are removed.

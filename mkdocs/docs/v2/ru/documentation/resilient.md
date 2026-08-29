@@ -1,16 +1,19 @@
 ---
-description: "Explains Kora resilience aspects for circuit breakers, retries, timeouts, fallback methods, imperative managers, exceptions, telemetry, configuration, and supported signatures. Use when working with @CircuitBreaker, @Retry, @Timeout, @Fallback, CircuitBreakerConfig, RetryConfig, TimeoutConfig, ResilientModule."
+description: "Explains Kora resilience aspects built on typed specification interfaces: circuit breakers, retries with backoff/jitter/budget, timeouts, rate limiters, fallback methods, exception filtering, telemetry, configuration, and supported signatures. Use when working with @CircuitBreakable, @Retryable, @Timeout, @RateLimited, @Fallback, @CircuitBreakerSpec, @RetrySpec, @TimeoutSpec, @RateLimiterSpec, ResilientModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora resilience aspects for circuit breakers, retries, timeouts, fallback methods, imperative managers, exceptions, telemetry, configuration, and supported signatures; key triggers include @CircuitBreaker, @Retry, @Timeout, @Fallback, CircuitBreakerManager, RetryManager, TimeoutManager, FallbackManager, RetryState, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, CircuitBreakerConfig, RetryConfig, TimeoutConfig, ResilientModule."
+  use_when: "Use this file for Kora docs or implementation questions about resilience aspects bound to typed specification interfaces, circuit breaker implementations, retry backoff/jitter/budget, timeouts, rate limiting, fallback methods, exception filtering, telemetry and supported signatures; key triggers include @CircuitBreakable, @CircuitBreakerSpec, @Retryable, @RetrySpec, @Timeout, @TimeoutSpec, @RateLimited, @RateLimiterSpec, @Fallback, Fallback.Reason, CircuitBreaker, CircuitBreakerPredicate, Retry, RetryPredicate, Timeouter, RateLimiter, CallNotPermittedException, RetryExhaustedException, TimeoutExhaustedException, RateLimitExceededException, ResilientException, ResilientModule."
 ---
 
 Модуль для построения отказоустойчивого приложения с помощью таких механизмов, как [CircuitBreaker](#circuitbreaker),
-[Fallback](#fallback), [Retry](#retry) и [Timeout](#timeout).
-Эти механизмы можно применять декларативно через аннотации-аспекты либо напрямую через компоненты-менеджеры, когда защита требуется в императивном коде.
+[Retry](#retry), [Timeout](#timeout), [RateLimiter](#ratelimiter) и [Fallback](#fallback).
 
-`ResilientModule` объединяет `CircuitBreakerModule`, `RetryModule`, `TimeoutModule` и `FallbackModule`.
+Каждый механизм, кроме `Fallback`, описывается [интерфейсом-спецификацией](#specifications) — типизированным контрактом,
+который указывает на путь в конфигурации. Аннотация на защищаемом методе ссылается на этот интерфейс, поэтому связь
+метода с его настройками отказоустойчивости проверяет компилятор, а не строковое совпадение имён.
 
-Пошаговый разбор перед справочным описанием смотрите в разделе [Отказоустойчивость](../guides/resilient.md).
+`ResilientModule` объединяет `CircuitBreakerModule`, `RetryModule`, `TimeoutModule`, `FallbackModule` и `RateLimiterModule`.
+
+Пошаговое введение перед справочником — в разделе [Отказоустойчивость](../guides/resilient.md).
 
 ## Подключение { #dependency }
 
@@ -18,7 +21,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:resilient-kora"
+    implementation "io.koraframework:resilient-kora"
     ```
 
     Модуль:
@@ -31,7 +34,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:resilient-kora")
+    implementation("io.koraframework:resilient-kora")
     ```
 
     Модуль:
@@ -40,38 +43,136 @@ agent:
     interface Application : ResilientModule
     ```
 
+Обработчик аннотаций (`annotation-processors`) либо `KSP`-обработчик (`symbol-processors`) обязателен: он одновременно
+генерирует реализации спецификаций и применяет аспекты.
+
+## Спецификации { #specifications }
+
+Спецификация — это интерфейс, который наследует контракт отказоустойчивости и помечен аннотацией с путём конфигурации:
+
+| Аннотация метода   | Аннотация спецификации   | Контракт, который наследует интерфейс | Пакет                                          |
+|--------------------|--------------------------|---------------------------------------|------------------------------------------------|
+| `@CircuitBreakable` | `@CircuitBreakerSpec`    | `CircuitBreaker`                      | `io.koraframework.resilient.circuitbreaker`     |
+| `@Retryable`       | `@RetrySpec`             | `Retry`                               | `io.koraframework.resilient.retry`              |
+| `@Timeout`         | `@TimeoutSpec`           | `Timeouter`                           | `io.koraframework.resilient.timeout`            |
+| `@RateLimited`     | `@RateLimiterSpec`       | `RateLimiter`                         | `io.koraframework.resilient.ratelimiter`        |
+| `@Fallback`        | —                        | —                                     | `io.koraframework.resilient.fallback.annotation` |
+
+Аннотации методов лежат в подпакете `annotation` рядом с контрактом, например
+`io.koraframework.resilient.circuitbreaker.annotation.CircuitBreakable`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @CircuitBreakerSpec("resilient.circuitbreaker.pet") //(1)!
+    public interface PetCircuitBreaker extends CircuitBreaker { }
+
+    @RetrySpec("resilient.retry.pet")
+    public interface PetRetry extends Retry { }
+
+    @TimeoutSpec("resilient.timeout.pet")
+    public interface PetTimeouter extends Timeouter { }
+
+    @Component
+    public class PetService {
+
+        @CircuitBreakable(PetCircuitBreaker.class) //(2)!
+        @Retryable(PetRetry.class)
+        @Timeout(PetTimeouter.class)
+        public Optional<Pet> findById(long id) {
+            return petRepository.findById(id);
+        }
+    }
+    ```
+
+    1.  Полный путь секции конфигурации, которая описывает этот экземпляр.
+    2.  Аспект связывается с типом спецификации, а не со строковым именем.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @CircuitBreakerSpec("resilient.circuitbreaker.pet") //(1)!
+    interface PetCircuitBreaker : CircuitBreaker
+
+    @RetrySpec("resilient.retry.pet")
+    interface PetRetry : Retry
+
+    @TimeoutSpec("resilient.timeout.pet")
+    interface PetTimeouter : Timeouter
+
+    @Component
+    open class PetService {
+
+        @CircuitBreakable(PetCircuitBreaker::class) //(2)!
+        @Retryable(PetRetry::class)
+        @Timeout(PetTimeouter::class)
+        open fun findById(id: Long): Pet? = petRepository.findById(id)
+    }
+    ```
+
+    1.  Полный путь секции конфигурации, которая описывает этот экземпляр.
+    2.  Аспект связывается с типом спецификации, а не со строковым именем.
+
+Что обработчик делает со спецификацией:
+
+- генерирует её реализацию и модуль, который её публикует; модуль подхватывается `@KoraApp` автоматически — вручную ничего подключать не нужно;
+- публикует сам интерфейс спецификации как компонент графа приложения, поэтому его можно внедрить для [императивного использования](#imperative-usage);
+- читает конфигурацию ровно из того пути, который указан в аннотации.
+
+!!! warning "Один экземпляр на спецификацию"
+
+    Все методы, помеченные одной и той же спецификацией, разделяют **один** экземпляр, а значит одно состояние и один
+    набор метрик. Если два метода не должны влиять на состояние circuit breaker друг друга, им нужны два интерфейса-спецификации,
+    указывающих на две разные секции конфигурации.
+
+!!! warning "Путь конфигурации абсолютный и ни с чем не объединяется"
+
+    Путь в аннотации — это полный путь до секции. Секции `default`, от которой наследуется именованная секция, больше нет:
+    все обязательные значения должны присутствовать именно по этому пути. Подойдёт любой путь, в том числе вне префикса
+    `resilient` — `@CircuitBreakerSpec("payment")` читает корневую секцию `payment`.
+
+Типичные ошибки компиляции:
+
+- `@CircuitBreakerSpec can only be applied to an interface` — аннотация поставлена на класс или запись.
+- `@CircuitBreakerSpec annotated interface 'X' must extend io.koraframework.resilient.circuitbreaker.CircuitBreaker` — интерфейс не наследует контракт.
+- `config path can't be blank` — в значении аннотации пустая строка.
+- `@CircuitBreakable on 'X#y()' references an invalid resilient component type` — класс, переданный в аннотацию метода, не реализует ожидаемый контракт.
+
 ## CircuitBreaker { #circuitbreaker }
 
 `CircuitBreaker` — это прокси, который управляет потоком запросов к конкретному методу
-и может временно запретить выполнение этого метода, если тот выбрасывает много исключений, попадающих под настроенный фильтр (`CircuitBreakerPredicate`).
+и может временно запретить его выполнение, если метод бросает много исключений, подходящих под настроенный фильтр.
 
-Цель применения CircuitBreaker — дать системе время исправить ошибку, вызвавшую сбой, прежде чем позволить приложению снова попытаться выполнить операцию.
-Паттерн `CircuitBreaker` обеспечивает стабильность на время восстановления системы после сбоя и снижает влияние на производительность.
-`CircuitBreaker` может находиться в одном из нескольких состояний: `CLOSED`, `OPEN`, `HALF_OPEN`.
+Смысл применения CircuitBreaker в том, чтобы дать системе время исправить ошибку, вызвавшую сбой, прежде чем позволить приложению повторить операцию.
+Шаблон `CircuitBreaker` обеспечивает стабильность на время восстановления системы после сбоя и снижает влияние на производительность.
+`CircuitBreaker` может находиться в одном из состояний: `CLOSED`, `OPEN`, `HALF_OPEN`.
 
-- `CLOSED`: запрос приложения передается защищаемой операции. Прокси подсчитывает недавние сбои в пределах настроенного числа операций (`slidingWindowSize`), проходящих через него, и увеличивает этот счетчик, когда операция завершается неуспешно.
-  Если количество запросов превышает минимально необходимое для расчета (`minimumRequiredCalls`) и число недавних сбоев превышает настроенный порог (`failureRateThreshold`), прокси переходит в `OPEN`.
-- `OPEN`: находясь в этом состоянии, запрос приложения немедленно завершается с ошибкой, и приложению возвращается исключение.
-  В этот момент прокси запускает таймер ожидания (`waitDurationInOpenState`), и по его истечении прокси переходит в `HALF_OPEN`.
-- `HALF_OPEN`: ограниченному числу запросов (`permittedCallsInHalfOpenState`) от приложения разрешается пройти и вызвать операцию. Если эти запросы успешны, считается, что ошибка, ранее вызвавшая
-  сбой, устранена, и `CircuitBreaker` переходит в состояние `CLOSED` (счетчик сбоев сбрасывается). Если какой-либо запрос завершается сбоем, `CircuitBreaker` считает, что
-  неисправность все еще присутствует, поэтому возвращается в состояние `OPEN` и перезапускает таймер ожидания (`waitDurationInOpenState`), чтобы дать системе дополнительное время на восстановление после сбоя.
+- `CLOSED`: запрос приложения передаётся в защищаемую операцию. Прокси считает недавние отказы в пределах настроенного количества операций (`countBased.windowSize`), проходящих через него, и увеличивает счётчик, когда операция завершается неуспешно.
+  Если число запросов превысило минимально необходимое для расчёта (`minimumRequiredCalls`), а доля недавних отказов превысила настроенный порог (`failureRateThreshold`), прокси переходит в `OPEN`.
+- `OPEN`: в этом состоянии запрос приложения немедленно завершается ошибкой, и приложению возвращается исключение.
+  В этот момент прокси запускает таймер ожидания (`waitDurationInOpenState`), по истечении которого переходит в `HALF_OPEN`.
+- `HALF_OPEN`: ограниченному числу запросов (`permittedCallsInHalfOpenState`) разрешается пройти и вызвать операцию. Если эти запросы успешны, считается, что ошибка,
+  ранее вызвавшая сбой, устранена, и `CircuitBreaker` переходит в состояние `CLOSED` (счётчик отказов сбрасывается). Если хотя бы один запрос завершается отказом, `CircuitBreaker` считает,
+  что неисправность сохраняется, возвращается в состояние `OPEN` и перезапускает таймер ожидания (`waitDurationInOpenState`), давая системе дополнительное время на восстановление.
 
-Состояние `HALF_OPEN` помогает предотвратить лавинообразный рост числа запросов к сервису: после начала восстановления сервис некоторое время может справляться лишь с ограниченным числом запросов.
+Состояние `HALF_OPEN` помогает избежать лавинообразного роста запросов к сервису: после начала восстановления сервис какое-то время может выдерживать лишь ограниченное число запросов.
 
 Изначально находится в состоянии `CLOSED`.
 
 ### Декларативное использование { #declarative-usage }
 
-Если `CircuitBreaker` находится в состоянии `OPEN`, вызов завершается с `CallNotPermittedException`.
+Если `CircuitBreaker` находится в состоянии `OPEN`, вызов завершается исключением `CallNotPermittedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @CircuitBreakerSpec("resilient.circuitbreaker.custom")
+    public interface CustomCircuitBreaker extends CircuitBreaker { }
+
     @Component
     public class SomeService {
 
-        @CircuitBreaker("custom")
+        @CircuitBreakable(CustomCircuitBreaker.class)
         public String getValue() {
             throw new IllegalStateException("Ops");
         }
@@ -81,74 +182,20 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @CircuitBreakerSpec("resilient.circuitbreaker.custom")
+    interface CustomCircuitBreaker : CircuitBreaker
+
     @Component
     open class SomeService {
 
-        @CircuitBreaker("custom")
-        fun value(): String = throw IllegalStateException("Ops")
+        @CircuitBreakable(CustomCircuitBreaker::class)
+        open fun value(): String = throw IllegalStateException("Ops")
     }
     ```
 
 ### Конфигурация { #configuration }
 
-Существует конфигурация по умолчанию, которая применяется к CircuitBreaker при его создании,
-после чего именованные настройки конкретного CircuitBreaker применяются поверх настроек по умолчанию.
-
-Вы можете изменить настройки по умолчанию сразу для всех CircuitBreaker, изменив конфигурацию `default`.
-
-Пример полной конфигурации, описанной в классе `CircuitBreakerConfig` (указаны примерные значения или значения по умолчанию):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    resilient {
-        circuitbreaker {
-            default {
-                slidingWindowSize = 100 //(1)!
-                minimumRequiredCalls = 10 //(2)!
-                failureRateThreshold = 50 //(3)!
-                waitDurationInOpenState = "25s" //(4)!
-                permittedCallsInHalfOpenState = 15 //(5)!
-                enabled = true //(6)!
-                failurePredicateName = "MyPredicate" //(7)!
-            }
-        }
-    }
-    ```
-
-    1.  Максимальное число запросов, используемых для расчета `failureRateThreshold` и определения состояния (`required`, значение по умолчанию не задано).
-    2.  Минимальное число запросов, необходимое для начала расчета состояния (`required`, значение по умолчанию не задано).
-    3.  Процент неуспешных запросов, необходимый для перехода в `OPEN`; значение должно быть от `1` до `100` (`required`, значение по умолчанию не задано).
-    4.  Время ожидания в `OPEN`, по истечении которого выполняется переход в `HALF_OPEN` (`required`, значение по умолчанию не задано).
-    5.  Число запросов в `HALF_OPEN`, которые должны завершиться успешно для перехода в `CLOSED` (`required`, значение по умолчанию не задано).
-    6.  Включение или отключение `CircuitBreaker` (по умолчанию: `true`).
-    7.  Имя фильтра исключений из `CircuitBreakerPredicate#name()` (по умолчанию учитываются все ошибки).
-
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    resilient:
-      circuitbreaker:
-        default:
-          slidingWindowSize: 100 #(1)!
-          minimumRequiredCalls: 10 #(2)!
-          failureRateThreshold: 50 #(3)!
-          waitDurationInOpenState: "25s" #(4)!
-          permittedCallsInHalfOpenState: 15 #(5)!
-          enabled: true #(6)!
-          failurePredicateName: "MyPredicate" #(7)!
-    ```
-
-    1.  Максимальное число запросов, используемых для расчета `failureRateThreshold` и определения состояния (`required`, значение по умолчанию не задано).
-    2.  Минимальное число запросов, необходимое для начала расчета состояния (`required`, значение по умолчанию не задано).
-    3.  Процент неуспешных запросов, необходимый для перехода в `OPEN`; значение должно быть от `1` до `100` (`required`, значение по умолчанию не задано).
-    4.  Время ожидания в `OPEN`, по истечении которого выполняется переход в `HALF_OPEN` (`required`, значение по умолчанию не задано).
-    5.  Число запросов в `HALF_OPEN`, которые должны завершиться успешно для перехода в `CLOSED` (`required`, значение по умолчанию не задано).
-    6.  Включение или отключение `CircuitBreaker` (по умолчанию: `true`).
-    7.  Имя фильтра исключений из `CircuitBreakerPredicate#name()` (по умолчанию учитываются все ошибки).
-
-Пример переопределения именованных настроек конкретного CircuitBreaker:
+Секция, на которую указывает `@CircuitBreakerSpec`, описана в классе `CircuitBreakerConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -156,11 +203,31 @@ agent:
     resilient {
         circuitbreaker {
             custom {
-                waitDurationInOpenState = "50s"
+                type = STRIPED_APPROX //(1)!
+                failureRateThreshold = 50 //(2)!
+                minimumRequiredCalls = 10 //(3)!
+                waitDurationInOpenState = "25s" //(4)!
+                permittedCallsInHalfOpenState = 15 //(5)!
+                enabled = true //(6)!
+                countBased {
+                    windowSize = 100 //(7)!
+                    stripedApprox {
+                        stripes = 16 //(8)!
+                    }
+                }
             }
         }
     }
     ```
+
+    1.  [Реализация](#circuitbreaker-implementations) окна вызовов: `STRIPED_APPROX`, `FIXED_WINDOW`, `RING_BUFFER` или `TIME_BASED` (по умолчанию: `STRIPED_APPROX`).
+    2.  Процент неуспешных запросов, необходимый для перехода в `OPEN`; значение должно быть от `1` до `100` (обязательное, без значения по умолчанию).
+    3.  Минимальное число запросов, необходимое для начала расчёта состояния (обязательное, без значения по умолчанию).
+    4.  Время ожидания в `OPEN`, по истечении которого выполняется переход в `HALF_OPEN` (обязательное, без значения по умолчанию).
+    5.  Число запросов в `HALF_OPEN`, которые должны завершиться успешно для перехода в `CLOSED` (обязательное, без значения по умолчанию).
+    6.  Включение или отключение `CircuitBreaker` (по умолчанию: `true`).
+    7.  Максимальное число запросов, используемых для расчёта `failureRateThreshold` и определения состояния (обязательное для всех типов, кроме `TIME_BASED`, без значения по умолчанию).
+    8.  Количество независимых полос счётчиков, от `1` до `64`; используется только реализацией `STRIPED_APPROX` (по умолчанию: `16`).
 
 === ":simple-yaml: `YAML`"
 
@@ -168,43 +235,125 @@ agent:
     resilient:
       circuitbreaker:
         custom:
-          waitDurationInOpenState: "50s"
+          type: STRIPED_APPROX #(1)!
+          failureRateThreshold: 50 #(2)!
+          minimumRequiredCalls: 10 #(3)!
+          waitDurationInOpenState: "25s" #(4)!
+          permittedCallsInHalfOpenState: 15 #(5)!
+          enabled: true #(6)!
+          countBased:
+            windowSize: 100 #(7)!
+            stripedApprox:
+              stripes: 16 #(8)!
     ```
+
+    1.  [Реализация](#circuitbreaker-implementations) окна вызовов: `STRIPED_APPROX`, `FIXED_WINDOW`, `RING_BUFFER` или `TIME_BASED` (по умолчанию: `STRIPED_APPROX`).
+    2.  Процент неуспешных запросов, необходимый для перехода в `OPEN`; значение должно быть от `1` до `100` (обязательное, без значения по умолчанию).
+    3.  Минимальное число запросов, необходимое для начала расчёта состояния (обязательное, без значения по умолчанию).
+    4.  Время ожидания в `OPEN`, по истечении которого выполняется переход в `HALF_OPEN` (обязательное, без значения по умолчанию).
+    5.  Число запросов в `HALF_OPEN`, которые должны завершиться успешно для перехода в `CLOSED` (обязательное, без значения по умолчанию).
+    6.  Включение или отключение `CircuitBreaker` (по умолчанию: `true`).
+    7.  Максимальное число запросов, используемых для расчёта `failureRateThreshold` и определения состояния (обязательное для всех типов, кроме `TIME_BASED`, без значения по умолчанию).
+    8.  Количество независимых полос счётчиков, от `1` до `64`; используется только реализацией `STRIPED_APPROX` (по умолчанию: `16`).
+
+Ключ `telemetry` внутри той же секции переопределяет общемодульные настройки из раздела [Телеметрия](#telemetry).
 
 !!! warning "Ограничения"
 
-    Следующие условия проверяются при старте приложения — нарушение любого из них приводит к ошибке сборки графа:
-    `failureRateThreshold` должен быть в диапазоне `1..100`; `slidingWindowSize` ≥ `1`; `minimumRequiredCalls` ≥ `1` **и** ≤ `slidingWindowSize`; `permittedCallsInHalfOpenState` ≥ `1`.
-    Для каждого `@CircuitBreaker` **должна** присутствовать либо именованная, либо `default` конфигурация, иначе запуск завершится ошибкой.
+    Перечисленное ниже проверяется при построении графа — нарушение любого правила прерывает старт приложения
+    с явным сообщением вида `CircuitBreaker '<name>' property '<key>' ...`:
+    `countBased` обязателен для всех типов, кроме `TIME_BASED`, а `timeBased` обязателен для `TIME_BASED`;
+    `failureRateThreshold` в диапазоне `1..100`; `countBased.windowSize` ≥ `1`; `minimumRequiredCalls` ≥ `1`
+    **и** ≤ `countBased.windowSize`; `permittedCallsInHalfOpenState` в диапазоне `1..65535`;
+    `waitDurationInOpenState` не может быть отрицательным;
+    `countBased.stripedApprox.stripes` в диапазоне `1..64`, а `countBased.windowSize` не может превышать `stripes * 65535`;
+    для `RING_BUFFER` значение `countBased.windowSize` не может превышать `4194304`.
 
-!!! note "Примечание"
+!!! note
 
-    Установка `enabled = false` превращает аспект в прозрачный проброс — метод вызывается напрямую, без размыкания цепи.
-    `failurePredicateName` по умолчанию равен `KoraCircuitBreakerPredicate` (учитывает каждую ошибку); собственный `CircuitBreakerPredicate` может использоваться несколькими прерывателями через ссылку на его `name()`.
+    Значение `enabled = false` превращает аспект в прозрачный проброс — метод вызывается напрямую без защиты.
+    Остальные значения при этом всё равно читаются и валидируются, потому что объект конфигурации создаётся в любом случае.
 
 Метрики модуля описаны в разделе [Справочник метрик](metrics.md#resilience).
 
+### Реализации { #circuitbreaker-implementations }
+
+`type` выбирает способ сбора статистики в состоянии `CLOSED`. Сама машина состояний во всех четырёх реализациях одинакова и строго атомарна.
+
+| `type`           | Окно                                 | Статистика                                               | Когда использовать                                                        |
+|------------------|--------------------------------------|-----------------------------------------------------------|---------------------------------------------------------------------------|
+| `STRIPED_APPROX` | по числу вызовов, `countBased.windowSize` | приблизительная — запись распределяется по независимым полосам | по умолчанию; самый быстрый вариант на горячих и высоконагруженных путях   |
+| `FIXED_WINDOW`   | по числу вызовов, `countBased.windowSize` | фиксированный счётчик, сбрасываемый при заполнении окна   | минимальные накладные расходы, один упакованный счётчик, без точной истории последних N вызовов |
+| `RING_BUFFER`    | по числу вызовов, `countBased.windowSize` | точная история последних N вызовов в глобальном порядке   | когда точная семантика по числу вызовов важнее накладных расходов на синхронизацию |
+| `TIME_BASED`     | по времени, `timeBased.windowDuration` | последнее временное окно, согласованность в пределах смены корзины | когда интенсивность нагрузки меняется и фиксированное число вызовов не является осмысленным окном |
+
+`TIME_BASED` игнорирует `countBased` и читает собственную секцию:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        circuitbreaker {
+            custom {
+                type = TIME_BASED
+                failureRateThreshold = 50
+                minimumRequiredCalls = 10
+                waitDurationInOpenState = "25s"
+                permittedCallsInHalfOpenState = 15
+                timeBased {
+                    windowDuration = "10s" //(1)!
+                    sampleCount = 16 //(2)!
+                    counterStripes = 16 //(3)!
+                    counterType = ATOMIC //(4)!
+                }
+            }
+        }
+    }
+    ```
+
+    1.  Длительность временного окна, по которому считается доля отказов (обязательное для `TIME_BASED`, без значения по умолчанию).
+    2.  Число корзин, на которые делится окно, от `1` до `1024` (по умолчанию: `16`).
+    3.  Число независимых полос счётчиков внутри корзины, от `1` до `64` (по умолчанию: `16`).
+    4.  Реализация счётчиков: `ATOMIC` даёт предсказуемый сброс, `LONG_ADDER` быстрее при высокой конкуренции ценой более приблизительного сброса на границах корзин (по умолчанию: `ATOMIC`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      circuitbreaker:
+        custom:
+          type: TIME_BASED
+          failureRateThreshold: 50
+          minimumRequiredCalls: 10
+          waitDurationInOpenState: "25s"
+          permittedCallsInHalfOpenState: 15
+          timeBased:
+            windowDuration: "10s" #(1)!
+            sampleCount: 16 #(2)!
+            counterStripes: 16 #(3)!
+            counterType: ATOMIC #(4)!
+    ```
+
+    1.  Длительность временного окна, по которому считается доля отказов (обязательное для `TIME_BASED`, без значения по умолчанию).
+    2.  Число корзин, на которые делится окно, от `1` до `1024` (по умолчанию: `16`).
+    3.  Число независимых полос счётчиков внутри корзины, от `1` до `64` (по умолчанию: `16`).
+    4.  Реализация счётчиков: `ATOMIC` даёт предсказуемый сброс, `LONG_ADDER` быстрее при высокой конкуренции ценой более приблизительного сброса на границах корзин (по умолчанию: `ATOMIC`).
+
 ### Фильтрация исключений { #exception-filtering }
 
-Чтобы задать, какие ошибки должны учитываться как ошибки CircuitBreaker, вы можете переопределить фильтр по умолчанию:
-необходимо реализовать `CircuitBreakerPredicate`, зарегистрировать свой компонент в контексте и указать в конфигурации CircuitBreaker его имя, возвращаемое методом `name()`.
+По умолчанию `CircuitBreaker` считает отказом любую ошибку. Изменить это можно двумя способами.
 
-По умолчанию `CircuitBreaker` учитывает все ошибки.
+Самый простой — переопределить `isFailure` прямо в интерфейсе-спецификации: без отдельного компонента и без конфигурации:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Component
-    public final class MyFailurePredicate implements CircuitBreakerPredicate {
+    @CircuitBreakerSpec("resilient.circuitbreaker.custom")
+    public interface CustomCircuitBreaker extends CircuitBreaker {
 
         @Override
-        public String name() {
-            return "MyPredicate";
-        }
-
-        @Override
-        public boolean test(Throwable throwable) {
-            return true;
+        default boolean isFailure(Throwable throwable) {
+            return !(throwable instanceof HttpServerResponseException e) || e.code() >= 500;
         }
     }
     ```
@@ -212,46 +361,55 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
-    class MyFailurePredicate : CircuitBreakerPredicate {
+    @CircuitBreakerSpec("resilient.circuitbreaker.custom")
+    interface CustomCircuitBreaker : CircuitBreaker {
 
-        override fun name(): String = "MyPredicate"
-
-        override fun test(throwable: Throwable): Boolean = true
+        override fun isFailure(throwable: Throwable): Boolean =
+            throwable !is HttpServerResponseException || throwable.code() >= 500
     }
     ```
 
-Конфигурация:
+Второй способ — компонент `CircuitBreakerPredicate`, привязанный к спецификации через `@Tag`. Он имеет приоритет над
+`isFailure` и подходит, когда самому фильтру нужны зависимости:
 
-===! ":material-code-json: `Hocon`"
+===! ":fontawesome-brands-java: `Java`"
 
-    ```javascript
-    resilient {
-        circuitbreaker {
-            custom {
-                failurePredicateName = "MyPredicate" //(1)!
-            }
+    ```java
+    @Tag(CustomCircuitBreaker.class) //(1)!
+    @Component
+    public final class MyFailurePredicate implements CircuitBreakerPredicate {
+
+        @Override
+        public boolean isCircuitBreakerFailure(Throwable throwable) { //(2)!
+            return !(throwable instanceof HttpServerResponseException e) || e.code() >= 500;
         }
     }
     ```
 
-    1. Имя фильтра исключений из `CircuitBreakerPredicate#name()` (по умолчанию учитываются все ошибки).
+    1.  Привязывает предикат к одной спецификации; без тега предикат не будет использован.
+    2.  Возврат `true` означает, что исключение засчитывается как отказ.
 
-=== ":simple-yaml: `YAML`"
+=== ":simple-kotlin: `Kotlin`"
 
-    ```yaml
-    resilient:
-      circuitbreaker:
-        custom:
-          failurePredicateName: "MyPredicate" #(1)!
+    ```kotlin
+    @Tag(CustomCircuitBreaker::class) //(1)!
+    @Component
+    class MyFailurePredicate : CircuitBreakerPredicate {
+
+        override fun isCircuitBreakerFailure(throwable: Throwable): Boolean = //(2)!
+            throwable !is HttpServerResponseException || throwable.code() >= 500
+    }
     ```
 
-    1. Имя фильтра исключений из `CircuitBreakerPredicate#name()` (по умолчанию учитываются все ошибки).
+    1.  Привязывает предикат к одной спецификации; без тега предикат не будет использован.
+    2.  Возврат `true` означает, что исключение засчитывается как отказ.
+
+Исключение, отклонённое фильтром, не засчитывается ни как отказ, ни как успех: circuit breaker его просто игнорирует,
+а вызывающему коду оно возвращается без изменений.
 
 ### Императивное использование { #imperative-usage }
 
-Прерыватель можно использовать в императивном коде: внедрите `CircuitBreakerManager`
-и получите из него `CircuitBreaker` по имени конфигурации, которое было бы указано в аннотации:
+Интерфейс спецификации — обычный компонент графа приложения, поэтому в императивном коде его достаточно внедрить напрямую:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -259,14 +417,13 @@ agent:
     @Component
     public final class SomeService {
 
-        private final CircuitBreakerManager manager;
+        private final CustomCircuitBreaker circuitBreaker;
 
-        public SomeService(CircuitBreakerManager manager) {
-            this.manager = manager;
+        public SomeService(CustomCircuitBreaker circuitBreaker) {
+            this.circuitBreaker = circuitBreaker;
         }
 
         public String doWork() {
-            var circuitBreaker = manager.get("custom");
             return circuitBreaker.accept(this::doSomeWork);
         }
 
@@ -280,11 +437,10 @@ agent:
 
     ```kotlin
     @Component
-    class SomeService(val manager: CircuitBreakerManager) {
+    class SomeService(private val circuitBreaker: CustomCircuitBreaker) {
 
         fun doWork(): String {
-            val circuitBreaker = manager["custom"]
-            return circuitBreaker.accept { doSomeWork() }
+            return circuitBreaker.accept(ThrowableCallable { doSomeWork() })
         }
 
         private fun doSomeWork(): String {
@@ -293,13 +449,15 @@ agent:
     }
     ```
 
-Чтобы вернуть резервное значение вместо выбрасывания `CallNotPermittedException`, когда прерыватель находится в `OPEN`, используйте перегрузку `accept`, принимающую второй `Supplier`:
+Методы `accept` принимают `ThrowableCallable<T, E>` или `ThrowableRunnable<E>` из пакета `io.koraframework.resilient.common`,
+поэтому защищаемый код может бросать проверяемые исключения.
+
+Чтобы в состоянии `OPEN` вернуть резервное значение вместо `CallNotPermittedException`, используйте перегрузку `accept` со вторым аргументом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public String doWork() {
-        var circuitBreaker = manager.get("custom");
         return circuitBreaker.accept(this::doSomeWork, () -> "fallback");
     }
     ```
@@ -308,19 +466,17 @@ agent:
 
     ```kotlin
     fun doWork(): String {
-        val circuitBreaker = manager["custom"]
-        return circuitBreaker.accept({ doSomeWork() }, { "fallback" })
+        return circuitBreaker.accept(ThrowableCallable { doSomeWork() }, ThrowableCallable { "fallback" })
     }
     ```
 
-Когда защищаемый вызов нельзя обернуть в единственный `Supplier`, получите и освободите разрешение вручную.
-Вызовите `acquire()` (выбрасывает `CallNotPermittedException`, когда прерыватель в `OPEN` либо в `HALF_OPEN` без оставшихся пробных вызовов), чтобы получить разрешение, затем **всегда** сообщайте о результате через `releaseOnSuccess()` или `releaseOnError(Throwable)` — иначе прерыватель теряет разрешение, и его учет становится некорректным:
+Если защищаемый вызов не удаётся обернуть в один callable, разрешение можно получать и освобождать вручную.
+Вызовите `acquire()` (бросает `CallNotPermittedException`, когда состояние `OPEN` либо `HALF_OPEN` и все пробные вызовы уже израсходованы), а затем **обязательно** сообщите результат через `releaseOnSuccess()` или `releaseOnError(Throwable)` — иначе разрешение утечёт и учёт вызовов станет неверным:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public String doWork() {
-        var circuitBreaker = manager.get("custom");
         circuitBreaker.acquire(); // throws CallNotPermittedException when the call is not permitted
         try {
             var result = doSomeWork();
@@ -337,7 +493,6 @@ agent:
 
     ```kotlin
     fun doWork(): String {
-        val circuitBreaker = manager["custom"]
         circuitBreaker.acquire() // throws CallNotPermittedException when the call is not permitted
         try {
             val result = doSomeWork()
@@ -350,25 +505,28 @@ agent:
     }
     ```
 
-`tryAcquire()` — это альтернатива без выбрасывания исключения: она возвращает `false`, когда вызов не разрешен, поэтому вы можете ветвить логику без перехвата `CallNotPermittedException`.
-Когда `acquire()` все же выбрасывает исключение, текущее [состояние](#circuitbreaker) прерывателя (`OPEN` или `HALF_OPEN`) доступно через `CallNotPermittedException#state()`.
+`tryAcquire()` — вариант без исключения: он возвращает `false`, когда вызов не разрешён, и позволяет ветвиться без перехвата `CallNotPermittedException`.
+Если же `acquire()` бросил исключение, текущее [состояние](#circuitbreaker) (`OPEN` или `HALF_OPEN`) доступно через `CallNotPermittedException#state()`.
 
 ## Retry { #retry }
 
-`Retry` предоставляет возможность настроить повторный вызов аннотированных методов.
-Он позволяет задать, когда метод должен повторяться, и настроить параметры повторов, когда метод выбрасывает исключение, попадающее под настроенный фильтр (`RetryPredicate`).
+`Retry` даёт возможность настроить повторные вызовы аннотированных методов.
+Он позволяет указать, когда метод следует повторить, и настроить параметры повторов, если метод бросает исключение, подходящее под настроенный фильтр.
 
 ### Декларативное использование { #declarative-usage-2 }
 
-Если все попытки исчерпаны, вызов завершается с `RetryExhaustedException`.
+Когда все попытки исчерпаны, вызов завершается исключением `RetryExhaustedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @RetrySpec("resilient.retry.custom")
+    public interface CustomRetry extends Retry { }
+
     @Component
     public class SomeService {
 
-        @Retry("custom1")
+        @Retryable(CustomRetry.class)
         public String getValue() {
             throw new IllegalStateException("Ops");
         }
@@ -378,113 +536,20 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @RetrySpec("resilient.retry.custom")
+    interface CustomRetry : Retry
+
     @Component
     open class SomeService {
 
-        @Retry("custom1")
-        fun execute(arg: String): Unit = throw IllegalStateException("Ops")
+        @Retryable(CustomRetry::class)
+        open fun execute(arg: String): Unit = throw IllegalStateException("Ops")
     }
     ```
 
 ### Конфигурация { #configuration-2 }
 
-Существует конфигурация `default`, которая применяется к `Retry` при создании,
-после чего именованные настройки конкретного `Retry` применяются поверх настроек по умолчанию.
-
-Настройки по умолчанию можно изменить сразу для всех `Retry`, изменив конфигурацию `default`.
-
-Пример полной конфигурации, описанной в классе `RetryConfig` (указаны значения по умолчанию или примерные значения):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    resilient {
-        retry {
-            default {
-                delay = "100ms" //(1)!
-                attempts = 2 //(2)!
-                delayStep = "100ms" //(3)!
-                enabled = true //(4)!
-                failurePredicateName = "MyPredicate" //(5)!
-            }
-        }
-    }
-    ```
-
-    1. Начальная задержка перед повторным вызовом (`required`, значение по умолчанию не задано).
-    2. Число попыток повтора (`required`, значение по умолчанию не задано).
-    3. Приращение задержки для последующих попыток (по умолчанию: `0`).
-    4. Включение или отключение `Retry` (по умолчанию: `true`).
-    5. Имя фильтра исключений из `RetryPredicate#name()` (по умолчанию учитываются все ошибки).
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    resilient:
-      retry:
-        default:
-          delay: "100ms" #(1)!
-          attempts: 2 #(2)!
-          delayStep: "100ms" #(3)!
-          enabled: true #(4)!
-          failurePredicateName: "MyPredicate" #(5)!
-    ```
-
-    1. Начальная задержка перед повторным вызовом (`required`, значение по умолчанию не задано).
-    2. Число попыток повтора (`required`, значение по умолчанию не задано).
-    3. Приращение задержки для последующих попыток (по умолчанию: `0`).
-    4. Включение или отключение `Retry` (по умолчанию: `true`).
-    5. Имя фильтра исключений из `RetryPredicate#name()` (по умолчанию учитываются все ошибки).
-
-!!! warning "Ограничения и прогрессия задержки"
-
-    `delay` и `attempts` обязательны (берутся из именованной или `default` конфигурации), а `attempts` должно быть `≥ 0`; отсутствие `delay`/`attempts` или отрицательное `attempts` приводит к ошибке старта приложения.
-    `attempts` считает повторы **после** первоначального вызова, поэтому `attempts = 2` допускает в сумме до `3` выполнений.
-    Каждый повтор ждет на `delayStep` (по умолчанию `0`) дольше предыдущего, так что задержки составляют `delay`, `delay + delayStep`, `delay + 2·delayStep`, … .
-
-!!! note "Примечание"
-
-    Установка `enabled = false` превращает `@Retry` в прозрачный проброс (метод выполняется один раз).
-    `failurePredicateName` по умолчанию равен `KoraRetryPredicate` (повторяет при каждой ошибке); собственный `RetryPredicate` может использоваться несколькими повторителями через ссылку на его `name()`.
-
-### Фильтрация исключений { #exception-filtering-2 }
-
-Чтобы задать, какие ошибки должны учитываться как ошибки на стороне Retry, вы можете переопределить фильтр по умолчанию:
-необходимо реализовать `RetryPredicate`, зарегистрировать его компонент в контексте и указать в конфигурации Retry его имя, возвращаемое методом `name()`.
-
-По умолчанию `Retry` учитывает все ошибки.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class MyFailurePredicate implements RetryPredicate {
-
-        @Override
-        public String name() {
-            return "MyPredicate";
-        }
-
-        @Override
-        public boolean test(Throwable throwable) {
-            return true;
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class MyFailurePredicate : RetryPredicate {
-
-        override fun name(): String = "MyPredicate"
-
-        override fun test(throwable: Throwable): Boolean = true
-    }
-    ```
-
-Конфигурация:
+Секция, на которую указывает `@RetrySpec`, описана в классе `RetryConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -492,13 +557,19 @@ agent:
     resilient {
         retry {
             custom {
-                failurePredicateName = "MyPredicate" //(1)!
+                delay = "100ms" //(1)!
+                attempts = 2 //(2)!
+                delayStep = "100ms" //(3)!
+                enabled = true //(4)!
             }
         }
     }
     ```
-    
-    1. Имя фильтра исключений из `RetryPredicate#name()` (по умолчанию учитываются все ошибки).
+
+    1.  Начальная задержка перед повторным вызовом (обязательное, без значения по умолчанию).
+    2.  Количество повторных попыток (обязательное, без значения по умолчанию).
+    3.  Приращение задержки для последующих попыток; игнорируется, если задана секция `backoff` (по умолчанию: `0`).
+    4.  Включение или отключение `Retry` (по умолчанию: `true`).
 
 === ":simple-yaml: `YAML`"
 
@@ -506,15 +577,204 @@ agent:
     resilient:
       retry:
         custom:
-          failurePredicateName: "MyPredicate" #(1)!
+          delay: "100ms" #(1)!
+          attempts: 2 #(2)!
+          delayStep: "100ms" #(3)!
+          enabled: true #(4)!
     ```
 
-    1. Имя фильтра исключений из `RetryPredicate#name()` (по умолчанию учитываются все ошибки).
+    1.  Начальная задержка перед повторным вызовом (обязательное, без значения по умолчанию).
+    2.  Количество повторных попыток (обязательное, без значения по умолчанию).
+    3.  Приращение задержки для последующих попыток; игнорируется, если задана секция `backoff` (по умолчанию: `0`).
+    4.  Включение или отключение `Retry` (по умолчанию: `true`).
+
+Необязательные секции `backoff`, `jitter` и `retryBudget` описаны в разделах [Backoff и jitter](#retry-backoff) и
+[Бюджет повторов](#retry-budget), а ключ `telemetry` переопределяет настройки из раздела [Телеметрия](#telemetry).
+
+!!! warning "Ограничения и рост задержки"
+
+    `delay` и `attempts` обязательны, без них приложение не стартует.
+    `attempts` считает повторы **после** первоначального вызова, поэтому `attempts = 2` допускает до `3` выполнений суммарно,
+    а `attempts = 0` превращает аспект в прозрачный проброс.
+    Без секции `backoff` каждый повтор ждёт на `delayStep` (по умолчанию `0`) дольше предыдущего, то есть задержки составляют
+    `delay`, `delay + delayStep`, `delay + 2·delayStep`, … .
+
+!!! note
+
+    Значение `enabled = false` превращает `@Retryable` в прозрачный проброс (метод выполняется один раз).
+    Когда попытки заканчиваются, бросается `RetryExhaustedException`, у которого `getCause()` — последний отказ,
+    а в подавленных (`suppressed`) исключениях лежат все предыдущие.
+
+### Backoff и jitter { #retry-backoff }
+
+Секция `backoff` заменяет линейный рост `delayStep` на экспоненциальный, а `jitter` разводит задержки параллельных
+вызовов, чтобы они не повторяли запрос синхронно:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        retry {
+            custom {
+                delay = "100ms"
+                attempts = 4
+                backoff {
+                    type = EXPONENTIAL //(1)!
+                    multiplier = 2.0 //(2)!
+                    delayMax = "5s" //(3)!
+                }
+                jitter {
+                    type = FULL //(4)!
+                    ratio = 1.0 //(5)!
+                }
+            }
+        }
+    }
+    ```
+
+    1.  Стратегия роста задержки; поддерживается единственное значение `EXPONENTIAL` (по умолчанию: `EXPONENTIAL`).
+    2.  Множитель, применяемый на каждой попытке, должен быть больше `0` (по умолчанию: `2.0`).
+    3.  Верхняя граница вычисленной задержки (опционально, по умолчанию не ограничена).
+    4.  Стратегия разброса: `NONE` отключает его, `FULL` рандомизирует задержку (по умолчанию: `NONE`).
+    5.  Доля вычисленной задержки, которая может быть вычтена, значение в диапазоне `0..1` (по умолчанию: `1.0`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      retry:
+        custom:
+          delay: "100ms"
+          attempts: 4
+          backoff:
+            type: EXPONENTIAL #(1)!
+            multiplier: 2.0 #(2)!
+            delayMax: "5s" #(3)!
+          jitter:
+            type: FULL #(4)!
+            ratio: 1.0 #(5)!
+    ```
+
+    1.  Стратегия роста задержки; поддерживается единственное значение `EXPONENTIAL` (по умолчанию: `EXPONENTIAL`).
+    2.  Множитель, применяемый на каждой попытке, должен быть больше `0` (по умолчанию: `2.0`).
+    3.  Верхняя граница вычисленной задержки (опционально, по умолчанию не ограничена).
+    4.  Стратегия разброса: `NONE` отключает его, `FULL` рандомизирует задержку (по умолчанию: `NONE`).
+    5.  Доля вычисленной задержки, которая может быть вычтена, значение в диапазоне `0..1` (по умолчанию: `1.0`).
+
+С приведёнными настройками вычисленная задержка для попытки `n` равна `delay * multiplier^(n-1)` и ограничена сверху `delayMax`:
+`100ms`, `200ms`, `400ms`, `800ms`. Затем jitter выбирает фактическую задержку равномерно из отрезка
+`[computed - computed * ratio, computed]`, поэтому `ratio = 1.0` означает любое значение от `0` до вычисленной задержки.
+
+### Бюджет повторов { #retry-budget }
+
+Бюджет повторов ограничивает, сколько дополнительной нагрузки могут создать повторы. Это ведро токенов: каждый повтор
+забирает один токен, каждый успешный вызов возвращает `ratio` токенов, а когда ведро пусто, повтор запрещается и исходное
+исключение пробрасывается как есть — без ожидания и без `RetryExhaustedException`.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        retry {
+            custom {
+                delay = "100ms"
+                attempts = 3
+                retryBudget {
+                    enabled = true //(1)!
+                    ratio = 0.1 //(2)!
+                    tokensMax = 100 //(3)!
+                    tokensInitial = 10 //(4)!
+                    minTokensPerSecond = 0.0 //(5)!
+                }
+            }
+        }
+    }
+    ```
+
+    1.  Включение или отключение бюджета (по умолчанию: `true`).
+    2.  Сколько токенов добавляет успешный вызов — `0.1` разрешает примерно один повтор на десять успешных вызовов (по умолчанию: `0.1`).
+    3.  Верхняя граница ведра (по умолчанию: `100`).
+    4.  Начальное количество токенов, не должно превышать `tokensMax` (по умолчанию: `10`).
+    5.  Гарантированная скорость пополнения, которая работает даже без успешных вызовов (по умолчанию: `0.0`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      retry:
+        custom:
+          delay: "100ms"
+          attempts: 3
+          retryBudget:
+            enabled: true #(1)!
+            ratio: 0.1 #(2)!
+            tokensMax: 100 #(3)!
+            tokensInitial: 10 #(4)!
+            minTokensPerSecond: 0.0 #(5)!
+    ```
+
+    1.  Включение или отключение бюджета (по умолчанию: `true`).
+    2.  Сколько токенов добавляет успешный вызов — `0.1` разрешает примерно один повтор на десять успешных вызовов (по умолчанию: `0.1`).
+    3.  Верхняя граница ведра (по умолчанию: `100`).
+    4.  Начальное количество токенов, не должно превышать `tokensMax` (по умолчанию: `10`).
+    5.  Гарантированная скорость пополнения, которая работает даже без успешных вызовов (по умолчанию: `0.0`).
+
+!!! note
+
+    Бюджет выключен, пока секция `retryBudget` не объявлена. Объявление её с `enabled = false` также оставляет бюджет выключенным.
+
+### Фильтрация исключений { #exception-filtering-2 }
+
+По умолчанию `Retry` повторяет вызов при любой ошибке, а два способа это сузить повторяют подход
+[circuit breaker](#exception-filtering): переопределить `isFailure` в спецификации либо зарегистрировать компонент
+`RetryPredicate` с тегом спецификации. Если есть оба, побеждает компонент с тегом.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @RetrySpec("resilient.retry.custom")
+    public interface CustomRetry extends Retry {
+
+        @Override
+        default boolean isFailure(Throwable throwable) {
+            return throwable instanceof IOException;
+        }
+    }
+
+    @Tag(CustomRetry.class)
+    @Component
+    public final class MyRetryPredicate implements RetryPredicate {
+
+        @Override
+        public boolean isRetryFailure(Throwable throwable) {
+            return throwable instanceof IOException;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @RetrySpec("resilient.retry.custom")
+    interface CustomRetry : Retry {
+
+        override fun isFailure(throwable: Throwable): Boolean = throwable is IOException
+    }
+
+    @Tag(CustomRetry::class)
+    @Component
+    class MyRetryPredicate : RetryPredicate {
+
+        override fun isRetryFailure(throwable: Throwable): Boolean = throwable is IOException
+    }
+    ```
+
+Исключение, отклонённое фильтром, пробрасывается сразу — без дальнейших попыток и без оборачивания в
+`RetryExhaustedException`.
 
 ### Императивное использование { #imperative-usage-2 }
 
-Повторитель можно использовать в императивном коде: внедрите `RetryManager`
-и получите из него `Retry` по имени конфигурации, которое было бы указано в аннотации:
+Внедрите интерфейс спецификации и вызывайте его напрямую:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -522,14 +782,13 @@ agent:
     @Component
     public final class SomeService {
 
-        private final RetryManager manager;
+        private final CustomRetry retry;
 
-        public SomeService(RetryManager manager) {
-            this.manager = manager;
+        public SomeService(CustomRetry retry) {
+            this.retry = retry;
         }
 
         public String doWork() {
-            var retry = manager.get("custom");
             return retry.retry(this::doSomeWork);
         }
 
@@ -543,11 +802,10 @@ agent:
 
     ```kotlin
     @Component
-    class SomeService(private val manager: RetryManager) {
+    class SomeService(private val retry: CustomRetry) {
 
         fun doWork(): String {
-            val retry = manager["custom"]
-            return retry.retry<String, RuntimeException> { doSomeWork() }
+            return retry.retry(ThrowableCallable { doSomeWork() })
         }
 
         private fun doSomeWork(): String {
@@ -556,41 +814,38 @@ agent:
     }
     ```
 
-Чтобы вернуть резервное значение вместо выбрасывания `RetryExhaustedException`, когда все попытки исчерпаны, передайте второй `Supplier`:
+Чтобы после исчерпания всех попыток вернуть резервное значение вместо `RetryExhaustedException`, передайте второй callable:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var retry = manager.get("custom");
     return retry.retry(this::doSomeWork, () -> "fallback");
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val retry = manager["custom"]
-    return retry.retry<String, RuntimeException>({ doSomeWork() }, { "fallback" })
+    return retry.retry(ThrowableCallable { doSomeWork() }, ThrowableCallable { "fallback" })
     ```
 
-Для асинхронного императивного кода есть перегрузка, которая повторяет `Supplier<CompletionStage<T>>` и возвращает `CompletionStage<T>`, планируя каждую попытку после настроенной задержки без блокировки вызывающего потока.
+Для асинхронного императивного кода есть перегрузка, которая повторяет `Supplier<CompletionStage<T>>` и возвращает `CompletionStage<T>`, планируя каждую попытку после настроенной задержки и не блокируя вызывающий поток.
 
 #### Ручное управление состоянием повтора { #manual-retry-state }
 
-Для полного контроля над циклом повторов используйте `retry.asState()`, который возвращает `RetryState`.
-Он реализует `AutoCloseable`, поэтому оберните его в try-with-resources (Java) или `use` (Kotlin), чтобы записать метрики по завершении.
-При каждом перехваченном исключении вызывайте `onException(Throwable)`, который возвращает `RetryStatus`:
+Для полного контроля над циклом повторов используйте `retry.asState()`, возвращающий `Retry.RetryState`.
+Он реализует `AutoCloseable`, поэтому оборачивайте его в try-with-resources (Java) или `use` (Kotlin), чтобы метрики записались по завершении.
+На каждое пойманное исключение вызывайте `onException(Throwable)`, который возвращает `RetryStatus`:
 
-- `ACCEPTED` — разрешена еще одна попытка; вызовите `doDelay()` (блокирует на время текущей задержки) и повторите.
-- `REJECTED` — исключение отклонено `RetryPredicate` и не должно повторяться; пробросьте его.
-- `EXHAUSTED` — все попытки исчерпаны; выбросьте `RetryExhaustedException` (или вернитесь к значению по умолчанию).
+- `ACCEPTED` — очередная попытка разрешена; вызовите `doDelay()` (блокирует на текущую задержку) и повторите вызов.
+- `REJECTED` — исключение отклонено фильтром либо [бюджет повторов](#retry-budget) исчерпан, повторять нельзя; пробросьте его дальше.
+- `EXHAUSTED` — все попытки израсходованы; бросьте `RetryExhaustedException` (или верните значение по умолчанию).
 
-`getAttempts()` / `getAttemptsMax()` сообщают о прогрессе, а `getDelayNanos()` возвращает следующую задержку.
+`getAttempts()` / `getAttemptsMax()` показывают прогресс, а `getDelayNanos()` возвращает следующую задержку.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public String doWork() {
-        var retry = manager.get("custom");
         try (var state = retry.asState()) {
             while (true) {
                 try {
@@ -611,7 +866,6 @@ agent:
 
     ```kotlin
     fun doWork(): String {
-        val retry = manager["custom"]
         retry.asState().use { state ->
             while (true) {
                 try {
@@ -630,19 +884,24 @@ agent:
 
 ## Timeout { #timeout }
 
-`Timeout` задает максимальное время выполнения аннотированного метода.
+`Timeout` задаёт максимальное время выполнения аннотированного метода.
+Синхронные методы выполняются на виртуальном потоке и прерываются по достижении лимита, а для Kotlin `suspend`-функций
+корутина отменяется через `withTimeout`.
 
 ### Декларативное использование { #declarative-usage-3 }
 
-Если метод не завершается в пределах `duration`, вызов завершается с `TimeoutExhaustedException`.
+Если метод не завершается в пределах `duration`, вызов падает с `TimeoutExhaustedException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @TimeoutSpec("resilient.timeout.custom")
+    public interface CustomTimeouter extends Timeouter { }
+
     @Component
     public class SomeService {
 
-        @Timeout("custom")
+        @Timeout(CustomTimeouter.class)
         public String getValue() {
             try {
                 Thread.sleep(3000);
@@ -657,11 +916,14 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @TimeoutSpec("resilient.timeout.custom")
+    interface CustomTimeouter : Timeouter
+
     @Component
     open class SomeService {
 
-        @Timeout("custom")
-        fun value(): String = try {
+        @Timeout(CustomTimeouter::class)
+        open fun value(): String = try {
             Thread.sleep(3000)
             "OK"
         } catch (e: InterruptedException) {
@@ -672,19 +934,14 @@ agent:
 
 ### Конфигурация { #configuration-3 }
 
-Существует конфигурация `default`, которая применяется к Timeout при его создании,
-после чего именованные настройки конкретного Timeout применяются поверх настроек по умолчанию.
-
-Настройки по умолчанию можно изменить сразу для всех Timeout, изменив конфигурацию `default`.
-
-Пример полной конфигурации, описанной в классе `TimeoutConfig` (указаны значения по умолчанию или примерные значения):
+Секция, на которую указывает `@TimeoutSpec`, описана в классе `TimeoutConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     resilient {
         timeout {
-            default {
+            custom {
                 duration = "1s" //(1)!
                 enabled = true //(2)!
             }
@@ -692,7 +949,7 @@ agent:
     }
     ```
 
-    1.  Ограничение времени операции, по превышении которого будет выброшено `TimeoutExhaustedException` (`required`, значение по умолчанию не задано).
+    1.  Ограничение времени операции, по истечении которого будет брошено `TimeoutExhaustedException` (обязательное, без значения по умолчанию).
     2.  Включение или отключение `Timeout` (по умолчанию: `true`).
 
 === ":simple-yaml: `YAML`"
@@ -700,23 +957,25 @@ agent:
     ```yaml
     resilient:
       timeout:
-        default:
+        custom:
           duration: "1s" #(1)!
           enabled: true #(2)!
     ```
 
-    1.  Ограничение времени операции, по превышении которого будет выброшено `TimeoutExhaustedException` (`required`, значение по умолчанию не задано).
+    1.  Ограничение времени операции, по истечении которого будет брошено `TimeoutExhaustedException` (обязательное, без значения по умолчанию).
     2.  Включение или отключение `Timeout` (по умолчанию: `true`).
 
-!!! note "Примечание"
+Ключ `telemetry` внутри той же секции переопределяет общемодульные настройки из раздела [Телеметрия](#telemetry).
 
-    `duration` обязателен (берется из именованной или `default` конфигурации), и без него запуск завершается ошибкой.
-    Установка `enabled = false` превращает `@Timeout` в прозрачный проброс — метод выполняется без ограничения по времени.
+!!! note
+
+    `duration` обязателен, без него приложение не стартует.
+    Значение `enabled = false` превращает `@Timeout` в прозрачный проброс — метод выполняется без ограничения времени.
+    Исключение, брошенное методом до истечения лимита, пробрасывается без изменений, включая проверяемые исключения.
 
 ### Императивное использование { #imperative-usage-3 }
 
-Ограничитель времени можно использовать в императивном коде: внедрите `TimeoutManager`
-и получите из него `Timeout` по имени конфигурации, которое было бы указано в аннотации:
+Внедрите интерфейс спецификации и вызывайте его напрямую:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -724,15 +983,14 @@ agent:
     @Component
     public final class SomeService {
 
-        private final TimeoutManager manager;
+        private final CustomTimeouter timeouter;
 
-        public SomeService(TimeoutManager manager) {
-            this.manager = manager;
+        public SomeService(CustomTimeouter timeouter) {
+            this.timeouter = timeouter;
         }
 
         public String doWork() {
-            var timeout = manager.get("custom");
-            return timeout.execute(this::doSomeWork);
+            return timeouter.execute(this::doSomeWork);
         }
 
         private String doSomeWork() {
@@ -745,11 +1003,10 @@ agent:
 
     ```kotlin
     @Component
-    class SomeService(private val manager: TimeoutManager) {
+    class SomeService(private val timeouter: CustomTimeouter) {
 
         fun doWork(): String {
-            val timeout = manager["custom"]
-            return timeout.execute<String> { doSomeWork() }
+            return timeouter.execute(ThrowableCallable { doSomeWork() })
         }
 
         private fun doSomeWork(): String {
@@ -758,29 +1015,178 @@ agent:
     }
     ```
 
-`Timeout` также предоставляет `execute(Runnable)` для операций, ничего не возвращающих, а `timeout()` возвращает настроенную `Duration`:
+У `Timeouter` также есть перегрузка `execute` для операций, ничего не возвращающих, а `timeout()` возвращает настроенный `Duration`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var timeout = manager.get("custom");
-    Duration limit = timeout.timeout();          // configured duration
-    timeout.execute(() -> { /* do some work */ }); // Runnable variant, throws TimeoutExhaustedException on timeout
+    Duration limit = timeouter.timeout();  // configured duration
+    timeouter.execute(this::cleanup);      // void operation, throws TimeoutExhaustedException on timeout
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val timeout = manager["custom"]
-    val limit: Duration = timeout.timeout()            // configured duration
-    timeout.execute(Runnable { /* do some work */ })   // Runnable variant, throws TimeoutExhaustedException on timeout
+    val limit: Duration = timeouter.timeout()           // configured duration
+    timeouter.execute(ThrowableRunnable { cleanup() })  // void operation, throws TimeoutExhaustedException on timeout
     ```
+
+## RateLimiter { #ratelimiter }
+
+`RateLimiter` ограничивает, сколько раз метод может быть вызван за период. Ограничитель работает как счётчик с
+фиксированным окном: он выдаёт `limitForPeriod` разрешений, а счётчик восстанавливается до этого значения на первом вызове
+после того, как прошёл `limitRefreshPeriod`. Получение разрешения никогда не блокирует — вызов, для которого разрешений
+не осталось, сразу падает с `RateLimitExceededException`.
+
+### Декларативное использование { #declarative-usage-5 }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @RateLimiterSpec("resilient.ratelimiter.custom")
+    public interface CustomRateLimiter extends RateLimiter { }
+
+    @Component
+    public class SomeService {
+
+        @RateLimited(CustomRateLimiter.class)
+        public String getValue() {
+            return "OK";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @RateLimiterSpec("resilient.ratelimiter.custom")
+    interface CustomRateLimiter : RateLimiter
+
+    @Component
+    open class SomeService {
+
+        @RateLimited(CustomRateLimiter::class)
+        open fun value(): String = "OK"
+    }
+    ```
+
+### Конфигурация { #configuration-5 }
+
+Секция, на которую указывает `@RateLimiterSpec`, описана в классе `RateLimiterConfig`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        ratelimiter {
+            custom {
+                limitForPeriod = 100 //(1)!
+                limitRefreshPeriod = "1s" //(2)!
+                enabled = true //(3)!
+            }
+        }
+    }
+    ```
+
+    1.  Количество вызовов, разрешённых в пределах одного периода (обязательное, без значения по умолчанию).
+    2.  Длительность периода, по истечении которого разрешения восстанавливаются (обязательное, без значения по умолчанию).
+    3.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      ratelimiter:
+        custom:
+          limitForPeriod: 100 #(1)!
+          limitRefreshPeriod: "1s" #(2)!
+          enabled: true #(3)!
+    ```
+
+    1.  Количество вызовов, разрешённых в пределах одного периода (обязательное, без значения по умолчанию).
+    2.  Длительность периода, по истечении которого разрешения восстанавливаются (обязательное, без значения по умолчанию).
+    3.  Включение или отключение `RateLimiter` (по умолчанию: `true`).
+
+Ключ `telemetry` внутри той же секции переопределяет общемодульные настройки из раздела [Телеметрия](#telemetry).
+
+!!! note
+
+    Значение `enabled = false` превращает `@RateLimited` в прозрачный проброс — разрешается любой вызов.
+    Ограничитель работает в пределах одного экземпляра приложения: при нескольких репликах фактический лимит равен `limitForPeriod`, умноженному на число реплик.
+
+### Императивное использование { #imperative-usage-5 }
+
+Внедрите интерфейс спецификации и вызывайте его напрямую:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeService {
+
+        private final CustomRateLimiter rateLimiter;
+
+        public SomeService(CustomRateLimiter rateLimiter) {
+            this.rateLimiter = rateLimiter;
+        }
+
+        public String doWork() {
+            return rateLimiter.execute(this::doSomeWork); //(1)!
+        }
+
+        public boolean doWorkIfPermitted() {
+            if (!rateLimiter.tryAcquire()) { //(2)!
+                return false;
+            }
+            doSomeWork();
+            return true;
+        }
+
+        private String doSomeWork() {
+            // do some work
+        }
+    }
+    ```
+
+    1.  Получает разрешение и выполняет операцию, бросая `RateLimitExceededException`, когда лимит исчерпан.
+    2.  Вариант без исключения: возвращает `false` вместо ошибки.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(private val rateLimiter: CustomRateLimiter) {
+
+        fun doWork(): String {
+            return rateLimiter.execute(ThrowableCallable { doSomeWork() }) //(1)!
+        }
+
+        fun doWorkIfPermitted(): Boolean {
+            if (!rateLimiter.tryAcquire()) { //(2)!
+                return false
+            }
+            doSomeWork()
+            return true
+        }
+
+        private fun doSomeWork(): String {
+            // do some work
+        }
+    }
+    ```
+
+    1.  Получает разрешение и выполняет операцию, бросая `RateLimitExceededException`, когда лимит исчерпан.
+    2.  Вариант без исключения: возвращает `false` вместо ошибки.
+
+`acquire()` забирает разрешение, ничего не выполняя, и бросает `RateLimitExceededException`, когда разрешений не осталось.
 
 ## Fallback { #fallback }
 
-`Fallback` позволяет указать метод, который будет вызван, когда исключение, выброшенное аннотированным методом, попадает под настроенные фильтры (`FallbackPredicate`).
+`Fallback` указывает метод, который будет вызван при сбое аннотированного метода.
+В отличие от остальных механизмов у него нет ни интерфейса-спецификации, ни собственной секции конфигурации: весь контракт —
+это сам резервный метод.
 
-Резервный метод **должен совпадать** по типу возвращаемого значения с аннотированным методом.
+Резервный метод **обязан совпадать** по типу возвращаемого значения с аннотированным методом и **должен быть объявлен в том же классе**.
 
 ### Декларативное использование { #declarative-usage-4 }
 
@@ -792,7 +1198,7 @@ agent:
     @Component
     public class SomeService {
 
-        @Fallback(value = "custom", method = "getFallback()")
+        @Fallback(method = "getFallback()")
         public String getValue() {
             return "value";
         }
@@ -809,14 +1215,14 @@ agent:
     @Component
     open class SomeService {
 
-        @Fallback(value = "custom", method = "getFallback()")
-        fun value(): String = "value"
+        @Fallback(method = "getFallback()")
+        open fun value(): String = "value"
 
         fun getFallback(): String = "fallback"
     }
     ```
 
-Пример для *Fallback* с аргументами:
+Пример *Fallback* с аргументами:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -824,7 +1230,7 @@ agent:
     @Component
     public class SomeService {
 
-        @Fallback(value = "custom", method = "getFallback(arg3, arg1)")     // Passes the arguments of the annotated method in the specified order to the Fallback method
+        @Fallback(method = "getFallback(arg3, arg1)")     // Passes the arguments of the annotated method in the specified order to the Fallback method
         public String getValue(String arg1, Integer arg2, Long arg3) {
             return "value";
         }
@@ -842,177 +1248,25 @@ agent:
     open class SomeService {
 
         // Passes the arguments of the annotated method in the specified order to the Fallback method
-        @Fallback(value = "custom", method = "getFallback(arg3, arg1)")
-        fun getValue(arg1: String, arg2: Int, arg3: Long): String = "value"
+        @Fallback(method = "getFallback(arg3, arg1)")
+        open fun getValue(arg1: String, arg2: Int, arg3: Long): String = "value"
 
         fun getFallback(argLong: Long, argString: String): String = "fallback"
     }
     ```
 
-### Конфигурация { #configuration-4 }
+Ссылка проверяется на этапе компиляции. Типичные ошибки:
 
-Существует конфигурация `default`, которая применяется к Fallback при создании,
-после чего именованные настройки конкретного Fallback применяются поверх настроек по умолчанию.
-
-Настройки по умолчанию можно изменить сразу для всех Fallback, изменив конфигурацию `default`.
-
-Пример полной конфигурации, описанной в классе `FallbackConfig` (указаны значения по умолчанию или примерные значения):
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    resilient {
-        fallback {
-            custom {
-                failurePredicateName = "MyPredicate" //(1)!
-                enabled = true //(2)!
-            }
-        }
-    }
-    ```
-
-    1. Имя фильтра исключений из `FallbackPredicate#name()` (по умолчанию учитываются все ошибки).
-    2. Включение или отключение `Fallback` (по умолчанию: `true`).
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    resilient:
-      fallback:
-        custom:
-          failurePredicateName: "MyPredicate" #(1)!
-          enabled: true #(2)!
-    ```
-
-    1. Имя фильтра исключений из `FallbackPredicate#name()` (по умолчанию учитываются все ошибки).
-    2. Включение или отключение `Fallback` (по умолчанию: `true`).
-
-!!! note "Примечание"
-
-    В отличие от других аспектов, у `@Fallback` нет обязательных свойств — без конфигурации он использует значения по умолчанию.
-    Установка `enabled = false` отключает резервный вариант, так что исходное исключение пробрасывается дальше.
-    `failurePredicateName` по умолчанию равен `KoraFallbackPredicate` (запускает резервный вариант при каждой ошибке); собственный `FallbackPredicate` может использоваться несколькими резервными вариантами через ссылку на его `name()`.
+- `@Fallback method reference '…' has invalid syntax` — значение должно иметь вид `name()` или `name(arg1, arg2)`.
+- `@Fallback method reference '…' uses unknown source arguments` — указан аргумент, которого нет у аннотированного метода.
+- `@Fallback method '…' was not found` — метода с таким именем нет в том же классе.
+- `@Fallback method '…' does not match requested signature` — резервный метод должен принимать ровно перечисленные аргументы плюс необязательный параметр `@Fallback.Reason`.
 
 ### Фильтрация исключений { #exception-filtering-3 }
 
-Чтобы задать, какие ошибки должны учитываться как ошибки Fallback, вы можете переопределить фильтр по умолчанию:
-необходимо реализовать `FallbackPredicate`, зарегистрировать свой компонент в контексте и указать в конфигурации Fallback его имя, возвращаемое методом `name()`.
-
-По умолчанию `Fallback` учитывает все ошибки.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class MyFailurePredicate implements FallbackPredicate {
-
-        @Override
-        public String name() {
-            return "MyPredicate";
-        }
-
-        @Override
-        public boolean test(Throwable throwable) {
-            return true;
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class MyFailurePredicate : FallbackPredicate {
-
-        override fun name(): String = "MyPredicate"
-
-        override fun test(throwable: Throwable): Boolean = true
-    }
-    ```
-
-### Императивное использование { #imperative-usage-4 }
-
-Резервный метод можно использовать в императивном коде: внедрите `FallbackManager`
-и получите из него `Fallback` по имени конфигурации, которое было бы указано в аннотации:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class SomeService {
-
-        private final FallbackManager manager;
-
-        public SomeService(FallbackManager manager) {
-            this.manager = manager;
-        }
-
-        public String doWork() {
-            var fallback = manager.get("custom");
-            return fallback.fallback(this::doSomeWork, () -> "BackupValue");
-        }
-
-        private String doSomeWork() {
-            // do some work
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService(private val manager: FallbackManager) {
-
-        fun doWork(): String {
-            val fallback = manager["custom"]
-            return fallback.fallback<String>({ doSomeWork() }) { "BackupValue" }
-        }
-
-        private fun doSomeWork(): String {
-            // do some work
-        }
-    }
-    ```
-
-Для операций, ничего не возвращающих, используйте перегрузку с `Runnable`; а `canFallback(Throwable)` сообщает, запустит ли заданное исключение резервный вариант согласно настроенному `FallbackPredicate`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    var fallback = manager.get("custom");
-
-    // canFallback tells whether the exception would trigger the fallback
-    if (fallback.canFallback(exception)) {
-        // exception matches the configured FallbackPredicate
-    }
-
-    // Runnable variant for operations that return nothing
-    fallback.fallback(
-        () -> { /* primary action */ },
-        () -> { /* fallback action */ });
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    val fallback = manager["custom"]
-
-    // canFallback tells whether the exception would trigger the fallback
-    if (fallback.canFallback(exception)) {
-        // exception matches the configured FallbackPredicate
-    }
-
-    // Runnable variant for operations that return nothing
-    fallback.fallback(Runnable { /* primary action */ }, Runnable { /* fallback action */ })
-    ```
-
-## Комбинирование { #combination }
-
-Все перечисленные выше аннотации можно комбинировать одновременно над одним методом.
-
-Порядок применения аннотаций зависит от порядка их объявления.
-Вы можете менять порядок по своему усмотрению и комбинировать с другими аннотациями, которые также применяются в порядке объявления.
+По умолчанию резервный метод вызывается на любой `Throwable`. Единственный параметр `@Fallback.Reason` в резервном методе
+одновременно передаёт вызвавшее фолбэк исключение и сужает условие срабатывания: исключение, не являющееся экземпляром
+объявленного типа параметра, пробрасывается дальше, а резервный метод не вызывается.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1020,18 +1274,144 @@ agent:
     @Component
     public class SomeService {
 
-        @Fallback(value = "default", method = "getFallback(arg1)")   // 4
-        @CircuitBreaker("default")                                   // 3
-        @Retry("default")                                            // 2
-        @Timeout("default")                                          // 1
+        @Fallback(method = "getFallback()")
+        public String getValue() {
+            throw new IllegalStateException("Ops");
+        }
+
+        protected String getFallback(@Fallback.Reason RuntimeException reason) { //(1)!
+            return "fallback: " + reason.getMessage();
+        }
+    }
+    ```
+
+    1.  Такой параметр допускается не более одного, и он не входит в список аргументов в `method = "..."`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    open class SomeService {
+
+        @Fallback(method = "getFallback()")
+        open fun value(): String = throw IllegalStateException("Ops")
+
+        fun getFallback(@Fallback.Reason reason: RuntimeException): String = //(1)!
+            "fallback: " + reason.message
+    }
+    ```
+
+    1.  Такой параметр допускается не более одного, и он не входит в список аргументов в `method = "..."`.
+
+В Java тип параметра должен соответствовать тому, что может бросить аннотированный метод: `RuntimeException`, если у него
+нет `throws`, `Exception`, если объявлены проверяемые исключения, и `Throwable`, если объявлено `throws Throwable`.
+Более узкий тип приводит к ошибке компиляции, поэтому для более тонкой фильтрации используйте обычную проверку `instanceof` внутри резервного метода.
+
+## Телеметрия { #telemetry }
+
+Логирование, метрики и трассировка настраиваются отдельно для каждого механизма в секции `resilient.telemetry`, а любая
+спецификация может переопределить общемодульные значения ключом `telemetry` внутри своей секции конфигурации:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    resilient {
+        telemetry {
+            circuitBreaker { //(1)!
+                logging.enabled = false //(2)!
+                metrics {
+                    enabled = false //(3)!
+                    tags { "service" = "pets" } //(4)!
+                }
+                tracing {
+                    enabled = false //(5)!
+                    attributes { "component" = "resilient" } //(6)!
+                }
+            }
+            retry {}
+            timeout {}
+            fallback {}
+            rateLimiter {}
+        }
+        circuitbreaker {
+            custom {
+                telemetry.metrics.enabled = true //(7)!
+            }
+        }
+    }
+    ```
+
+    1.  Секции: `circuitBreaker`, `retry`, `timeout`, `fallback`, `rateLimiter`.
+    2.  Включает логирование механизма (по умолчанию: `false`).
+    3.  Включает метрики механизма (по умолчанию: `false`).
+    4.  Дополнительные теги, добавляемые ко всем метрикам механизма (по умолчанию: пусто).
+    5.  Включает трассировку механизма (по умолчанию: `false`).
+    6.  Дополнительные атрибуты, добавляемые ко всем спанам механизма (по умолчанию: пусто).
+    7.  Переопределение для конкретной спецификации; незаданные ключи берутся из `resilient.telemetry`.
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    resilient:
+      telemetry:
+        circuitBreaker: #(1)!
+          logging:
+            enabled: false #(2)!
+          metrics:
+            enabled: false #(3)!
+            tags:
+              service: "pets" #(4)!
+          tracing:
+            enabled: false #(5)!
+            attributes:
+              component: "resilient" #(6)!
+        retry: {}
+        timeout: {}
+        fallback: {}
+        rateLimiter: {}
+      circuitbreaker:
+        custom:
+          telemetry:
+            metrics:
+              enabled: true #(7)!
+    ```
+
+    1.  Секции: `circuitBreaker`, `retry`, `timeout`, `fallback`, `rateLimiter`.
+    2.  Включает логирование механизма (по умолчанию: `false`).
+    3.  Включает метрики механизма (по умолчанию: `false`).
+    4.  Дополнительные теги, добавляемые ко всем метрикам механизма (по умолчанию: пусто).
+    5.  Включает трассировку механизма (по умолчанию: `false`).
+    6.  Дополнительные атрибуты, добавляемые ко всем спанам механизма (по умолчанию: пусто).
+    7.  Переопределение для конкретной спецификации; незаданные ключи берутся из `resilient.telemetry`.
+
+Весь блок `resilient.telemetry` необязателен — если его не указывать, все механизмы получат перечисленные значения по умолчанию.
+Имена метрик перечислены в разделе [Справочник метрик](metrics.md#resilience).
+
+## Комбинирование { #combination }
+
+Все перечисленные аннотации можно комбинировать одновременно над одним методом.
+
+Порядок применения аннотаций зависит от порядка их объявления.
+Порядок можно менять как угодно и сочетать с другими аннотациями, которые также применяются в порядке объявления.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public class SomeService {
+
+        @Fallback(method = "getFallback(arg1)")           // 4
+        @CircuitBreakable(CustomCircuitBreaker.class)     // 3
+        @Retryable(CustomRetry.class)                     // 2
+        @Timeout(CustomTimeouter.class)                   // 1
         public String getValueSync(String arg1) {
             return "result-" + arg1;
         }
 
-        protected String getFallback(String arg1) {                  // 4
+        protected String getFallback(String arg1) {       // 4
             return "fallback-" + arg1;
         }
-    }   
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1040,11 +1420,11 @@ agent:
     @Component
     open class SomeService {
 
-        @Fallback(value = "default", method = "getFallback(arg1)")          // 4
-        @CircuitBreaker("default")                                          // 3
-        @Retry("default")                                                   // 2
-        @Timeout("default")                                                 // 1
-        fun getValueSync(arg1: String): String = "result-$arg1"
+        @Fallback(method = "getFallback(arg1)")             // 4
+        @CircuitBreakable(CustomCircuitBreaker::class)      // 3
+        @Retryable(CustomRetry::class)                      // 2
+        @Timeout(CustomTimeouter::class)                    // 1
+        open fun getValueSync(arg1: String): String = "result-$arg1"
 
         protected fun getFallback(arg1: String): String = "fallback-$arg1"  // 4
     }
@@ -1052,12 +1432,13 @@ agent:
 
 В примере выше:
 
-1. Применяется `@Timeout` и проверяет, что метод не выполняется дольше времени, указанного в конфигурации.
-2. Применяется `@Retry` и пытается повторить выполнение метода настроенное число раз, если метод выбрасывает исключение в цепочке, включая исключение из `@Timeout`.
-3. Применяется `@CircuitBreaker` и работает согласно своей конфигурации и [состоянию](#circuitbreaker), в зависимости от успешного результата метода или исключения в цепочке, включая исключения из `@Timeout` и `@Retry`.
-4. Применяется `@Fallback` и вызывает метод `getFallback` с аргументом `arg1`, если метод выбрасывает исключение в цепочке, включая исключения из `@Timeout`, `@Retry` и `@CircuitBreaker`.
+1. Применяется `@Timeout` и проверяет, что метод не выполняется дольше указанного в конфигурации времени.
+2. Применяется `@Retryable` и повторяет выполнение метода настроенное число раз, если в цепочке возникло исключение, в том числе исключение от `@Timeout`.
+3. Применяется `@CircuitBreakable` и работает согласно своей конфигурации и [состоянию](#circuitbreaker), в зависимости от успешного результата метода или исключения в цепочке, включая исключения от `@Timeout` и `@Retryable`.
+4. Применяется `@Fallback` и вызывает метод `getFallback` с аргументом `arg1`, если в цепочке возникло исключение, включая исключения от `@Timeout`, `@Retryable` и `@CircuitBreakable`.
 
-Порядок вызова аспектов следует порядку аннотаций на методе: сверху вниз.
+Порядок вызова аспектов соответствует порядку аннотаций на методе: сверху вниз, то есть самая верхняя аннотация — самая внешняя обёртка.
+`@RateLimited` встраивается в ту же цепочку и обычно ставится выше `@CircuitBreakable`, чтобы отклонённые вызовы вообще не доходили до circuit breaker.
 
 Пример конфигурации для всех аспектов:
 
@@ -1066,8 +1447,9 @@ agent:
     ```javascript
     resilient {
         circuitbreaker {
-            default {
-                slidingWindowSize = 1
+            custom {
+                type = FIXED_WINDOW
+                countBased.windowSize = 1
                 minimumRequiredCalls = 1
                 failureRateThreshold = 100
                 permittedCallsInHalfOpenState = 1
@@ -1075,14 +1457,20 @@ agent:
             }
         }
         timeout {
-            default {
+            custom {
                 duration = "300ms"
             }
         }
         retry {
-            default {
+            custom {
                 delay = "100ms"
                 attempts = 2
+            }
+        }
+        ratelimiter {
+            custom {
+                limitForPeriod = 100
+                limitRefreshPeriod = "1s"
             }
         }
     }
@@ -1093,44 +1481,55 @@ agent:
     ```yaml
     resilient:
       circuitbreaker:
-        default:
-          slidingWindowSize: 1
+        custom:
+          type: FIXED_WINDOW
+          countBased:
+            windowSize: 1
           minimumRequiredCalls: 1
           failureRateThreshold: 100
           permittedCallsInHalfOpenState: 1
           waitDurationInOpenState: "1s"
       timeout:
-        default:
+        custom:
           duration: "300ms"
       retry:
-        default:
+        custom:
           delay: "100ms"
           attempts: 2
+      ratelimiter:
+        custom:
+          limitForPeriod: 100
+          limitRefreshPeriod: "1s"
     ```
 
 ## Исключения { #exceptions }
 
-Все исключения отказоустойчивости наследуются от `ru.tinkoff.kora.resilient.ResilientException` (это `RuntimeException`), который предоставляет `name()` — имя конфигурации аспекта, вызвавшего его.
+Все исключения отказоустойчивости наследуют `io.koraframework.resilient.exception.ResilientException` (наследник `RuntimeException`), который предоставляет `name()` — простое имя интерфейса-спецификации, вызвавшего ошибку.
 
-| Исключение                   | Выбрасывается                                                                                      | Дополнительный API                                                                       |
-|------------------------------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `ResilientException`         | базовый тип для всех перечисленных ниже                                                            | `name()`                                                                                 |
-| `CallNotPermittedException`  | `@CircuitBreaker` / `CircuitBreaker#acquire()`, когда прерыватель в `OPEN` либо в `HALF_OPEN` без оставшихся пробных вызовов | `state()` возвращает `CircuitBreaker.State` (`OPEN` / `HALF_OPEN`)                        |
-| `RetryExhaustedException`    | `@Retry` / `Retry#retry(...)`, когда каждая попытка завершилась неудачей                           | `name()`; в сообщении указано число попыток, последний сбой доступен через `getCause()`  |
-| `TimeoutExhaustedException`  | `@Timeout` / `Timeout#execute(...)`, когда метод превышает `duration`                              | `name()`                                                                                  |
+| Исключение                   | Кем бросается                                                                                                     | Дополнительный API                                                                       |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `ResilientException`         | базовый тип для всех перечисленных ниже                                                                           | `name()`                                                                                 |
+| `CallNotPermittedException`  | `@CircuitBreakable` / `CircuitBreaker#acquire()`, когда состояние `OPEN` либо `HALF_OPEN` без оставшихся пробных вызовов | `state()` возвращает `CircuitBreaker.State` (`OPEN` / `HALF_OPEN`)                        |
+| `RetryExhaustedException`    | `@Retryable` / `Retry#retry(...)`, когда все попытки завершились неуспешно                                        | `name()`; в сообщении указано число попыток, последний отказ доступен через `getCause()`, предыдущие — в `suppressed` |
+| `TimeoutExhaustedException`  | `@Timeout` / `Timeouter#execute(...)`, когда метод превысил `duration`                                            | `name()`                                                                                  |
+| `RateLimitExceededException` | `@RateLimited` / `RateLimiter#acquire()`, когда в текущем периоде не осталось разрешений                          | `name()`                                                                                  |
+
+Каждое исключение лежит в подпакете `exception` своего механизма, например `io.koraframework.resilient.circuitbreaker.exception.CallNotPermittedException`.
 
 **Описание** — аспекты отказоустойчивости сигнализируют о сбое, выбрасывая одно из этих непроверяемых исключений из защищаемого метода.
 
 **Причины**
 
-- `CallNotPermittedException` — прерыватель размыкает вызовы, потому что доля сбоев достигла `failureRateThreshold`; вызов был отклонен без обращения к методу.
-- `RetryExhaustedException` — метод продолжал выбрасывать повторяемое исключение, пока не было достигнуто `attempts`; исходный сбой доступен через `getCause()`.
+- `CallNotPermittedException` — circuit breaker обрывает вызовы, потому что доля отказов достигла `failureRateThreshold`; вызов отклонён без обращения к методу.
+- `RetryExhaustedException` — метод продолжал бросать повторяемое исключение, пока не были исчерпаны `attempts`; исходная ошибка доступна через `getCause()`.
 - `TimeoutExhaustedException` — метод не завершился в пределах `duration`.
+- `RateLimitExceededException` — в текущем `limitRefreshPeriod` уже разрешено `limitForPeriod` вызовов.
 
 **Рекомендации**
 
-- Перехватывайте `ResilientException`, чтобы единообразно обрабатывать любой сбой отказоустойчивости, либо перехватывайте конкретный тип, когда обработка различается.
-- Когда аспекты [комбинируются](#combination), исключение нижележащего аспекта распространяется вверх по цепочке: например, `TimeoutExhaustedException` из `@Timeout` наблюдается `@Retry`, затем `@CircuitBreaker` и, наконец, `@Fallback`. Предпочитайте метод `@Fallback` или императивный резервный вариант превращению этих исключений в ошибки, видимые пользователю.
+- Ловите `ResilientException`, чтобы единообразно обрабатывать любой отказ механизмов, либо конкретный тип, когда обработка различается.
+- При [комбинировании](#combination) аспектов исключение нижележащего аспекта поднимается по цепочке: например, `TimeoutExhaustedException` от `@Timeout` увидит `@Retryable`, затем `@CircuitBreakable` и в конце `@Fallback`. Предпочтительнее обработать это методом `@Fallback` или императивным резервным значением, чем превращать в ошибку, видимую пользователю.
+- Исключение, отклонённое [фильтром](#exception-filtering), пробрасывается как есть и никогда не оборачивается, поэтому вызывающий код видит исходный тип.
 
 Пример обработки:
 
@@ -1142,7 +1541,7 @@ agent:
     } catch (CallNotPermittedException e) {
         log.warn("CircuitBreaker '{}' is {}", e.name(), e.state());
         return cachedValue();
-    } catch (TimeoutExhaustedException | RetryExhaustedException e) {
+    } catch (TimeoutExhaustedException | RetryExhaustedException | RateLimitExceededException e) {
         log.warn("Resilient '{}' failed", e.name(), e);
         return cachedValue();
     }
@@ -1156,7 +1555,7 @@ agent:
     } catch (e: CallNotPermittedException) {
         log.warn("CircuitBreaker '{}' is {}", e.name(), e.state())
         return cachedValue()
-    } catch (e: ResilientException) { // TimeoutExhaustedException, RetryExhaustedException, ...
+    } catch (e: ResilientException) { // TimeoutExhaustedException, RetryExhaustedException, RateLimitExceededException, ...
         log.warn("Resilient '{}' failed", e.name(), e)
         return cachedValue()
     }
@@ -1164,28 +1563,31 @@ agent:
 
 ## Сигнатуры { #signatures }
 
-Доступные сигнатуры методов, поддерживаемые этими аннотациями «из коробки»:
-Все четыре аннотации поддерживают обычные синхронные методы, асинхронные типы и реактивные типы, но фактический набор зависит от языка и обработчика.
+Доступные сигнатуры методов, которые поддерживают эти аннотации из коробки.
+Реактивные типы возвращаемого значения (`Mono`, `Flux` и любой другой `Publisher`) не поддерживаются ни одним из аспектов отказоустойчивости.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Класс должен быть не `final`, чтобы аспекты работали.
 
-    `T` обозначает тип возвращаемого значения.
+    Под `T` подразумевается тип возвращаемого значения.
 
     - `void myMethod()`
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` / `CompletableFuture<T> myMethod()` ([CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html))
-    - `Mono<T> myMethod()` ([Project Reactor](https://projectreactor.io/docs/core/release/reference/), требуется [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Flux<T> myMethod()` ([Project Reactor](https://projectreactor.io/docs/core/release/reference/), требуется [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` / `CompletableFuture<T> myMethod()` ([CompletionStage](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/CompletionStage.html)) — поддерживается всеми аннотациями, кроме `@RateLimited`
 
 === ":simple-kotlin: `Kotlin`"
 
     Класс должен быть `open`, чтобы аспекты работали.
 
-    Под `T` понимается тип возвращаемого значения, либо `T?`, либо `Unit`.
+    Под `T` подразумевается тип возвращаемого значения, либо `T?`, либо `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), требуется [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
-    - `myMethod(): Flow<T>` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), требуется [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `suspend myMethod(): T` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), требует [зависимости](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): Flow<T>` ([Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine), требует [зависимости](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+
+    `CompletionStage` и `CompletableFuture` в Kotlin не поддерживаются — используйте `suspend`.
+
+Применение аспекта к неподдерживаемому типу возвращаемого значения приводит к ошибке компиляции вида
+`@Retryable cannot be applied to '…' because return type '…' is not supported by this aspect`.

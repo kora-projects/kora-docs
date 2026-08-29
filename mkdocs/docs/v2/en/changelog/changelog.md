@@ -68,9 +68,9 @@ Fixed:
 
 Added:
 
-- Added telemetry config tracing `attributes` and metrics `tags` options 
+- Added telemetry config tracing `attributes` and metrics `tags` options
 - Added `ConfigWatcher` tracks `HOCON` include files
-  
+
 Fixed:
 
 - Fixed OpenAPI generator `FormMultipart` request mappers for multiple parts same name for server & client
@@ -84,23 +84,23 @@ Added:
 
 - Added support for `null` keys and added more key & value mappers for Redis Cache
 - Added OpenAPI generator server validation interceptor disabling option
-- Added Swagger UI `OAuth2` redirect page support 
+- Added Swagger UI `OAuth2` redirect page support
 - Added partial support for OpenAPI 3.1.x version in Swagger UI
 
 Fixed:
 
 - Fixed `ConfigParser` generator working for empty interfaces with super types
-- Fixed Kotlin `R2dbcTypesExtension.kt` for type extraction 
+- Fixed Kotlin `R2dbcTypesExtension.kt` for type extraction
 - Fixed and reinforced `GraalVM` configs
 - Fixed `@Log` mark `AopAnnotation` only for supported ones
-- Fixed `R2DBC` and `Vertx` Kotlin issues 
+- Fixed `R2DBC` and `Vertx` Kotlin issues
 
 ### 1.2.14
 
 Fixed:
 
 - Fixed HTTP client and Database repository parent interfaces search for AOP methods
-- Fixed correct Redis cache `mappingFunction` and `null` restricted key handling 
+- Fixed correct Redis cache `mappingFunction` and `null` restricted key handling
 - Fixed Cache super interfaces search for implementation
 - Fixed JUnit test extension graph cleanup in `afterAll` for `@Nested` test classes with `PER_METHOD` initialization
 
@@ -193,9 +193,9 @@ Added:
 - Added logging `@Mdc` annotation aspect
 - Added OpenAPI generator HTTP client [multiple auth specification](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) support via [config option](../documentation/openapi-codegen.md#client)
 - Added `ProgrammaticDriverConfigLoaderBuilder` to `CassandraConfigurer` config option
-- Added Camunda BPMN Rest `CORS` support 
+- Added Camunda BPMN Rest `CORS` support
 - Added Camunda BPMN engine virtual thread executor and `preconfigure` option
-- Restored `OkHttpClient` option `retryOnConnectionFailure#true` by default 
+- Restored `OkHttpClient` option `retryOnConnectionFailure#true` by default
 - Improved annotation processing errors message output
 
 Fixed:
@@ -204,12 +204,12 @@ Fixed:
 - Fixed `AbstractRedisCache#invalidateAll` proper behavior to evict only cache specific keys (slower performance)
 - Fixed database query parameter substitution when prefix matched other parameter
 - Fixed `@KafkaListener` generated factory handler missing `@Tag` annotation
-- Fixed `Caffeine` cache tracing by disabling it cause useless 
+- Fixed `Caffeine` cache tracing by disabling it cause useless
 - Fixed `AwsS3ObjectMeta` NPE when missing size response parameter
-- Fixed config `Collection<T>` empty string value incorrectly treated not as empty collection 
+- Fixed config `Collection<T>` empty string value incorrectly treated not as empty collection
 - Fixed `@Mapping` should work with abstract class implementations
 - Fixed OpenAPI generator `filterWithModel` for requests section
-- Fixed OpenAPI HTTP Client auth parameter as argument extract name 
+- Fixed OpenAPI HTTP Client auth parameter as argument extract name
 - Fixed Camunda REST request body reading for POST requests
 - Fixed HTTP Client `@CodeMapper` signature matching for complex generic types
 - Fixed `@Component` and `@Root` for HttpClient and Repository testing generated graph
@@ -224,22 +224,22 @@ Added:
 
 Fixed:
 
-- Fixed Resilient `CircuitBreaker` incorrect release when ignored exceptions in `HALF_OPEN` state 
+- Fixed Resilient `CircuitBreaker` incorrect release when ignored exceptions in `HALF_OPEN` state
 - Fixed HTTP Client encode space char in `@Path` param as `%20` symbol
-- Fixed incorrect `@ScheduleWithCron` job `Quartz` execution at startup 
-- Fixed OpenAPI generator `forceIncludeOptional` missing `@JsonInclude(ALWAYS)` for Kotlin 
+- Fixed incorrect `@ScheduleWithCron` job `Quartz` execution at startup
+- Fixed OpenAPI generator `forceIncludeOptional` missing `@JsonInclude(ALWAYS)` for Kotlin
 
 ### 1.2.3
 
-Added: 
+Added:
 
-- Added `ConsumerRecordWrapper#unwrap` for accessing original record 
+- Added `ConsumerRecordWrapper#unwrap` for accessing original record
 
 Fixed:
 
 - Fixed `OkHttpClient` connection retry behavior disabled by default
 - Fixed database name propagation in tracing
-- Fixed `NPE` on `HttpServerResponseException.of` with empty message on throwable 
+- Fixed `NPE` on `HttpServerResponseException.of` with empty message on throwable
 - Fixed Resilient module `Retry` incorrect behavior on `disabled` and `attemptMax=0` in Kotlin
 - Fixed `HttpClientResponseMapper` resolution on `ResponseCodeMapper` annotation in Kotlin
 - Fixed OpenAPI generator loop cause `StackOverFlow` when check models for server `Validation`
@@ -252,17 +252,17 @@ Fixed:
 
 Added:
 
-- Added HTTP-server controller `@Tag` propagation support 
+- Added HTTP-server controller `@Tag` propagation support
 - Added `Redis` option `forceClusterClient` for single URI connection
 
 Fixed:
 
-- Fixed `Opentelemetry` gRPC exporter dependency for `OkHttp` client 
-- Fixed OpenAPI generator `Form` generation for `byte[]` args 
-- Fixed OpenAPI generator improve `discriminator` parent model 
-- Fixed OpenAPI generator `Validation` for inner models 
+- Fixed `Opentelemetry` gRPC exporter dependency for `OkHttp` client
+- Fixed OpenAPI generator `Form` generation for `byte[]` args
+- Fixed OpenAPI generator improve `discriminator` parent model
+- Fixed OpenAPI generator `Validation` for inner models
 - Fixed OpenAPI generator `Kotlin` nullable items
-- Fixed `Undertow` HttpServer check for `Virtual Threads` enabled 
+- Fixed `Undertow` HttpServer check for `Virtual Threads` enabled
 - Improved some exception messages, logging
 
 ### 1.2.1
@@ -282,16 +282,16 @@ Migration required:
 
 Added:
 
-- Added virtual thread based executor for `Undertow` HTTP-server processing
-- Added `@DisallowConcurrentExecution` and `@PersistJobDataAfterExecution` annotations for Quartz jobs
-- Added `post-commit` and `post-rollback` callbacks for `JdbcConnectionFactory#inTx` method
+- Added virtual thread based executor for [`Undertow`](../documentation/http-server.md#undertow) HTTP-server processing
+- Added `@DisallowConcurrentExecution` and `@PersistJobDataAfterExecution` annotations for [Quartz jobs](../documentation/scheduling.md#non-concurrent-execution)
+- Added `post-commit` and `post-rollback` callbacks for [`JdbcConnectionFactory#inTx`](../documentation/database-jdbc.md#post-commit-actions) method
 - Added HTTP client `@Cookie` parameters support
 - Added HTTP client processor should implement methods from super interfaces
-- Added Kora `JUnit` mockito session & report unused stubbing
+- Added Kora [`JUnit` mockito session & report unused stubbing](../documentation/junit5.md#mock-strictness)
 - Added OpenAPI generator behavior with remove `@JsonInclude(Always)` as default behavior since 1.1.13
 - Added OpenAPI generator `forceIncludeOptional` option to add `@JsonInclude(Always)` for `isNullable` and `NonRequired` fields in the OpenAPI generator
 - Added masking `Cookie/Set-Cookie` HTTP headers by default
-- Added Redis Lettuce factory `LettuceConfigurator` for client
+- Added Redis Lettuce factory [`LettuceConfigurator`](../documentation/cache.md#configurator) for client
 - Added Redis Lettuce metrics
 - Added more data providing for `@KafkaProducer` telemetry
 - Added HTTP client metric tags provider
@@ -300,7 +300,7 @@ Added:
 - Added Kotlin KSP incremental processing support
 - Improved `@KafkaListener` & `@KafkaProducer` metrics
 - Improved resilient `@CircuitBreaker` logging and metrics
-- Updated all dependencies for their [up-to-date versions]((https://github.com/kora-projects/kora/pull/392/files#diff-697f70cdd88ba88fe77eebda60c7e143f6ad1286bca75017421e93ad84fb87df))
+- Updated all dependencies for their [up-to-date versions](https://github.com/kora-projects/kora/pull/392/files#diff-697f70cdd88ba88fe77eebda60c7e143f6ad1286bca75017421e93ad84fb87df)
 
 Fixed:
 
@@ -318,18 +318,18 @@ Added:
 
 - Added `@KafkaListener` skip record logic via [KafkaSkipRecordException](../documentation/kafka.md#exception-skipping)
 - Added `Redis` cache `SSL` configuration options
-- Added `OpentelemetryContext` methods for `getSpan` and `getTraceId`
+- Added [`OpentelemetryContext`](../documentation/tracing.md#tracing-context) methods for `getSpan` and `getTraceId`
 - Added ability to post process `Cassandra` config with `CassandraConfigurer`
 - Added OpenAPI HTTP-server generator `delegateMethodBodyMode` option
 - Added OpenAPI generator `Javadoc` and improved code style for generated classes
 
 Fixed:
 
-- Fixed HTTP-client `JdkProxySelector` should not cache proxy IP address 
+- Fixed HTTP-client `JdkProxySelector` should not cache proxy IP address
 - Fixed `KafkaAssignConsumer` stopping topic polling on graph refresh
 - Fixed support Json reader/writer generation for sealed hierarchies with `Nothing` as type variable in `Kotlin`
-- Fixed OpenAPI generator `implicitHeaders` option extraction 
-- Fixed `JUnit` testing complex `Wrapped<T>` support 
+- Fixed OpenAPI generator `implicitHeaders` option extraction
+- Fixed `JUnit` testing complex `Wrapped<T>` support
 
 ### 1.1.30
 
@@ -402,35 +402,35 @@ Fixed:
 Added:
 
 - Added more common default mappers for `Json` and `StringConverter`
-- Added support for Kotlin properties in `@ConfigSource` interfaces 
+- Added support for Kotlin properties in `@ConfigSource` interfaces
 
 Fixed:
 
-- Fixed OpenAPI `Enum` field naming and translite field naming 
+- Fixed OpenAPI `Enum` field naming and translite field naming
 - Fixed OpenAPI field cyrillic translite naming
-- Fixed OpenAPI option `filterWithModels` to work with complex hierarchy and recursion 
-- Fixed support private functions and properties in `PromisedProxy` implementations 
+- Fixed OpenAPI option `filterWithModels` to work with complex hierarchy and recursion
+- Fixed support private functions and properties in `PromisedProxy` implementations
 - Fixed `JsonReader` generation for sealed interfaces
 
 ### 1.1.24
 
 Added:
 
-- Added OpenAPI `Enum` Cyrillic translite constants support 
-- Added OpenAPI `Enum` constant SnakeCase additional naming 
+- Added OpenAPI `Enum` Cyrillic translite constants support
+- Added OpenAPI `Enum` constant SnakeCase additional naming
 - Added OpenAPI `filterWithModels` custom option for filtering models when `openapiNormalizer` [FILTER option](https://openapi-generator.tech/docs/customization/#available-filters) is specified
 - Added OpenAPI `prefixPath` custom option for HTTP-server controllers generator
 - Added OpenAPI Kotlin HTTP-server authorization optimizations
-- Added more [tracing exporter](../documentation/tracing.md) configurable options 
+- Added more [tracing exporter](../documentation/tracing.md) configurable options
 
 Fixed:
 
-- Fixed KSP generation of `JsonWriter` for Java classes 
-- Fixed `CircuitBreaker` half-open proper error count 
+- Fixed KSP generation of `JsonWriter` for Java classes
+- Fixed `CircuitBreaker` half-open proper error count
 - Fixed Redis Cache potential NPE for `putAsync` operation
 - Fixed `KafkaConsumer` metric `report lag` proper value export
 - Fixed OpenAPI discriminator field `JsonField` naming for child models
-- Fixed OpenAPI discriminator for free Form error handling 
+- Fixed OpenAPI discriminator for free Form error handling
 - Fixed OpenAPI management block in HTTP-server specified endpoints paths even if management endpoints are disabled
 
 ### 1.1.23
@@ -494,8 +494,8 @@ Added:
 
 * Added `@EntityCassandra` annotation with processors
 * Added more flexible way of gRPC component configuration
-* Added warning in `@Json` extensions for non annotated types 
-* Replaced deprecated OpenTelemetry `SemanticAttributes` usages 
+* Added warning in `@Json` extensions for non annotated types
+* Replaced deprecated OpenTelemetry `SemanticAttributes` usages
 
 Fixed:
 
@@ -508,20 +508,20 @@ Fixed:
 Added:
 
 * Added enriched HTTP-server parameter parsing API with `Set<T>` support
-* Added more `Cassandra` default result mappers 
+* Added more `Cassandra` default result mappers
 * Improved `ClientClassGenerator` error handling for Path/Query mismatch
 * Added `ViolationExceptionHttpServerResponseMapper` context injection before execution
-  
+
 Fixed:
 
-* Fixed Cache `Redis` multiple key get 
-* Fixed `Cassandra` row mappers for primitive return types 
-* Fixed `OpenAPI` generation discriminator enum naming 
-* Fixed `Quartz` default properties values 
-* Fixed Allow empty interfaces as targets of `@ConfigValueExtractor` targets 
-* Fixed handling of `null` values for sealed interfaces in `JSON` parsing 
+* Fixed Cache `Redis` multiple key get
+* Fixed `Cassandra` row mappers for primitive return types
+* Fixed `OpenAPI` generation discriminator enum naming
+* Fixed `Quartz` default properties values
+* Fixed Allow empty interfaces as targets of `@ConfigValueExtractor` targets
+* Fixed handling of `null` values for sealed interfaces in `JSON` parsing
 * Fixed `OpenAPI` parameter `typeMapping` for Java primitive types
-* Fixed parameterized generic class to be discovered as final components 
+* Fixed parameterized generic class to be discovered as final components
 
 ### 1.1.18
 
@@ -533,11 +533,11 @@ Added:
 
 Fixed:
 
-* Fixed `Kafka` unused parameter in HandlerWrapper 
-* Fixed `Kafka` transactional publisher sendOffsetsToTransaction method 
-* Fixed `Quartz` scheduler default configuration for correct clustered behavior 
+* Fixed `Kafka` unused parameter in HandlerWrapper
+* Fixed `Kafka` transactional publisher sendOffsetsToTransaction method
+* Fixed `Quartz` scheduler default configuration for correct clustered behavior
 * Fixed `Wrapped` components  in `JUnit` for Mock/Spy/Replace operations
-* Fixed minor dependency security updates 
+* Fixed minor dependency security updates
 
 ### 1.1.17
 
@@ -562,11 +562,11 @@ Added:
 Fixed:
 
 * Fixed JDBC `byte[]` type mapping
-* Fixed `JdkScheduler` job await proper release 
+* Fixed `JdkScheduler` job await proper release
 * Fixed Quartz job registration potential NPE
-* Fixed scheduling jobs refresh trigger whole scheduler refresh behavior 
+* Fixed scheduling jobs refresh trigger whole scheduler refresh behavior
 * Improved Quartz job shutdown
-* Updated dependencies minor version 
+* Updated dependencies minor version
 
 ### 1.1.15
 
@@ -591,10 +591,10 @@ Fixed:
 Added:
 
 * Added [JsonNullable](../documentation/json.md#jsonnullable-wrapper) special type
-* Added config parameter [KafkaConsumer](../documentation/kafka.md#configuration) that allows empty records after `poll()`
-* Added OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) option support (**Changed default behavior**, now *nullable* and *non required* fields [Include.Always](../documentation/json.md#_9) default if `JsonNullable` is not enabled)
+* Added config parameter [KafkaConsumer](../documentation/kafka.md#config-consumer) that allows empty records after `poll()`
+* Added OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) option support (**Changed default behavior**, now *nullable* and *non required* fields [Include.Always](../documentation/json.md#serialization-levels) default if `JsonNullable` is not enabled)
 * Added Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#configuration)
-* Improved Camunda Rest Telemetry 
+* Improved [Camunda Rest](../documentation/camunda7-rest.md#configuration) Telemetry
 * Improved Graceful shutdown for HTTP Server, KafkaListener, gRPC Server, Schedulers
 
 Fixed:
@@ -618,7 +618,7 @@ Fixed:
 * Fixed HTTP Client introduced in `1.1.11` new telemetry config backward compatibility with older versions (actual for libraries with versions before `1.1.11`)
 * Fixed Metrics missing tags for multiple modules
 * Fixed Jdbc Kotlin `ResultSet.next()` check for optional params
-* Fixed HTTP client operation logging enabled 
+* Fixed HTTP client operation logging enabled
 * Fixed tracing missing `ERROR` status code for multiple modules
 
 ### 1.1.11
@@ -678,7 +678,7 @@ Fixed:
 * Fixed `GraphInterceptor` for components with AOP
 * Fixed Cassandra metrics config
 * Fixed Logging AOP exception handling
-* Fixed JSON potential name collision 
+* Fixed JSON potential name collision
 * Fixed KSP missing external writer constructor
 * Fixed Kafka Listener empty records telemetry recorded
 * Fixed handling of event commit when processing record one by one in `@KafkaListener`
@@ -691,7 +691,7 @@ Fixed:
 
 Added:
 
-* Added [S3 Client](../documentation/s3-client.md) **experimental** module 
+* Added [S3 Client](../documentation/s3-client.md) **experimental** module
 * Added [Liquibase module](../documentation/database-migration.md#liquibase)
 * Added configuration option to specify migration files to the [Flyway](../documentation/database-migration.md#flyway) module
 * Added [Size type](../documentation/config.md#size)
@@ -776,9 +776,9 @@ Fixed:
 Fixed:
 
 - Fixed `@Retry` for CompletableFuture signature
-- Fixed Cache AOP error handling 
+- Fixed Cache AOP error handling
 - Fixed OpenAPI generator [primaryAuth](../documentation/openapi-codegen.md#client) property
-- Fixed HttpClient telemetry passing Content-Length to underlying client 
+- Fixed HttpClient telemetry passing Content-Length to underlying client
 - Fixed `Wrapped` support in JUnit5 testing
 
 ### 1.1.1
@@ -789,7 +789,7 @@ Fixed:
 - Fixed `@Cacheable` AOP for Reactive contract
 - Fixed HTTP Content-Length processing in implementation
 - Fixed OpenApi Kotlin Nullable enum
-- Fixed OpenAPI Kotlin empty class equals & hashCode 
+- Fixed OpenAPI Kotlin empty class equals & hashCode
 - Fixed GraalVM ReactorContextHook#init() missing in runtime
 
 ## 1.1.0

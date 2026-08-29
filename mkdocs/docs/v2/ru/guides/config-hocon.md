@@ -1,16 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Управление HOCON-конфигурацией в Kora
 summary: Learn how to bind HOCON configuration to type-safe interfaces, separate required and optional values, and reuse one config shape across multiple integrations
-tags: configuration, hocon, configsource, configvalueextractor
+description: "Step-by-step type-safe HOCON configuration for a Kora 2.0 service: the io.koraframework:config-hocon artifact, HoconConfigModule, @ConfigSource for an application section, @ConfigMapper plus ConfigValueMapper.mapOrThrow for a reusable library shape, @Tag to bind one config type to several paths, required ${VAR} and optional ${?VAR} substitutions, HOCON object reuse and include, config.resource and config.file selection, and the generated config mapper and module sources."
+agent:
+  use_when: "Use this file for questions about typed HOCON configuration in a Kora 2.0 service: io.koraframework:config-hocon, HoconConfigModule, @ConfigSource, @ConfigMapper, ConfigValueMapper with map and mapOrThrow, Config.get, @Tag for two instances of one config type, required values versus @Nullable and default methods, ${APP_VERSION} and ${?APP_NAME} substitutions, HOCON object reuse and include, -Dconfig.resource and -Dconfig.file, and generated $Type_ConfigValueMapper sources."
+tags: configuration, hocon, configsource, configmapper
 ---
 
 # Управление HOCON-конфигурацией в Kora { #hocon-configuration-management-kora }
 
-Это руководство знакомит с типобезопасной конфигурацией в Kora и HOCON. Оно показывает, как записи конфигурации извлекаются из `application.conf`, как обязательные и необязательные значения выражаются
-в Java-коде, и как переиспользуемые фрагменты конфигурации можно внедрять в несколько компонентов без дублирования всего блока. Также вы увидите, как переменные окружения и вывод значений во время
-выполнения помогают легко проверять итоговую конфигурацию.
+Это руководство знакомит с типобезопасной конфигурацией в Kora и HOCON. Оно показывает, как значения конфигурации отображаются из `application.conf` в типизированные интерфейсы, как обязательные и
+необязательные значения выражаются в коде на Java и Kotlin, и как один переиспользуемый формат конфигурации можно привязать к нескольким секциям без дублирования целого блока. Также вы увидите, как
+переменные окружения и вывод значений во время выполнения помогают легко проверять итоговую конфигурацию.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -27,71 +30,77 @@ tags: configuration, hocon, configsource, configvalueextractor
 - связывает `app.name`, `app.version` и `app.environment` через `@ConfigSource`
 - считает `APP_VERSION` обязательным значением, а `APP_NAME` необязательным переопределением
 - определяет один переиспользуемый `LibConfig` с `endpoint` и `requestTimeout`
-- извлекает тот же `LibConfig` для `lib1` и `lib2`
+- отображает тот же `LibConfig` для `lib1` и `lib2`
 - переиспользует один общий HOCON-объект и переопределяет только одно поле для второй библиотеки
 - печатает все итоговые значения в `stdout` во время запуска
 
 ## Что потребуется { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- редактор кода или среда разработки
-- пройденное руководство [Создание первого приложения на Kora](getting-started.md)
+- JDK 25 или новее
+- Gradle 9+
+- Текстовый редактор или IDE
+- Пройденное руководство [Создание первого приложения Kora](getting-started.md)
+
+Артефакты Kora 2.0 собраны под Java 25, поэтому JDK, которым компилируется приложение, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
-!!! note "Требуется: завершить начальное руководство"
+!!! note "Обязательно: пройденное вводное руководство"
 
-    Это руководство предполагает, что вы прошли **[Создание первого приложения на Kora](getting-started.md)** и уже имеете запускаемый проект Kora с плагином `application` и сгенерированным графом приложения.
+    Это руководство предполагает, что вы прошли **[Создание первого приложения Kora](getting-started.md)** и у вас уже есть запускаемый проект Kora с плагином `application` и сгенерированным графом приложения.
 
-    Если вы еще не создали такую базовую заготовку, сначала пройдите начальное руководство, потому что этот материал сосредоточен на типизированной конфигурации, а не на первоначальной настройке проекта.
+    Если такой основы еще нет, сначала пройдите вводное руководство: здесь мы сосредоточены на типизированной конфигурации, а не на начальной настройке проекта.
 
 ## Обзор { #overview }
 
-Конфигурация — это способ, которым окружения времени выполнения влияют на поведение приложения без изменения кода. Порты, учетные данные, переключатели возможностей, тайм-ауты и адреса внешних
-сервисов должны жить вне скомпилированных классов, но коду приложения все равно нужен типобезопасный способ читать эти значения.
+Конфигурация — это способ влиять на поведение приложения из среды выполнения, не меняя код. Порты, учетные данные, переключатели функциональности, таймауты и адреса внешних сервисов должны жить вне
+скомпилированных классов, но коду приложения все равно нужен типобезопасный способ их читать.
 
-Главный урок: конфигурация должна быть явной на границе приложения. Компоненты не должны сами искать переменные окружения или разбирать файлы; они должны получать типизированную конфигурацию из графа.
+Главный урок в том, что конфигурация должна быть явной на границе приложения. Компоненты не должны сами искать переменные окружения или разбирать файлы; они должны получать типизированную конфигурацию
+из графа.
 
-### HOCON и типобезопасное извлечение { #hocon-type-safe-extraction }
+### HOCON и типобезопасное отображение { #hocon-type-safe-extraction }
 
-Kora умеет читать конфигурацию [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) и извлекать ее в Java-интерфейсы или записи. Вместо передачи сырых строк и словарей через приложение,
-компоненты получают типизированные объекты конфигурации. Это делает обязательные значения явными и позволяет компилятору помогать при использовании конфигурации.
+Kora умеет читать конфигурацию в формате [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) и отображать ее в интерфейсы Java или Kotlin. Вместо того чтобы протаскивать через приложение
+сырые строки и словари, компоненты получают типизированные объекты конфигурации. Это делает обязательные значения явными и позволяет компилятору помогать с использованием конфигурации.
 
-В этом руководстве используются два взаимодополняющих стиля отображения:
+В этом руководстве используются два дополняющих друг друга стиля отображения:
 
-- `@ConfigSource("app")` связывает одну фиксированную секцию конфигурации с типобезопасной зависимостью
-- `@ConfigValueExtractor` описывает переиспользуемую форму конфигурации, которую можно извлекать из разных путей
+- `@ConfigSource("app")` отображает одну фиксированную секцию конфигурации в типобезопасную зависимость
+- `@ConfigMapper` отображает переиспользуемый формат конфигурации, который можно привязать к разным путям
 
-Используйте `@ConfigSource`, когда компоненту нужна одна стабильная секция конфигурации приложения. Используйте `@ConfigValueExtractor`, когда одна и та же структура встречается в нескольких местах и
-нужен один переиспользуемый извлекатель.
+Используйте `@ConfigSource`, когда компоненту нужна одна стабильная секция конфигурации приложения. Используйте `@ConfigMapper`, когда та же структура встречается в нескольких местах и нужно одно
+переиспользуемое правило отображения, путь для которого выбирается в фабрике модуля.
+
+Обе аннотации генерируют реализацию `ConfigValueMapper<T>` на этапе компиляции. Разница только в том, кто выбирает путь: `@ConfigSource` зашивает его в сгенерированный модуль, а `@ConfigMapper`
+оставляет выбор вам.
 
 ### Обязательные и необязательные значения { #required-optional }
 
-HOCON поддерживает полезные возможности композиции:
+HOCON поддерживает полезные средства композиции:
 
-- обязательную подстановку из переменной окружения, например `${APP_VERSION}`
-- необязательную подстановку из переменной окружения, например `${?APP_NAME}`
-- переиспользование объекта, например `${common-lib}`
+- обязательная подстановка из окружения вида `${APP_VERSION}`
+- необязательная подстановка из окружения вида `${?APP_NAME}`
+- переиспользование объекта вида `${common-lib}`
 
-Эти возможности помогают одному файлу конфигурации оставаться читаемым и при этом адаптироваться к локальной разработке, тестам и развернутым окружениям.
+Эти возможности позволяют одному файлу конфигурации оставаться читаемым и при этом подстраиваться под локальную разработку, тесты и развернутые окружения.
 
-Как контракт protobuf в gRPC или контракт кеша в кешировании, тип конфигурации является контрактом границы. Он говорит, какие значения времени выполнения ожидает приложение и какую форму эти значения
-должны иметь.
+Со стороны кода правило столь же короткое: каждый метод интерфейса конфигурации — обязательное значение, если он не помечен как допускающий `null` и не имеет реализации `default`. Как protobuf-контракт
+в gRPC или контракт кэша в кэшировании, тип конфигурации — это контракт границы. Он говорит, какие значения среды выполнения ожидает приложение и какую форму эти значения должны иметь.
 
 ### Конфигурация как зависимость графа { #configuration-graph-dependency }
 
-В Kora конфигурация является частью графа зависимостей. Компонент может запросить типизированный объект конфигурации в конструкторе так же, как репозиторий или клиент. Это делает зависимости от
-конфигурации видимыми и тестируемыми. Также это удерживает разбор конфигурации на границе графа, а не размазывает его по коду приложения.
+В Kora конфигурация — часть графа зависимостей. Компонент может запросить типизированный объект конфигурации в конструкторе так же, как запрашивает репозиторий или клиент. Это делает зависимости от
+конфигурации видимыми и тестируемыми, а разбор конфигурации остается на границе графа, а не размазывается по коду приложения.
 
-Практический поток:
+Практический порядок действий:
 
-1. добавить модуль конфигурации HOCON
+1. подключить модуль конфигурации HOCON
 2. определить фиксированный источник конфигурации приложения
 3. связать обязательные и необязательные значения
-4. определить переиспользуемый извлекатель значений
-5. переиспользовать одну форму конфигурации для настроек нескольких библиотек
-6. запустить приложение и посмотреть итоговую конфигурацию
+4. определить переиспользуемый маппер конфигурации
+5. переиспользовать один формат конфигурации для настроек нескольких библиотек
+6. запустить приложение и изучить итоговую конфигурацию
 
 ## Зависимости { #dependencies }
 
@@ -107,8 +116,8 @@ HOCON поддерживает полезные возможности комп�
     }
 
     dependencies {
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
@@ -122,37 +131,39 @@ HOCON поддерживает полезные возможности комп�
     }
 
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
 Почему это важно:
 
-- `config-hocon` включает загрузку HOCON-файла в граф приложения
-- `logging-logback` делает запуск и диагностику неполадок видимыми, пока приложение работает
+- `config-hocon` включает загрузку HOCON-файлов в графе приложения
+- `logging-logback` сохраняет видимость логов запуска и диагностики во время работы приложения
+
+Версии берутся из платформы `io.koraframework:kora-bom`, которую проект уже импортирует, поэтому указывать версию здесь не нужно.
 
 ## Модули { #modules }
 
-Начните с минимального графа приложения, который может загрузить HOCON-конфигурацию и запустить приложение Kora.
+Начните с минимально возможного графа приложения, который умеет загружать HOCON-конфигурацию и запускать приложение Kora.
 
-На этом этапе мы еще не добавляем конфигурацию, специфичную для приложения. Мы только подготавливаем граф, чтобы на следующих шагах связать типизированную конфигурацию и напечатать итоговые значения.
+На этом шаге мы еще не добавляем конфигурацию, специфичную для приложения. Мы только готовим граф, чтобы дальше можно было связать типизированную конфигурацию и вывести итоговые значения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/hocon/Application.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/hocon/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            HoconConfigModule,  // <----- Подключили модуль
+            HoconConfigModule,  // <----- Connected module
             LogbackModule {
 
         static void main(String[] args) {
@@ -163,19 +174,19 @@ HOCON поддерживает полезные возможности комп�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/Application.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/hocon/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        HoconConfigModule,  // <----- Подключили модуль
+        HoconConfigModule,  // <----- Connected module
         LogbackModule
 
     fun main() {
@@ -185,28 +196,31 @@ HOCON поддерживает полезные возможности комп�
 
 Почему это важно:
 
-- `HoconConfigModule` активирует загрузку конфигурации в формате HOCON
-- `LogbackModule` подключает базовое логирование для запуска и диагностики
-- граф пока остается минимальным: он только умеет стартовать приложение и читать файл конфигурации
+- `HoconConfigModule` активирует загрузку конфигурации на основе HOCON
+- `LogbackModule` добавляет базовые логи запуска и диагностики
+- граф пока остается минимальным: он умеет запустить приложение и прочитать файл конфигурации
 
-Типизированные секции появятся постепенно: сначала секция приложения, затем отдельная форма для библиотек и только после этого явное связывание путей `libs.lib1` и `libs.lib2` с двумя экземплярами одного типа.
+`HoconConfigModule` также решает, какой файл читать. Если системные свойства не заданы, он ищет `application.conf` в classpath; `config.resource` и `config.file` переопределяют этот выбор, и первое из
+них мы используем в конце руководства.
 
-Если хотите больше контекста о связывании графа и фабриках, смотрите [документацию по контейнеру](../documentation/container.md).
+Типизированные секции вводятся постепенно: сначала секция приложения, затем переиспользуемый формат для библиотеки, и только после этого явное отображение `libs.lib1` и `libs.lib2` в два экземпляра одного типа.
+
+Если нужно больше контекста про связывание графа и фабрики, посмотрите [документацию по контейнеру](../documentation/container.md).
 
 ## Конфигурация приложения { #app-config }
 
-Теперь добавим первый типизированный контракт конфигурации: стабильную секцию приложения с именем `app`.
+Теперь введем первый типизированный контракт конфигурации: стабильную секцию приложения с именем `app`.
 
-Это самый простой и самый частый шаблон конфигурации в Kora. Вместо ручного чтения ключей вы один раз объявляете форму и внедряете ее туда, где она нужна.
+Это самый простой и самый частый паттерн конфигурации в Kora. Вместо ручного чтения ключей вы один раз объявляете форму и внедряете ее там, где она нужна.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/hocon/AppConfig.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/hocon/AppConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource;
+    import io.koraframework.config.common.annotation.ConfigSource;
 
     @ConfigSource("app")
     public interface AppConfig {
@@ -221,12 +235,12 @@ HOCON поддерживает полезные возможности комп�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/AppConfig.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/hocon/AppConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource
+    import io.koraframework.config.common.annotation.ConfigSource
 
     @ConfigSource("app")
     interface AppConfig {
@@ -239,12 +253,15 @@ HOCON поддерживает полезные возможности комп�
 Почему это важно:
 
 - `@ConfigSource("app")` делает секцию `app` полноценной зависимостью
-- контракт остается рядом с кодом, который его использует
+- контракт находится рядом с кодом, который его использует
 - рефакторинг ключей конфигурации становится безопаснее, потому что структура явно описана в одном месте
+
+Все три метода возвращают типы, не допускающие `null`, поэтому все три значения обязательны. Сделать одно из них необязательным — это правка кода, а не файла: пометьте его `@Nullable` в Java или
+верните nullable-тип в Kotlin. Имена методов сопоставляются нестрого, поэтому `someBarString()` читается также из `some-bar-string` и `some_bar_string`.
 
 ## Обязательные значения { #required-values }
 
-Когда `AppConfig` определен, можно решить, какие значения обязательны, а какие могут использовать значения по умолчанию.
+Теперь, когда `AppConfig` определен, можно решить, какие значения обязательны, а какие могут опираться на значения по умолчанию.
 
 Обновите `src/main/resources/application.conf`:
 
@@ -259,36 +276,39 @@ app {
 
 Что это означает:
 
-- `version = ${APP_VERSION}` является обязательным, поэтому запуск завершается ошибкой, если `APP_VERSION` отсутствует
-- `name = ${?APP_NAME}` является необязательным и переопределяет значение по умолчанию только когда переменная существует
-- `environment` остается обычным статическим значением, потому что в этом руководстве его пока не нужно менять
+- `version = ${APP_VERSION}` обязателен, поэтому запуск падает, если `APP_VERSION` отсутствует
+- `name = ${?APP_NAME}` необязателен и переопределяет значение по умолчанию только тогда, когда переменная существует
+- `environment` остается обычным статическим значением, потому что в этом руководстве его менять не требуется
 
-Это важный шаблон HOCON: критически важные значения должны завершать запуск с ошибкой как можно раньше, а косметические или зависящие от окружения переопределения могут быть необязательными.
+Это важный паттерн HOCON: критичные значения должны падать сразу, а косметические или зависящие от окружения переопределения оставаться необязательными.
 
-Подробнее о правилах подстановки и поддерживаемых типах значений смотрите в [документации по конфигурации](../documentation/config.md).
+Обратите внимание: две строки `name` — не ошибка. HOCON сохраняет последнее присваивание ключа, а `${?APP_NAME}` не дает ничего, когда переменная не задана, поэтому литерал выше выживает. Именно так в
+HOCON записывается значение по умолчанию вместе с необязательным переопределением.
+
+Подробнее о правилах подстановки и поддерживаемых типах значений — в [документации по конфигурации](../documentation/config.md).
 
 ## Конфигурация библиотек { #library-config }
 
-Теперь создадим переиспользуемую форму конфигурации для одной библиотеки.
+Дальше создадим переиспользуемый формат конфигурации для одной библиотеки.
 
-Представим, что абстрактной библиотеке нужны две настройки:
+Представим, что некоторой абстрактной библиотеке нужны две настройки:
 
 - `endpoint`
 - `requestTimeout`
 
-Вместо хранения этих значений как сырых ключей, опишите их один раз как тип.
+Вместо того чтобы держать их как сырые ключи, опишем их один раз как тип.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/hocon/LibConfig.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/hocon/LibConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
     import java.time.Duration;
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor;
+    import io.koraframework.config.common.annotation.ConfigMapper;
 
-    @ConfigValueExtractor
+    @ConfigMapper
     public interface LibConfig {
 
         String endpoint();
@@ -299,61 +319,57 @@ app {
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/LibConfig.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/hocon/LibConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
+    import io.koraframework.config.common.annotation.ConfigMapper
     import java.time.Duration
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor
 
-    @ConfigValueExtractor
+    @ConfigMapper
     interface LibConfig {
         fun endpoint(): String
         fun requestTimeout(): Duration
     }
     ```
 
-Теперь, когда тип `LibConfig` уже объявлен, можно вернуться к графу приложения и явно показать, откуда берутся две библиотечные конфигурации.
+Теперь, когда `LibConfig` существует, вернемся к графу приложения и явно покажем, откуда берутся две конфигурации библиотек.
 
-`@ConfigValueExtractor` генерирует извлекатель для формы `LibConfig`, а методы графа выбирают конкретные ветки файла конфигурации. Так Kora получает два разных экземпляра одного типа: один для `libs.lib1`, второй для `libs.lib2`.
+`@ConfigMapper` генерирует `ConfigValueMapper<LibConfig>` для этой формы, но не привязывает путь, а методы графа выбирают конкретные ветки файла конфигурации. Так Kora получает два разных экземпляра одного типа: один для `libs.lib1` и один для `libs.lib2`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/config/hocon/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/config/hocon/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.common.Config;
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.common.Config;
+    import io.koraframework.config.common.mapper.ConfigValueMapper;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            HoconConfigModule,  // <----- Подключили модуль
+            HoconConfigModule,  // <----- Connected module
             LogbackModule {
 
-        final class Lib1Tag {
-            private Lib1Tag() {}
-        }
+        final class Lib1Tag {}
 
-        final class Lib2Tag {
-            private Lib2Tag() {}
-        }
+        final class Lib2Tag {}
 
         @Tag(Lib1Tag.class)
-        default LibConfig lib1Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib1"));
+        default LibConfig lib1Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib1"));
         }
 
         @Tag(Lib2Tag.class)
-        default LibConfig lib2Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib2"));
+        default LibConfig lib2Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib2"));
         }
 
         static void main(String[] args) {
@@ -364,35 +380,35 @@ app {
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/config/hocon/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.common.Config
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.common.Config
+    import io.koraframework.config.common.mapper.ConfigValueMapper
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        HoconConfigModule,  // <----- Подключили модуль
+        HoconConfigModule,  // <----- Connected module
         LogbackModule {
 
         class Lib1Tag private constructor()
         class Lib2Tag private constructor()
 
         @Tag(Lib1Tag::class)
-        fun lib1Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib1"))
+        fun lib1Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib1"))
         }
 
         @Tag(Lib2Tag::class)
-        fun lib2Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib2"))
+        fun lib2Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib2"))
         }
     }
 
@@ -405,9 +421,12 @@ app {
 
 - `Lib1Tag` и `Lib2Tag` различают два экземпляра `LibConfig` в графе
 - `config.get("libs.lib1")` и `config.get("libs.lib2")` выбирают разные ветки конфигурации
-- `ConfigValueExtractor<LibConfig>` преобразует каждую ветку в типизированный объект
+- `ConfigValueMapper<LibConfig>` превращает каждую ветку в типизированный объект
 
-Добавьте первую секцию библиотеки в `application.conf`:
+У `ConfigValueMapper<T>` есть два метода чтения. `map(...)` может вернуть `null`, а `mapOrThrow(...)` превращает этот `null` в `ConfigValueException`. В фабричных методах обычно используют
+`mapOrThrow(...)`, потому что отсутствующая секция библиотеки — это ошибка запуска, а не допустимое состояние.
+
+Теперь обе фабрики входят в граф, поэтому обе секции обязаны существовать. Добавьте их в `application.conf`:
 
 ```hocon title="src/main/resources/application.conf"
 app {
@@ -417,19 +436,25 @@ app {
   environment = "development"
 }
 
-libs.lib1 {
-  endpoint = "https://integration.local/api"
-  requestTimeout = 5s
+libs {
+  lib1 {
+    endpoint = "https://integration.local/api"
+    requestTimeout = 5s
+  }
+  lib2 {
+    endpoint = "https://integration-2.local/api"
+    requestTimeout = 5s
+  }
 }
 ```
 
-На этом этапе `LibConfig` используется только для `lib1`. Граф приложения извлекает его из `libs.lib1`, а Kora напрямую преобразует `5s` в `Duration`.
+На этом шаге приложение запускается, а Kora преобразует `5s` прямо в `Duration`. Но две секции почти одинаковы, и именно это дублирование убирает следующий шаг.
 
 ## Файл конфигурации { #config-file }
 
-Теперь представим, что второй библиотеке нужна ровно такая же форма.
+Обеим библиотекам нужна ровно одна и та же форма, а сейчас общие значения скопированы дважды.
 
-Можно продублировать весь блок конфигурации, но HOCON дает лучший вариант: положить общие значения в один объект и переиспользовать этот объект там, где нужно.
+HOCON дает лучший вариант: положить общие значения в один объект и переиспользовать этот объект там, где он нужен.
 
 Снова обновите `application.conf`:
 
@@ -454,32 +479,34 @@ libs.lib2.endpoint = "https://integration-2.local/api"
 Что изменилось:
 
 - `common-lib` теперь хранит общие значения по умолчанию один раз
-- `libs.lib1` переиспользует весь объект
-- `libs.lib2` тоже переиспользует весь объект
-- `libs.lib2.endpoint` переопределяет только одно поле после переиспользования
+- `libs.lib1` переиспользует объект целиком
+- `libs.lib2` тоже переиспользует объект целиком
+- `libs.lib2.endpoint` переопределяет после этого только одно поле
 
-В этом и есть выигрыш от сочетания переиспользования HOCON с `@ConfigValueExtractor`: одна форма конфигурации, несколько извлеченных экземпляров, минимум дублирования.
+В последних трех строках важен порядок: `libs.lib2.endpoint` должен идти после `libs.lib2 = ${common-lib}`, иначе присваивание объекта целиком затерло бы его.
+
+В этом и польза от сочетания переиспользования HOCON с `@ConfigMapper`: один формат конфигурации, несколько отображенных экземпляров, минимум дублирования.
 
 ## Итоговые значения { #resolved-values }
 
-Последний шаг — доказать, что все внедрилось корректно.
+Последний шаг — убедиться, что все было внедрено правильно.
 
-Вместо HTTP-маршрута это руководство использует маленький компонент `@Root`, который печатает все итоговые значения в стандартный вывод во время запуска. Это похоже на проверку через консоль из руководства по
-внедрению зависимостей.
+Вместо HTTP-эндпоинта в этом руководстве используется небольшой `@Root`-компонент, который печатает все итоговые значения в стандартный вывод во время запуска. Это повторяет консольную проверку из
+руководства по внедрению зависимостей.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/hocon/ConfigRunner.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/hocon/ConfigRunner.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
     import java.util.LinkedHashMap;
     import java.util.Map;
-    import ru.tinkoff.kora.application.graph.Lifecycle;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
+    import io.koraframework.application.graph.Lifecycle;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
 
     @Root
     @Component
@@ -526,15 +553,15 @@ libs.lib2.endpoint = "https://integration-2.local/api"
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/ConfigRunner.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/hocon/ConfigRunner.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.Lifecycle
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
+    import io.koraframework.application.graph.Lifecycle
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
 
     @Root
     @Component
@@ -569,31 +596,111 @@ libs.lib2.endpoint = "https://integration-2.local/api"
 
 Почему это важно:
 
-- `@Root` гарантирует, что запускаемый компонент действительно будет создан при старте приложения
-- `Lifecycle` дает естественное место для печати или проверки внедренных значений
+- `@Root` гарантирует, что компонент действительно будет создан при запуске приложения
+- `Lifecycle` дает естественное место для вывода или проверки внедренных значений
 - `snapshot()` удерживает вывод во время выполнения и тесты вокруг одного контракта
+
+Те же маркеры `@Tag`, которые различали две фабрики, теперь выбирают, какой `LibConfig` получит каждый параметр конструктора. Без них граф не смог бы отличить два компонента друг от друга.
+
+## Сгенерированный код конфигурации { #config-code }
+
+Как и все остальное в Kora, отображение конфигурации генерируется на этапе компиляции. После `./gradlew clean classes` посмотрите, что создал обработчик:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```text
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/AppConfigModule.java
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/$AppConfig_ConfigValueMapper.java
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/$LibConfig_ConfigValueMapper.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/AppConfigModule.kt
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/$AppConfig_ConfigValueMapper.kt
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/$LibConfig_ConfigValueMapper.kt
+    ```
+
+`@ConfigSource` создал целый модуль, и выглядит он ровно так же, как фабрики, написанные вами вручную для `LibConfig`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AppConfigModule {
+      default AppConfig appConfig(Config config, ConfigValueMapper<AppConfig> mapper) {
+        return mapper.mapOrThrow(config.get("app"));
+      }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    public interface AppConfigModule {
+      public fun appConfig(config: Config, mapper: ConfigValueMapper<AppConfig>): AppConfig = mapper.mapOrThrow(config.get("app"))
+    }
+    ```
+
+В этом и вся разница между двумя аннотациями: `@ConfigSource` пишет этот модуль за вас для фиксированного пути, а `@ConfigMapper` — нет, поэтому для `LibConfig` вы написали две фабрики с тегами.
+
+Сам маппер показывает, где именно проверяются обязательные значения:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    private String parse_endpoint(ConfigValue.ObjectValue config) {
+      var value = config.get(_endpoint_path);
+      if (value instanceof ConfigValue.NullValue nullValue) {
+        throw ConfigValueException.missingValue(nullValue);
+      }
+      return value.asString();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    private fun parse_endpoint(config: ConfigValue.ObjectValue): String {
+      val value = config.get(_endpoint_path)
+      if (value is ConfigValue.NullValue) {
+        throw ConfigValueException.missingValue(value)
+      }
+      return value.asString()
+    }
+    ```
+
+`requestTimeout` обрабатывается иначе: вместо написанной вручную ветки сгенерированный маппер принимает `ConfigValueMapper<Duration>` как зависимость конструктора. Любой поддерживаемый тип значения
+попадает в маппер тем же путем — так позже можно добавить собственный тип, не трогая интерфейс конфигурации.
 
 ## Запуск приложения { #run-app }
 
-Используйте стандартную последовательность действий из руководств:
+Используйте стандартный порядок из руководств:
 
 ```bash
 ./gradlew clean classes
 ./gradlew test
-./gradlew run
 ```
 
-В запускаемом примере задача `run` внедряет `APP_VERSION` из `koraVersion` в `gradle.properties`, поэтому обычный `./gradlew run` работает из коробки.
-
-Если хотите также переопределить имя приложения, добавьте `APP_NAME` перед запуском:
+`app.version` обязателен, поэтому `APP_VERSION` должен присутствовать до запуска приложения:
 
 ```bash
-APP_NAME="Custom Task App" ./gradlew run
+APP_VERSION=1.0.0 ./gradlew run
+```
+
+В запускаемом Java-примере задача `run` уже подставляет `APP_VERSION` из `koraVersion` в `gradle.properties`, поэтому там обычный `./gradlew run` работает сразу.
+
+Если нужно переопределить еще и имя приложения, добавьте `APP_NAME` перед запуском:
+
+```bash
+APP_VERSION=1.0.0 APP_NAME="Custom Task App" ./gradlew run
 ```
 
 ## Вывод приложения { #output }
 
-Когда приложение стартует, оно должно напечатать примерно такой вывод:
+При запуске приложение печатает:
 
 ```text
 Config guide start
@@ -606,15 +713,20 @@ lib2.endpoint=https://integration-2.local/api
 lib2.requestTimeout=PT5S
 ```
 
-Если вы передадите `APP_NAME`, строка `name=` должна показать переопределение.
+`PT5S` — это запись `Duration.ofSeconds(5)` в формате ISO-8601, что подтверждает: `5s` был отображен в настоящий `Duration`, а не в строку. Если задать `APP_NAME`, выведенная строка `name=` отразит
+переопределение:
+
+```text
+name=Custom Task App
+```
 
 ## Вторая конфигурация { #config-2 }
 
-Частый следующий шаг — держать отдельные файлы конфигурации для разных окружений, например разработки, стенда или промышленного окружения.
+Частый следующий шаг — держать отдельные файлы конфигурации для разных окружений: разработки, тестового стенда или продакшена.
 
 Например, создайте `src/main/resources/application-prod.conf`:
 
-```hocon
+```hocon title="src/main/resources/application-prod.conf"
 include "application"
 
 app {
@@ -622,60 +734,92 @@ app {
 }
 ```
 
-Этот файл переиспользует базовую конфигурацию из `application.conf` и переопределяет только значения, которые отличаются для промышленного окружения. Это типичный шаблон HOCON для конфигурации,
-зависящей от окружения.
+Этот файл переиспользует базовую конфигурацию из `application.conf` через директиву HOCON `include` и переопределяет только те значения, которые отличаются для продакшена. Включенные файлы участвуют в
+том же слиянии и разрешении подстановок, что и основной файл, поэтому `${APP_VERSION}` продолжает работать.
 
-Запустить приложение с этой конфигурацией можно через системное свойство Kora `config.resource`:
+Альтернативный файл выбирается системным свойством `config.resource`. Плагин Gradle `application` не передает флаги `-D` из командной строки в процесс приложения, поэтому объявите свойство в задаче
+`run`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy title="build.gradle"
+    run {
+        jvmArgs += [
+                "-Dconfig.resource=application-prod.conf"
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="build.gradle.kts"
+    tasks.named<JavaExec>("run") {
+        jvmArgs("-Dconfig.resource=application-prod.conf")
+    }
+    ```
+
+Собранный дистрибутив принимает то же свойство через `JAVA_OPTS`:
 
 ```bash
-./gradlew run -Dconfig.resource=application-prod.conf
+JAVA_OPTS="-Dconfig.resource=application-prod.conf" ./bin/application
 ```
 
-С таким переопределением вывод при запуске должен напечатать:
+С этим переопределением вывод при запуске печатает:
 
 ```text
 environment=production
 ```
 
-Подробнее о поиске файлов и внешних файлах конфигурации смотрите в [документации по конфигурации](../documentation/config.md).
+Используйте `config.file` вместо `config.resource`, чтобы читать файл с диска, а не из classpath. Одновременно можно задать только одно из двух: если заданы оба, приложение падает при запуске с
+`Application config source is ambiguous`.
+
+Подробнее о выборе файла и внешних файлах конфигурации — в [документации по конфигурации](../documentation/config.md).
 
 ## Лучшие практики { #best-practices }
 
-- Используйте `@ConfigSource` для стабильной конфигурации уровня приложения, которая принадлежит одной хорошо известной секции.
-- Используйте `@ConfigValueExtractor`, когда одна форма конфигурации переиспользуется под несколькими путями.
-- Держите обязательные значения явными через `${VAR_NAME}`, а необязательные переопределения явными через `${?VAR_NAME}`.
-- Предпочитайте переиспользование объекта плюс маленькие переопределения полей вместо копирования больших блоков конфигурации.
-- Пока изучаете поведение конфигурации, держите диагностику запуска простой; `System.out.println(...)` достаточно для учебной последовательности действий.
+- Используйте `@ConfigSource` для стабильной конфигурации уровня приложения, относящейся к одной известной секции.
+- Используйте `@ConfigMapper`, когда один формат конфигурации переиспользуется по нескольким путям, и выбирайте путь в фабрике модуля.
+- Предпочитайте `mapOrThrow(...)` вместо `map(...)` в фабриках, чтобы отсутствующая секция падала при запуске, а не давала `null`.
+- Делайте обязательные значения явными через `${VAR_NAME}`, а необязательные переопределения — через `${?VAR_NAME}`.
+- Предпочитайте переиспользование объекта с небольшими переопределениями полей копированию больших блоков конфигурации.
+- Держите диагностику при запуске простой, пока изучаете поведение конфигурации; `System.out.println(...)` вполне достаточно для учебных сценариев.
 
 ## Итоги { #summary }
 
-Теперь у вас есть рабочее приложение Kora на основе HOCON, которое связывает конфигурацию двумя способами. `AppConfig` отображает стабильную секцию `app`, а `LibConfig` дважды извлекается из двух
-разных путей с разными метками. Переиспользование HOCON делает файл компактным, а одно переопределение меняет только `endpoint` второй библиотеки.
+Теперь у вас есть рабочее приложение Kora на HOCON, которое связывает конфигурацию двумя способами. `AppConfig` отображает стабильную секцию `app`, а `LibConfig` отображается дважды из двух разных
+путей с разными тегами. Переиспользование в HOCON делает файл компактным, а одно переопределение меняет только endpoint второй библиотеки.
 
 ## Ключевые понятия { #key-concepts }
 
 **`@ConfigSource`:**
 
-- отображает одну фиксированную секцию конфигурации на типобезопасный интерфейс
+- отображает одну фиксированную секцию конфигурации в типобезопасный интерфейс
+- генерирует модуль, который сам вызывает `mapOrThrow(config.get("app"))`
 - хорошо подходит для настроек приложения вроде `app.name` и `app.environment`
 
 **Обязательные и необязательные значения:**
 
-- `${APP_VERSION}` является обязательным и завершает запуск с ошибкой как можно раньше, если значение отсутствует
-- `${?APP_NAME}` является необязательным и переопределяет значение по умолчанию только когда присутствует
+- каждый метод интерфейса обязателен, если он не допускает `null` и не имеет реализации `default`
+- `${APP_VERSION}` обязателен и падает сразу, когда значение отсутствует
+- `${?APP_NAME}` необязателен и переопределяет значение по умолчанию только тогда, когда присутствует
 
-**`@ConfigValueExtractor` и переиспользование:**
+**`@ConfigMapper` и переиспользование:**
 
-- одну форму конфигурации можно извлекать из нескольких путей
-- `${common-lib}` копирует весь объект в другой путь
-- более позднее присваивание вроде `libs.lib2.endpoint = ...` переопределяет только одно поле
+- генерирует `ConfigValueMapper<T>` без привязки к пути
+- один формат конфигурации можно отобразить из нескольких путей, различая их через `@Tag`
+- `${common-lib}` копирует объект целиком в другой путь
+- последующее присваивание вида `libs.lib2.endpoint = ...` переопределяет только одно поле
 
 ## Устранение неполадок { #troubleshooting }
 
-**Приложение падает при старте из-за неразрешенной подстановки:**
+**Приложение падает при запуске из-за неразрешенной подстановки:**
 
-`app.version = ${APP_VERSION}` является обязательным. В запускаемом примере задача `run` предоставляет его автоматически из `koraVersion`. Если вы удалите это связывание Gradle, нужно
-задать `APP_VERSION` перед запуском.
+`app.version = ${APP_VERSION}` обязателен. В запускаемом Java-примере задача `run` подставляет его автоматически из `koraVersion`. В остальных случаях нужно задать `APP_VERSION` перед запуском.
+
+**Запуск падает с `Config expected value, but got null at path: '...'`:**
+
+В итоговой конфигурации отсутствует обязательное значение. Либо добавьте ключ в файл, либо сделайте метод необязательным через `@Nullable` в Java или nullable-тип возврата в Kotlin, либо дайте ему
+реализацию `default`.
 
 **`APP_NAME` не переопределяет имя по умолчанию:**
 
@@ -686,11 +830,15 @@ name = "Task Management App"
 name = ${?APP_NAME}
 ```
 
-**Значения конфигурации библиотеки дублируются между секциями:**
+**Значения конфигурации библиотек дублируются между секциями:**
 
-Перенесите общие значения в один объект, например `common-lib`, и переиспользуйте его через `${common-lib}` вместо копирования полного блока в обе библиотеки.
+Перенесите общие значения в один объект, например `common-lib`, и переиспользуйте его через `${common-lib}` вместо копирования целого блока в обе библиотеки.
 
-**Сборка зависает или падает неожиданно:**
+**`Application config source is ambiguous`:**
+
+Заданы одновременно `config.resource` и `config.file`. Уберите одно из двух системных свойств.
+
+**Сборка зависает или неожиданно падает:**
 
 Остановите демоны Gradle и повторите:
 
@@ -699,9 +847,9 @@ name = ${?APP_NAME}
 ./gradlew clean classes
 ```
 
-**`AccessDeniedException` в кеше Gradle на Windows:**
+**`AccessDeniedException` в кэше Gradle на Windows:**
 
-Если кешированные файлы заблокированы другим процессом, повторите запуск со свежим кешем текущего запуска:
+Если закэшированные файлы заблокированы другим процессом, повторите со свежим кэшем сессии:
 
 ```bash
 GRADLE_USER_HOME=.gradle-user-home ./gradlew test
@@ -709,16 +857,17 @@ GRADLE_USER_HOME=.gradle-user-home ./gradlew test
 
 ## Что дальше? { #whats-next }
 
-- [Конфигурация YAML](config-yaml.md), чтобы увидеть ту же модель типизированной конфигурации с другим форматом файла.
-- [Работа с JSON](json.md), чтобы сделать DTO запросов и ответов явными в небольшом приложении, которое у вас уже есть.
-- [Создание HTTP-сервера](http-server.md) после JSON, потому что это руководство опирается на отображение JSON DTO и превращает приложение в более полноценный HTTP API.
-- [Изучите основы внедрения зависимостей](dependency-injection-introduction.md), если сгенерированный граф и фабрики конфигурации все еще кажутся неочевидными.
+- [YAML-конфигурация](config-yaml.md), чтобы увидеть ту же модель типизированной конфигурации в другом формате файла.
+- [Работа с JSON](json.md), чтобы сделать DTO запросов и ответов явными в том небольшом приложении, которое у вас уже есть.
+- [Создание HTTP-сервера](http-server.md) после JSON, так как это руководство опирается на отображение JSON-DTO и превращает приложение в более полноценное HTTP API.
+- [Основы внедрения зависимостей](dependency-injection-introduction.md), если сгенерированный граф и фабрики конфигурации все еще кажутся непонятными.
 
 ## Помощь { #help }
 
-Если возникли проблемы:
+Если возникли сложности:
 
 - сравните с [Kora Java Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-config-hocon-app) и [Kora Kotlin Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-config-hocon-app)
-- проверьте [документацию по конфигурации](../documentation/config.md)
-- проверьте [документацию по контейнеру](../documentation/container.md)
+- посмотрите [документацию по конфигурации](../documentation/config.md)
+- посмотрите [документацию по контейнеру](../documentation/container.md)
+- посмотрите [пример конфигурации HOCON](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-config-hocon)
 - прочитайте [спецификацию HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)

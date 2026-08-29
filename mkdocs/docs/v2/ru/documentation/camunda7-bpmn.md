@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry. Use when working with CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+description: "Explains Kora Camunda 7 BPMN embedded process engine integration, resource deployment, delegates, engine services, transactions, configuration, and telemetry. Use when working with CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, KoraDelegate, CamundaTransactionManager, ProcessEngineConfigurator, Metrics Reference."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 7 BPMN embedded process engine integration, deployment, worker components, configuration, and telemetry; key triggers include CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, @Component, Metrics Reference."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora Camunda 7 BPMN embedded process engine, resource deployment, delegates, engine services, transactions, configuration, and telemetry; key triggers include CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, KoraDelegate, CamundaEngineDataSource, CamundaTransactionManager, ProcessEngineConfigurator, CamundaVersion, Metrics Reference."
 ---
 
 ??? warning "Экспериментальный модуль"
@@ -9,10 +9,16 @@ agent:
     **Экспериментальный** модуль является полностью рабочим и протестированным, но требует дополнительной апробации и аналитики по использованию.
     Поэтому `API` может получить незначительные изменения до полной готовности.
 
-Модуль подключает встроенный движок [Camunda 7](https://docs.camunda.org/manual/7.21/) для выполнения `BPMN`-процессов внутри приложения Kora.
+???+ warning "Camunda 7 устарела"
+
+    `CamundaEngineBpmnModule` помечен как `@Deprecated`, потому что [Camunda 7 достигла конца жизненного цикла](https://camunda.com/blog/2025/02/camunda-7-enterprise-end-of-life-extension/).
+    Модуль по-прежнему работает и поставляется, но новых возможностей для него не планируется.
+    Для новых сервисов рассмотрите [Camunda 8](camunda8-worker.md) или движок [Operaton](https://operaton.org/) — форк Camunda 7, развиваемый сообществом.
+
+Модуль подключает встроенный движок [Camunda 7](https://docs.camunda.org/manual/7.24/) для выполнения `BPMN`-процессов внутри приложения Kora.
 Он создает и настраивает `ProcessEngine`, связывает его с `JDBC`-источником данных, регистрирует исполнителей из графа приложения, загружает `BPMN` / `FORM` / `DMN`-ресурсы из `classpath` и добавляет телеметрию выполнения.
 
-Чтобы предоставить `Camunda 7 REST API` и веб-приложения `Cockpit` / `Admin` / `Tasklist` по HTTP, используйте вместе с этим модулем отдельный [модуль Camunda 7 REST](camunda7-rest.md).
+Чтобы предоставить `Camunda 7 REST API` по HTTP, используйте вместе с этим модулем отдельный [модуль Camunda 7 REST](camunda7-rest.md).
 
 ## Подключение { #dependency }
 
@@ -20,7 +26,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora.experimental:camunda-engine-bpmn"
+    implementation "io.koraframework.experimental:camunda-engine-bpmn"
     ```
 
     Модуль:
@@ -33,7 +39,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora.experimental:camunda-engine-bpmn")
+    implementation("io.koraframework.experimental:camunda-engine-bpmn")
     ```
 
     Модуль:
@@ -47,7 +53,7 @@ agent:
 
 ## Конфигурация { #configuration }
 
-Пример полной конфигурации, описанной в классе `CamundaEngineBpmnConfig`:
+Пример полной конфигурации, описанной в интерфейсе `CamundaEngineBpmnConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -86,14 +92,14 @@ agent:
                         stacktrace = true //(19)!
                     }
                     metrics {
-                        enabled = true //(20)!
-                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(21)!
-                        tags = { //(22)!
+                        enabled = false //(20)!
+                        engineMetrics = false //(21)!
+                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(22)!
+                        tags = { //(23)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
-                    engineTelemetryEnabled = false //(23)!
                     tracing {
                         enabled = true //(24)!
                         attributes = { //(25)!
@@ -107,13 +113,13 @@ agent:
     }
     ```
 
-    1.  Минимальное количество постоянно живущих потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) (по умолчанию: `5`).
-    2.  Максимальное количество потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) (по умолчанию: `25`).
+    1.  Минимальное количество постоянно живущих потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/the-job-executor/) (по умолчанию: `5`).
+    2.  Максимальное количество потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/the-job-executor/) (по умолчанию: `25`).
     3.  Размер очереди задач `JobExecutor`, при превышении которого новые задачи отклоняются (по умолчанию: `25`).
     4.  Максимальное количество задач, забираемых `JobExecutor` за один запрос (по умолчанию: `Runtime.getRuntime().availableProcessors() * 2`).
-    5.  Использовать [виртуальные потоки](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) в качестве основы `JobExecutor` (по умолчанию: `false`). При включении этой опции настройки размера пула и очереди не используются.
-    6.  Идентификатор `tenant` для [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию не указан, опционально).
-    7.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию: `KoraEngineAutoDeployment`).
+    5.  Использовать [виртуальные потоки](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html) в качестве основы `JobExecutor` (по умолчанию: `false`). При включении этой опции настройки размера пула и очереди не используются.
+    6.  Идентификатор `tenant` для [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.24/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию не указан, опционально).
+    7.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.24/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию: `KoraEngineAutoDeployment`).
     8.  Загружать только измененные ресурсы за счет фильтрации дубликатов в `Camunda` (по умолчанию: `true`).
     9.  Список путей для поиска `BPMN` / `FORM` / `DMN`-ресурсов (`обязательный`, по умолчанию не указан). Поддерживаются только пути с префиксом `classpath:`.
     10. Задержка перед загрузкой ресурсов в движок (по умолчанию не указана, опционально).
@@ -126,10 +132,10 @@ agent:
     17. Адрес электронной почты администратора `Camunda` (по умолчанию не указан, опционально). Если не указан, используется `<id>@localhost`.
     18. Включает логирование модуля (по умолчанию: `false`).
     19. Включает логирование стек-трейса ошибок (по умолчанию: `true`).
-    20. Включает метрики модуля (по умолчанию: `true`).
-    21. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    22. Теги метрик (по умолчанию: `{}`).
-    23. Включает сбор встроенной телеметрии движка `Camunda` (по умолчанию: `false`).
+    20. Включает метрики модуля (по умолчанию: `false`).
+    21. Включает собственные метрики движка и задач `Camunda`, которые накапливаются в таблицах ее базы данных (по умолчанию: `false`).
+    22. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    23. Теги метрик (по умолчанию: `{}`).
     24. Включает трассировку модуля (по умолчанию: `true`).
     25. Атрибуты трассировки (по умолчанию: `{}`).
 
@@ -166,12 +172,12 @@ agent:
               enabled: false #(18)!
               stacktrace: true #(19)!
             metrics:
-              enabled: true #(20)!
-              slo: [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] #(21)!
-              tags: #(22)!
+              enabled: false #(20)!
+              engineMetrics: false #(21)!
+              slo: [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] #(22)!
+              tags: #(23)!
                 key1: value1
                 key2: value2
-            engineTelemetryEnabled: false #(23)!
             tracing:
               enabled: true #(24)!
               attributes: #(25)!
@@ -179,13 +185,13 @@ agent:
                 key2: value2
     ```
 
-    1.  Минимальное количество постоянно живущих потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) (по умолчанию: `5`).
-    2.  Максимальное количество потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/) (по умолчанию: `25`).
+    1.  Минимальное количество постоянно живущих потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/the-job-executor/) (по умолчанию: `5`).
+    2.  Максимальное количество потоков в [`JobExecutor`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/the-job-executor/) (по умолчанию: `25`).
     3.  Размер очереди задач `JobExecutor`, при превышении которого новые задачи отклоняются (по умолчанию: `25`).
     4.  Максимальное количество задач, забираемых `JobExecutor` за один запрос (по умолчанию: `Runtime.getRuntime().availableProcessors() * 2`).
-    5.  Использовать [виртуальные потоки](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) в качестве основы `JobExecutor` (по умолчанию: `false`). При включении этой опции настройки размера пула и очереди не используются.
-    6.  Идентификатор `tenant` для [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию не указан, опционально).
-    7.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.21/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию: `KoraEngineAutoDeployment`).
+    5.  Использовать [виртуальные потоки](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html) в качестве основы `JobExecutor` (по умолчанию: `false`). При включении этой опции настройки размера пула и очереди не используются.
+    6.  Идентификатор `tenant` для [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.24/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию не указан, опционально).
+    7.  Имя [загрузки](https://docs.camunda.org/javadoc/camunda-bpm-platform/7.24/org/camunda/bpm/engine/repository/DeploymentBuilder.html) ресурсов (по умолчанию: `KoraEngineAutoDeployment`).
     8.  Загружать только измененные ресурсы за счет фильтрации дубликатов в `Camunda` (по умолчанию: `true`).
     9.  Список путей для поиска `BPMN` / `FORM` / `DMN`-ресурсов (`обязательный`, по умолчанию не указан). Поддерживаются только пути с префиксом `classpath:`.
     10. Задержка перед загрузкой ресурсов в движок (по умолчанию не указана, опционально).
@@ -198,10 +204,10 @@ agent:
     17. Адрес электронной почты администратора `Camunda` (по умолчанию не указан, опционально). Если не указан, используется `<id>@localhost`.
     18. Включает логирование модуля (по умолчанию: `false`).
     19. Включает логирование стек-трейса ошибок (по умолчанию: `true`).
-    20. Включает метрики модуля (по умолчанию: `true`).
-    21. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    22. Теги метрик (по умолчанию: `{}`).
-    23. Включает сбор встроенной телеметрии движка `Camunda` (по умолчанию: `false`).
+    20. Включает метрики модуля (по умолчанию: `false`).
+    21. Включает собственные метрики движка и задач `Camunda`, которые накапливаются в таблицах ее базы данных (по умолчанию: `false`).
+    22. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    23. Теги метрик (по умолчанию: `{}`).
     24. Включает трассировку модуля (по умолчанию: `true`).
     25. Атрибуты трассировки (по умолчанию: `{}`).
 
@@ -252,9 +258,10 @@ src/main/resources/bpm/
 
 Правила загрузки, которые стоит учитывать:
 
-- Поддерживаемые типы ресурсов — модели процессов `BPMN`, формы `FORM` и таблицы решений `DMN`.
+- Поддерживаемые типы ресурсов — модели процессов `BPMN`, формы `FORM` и таблицы решений `DMN`. Кейс-модели `CMMN` этой интеграцией не поддерживаются: движок собирается без `CMMN`, а запросы кейсов всегда возвращают пустой результат.
 - Загружаются только пути с префиксом `classpath:`. Любой другой путь пропускается с предупреждением в логе.
 - Пути сканируются **рекурсивно**, поэтому вложенные каталоги внутри указанного пути также включаются.
+- Ресурсы находятся как в распакованных каталогах, так и внутри `JAR`-файлов, поэтому путь `classpath:bpm` продолжает работать и в собранном дистрибутиве.
 - При `deployChangedOnly = true` (по умолчанию) включается фильтрация дубликатов `Camunda`, поэтому повторно загружаются только ресурсы, изменившиеся с момента предыдущей загрузки.
 - Опциональный `tenantId` привязывает загрузку к конкретному `tenant`, а `delay` откладывает загрузку на заданное время после старта.
 - Загрузка регистрируется под именем `name` (по умолчанию `KoraEngineAutoDeployment`).
@@ -263,7 +270,7 @@ src/main/resources/bpm/
 ## Исполнители { #applications }
 
 `Camunda` может вызывать компоненты приложения в качестве исполнителей процесса.
-Обычные экземпляры [`JavaDelegate`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/delegation-code/) регистрируются в контексте по полному имени класса (`canonicalName`) и по короткому имени класса (`simpleName`).
+Обычные компоненты [`JavaDelegate`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/delegation-code/) регистрируются в контексте выражений движка по полному имени класса (`canonicalName`) и по короткому имени класса (`simpleName`).
 Внутри `execute(...)` вы читаете и записываете переменные процесса через `DelegateExecution`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -345,8 +352,12 @@ src/main/resources/bpm/
     ```
 
 На объявленный таким образом исполнитель ссылаются как `${myKey}` в `camunda:delegateExpression`, поэтому имя, используемое в модели процесса, больше не зависит от имени класса.
+Для `KoraDelegate` продолжают работать и `simpleName`, и `canonicalName`, так что переопределение `key()` лишь добавляет еще одно имя.
 
-Каждый исполнитель перед вызовом оборачивается фабрикой `KoraDelegateWrapperFactory`: она ответвляет текущий `Context` Kora на время выполнения исполнителя и применяет телеметрию модуля вокруг `execute(...)`.
+Эти же имена доступны в скриптовых задачах и скриптовых выражениях `BPMN`, потому что модуль регистрирует свой реестр исполнителей как скриптовый `Resolver` `Camunda`.
+Кроме того, исполнитель разрешается и через `camunda:class` по полному имени класса: модуль устанавливает `ArtifactFactory`, который возвращает компонент из графа вместо создания нового объекта, поэтому `camunda:class="com.example.ScoreCustomerDelegate"` вызывает именно компонент из контейнера со всеми внедренными зависимостями.
+
+Каждый исполнитель перед вызовом оборачивается фабрикой `KoraDelegateWrapperFactory`: она открывает новую область логирования `MDC` и телеметрическое наблюдение модуля вокруг `execute(...)`.
 Вы можете предоставить собственную `KoraDelegateWrapperFactory` в виде `@Component`, чтобы изменить это поведение.
 
 ## Сервисы движка { #engine-services }
@@ -365,7 +376,7 @@ src/main/resources/bpm/
 - `HistoryService`
 - `IdentityService`
 
-Эти сервисы можно внедрять в ваши компоненты обычным образом.
+Эти сервисы можно внедрять в ваши компоненты обычным образом, как и сам `ProcessEngine`.
 
 ## Запуск процессов и взаимодействие с ними { #usage }
 
@@ -379,18 +390,22 @@ src/main/resources/bpm/
     @HttpController("/camunda")
     public final class CamundaController {
 
+        @Json
+        public record CamundaProcess(String instanceId, String businessKey) {}
+
         private final ProcessEngine processEngine;
 
         public CamundaController(ProcessEngine processEngine) {
             this.processEngine = processEngine;
         }
 
+        @Json
         @HttpRoute(method = HttpMethod.GET, path = "/start/onboarding")
-        public String startOnboarding() {
+        public HttpResponseEntity<CamundaProcess> startOnboarding() {
             String businessKey = UUID.randomUUID().toString();
             ProcessInstance instance = processEngine.getRuntimeService()
                 .startProcessInstanceByKey("Onboarding", businessKey);
-            return instance.getId();
+            return HttpResponseEntity.of(200, new CamundaProcess(instance.getId(), businessKey));
         }
     }
     ```
@@ -402,12 +417,16 @@ src/main/resources/bpm/
     @HttpController("/camunda")
     class CamundaController(private val processEngine: ProcessEngine) {
 
+        @Json
+        data class CamundaProcess(val instanceId: String, val businessKey: String)
+
+        @Json
         @HttpRoute(method = HttpMethod.GET, path = "/start/onboarding")
-        fun startOnboarding(): String {
+        fun startOnboarding(): HttpResponseEntity<CamundaProcess> {
             val businessKey = UUID.randomUUID().toString()
             val instance = processEngine.runtimeService
                 .startProcessInstanceByKey("Onboarding", businessKey)
-            return instance.id
+            return HttpResponseEntity.of(200, CamundaProcess(instance.id, businessKey))
         }
     }
     ```
@@ -481,27 +500,34 @@ src/main/resources/bpm/
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag(CamundaBpmn.class)
-    @Component
-    public DataSource camundaDataSource(/* ... */) {
-        return dataSource;
+    @Module
+    public interface CamundaDataSourceModule {
+
+        @Tag(CamundaBpmn.class)
+        default DataSource camundaDataSource(/* ... */) {
+            return dataSource;
+        }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(CamundaBpmn::class)
-    @Component
-    fun camundaDataSource(/* ... */): DataSource {
-        return dataSource
+    @Module
+    interface CamundaDataSourceModule {
+
+        @Tag(CamundaBpmn::class)
+        fun camundaDataSource(/* ... */): DataSource {
+            return dataSource
+        }
     }
     ```
 
 Компонент `CamundaEngineDataSource` абстрагирует `DataSource` движка вместе с его `CamundaTransactionManager`.
 Реализация по умолчанию выполняет `JDBC` через `DataSource` с тегом `@Tag(CamundaBpmn.class)`; вы можете переопределить `CamundaEngineDataSource` как `@Component`, чтобы полностью контролировать, как движок получает соединения и управляет транзакциями.
 
-Исполнитель, выполняющий собственную `JDBC`-работу, может проводить ее внутри транзакции движка через `CamundaTransactionManager`.
+Поскольку движок работает с внешним управлением транзакциями, каждая команда движка выполняется внутри транзакции, открытой `CamundaTransactionManager`.
+Исполнитель, выполняющий собственную `JDBC`-работу, может присоединиться к этой транзакции вместо открытия второй.
 `inContinueTx(...)` переиспользует соединение текущей транзакции движка (открывая новую только если активной нет), тогда как `inNewTx(...)` всегда открывает новую транзакцию; `currentConnection()` возвращает дескриптор для `commit()` / `rollback()` текущей транзакции:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -539,24 +565,29 @@ src/main/resources/bpm/
     }
     ```
 
+Ошибка `JDBC`-операции сообщается как `UncheckedSqlException`.
+
 ## Исполнитель задач и готовность { #job-executor }
 
-Движок выполняет асинхронные продолжения и таймеры через [`JobExecutor`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/the-job-executor/).
-Реализация выбирается опцией `jobExecutor.virtualThreadsEnabled`: при `false` (по умолчанию) используется исполнитель на пуле потоков с размерами, задаваемыми `corePoolSize` / `maxPoolSize` / `queueSize` / `maxJobsPerAcquisition`; при `true` используется исполнитель на [виртуальных потоках](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html), а размеры пула и очереди игнорируются (см. пояснения в разделе [Конфигурация](#configuration)).
+Движок выполняет асинхронные продолжения и таймеры через [`JobExecutor`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/the-job-executor/).
+Реализация выбирается опцией `jobExecutor.virtualThreadsEnabled`: при `false` (по умолчанию) используется исполнитель на пуле потоков с именами потоков `camunda-worker-N` и размерами, задаваемыми `corePoolSize` / `maxPoolSize` / `queueSize` / `maxJobsPerAcquisition`; при `true` используется исполнитель на [виртуальных потоках](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html) с именами потоков `camunda-job-executor-N`, а размеры пула и очереди игнорируются (см. пояснения в разделе [Конфигурация](#configuration)).
 
 Модуль автоматически регистрирует [пробу готовности](probes.md), которая сообщает о приложении как `UP` только после того, как `JobExecutor` становится активным.
 Пока исполнитель задач не активирован, проба падает с сообщением `Camunda BPMN Engine JobExecutor is not active`, что удерживает приложение вне ротации, пока движок еще запускается.
 
-## Пользователь-администратор и Cockpit { #admin }
+При `parallelInitialization.enabled = true` (по умолчанию) движок стартует в два этапа: на первом этапе движок собирается с сокращенным набором выражений `MyBatis`, чтобы приложение запускалось быстрее, а на втором этапе добавляются оставшиеся выражения и параллельно с остальными конфигураторами активируется `JobExecutor`.
+Значение `parallelInitialization.enabled = false` собирает движок в один этап.
+
+## Пользователь-администратор { #admin }
 
 Когда секция `admin` присутствует, модуль создает пользователя-администратора `Camunda`, гарантирует существование группы `camunda-admin` с полными правами и добавляет в нее пользователя (см. пояснения `admin` в разделе [Конфигурация](#configuration)).
-Именно эту учетную запись вы используете для входа в веб-приложения `Cockpit` / `Admin` / `Tasklist`, предоставляемые [модулем Camunda 7 REST](camunda7-rest.md).
-Если секция `admin` опущена, пользователь не создается.
+Эта учетная запись хранится в сервисе идентификации движка, поэтому она аутентифицируется в [Camunda 7 REST API](camunda7-rest.md) и в любом внешнем веб-приложении `Camunda`, работающем с той же базой данных.
+Если секция `admin` опущена, пользователь не создается; если пользователь с указанным `id` уже существует, ничего не изменяется.
 
 ## Конфигурация движка { #engine-configuration }
 
 Для дополнительной настройки зарегистрируйте компонент `ProcessEngineConfigurator`.
-Метод `prepare(...)` вызывается до создания [ProcessEngine](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-bootstrapping/) и получает `ProcessEngineConfiguration`; метод `setup(...)` вызывается после создания движка:
+Метод `prepare(...)` вызывается до создания [ProcessEngine](https://docs.camunda.org/manual/7.24/user-guide/process-engine/process-engine-bootstrapping/) и получает `ProcessEngineConfiguration`; метод `setup(...)` вызывается после создания движка:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -592,9 +623,14 @@ src/main/resources/bpm/
     }
     ```
 
+Все вызовы `setup(...)` выполняются параллельно на виртуальных потоках, поэтому конфигуратор не должен полагаться на порядок выполнения других конфигураторов.
+Сам модуль через этот же механизм добавляет конфигуратор пользователя-администратора, конфигуратор загрузки ресурсов и конфигуратор второго этапа инициализации.
+
+Всю `ProcessEngineConfiguration` тоже можно заменить: она предоставляется как `@DefaultComponent`, поэтому регистрация собственного компонента `ProcessEngineConfiguration` имеет приоритет над `KoraProcessEngineConfiguration` из модуля.
+
 ## Плагины { #plugins }
 
-Вы можете зарегистрировать произвольные [`ProcessEnginePlugin`](https://docs.camunda.org/manual/7.21/user-guide/process-engine/process-engine-plugins/), предоставив их в качестве компонентов в контейнере зависимостей Kora.
+Вы можете зарегистрировать произвольные [`ProcessEnginePlugin`](https://docs.camunda.org/manual/7.24/user-guide/process-engine/process-engine-plugins/), предоставив их в качестве компонентов в контейнере зависимостей Kora.
 Модуль собирает все такие компоненты и передает их в конфигурацию движка при создании `ProcessEngine`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -673,9 +709,127 @@ src/main/resources/bpm/
     }
     ```
 
+## Тестирование { #testing }
+
+Для [компонентных тестов](junit5.md) движок можно заменить на in-memory, чтобы не требовалась внешняя база данных.
+Компонент `ProcessEngineConfiguration` заменяется на `StandaloneInMemProcessEngineConfiguration`, который сохраняет предоставленные Kora менеджер выражений, фабрику артефактов, генератор идентификаторов, исполнитель задач и скриптовый резолвер, поэтому исполнители из графа по-прежнему разрешаются как обычно:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class InMemoryProcessEngineConfiguration extends StandaloneInMemProcessEngineConfiguration {
+
+        public InMemoryProcessEngineConfiguration(KoraAppGraph graph) {
+            setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP);
+            setJdbcUrl("jdbc:h2:mem:camunda;DB_CLOSE_ON_EXIT=FALSE");
+            setAuthorizationEnabled(false);
+            setJobExecutorActivate(true);
+            setExpressionManager(graph.getFirst(JuelExpressionManager.class));
+            setArtifactFactory(graph.getFirst(ArtifactFactory.class));
+            setIdGenerator(graph.getFirst(IdGenerator.class));
+            setJobExecutor(graph.getFirst(JobExecutor.class));
+            if (getResolverFactories() == null) {
+                setResolverFactories(new ArrayList<>());
+            }
+            getResolverFactories().add(graph.getFirst(KoraResolverFactory.class));
+        }
+    }
+
+    @KoraAppTest(Application.class)
+    class ProcessTests implements KoraAppTestGraphModifier, KoraAppTestConfigModifier {
+
+        @Mock
+        @TestComponent
+        private CamundaEngineDataSource mockDataSource;
+        @TestComponent
+        private ProcessEngine processEngine;
+
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification.ofString("""
+                camunda.engine.bpmn {
+                  deployment.resources = "classpath:bpm"
+                }
+                """);
+        }
+
+        @Override
+        public KoraGraphModification graph() {
+            return KoraGraphModification.create()
+                .replaceComponent(ProcessEngineConfiguration.class, InMemoryProcessEngineConfiguration::new);
+        }
+
+        @Test
+        void processStarted() {
+            var instance = processEngine.getRuntimeService()
+                .startProcessInstanceByKey("Onboarding", UUID.randomUUID().toString());
+            assertNotNull(instance.getId());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class InMemoryProcessEngineConfiguration(graph: KoraAppGraph) : StandaloneInMemProcessEngineConfiguration() {
+
+        init {
+            databaseSchemaUpdate = ProcessEngineConfiguration.DB_SCHEMA_UPDATE_CREATE_DROP
+            jdbcUrl = "jdbc:h2:mem:camunda;DB_CLOSE_ON_EXIT=FALSE"
+            authorizationEnabled = false
+            isJobExecutorActivate = true
+            expressionManager = graph.getFirst(JuelExpressionManager::class.java)
+            artifactFactory = graph.getFirst(ArtifactFactory::class.java)
+            idGenerator = graph.getFirst(IdGenerator::class.java)
+            jobExecutor = graph.getFirst(JobExecutor::class.java)
+            if (resolverFactories == null) {
+                resolverFactories = ArrayList()
+            }
+            resolverFactories.add(graph.getFirst(KoraResolverFactory::class.java))
+        }
+    }
+
+    @KoraAppTest(Application::class)
+    class ProcessTests : KoraAppTestGraphModifier, KoraAppTestConfigModifier {
+
+        @Mock
+        @TestComponent
+        lateinit var mockDataSource: CamundaEngineDataSource
+
+        @TestComponent
+        lateinit var processEngine: ProcessEngine
+
+        override fun config(): KoraConfigModification = KoraConfigModification.ofString(
+            """
+            camunda.engine.bpmn {
+              deployment.resources = "classpath:bpm"
+            }
+            """.trimIndent()
+        )
+
+        override fun graph(): KoraGraphModification = KoraGraphModification.create()
+            .replaceComponent(ProcessEngineConfiguration::class.java, ::InMemoryProcessEngineConfiguration)
+
+        @Test
+        fun processStarted() {
+            val instance = processEngine.runtimeService
+                .startProcessInstanceByKey("Onboarding", UUID.randomUUID().toString())
+            assertNotNull(instance.id)
+        }
+    }
+    ```
+
+Мок `CamundaEngineDataSource` не дает реальному `DataSource` приложения попасть в тестовый граф, а любой исполнитель можно замокать через `@Mock` `@TestComponent`, чтобы проверить, что процесс до него дошел.
+
 ## Телеметрия { #telemetry }
 
 Модуль сообщает собственные логирование, метрики и трассировку для выполнения исполнителей через секцию конфигурации `telemetry`.
-Метрики описаны в разделе [Справочник метрик](metrics.md#camunda-7-bpmn), а ответвление `Context`, выполняемое `KoraDelegateWrapperFactory`, ограничивает эту телеметрию рамками каждого вызова исполнителя.
 
-Независимо от телеметрии модуля, `telemetry.engineTelemetryEnabled` переключает сбор собственной встроенной телеметрии `Camunda` (по умолчанию отключен).
+Логирование пишется в логгер, названный по классу исполнителя, и создает событие `Camunda BPMN Engine started` перед вызовом и событие `Camunda BPMN Engine finished delegate execution` (или `... failed delegate execution`) после него, со структурированными полями `processBusinessKey`, `processInstanceId`, `activityId`, `activityName`, `eventName`, `businessKey` и временем обработки.
+
+Трассировка создает на каждый вызов исполнителя span `Camunda Delegate <canonicalName>` с атрибутами `eventName`, `processBusinessKey` и `processInstanceId`.
+Метрики описаны в разделе [Справочник метрик](metrics.md#camunda-7-bpmn), а область `MDC`, открываемая `KoraDelegateWrapperFactory`, ограничивает эту телеметрию рамками каждого вызова исполнителя.
+
+Чтобы изменить состав отправляемых данных, зарегистрируйте как `@Component` собственного наследника `DefaultCamundaEngineLoggerFactory` или `DefaultCamundaEngineMetricsFactory`; вся `CamundaEngineTelemetryFactory` предоставляется через `@DefaultComponent` и также может быть заменена.
+
+Независимо от телеметрии модуля, `telemetry.metrics.engineMetrics` переключает собственные метрики движка и задач `Camunda`, которые движок накапливает в своих таблицах базы данных (по умолчанию отключены).

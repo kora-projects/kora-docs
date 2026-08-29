@@ -1,16 +1,20 @@
 ---
-description: "Explains Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpClientModule, OkHttp."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule."
 ---
 
-Модуль `HTTP-клиента` описывает исходящие HTTP-вызовы приложения: от выбора транспортной реализации до преобразования запроса,
-преобразования ответа, телеметрии и перехватчиков. В Kora можно описывать типизированные клиенты декларативно через `@HttpClient`
-и `@HttpRoute` с тонким слоем абстракции, либо использовать общий интерфейс `HttpClient` напрямую, когда запрос нужно собрать в коде.
+Модуль `HTTP-клиента` описывает исходящие HTTP-вызовы приложения: реализацию транспорта, преобразование запроса,
+преобразование ответа, телеметрию и перехватчики. В Kora типизированные клиенты описываются декларативно через `@HttpClient`
+и `@HttpRoute`, либо используется общий интерфейс `HttpClient` напрямую, когда запрос нужно собрать в коде.
 
 Декларативный подход подходит для большинства интеграций с внешними службами: контракт метода становится контрактом удаленного вызова,
 а Kora во время компиляции создает реализацию без использования `Reflection` во время работы. Императивный подход полезен для низкоуровневых
 или динамических сценариев, где путь, заголовки, параметры или тело запроса удобнее собирать вручную.
+
+Все вызовы HTTP-клиента в Kora **синхронные и блокирующие**: `HttpClient.execute()` возвращает `HttpClientResponse` напрямую,
+а декларативный метод сразу возвращает результат. Параллелизм обеспечивается виртуальными потоками,
+а не реактивными или корутинными типами возврата.
 
 ???+ tip "Совет"
 
@@ -24,10 +28,9 @@ agent:
 
 ## OkHttp { #okhttp }
 
-Реализация `HTTP`-клиента основана на библиотеке [OkHttp](https://github.com/square/okhttp).
-Учитывайте что реализация написана на Kotlin и использует соответствующие зависимости.
-Лучше всего подходит для Kotlin сервисов, либо Java сервисов где нужна высокая производительность,
-либо требуется поддержка HTTP 3, либо поддержка GZip сжатия, либо другие специфичные HTTP опции.
+Реализация `HTTP`-клиента на базе библиотеки [OkHttp](https://github.com/square/okhttp).
+Сам модуль Kora написан на Java, но библиотека OkHttp написана на Kotlin и тянет собственные зависимости.
+Этот транспорт стоит выбирать, если нужны `HTTP/2` или `HTTP/3`, сжатие `GZip` либо иные специфичные для OkHttp настройки.
 
 ### Подключение { #dependency }
 
@@ -35,7 +38,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-ok"
+    implementation "io.koraframework:http-client-ok"
     ```
 
     Модуль:
@@ -48,7 +51,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-ok")
+    implementation("io.koraframework:http-client-ok")
     ```
 
     Модуль:
@@ -57,9 +60,11 @@ agent:
     interface Application : OkHttpClientModule
     ```
 
+Реализацией интерфейса `HttpClient` выступает `OkHttpClient` из пакета `io.koraframework.http.client.ok`.
+
 ### Конфигурация { #configuration }
 
-Основные параметры конфигурации OkHttp клиента:
+Основные параметры конфигурации клиента OkHttp:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -70,8 +75,8 @@ agent:
     }
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -81,12 +86,13 @@ agent:
       readTimeout: "2m" #(2)!
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации, описанной в классе `OkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
+    Пример полной конфигурации, описанной в классах `OkHttpClientConfig`
+    и `HttpClientConfig` (указаны значения по умолчанию либо примерные значения):
 
     ===! ":material-code-json: `Hocon`"
 
@@ -94,8 +100,8 @@ agent:
         httpClient {
             ok {
                 followRedirects = true //(1)!
-                httpVersion = "HTTP_1_1" //(2)!
-                retryOnConnectionFailure = true //(3)!
+                retryOnConnectionFailure = true //(2)!
+                httpVersion = "HTTP_1_1" //(3)!
             }
             connectTimeout = "5s" //(4)!
             readTimeout = "2m" //(5)!
@@ -107,54 +113,20 @@ agent:
                 password = "password" //(10)!
                 nonProxyHosts = [ "host1", "host2" ] //(11)!
             }
-            telemetry {
-                logging {
-                    enabled = false //(12)!
-                    mask = "***" //(13)!
-                    maskQueries = [ ] //(14)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(15)!
-                    pathTemplate = true //(16)!
-                }
-                metrics {
-                    enabled = true //(17)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                    tags = { // (19)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(20)!
-                    attributes = { // (21)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
         ```
 
-        1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
-        2.  Максимальная используемая версия `HTTP`-протокола, доступные значения: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (по умолчанию: `HTTP_1_1`)
-        3.  Пробовать ли повторно выполнить запрос при ошибке соединения; может влиять на предельное время установления соединения (по умолчанию: `true`)
-        4.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        5.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        6.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        7.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        8.  Порт прокси (`обязательная`, по умолчанию не указано)
-        9.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        10.  Пароль для прокси (по умолчанию не указано, необязательно)
-        11.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        12.  Включает логирование модуля (по умолчанию: `false`)
-        13.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        14.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        15.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        16.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        17.  Включает метрики модуля (по умолчанию: `true`)
-        18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19.  Настройка тегов для метрик (по умолчанию: `{}`)
-        20.  Включает трассировку модуля (по умолчанию: `true`)
-        21.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Повторять ли запрос после сбоя соединения; это может влиять на максимальное время установки соединения (по умолчанию: `true`)
+        3. Максимальная используемая версия протокола `HTTP`, доступные значения: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (по умолчанию: `HTTP_1_1`)
+        4. Максимальное время установки соединения (по умолчанию: `5s`)
+        5. Максимальное время чтения ответа (по умолчанию: `2m`)
+        6. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        7. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        9. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        10. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        11. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
 
     === ":simple-yaml: `YAML`"
 
@@ -162,8 +134,8 @@ agent:
         httpClient:
           ok:
             followRedirects: true #(1)!
-            httpVersion: "HTTP_1_1" #(2)!
-            retryOnConnectionFailure: true #(3)!
+            retryOnConnectionFailure: true #(2)!
+            httpVersion: "HTTP_1_1" #(3)!
           connectTimeout: "5s" #(4)!
           readTimeout: "2m" #(5)!
           useEnvProxy: false #(6)!
@@ -173,63 +145,39 @@ agent:
             user: "user"  #(9)!
             password: "password" #(10)!
             nonProxyHosts: [ "host1", "host2" ] #(11)!
-          telemetry:
-            logging:
-              enabled: false #(12)!
-              mask: "***" #(13)!
-              maskQueries: [ ] #(14)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(15)!
-              pathTemplate: true #(16)!
-            metrics:
-              enabled: true #(17)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-              tags: #(19)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(20)!
-              attributes: #(21)!
-                key1: value1
-                key2: value2
         ```
 
-        1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
-        2.  Максимальная используемая версия `HTTP`-протокола, доступные значения: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (по умолчанию: `HTTP_1_1`)
-        3.  Пробовать ли повторно выполнить запрос при ошибке соединения; может влиять на предельное время установления соединения (по умолчанию: `true`)
-        4.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        5.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        6.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        7.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        8.  Порт прокси (`обязательная`, по умолчанию не указано)
-        9.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        10.  Пароль для прокси (по умолчанию не указано, необязательно)
-        11.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        12.  Включает логирование модуля (по умолчанию: `false`)
-        13.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        14.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        15.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        16.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        17.  Включает метрики модуля (по умолчанию: `true`)
-        18.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19.  Настройка тегов для метрик (по умолчанию: `{}`)
-        20.  Включает трассировку модуля (по умолчанию: `true`)
-        21.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Повторять ли запрос после сбоя соединения; это может влиять на максимальное время установки соединения (по умолчанию: `true`)
+        3. Максимальная используемая версия протокола `HTTP`, доступные значения: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (по умолчанию: `HTTP_1_1`)
+        4. Максимальное время установки соединения (по умолчанию: `5s`)
+        5. Максимальное время чтения ответа (по умолчанию: `2m`)
+        6. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        7. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        9. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        10. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        11. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
 
-Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-client).
+Телеметрия **не** настраивается в секции транспорта: логирование, метрики и трассировка настраиваются для каждого
+декларативного клиента по пути `httpClient.<clientName>.telemetry`, смотрите [Конфигурацию клиента](#client-configuration).
+
+Метрики модуля описаны в разделе [Описание метрик](metrics.md#http-client).
 
 #### Конфигуратор { #configurer }
 
-Пример настройки построителя OkHttp клиента, `OkHttpConfigurer` должен быть доступен как компонент:
+Построитель транспорта настраивается компонентом `Configurer<OkHttpClient.Builder>`.
+Kora применяет его последним, уже после собственной настройки:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public class SomeConfigurer implements OkHttpConfigurer {
+    public final class SomeConfigurer implements Configurer<OkHttpClient.Builder> {
 
         @Override
         public OkHttpClient.Builder configure(OkHttpClient.Builder builder) {
-            return builder;
+            return builder.callTimeout(Duration.ofSeconds(30));
         }
     }
     ```
@@ -238,17 +186,20 @@ agent:
 
     ```kotlin
     @Component
-    class SomeConfigurer : OkHttpConfigurer {
-        fun configure(builder: Builder): Builder {
-            return builder
+    class SomeConfigurer : Configurer<OkHttpClient.Builder> {
+
+        override fun configure(builder: OkHttpClient.Builder): OkHttpClient.Builder {
+            return builder.callTimeout(Duration.ofSeconds(30))
         }
     }
     ```
 
-## AsyncHttpClient { #asynchttpclient }
+`Configurer` находится в пакете `io.koraframework.common` и является общим контрактом настройки всех транспортов Kora.
 
-Реализация `HTTP`-клиента основана на библиотеке [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client).
-Подходит для Java сервисов, где преобладают асинхронные вызовы.
+## Apache HttpClient { #apache-httpclient }
+
+Реализация `HTTP`-клиента на базе [Apache HttpClient 5](https://hc.apache.org/httpcomponents-client-5.5.x/).
+Используется классический (блокирующий) API и пул соединений, что напрямую соответствует синхронному контракту клиента Kora.
 
 ### Подключение { #dependency-2 }
 
@@ -256,31 +207,33 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-async"
+    implementation "io.koraframework:http-client-apache"
     ```
 
     Модуль:
     ```java
     @KoraApp
-    public interface Application extends AsyncHttpClientModule { }
+    public interface Application extends ApacheHttpClientModule { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-async")
+    implementation("io.koraframework:http-client-apache")
     ```
 
     Модуль:
     ```kotlin
     @KoraApp
-    interface Application : AsyncHttpClientModule
+    interface Application : ApacheHttpClientModule
     ```
+
+Реализацией интерфейса `HttpClient` выступает `ApacheHttpClient` из пакета `io.koraframework.http.client.apache`.
 
 ### Конфигурация { #configuration-2 }
 
-Основные параметры конфигурации AsyncHttpClient:
+Основные параметры конфигурации Apache HttpClient:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -291,8 +244,8 @@ agent:
     }
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа, отображается на response timeout Apache (по умолчанию: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -302,139 +255,130 @@ agent:
       readTimeout: "2m" #(2)!
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа, отображается на response timeout Apache (по умолчанию: `2m`)
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации, описанной в классе `AsyncHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
+    Пример полной конфигурации, описанной в классах `ApacheHttpClientConfig`
+    и `HttpClientConfig` (указаны значения по умолчанию либо примерные значения):
 
     ===! ":material-code-json: `Hocon`"
 
         ```javascript
         httpClient {
-            async {
+            apache {
                 followRedirects = true //(1)!
+                maxRedirects = 3 //(2)!
+                maxConnections = 1000 //(3)!
             }
-            connectTimeout = "5s" //(2)!
-            readTimeout = "2m" //(3)!
-            useEnvProxy = false //(4)!
+            connectTimeout = "5s" //(4)!
+            readTimeout = "2m" //(5)!
+            useEnvProxy = false //(6)!
             proxy {
-                host = "localhost"  //(5)!
-                port = 8090  //(6)!
-                user = "user"  //(7)!
-                password = "password"  //(8)!
-                nonProxyHosts = [ "host1", "host2" ]  //(9)!
-            }
-            telemetry {
-                logging {
-                    enabled = false //(10)!
-                    mask = "***" //(11)!
-                    maskQueries = [ ] //(12)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
-                    pathTemplate = true //(14)!
-                }
-                metrics {
-                    enabled = true //(15)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
-                    tags = { // (17)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(18)!
-                    attributes = { // (19)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
+                host = "localhost" //(7)!
+                port = 8090 //(8)!
+                user = "user" //(9)!
+                password = "password" //(10)!
+                nonProxyHosts = [ "host1", "host2" ] //(11)!
             }
         }
         ```
 
-        1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
-        2.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        3.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        4.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        5.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        6.  Порт прокси (`обязательная`, по умолчанию не указано)
-        7.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        8.  Пароль для прокси (по умолчанию не указано, необязательно)
-        9.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        10.  Включает логирование модуля (по умолчанию: `false`)
-        11.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        12.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        13.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        14.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        15.  Включает метрики модуля (по умолчанию: `true`)
-        16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        17.  Настройка тегов для метрик (по умолчанию: `{}`)
-        18.  Включает трассировку модуля (по умолчанию: `true`)
-        19.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Максимальное количество перенаправлений для одного запроса (по умолчанию: `3`)
+        3. Максимальное количество соединений в пуле, применяется и суммарно, и на маршрут (по умолчанию: количество доступных процессоров, умноженное на `250`)
+        4. Максимальное время установки соединения (по умолчанию: `5s`)
+        5. Максимальное время чтения ответа (по умолчанию: `2m`)
+        6. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        7. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        9. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        10. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        11. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
         httpClient:
-          async:
+          apache:
             followRedirects: true #(1)!
-          connectTimeout: "5s" #(2)!
-          readTimeout: "2m" #(3)!
-          useEnvProxy: false #(4)!
+            maxRedirects: 3 #(2)!
+            maxConnections: 1000 #(3)!
+          connectTimeout: "5s" #(4)!
+          readTimeout: "2m" #(5)!
+          useEnvProxy: false #(6)!
           proxy:
-            host: "localhost"  #(5)!
-            port: 8090  #(6)!
-            user: "user"  #(7)!
-            password: "password"  #(8)!
-            nonProxyHosts: [ "host1", "host2" ]  #(9)!
-          telemetry:
-            logging:
-              enabled: false #(10)!
-              mask: "***" #(11)!
-              maskQueries: [ ] #(12)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
-              pathTemplate: true #(14)!
-            metrics:
-              enabled: true #(15)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-              tags: #(17)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(18)!
-              attributes: #(19)!
-                key1: value1
-                key2: value2
+            host: "localhost" #(7)!
+            port: 8090  #(8)!
+            user: "user"  #(9)!
+            password: "password" #(10)!
+            nonProxyHosts: [ "host1", "host2" ] #(11)!
         ```
 
-        1.  Следовать ли по [перенаправлениям в HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
-        2.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        3.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        4.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        5.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        6.  Порт прокси (`обязательная`, по умолчанию не указано)
-        7.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        8.  Пароль для прокси (по умолчанию не указано, необязательно)
-        9.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        10.  Включает логирование модуля (по умолчанию: `false`)
-        11.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        12.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        13.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        14.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        15.  Включает метрики модуля (по умолчанию: `true`)
-        16.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        17.  Настройка тегов для метрик (по умолчанию: `{}`)
-        18.  Включает трассировку модуля (по умолчанию: `true`)
-        19.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Максимальное количество перенаправлений для одного запроса (по умолчанию: `3`)
+        3. Максимальное количество соединений в пуле, применяется и суммарно, и на маршрут (по умолчанию: количество доступных процессоров, умноженное на `250`)
+        4. Максимальное время установки соединения (по умолчанию: `5s`)
+        5. Максимальное время чтения ответа (по умолчанию: `2m`)
+        6. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        7. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        9. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        10. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        11. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
 
-Можно также настроить [Netty транспорт](netty.md).
+#### Конфигуратор { #configurer-2 }
+
+Транспорт Apache принимает два конфигуратора: `Configurer<RequestConfig.Builder>` для настроек запроса по умолчанию
+и `Configurer<HttpClientBuilder>` для самого клиента. Оба опциональны:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeRequestConfigurer implements Configurer<RequestConfig.Builder> {
+
+        @Override
+        public RequestConfig.Builder configure(RequestConfig.Builder builder) {
+            return builder.setConnectionRequestTimeout(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Component
+    public final class SomeClientConfigurer implements Configurer<HttpClientBuilder> {
+
+        @Override
+        public HttpClientBuilder configure(HttpClientBuilder builder) {
+            return builder.setUserAgent("my-service");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeRequestConfigurer : Configurer<RequestConfig.Builder> {
+
+        override fun configure(builder: RequestConfig.Builder): RequestConfig.Builder {
+            return builder.setConnectionRequestTimeout(1, TimeUnit.SECONDS)
+        }
+    }
+
+    @Component
+    class SomeClientConfigurer : Configurer<HttpClientBuilder> {
+
+        override fun configure(builder: HttpClientBuilder): HttpClientBuilder {
+            return builder.setUserAgent("my-service")
+        }
+    }
+    ```
 
 ## Java клиент { #native-client }
 
-Реализация `HTTP`-клиента основана на встроенном Java-клиенте, поставляемом в [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
-Лучше всего подходит для Java-сервисов, где не требуется максимальная производительность,
-и хочется минимизировать количество внешних библиотек.
+Реализация `HTTP`-клиента на базе встроенного в [JDK](https://openjdk.org/groups/net/httpclient/intro.html) клиента.
+Kora запускает его на исполнителе виртуальных потоков, поэтому у транспорта нет собственных настроек пула потоков.
 
 ### Подключение { #dependency-3 }
 
@@ -442,7 +386,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-jdk"
+    implementation "io.koraframework:http-client-jdk"
     ```
 
     Модуль:
@@ -455,7 +399,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-jdk")
+    implementation("io.koraframework:http-client-jdk")
     ```
 
     Модуль:
@@ -463,6 +407,8 @@ agent:
     @KoraApp
     interface Application : JdkHttpClientModule
     ```
+
+Реализацией интерфейса `HttpClient` выступает `JdkHttpClient` из пакета `io.koraframework.http.client.jdk`.
 
 ### Конфигурация { #configuration-3 }
 
@@ -477,8 +423,8 @@ agent:
     }
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -488,19 +434,20 @@ agent:
       readTimeout: "2m" #(2)!
     ```
 
-    1.  Максимальное время на установление соединения (по умолчанию: `5s`)
-    2.  Максимальное время на чтение ответа (по умолчанию: `2m`)
+    1.  Максимальное время установки соединения (по умолчанию: `5s`)
+    2.  Максимальное время чтения ответа (по умолчанию: `2m`)
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации, описанной в классе `JdkHttpClientConfig` и `HttpClientConfig` (указаны примеры значений или значения по умолчанию):
+    Пример полной конфигурации, описанной в классах `JdkHttpClientConfig`
+    и `HttpClientConfig` (указаны значения по умолчанию либо примерные значения):
 
     ===! ":material-code-json: `Hocon`"
 
         ```javascript
         httpClient {
             jdk {
-                threads = 2 //(1)!
+                followRedirects = true //(1)!
                 httpVersion = "HTTP_1_1" //(2)!
             }
             connectTimeout = "5s" //(3)!
@@ -513,60 +460,26 @@ agent:
                 password = "password" //(9)!
                 nonProxyHosts = [ "host1", "host2" ] //(10)!
             }
-            telemetry {
-                logging {
-                    enabled = false //(11)!
-                    mask = "***" //(12)!
-                    maskQueries = [ ] //(13)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
-                    pathTemplate = true //(15)!
-                }
-                metrics {
-                    enabled = true //(16)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
-                    tags = { // (18)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(19)!
-                    attributes = { // (20)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
         ```
 
-        1.  Количество потоков для `HTTP`-клиента (по умолчанию: количество доступных процессоров, умноженное на `2`)
-        2.  Какую версию `HTTP`-протокола использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
-        3.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        4.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        5.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        6.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        7.  Порт прокси (`обязательная`, по умолчанию не указано)
-        8.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        9.  Пароль для прокси (по умолчанию не указано, необязательно)
-        10.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        11.  Включает логирование модуля (по умолчанию: `false`)
-        12.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        13.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        14.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        15.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        16.  Включает метрики модуля (по умолчанию: `true`)
-        17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        18.  Настройка тегов для метрик (по умолчанию: `{}`)
-        19.  Включает трассировку модуля (по умолчанию: `true`)
-        20.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Какую версию протокола `HTTP` использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
+        3. Максимальное время установки соединения (по умолчанию: `5s`)
+        4. Максимальное время чтения ответа (по умолчанию: `2m`)
+        5. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        6. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        7. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        9. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        10. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
         httpClient:
           jdk:
-            threads: 2 #(1)!
+            followRedirects: true #(1)!
             httpVersion: "HTTP_1_1" #(2)!
           connectTimeout: "5s" #(3)!
           readTimeout: "2m" #(4)!
@@ -577,53 +490,52 @@ agent:
             user: "user" #(8)!
             password: "password" #(9)!
             nonProxyHosts: [ "host1", "host2" ] #(10)!
-          telemetry:
-            logging:
-              enabled: false #(11)!
-              mask: "***" #(12)!
-              maskQueries: [ ] #(13)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
-              pathTemplate: true #(15)!
-            metrics:
-              enabled: true #(16)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-              tags: #(18)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(19)!
-              attributes: #(20)!
-                key1: value1
-                key2: value2
         ```
 
-        1.  Количество потоков для `HTTP`-клиента (по умолчанию: количество доступных процессоров, умноженное на `2`)
-        2.  Какую версию `HTTP`-протокола использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
-        3.  Максимальное время на установление соединения (по умолчанию: `5s`)
-        4.  Максимальное время на чтение ответа (по умолчанию: `2m`)
-        5.  Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
-        6.  Адрес прокси (`обязательная`, по умолчанию не указано)
-        7.  Порт прокси (`обязательная`, по умолчанию не указано)
-        8.  Пользователь для прокси (по умолчанию не указано, необязательно)
-        9.  Пароль для прокси (по умолчанию не указано, необязательно)
-        10.  Узлы, которые следует исключить из проксирования (по умолчанию не указано, необязательно)
-        11.  Включает логирование модуля (по умолчанию: `false`)
-        12.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        13.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        14.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        15.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        16.  Включает метрики модуля (по умолчанию: `true`)
-        17.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        18.  Настройка тегов для метрик (по умолчанию: `{}`)
-        19.  Включает трассировку модуля (по умолчанию: `true`)
-        20.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Следовать ли [HTTP-перенаправлениям](https://developer.mozilla.org/ru/docs/Web/HTTP/Redirections) (по умолчанию: `true`)
+        2. Какую версию протокола `HTTP` использовать, доступные значения: `HTTP_1_1` / `HTTP_2` (по умолчанию: `HTTP_1_1`)
+        3. Максимальное время установки соединения (по умолчанию: `5s`)
+        4. Максимальное время чтения ответа (по умолчанию: `2m`)
+        5. Использовать ли переменные окружения `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` и `no_proxy` / `NO_PROXY` для настройки прокси (по умолчанию: `false`)
+        6. Хост прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        7. Порт прокси-сервера (обязательный, если секция `proxy` присутствует, без значения по умолчанию)
+        8. Пользователь прокси-сервера (опционально, без значения по умолчанию)
+        9. Пароль прокси-сервера (опционально, без значения по умолчанию)
+        10. Хосты, которые исключаются из проксирования (опционально, без значения по умолчанию)
+
+#### Конфигуратор { #configurer-3 }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeConfigurer implements Configurer<java.net.http.HttpClient.Builder> {
+
+        @Override
+        public java.net.http.HttpClient.Builder configure(java.net.http.HttpClient.Builder builder) {
+            return builder.sslContext(SSLContext.getDefault());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConfigurer : Configurer<java.net.http.HttpClient.Builder> {
+
+        override fun configure(builder: java.net.http.HttpClient.Builder): java.net.http.HttpClient.Builder {
+            return builder.sslContext(SSLContext.getDefault())
+        }
+    }
+    ```
 
 ## Декларативный клиент { #client-declarative }
 
-Предлагается использовать специальные аннотации для создания декларативного клиента:
+Для создания декларативного клиента предлагается использовать специальные аннотации:
 
-* `@HttpClient` — указывает, что интерфейс является декларативным `HTTP`-клиентом
-* `@HttpRoute` — указывает [тип HTTP-запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Methods) и путь запроса
+* `@HttpClient` - указывает, что интерфейс является декларативным HTTP-клиентом
+* `@HttpRoute` - указывает [тип HTTP-запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Methods) и путь запроса
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -646,16 +558,22 @@ agent:
         fun hello()
     }
     ```
+
+`HttpMethod` — это контейнер строковых констант (`GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`, `QUERY`),
+поэтому запись `method = "GET"` также корректна.
+
+Интерфейс клиента может наследовать другие интерфейсы: маршруты, объявленные в родителе, тоже будут реализованы,
+а переопределенный в клиенте метод заменяет унаследованный маршрут.
 
 ### Конфигурация клиента { #client-configuration }
 
-Конфигурация конкретной реализации `@HttpClient` по умолчанию ищется по пути `httpClient.{имя класса в нижнем регистре}`.
-Если нужно задать путь явно, используйте параметр `configPath` в аннотации:
+По умолчанию конфигурация конкретной реализации `@HttpClient` ищется по пути `httpClient.{имя класса с маленькой буквы}`.
+Если путь требуется указать явно, он передается значением аннотации:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @HttpClient(configPath = "httpClient.someClient") //(1)!
+    @HttpClient("httpClient.someClient") //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -663,12 +581,12 @@ agent:
     }
     ```
 
-    1. Путь до конфигурации конкретно этого клиента
+    1. Путь к конфигурации именно этого клиента
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @HttpClient(configPath = "httpClient.someClient") //(1)!
+    @HttpClient("httpClient.someClient") //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -676,18 +594,18 @@ agent:
     }
     ```
 
-    1. Путь до конфигурации конкретно этого клиента
+    1. Путь к конфигурации именно этого клиента
 
-В `@HttpClient` также можно указать теги для внедряемых компонентов:
+В `@HttpClient` также можно указать теги внедряемых компонентов:
 
-* `httpClientTag` — тег для выбора конкретного транспортного `HttpClient`, если в графе есть несколько реализаций с разными `@Tag`
-* `telemetryTag` — тег для выбора конкретной фабрики телеметрии клиента
+* `httpClientTag` — тег для выбора конкретного транспортного `HttpClient`, когда в графе есть несколько реализаций с разными `@Tag`
+* `telemetryTag` — тег для выбора конкретной фабрики `HttpClientTelemetryFactory`
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient(
-        configPath = "httpClient.someClient",
+        value = "httpClient.someClient",
         httpClientTag = CustomTransport.class,
         telemetryTag = CustomTelemetry.class
     )
@@ -702,9 +620,9 @@ agent:
 
     ```kotlin
     @HttpClient(
-        configPath = "httpClient.someClient",
-        httpClientTag = [CustomTransport::class],
-        telemetryTag = [CustomTelemetry::class]
+        value = "httpClient.someClient",
+        httpClientTag = CustomTransport::class,
+        telemetryTag = CustomTelemetry::class
     )
     interface SomeClient {
 
@@ -726,8 +644,8 @@ agent:
     }
     ```
 
-    1.  Базовый `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано)
-    2.  Максимальное время запроса (по умолчанию не указано, необязательно)
+    1.  Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
+    2.  Максимальное время запроса (опционально, без значения по умолчанию)
 
 === ":simple-yaml: `YAML`"
 
@@ -738,12 +656,13 @@ agent:
         requestTimeout: "10s" #(2)!
     ```
 
-    1.  Базовый `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано)
-    2.  Максимальное время запроса (по умолчанию не указано, необязательно)
+    1.  Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
+    2.  Максимальное время запроса (опционально, без значения по умолчанию)
 
 ??? note "Полная конфигурация"
 
-    Пример конфигурации в случае пути `httpClient.someClient` описанной в классе `DeclarativeHttpClientConfig`:
+    Пример конфигурации для пути `httpClient.someClient`, описанной в классах `DeclarativeHttpClientConfig`
+    и `HttpClientTelemetryConfig`:
 
     ===! ":material-code-json: `Hocon`"
 
@@ -758,19 +677,22 @@ agent:
                         mask = "***" //(4)!
                         maskQueries = [ ] //(5)!
                         maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
-                        pathTemplate = true //(7)!
+                        pathFull = false //(7)!
+                        maxRequestBodyLogSize = "2MiB" //(8)!
+                        maxResponseBodyLogSize = "2MiB" //(9)!
                     }
                     metrics {
-                        enabled = true //(8)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                        tags = { // (10)!
+                        enabled = false //(10)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                        tags = { // (12)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(11)!
-                        attributes = { // (12)!
+                        enabled = true //(13)!
+                        pathFull = true //(14)!
+                        attributes = { // (15)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -780,18 +702,21 @@ agent:
         }
         ```
 
-        1.  Базовый `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано)
-        2.  Максимальное время запроса: может включать разрешение `DNS`, подключение, запись тела запроса, обработку сервером и чтение тела ответа. Если вызов требует перенаправления или повторных попыток, все они должны завершиться в течение одного периода (по умолчанию не указано, необязательно)
-        3.  Включает логирование модуля (по умолчанию: `false`)
-        4.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        5.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        6.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        7.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        8.  Включает метрики модуля (по умолчанию: `true`)
-        9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        10.  Настройка тегов для метрик (по умолчанию: `{}`)
-        11.  Включает трассировку модуля (по умолчанию: `true`)
-        12.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
+        2. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, без значения по умолчанию)
+        3. Включает логирование модуля (по умолчанию: `false`)
+        4. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
+        5. Список параметров запроса, которые требуется скрывать (по умолчанию: `[]`)
+        6. Список заголовков запроса или ответа, которые требуется скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        7. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
+        8. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        9. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        10. Включает метрики модуля (по умолчанию: `false`)
+        11. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Настраивает теги метрик (по умолчанию: `{}`)
+        13. Включает трассировку модуля (по умолчанию: `true`)
+        14. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
+        15. Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -806,40 +731,52 @@ agent:
                 mask: "***" #(4)!
                 maskQueries: [ ] #(5)!
                 maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
-                pathTemplate: true #(7)!
+                pathFull: false #(7)!
+                maxRequestBodyLogSize: "2MiB" #(8)!
+                maxResponseBodyLogSize: "2MiB" #(9)!
               metrics:
-                enabled: true #(8)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-                tags: #(10)!
+                enabled: false #(10)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+                tags: #(12)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(11)!
-                attributes: #(12)!
+                enabled: true #(13)!
+                pathFull: true #(14)!
+                attributes: #(15)!
                   key1: value1
                   key2: value2
         ```
 
-        1.  Базовый `URL` сервиса, куда будут отправляться запросы (`обязательная`, по умолчанию не указано)
-        2.  Максимальное время запроса: может включать разрешение `DNS`, подключение, запись тела запроса, обработку сервером и чтение тела ответа. Если вызов требует перенаправления или повторных попыток, все они должны завершиться в течение одного периода (по умолчанию не указано, необязательно)
-        3.  Включает логирование модуля (по умолчанию: `false`)
-        4.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        5.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        6.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        7.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        8.  Включает метрики модуля (по умолчанию: `true`)
-        9.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        10.  Настройка тегов для метрик (по умолчанию: `{}`)
-        11.  Включает трассировку модуля (по умолчанию: `true`)
-        12.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Базовый `URL` сервиса, куда будут отправляться запросы (обязательный, без значения по умолчанию)
+        2. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, без значения по умолчанию)
+        3. Включает логирование модуля (по умолчанию: `false`)
+        4. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
+        5. Список параметров запроса, которые требуется скрывать (по умолчанию: `[]`)
+        6. Список заголовков запроса или ответа, которые требуется скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        7. Писать ли в лог полный путь запроса вместо шаблона маршрута; если значение не указано, полный путь пишется только на уровне `TRACE`, а в остальных случаях используется шаблон (опционально, без значения по умолчанию)
+        8. Максимальный размер тела запроса, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        9. Максимальный размер тела ответа, которое еще записывается в лог; тело большего размера пропускается с предупреждением (по умолчанию: `2MiB`)
+        10. Включает метрики модуля (по умолчанию: `false`)
+        11. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Настраивает теги метрик (по умолчанию: `{}`)
+        13. Включает трассировку модуля (по умолчанию: `true`)
+        14. Записывать ли в span атрибут `url.full` вместо только `url.path` (по умолчанию: `true`)
+        15. Настраивает атрибуты трассировки (по умолчанию: `{}`)
+
+???+ warning "Метрики и логирование выключены по умолчанию"
+
+    В Kora 2.0 `telemetry.metrics.enabled` и `telemetry.logging.enabled` по умолчанию `false`, а `telemetry.tracing.enabled` — `true`.
+    При выключенных метриках ничего не падает и ничего не пишется в лог — метрика `http.client.request.duration` просто не появляется.
+    Включайте их явно для каждого клиента.
 
 ### Конфигурация метода { #method-configuration }
 
-Для конкретного метода можно отдельно настроить часть параметров. Путь к конфигурации метода определяется путем к клиенту и именем метода:
-если путь клиента `httpClient.someClient`, то для метода `hello` итоговый путь будет `httpClient.someClient.hello`.
+Для конкретного метода часть параметров настраивается отдельно. Путь конфигурации метода складывается из пути клиента и имени метода:
+если путь клиента `httpClient.someClient`, то итоговый путь для метода `hello` — `httpClient.someClient.hello`.
 
-Конфигурация метода накладывается поверх конфигурации клиента: `requestTimeout` метода заменяет клиентское значение, а настройки телеметрии метода
-переопределяют только явно указанные поля.
+Конфигурация метода накладывается поверх конфигурации клиента: `requestTimeout` метода заменяет значение клиента,
+а настройки телеметрии метода переопределяют только явно указанные поля.
 
 Основные параметры конфигурации метода:
 
@@ -855,7 +792,7 @@ agent:
     }
     ```
 
-    1.  Максимальное время запроса (по умолчанию не указано, необязательно)
+    1.  Максимальное время запроса (опционально, без значения по умолчанию)
 
 === ":simple-yaml: `YAML`"
 
@@ -866,11 +803,12 @@ agent:
           requestTimeout: "10s" #(1)!
     ```
 
-    1.  Максимальное время запроса (по умолчанию не указано, необязательно)
+    1.  Максимальное время запроса (опционально, без значения по умолчанию)
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации метода:
+    Пример полной конфигурации метода, описанной в классе `HttpClientOperationConfig`.
+    Все поля опциональны: пропущенное поле наследует значение клиента.
 
     ===! ":material-code-json: `Hocon`"
 
@@ -885,19 +823,22 @@ agent:
                             mask = "***" //(3)!
                             maskQueries = [ ] //(4)!
                             maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
-                            pathTemplate = true //(6)!
+                            pathFull = false //(6)!
+                            maxRequestBodyLogSize = "2MiB" //(7)!
+                            maxResponseBodyLogSize = "2MiB" //(8)!
                         }
                         metrics {
-                            enabled = true //(7)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                            tags = { // (9)!
+                            enabled = false //(9)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                            tags = { // (11)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
                         }
                         tracing {
-                            enabled = true //(10)!
-                            attributes = { // (11)!
+                            enabled = true //(12)!
+                            pathFull = true //(13)!
+                            attributes = { // (14)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
@@ -908,17 +849,20 @@ agent:
         }
         ```
 
-        1.  Максимальное время запроса: может включать разрешение `DNS`, подключение, запись тела запроса, обработку сервером и чтение тела ответа. Если вызов требует перенаправления или повторных попыток, все они должны завершиться в течение одного периода (по умолчанию не указано, необязательно)
-        2.  Включает логирование модуля (по умолчанию: `false`)
-        3.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        4.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        5.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        6.  Использовать ли шаблон пути запроса при логировании; если не указано, наследуется значение клиента (по умолчанию не указано, необязательно)
-        7.  Включает метрики модуля (по умолчанию: `true`)
-        8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        9.  Настройка тегов для метрик (по умолчанию: `{}`)
-        10.  Включает трассировку модуля (по умолчанию: `true`)
-        11.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, наследует значение клиента)
+        2. Включает логирование модуля (опционально, наследует значение клиента)
+        3. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (опционально, наследует значение клиента)
+        4. Список параметров запроса, которые требуется скрывать (опционально, наследует значение клиента)
+        5. Список заголовков запроса или ответа, которые требуется скрывать (опционально, наследует значение клиента)
+        6. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
+        7. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
+        8. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
+        9. Включает метрики модуля (опционально, наследует значение клиента)
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
+        11. Настраивает теги метрик (опционально, наследует значение клиента)
+        12. Включает трассировку модуля (опционально, наследует значение клиента)
+        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
+        14. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
 
     === ":simple-yaml: `YAML`"
 
@@ -933,54 +877,62 @@ agent:
                   mask: "***" #(3)!
                   maskQueries: [ ] #(4)!
                   maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-                  pathTemplate: true #(6)!
+                  pathFull: false #(6)!
+                  maxRequestBodyLogSize: "2MiB" #(7)!
+                  maxResponseBodyLogSize: "2MiB" #(8)!
                 metrics:
-                  enabled: true #(7)!
-                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-                  tags: #(9)!
+                  enabled: false #(9)!
+                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+                  tags: #(11)!
                     key1: value1
                     key2: value2
                 tracing:
-                  enabled: true #(10)!
-                  attributes: #(11)!
+                  enabled: true #(12)!
+                  pathFull: true #(13)!
+                  attributes: #(14)!
                     key1: value1
                     key2: value2
         ```
 
-        1.  Максимальное время запроса: может включать разрешение `DNS`, подключение, запись тела запроса, обработку сервером и чтение тела ответа. Если вызов требует перенаправления или повторных попыток, все они должны завершиться в течение одного периода (по умолчанию не указано, необязательно)
-        2.  Включает логирование модуля (по умолчанию: `false`)
-        3.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        4.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        5.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        6.  Использовать ли шаблон пути запроса при логировании; если не указано, наследуется значение клиента (по умолчанию не указано, необязательно)
-        7.  Включает метрики модуля (по умолчанию: `true`)
-        8.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        9.  Настройка тегов для метрик (по умолчанию: `{}`)
-        10.  Включает трассировку модуля (по умолчанию: `true`)
-        11.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1. Максимальное время запроса: может включать разрешение `DNS`, установку соединения, запись тела запроса, обработку на сервере и чтение тела ответа. Если вызову требуются перенаправления или повторы, все они должны уложиться в один такой период (опционально, наследует значение клиента)
+        2. Включает логирование модуля (опционально, наследует значение клиента)
+        3. Маска, которой скрываются указанные заголовки и параметры запроса или ответа (опционально, наследует значение клиента)
+        4. Список параметров запроса, которые требуется скрывать (опционально, наследует значение клиента)
+        5. Список заголовков запроса или ответа, которые требуется скрывать (опционально, наследует значение клиента)
+        6. Писать ли в лог полный путь запроса вместо шаблона маршрута (опционально, наследует значение клиента)
+        7. Максимальный размер тела запроса, которое еще записывается в лог (опционально, наследует значение клиента)
+        8. Максимальный размер тела ответа, которое еще записывается в лог (опционально, наследует значение клиента)
+        9. Включает метрики модуля (опционально, наследует значение клиента)
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) корзины в миллисекундах для метрик (опционально, наследует значение клиента)
+        11. Настраивает теги метрик (опционально, наследует значение клиента)
+        12. Включает трассировку модуля (опционально, наследует значение клиента)
+        13. Записывать ли в span атрибут `url.full` вместо только `url.path` (опционально, наследует значение клиента)
+        14. Настраивает атрибуты трассировки (опционально, наследует значение клиента)
 
 ### Запрос { #request }
 
-Раздел описывает преобразования `HTTP`-запроса у декларативного `HTTP`-клиента.
-Предлагается использовать специальные аннотации для указания параметров запроса.
+В этом разделе описаны преобразования `HTTP`-запроса для декларативного `HTTP`-клиента.
+Параметры запроса задаются специальными аннотациями.
 
-#### Преобразование параметров в строку { #string-parameter-converter }
+#### Преобразование параметров { #string-parameter-converter }
 
-`StringParameterConverter<T>` преобразует значение параметра в строку перед тем, как Kora подставит его в путь, параметр запроса,
-заголовок или куки. Интерфейс состоит из одного метода:
+`HttpClientParameterWriter<T>` преобразует значение параметра в строку, прежде чем Kora подставит его в путь, параметр запроса,
+заголовок или куки. У интерфейса один метод:
 
 ```java
-public interface StringParameterConverter<T> {
+public interface HttpClientParameterWriter<T> {
     String convert(T value);
 }
 ```
 
-Преобразователь ищется как обычный компонент графа по точному типу параметра. Если параметр имеет тип `Map<String, T>`,
-то преобразователь ищется для типа значения `T`; если используется `Map<String, List<T>>`, он применяется к каждому элементу списка.
+`String`, `Integer`, `Long`, `Boolean` и примитивы Java записываются напрямую и вообще не требуют писателя.
+Для любого другого типа Kora ищет компонент `HttpClientParameterWriter<T>` по точному типу параметра.
+Если параметр имеет тип `Map<String, T>`, писатель ищется для типа значения `T`; если используется `Map<String, List<T>>`,
+он применяется к каждому элементу списка; для `List<T>` / `Set<T>` / `Collection<T>` — к каждому элементу коллекции.
 
-Из коробки доступны преобразователи для `Boolean`, `Short`, `Integer`, `Long`, `Double`, `Float`, `UUID`, `BigDecimal`, `BigInteger`,
+Встроенные писатели доступны для `Boolean`, `Short`, `Integer`, `Long`, `Double`, `Float`, `UUID`, `BigDecimal`, `BigInteger`,
 `Duration`, `OffsetTime`, `OffsetDateTime`, `LocalTime`, `LocalDate`, `LocalDateTime`, `ZonedDateTime` и `Instant`.
-Типы даты и времени записываются в `ISO`-формате. Для собственных типов нужно предоставить компонент `StringParameterConverter<T>`:
+Типы даты и времени записываются в формате `ISO`. Для собственных типов нужно предоставить компонент `HttpClientParameterWriter<T>`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -990,7 +942,7 @@ public interface StringParameterConverter<T> {
     @Module
     public interface UserIdModule {
 
-        default StringParameterConverter<UserId> userIdStringParameterConverter() {
+        default HttpClientParameterWriter<UserId> userIdParameterWriter() {
             return value -> Long.toString(value.value());
         }
     }
@@ -1004,8 +956,8 @@ public interface StringParameterConverter<T> {
     @Module
     interface UserIdModule {
 
-        fun userIdStringParameterConverter(): StringParameterConverter<UserId> {
-            return StringParameterConverter { value -> value.value.toString() }
+        fun userIdParameterWriter(): HttpClientParameterWriter<UserId> {
+            return HttpClientParameterWriter { value -> value.value.toString() }
         }
     }
     ```
@@ -1034,10 +986,20 @@ public interface StringParameterConverter<T> {
     }
     ```
 
+Для перечислений есть `EnumHttpClientParameterWriter` из пакета `io.koraframework.http.client.common.request.mapper`:
+он строит писатель из констант перечисления и функции преобразования, и именно его использует [генератор OpenAPI](openapi-codegen.md).
+
+??? failure "HttpClientParameterWriter&lt;T&gt; was not found"
+
+    Сборка падает с ошибкой `No component found for dependency: HttpClientParameterWriter<T>`.
+    Либо тип собственный и компонента-писателя нет, либо у писателя есть `@Tag`, которого нет у параметра.
+    Объявите компонент `HttpClientParameterWriter<T>` для этого точного типа.
+
 #### Параметр пути { #path-parameter }
 
-`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути
-и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
+`@Path` - обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути,
+а имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
+Значения пути кодируются в URL, поэтому пробел превращается в `%20`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1061,11 +1023,15 @@ public interface StringParameterConverter<T> {
     }
     ```
 
+Каждому placeholder-у `{name}` в пути должен соответствовать параметр `@Path`, иначе сборка падает с ошибкой
+`Path template contains parameters that have no matching @Path method parameter`.
+
 #### Параметр запроса { #query-parameter }
 
-`@Query` — значение параметра запроса, имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
-Поддерживаются одиночные значения, `List<T>`, `Set<T>`, `Collection<T>`, а также `Map<String, T>` и `Map<String, List<T>>`.
-Для значений, которые не являются строками, используется доступный `StringParameterConverter<T>`.
+`@Query` - значение параметра запроса, имя указывается в `value` либо по умолчанию равно имени аргумента метода.
+Поддерживаются одиночные значения, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>` и `Map<String, List<T>>`.
+Для нестроковых значений используется доступный `HttpClientParameterWriter<T>`.
+Пустая коллекция отправляется как параметр без значения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1091,10 +1057,9 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-Можно отправлять параметры запроса в формате ключ и значение, для этого предполагается использовать тип `Map`,
-где ключом является имя параметра и обязательно имеет тип `String`.
-Если значение `Map` является списком, каждый элемент списка будет отправлен как отдельное значение того же параметра.
-Если элемент списка равен `null`, параметр будет отправлен без значения.
+Параметры запроса можно отправлять в формате ключ-значение через `Map`, где ключ является именем параметра и должен быть `String`.
+Если значением `Map` является список, каждый его элемент отправляется как отдельное значение того же параметра.
+Если элемент списка равен `null`, параметр отправляется без значения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1120,7 +1085,7 @@ public interface StringParameterConverter<T> {
 
 #### Заголовок { #header }
 
-`@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
+`@Header` - значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 Поддерживаются одиночные значения, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>` и готовый объект `HttpHeaders`.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -1147,9 +1112,8 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-Можно отправлять заголовки в формате ключ и значение, для этого предполагается использовать тип `HttpHeaders` либо `Map`,
-где ключом является имя заголовка и обязательно имеет тип `String`.
-Для значений, которые не являются строками, используется доступный `StringParameterConverter<T>`:
+Заголовки можно отправлять в формате ключ-значение через `HttpHeaders` или `Map`, где ключ является именем заголовка и должен быть `String`.
+Для нестроковых значений используется доступный `HttpClientParameterWriter<T>`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1175,13 +1139,14 @@ public interface StringParameterConverter<T> {
 
 #### Тело запроса { #request-body }
 
-Для указания тела запроса требуется использовать аргумент метода без специальных аннотации,
-по умолчанию поддерживаются такие типы как `byte[]`, `ByteBuffer` или `String`.
+Тело запроса указывается аргументом метода без специальных аннотаций.
+Из коробки поддерживаются `byte[]`, `ByteBuffer`, `String`, `HttpBodyOutput`, `FormUrlEncoded` и `FormMultipart`,
+поскольку `HttpClientRequestMapperModule` предоставляет реализации `HttpClientRequestMapper` именно для этих типов.
 
-##### JSON { #json }
+##### Json { #json }
 
-Чтобы указать, что тело является `JSON` и для него требуется автоматически создать и внедрить `JsonWriter`,
-используется тег-аннотация `@Json`:
+Чтобы указать, что тело является Json и для него требуется автоматически создать и внедрить писатель,
+используется специальная аннотация-тег `@Json`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1196,7 +1161,7 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-    1. Указывает, что тело должно быть записано как `JSON`
+    1. Указывает, что тело должно быть записано как Json
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1204,20 +1169,20 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface SomeClient {
 
-        data class MyBody(val name: String) { }
+        data class MyBody(val name: String)
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         fun hello(@Json body: MyBody) //(1)!
     }
     ```
 
-    1. Указывает, что тело должно быть записано как `JSON`
+    1. Указывает, что тело должно быть записано как Json
 
-Требуется подключить модуль [JSON](json.md).
+Требуется модуль [Json](json.md), а также наличие `JsonWriter<MyBody>` — обычно это достигается аннотацией `@Json` на самом типе.
 
 ##### Текстовая форма { #text-form }
 
-Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
+В качестве типа аргумента тела можно использовать `FormUrlEncoded`, и он будет обработан как [форма с текстовыми данными](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1226,7 +1191,7 @@ public interface StringParameterConverter<T> {
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(FormUrlEncoded body);
+        HttpResponseEntity<String> formEncoded(FormUrlEncoded body);
     }
     ```
 
@@ -1237,16 +1202,16 @@ public interface StringParameterConverter<T> {
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormUrlEncoded):
+        fun formEncoded(body: FormUrlEncoded): HttpResponseEntity<String>
     }
     ```
 
-Пример вызова метода с такой формой будет выглядеть так:
+Пример вызова метода с такой формой выглядит так:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var response = httpClient.formEncoded(new FormUrlEncoded(
+    var response = someClient.formEncoded(new FormUrlEncoded(
             new FormUrlEncoded.FormPart("name", "Bob"),
             new FormUrlEncoded.FormPart("password", "12345")
     ));
@@ -1255,7 +1220,7 @@ public interface StringParameterConverter<T> {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val response = httpClient.formEncoded(
+    val response = someClient.formEncoded(
         FormUrlEncoded(
             FormUrlEncoded.FormPart("name", "Bob"),
             FormUrlEncoded.FormPart("password", "12345")
@@ -1265,7 +1230,7 @@ public interface StringParameterConverter<T> {
 
 ##### Бинарная форма { #binary-form }
 
-Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
+В качестве типа аргумента тела можно использовать `FormMultipart`, и он будет обработан как [форма с бинарными данными](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1274,7 +1239,7 @@ public interface StringParameterConverter<T> {
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(FormMultipart body);
+        HttpResponseEntity<String> formMultipart(FormMultipart body);
     }
     ```
 
@@ -1285,16 +1250,16 @@ public interface StringParameterConverter<T> {
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormMultipart):
+        fun formMultipart(body: FormMultipart): HttpResponseEntity<String>
     }
     ```
 
-Пример вызова метода с такой формой будет выглядеть так:
+Пример вызова метода с такой формой выглядит так:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var response = httpClient.formMultipart(new FormMultipart(List.of(
+    var response = someClient.formMultipart(new FormMultipart(List.of(
             FormMultipart.data("field1", "some data content"),
             FormMultipart.file("field2", "example1.txt", "text/plain", "some file content".getBytes(StandardCharsets.UTF_8))
     )));
@@ -1303,9 +1268,9 @@ public interface StringParameterConverter<T> {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val response = httpClient.formMultipart(
+    val response = someClient.formMultipart(
         FormMultipart(
-            listOf<FormMultipart.FormPart>(
+            listOf(
                 FormMultipart.data("field1", "some data content"),
                 FormMultipart.file(
                     "field2",
@@ -1318,10 +1283,12 @@ public interface StringParameterConverter<T> {
     )
     ```
 
-##### Самописное { #custom-body }
+Метод `FormMultipart.file(String name, String fileName, HttpBodyOutput content)` отправляет часть формы потоком, а не массивом байт.
 
-Если тело требуется записывать отличным от стандартных механизмов способом,
-то можно использовать специальный интерфейс `HttpClientRequestMapper` для реализации собственной логики:
+##### Свое тело { #custom-body }
+
+Если тело требуется записать способом, отличным от стандартных механизмов,
+можно использовать специальный интерфейс `HttpClientRequestMapper` для реализации собственной логики:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1334,13 +1301,13 @@ public interface StringParameterConverter<T> {
         final class UserRequestMapper implements HttpClientRequestMapper<UserBody> {
 
             @Override
-            public HttpBodyOutput apply(Context ctx, UserBody value) {
+            public HttpBodyOutput apply(UserBody value) {
                 return HttpBody.plaintext(value.id());
             }
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(@Mapping(UserRequestMapper.class) UserBody body);
+        HttpResponseEntity<String> hello(@Mapping(UserRequestMapper.class) UserBody body);
     }
     ```
 
@@ -1353,17 +1320,20 @@ public interface StringParameterConverter<T> {
         data class UserBody(val id: String)
 
         class UserRequestMapper : HttpClientRequestMapper<UserBody> {
-            override fun apply(ctx: Context, value: UserBody): HttpBodyOutput {
+
+            override fun apply(value: UserBody): HttpBodyOutput {
                 return HttpBody.plaintext(value.id)
             }
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(@Mapping(UserRequestMapper::class) body: UserBody)
+        fun hello(@Mapping(UserRequestMapper::class) body: UserBody): HttpResponseEntity<String>
     }
     ```
 
-**Пример: Protobuf сериализация**
+**Пример: сериализация Protobuf**
+
+Обратите внимание, что `HttpBody.of` принимает сначала тип содержимого, а затем полезную нагрузку:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1374,9 +1344,9 @@ public interface StringParameterConverter<T> {
         final class ProtobufRequestMapper implements HttpClientRequestMapper<MyMessage> {
 
             @Override
-            public HttpBodyOutput apply(Context ctx, MyMessage value) {
+            public HttpBodyOutput apply(MyMessage value) {
                 byte[] protobufBytes = value.toByteArray();
-                return HttpBody.of(protobufBytes, "application/x-protobuf");
+                return HttpBody.of("application/x-protobuf", protobufBytes);
             }
         }
 
@@ -1393,9 +1363,9 @@ public interface StringParameterConverter<T> {
 
         class ProtobufRequestMapper : HttpClientRequestMapper<MyMessage> {
 
-            override fun apply(ctx: Context, value: MyMessage): HttpBodyOutput {
+            override fun apply(value: MyMessage): HttpBodyOutput {
                 val protobufBytes = value.toByteArray()
-                return HttpBody.of(protobufBytes, "application/x-protobuf")
+                return HttpBody.of("application/x-protobuf", protobufBytes)
             }
         }
 
@@ -1404,11 +1374,19 @@ public interface StringParameterConverter<T> {
     }
     ```
 
+???+ note "Когда мапперу нужен `@Component`"
+
+    Маппер, указанный в `@Mapping`, который является `final` (Java) либо не `open` (Kotlin) **и** имеет единственный публичный
+    конструктор без аргументов, создается самим сгенерированным клиентом — компонентом графа он быть не должен.
+    Любой другой маппер — с зависимостями в конструкторе, например `JsonReader<T>`, открытый класс или класс с несколькими
+    конструкторами — берется из контейнера зависимостей и потому должен быть объявлен как `@Component`.
+    Ориентироваться нужно на конструктор, а не на аннотацию над методом.
+
 #### Куки { #cookie }
 
-`@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
+`@Cookie` - значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
 Поддерживаются одиночные значения, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>` и готовый объект `Cookie`.
-Куки добавляются в заголовок `Cookie`; для коллекций каждое значение превращается в отдельное значение куки с тем же именем.
+Каждая кука записывается отдельным значением заголовка `Cookie` в формате `name=value`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1436,17 +1414,17 @@ public interface StringParameterConverter<T> {
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    По умолчанию все аргументы объявленные в методе являются **обязательными** (*NotNull*).
+    По умолчанию все аргументы, объявленные в методе, считаются **обязательными** (*NotNull*).
 
 === ":simple-kotlin: `Kotlin`"
 
-    По умолчанию все аргументы объявленные в методе которые не используют [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) синтаксис считаются **обязательными** (*NotNull*).
+    По умолчанию все аргументы метода, которые не используют синтаксис [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html), считаются **обязательными** (*NotNull*).
 
 #### Необязательные параметры { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если аргумент метода является необязательным, то есть может отсутствовать то,
+    Если аргумент метода необязательный, то есть его может не быть,
     можно использовать аннотацию `@Nullable`:
 
     ```java
@@ -1458,11 +1436,11 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-    1.  Подойдет любая аннотация `@Nullable`, такие как `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / и т.д.
+    1.  Kora построена на [JSpecify](https://jspecify.dev/), поэтому рекомендуется `org.jspecify.annotations.Nullable`; принимается любая аннотация с простым именем `Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Предполагается использовать [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) синтаксис и помечать такой параметр как Nullable:
+    Предполагается использование синтаксиса [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) и пометка такого параметра как Nullable:
 
     ```kotlin
     @HttpClient
@@ -1473,17 +1451,32 @@ public interface StringParameterConverter<T> {
     }
     ```
 
+Параметр запроса, заголовок или кука со значением `null` просто не попадают в запрос.
+
 ### Ответ { #response }
 
-Раздел описывает преобразование `HTTP`-ответа от декларативного `HTTP`-клиента.
+В разделе описано преобразование HTTP-ответа для декларативного HTTP-клиента.
 
 #### Тело ответа { #response-body }
 
-По умолчанию можно использовать стандартные типы возвращаемых значений тела ответа, такие как `void`, `byte[]`, `ByteBuffer` либо `String`.
+Kora поставляет реализации `HttpClientResponseMapper` для ограниченного набора типов, все они объявлены в `HttpClientResponseMapperModule`:
 
-##### JSON { #json-2 }
+| Тип возврата | Требует |
+|---|---|
+| `void` | ничего, тело не читается |
+| `String` | ничего |
+| `byte[]` | ничего |
+| `ByteBuffer` | ничего |
+| `HttpBodyInput` | ничего, тело остается потоком |
+| `T` с `@Json` | `JsonReader<T>` |
+| `HttpResponseEntity<T>` | `HttpClientResponseMapper<T>` для полезной нагрузки |
+| `Either<T, E>` | по одному `HttpClientResponseMapper` для `T` и для `E` |
 
-Если предполагается читать тело как `JSON`, то требуется использовать аннотацию `@Json` над методом.
+Для любого другого типа требуется собственный маппер, смотрите [Свой ответ](#custom-response).
+
+##### Json { #json-2 }
+
+Если тело требуется читать как Json, над методом нужно использовать аннотацию `@Json`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1499,7 +1492,7 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-    1. Указывает, что ответ должен быть прочитан как `JSON`
+    1. Указывает, что ответ должен быть прочитан как Json
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1507,7 +1500,7 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface SomeClient {
 
-        data class MyResponse(val name: String) { }
+        data class MyResponse(val name: String)
 
         @Json //(1)!
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -1515,16 +1508,16 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-    1. Указывает, что ответ должен быть прочитан как `JSON`
+    1. Указывает, что ответ должен быть прочитан как Json
 
-Требуется подключить модуль [JSON](json.md).
+Требуется модуль [Json](json.md).
 
-##### Сущность ответа { #response-entity }
+##### Ответ с метаданными { #response-entity }
 
-Если предполагается читать тело и получить также заголовки и статус код ответа,
-то предполагается использовать `HttpResponseEntity`, это обертка над телом ответа.
+Если нужно прочитать тело и вдобавок получить заголовки и код статуса ответа,
+предназначен `HttpResponseEntity` — обертка над телом ответа, которая предоставляет `code()`, `headers()` и `body()`.
 
-Ниже показан пример, аналогичный примеру `JSON`, вместе с оберткой `HttpResponseEntity`:
+Ниже пример, аналогичный примеру с Json, но с оберткой `HttpResponseEntity`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1546,7 +1539,7 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface SomeClient {
 
-        data class MyResponse(val name: String) { }
+        data class MyResponse(val name: String)
 
         @Json
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -1554,9 +1547,104 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-##### Самописное { #custom-response }
+Обертку Kora строит сама из маппера полезной нагрузки, поэтому для `HttpResponseEntity<Void>` — обычного приема, когда от ответа
+нужен только код статуса, — в графе должен быть `HttpClientResponseMapper<Void>`. Встроенного нет, поэтому его объявляют компонентом
+и **не** указывают через `@Mapping`: с `@Mapping` маппер обязан произвести весь тип `HttpResponseEntity<Void>`,
+тогда как шаблонная фабрика фреймворка ждет маппер полезной нагрузки и оборачивает его в entity сама.
 
-Если требуется чтение ответа отличным способом, то можно использовать специальный интерфейс `HttpClientResponseMapper`:
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient("httpClient.userApi")
+    public interface UserApiClient {
+
+        @Component
+        final class VoidResponseMapper implements HttpClientResponseMapper<Void> {
+
+            @Override
+            public Void apply(HttpClientResponse response) throws IOException {
+                try (var body = response.body()) {
+                    body.asInputStream().readAllBytes();
+                }
+                return null;
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
+        HttpResponseEntity<Void> deleteUser(@Path String userId);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient("httpClient.userApi")
+    interface UserApiClient {
+
+        @Component
+        class VoidResponseMapper : HttpClientResponseMapper<Void> {
+
+            override fun apply(response: HttpClientResponse): Void? {
+                response.body().use { body ->
+                    body.asInputStream().readAllBytes()
+                }
+                return null
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
+        fun deleteUser(@Path userId: String): HttpResponseEntity<Void>
+    }
+    ```
+
+Без этого компонента сборка падает с ошибкой `No component found for dependency: HttpClientResponseMapper<java.lang.Void>`.
+
+##### Either { #either }
+
+`Either<T, E>` описывает вызов, для которого неуспешный код статуса является нормальным исходом, а не исключением.
+Ответ `2xx` Kora преобразует маппером типа `T` в `Either.Left`, любой другой код статуса — маппером типа `E` в `Either.Right`,
+и `HttpClientResponseException` для такого метода никогда не бросается.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        record Success(String id) {}
+
+        record Error(String message) {}
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        Either<@Json Success, @Json Error> get(@Path String id); //(1)!
+    }
+    ```
+
+    1. `@Json` здесь используется как аннотация над типом, поэтому успешную и ошибочную полезные нагрузки можно помечать независимо
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        data class Success(val id: String)
+
+        data class Error(val message: String)
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        fun get(@Path id: String): Either<@Json Success, @Json Error> //(1)!
+    }
+    ```
+
+    1. `@Json` здесь используется как аннотация над типом, поэтому успешную и ошибочную полезные нагрузки можно помечать независимо
+
+`Either` предоставляет `isLeft()` / `isRight()` и nullable-аксессоры `left()` / `right()`.
+Также поддерживается `HttpResponseEntity<Either<T, E>>`, когда дополнительно нужны код статуса и заголовки.
+
+#### Свой ответ { #custom-response }
+
+Если ответ нужно прочитать иначе, можно использовать специальный интерфейс `HttpClientResponseMapper`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1594,7 +1682,6 @@ public interface StringParameterConverter<T> {
 
         class ResponseMapper : HttpClientResponseMapper<MyResponse> {
 
-            @Throws(IOException::class, HttpClientDecoderException::class)
             override fun apply(response: HttpClientResponse): MyResponse {
                 response.body().asInputStream().use {
                     val bytes: ByteArray = it.readAllBytes()
@@ -1610,7 +1697,14 @@ public interface StringParameterConverter<T> {
     }
     ```
 
-**Пример: Обработка ошибок в маппере**
+???+ warning "Маппер из `@Mapping` обрабатывает любой код статуса"
+
+    Если у метода объявлен `@Mapping`, Kora перестает проверять успешность кода статуса и передает мапперу **любой** ответ,
+    включая `4xx` и `5xx`. Если неуспешный код должен оставаться ошибкой, бросайте исключение из маппера сами.
+    Аннотация `@Tag` над методом лишь выбирает, какой компонент `HttpClientResponseMapper` будет внедрен: проверка на `2xx`
+    при этом сохраняется, и неуспешный код по-прежнему приводит к `HttpClientResponseException`.
+
+**Пример: обработка ошибок в маппере**
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1618,8 +1712,9 @@ public interface StringParameterConverter<T> {
     @HttpClient
     public interface ApiClient {
 
-        record ApiResponse(String status, Object data) {}
+        record ApiResponse(String status, String data) {}
 
+        @Component
         final class SafeResponseMapper implements HttpClientResponseMapper<ApiResponse> {
 
             private final JsonReader<ApiResponse> jsonReader;
@@ -1630,19 +1725,13 @@ public interface StringParameterConverter<T> {
 
             @Override
             public ApiResponse apply(HttpClientResponse response) throws IOException {
-                int statusCode = response.statusCode();
-                byte[] body = response.body();
-
-                if (statusCode >= 400) {
-                    // Обработка ошибки: логирование или выброс исключения
-                    throw new HttpClientResponseException(statusCode, body, response.headers());
+                if (response.code() >= 400) {
+                    throw HttpClientResponseException.fromResponse(response);
                 }
 
-                if (body == null || body.length == 0) {
-                    return null;
+                try (var body = response.body(); var is = body.asInputStream()) {
+                    return jsonReader.read(is);
                 }
-
-                return jsonReader.read(body);
             }
         }
 
@@ -1658,27 +1747,21 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface ApiClient {
 
-        data class ApiResponse(val status: String, val data: Any?)
+        data class ApiResponse(val status: String, val data: String)
 
+        @Component
         class SafeResponseMapper(
             private val jsonReader: JsonReader<ApiResponse>
         ) : HttpClientResponseMapper<ApiResponse> {
 
-            @Throws(IOException::class)
             override fun apply(response: HttpClientResponse): ApiResponse {
-                val statusCode = response.statusCode()
-                val body = response.body()
-
-                if (statusCode >= 400) {
-                    // Обработка ошибки: логирование или выброс исключения
-                    throw HttpClientResponseException(statusCode, body, response.headers())
+                if (response.code() >= 400) {
+                    throw HttpClientResponseException.fromResponse(response)
                 }
 
-                if (body == null || body.isEmpty()) {
-                    return null
+                response.body().use { body ->
+                    body.asInputStream().use { return jsonReader.read(it) }
                 }
-
-                return jsonReader.read(body)
             }
         }
 
@@ -1688,15 +1771,20 @@ public interface StringParameterConverter<T> {
     }
     ```
 
+Этот маппер принимает `JsonReader` в конструкторе, поэтому он является компонентом графа и помечен `@Component`.
+
 #### Ошибка ответа { #response-error }
 
-По умолчанию, когда не указан ни тег преобразователя, ни сам преобразователь, преобразование применяется только для `2xx` HTTP-кодов ответа.
-Для всех остальных кодов будет выброшено исключение `HttpClientResponseException`, которое содержит [HTTP-код ответа](https://developer.mozilla.org/ru/docs/Web/HTTP/Status), тело ответа и заголовки ответа.
+По умолчанию, когда не указаны ни маппер в `@Mapping`, ни `@ResponseCodeMapper`,
+преобразование применяется только для кодов ответа `2xx`.
+Для всех остальных кодов бросается `HttpClientResponseException`. Он содержит [код ответа HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Status), тело ответа и заголовки ответа.
+
+Исключение из этого правила — `Either<T, E>` и `HttpResponseEntity<Either<T, E>>`: они преобразуют любой код статуса и никогда не бросают исключение.
 
 #### Исключения клиента { #client-exceptions }
 
-Все штатные исключения `HTTP`-клиента наследуются от `HttpClientException`, который является `RuntimeException`.
-Это позволяет перехватывать как конкретный вид ошибки, так и все ошибки клиента одним общим типом:
+Все стандартные исключения `HTTP`-клиента наследуются от `HttpClientException`, который является `RuntimeException`.
+Это позволяет ловить как конкретный тип ошибки, так и все ошибки клиента одним общим типом:
 
 ```java
 try {
@@ -1714,23 +1802,27 @@ try {
 
 * `HttpClientResponseException` — ответ получен, но его код не был обработан как успешный. Содержит `getCode()`, `getHeaders()` и `getBytes()`.
 * `HttpClientTimeoutException` — истекло время ожидания запроса, соединения или чтения.
-* `HttpClientConnectionException` — ошибка установления или поддержания соединения с удаленным узлом.
-* `HttpClientEncoderException` — ошибка преобразования пользовательского значения в тело запроса.
-* `HttpClientDecoderException` — ошибка преобразования тела ответа в пользовательский тип.
-* `HttpClientUnknownException` — прочая ошибка транспортного клиента, которая не попала в более точную категорию.
+* `HttpClientConnectionException` — ошибка при установке или поддержании соединения с удаленным хостом.
+* `HttpClientEncoderException` — ошибка при преобразовании пользовательского значения в тело запроса.
+* `HttpClientDecoderException` — ошибка при преобразовании тела ответа в пользовательский тип.
+* `HttpClientUnknownException` — прочая ошибка транспортного клиента, не попавшая в более конкретную категорию.
 
-`HttpClientResponseException` создается после чтения тела ответа в массив байт. Если тело не удалось прочитать полностью,
-ошибка чтения добавляется как `suppressed`-исключение, а в `getBytes()` попадает то тело, которое удалось собрать.
+`HttpClientResponseException` создается методом `HttpClientResponseException.fromResponse(response)` после чтения тела ответа.
+Если тело уже полностью буферизовано, оно сохраняется целиком; иначе в `getBytes()` попадают только первые `4096` байт,
+чтобы неуспешный вызов не буферизовал произвольно большую страницу ошибки.
 
 #### Преобразование по коду { #conversion-by-code }
 
-Если требуется особое преобразование в зависимости от [HTTP-кода ответа](https://developer.mozilla.org/ru/docs/Web/HTTP/Status), можно использовать аннотацию `@ResponseCodeMapper` для указания
-соответствия HTTP-кода и преобразователя `HttpClientResponseMapper`.
+Если требуются разные преобразования в зависимости от [кода статуса HTTP](https://developer.mozilla.org/ru/docs/Web/HTTP/Status) ответа,
+можно использовать аннотацию `@ResponseCodeMapper`, чтобы задать соответствие между кодом статуса HTTP и обработчиком `HttpClientResponseMapper`.
 
-Также можно использовать `ResponseCodeMapper.DEFAULT` как указание поведения по умолчанию для всех неперечисленных HTTP-кодов.
-Если для кода указан параметр `mapper`, будет использован конкретный `HttpClientResponseMapper`.
-Если указан параметр `type`, Kora подберет преобразователь ответа для этого типа и затем приведет результат к возвращаемому типу метода.
-Это удобно для закрытых иерархий ответов, где разные HTTP-статусы соответствуют разным подтипам результата.
+Также можно использовать `ResponseCodeMapper.DEFAULT`, чтобы задать поведение по умолчанию для всех неперечисленных кодов HTTP.
+Если для кода указан `mapper`, используется именно этот `HttpClientResponseMapper`.
+Если указан `type`, Kora подбирает маппер ответа для этого типа, а затем приводит результат к типу возврата метода.
+Это удобно для закрытых иерархий ответов, где разным статусам HTTP соответствуют разные подтипы результата.
+Если не указано ни то, ни другое, Kora запрашивает у графа `HttpClientResponseMapper` для типа возврата метода
+(`HttpClientResponseMapper<Void>` для метода с `void`).
+Код статуса, который не перечислен и для которого нет записи `DEFAULT`, по-прежнему приводит к `HttpClientResponseException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1758,7 +1850,7 @@ try {
     @HttpClient
     interface SomeClient {
 
-        data class UserResponse(val payload: Payload, val error: Error) {
+        data class UserResponse(val payload: Payload?, val error: Error?) {
 
             data class Error(val code: Int, val message: String)
 
@@ -1772,8 +1864,8 @@ try {
     }
     ```
 
-В примере выше для статуса кода `200` будет использовать `ResponseSuccessMapper`,
-а для всех остальных статус кодов будет использован `ResponseErrorMapper`.
+В примере выше для кода статуса `200` будет использован `ResponseSuccessMapper`,
+а для всех остальных кодов статуса — `ResponseErrorMapper`.
 
 Пример с параметром `type`:
 
@@ -1783,13 +1875,10 @@ try {
     @HttpClient
     public interface SomeClient {
 
-        @Json
         sealed interface UserResponse permits Success, Error {}
 
-        @Json
         record Success(String id) implements UserResponse {}
 
-        @Json
         record Error(String message) implements UserResponse {}
 
         @Json
@@ -1806,13 +1895,10 @@ try {
     @HttpClient
     interface SomeClient {
 
-        @Json
         sealed interface UserResponse
 
-        @Json
         data class Success(val id: String) : UserResponse
 
-        @Json
         data class Error(val message: String) : UserResponse
 
         @Json
@@ -1823,29 +1909,63 @@ try {
     }
     ```
 
+Если указанный `type` нельзя присвоить типу возврата метода, Kora трактует результат маппера как исключение и бросает его
+вместо возврата — так ветку ошибки можно смоделировать как выбрасываемое исключение для конкретного кода статуса.
+
 ### Сигнатуры { #signatures }
 
-Доступные сигнатуры для методов декларативного `HTTP`-клиента из коробки:
+Методы декларативного `HTTP`-клиента **блокирующие**:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Void`.
+    Под `T` подразумевается тип возвращаемого значения.
 
     - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `void myMethod()`
 
 === ":simple-kotlin: `Kotlin`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
+    Под `T` подразумевается тип возвращаемого значения, либо `T?`, либо `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+
+???+ warning "Асинхронные сигнатуры не поддерживаются"
+
+    В Kotlin метод клиента с `suspend` приводит к ошибке компиляции: *Suspend methods are not supported by the HTTP client generator*.
+    В Java тип возврата `CompletionStage<T>` или `Mono<T>` дает только предупреждение *Method has async signature, this might not work correctly* —
+    сгенерированный код все равно выполняет блокирующий вызов, и такой тип не будет удовлетворен.
+
+    Независимые вызовы выполняйте параллельно на виртуальных потоках, например через `StructuredTaskScope`:
+
+    ```java
+    try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.<Object>awaitAllSuccessfulOrThrow())) {
+        var profile = scope.fork(() -> profileHttpClient.getProfile(userId));
+        var recommendations = scope.fork(() -> recommendationsHttpClient.getForUser(userId));
+        scope.join();
+        return new Dashboard(profile.get(), recommendations.get());
+    }
+    ```
 
 ## Перехватчики { #interceptors }
 
-Можно создавать перехватчики для изменения поведения либо создания дополнительного поведения используя интерфейс `HttpClientInterceptor`.
-Перехватчики можно подключить на определенные методы либо весь `@HttpClient` класс целиком с помощью аннотации `@InterceptWith`.
+Для изменения или расширения поведения можно создавать перехватчики через интерфейс `HttpClientInterceptor`.
+Перехватчики подключаются аннотацией `@InterceptWith` — либо к конкретному методу, либо ко всему интерфейсу `@HttpClient`.
+
+```java
+public interface HttpClientInterceptor {
+
+    HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
+
+    interface InterceptChain {
+        HttpClientResponse process(HttpClientRequest request) throws Exception; //(2)!
+    }
+}
+```
+
+1. Вызывается для каждого запроса перехватываемого метода
+2. Передает запрос дальше по цепочке и возвращает ответ
+
+Запрос неизменяемый, поэтому измененный запрос создается через `request.toBuilder()`.
 
 **Перехватчик на метод:**
 
@@ -1855,18 +1975,19 @@ try {
     @HttpClient
     public interface SomeClient {
 
+        @Component
         final class MethodInterceptor implements HttpClientInterceptor {
 
             private final Component1 component1;
 
-            private MethodInterceptor(Component1 component1) {
+            public MethodInterceptor(Component1 component1) {
                 this.component1 = component1;
             }
 
             @Override
-            public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
+            public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
                 component1.doSomething();
-                return chain.process(ctx, request);
+                return chain.process(request);
             }
         }
 
@@ -1882,16 +2003,15 @@ try {
     @HttpClient
     interface SomeClient {
 
+        @Component
         class MethodInterceptor(val component1: Component1) : HttpClientInterceptor {
 
-            @Throws(Exception::class)
             override fun processRequest(
-                ctx: Context,
                 chain: HttpClientInterceptor.InterceptChain,
                 request: HttpClientRequest
-            ): CompletionStage<HttpClientResponse> {
+            ): HttpClientResponse {
                 component1.doSomething()
-                return chain.process(ctx, request)
+                return chain.process(request)
             }
         }
 
@@ -1901,13 +2021,68 @@ try {
     }
     ```
 
-**Перехватчик на весь класс:**
+Перехватчик берется из контейнера зависимостей, поэтому для него действует то же правило, что и для маппера:
+`@Component` нужен тогда, когда у него есть зависимости в конструкторе.
+У `@InterceptWith` также есть атрибут `tag` для выбора реализации перехватчика по тегу.
+
+**Пример: добавление заголовка**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @InterceptWith(LoggingInterceptor.class) // Применяется ко всем методам клиента
+    public final class RequestIdInterceptor implements HttpClientInterceptor {
+
+        @Override
+        public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
+            var modified = request.toBuilder()
+                    .header("x-request-id", UUID.randomUUID().toString())
+                    .build();
+            return chain.process(modified);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class RequestIdInterceptor : HttpClientInterceptor {
+
+        override fun processRequest(
+            chain: HttpClientInterceptor.InterceptChain,
+            request: HttpClientRequest
+        ): HttpClientResponse {
+            val modified = request.toBuilder()
+                .header("x-request-id", UUID.randomUUID().toString())
+                .build()
+            return chain.process(modified)
+        }
+    }
+    ```
+
+**Порядок выполнения перехватчиков:**
+
+Перехватчики, объявленные на клиенте, выполняются раньше перехватчиков, объявленных на методе,
+а в пределах одного элемента — в порядке объявления. Каждый перехватчик может:
+
+- Изменить запрос перед отправкой
+- Вызвать следующий перехватчик в цепочке (`chain.process(request)`)
+- Изменить или проанализировать полученный ответ
+- Бросить исключение и прервать цепочку
+
+```
+Request  → Client interceptors → Method interceptors → Telemetry → HTTP Server
+Response ← Client interceptors ← Method interceptors ← Telemetry ← HTTP Server
+```
+
+### Перехватчик на клиент { #interceptor-global }
+
+Если перехватчик должен применяться ко всем методам клиента, `@InterceptWith` указывается на интерфейсе:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
     @HttpClient
+    @InterceptWith(ClientInterceptor.class) //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello")
@@ -1918,11 +2093,13 @@ try {
     }
     ```
 
+    1. Применяется к каждому методу этого клиента
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @InterceptWith(LoggingInterceptor::class) // Применяется ко всем методам клиента
     @HttpClient
+    @InterceptWith(ClientInterceptor::class) //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello")
@@ -1933,201 +2110,18 @@ try {
     }
     ```
 
-**Порядок выполнения перехватчиков:**
+    1. Применяется к каждому методу этого клиента
 
-Перехватчики выполняются в порядке объявления (слева направо). Каждый перехватчик может:
-- Модифицировать запрос перед отправкой
-- Вызвать следующий перехватчик в цепочке (`chain.process()`)
-- Модифицировать ответ после получения
-- Выбросить исключение и прервать цепочку
-
-```
-Запрос → Interceptor1 → Interceptor2 → Interceptor3 → HTTP сервер
-Ответ ← Interceptor1 ← Interceptor2 ← Interceptor3 ← HTTP сервер
-```
-
-### Перехватчик на клиент { #interceptor-global }
-
-Для применения перехватчика ко всем клиентам можно зарегистрировать его как компонент без `@InterceptWith`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class GlobalInterceptor implements HttpClientInterceptor {
-
-        @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
-            // Применяется ко всем HTTP клиентам
-            return chain.process(ctx, request);
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class GlobalInterceptor : HttpClientInterceptor {
-
-        @Throws(Exception::class)
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
-            // Применяется ко всем HTTP клиентам
-            return chain.process(ctx, request)
-        }
-    }
-    ```
-
-### Базовый URL { #root-uri-interceptor }
-
-`RootUriInterceptor` — готовый перехватчик, который добавляет базовый `URL` к относительным запросам.
-Если запрос уже содержит схему (`http://` или `https://`), перехватчик оставляет его без изменений.
-Если запрос относительный, `RootUriInterceptor` добавляет к нему корневой адрес и гарантирует один разделитель `/` между корнем и путем.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Module
-    public interface ClientModule {
-
-        default RootUriInterceptor rootUriInterceptor() {
-            return new RootUriInterceptor("https://api.example.com");
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Module
-    interface ClientModule {
-
-        fun rootUriInterceptor(): RootUriInterceptor {
-            return RootUriInterceptor("https://api.example.com")
-        }
-    }
-    ```
-
-После регистрации перехватчика его можно подключить к клиенту:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @HttpClient
-    @InterceptWith(RootUriInterceptor.class)
-    public interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
-        User get(@Path String id);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @HttpClient
-    @InterceptWith(RootUriInterceptor::class)
-    interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
-        fun get(@Path id: String): User
-    }
-    ```
-
-Для декларативных клиентов обычно удобнее задавать базовый `URL` через конфигурацию `DeclarativeHttpClientConfig.url`.
-`RootUriInterceptor` полезен для императивного `HttpClient` или для случаев, когда общий корневой адрес нужно добавить как отдельное сквозное поведение.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @HttpClient
-    public interface SomeClient {
-
-        final class MethodInterceptor implements HttpClientInterceptor {
-
-            private final Component1 component1;
-
-            private MethodInterceptor(Component1 component1) {
-                this.component1 = component1;
-            }
-
-            @Override
-            public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
-                component1.doSomething();
-                return chain.process(ctx, request);
-            }
-        }
-
-        @InterceptWith(MethodInterceptor.class)
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        void hello();
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @HttpClient
-    interface SomeClient {
-
-        class MethodInterceptor(val component1: Component1) : HttpClientInterceptor {
-
-            @Throws(Exception::class)
-            override fun processRequest(
-                ctx: Context,
-                chain: HttpClientInterceptor.InterceptChain,
-                request: HttpClientRequest
-            ): CompletionStage<HttpClientResponse> {
-                component1.doSomething()
-                return chain.process(ctx, request)
-            }
-        }
-
-        @InterceptWith(MethodInterceptor::class)
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello()
-    }
-    ```
-
-Если перехватчик нужен для всех методов клиента, `@InterceptWith` можно поставить на интерфейс:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @HttpClient
-    @InterceptWith(ClientInterceptor.class)
-    public interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        void hello();
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @HttpClient
-    @InterceptWith(ClientInterceptor::class)
-    interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello()
-    }
-    ```
-
-Если перехватчики указаны и на клиенте, и на методе, для конкретного вызова будут применены оба набора перехватчиков.
+Если перехватчики указаны и на клиенте, и на методе, для такого вызова применяются оба набора.
+Реестра перехватчиков HTTP-клиента на все приложение не существует: перехватчик действует только там, где он назван в `@InterceptWith`.
 
 ### Авторизация { #authorization }
 
-Kora предоставляет готовые перехватчики, которые можно использовать для авторизации с помощью [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/)
+Kora предоставляет из коробки перехватчики для авторизации [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/).
 
 #### Basic { #basic }
 
-Требуется сконфигурировать перехватчик и конфигурацию для авторизации [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/):
+Требуется настроить перехватчик и конфигурацию для авторизации [Basic](https://swagger.io/docs/specification/authentication/basic-authentication/):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2136,7 +2130,7 @@ Kora предоставляет готовые перехватчики, кот�
     public interface BasicAuthModule {
 
         @ConfigSource("openapiAuth.basicAuth")
-        public interface BasicAuthConfig {
+        interface BasicAuthConfig {
 
             String username();
 
@@ -2169,9 +2163,10 @@ Kora предоставляет готовые перехватчики, кот�
     }
     ```
 
-Также в конструктор можно предоставить собственную реализацию `HttpClientTokenProvider` если правила получения секретов другие.
+Конструктор с двумя аргументами оборачивает учетные данные в `BasicAuthHttpClientTokenProvider`.
+Если правила получения секретов отличаются, в конструктор можно передать собственную реализацию `HttpClientTokenProvider`.
 
-Затем подключить перехватчик для всего `HTTP`-клиента либо определенных методов.
+Затем перехватчик добавляется на весь HTTP-клиент либо на конкретные методы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2199,7 +2194,8 @@ Kora предоставляет готовые перехватчики, кот�
 
 #### ApiKey { #apikey }
 
-Требуется сконфигурировать перехватчик и конфигурацию для авторизации [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/):
+Требуется настроить перехватчик и конфигурацию для авторизации [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/).
+`ApiKeyLocation` поддерживает значения `HEADER`, `QUERY` и `COOKIE`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2237,7 +2233,7 @@ Kora предоставляет готовые перехватчики, кот�
     }
     ```
 
-Затем подключить перехватчик для всего `HTTP`-клиента либо определенных методов.
+Затем перехватчик добавляется на весь HTTP-клиент либо на конкретные методы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2265,7 +2261,7 @@ Kora предоставляет готовые перехватчики, кот�
 
 #### Bearer { #bearer }
 
-Требуется сконфигурировать перехватчик для авторизации [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/):
+Требуется настроить перехватчик для авторизации [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2283,7 +2279,7 @@ Kora предоставляет готовые перехватчики, кот�
 
     ```kotlin
     @Module
-    interface BasicAuthModule {
+    interface BearerAuthModule {
 
         fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
             return BearerAuthHttpClientInterceptor(tokenProvider)
@@ -2291,17 +2287,20 @@ Kora предоставляет готовые перехватчики, кот�
     }
     ```
 
-Потребуется самостоятельно реализовать предоставление `Bearer` токена с помощью собственной реализации `HttpClientTokenProvider`,
-либо использовать конструктор который принимает статический `Bearer Token`.
+Предоставление токена `Bearer` реализуется самостоятельно через собственную реализацию `HttpClientTokenProvider`
+либо используется конструктор, принимающий статический `Bearer Token`.
 
 ```java
 public interface HttpClientTokenProvider {
 
-    CompletionStage<String> getToken(HttpClientRequest request);
+    @Nullable
+    String getToken(HttpClientRequest request); //(1)!
 }
 ```
 
-Затем подключить перехватчик для всего `HTTP`-клиента либо определенных методов.
+1. Если вернуть `null`, запрос остается без изменений и заголовок `Authorization` не добавляется
+
+Затем перехватчик добавляется на весь HTTP-клиент либо на конкретные методы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2329,13 +2328,14 @@ public interface HttpClientTokenProvider {
 
 #### OAuth { #oauth }
 
-Авторизация с помощью [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогична [Bearer](#bearer),
-требуется самостоятельно реализовать `HttpClientTokenProvider` и подложить его в контейнер зависимостей.
+Авторизация через [OAuth](https://swagger.io/docs/specification/authentication/oauth2/) аналогична [Bearer](#bearer):
+нужно самостоятельно реализовать `HttpClientTokenProvider` и поместить его в контейнер зависимостей.
 
 #### Предоставление токена { #token-provider }
 
-`HttpClientTokenProvider` — интерфейс для предоставления токенов авторизации динамически.
-Используется когда токен нужно обновлять или получать из внешнего источника (например, OAuth2 token endpoint).
+`HttpClientTokenProvider` — интерфейс для динамического получения токенов авторизации.
+Используется, когда токен требуется обновлять либо получать из внешнего источника (например, из token endpoint OAuth2).
+Метод блокирующий, поэтому токен можно получать прямо в нем.
 
 **Пример реализации:**
 
@@ -2343,7 +2343,7 @@ public interface HttpClientTokenProvider {
 
     ```java
     @Component
-    public class MyTokenProvider implements HttpClientTokenProvider {
+    public final class MyTokenProvider implements HttpClientTokenProvider {
 
         private final OAuthClient oauthClient;
         private volatile String cachedToken;
@@ -2354,18 +2354,15 @@ public interface HttpClientTokenProvider {
         }
 
         @Override
-        public CompletionStage<String> getToken(HttpClientRequest request) {
+        public String getToken(HttpClientRequest request) {
             if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
-                return CompletableFuture.completedFuture(cachedToken);
+                return cachedToken;
             }
-            
-            // Получить новый токен
-            return oauthClient.refreshToken()
-                .thenApply(response -> {
-                    this.cachedToken = response.accessToken();
-                    this.tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000;
-                    return this.cachedToken;
-                });
+
+            var response = oauthClient.refreshToken();
+            this.cachedToken = response.accessToken();
+            this.tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000;
+            return this.cachedToken;
         }
     }
     ```
@@ -2378,21 +2375,22 @@ public interface HttpClientTokenProvider {
         private val oauthClient: OAuthClient
     ) : HttpClientTokenProvider {
 
+        @Volatile
         private var cachedToken: String? = null
+
+        @Volatile
         private var tokenExpiry: Long = 0
 
-        override fun getToken(request: HttpClientRequest): CompletionStage<String> {
-            if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
-                return CompletableFuture.completedFuture(cachedToken)
+        override fun getToken(request: HttpClientRequest): String? {
+            val token = cachedToken
+            if (token != null && System.currentTimeMillis() < tokenExpiry) {
+                return token
             }
-            
-            // Получить новый токен
-            return oauthClient.refreshToken()
-                .thenApply { response ->
-                    cachedToken = response.accessToken()
-                    tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000
-                    cachedToken!!
-                }
+
+            val response = oauthClient.refreshToken()
+            cachedToken = response.accessToken()
+            tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000
+            return cachedToken
         }
     }
     ```
@@ -2423,9 +2421,12 @@ public interface HttpClientTokenProvider {
     }
     ```
 
+[Генератор OpenAPI](openapi-codegen.md) ожидает тот же интерфейс, помеченный сгенерированным классом-маркером `ApiSecurity`.
+
 ## Обработка исключений { #exception-handling }
 
-При выполнении HTTP запросов могут возникать различные исключения. Все исключения наследуются от базового `HttpClientException`.
+Во время HTTP-запросов могут возникать разные исключения. Все они наследуются от базового `HttpClientException`,
+который является непроверяемым `RuntimeException` из пакета `io.koraframework.http.client.common.exception`.
 
 **Иерархия исключений:**
 
@@ -2445,7 +2446,8 @@ HttpClientException
 
     ```java
     @Component
-    class SomeService {
+    public final class SomeService {
+
         private final SomeClient client;
 
         public SomeService(SomeClient client) {
@@ -2456,19 +2458,20 @@ HttpClientException
             try {
                 client.hello();
             } catch (HttpClientTimeoutException e) {
-                // Таймаут: логирование, повторная попытка
+                // Timeout: log, retry
             } catch (HttpClientConnectionException e) {
-                // Ошибка соединения: проверка доступности сервиса
+                // Connection error: check service availability
             } catch (HttpClientResponseException e) {
-                // Ошибка ответа: statusCode, body, headers
-                int statusCode = e.getStatusCode();
-                byte[] body = e.getBody();
+                // Response error: code, body, headers
+                int code = e.getCode();
+                byte[] body = e.getBytes();
+                var headers = e.getHeaders();
             } catch (HttpClientEncoderException e) {
-                // Ошибка сериализации: проверка данных
+                // Serialization error: validate data
             } catch (HttpClientDecoderException e) {
-                // Ошибка десериализации: логирование
+                // Deserialization error: log
             } catch (HttpClientUnknownException e) {
-                // Неизвестная ошибка: e.getCause()
+                // Unknown error: e.getCause()
             }
         }
     }
@@ -2485,19 +2488,20 @@ HttpClientException
             try {
                 client.hello()
             } catch (e: HttpClientTimeoutException) {
-                // Таймаут: логирование, повторная попытка
+                // Timeout: log, retry
             } catch (e: HttpClientConnectionException) {
-                // Ошибка соединения: проверка доступности сервиса
+                // Connection error: check service availability
             } catch (e: HttpClientResponseException) {
-                // Ошибка ответа: statusCode, body, headers
-                val statusCode = e.statusCode
-                val body = e.body
+                // Response error: code, body, headers
+                val code = e.code
+                val body = e.bytes
+                val headers = e.headers
             } catch (e: HttpClientEncoderException) {
-                // Ошибка сериализации: проверка данных
+                // Serialization error: validate data
             } catch (e: HttpClientDecoderException) {
-                // Ошибка десериализации: логирование
+                // Deserialization error: log
             } catch (e: HttpClientUnknownException) {
-                // Неизвестная ошибка: e.cause
+                // Unknown error: e.cause
             }
         }
     }
@@ -2505,138 +2509,178 @@ HttpClientException
 
 #### Время ожидания { #timeout-exception }
 
-Выбрасывается когда запрос превышает установленное время ожидания (`requestTimeout` или `connectTimeout`).
+Бросается, когда запрос превысил настроенное время ожидания (`requestTimeout`, `connectTimeout` или `readTimeout`).
 
 **Причины:**
-- Сервер не отвечает в течение `requestTimeout`
-- Превышено время установления соединения (`connectTimeout`)
+
+- Сервер не ответил за `requestTimeout`
+- Превышено время установки соединения (`connectTimeout`)
+- Превышено время чтения ответа (`readTimeout`)
 - Сетевые задержки
 
 **Рекомендации:**
-- Настройте адекватные таймауты в конфигурации
-- Реализуйте retry-логику для временных сбоев
-- Используйте circuit breaker для защиты от cascading failures
+
+- Настраивайте адекватные таймауты в конфигурации, на клиент и на метод
+- Применяйте [повторы](resilient.md) для временных сбоев
+- Используйте [circuit breaker](resilient.md) для защиты от каскадных отказов
 
 #### Ошибка соединения { #connection-exception }
 
-Выбрасывается когда не удалось установить соединение с сервером.
+Бросается, когда не удается установить соединение с сервером.
 
 **Причины:**
-- DNS не разрешается
-- Сервер недоступен (port closed, firewall)
+
+- Ошибка разрешения DNS
+- Сервер недоступен (порт закрыт, firewall)
 - Соединение отклонено
-- SSL/TLS handshake failed
+- Ошибка SSL/TLS handshake
 
 **Рекомендации:**
-- Проверьте доступность сервиса (health check)
-- Используйте fallback на резервный сервис
-- Настройте retry с exponential backoff
+
+- Проверяйте доступность сервиса (health check)
+- Используйте переключение на резервный сервис
+- Настраивайте повторы с экспоненциальной задержкой
 
 #### Ошибка клиента и сервера { #response-exception }
 
-Выбрасывается когда сервер вернул HTTP статус код ошибки (4xx или 5xx) и не указан собственный маппер через `@ResponseCodeMapper`.
+Бросается, когда сервер вернул код статуса HTTP вне диапазона `2xx`, а метод не объявляет собственный маппер
+через `@Mapping` или `@ResponseCodeMapper` и не возвращает `Either`.
 
 **Доступные данные:**
-- `statusCode` — HTTP статус код (400, 404, 500, etc.)
-- `body` — тело ответа (может содержать детали ошибки)
-- `headers` — заголовки ответа
+
+- `getCode()` — код статуса HTTP (400, 404, 500 и т.д.)
+- `getBytes()` — тело ответа, обрезанное до `4096` байт, если тело не было полностью буферизовано
+- `getHeaders()` — заголовки ответа
 
 **Рекомендации:**
-- Используйте `@ResponseCodeMapper` для кастомной обработки статусов
-- Логируйте statusCode и body для отладки
-- Различайте клиентские (4xx) и серверные (5xx) ошибки
+
+- Используйте `@ResponseCodeMapper` для собственной обработки статусов
+- Используйте `Either<T, E>`, когда неуспешный код является нормальным исходом
+- Логируйте код и тело для отладки
+- Разделяйте клиентские (4xx) и серверные (5xx) ошибки
 
 #### Ошибка запроса { #encoder-exception }
 
-Выбрасывается когда произошла ошибка при сериализации тела запроса.
+Бросается при ошибке сериализации тела запроса: `HttpClientRequestMapper` тела бросил исключение.
 
 **Причины:**
-- Ошибка JSON/XML сериализации
-- Невалидные данные в объекте запроса
-- Отсутствие сериализатора для типа
+
+- Ошибка сериализации JSON или бинарного формата
+- Некорректные данные в объекте запроса
+- Сам маппер не справился со значением
 
 **Рекомендации:**
-- Валидируйте данные перед отправкой
-- Проверьте наличие Json-аннотаций на классах
-- Логируйте оригинальное исключение в `cause`
+
+- Проверяйте данные перед отправкой
+- Убедитесь, что тип тела помечен `@Json` и для него есть `JsonWriter`
+- Логируйте исходное исключение в `cause`
 
 #### Ошибка ответа { #decoder-exception }
 
-Выбрасывается когда произошла ошибка при десериализации тела ответа.
+Бросается при ошибке десериализации тела ответа: `HttpClientResponseMapper` метода бросил исключение.
 
 **Причины:**
-- Невалидный JSON/XML в ответе сервера
-- Несоответствие схемы (сервер вернул неожиданные поля)
-- Отсутствие десериализатора для типа
+
+- Некорректный JSON в ответе сервера
+- Несовпадение схемы (сервер вернул неожиданные поля)
+- Поток был закрыт или оборван
 
 **Рекомендации:**
-- Проверьте совместимость версий API
+
+- Проверяйте совместимость версий API
 - Логируйте тело ответа для отладки
-- Используйте `@ResponseCodeMapper` для обработки ошибок формата
+- Используйте `@ResponseCodeMapper` для обработки иначе устроенных тел ошибок
 
 #### Ошибка неизвестная { #unknown-exception }
 
-Выбрасывается когда произошла неизвестная ошибка, не подпадающая под другие категории.
+Бросается при ошибке, не попадающей в остальные категории, включая любое проверяемое исключение, вышедшее из транспорта.
 
 **Доступные данные:**
-- `cause` — оригинальное исключение
+
+- `getCause()` — исходное исключение
 
 **Рекомендации:**
+
 - Всегда логируйте `cause` для диагностики
-- Проверьте логи HTTP клиента на уровне DEBUG/TRACE
-- Сообщите о баге если исключение воспроизводится
+- Смотрите логи HTTP-клиента на уровне DEBUG/TRACE
+- Заводите баг, если исключение воспроизводится
 
 ## Клиент императивный { #client-imperative }
 
-Базовый клиент представляет собой интерфейс `HttpClient` и доступен для внедрения:
+Базовый клиент представлен интерфейсом `HttpClient` и доступен для внедрения из любого модуля транспорта:
 
 ```java
 public interface HttpClient {
 
-    CompletionStage<HttpClientResponse> execute(HttpClientRequest request); //(1)!
+    HttpClientResponse execute(HttpClientRequest request) throws HttpClientException; //(1)!
 
-    HttpClient with(HttpClientInterceptor interceptor); //(2)!
+    default HttpClient with(HttpClientInterceptor interceptor); //(2)!
 }
 ```
 
-1. Метод исполнения запроса
-2. Метод позволяющий добавлять различные перехватчики в ручном режиме
+1. Выполняет запрос и возвращает ответ; ответ обязательно нужно закрыть
+2. Возвращает новое представление `HttpClient` с дополнительным перехватчиком поверх
 
-Для построения запросов вручную можно использовать `HttpClientRequestBuilder`:
+Ответ держит открытый поток тела, поэтому его нужно закрывать — используйте блок `try`-with-resources:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-            .templateParam("petId", "1")
+    var request = HttpClientRequest.post("http://localhost:8090/pets/{petId}")
+            .pathParam("petId", "1")
             .queryParam("page", 1)
             .header("token", "12345")
             .body(HttpBody.plaintext("refresh"))
             .build();
+
+    try (var response = httpClient.execute(request)) {
+        var code = response.code();
+        var body = new String(response.body().asInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-        .templateParam("petId", "1")
+    val request = HttpClientRequest.post("http://localhost:8090/pets/{petId}")
+        .pathParam("petId", "1")
         .queryParam("page", 1)
         .header("token", "12345")
         .body(HttpBody.plaintext("refresh"))
         .build()
+
+    httpClient.execute(request).use { response ->
+        val code = response.code()
+        val body = String(response.body().asInputStream().readAllBytes(), StandardCharsets.UTF_8)
+    }
     ```
 
 ### Построитель запроса { #request-builder }
 
-`HttpClientRequestBuilder` позволяет строить HTTP запросы вручную.
+`HttpClientRequestBuilder` позволяет собирать HTTP-запросы вручную. Построитель создается одним из фабричных методов
+`HttpClientRequest` — `get`, `head`, `post`, `put`, `delete`, `connect`, `options`, `trace`, `patch`
+или `of(method, uriTemplate)`, — а готовый запрос можно превратить обратно в построитель через `request.toBuilder()`.
+
+| Метод | Описание |
+|---|---|
+| `pathParam(String name, String \| int \| long \| UUID value)` | Подставляет значение вместо placeholder-а `{name}` в шаблоне URI |
+| `queryParam(String name)` | Добавляет параметр запроса без значения |
+| `queryParam(String name, String \| int \| long \| boolean \| UUID \| Collection<?> value)` | Добавляет значение параметра запроса |
+| `queryParamRemove(String name)` | Удаляет все значения параметра запроса |
+| `header(String name, String \| List<String> value)` | Устанавливает заголовок запроса |
+| `headerRemove(String name)` | Удаляет заголовок запроса |
+| `requestTimeout(Duration \| int millis)` | Переопределяет время ожидания для этого запроса |
+| `body(HttpBodyOutput body)` | Устанавливает тело запроса |
+| `build()` | Собирает неизменяемый `HttpClientRequest` |
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-            .templateParam("petId", "1")
+            .pathParam("petId", "1")
             .queryParam("page", 1)
             .header("token", "12345")
+            .requestTimeout(Duration.ofSeconds(5))
             .body(HttpBody.plaintext("refresh"))
             .build();
     ```
@@ -2645,187 +2689,252 @@ public interface HttpClient {
 
     ```kotlin
     val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-        .templateParam("petId", "1")
+        .pathParam("petId", "1")
         .queryParam("page", 1)
         .header("token", "12345")
+        .requestTimeout(Duration.ofSeconds(5))
         .body(HttpBody.plaintext("refresh"))
         .build()
     ```
 
+У собранного `HttpClientRequest` доступны `method()`, `uri()`, `uriTemplate()`, `headers()`, `body()` и `requestTimeout()`.
+Именно `uriTemplate()` телеметрия использует как имя операции — поэтому шаблонные пути удерживают низкую кардинальность метрик и трассировок.
+
 ### Построитель URI { #uri-query-builder }
 
-`UriQueryBuilder` помогает строить URI с параметрами запроса.
+`UriQueryBuilder` — низкоуровневый помощник, которым сгенерированные декларативные клиенты собирают строку запроса.
+Он добавляет параметры по порядку и сам расставляет разделители `?` и `&`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    UriQueryBuilder builder = new UriQueryBuilder()
-        .path("/api/users")
-        .queryParam("page", 1)
-        .queryParam("size", 10)
-        .queryParam("sort", "name");
-    
-    String uri = builder.build();
-    // /api/users?page=1&size=10&sort=name
+    var query = new UriQueryBuilder(true, false); //(1)!
+    query.add("page", "1"); //(2)!
+    query.add("sort", "name age"); //(3)!
+    query.add("debug"); //(4)!
+
+    String uri = "/api/users" + query.build();
+    // /api/users?page=1&sort=name+age&debug
     ```
+
+    1. Первый аргумент: начинать строку с `?`; второй: начинать с `&`, если базовый путь уже заканчивается параметром запроса
+    2. Добавляет пару `name=value`, обе части кодируются в URL
+    3. Значения кодируются в URL, поэтому пробел превращается в `+`
+    4. Добавляет параметр без значения
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val builder = UriQueryBuilder()
-        .path("/api/users")
-        .queryParam("page", 1)
-        .queryParam("size", 10)
-        .queryParam("sort", "name")
-    
-    val uri = builder.build()
-    // /api/users?page=1&size=10&sort=name
+    val query = UriQueryBuilder(true, false) //(1)!
+    query.add("page", "1") //(2)!
+    query.add("sort", "name age") //(3)!
+    query.add("debug") //(4)!
+
+    val uri = "/api/users" + query.build()
+    // /api/users?page=1&sort=name+age&debug
     ```
 
-### Тело запроса { #http-body-input }
+    1. Первый аргумент: начинать строку с `?`; второй: начинать с `&`, если базовый путь уже заканчивается параметром запроса
+    2. Добавляет пару `name=value`, обе части кодируются в URL
+    3. Значения кодируются в URL, поэтому пробел превращается в `+`
+    4. Добавляет параметр без значения
 
-`HttpBodyInput` — интерфейс который описывает тело HTTP запроса как поток данных (Flow.Publisher<ByteBuffer>).
-Используется для стриминга больших данных без загрузки в память.
+Варианты `unsafeAdd` добавляют уже закодированные значения как есть. Значение `null` пропускается целиком.
 
-**Методы:**
+### Тело ответа { #http-body-input }
+
+`HttpBodyInput` описывает тело ответа. Он наследует `HttpBody` и является `Closeable`.
 
 | Метод | Возвращает | Описание |
-|-------|------------|----------|
-| `asInputStream()` | `InputStream` | Представляет тело как InputStream для чтения |
-| `asBufferStage()` | `CompletionStage<ByteBuffer>` | Асинхронно читает всё тело в ByteBuffer |
-| `asArrayStage()` | `CompletionStage<byte[]>` | Асинхронно читает всё тело в byte[] |
+|--------|---------|-------------|
+| `asInputStream()` | `InputStream` | Читает тело как поток |
+| `getFullContentIfAvailable()` | `ByteBuffer` | Возвращает тело целиком, если оно уже буферизовано, иначе `null` |
+| `contentLength()` | `long` | Длина тела, `-1` если неизвестна |
+| `contentType()` | `String` | Значение заголовка `Content-Type`, может быть `null` |
+| `close()` | `void` | Освобождает ресурсы соединения |
+
+Исходящий аналог — `HttpBodyOutput`, который создается через `HttpBody.plaintext(...)`, `HttpBody.json(...)`,
+`HttpBody.octetStream(...)`, `HttpBody.of(contentType, content)` либо `HttpBodyOutput.of(contentType, inputStream)`
+для потоковой передачи тела, которое не помещается в память целиком.
 
 ### Ответ клиента { #http-client-response }
 
-`HttpClientResponse` — интерфейс который представляет HTTP ответ от сервера.
-
-**Методы:**
+`HttpClientResponse` — интерфейс, представляющий HTTP-ответ от сервера. Он является `Closeable`.
 
 | Метод | Возвращает | Описание |
-|-------|------------|----------|
-| `statusCode()` | `int` | HTTP статус код (200, 404, 500, etc.) |
-| `body()` | `byte[]` | Тело ответа как массив байтов |
+|--------|---------|-------------|
+| `code()` | `int` | Код статуса HTTP (200, 404, 500 и т.д.) |
 | `headers()` | `HttpHeaders` | Заголовки ответа |
-| `cookies()` | `Cookies` | Cookies из ответа |
+| `body()` | `HttpBodyInput` | Тело ответа |
+| `close()` | `void` | Закрывает ответ и освобождает соединение |
 
 ### Заголовки { #http-headers-imperative }
 
-`HttpHeaders` предоставляет доступ к заголовкам запроса и ответа в императивном клиенте.
+`HttpHeaders` дает доступ к заголовкам запроса и ответа. Имена заголовков приводятся к нижнему регистру, поиск регистронезависимый.
+
+| Метод | Возвращает | Описание |
+|--------|---------|-------------|
+| `getFirst(String name)` | `String` | Первое значение заголовка либо `null` |
+| `getAll(String name)` | `List<String>` | Все значения заголовка либо `null` |
+| `has(String name)` | `boolean` | Присутствует ли заголовок |
+| `names()` | `Set<String>` | Все имена заголовков |
+| `size()` | `int` | Количество заголовков |
+| `isEmpty()` | `boolean` | Пуст ли набор заголовков |
+| `toMutable()` | `MutableHttpHeaders` | Изменяемая копия |
 
 **Чтение заголовков:**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/data")
-        .build();
-    
-    httpClient.execute(request).thenAccept(response -> {
+    var request = HttpClientRequest.get("http://localhost:8090/api/data").build();
+
+    try (var response = httpClient.execute(request)) {
         HttpHeaders headers = response.headers();
-        String contentType = headers.getFirst("Content-Type");
-        List<String> allValues = headers.get("X-Custom-Header");
-        boolean hasHeader = headers.contains("Authorization");
-    });
+        String contentType = headers.getFirst("content-type");
+        List<String> allValues = headers.getAll("x-custom-header");
+        boolean hasHeader = headers.has("authorization");
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/data").build()
-    
-    httpClient.execute(request).thenAccept { response ->
-        val headers = response.headers
-        val contentType = headers.getFirst("Content-Type")
-        val allValues = headers.get("X-Custom-Header")
-        val hasHeader = headers.contains("Authorization")
+    val request = HttpClientRequest.get("http://localhost:8090/api/data").build()
+
+    httpClient.execute(request).use { response ->
+        val headers = response.headers()
+        val contentType = headers.getFirst("content-type")
+        val allValues = headers.getAll("x-custom-header")
+        val hasHeader = headers.has("authorization")
     }
     ```
 
-**Добавление заголовков:**
+**Сборка заголовков:**
+
+`HttpHeaders.of(...)` возвращает `MutableHttpHeaders`, который поддерживает `set`, `add` и `remove`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    MutableHttpHeaders headers = new MutableHttpHeaders();
-    headers.add("Authorization", "Bearer token123");
-    headers.add("X-Custom-Header", "value");
-    headers.set("Content-Type", "application/json");
-    
-    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
-        .headers(headers)
-        .body(HttpBody.plaintext("body"))
-        .build();
-    
-    httpClient.execute(request);
+    MutableHttpHeaders headers = HttpHeaders.of();
+    headers.add("authorization", "Bearer token123");
+    headers.add("x-custom-header", "value");
+    headers.set("content-type", "application/json");
+
+    var request = HttpClientRequest.post("http://localhost:8090/api/data")
+            .header("authorization", headers.getFirst("authorization"))
+            .body(HttpBody.json("{}"))
+            .build();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val headers = MutableHttpHeaders()
-    headers.add("Authorization", "Bearer token123")
-    headers.add("X-Custom-Header", "value")
-    headers.set("Content-Type", "application/json")
-    
-    val request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
-        .headers(headers)
-        .body(HttpBody.plaintext("body"))
+    val headers = HttpHeaders.of()
+    headers.add("authorization", "Bearer token123")
+    headers.add("x-custom-header", "value")
+    headers.set("content-type", "application/json")
+
+    val request = HttpClientRequest.post("http://localhost:8090/api/data")
+        .header("authorization", headers.getFirst("authorization")!!)
+        .body(HttpBody.json("{}"))
         .build()
-    
-    httpClient.execute(request)
     ```
+
+Готовый объект `HttpHeaders` можно также передать прямо в декларативный метод через `@Header`, смотрите [Заголовок](#header).
 
 ### Cookies { #cookies-imperative }
 
-`Cookies` предоставляет доступ к cookies запроса и ответа в императивном клиенте.
+Куки — это обычные заголовки: исходящая кука это заголовок `Cookie`, входящая — заголовок `Set-Cookie`.
+`Cookie` описывает одну куку, а `Cookies` — служебный класс, который их разбирает и формирует.
 
-**Чтение cookies:**
+**Отправка куки:**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
-        .build();
-    
-    httpClient.execute(request).thenAccept(response -> {
-        Cookies cookies = response.cookies();
-        Cookie sessionCookie = cookies.get("SESSIONID");
-        if (sessionCookie != null) {
-            String value = sessionCookie.value();
-            String domain = sessionCookie.domain();
-            String path = sessionCookie.path();
-        }
-    });
+    var request = HttpClientRequest.get("http://localhost:8090/api/profile")
+            .header("Cookie", Cookie.of("SESSIONID", "12345").toValue())
+            .build();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile").build()
-    
-    httpClient.execute(request).thenAccept { response ->
-        val cookies = response.cookies
-        val sessionCookie = cookies.get("SESSIONID")
-        if (sessionCookie != null) {
-            val value = sessionCookie.value()
-            val domain = sessionCookie.domain()
-            val path = sessionCookie.path()
+    val request = HttpClientRequest.get("http://localhost:8090/api/profile")
+        .header("Cookie", Cookie.of("SESSIONID", "12345").toValue())
+        .build()
+    ```
+
+**Чтение кук из ответа:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try (var response = httpClient.execute(request)) {
+        var setCookies = response.headers().getAll("set-cookie");
+        if (setCookies != null) {
+            for (var header : setCookies) {
+                Cookie cookie = Cookies.parseSetCookieHeader(header);
+                String name = cookie.name();
+                String value = cookie.value();
+                String domain = cookie.domain();
+                String path = cookie.path();
+            }
         }
     }
     ```
 
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    httpClient.execute(request).use { response ->
+        val setCookies = response.headers().getAll("set-cookie")
+        if (setCookies != null) {
+            for (header in setCookies) {
+                val cookie = Cookies.parseSetCookieHeader(header)
+                val name = cookie.name()
+                val value = cookie.value()
+                val domain = cookie.domain()
+                val path = cookie.path()
+            }
+        }
+    }
+    ```
+
+Для декларативного клиента вместо ручной сборки заголовка используйте аннотацию параметра [`@Cookie`](#cookie).
+
 ## Телеметрия { #telemetry }
 
-HTTP Client использует контракт телеметрии для логирования, метрик и трассировки запросов.
-Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
-Точки расширения находятся в `ru.tinkoff.kora.http.client.common.telemetry`.
+Телеметрия HTTP-клиента устанавливается как перехватчик: `DeclarativeHttpClientConfig` запрашивает у `HttpClientTelemetryFactory`
+объект `HttpClientTelemetry` для каждого метода клиента и оборачивает транспорт в `TelemetryInterceptor`.
+Точки расширения находятся в пакете `io.koraframework.http.client.common.telemetry`.
 
-Для каждого HTTP-запроса создаётся `HttpClientTelemetry.HttpClientTelemetryContext`, который закрывается по завершении запроса.
-Запрос описывается через параметры обработчика телеметрии, включая метод, URL, статус ответа и длительность.
+Для каждого HTTP-запроса `HttpClientTelemetry.observe(request)` создает `HttpClientObservation`,
+который видит запрос через `observeRequest`, ответ через `observeResponse`, сбой через `observeError`
+и всегда закрывается вызовом `end()`.
 
-Фабрика по умолчанию `DefaultHttpClientTelemetryFactory` объединяет три фабрики:
-- `HttpClientLoggerFactory` строит `HttpClientLogger` для логирования начала/конца запроса;
-- `HttpClientMetricsFactory` строит `HttpClientMetrics` для записи метрик запросов;
-- `HttpClientTracerFactory` строит `HttpClientTracer` для распределённой трассировки.
+Фабрика по умолчанию `DefaultHttpClientTelemetryFactory` объединяет три опциональные части, каждую из которых можно заменить,
+объявив компонент соответствующего типа:
 
-Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-client).
+- `DefaultHttpClientLoggerFactory` создает логгеры запроса и ответа;
+- `DefaultHttpClientMetricsFactory` создает сборщик метрик;
+- `DefaultHttpClientBodyConverter` превращает захваченное тело в строку, которая пишется в лог.
+
+Если для клиента выключены и логирование, и метрики, и трассировка, фабрика возвращает пустую телеметрию и обертка вообще не устанавливается.
+
+**Логирование.** На каждый метод клиента создаются два логгера, названные по классу клиента, методу и направлению:
+`com.example.SomeClient.hello.request` и `com.example.SomeClient.hello.response`.
+Их уровень определяет объем записи: `INFO` пишет только операцию, `DEBUG` добавляет параметры запроса и заголовки,
+`TRACE` добавляет тело. Скрываемые параметры и заголовки заменяются настроенной маской `mask`,
+а тело больше `maxRequestBodyLogSize` / `maxResponseBodyLogSize` пропускается с предупреждением.
+Настройка самих логгеров описана в разделе [Логирование](logging-slf4j.md).
+
+**Метрики.** Сборщик по умолчанию пишет таймер `http.client.request.duration` с корзинами SLO из
+`telemetry.metrics.slo`, размеченный методом HTTP, кодом статуса, маршрутом, адресом сервера и типом ошибки.
+Смотрите [Описание метрик](metrics.md#http-client).
+
+**Трассировка.** На каждый запрос создается span с именем `<METHOD> <шаблон пути>` и семантическими атрибутами HTTP
+из OpenTelemetry; `telemetry.tracing.pathFull` выбирает между атрибутами `url.full` и `url.path`.
+Смотрите [Трассировка](tracing.md).

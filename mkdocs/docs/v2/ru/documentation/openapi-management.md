@@ -1,14 +1,16 @@
 ---
-description: "Описывает модуль управления OpenAPI в Kora для публикации сгенерированных спецификаций OpenAPI, а также страниц Swagger UI и RapiDoc через публичный HTTP-сервер. Используйте при работе с OpenApiManagementModule, OpenApiManagementConfig, маршруты OpenAPI, Swagger UI, RapiDoc."
+description: "Explains the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server. Use when working with OpenApiManagementModule, OpenApiManagementConfig, openapi.management.files, CacheMode, Swagger UI, Scalar."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI management module for serving generated OpenAPI specifications, Swagger UI, and RapiDoc pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenAPI endpoint, Swagger UI, RapiDoc, /openapi, /swagger-ui, /rapidoc."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenApiHttpServerHandler, SwaggerUIHttpServerHandler, ScalarHttpServerHandler, openapi.management.files, openapi.management.path, swaggerui, scalar, CacheMode, /openapi, /swagger-ui, /scalar."
 ---
 
-Модуль `openapi-management` предоставляет из приложения готовые файлы `OpenAPI`, а также страницы [Swagger UI](https://swagger.io/tools/swagger-ui/) и [RapiDoc](https://rapidocweb.com/) для их просмотра.
+Модуль `openapi-management` предоставляет из приложения готовые файлы `OpenAPI`, а также страницы [Swagger UI](https://swagger.io/tools/swagger-ui/) и [Scalar](https://scalar.com/) для их просмотра.
 `OpenAPI` — это машиночитаемый контракт HTTP API: по нему удобно проверять доступные операции, модели данных и параметры запросов.
 
 Модуль не создает контракт из кода, а публикует уже существующие файлы из ресурсов приложения.
 Это полезно для локальной разработки, тестовых окружений и служебного доступа к описанию API без отдельного сервера документации.
+
+Обе страницы просмотра поставляются внутри модуля как полностью самодостаточные ресурсы, поэтому `Swagger UI` и `Scalar` открываются без доступа в интернет и без какого-либо `CDN`.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [HTTP-сервер OpenAPI](../guides/openapi-http-server.md).
 
@@ -18,7 +20,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:openapi-management"
+    implementation "io.koraframework:openapi-management"
     ```
 
     Модуль:
@@ -31,7 +33,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:openapi-management")
+    implementation("io.koraframework:openapi-management")
     ```
 
     Модуль:
@@ -41,91 +43,278 @@ agent:
     ```
 
 Требует подключения модуля [HTTP-сервера](http-server.md), так как регистрирует собственные `GET`-обработчики для выдачи файлов и страниц просмотра.
-Это обычные бины `HttpServerRequestHandler`, которые собирает **публичный** HTTP-сервер, поэтому пути `/openapi`, `/swagger-ui` и `/rapidoc` доступны на публичном HTTP-порту, а не на приватном (management) порту.
+Это обычные компоненты `HttpServerRequestHandler`, объявленные без системного тега, поэтому их собирает **публичный** HTTP-сервер: пути `/openapi`, `/swagger-ui` и `/scalar` доступны на `httpServer.port`, а не на системном порту `httpServer.system.port`.
 
 ## Конфигурация { #configuration }
 
-Пример конфигурации, описанной в классе `OpenApiManagementConfig`:
+Конфигурация читается из секции `openapi.management` и описана классом `OpenApiManagementConfig`:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     openapi {
         management {
-            file = [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] //(1)!
-            enabled = false  //(2)!
-            endpoint = "/openapi" //(3)!
+            enabled = true //(1)!
+            files = [ "openapi/my-openapi-1.yaml", "openapi/my-openapi-2.yaml" ] //(2)!
+            path = "/openapi" //(3)!
+            cache = "GZIP" //(4)!
             swaggerui {
-                enabled = false //(4)!
-                endpoint = "/swagger-ui" //(5)!
+                enabled = true //(5)!
+                path = "/swagger-ui" //(6)!
+                withCredentials = true //(7)!
+                cache = "GZIP" //(8)!
+                options { //(9)!
+                    layout = "StandaloneLayout"
+                    validatorUrl = "null"
+                    defaultModelsExpandDepth = "0"
+                    deepLinking = "true"
+                    persistAuthorization = "true"
+                    displayOperationId = "true"
+                    filter = "true"
+                }
             }
-            rapidoc {
-                enabled = false //(6)!
-                endpoint = "/rapidoc" //(7)!
+            scalar {
+                enabled = true //(10)!
+                path = "/scalar" //(11)!
+                cache = "GZIP" //(12)!
             }
         }
     }
     ```
 
-    1.  Путь к файлу `OpenAPI` или список путей относительно ресурсов приложения (обязательный, по умолчанию не указан).
-    2.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    1.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    2.  Список путей к файлам `OpenAPI` относительно ресурсов приложения (обязательный, значения по умолчанию нет), смотрите [Файлы контрактов](#files).
     3.  Путь, по которому доступны файлы `OpenAPI` (по умолчанию: `/openapi`).
         Если указан один файл, он доступен ровно по этому пути.
-        Если указано несколько файлов, путь становится префиксом вида `/openapi/{file}`.
-        Значение `{file}` берется из имени файла без директорий и без расширения `.json`, `.yml` или `.yaml`: файл `someDirectory/my-openapi-1.yaml` будет доступен по пути `/openapi/my-openapi-1`.
-    4.  Включает страницу `Swagger UI` (по умолчанию: `false`).
-    5.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
-    6.  Включает страницу `RapiDoc` (по умолчанию: `false`).
-    7.  Путь, по которому доступна страница `RapiDoc` (по умолчанию: `/rapidoc`).
+        Если указано больше одного файла, путь становится префиксом вида `/openapi/{file}`.
+    4.  Режим кэширования ответа для файлов `OpenAPI`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
+    5.  Включает страницу `Swagger UI` (по умолчанию: `false`).
+    6.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
+    7.  Отправлять учетные данные браузера (куки, заголовок `Authorization`) в запросах из `Swagger UI` (по умолчанию: `true`).
+    8.  Режим кэширования ответа для страницы `Swagger UI`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
+    9.  Параметры инициализации `Swagger UI`, смотрите [Параметры Swagger UI](#swagger-ui-options) (по умолчанию: семь значений, показанных выше).
+    10. Включает страницу `Scalar` (по умолчанию: `false`).
+    11. Путь, по которому доступна страница `Scalar` (по умолчанию: `/scalar`).
+    12. Режим кэширования ответа для страницы `Scalar`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     openapi:
       management:
-        file: [ "my-openapi-1.yaml", "my-openapi-2.yaml" ] #(1)!
-        enabled: false  #(2)!
-        endpoint: "/openapi" #(3)!
+        enabled: true #(1)!
+        files: [ "openapi/my-openapi-1.yaml", "openapi/my-openapi-2.yaml" ] #(2)!
+        path: "/openapi" #(3)!
+        cache: "GZIP" #(4)!
         swaggerui:
-          enabled: false #(4)!
-          endpoint: "/swagger-ui" #(5)!
-        rapidoc:
-          enabled: false #(6)!
-          endpoint: "/rapidoc" #(7)!
+          enabled: true #(5)!
+          path: "/swagger-ui" #(6)!
+          withCredentials: true #(7)!
+          cache: "GZIP" #(8)!
+          options: #(9)!
+            layout: "StandaloneLayout"
+            validatorUrl: "null"
+            defaultModelsExpandDepth: "0"
+            deepLinking: "true"
+            persistAuthorization: "true"
+            displayOperationId: "true"
+            filter: "true"
+        scalar:
+          enabled: true #(10)!
+          path: "/scalar" #(11)!
+          cache: "GZIP" #(12)!
     ```
 
-    1.  Путь к файлу `OpenAPI` или список путей относительно ресурсов приложения (обязательный, по умолчанию не указан).
-    2.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    1.  Включает выдачу файлов `OpenAPI` через HTTP-обработчик (по умолчанию: `false`).
+    2.  Список путей к файлам `OpenAPI` относительно ресурсов приложения (обязательный, значения по умолчанию нет), смотрите [Файлы контрактов](#files).
     3.  Путь, по которому доступны файлы `OpenAPI` (по умолчанию: `/openapi`).
         Если указан один файл, он доступен ровно по этому пути.
-        Если указано несколько файлов, путь становится префиксом вида `/openapi/{file}`.
-        Значение `{file}` берется из имени файла без директорий и без расширения `.json`, `.yml` или `.yaml`: файл `someDirectory/my-openapi-1.yaml` будет доступен по пути `/openapi/my-openapi-1`.
-    4.  Включает страницу `Swagger UI` (по умолчанию: `false`).
-    5.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
-    6.  Включает страницу `RapiDoc` (по умолчанию: `false`).
-    7.  Путь, по которому доступна страница `RapiDoc` (по умолчанию: `/rapidoc`).
+        Если указано больше одного файла, путь становится префиксом вида `/openapi/{file}`.
+    4.  Режим кэширования ответа для файлов `OpenAPI`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
+    5.  Включает страницу `Swagger UI` (по умолчанию: `false`).
+    6.  Путь, по которому доступна страница `Swagger UI` (по умолчанию: `/swagger-ui`).
+    7.  Отправлять учетные данные браузера (куки, заголовок `Authorization`) в запросах из `Swagger UI` (по умолчанию: `true`).
+    8.  Режим кэширования ответа для страницы `Swagger UI`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
+    9.  Параметры инициализации `Swagger UI`, смотрите [Параметры Swagger UI](#swagger-ui-options) (по умолчанию: семь значений, показанных выше).
+    10. Включает страницу `Scalar` (по умолчанию: `false`).
+    11. Путь, по которому доступна страница `Scalar` (по умолчанию: `/scalar`).
+    12. Режим кэширования ответа для страницы `Scalar`: `NONE`, `GZIP` или `FULL` (по умолчанию: `GZIP`), смотрите [Кэширование](#cache).
 
-Файлы читаются из ресурсов приложения при первом обращении и затем кэшируются в памяти (последующие запросы возвращают закэшированные байты).
-Для файлов с расширением `.json` используется тип ответа `text/json; charset=utf-8`, для всех остальных файлов — `text/x-yaml; charset=utf-8`.
+Значения `cache` сопоставляются с константами перечисления точно, поэтому их нужно писать в верхнем регистре.
 
-При нескольких файлах `Swagger UI` показывает список доступных контрактов, а `RapiDoc` открывает первый файл из списка.
+Минимальная рабочая конфигурация состоит из `files` и флагов того, что нужно опубликовать:
 
-Когда настроено несколько файлов, запрос к `/openapi/{file}` с неизвестным именем `{file}` возвращает `404` (`OpenAPI file not registered`), а запрос с пустым значением `{file}` возвращает `400` (`OpenAPI file not specified`).
-Если настроенный ресурс не удается найти или прочитать в момент запроса, обработчик возвращает `404` или `500` соответственно, иначе он отвечает `200` и содержимым файла.
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    openapi {
+        management {
+            enabled = true
+            files = "openapi/http-server.yaml"
+            swaggerui.enabled = true
+            scalar.enabled = true
+        }
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    openapi:
+      management:
+        enabled: true
+        files: "openapi/http-server.yaml"
+        swaggerui:
+          enabled: true
+        scalar:
+          enabled: true
+    ```
+
+### Файлы контрактов { #files }
+
+`files` — единственный обязательный параметр секции: значения по умолчанию у него нет, поэтому приложение, которое подключает `OpenApiManagementModule`, но не задает `openapi.management.files`, падает на этапе сборки графа с `ConfigValueException`, указывающим на этот путь.
+Проверка происходит независимо от `enabled` — конфигурация отображается до того, как какой-либо флаг будет прочитан.
+
+Ожидается список путей, но обычная строка тоже принимается и разбивается по `,`, поэтому все три записи ниже эквивалентны списку из двух элементов:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    files = [ "openapi/user.yaml", "openapi/data.yaml" ]
+    files = "openapi/user.yaml,openapi/data.yaml"
+    files = "openapi/user.yaml, openapi/data.yaml"
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    files: [ "openapi/user.yaml", "openapi/data.yaml" ]
+    files: "openapi/user.yaml,openapi/data.yaml"
+    files: "openapi/user.yaml, openapi/data.yaml"
+    ```
+
+Каждый путь ищется как ресурс на classpath — сначала как написан, затем с добавленным ведущим `/`, поэтому `openapi/user.yaml` и `/openapi/user.yaml` указывают на один и тот же ресурс.
+
+Когда настроено больше одного файла, публичное имя файла в URL выводится из имени файла: директории отбрасываются, а завершающее расширение `.json`, `.yml` или `.yaml` удаляется.
+Так, файл `someDirectory/my-openapi-1.yaml` доступен по пути `/openapi/my-openapi-1`.
+
+Тип содержимого ответа зависит от расширения: файлы, оканчивающиеся на `.json`, отдаются как `text/json; charset=utf-8`, все остальные — как `text/x-yaml; charset=utf-8`.
+
+Сценарии отказа у обработчика файлов:
+
+| Ситуация | Ответ |
+|-----------|----------|
+| Настроено больше одного файла, `{file}` пустой | `400`, `OpenAPI file not specified` |
+| `{file}` не совпадает ни с одним настроенным файлом | `404`, `OpenAPI file not registered: <name>` |
+| Настроенный ресурс не найден на classpath | `404`, `OpenAPI file not found while reading: <path>` |
+| Ресурс существует, но прочитать его не удалось | `500`, `Can't read OpenAPI file: <path>` |
+
+Ресурсы читаются лениво при первом обращении, поэтому опечатка в `files` не ломает запуск приложения — она проявляется как `404` на маршруте.
+
+### Кэширование { #cache }
+
+У каждого выдаваемого ресурса — у каждого файла `OpenAPI`, у страницы `Swagger UI` и у страницы `Scalar` — есть свой параметр `cache`, который определяет, что остается в памяти после первого чтения:
+
+| Режим | Запрос с `gzip` | Запрос без `gzip` |
+|------|---------------------|------------------------|
+| `NONE` | ресурс читается и сжимается на каждый запрос | ресурс читается на каждый запрос |
+| `GZIP` | ресурс читается и сжимается один раз, затем переиспользуется | ресурс читается на каждый запрос |
+| `FULL` | ресурс читается и сжимается один раз, затем переиспользуется | ресурс читается один раз, затем переиспользуется |
+
+`GZIP` используется по умолчанию и покрывает обычный случай, когда браузеры и API-клиенты сообщают о поддержке `gzip`.
+`FULL` дополнительно кэширует несжатую форму, а `NONE` полностью отключает кэширование, что удобно, пока файл контракта еще правится.
+
+Сжатие применяется только если о нем сообщил запрос: в `Accept-Encoding` должен быть указан `gzip` без коэффициента качества `q=0`.
+Сжатый ответ содержит `Content-Encoding: gzip`; и сжатый, и несжатый ответ содержат `Vary: Accept-Encoding`, чтобы промежуточные кэши не перепутали два представления.
+
+Страница `OAuth2`-перенаправления `Swagger UI` — исключение: она никогда не сжимается и всегда кэшируется в памяти после первого запроса.
+
+### Параметры Swagger UI { #swagger-ui-options }
+
+`swaggerui.options` — это набор параметров инициализации `Swagger UI`, которые подставляются в генерируемую страницу.
+Значения по умолчанию:
+
+| Параметр | Значение в конфигурации | Значение на странице |
+|--------|------------------|-------------------|
+| `layout` | `"StandaloneLayout"` | `"StandaloneLayout"` |
+| `validatorUrl` | `"null"` | `null` |
+| `defaultModelsExpandDepth` | `"0"` | `0` |
+| `deepLinking` | `"true"` | `true` |
+| `persistAuthorization` | `"true"` | `true` |
+| `displayOperationId` | `"true"` | `true` |
+| `filter` | `"true"` | `true` |
+
+Значения хранятся как строки, но подставляются в страницу как сырой `JavaScript`, если после обрезки пробелов они равны `null`, `true`, `false`, являются числом или начинаются с `{`, `[`, `function` или `(`.
+Все остальное подставляется как строковый литерал `JavaScript`, а пустое значение превращается в `""`.
+Это позволяет передавать через конфигурацию объекты и функции:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    openapi.management.swaggerui.options {
+        layout = "BaseLayout" //(1)!
+        defaultModelsExpandDepth = "-1"
+        syntaxHighlight = "{ activated: false }" //(2)!
+        onComplete = "() => window.swaggerReady = true" //(3)!
+    }
+    ```
+
+    1. Подставляется как строка `JavaScript`.
+    2. Подставляется как объект `JavaScript`, так как значение начинается с `{`.
+    3. Подставляется как стрелочная функция `JavaScript`, так как значение начинается с `(`.
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    openapi:
+      management:
+        swaggerui:
+          options:
+            layout: "BaseLayout" #(1)!
+            defaultModelsExpandDepth: "-1"
+            syntaxHighlight: "{ activated: false }" #(2)!
+            onComplete: "() => window.swaggerReady = true" #(3)!
+    ```
+
+    1. Подставляется как строка `JavaScript`.
+    2. Подставляется как объект `JavaScript`, так как значение начинается с `{`.
+    3. Подставляется как стрелочная функция `JavaScript`, так как значение начинается с `(`.
+
+???+ warning "Параметры заменяют значения по умолчанию"
+
+    Набор не объединяется со встроенными значениями по умолчанию: как только `options` появляется в конфигурации, на страницу попадают только перечисленные там ключи.
+    Если нужно изменить один параметр, перечислите рядом с ним и те значения по умолчанию, которые нужно сохранить.
+
+`withCredentials` настраивается отдельно от `options`, потому что влияет сразу на две вещи: он передается в `Swagger UI` как флаг `withCredentials`, и при значении `true` страница дополнительно устанавливает перехватчик, который проставляет `credentials = "include"` каждому запросу из кнопки «Try it out».
+Отключайте его, когда API вызывается из `Swagger UI` с другого origin и учетные данные браузера прикреплять не нужно.
+
+Страница также понимает значение `contextPath`, которое берется из куки `contextPath`, а если куки нет — из строки запроса страницы (`/swagger-ui?contextPath=/api`).
+Когда оно задано, все пути отображаемого контракта показываются с этим префиксом, что удобно, если сервис опубликован за префиксом пути.
+
+### Scalar { #scalar }
+
+`Scalar` — вторая встроенная страница просмотра, она включается независимо от `Swagger UI`: обе страницы можно опубликовать одновременно над одними и теми же файлами контрактов.
+Она получает тот же список контрактов, поэтому при нескольких файлах переключатель документов перечисляет каждый файл по его публичному имени.
+
+Обе страницы вычисляют `URL` контракта в браузере: они берут текущий адрес страницы и заменяют в нем сегмент `swaggerui.path` или `scalar.path` на `path`.
+Настраивать конкретный хост или порт не нужно, но если обратный прокси публикует страницу по пути, отличному от настроенного, замена ничего не находит и контракт не загружается.
 
 ## Маршруты { #endpoints }
 
-При включенной выдаче модуль регистрирует на публичном HTTP-сервере следующие `GET`-маршруты (пути показаны со значениями `endpoint` по умолчанию):
+При включенной выдаче модуль регистрирует на публичном HTTP-сервере следующие `GET`-маршруты (пути показаны со значениями `path` по умолчанию):
 
 | Маршрут | Обработчик | Включается через |
 |-------|-----------------|------------|
-| `GET /openapi` (один файл) или `GET /openapi/{file}` (несколько файлов) | `OpenApiHttpServerHandler` | `enabled = true` |
+| `GET /openapi` (один файл) или `GET /openapi/{file}` (больше одного файла) | `OpenApiHttpServerHandler` | `enabled = true` |
 | `GET /swagger-ui` | `SwaggerUIHttpServerHandler` | `swaggerui.enabled = true` |
 | `GET /swagger-ui/oauth2-redirect` | `SwaggerOauthHttpServerHandler` | регистрируется автоматически вместе со `Swagger UI` |
-| `GET /rapidoc` | `RapidocHttpServerHandler` | `rapidoc.enabled = true` |
+| `GET /scalar` | `ScalarHttpServerHandler` | `scalar.enabled = true` |
 
-Каждый маршрут использует значение `endpoint` из своей секции конфигурации, поэтому переопределение `endpoint` переносит соответствующий маршрут.
-Путь `OAuth2`-перенаправления всегда равен `swaggerui.endpoint` с добавленным суффиксом `/oauth2-redirect`.
+Каждый маршрут использует значение `path` из своей секции конфигурации, поэтому переопределение `path` переносит соответствующий маршрут.
+Путь `OAuth2`-перенаправления всегда равен `swaggerui.path` с добавленным суффиксом `/oauth2-redirect`.
+
+Маршрут, чья секция выключена, вообще не добавляется в роутер, поэтому отвечает так же, как любой неизвестный путь.
+Из-за этого включение страницы просмотра без `enabled = true` дает страницу, которая открывается, но не может получить свой контракт — маршрута выдачи файла просто нет.
 
 ## Рекомендации { #recommendations }
 
@@ -136,3 +325,8 @@ agent:
 
     Если сначала пишется код, а контракт должен создаваться по нему, можно использовать [Swagger Gradle Plugin](https://github.com/swagger-api/swagger-core/blob/master/modules/swagger-gradle-plugin/README.md)
     вместе с [аннотациями Swagger](https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Annotations).
+
+???+ warning "Не опубликуйте контракт наружу по невнимательности"
+
+    Все три маршрута живут на публичном HTTP-сервере, поэтому все включенное здесь доступно любому клиенту, который может достучаться до сервиса.
+    `enabled`, `swaggerui.enabled` и `scalar.enabled` по умолчанию равны `false`; держите страницы просмотра включенными только в тех окружениях, где описание API можно читать свободно.

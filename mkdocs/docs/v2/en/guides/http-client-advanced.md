@@ -2,15 +2,21 @@
 search:
   exclude: true
 title: HTTP Client Advanced Guide
-summary: Extend the basic HTTP client guide with form and multipart bodies, custom request mapping, response-code-aware decoding, method interceptors, and API-key authorization
-tags: http-client, advanced, form, multipart, interceptor, mapping, auth
+summary: Extend the basic HTTP client guide with form and multipart bodies, custom request mapping, response-code-aware decoding, method and client interceptors, API-key authorization and imperative calls
+description: "Advanced declarative HTTP client patterns for Kora 2.0: FormUrlEncoded and FormMultipart request bodies built from FormPart values, a custom HttpClientRequestMapper attached with @Mapping, @ResponseCodeMapper with ResponseCodeMapper.DEFAULT and per-status HttpClientResponseMapper implementations, HttpClientInterceptor applied through @InterceptWith for method logging and API-key authorization backed by @ConfigSource and @ConfigMapper, per-operation settings from HttpClientOperationConfig, and the imperative HttpClient with HttpClientRequest.of and a closeable HttpClientResponse."
+agent:
+  use_when: "Use this file for questions about non-trivial Kora 2.0 HTTP client calls: sending FormUrlEncoded or FormMultipart bodies with FormPart, writing an HttpClientRequestMapper and binding it with @Mapping, decoding different status codes into typed variants with @ResponseCodeMapper and ResponseCodeMapper.DEFAULT, HttpClientDecoderException raised inside a mapper, HttpClientInterceptor with @InterceptWith on a method or the whole interface, adding an API-key header from an @ConfigSource or @ConfigMapper value, per-operation keys such as httpClient.dataApi.getMappedByCode.requestTimeout and HttpClientOperationConfig, and building requests by hand with HttpClientRequest.of, HttpClient.with and HttpClient.execute."
+tags: http-client, advanced, form, multipart, interceptor, mapping, auth, imperative
 ---
 
 # Advanced HTTP Client Guide { #advanced-http-client-guide }
 
 This guide introduces advanced declarative HTTP client patterns in Kora. It covers how clients call form, multipart, and helper transport routes, how custom body mappers shape unusual request and
 response payloads, and how typed response variants represent different HTTP statuses. You will also see how method-level and client-level interceptors add cross-cutting behavior such as API-key
-authorization.
+authorization, and how to drop down to the imperative `HttpClient` when a request must be built by hand.
+
+Everything on this page stays synchronous. Interceptors return an `HttpClientResponse`, `HttpClient.execute(...)` returns an `HttpClientResponse`, and mappers work on a response that is already
+available. There is no callback, future, or coroutine anywhere in the client contract.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -18,7 +24,7 @@ authorization.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-http-client-advanced-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-client-advanced-app).
 
 ## What You'll Build { #youll-build }
 
@@ -30,12 +36,13 @@ You will extend the client application with:
 - response-code-aware decoding with `@ResponseCodeMapper`
 - a method-level `HttpClientInterceptor`
 - a client-wide API-key auth interceptor
+- an imperative call through the base `HttpClient` reusing the generated client configuration
 - a dedicated aggregate endpoint in `ClientTestController` that exercises the advanced data routes
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+ (the reference applications use Gradle Wrapper `9.5.1`)
 - Docker Desktop or another local Docker environment for container-based tests
 - A text editor or IDE
 
@@ -71,12 +78,15 @@ The main principle is the same as the basic client guide: the method signature s
 Client interceptors run around outbound calls. They are useful for cross-cutting transport behavior such as logging, correlation IDs, authentication headers, API keys, or metrics. Because interceptors
 live at the client boundary, they avoid duplicating the same header or logging code in every method.
 
+An interceptor implements one synchronous method, `HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request)`. It may rewrite the request, call `chain.process(request)`,
+inspect the response, and even skip the call entirely. Interceptors declared on the interface run before interceptors declared on a method.
+
 This guide uses interceptors for both method-level behavior and reusable client-level authorization.
 
 ### Targeted Changes { #targeted-changes }
 
-Advanced client features can easily spread through an application if the generated client is used everywhere directly. This guide keeps a service wrapper around the client so form calls, multipart
-calls, custom decoding, and authorization remain near the transport boundary. The rest of the application can work with clearer methods and typed results.
+Advanced client features can easily spread through an application if the generated client is used everywhere directly. This guide keeps the transport-heavy pieces inside the client interface so form
+calls, multipart calls, custom decoding, and authorization remain near the transport boundary. The rest of the application can work with clearer methods and typed results.
 
 The practical flow is:
 
@@ -85,6 +95,7 @@ The practical flow is:
 3. add a custom request mapper for one payload shape
 4. decode response statuses into typed results
 5. attach logging and API-key authorization with interceptors
+6. reach for the imperative `HttpClient` where the declarative model does not fit
 
 ## New HTTP Client { #new-http-client }
 
@@ -94,19 +105,19 @@ We keep these calls in a separate `DataApiClient` so the transport-heavy example
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/DataApiClient.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/client/DataApiClient.java"
+    package io.koraframework.guide.httpclient.client;
 
     import java.nio.charset.StandardCharsets;
     import java.util.List;
-    import ru.tinkoff.kora.http.client.common.annotation.HttpClient;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.form.FormMultipart;
-    import ru.tinkoff.kora.http.common.form.FormUrlEncoded;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.http.client.common.annotation.HttpClient;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.form.FormMultipart;
+    import io.koraframework.http.common.form.FormUrlEncoded;
+    import io.koraframework.json.common.annotation.Json;
 
-    @HttpClient(configPath = "httpClient.dataApi")
+    @HttpClient("httpClient.dataApi")
     public interface DataApiClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/data/form")
@@ -129,18 +140,18 @@ We keep these calls in a separate `DataApiClient` so the transport-heavy example
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/DataApiClient.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/client/DataApiClient.kt"
+    package io.koraframework.guide.httpclient.client
 
+    import io.koraframework.http.client.common.annotation.HttpClient
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.form.FormMultipart
+    import io.koraframework.http.common.form.FormUrlEncoded
+    import io.koraframework.json.common.annotation.Json
     import java.nio.charset.StandardCharsets
-    import ru.tinkoff.kora.http.client.common.annotation.HttpClient
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.form.FormMultipart
-    import ru.tinkoff.kora.http.common.form.FormUrlEncoded
-    import ru.tinkoff.kora.json.common.annotation.Json
 
-    @HttpClient(configPath = "httpClient.dataApi")
+    @HttpClient("httpClient.dataApi")
     interface DataApiClient {
 
         @HttpRoute(method = HttpMethod.POST, path = "/data/form")
@@ -155,7 +166,12 @@ We keep these calls in a separate `DataApiClient` so the transport-heavy example
                 FormMultipart(
                     listOf(
                         FormMultipart.data("field1", "some data content"),
-                        FormMultipart.file("field2", "example1.txt", "text/plain", "some file content".toByteArray(StandardCharsets.UTF_8))
+                        FormMultipart.file(
+                            "field2",
+                            "example1.txt",
+                            "text/plain",
+                            "some file content".toByteArray(StandardCharsets.UTF_8)
+                        )
                     )
                 )
             )
@@ -172,6 +188,55 @@ This separation helps:
 - `DataApiClient` becomes the home for advanced transport examples
 - the base guide stays easy to read
 
+Two body types do the heavy lifting here, and both come from `io.koraframework.http.common.form`:
+
+- `FormUrlEncoded` holds `FormPart(name, values)` entries and is encoded as `application/x-www-form-urlencoded`
+- `FormMultipart` holds a list of parts built with `FormMultipart.data(...)` for plain fields and `FormMultipart.file(...)` for file parts, and is encoded as `multipart/form-data`
+
+Neither type needs a `@Mapping`: Kora ships request mappers for both. `sampleUpload()` is an ordinary default method on the interface, so it is not a route — it is a convenience wrapper that builds the
+multipart body and delegates to `processUpload`. Default methods are also skipped when Kora generates the per-method configuration, so they never add stray configuration keys.
+
+The client needs its own configuration section, named by the `@HttpClient` value:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript title="src/main/resources/application.conf"
+    httpClient {
+      dataApi {
+        url = "http://localhost:8080" //(1)!
+        url = ${?DATA_API_URL} //(2)!
+        requestTimeout = 10s //(3)!
+        telemetry.logging.enabled = true //(4)!
+        getMappedByCode.requestTimeout = 2s //(5)!
+      }
+    }
+    ```
+
+    1. Base URL of the advanced server application (required, no default).
+    2. Optional override of the base URL from the `DATA_API_URL` environment variable.
+    3. Maximum time allowed for one client request (optional, no default).
+    4. Enables request logging for this client (default: `false`).
+    5. Per-operation override: every client method gets its own configuration block named after the method.
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml title="src/main/resources/application.yaml"
+    httpClient:
+      dataApi:
+        url: ${DATA_API_URL:http://localhost:8080} #(1)!
+        requestTimeout: 10s #(2)!
+        telemetry:
+          logging:
+            enabled: true #(3)!
+        getMappedByCode:
+          requestTimeout: 2s #(4)!
+    ```
+
+    1. Base URL of the advanced server application (required, no default). Uses the shown default and allows `DATA_API_URL` to override it.
+    2. Maximum time allowed for one client request (optional, no default).
+    3. Enables request logging for this client (default: `false`).
+    4. Per-operation override: every client method gets its own configuration block named after the method.
+
 ## Parameter Mapper { #parameter-mapper }
 
 For more on client request-body mappers, see [HTTP Client request body](../documentation/http-client.md#request-body).
@@ -179,7 +244,8 @@ For more on client request-body mappers, see [HTTP Client request body](../docum
 Sometimes a request body should not use the normal JSON or form mapping flow. A remote endpoint may expect a very specific text or binary representation, and you still want to model the input as your
 own type.
 
-That is what `HttpClientRequestMapper<T>` is for.
+That is what `HttpClientRequestMapper<T>` is for. It has one method, `HttpBodyOutput apply(T value)`, and `HttpBody` provides the factories for the usual representations: `HttpBody.plaintext(...)`,
+`HttpBody.json(...)`, `HttpBody.octetStream(...)` and `HttpBody.of(contentType, bytes)`.
 
 In this guide we use a small example:
 
@@ -192,24 +258,25 @@ In this guide we use a small example:
     Add these pieces inside `DataApiClient.java`:
 
     ```java
-    import ru.tinkoff.kora.common.Context;
-    import ru.tinkoff.kora.common.Mapping;
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequestMapper;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.common.body.HttpBodyOutput;
-
-    record PlainTextGreetingBody(String name) {}
-
-    final class GreetingRequestMapper implements HttpClientRequestMapper<PlainTextGreetingBody> {
-
-        @Override
-        public HttpBodyOutput apply(Context ctx, PlainTextGreetingBody value) {
-            return HttpBody.plaintext("Hello " + value.name());
-        }
-    }
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Mapping;
+    import io.koraframework.http.client.common.request.HttpClientRequestMapper;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.common.body.HttpBodyOutput;
 
     @HttpRoute(method = HttpMethod.POST, path = "/data/mapping-request")
     String processMappedRequest(@Mapping(GreetingRequestMapper.class) PlainTextGreetingBody body);
+
+    record PlainTextGreetingBody(String name) {}
+
+    @Component
+    final class GreetingRequestMapper implements HttpClientRequestMapper<PlainTextGreetingBody> {
+
+        @Override
+        public HttpBodyOutput apply(PlainTextGreetingBody value) {
+            return HttpBody.plaintext("Hello " + value.name());
+        }
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -217,23 +284,28 @@ In this guide we use a small example:
     Add the same idea in `DataApiClient.kt`:
 
     ```kotlin
-    import ru.tinkoff.kora.common.Context
-    import ru.tinkoff.kora.common.Mapping
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequestMapper
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.common.body.HttpBodyOutput
-
-    data class PlainTextGreetingBody(val name: String)
-
-    class GreetingRequestMapper : HttpClientRequestMapper<PlainTextGreetingBody> {
-        override fun apply(ctx: Context, value: PlainTextGreetingBody): HttpBodyOutput {
-            return HttpBody.plaintext("Hello ${value.name}")
-        }
-    }
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Mapping
+    import io.koraframework.http.client.common.request.HttpClientRequestMapper
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.common.body.HttpBodyOutput
 
     @HttpRoute(method = HttpMethod.POST, path = "/data/mapping-request")
     fun processMappedRequest(@Mapping(GreetingRequestMapper::class) body: PlainTextGreetingBody): String
+
+    data class PlainTextGreetingBody(val name: String)
+
+    @Component
+    class GreetingRequestMapper : HttpClientRequestMapper<PlainTextGreetingBody> {
+
+        override fun apply(value: PlainTextGreetingBody): HttpBodyOutput {
+            return HttpBody.plaintext("Hello ${value.name}")
+        }
+    }
     ```
+
+Note the `@Component` on the mapper. A request mapper referenced with `@Mapping` is always taken from the dependency graph — the generated client receives it as a constructor argument — so it has to be
+a graph component even when it has no dependencies of its own. The same rule applies to every interceptor referenced by `@InterceptWith`.
 
 This is the client-side analogue of the request mappers we introduced in the advanced server guide: a typed object becomes a transport representation in one clear place.
 
@@ -241,20 +313,21 @@ This is the client-side analogue of the request mappers we introduced in the adv
 
 Default client behavior often treats a response as either:
 
-- a successful body
-- or an exception
+- a successful body, for `2xx` statuses
+- or an `HttpClientResponseException`, for everything else
 
 That is enough for many APIs. But sometimes the contract intentionally says:
 
 - `200` returns one JSON shape
 - non-`200` responses return another JSON shape
 
-That is where `@ResponseCodeMapper` becomes useful.
+That is where `@ResponseCodeMapper` becomes useful. It is repeatable, it takes an exact status code plus the `HttpClientResponseMapper` to use for it, and `ResponseCodeMapper.DEFAULT` covers every
+status that is not listed explicitly. When at least one `@ResponseCodeMapper` is present, the generated client switches on the status code instead of throwing on non-`2xx`.
 
 In this guide, `GET /data/mapping-by-code/{code}` behaves like this:
 
 - `200` returns `{"message":"Hello from response mapper"}`
-- other codes return `{"message":"Request failed with code <status>"}` through the shared server-side `ErrorResponse`
+- other codes return `{"message":"Request failed with code <status>"}` through the shared server-side error payload
 
 We model that as one sealed result type.
 
@@ -264,16 +337,19 @@ We model that as one sealed result type.
 
     ```java
     import java.io.IOException;
-    import ru.tinkoff.kora.guide.httpclient.client.DataApiClient.MappedResponse.Error;
-    import ru.tinkoff.kora.guide.httpclient.client.DataApiClient.MappedResponse.Payload;
-    import ru.tinkoff.kora.http.client.common.HttpClientDecoderException;
-    import ru.tinkoff.kora.http.client.common.annotation.ResponseCodeMapper;
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse;
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponseMapper;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.json.common.JsonReader;
+    import io.koraframework.http.client.common.annotation.ResponseCodeMapper;
+    import io.koraframework.http.client.common.exception.HttpClientDecoderException;
+    import io.koraframework.http.client.common.response.HttpClientResponse;
+    import io.koraframework.http.client.common.response.HttpClientResponseMapper;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.json.common.JsonReader;
 
-    sealed interface MappedResponse permits Payload, Error {
+    @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper.class)
+    @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper.class)
+    @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
+    MappedResponse getMappedByCode(@Path int code);
+
+    sealed interface MappedResponse permits MappedResponse.Payload, MappedResponse.Error {
 
         @Json
         record Payload(String message) implements MappedResponse {}
@@ -285,11 +361,12 @@ We model that as one sealed result type.
         record ErrorPayload(String message) {}
     }
 
+    @Component
     final class MappedResponseSuccessMapper implements HttpClientResponseMapper<MappedResponse> {
 
-        private final JsonReader<Payload> jsonReader;
+        private final JsonReader<MappedResponse.Payload> jsonReader;
 
-        public MappedResponseSuccessMapper(JsonReader<Payload> jsonReader) {
+        public MappedResponseSuccessMapper(JsonReader<MappedResponse.Payload> jsonReader) {
             this.jsonReader = jsonReader;
         }
 
@@ -301,6 +378,7 @@ We model that as one sealed result type.
         }
     }
 
+    @Component
     final class MappedResponseErrorMapper implements HttpClientResponseMapper<MappedResponse> {
 
         private final JsonReader<MappedResponse.ErrorPayload> jsonReader;
@@ -313,15 +391,10 @@ We model that as one sealed result type.
         public MappedResponse apply(HttpClientResponse response) throws IOException, HttpClientDecoderException {
             try (var is = response.body().asInputStream()) {
                 var payload = this.jsonReader.read(is.readAllBytes());
-                return new Error(response.code(), payload.message());
+                return new MappedResponse.Error(response.code(), payload.message());
             }
         }
     }
-
-    @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper.class)
-    @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper.class)
-    @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
-    MappedResponse getMappedByCode(@Path int code);
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -329,13 +402,18 @@ We model that as one sealed result type.
     Add the same idea in Kotlin:
 
     ```kotlin
+    import io.koraframework.http.client.common.annotation.ResponseCodeMapper
+    import io.koraframework.http.client.common.exception.HttpClientDecoderException
+    import io.koraframework.http.client.common.response.HttpClientResponse
+    import io.koraframework.http.client.common.response.HttpClientResponseMapper
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.json.common.JsonReader
     import java.io.IOException
-    import ru.tinkoff.kora.http.client.common.HttpClientDecoderException
-    import ru.tinkoff.kora.http.client.common.annotation.ResponseCodeMapper
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponseMapper
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.json.common.JsonReader
+
+    @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper::class)
+    @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper::class)
+    @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
+    fun getMappedByCode(@Path code: Int): MappedResponse
 
     sealed interface MappedResponse {
 
@@ -349,43 +427,49 @@ We model that as one sealed result type.
         data class ErrorPayload(val message: String)
     }
 
+    @Component
     class MappedResponseSuccessMapper(
         private val jsonReader: JsonReader<MappedResponse.Payload>
     ) : HttpClientResponseMapper<MappedResponse> {
 
+        @Throws(IOException::class, HttpClientDecoderException::class)
         override fun apply(response: HttpClientResponse): MappedResponse {
             response.body().asInputStream().use { input ->
-                return jsonReader.read(input.readAllBytes())
+                return requireNotNull(jsonReader.read(input.readAllBytes())) { "Empty success payload" }
             }
         }
     }
 
+    @Component
     class MappedResponseErrorMapper(
         private val jsonReader: JsonReader<MappedResponse.ErrorPayload>
     ) : HttpClientResponseMapper<MappedResponse> {
 
+        @Throws(IOException::class, HttpClientDecoderException::class)
         override fun apply(response: HttpClientResponse): MappedResponse {
             response.body().asInputStream().use { input ->
-                val payload = jsonReader.read(input.readAllBytes())
+                val payload = requireNotNull(jsonReader.read(input.readAllBytes())) { "Empty error payload" }
                 return MappedResponse.Error(response.code(), payload.message)
             }
         }
     }
-
-    @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper::class)
-    @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper::class)
-    @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
-    fun getMappedByCode(@Path code: Int): MappedResponse
     ```
 
 This pattern is valuable because the status-code-specific transport logic stays close to the client method instead of leaking into every caller.
 
-Notice one small but important detail in this version of the example:
+Notice a few details in this version of the example:
 
+- both mappers take a `JsonReader` in their constructor, so both must be `@Component`
 - the error JSON body contains only `message`
 - the mapper gets `code` from the actual HTTP status line
+- anything the mapper throws is wrapped into `HttpClientDecoderException` by the generated client
 
 That keeps the server-side error format simpler while still letting the client expose a richer typed result.
+
+!!! tip "Two outcomes without custom mappers"
+
+    When you only need "success payload or error payload" and both are JSON, `Either<T, E>` is a lighter option: a method returning `Either<Payload, ErrorPayload>` maps every status code without
+    throwing, and with `@Json` Kora builds both mappers itself. See [Either](../documentation/http-client.md#either).
 
 ## Client Interceptor { #client-interceptor }
 
@@ -406,31 +490,29 @@ We keep this example intentionally small and apply it only to `getMappedByCode()
     Add this inside `DataApiClient.java`:
 
     ```java
-    import java.util.concurrent.CompletionStage;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.http.client.common.interceptor.HttpClientInterceptor;
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest;
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse;
-    import ru.tinkoff.kora.http.common.annotation.InterceptWith;
-
-    final class MethodLoggingInterceptor implements HttpClientInterceptor {
-
-        private static final Logger logger = LoggerFactory.getLogger(MethodLoggingInterceptor.class);
-
-        @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request)
-                throws Exception {
-            logger.info("Advanced HTTP client interceptor invoked");
-            return chain.process(ctx, request);
-        }
-    }
+    import io.koraframework.http.client.common.interceptor.HttpClientInterceptor;
+    import io.koraframework.http.client.common.request.HttpClientRequest;
+    import io.koraframework.http.common.annotation.InterceptWith;
 
     @InterceptWith(MethodLoggingInterceptor.class)
     @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper.class)
     @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper.class)
     @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
     MappedResponse getMappedByCode(@Path int code);
+
+    @Component
+    final class MethodLoggingInterceptor implements HttpClientInterceptor {
+
+        private static final Logger logger = LoggerFactory.getLogger(MethodLoggingInterceptor.class);
+
+        @Override
+        public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
+            logger.info("Advanced HTTP client interceptor invoked");
+            return chain.process(request);
+        }
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -438,37 +520,36 @@ We keep this example intentionally small and apply it only to `getMappedByCode()
     Add the same idea in Kotlin:
 
     ```kotlin
-    import java.util.concurrent.CompletionStage
     import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.http.client.common.interceptor.HttpClientInterceptor
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse
-    import ru.tinkoff.kora.http.common.annotation.InterceptWith
-
-    class MethodLoggingInterceptor : HttpClientInterceptor {
-
-        companion object {
-            private val logger = LoggerFactory.getLogger(MethodLoggingInterceptor::class.java)
-        }
-
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
-            logger.info("Advanced HTTP client interceptor invoked")
-            return chain.process(ctx, request)
-        }
-    }
+    import io.koraframework.http.client.common.interceptor.HttpClientInterceptor
+    import io.koraframework.http.client.common.request.HttpClientRequest
+    import io.koraframework.http.common.annotation.InterceptWith
 
     @InterceptWith(MethodLoggingInterceptor::class)
     @ResponseCodeMapper(code = ResponseCodeMapper.DEFAULT, mapper = MappedResponseErrorMapper::class)
     @ResponseCodeMapper(code = 200, mapper = MappedResponseSuccessMapper::class)
     @HttpRoute(method = HttpMethod.GET, path = "/data/mapping-by-code/{code}")
     fun getMappedByCode(@Path code: Int): MappedResponse
+
+    @Component
+    class MethodLoggingInterceptor : HttpClientInterceptor {
+
+        private val logger = LoggerFactory.getLogger(MethodLoggingInterceptor::class.java)
+
+        override fun processRequest(chain: HttpClientInterceptor.InterceptChain, request: HttpClientRequest): HttpClientResponse {
+            logger.info("Advanced HTTP client interceptor invoked")
+            return chain.process(request)
+        }
+    }
     ```
 
 This is a good local-before-global pattern: we add behavior only where the example actually needs it.
+
+The signature is worth reading closely. `processRequest` receives the chain first and the request second, and it returns the response directly:
+
+- to change the outgoing request, rebuild it with `request.toBuilder()` and pass the new instance to `chain.process(...)`
+- to inspect or replace the response, work with the value returned by `chain.process(...)`
+- to short-circuit the call, return a response without calling the chain at all
 
 ## API Key Authorization { #api-key }
 
@@ -484,26 +565,28 @@ Create the config contract:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/ApiKeyAuthConfig.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/client/ApiKeyAuthConfig.java"
+    package io.koraframework.guide.httpclient.client;
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource;
+    import io.koraframework.config.common.annotation.ConfigSource;
 
     @ConfigSource("auth.apiKey")
     public interface ApiKeyAuthConfig {
+
         String value();
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/ApiKeyAuthConfig.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/client/ApiKeyAuthConfig.kt"
+    package io.koraframework.guide.httpclient.client
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource
+    import io.koraframework.config.common.annotation.ConfigSource
 
     @ConfigSource("auth.apiKey")
     interface ApiKeyAuthConfig {
+
         fun value(): String
     }
     ```
@@ -512,15 +595,13 @@ Create the auth interceptor:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/ApiKeyAuthInterceptor.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/client/ApiKeyAuthInterceptor.java"
+    package io.koraframework.guide.httpclient.client;
 
-    import java.util.concurrent.CompletionStage;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Context;
-    import ru.tinkoff.kora.http.client.common.interceptor.HttpClientInterceptor;
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest;
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.http.client.common.interceptor.HttpClientInterceptor;
+    import io.koraframework.http.client.common.request.HttpClientRequest;
+    import io.koraframework.http.client.common.response.HttpClientResponse;
 
     @Component
     public final class ApiKeyAuthInterceptor implements HttpClientInterceptor {
@@ -532,53 +613,46 @@ Create the auth interceptor:
         }
 
         @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request)
-                throws Exception {
+        public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
             var authorizedRequest = request.toBuilder()
                     .header("Authorization", this.config.value())
                     .build();
-            return chain.process(ctx, authorizedRequest);
+            return chain.process(authorizedRequest);
         }
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/ApiKeyAuthInterceptor.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/client/ApiKeyAuthInterceptor.kt"
+    package io.koraframework.guide.httpclient.client
 
-    import java.util.concurrent.CompletionStage
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Context
-    import ru.tinkoff.kora.http.client.common.interceptor.HttpClientInterceptor
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest
-    import ru.tinkoff.kora.http.client.common.response.HttpClientResponse
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.http.client.common.interceptor.HttpClientInterceptor
+    import io.koraframework.http.client.common.request.HttpClientRequest
+    import io.koraframework.http.client.common.response.HttpClientResponse
 
     @Component
     class ApiKeyAuthInterceptor(
         private val config: ApiKeyAuthConfig
     ) : HttpClientInterceptor {
 
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
+        override fun processRequest(chain: HttpClientInterceptor.InterceptChain, request: HttpClientRequest): HttpClientResponse {
             val authorizedRequest = request.toBuilder()
                 .header("Authorization", config.value())
                 .build()
-            return chain.process(ctx, authorizedRequest)
+            return chain.process(authorizedRequest)
         }
     }
     ```
 
-Apply it to DataApiClient:
+Apply it to the whole client, so every route is authorized:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @InterceptWith(ApiKeyAuthInterceptor.class)
-    @HttpClient(configPath = "httpClient.dataApi")
+    @HttpClient("httpClient.dataApi")
     public interface DataApiClient {
         // routes stay the same
     }
@@ -588,11 +662,14 @@ Apply it to DataApiClient:
 
     ```kotlin
     @InterceptWith(ApiKeyAuthInterceptor::class)
-    @HttpClient(configPath = "httpClient.dataApi")
+    @HttpClient("httpClient.dataApi")
     interface DataApiClient {
         // routes stay the same
     }
     ```
+
+Interceptors declared on the interface run for every route, and they run **before** any interceptor declared on an individual method. So on `getMappedByCode()` the order is `ApiKeyAuthInterceptor`
+first, then `MethodLoggingInterceptor`, then the actual transport call.
 
 This is a very common interceptor use case. Teams often use the same pattern for:
 
@@ -600,6 +677,12 @@ This is a very common interceptor use case. Teams often use the same pattern for
 - cookies
 - API keys
 - other request metadata that should always be added automatically
+
+Kora also ships ready interceptors for the standard schemes in `io.koraframework.http.client.common.interceptor`, so a custom class is only needed when the scheme is non-standard:
+
+- `BasicAuthHttpClientInterceptor` — sends `Authorization: Basic ...` from a username and password, or from an `HttpClientTokenProvider`
+- `BearerAuthHttpClientInterceptor` — sends `Authorization: Bearer ...` from a static token or an `HttpClientTokenProvider`
+- `ApiKeyHttpClientInterceptor` — sends an API key as a header, a query parameter, or a cookie, chosen with `ApiKeyLocation.{HEADER,QUERY,COOKIE}`
 
 Configure the API key:
 
@@ -616,77 +699,92 @@ For the full configuration reference, see [Configuration](../documentation/confi
     }
     ```
 
-    1. Configured value consumed by the guide component.
-    2. Configured value consumed by the guide component. Optional override from `HTTP_ADVANCED_API_KEY`.
+    1. Local default API key value used by the guide (required, no default).
+    2. Optional override of the API key from the `HTTP_ADVANCED_API_KEY` environment variable.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml title="src/main/resources/application.yaml"
     auth:
       apiKey:
-        value: ${?HTTP_ADVANCED_API_KEY:"MySecuredApiKey"} #(1)!
+        value: ${HTTP_ADVANCED_API_KEY:MySecuredApiKey} #(1)!
     ```
 
-    1. Configured value consumed by the guide component. Uses the shown default and allows `HTTP_ADVANCED_API_KEY` to override it.
+    1. API key used by the guide (required, no default). Uses the shown default and allows `HTTP_ADVANCED_API_KEY` to override it.
 
-Both applications can share the same local default, while `HTTP_ADVANCED_API_KEY` keeps the example environment-friendly.
+Both applications can share the same local default, while `HTTP_ADVANCED_API_KEY` keeps the example environment-friendly. The client telemetry masks the `authorization` header by default, so the key
+does not leak into logs.
 
 ## Imperative Client { #imperative-client }
 
 Declarative `@HttpClient` interfaces are the usual application-level style, but Kora also exposes the base `HttpClient` component. This is useful when you need to build a request dynamically, apply an
 interceptor manually, or debug what the declarative client hides from you.
 
-First add a small config contract for the same remote base URL used by `DataApiClient`:
+There is no need to duplicate the client configuration for that. For every `@HttpClient` interface the processor generates a configuration interface named `$<InterfaceName>_Config` plus a module that
+binds it to the configured path, and that interface is an ordinary graph component you can inject:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/dataApiConfig.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java
+    @ConfigMapper
+    public interface $DataApiClient_Config extends DeclarativeHttpClientConfig {
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource;
+        @Override
+        HttpClientTelemetryConfig telemetry();
 
-    @ConfigSource("httpClient.dataApi")
-    public interface dataApiConfig {
-        String url();
+        HttpClientOperationConfig processForm();
+
+        HttpClientOperationConfig processUpload();
+
+        HttpClientOperationConfig processMappedRequest();
+
+        HttpClientOperationConfig getMappedByCode();
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/dataApiConfig.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin
+    @ConfigMapper
+    interface `$DataApiClient_Config` : DeclarativeHttpClientConfig {
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource
+        override fun telemetry(): HttpClientTelemetryConfig
 
-    @ConfigSource("httpClient.dataApi")
-    interface dataApiConfig {
-        fun url(): String
+        fun processForm(): HttpClientOperationConfig
+
+        fun processUpload(): HttpClientOperationConfig
+
+        fun processMappedRequest(): HttpClientOperationConfig
+
+        fun getMappedByCode(): HttpClientOperationConfig
     }
     ```
+
+`DeclarativeHttpClientConfig` contributes `url()`, `requestTimeout()` and `telemetry()`, and each abstract client method contributes one `HttpClientOperationConfig` block. That is exactly why
+`httpClient.dataApi.getMappedByCode.requestTimeout` from the configuration above is a valid key, and why default methods such as `sampleUpload()` never appear there.
 
 Now add a small manual client. Notice that it does not put the authorization header directly on the request. It reuses the same auth interceptor through `this.httpClient.with(...)`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/client/ManualDataHttpClient.java"
-    package ru.tinkoff.kora.guide.httpclient.client;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/client/ManualDataHttpClient.java"
+    package io.koraframework.guide.httpclient.client;
 
     import java.nio.charset.StandardCharsets;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.http.client.common.HttpClient;
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.http.client.common.HttpClient;
+    import io.koraframework.http.client.common.request.HttpClientRequest;
 
     @Component
     public final class ManualDataHttpClient {
 
         private final HttpClient httpClient;
-        private final dataApiConfig dataApiConfig;
+        private final $DataApiClient_Config dataApiConfig;
         private final ApiKeyAuthInterceptor apiKeyAuthInterceptor;
 
-        public ManualDataHttpClient(
-                HttpClient httpClient,
-                dataApiConfig dataApiConfig,
-                ApiKeyAuthInterceptor apiKeyAuthInterceptor) {
+        public ManualDataHttpClient(HttpClient httpClient,
+                                    $DataApiClient_Config dataApiConfig,
+                                    ApiKeyAuthInterceptor apiKeyAuthInterceptor) {
             this.httpClient = httpClient;
             this.dataApiConfig = dataApiConfig;
             this.apiKeyAuthInterceptor = apiKeyAuthInterceptor;
@@ -695,10 +793,7 @@ Now add a small manual client. Notice that it does not put the authorization hea
         public String pingManualHandler() {
             var request = HttpClientRequest.of("GET", this.dataApiConfig.url() + "/manual/data/ping")
                     .build();
-            var response = this.httpClient.with(this.apiKeyAuthInterceptor)
-                    .execute(request)
-                    .toCompletableFuture()
-                    .join();
+            var response = this.httpClient.with(this.apiKeyAuthInterceptor).execute(request);
             if (response.code() != 200) {
                 throw new IllegalStateException("Manual HTTP call failed with status " + response.code());
             }
@@ -713,28 +808,25 @@ Now add a small manual client. Notice that it does not put the authorization hea
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/client/ManualDataHttpClient.kt"
-    package ru.tinkoff.kora.guide.httpclient.client
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/client/ManualDataHttpClient.kt"
+    package io.koraframework.guide.httpclient.client
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.http.client.common.HttpClient
+    import io.koraframework.http.client.common.request.HttpClientRequest
     import java.nio.charset.StandardCharsets
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.http.client.common.HttpClient
-    import ru.tinkoff.kora.http.client.common.request.HttpClientRequest
 
     @Component
     class ManualDataHttpClient(
         private val httpClient: HttpClient,
-        private val dataApiConfig: dataApiConfig,
+        private val dataApiConfig: `$DataApiClient_Config`,
         private val apiKeyAuthInterceptor: ApiKeyAuthInterceptor
     ) {
 
         fun pingManualHandler(): String {
             val request = HttpClientRequest.of("GET", dataApiConfig.url() + "/manual/data/ping")
                 .build()
-            val response = httpClient.with(apiKeyAuthInterceptor)
-                .execute(request)
-                .toCompletableFuture()
-                .join()
+            val response = httpClient.with(apiKeyAuthInterceptor).execute(request)
             if (response.code() != 200) {
                 throw IllegalStateException("Manual HTTP call failed with status ${response.code()}")
             }
@@ -745,38 +837,14 @@ Now add a small manual client. Notice that it does not put the authorization hea
     }
     ```
 
-This example is intentionally small, but it demonstrates three important details:
+This example is intentionally small, but it demonstrates four important details:
 
-- `HttpClientRequest.of(...)` builds the outgoing request explicitly
-- `HttpClient.with(...)` returns a client decorated with an interceptor
-- `execute(...)` is the low-level operation behind higher-level declarative clients
+- `HttpClientRequest.of(method, uriTemplate)` returns an `HttpClientRequestBuilder`; there are also shorthands such as `HttpClientRequest.get(...)`, `.post(...)` and `.delete(...)`
+- the builder exposes `pathParam`, `queryParam`, `header`, `body` and `requestTimeout`, and `request.toBuilder()` derives a modified copy of an existing request
+- `HttpClient.with(...)` returns a client decorated with an interceptor, so authorization stays in one place
+- `execute(...)` is the low-level synchronous operation behind every declarative client, and it returns a `HttpClientResponse` whose body must be read before it is closed
 
-After compilation, the generated application graph shows that Kora wires the base client, config, and interceptor into the manual client:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    component57 = graphDraw.addNode0(_type_of_component57, new Class<?>[]{}, g -> new ManualDataHttpClient(
-          g.get(ApplicationGraph.holder0.component29),
-          g.get(ApplicationGraph.holder0.component36),
-          g.get(ApplicationGraph.holder0.component42)
-        ), List.of(), component29, component36, component42);
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    component62 = graphDraw.addNode0(map["component62"],
-      { ManualDataHttpClient(
-        it.get(holder0.component34),
-        it.get(holder0.component41),
-        it.get(holder0.component47)
-      ) },
-      component34, component41, component47
-    )
-    ```
-
-That generated graph is a useful source of truth when you want to confirm which `HttpClient` implementation and interceptors are actually injected.
+Unlike a declarative method, the imperative client does not translate status codes for you: nothing throws `HttpClientResponseException` here, so checking `response.code()` is your responsibility.
 
 ## Check Controller { #check-controller }
 
@@ -789,17 +857,17 @@ The base guide already has a user-oriented aggregate endpoint. We keep that sepa
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/httpclient/controller/ClientTestController.java"
-    package ru.tinkoff.kora.guide.httpclient.controller;
+    ```java title="src/main/java/io/koraframework/guide/httpclient/controller/ClientTestController.java"
+    package io.koraframework.guide.httpclient.controller;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpclient.client.DataApiClient;
-    import ru.tinkoff.kora.guide.httpclient.client.ManualDataHttpClient;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.form.FormUrlEncoded;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpclient.client.DataApiClient;
+    import io.koraframework.guide.httpclient.client.ManualDataHttpClient;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.form.FormUrlEncoded;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -877,21 +945,23 @@ The base guide already has a user-oriented aggregate endpoint. We keep that sepa
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/httpclient/controller/ClientTestController.kt"
-    package ru.tinkoff.kora.guide.httpclient.controller
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/httpclient/controller/ClientTestController.kt"
+    package io.koraframework.guide.httpclient.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpclient.client.DataApiClient
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.form.FormUrlEncoded
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpclient.client.DataApiClient
+    import io.koraframework.guide.httpclient.client.ManualDataHttpClient
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.form.FormUrlEncoded
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
     class ClientTestController(
-        private val dataApiClient: DataApiClient
+        private val dataApiClient: DataApiClient,
+        private val manualDataHttpClient: ManualDataHttpClient
     ) {
         @HttpRoute(method = HttpMethod.POST, path = "/client/test-all-data-endpoints")
         @Json
@@ -903,29 +973,38 @@ The base guide already has a user-oriented aggregate endpoint. We keep that sepa
                 val uploadResult = dataApiClient.sampleUpload()
                 val uploadProcessed = uploadResult.fileCount == 2
 
-                val mappedRequestResult = dataApiClient.processMappedRequest(DataApiClient.PlainTextGreetingBody("Client Mapper"))
+                val mappedRequestResult =
+                    dataApiClient.processMappedRequest(DataApiClient.PlainTextGreetingBody("Client Mapper"))
                 val customRequestMapped = mappedRequestResult == "Received mapped body: Hello Client Mapper"
 
                 val mappedSuccess = dataApiClient.getMappedByCode(200)
                 val mappedFailure = dataApiClient.getMappedByCode(404)
                 val responseMapped =
                     mappedSuccess is DataApiClient.MappedResponse.Payload &&
-                        mappedSuccess.message == "Hello from response mapper" &&
-                        mappedFailure is DataApiClient.MappedResponse.Error &&
-                        mappedFailure.code == 404 &&
-                        mappedFailure.message == "Request failed with code 404"
+                            mappedSuccess.message == "Hello from response mapper" &&
+                            mappedFailure is DataApiClient.MappedResponse.Error &&
+                            mappedFailure.code == 404 &&
+                            mappedFailure.message == "Request failed with code 404"
 
-                val allTestsPassed = formProcessed && uploadProcessed && customRequestMapped && responseMapped
+                val manualPingResult = manualDataHttpClient.pingManualHandler()
+                val manualHttpClientCallProcessed = manualPingResult == "manual-data-pong"
+
+                val allTestsPassed = formProcessed &&
+                        uploadProcessed &&
+                        customRequestMapped &&
+                        responseMapped &&
+                        manualHttpClientCallProcessed
                 TestResults(
                     formProcessed,
                     uploadProcessed,
                     customRequestMapped,
                     responseMapped,
+                    manualHttpClientCallProcessed,
                     allTestsPassed,
                     null
                 )
             } catch (e: Exception) {
-                TestResults(false, false, false, false, false, e.message)
+                TestResults(false, false, false, false, false, false, e.message)
             }
         }
 
@@ -933,7 +1012,7 @@ The base guide already has a user-oriented aggregate endpoint. We keep that sepa
             val parts = Array(keyValues.size / 2) { index ->
                 FormUrlEncoded.FormPart(keyValues[index * 2], keyValues[index * 2 + 1])
             }
-            return FormUrlEncoded(parts)
+            return FormUrlEncoded(*parts)
         }
 
         @Json
@@ -942,6 +1021,7 @@ The base guide already has a user-oriented aggregate endpoint. We keep that sepa
             val uploadProcessed: Boolean,
             val customRequestMapped: Boolean,
             val responseMapped: Boolean,
+            val manualHttpClientCallProcessed: Boolean,
             val allTestsPassed: Boolean,
             val error: String?
         )
@@ -978,13 +1058,18 @@ curl -X POST http://localhost:8081/client/test-all-data-endpoints
 
 Expected result: a JSON object where `allTestsPassed` is `true`.
 
+The same scenario can be automated exactly like in the basic guide: start the advanced server application in a container, point `DATA_API_URL` at it with `KoraAppTestConfigModifier`, and inject
+`DataApiClient` and `ManualDataHttpClient` with `@TestComponent`. See [Container Test](http-client.md#container-test).
+
 ## Best Practices { #best-practices }
 
 - Keep the basic HTTP client guide focused on the simplest JSON-first path, and move transport-heavy topics into an advanced follow-up.
 - Use separate client interfaces for different remote API areas when that improves readability.
 - Reach for `HttpClientRequestMapper` only when the built-in mapping styles are not enough.
-- Use `@ResponseCodeMapper` when status-code-aware decoding is part of the contract.
+- Use `@ResponseCodeMapper` when status-code-aware decoding is part of the contract, and `Either<T, E>` when a plain success/error split is enough.
 - Use interceptors for repeated transport behavior like logging or authorization instead of repeating headers and boilerplate manually.
+- Prefer the built-in `BasicAuthHttpClientInterceptor`, `BearerAuthHttpClientInterceptor` and `ApiKeyHttpClientInterceptor` for standard schemes.
+- Keep the imperative `HttpClient` for genuinely dynamic requests, and remember it does not raise `HttpClientResponseException` on its own.
 
 ## Summary { #summary }
 
@@ -996,15 +1081,18 @@ You extended the basic HTTP client application with:
 - response-code-aware decoding
 - a method-level interceptor
 - reusable API-key authorization
+- an imperative call that reuses the generated client configuration and the auth interceptor
 
 The result mirrors the spirit of `http-server-advanced.md`: one advanced transport concept at a time, each introduced only after the simpler path is already clear.
 
 ## Key Concepts { #key-concepts }
 
-- `FormUrlEncoded` and `FormMultipart` are first-class client-side body types in Kora
-- `HttpClientRequestMapper<T>` lets you control how a type becomes an HTTP request body
-- `@ResponseCodeMapper` lets different status codes decode into different variants of one result type
-- `HttpClientInterceptor` is a good place both for local logging and shared authorization behavior
+- `FormUrlEncoded` and `FormMultipart` are first-class client-side body types in Kora and need no custom mapper
+- `HttpClientRequestMapper<T>` turns a type into an HTTP request body through `HttpBodyOutput apply(T value)`
+- `@ResponseCodeMapper` lets different status codes decode into different variants of one result type, with `ResponseCodeMapper.DEFAULT` as the fallback
+- `HttpClientInterceptor.processRequest(chain, request)` is synchronous, and interface-level interceptors run before method-level ones
+- mappers and interceptors referenced by `@Mapping` and `@InterceptWith` are constructor arguments of the generated client, so they must be graph components
+- `$<Client>_Config` is generated for every declarative client and can be injected wherever the client configuration is needed
 
 ## Troubleshooting { #troubleshooting }
 
@@ -1018,22 +1106,34 @@ The result mirrors the spirit of `http-server-advanced.md`: one advanced transpo
 
 - Make sure the advanced server app is running, not only the basic server app.
 - Check that `DataController` is exposed on the target server.
+- Do not add `@Json` to a `FormUrlEncoded` or `FormMultipart` parameter — those types already have their own request mappers.
+
+**The build fails with `No component found for dependency:` and a mapper or interceptor type:**
+
+- Add `@Component` to the class referenced by `@Mapping` or `@InterceptWith`. The generated client receives both as constructor arguments, so they must exist in the graph even when they have no
+  dependencies of their own.
 
 **Custom request mapper does not run:**
 
 - Make sure the parameter uses `@Mapping(...)`.
-- Make sure the mapper implements `HttpClientRequestMapper<T>`.
+- Make sure the mapper implements `HttpClientRequestMapper<T>` for exactly the parameter type.
 
 **Response-code mapping does not behave as expected:**
 
 - Check the `@ResponseCodeMapper` entries carefully.
-- Remember that `ResponseCodeMapper.DEFAULT` is the fallback for all unlisted codes.
+- Remember that `ResponseCodeMapper.DEFAULT` is the fallback for all unlisted codes, and that without a `DEFAULT` entry an unlisted code raises `HttpClientResponseException`.
 - Make sure the server route returns the JSON shape your mapper expects for each branch.
+- An exception thrown inside a mapper surfaces as `HttpClientDecoderException`, so check the cause.
 
 **Interceptor logging does not appear:**
 
-- Check `@InterceptWith(...)` on the specific client method.
-- Make sure the interceptor class implements `HttpClientInterceptor`.
+- Check `@InterceptWith(...)` on the specific client method or on the interface.
+- Make sure the interceptor class implements `HttpClientInterceptor` and is annotated with `@Component`.
+
+**The imperative call hangs or returns an empty body:**
+
+- Read the body before the response is closed; `HttpClientResponse` is `Closeable` and the body is not buffered for you.
+- Set a timeout with `HttpClientRequest.of(...).requestTimeout(...)` when the remote service may be slow.
 
 ## What's Next? { #whats-next }
 
@@ -1046,7 +1146,7 @@ The result mirrors the spirit of `http-server-advanced.md`: one advanced transpo
 
 If you get stuck:
 
-- compare with [Kora Java HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-client-advanced-app) and [Kora Kotlin HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-http-client-advanced-app)
+- compare with [Kora Java HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-client-advanced-app) and [Kora Kotlin HTTP Client Advanced App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-client-advanced-app)
 - revisit [HTTP Client](http-client.md) for the basic declarative client shape
 - revisit [HTTP Server Advanced](http-server-advanced.md) for the server endpoints this client calls
 - check the [HTTP Client documentation](../documentation/http-client.md)

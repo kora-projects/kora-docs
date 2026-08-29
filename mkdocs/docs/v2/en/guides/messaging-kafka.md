@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Messaging with Kafka
 summary: Extend the HTTP Server guide with asynchronous user creation using Kafka producer and consumer components in the same Kora application
+description: "Step-by-step event-driven messaging for a Kora 2.0 service with Apache Kafka: the io.koraframework:kafka artifact and KafkaModule, a generated @KafkaPublisher interface with @KafkaPublisher.Topic pointing at a named topic config section, a @KafkaListener consumer with the defensive event-plus-exception signature, @Json event payloads, the kafka.producer and kafka.consumer configuration sections with driverProperties, and a local Kafka broker through Docker Compose."
+agent:
+  use_when: "Use this file for questions about publishing and consuming Kafka events from a Kora 2.0 service: io.koraframework:kafka, KafkaModule, @KafkaPublisher and its Topic nested annotation, @KafkaListener and its tag attribute, @Json event serialization, the synchronous and Future / CompletionStage / CompletableFuture / suspend / Deferred publisher signatures, the event-plus-Exception listener signature for deserialization failures, kafka.producer.* and kafka.consumer.* config keys (driverProperties, topics, pollTimeout, threads, offset, backoffTimeout, telemetry), returning 202 Accepted from an async create endpoint, and running a local broker."
 tags: kafka, messaging, asynchronous, event-driven, producer, consumer
 ---
 
@@ -18,7 +21,7 @@ operation in the background.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-messaging-kafka-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-messaging-kafka-app).
 
 ## What You'll Build { #youll-build }
 
@@ -42,8 +45,8 @@ So the main change in this guide is not the whole application architecture. The 
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+
 - Docker for local Kafka and integration tests
 - A text editor or IDE
 - Completed [HTTP Server](http-server.md) guide
@@ -137,7 +140,7 @@ services.
 
 ### Kafka and Kora { #kora-kafka }
 
-Kora's Kafka modules wire producers and consumers into the application graph. Configuration describes brokers, topics, consumer groups, and serialization. JSON serializers keep event payloads typed,
+Kora's Kafka module wires producers and consumers into the application graph. Configuration describes brokers, topics, consumer groups, and serialization. JSON serializers keep event payloads typed,
 while lifecycle-managed consumers start with the application and process records in the background.
 
 The important boundary stays the same as in the HTTP guide:
@@ -150,7 +153,7 @@ The important boundary stays the same as in the HTTP guide:
 
 The practical flow is:
 
-1. add Kafka modules and dependencies
+1. add the Kafka module and dependencies
 2. introduce `UserCreatedEvent`
 3. publish the event from `createUser()`
 4. add a Kafka consumer for that event
@@ -167,8 +170,10 @@ First, add Kafka support to the project you already built in the HTTP Server gui
 
     ```groovy title="build.gradle"
     dependencies {
-        implementation("ru.tinkoff.kora:kafka")
-        implementation("ru.tinkoff.kora:json-module")
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:kafka")
+        implementation("io.koraframework:json-common")
     }
     ```
 
@@ -178,12 +183,15 @@ First, add Kafka support to the project you already built in the HTTP Server gui
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        implementation("ru.tinkoff.kora:kafka")
-        implementation("ru.tinkoff.kora:json-module")
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:kafka")
+        implementation("io.koraframework:json-common")
     }
     ```
 
-Kafka support in Kora comes from `KafkaModule`, and JSON support is important because we want to send structured event objects instead of raw strings.
+Kafka support in Kora comes from a single `kafka` artifact, which brings the Apache Kafka client (`4.3.1` in Kora `2.0.0.RC1`) with it. JSON support matters because we want to send structured event
+objects instead of raw strings, and the code generator for both the publisher and the listener already lives in the `annotation-processors` / `symbol-processors` artifact you apply.
 
 ## Modules { #modules }
 
@@ -191,11 +199,21 @@ Now extend your application with Kafka support.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/Application.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/Application.java"
+    package io.koraframework.guide.messaging.kafka;
+
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.kafka.common.KafkaModule;
+    import io.koraframework.logging.logback.LogbackModule;
+
     @KoraApp
     public interface Application extends
             HoconConfigModule,
-            UndertowHttpServerModule,
+            UndertowPublicHttpServerModule,
             JsonModule,
             KafkaModule,  // <----- Connected module
             LogbackModule {
@@ -208,11 +226,21 @@ Now extend your application with Kafka support.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/Application.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/Application.kt"
+    package io.koraframework.guide.messaging.kafka
+
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.kafka.common.KafkaModule
+    import io.koraframework.logging.logback.LogbackModule
+
     @KoraApp
     interface Application :
         HoconConfigModule,
-        UndertowHttpServerModule,
+        UndertowPublicHttpServerModule,
         JsonModule,
         KafkaModule,  // <----- Connected module
         LogbackModule
@@ -222,7 +250,8 @@ Now extend your application with Kafka support.
     }
     ```
 
-At this point nothing publishes or consumes yet. We are only enabling the framework modules that will generate producer and consumer components for us.
+`KafkaModule` extends `KafkaDeserializersModule` and `KafkaSerializersModule` and contributes the producer and consumer telemetry factories. At this point nothing publishes or consumes yet. We are only
+enabling the framework module that will generate producer and consumer components for us.
 
 ## Events { #events }
 
@@ -276,7 +305,7 @@ Add `UserCreatedEvent`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedEvent.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/kafka/UserCreatedEvent.java"
     @Json
     public record UserCreatedEvent(
             String id,
@@ -288,7 +317,7 @@ Add `UserCreatedEvent`:
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedEvent.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/kafka/UserCreatedEvent.kt"
     @Json
     data class UserCreatedEvent(
         val id: String,
@@ -298,20 +327,21 @@ Add `UserCreatedEvent`:
     )
     ```
 
-This is the payload that Kafka will carry from the producer to the consumer.
+This is the payload that Kafka will carry from the producer to the consumer. `@Json` generates a reader and a writer for it at compile time, and both the publisher and the listener pick those up from
+the graph.
 
 Add `UserAcceptedResponse`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/dto/UserAcceptedResponse.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/dto/UserAcceptedResponse.java"
     @Json
     public record UserAcceptedResponse(String id) {}
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/dto/UserAcceptedResponse.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/dto/UserAcceptedResponse.kt"
     @Json
     data class UserAcceptedResponse(val id: String)
     ```
@@ -329,7 +359,13 @@ Kora generates producer implementations from annotated interfaces, so we only de
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedPublisher.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/kafka/UserCreatedPublisher.java"
+    package io.koraframework.guide.messaging.kafka.kafka;
+
+    import io.koraframework.json.common.annotation.Json;
+    import io.koraframework.kafka.common.annotation.KafkaPublisher;
+    import io.koraframework.kafka.common.annotation.KafkaPublisher.Topic;
+
     @KafkaPublisher("kafka.producer.user-created")
     public interface UserCreatedPublisher {
 
@@ -340,7 +376,13 @@ Kora generates producer implementations from annotated interfaces, so we only de
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedPublisher.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/kafka/UserCreatedPublisher.kt"
+    package io.koraframework.guide.messaging.kafka.kafka
+
+    import io.koraframework.json.common.annotation.Json
+    import io.koraframework.kafka.common.annotation.KafkaPublisher
+    import io.koraframework.kafka.common.annotation.KafkaPublisher.Topic
+
     @KafkaPublisher("kafka.producer.user-created")
     interface UserCreatedPublisher {
 
@@ -351,11 +393,18 @@ Kora generates producer implementations from annotated interfaces, so we only de
 
 What is happening here:
 
-- `@KafkaPublisher(...)` tells Kora to generate a Kafka producer component
-- `@Topic(...)` points to the named topic configuration in `application.conf`
+- `@KafkaPublisher(...)` tells Kora to generate a Kafka producer component, and its value is the configuration path holding this producer's `driverProperties`
+- `@Topic(...)` points to a **separate** named configuration section that holds the `topic` key, not to the topic name itself
 - `@Json` tells Kora to serialize the event as JSON before sending it to Kafka
 
+That two-path arrangement is deliberate: several publisher methods can share one producer connection while each writes to its own topic section.
+
 This is similar in spirit to Kora HTTP clients: you describe the contract, and Kora generates the implementation.
+
+The `void` return above is the simplest shape and the right default for this guide, because it blocks until the broker acknowledges the record. When you need the acknowledgement without blocking, the
+publisher method can instead return `Future<RecordMetadata>`, `CompletionStage<RecordMetadata>`, or `CompletableFuture<RecordMetadata>`, and in Kotlin it may be a `suspend fun` or return a
+`Deferred<RecordMetadata>`. Those are not legacy reactive leftovers — they are the supported way to overlap publishing with other work. The full list is in
+[Producer signatures](../documentation/kafka.md#signatures-producer).
 
 ### Publish events { #publish-events }
 
@@ -368,7 +417,7 @@ Update only the constructor dependencies and the `createUser()` method. The othe
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/controller/UserController.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/controller/UserController.java"
     @Component
     @HttpController
     public final class UserController {
@@ -394,7 +443,7 @@ Update only the constructor dependencies and the `createUser()` method. The othe
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/controller/UserController.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/controller/UserController.kt"
     @Component
     @HttpController
     class UserController(
@@ -438,7 +487,7 @@ Again, we only show the parts that actually changed compared with the HTTP Serve
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/repository/UserRepository.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/repository/UserRepository.java"
     public interface UserRepository {
 
         void save(UserResponse user);
@@ -447,7 +496,7 @@ Again, we only show the parts that actually changed compared with the HTTP Serve
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/repository/UserRepository.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/repository/UserRepository.kt"
     interface UserRepository {
 
         fun save(user: UserResponse)
@@ -458,7 +507,7 @@ The in-memory repository changes only in its `save(...)` method, because it now 
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/repository/InMemoryUserRepository.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/repository/InMemoryUserRepository.java"
     @Component
     public final class InMemoryUserRepository implements UserRepository {
 
@@ -473,7 +522,7 @@ The in-memory repository changes only in its `save(...)` method, because it now 
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/repository/InMemoryUserRepository.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/repository/InMemoryUserRepository.kt"
     @Component
     class InMemoryUserRepository : UserRepository {
 
@@ -489,7 +538,7 @@ The service also changes only where the Kafka consumer needs a new entrypoint. E
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/service/UserService.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/service/UserService.java"
     @Component
     public final class UserService {
 
@@ -507,7 +556,7 @@ The service also changes only where the Kafka consumer needs a new entrypoint. E
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/service/UserService.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/service/UserService.kt"
     @Component
     class UserService(
         private val userRepository: UserRepository
@@ -559,7 +608,7 @@ Here again, we only show the consumer class itself because that is the class bei
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedConsumer.java"
+    ```java title="src/main/java/io/koraframework/guide/messaging/kafka/kafka/UserCreatedConsumer.java"
     @Component
     public final class UserCreatedConsumer {
 
@@ -589,7 +638,7 @@ Here again, we only show the consumer class itself because that is the class bei
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/messaging/kafka/kafka/UserCreatedConsumer.kt"
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/messaging/kafka/kafka/UserCreatedConsumer.kt"
     @Component
     class UserCreatedConsumer(
         private val userService: UserService
@@ -616,8 +665,14 @@ Here again, we only show the consumer class itself because that is the class bei
 Why this is useful:
 
 - if deserialization fails, Kora can pass the error to your listener
-- your business code can separate “valid event” from “message could not be read”
+- your business code can separate "valid event" from "message could not be read"
 - the guide can show both the simple shape and the more defensive production-style shape
+
+Note the nullability in both languages. The event parameter must accept `null`, because a record whose body could not be read arrives with the exception instead of a value. In Java that means
+`@Nullable`; in Kotlin it means `UserCreatedEvent?`. Declaring a non-null Kotlin parameter here is a compile-time error, not a runtime surprise.
+
+The same nullability shows up if you ever write a Kafka `Deserializer` by hand: `JsonReader.read(...)` is declared `@Nullable`, so Kotlin sees `T?` and a deserializer with a non-null return type has to
+narrow it with `requireNotNull(...)`. See [Custom deserializer](../documentation/kafka.md#custom-deserializer).
 
 This is also a nice symmetry with the HTTP guides: the controller is still the entry point for the HTTP command, but now the consumer becomes the entry point for the asynchronous processing stage.
 
@@ -660,16 +715,16 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
     }
     ```
 
-    1. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
-    2. Enables the feature for this configuration section.
-    3. Topic or channel name used by the component.
-    4. Value for `kafka.consumer.user-created.topics`.
-    5. Value for `kafka.consumer.user-created.pollTimeout`.
-    6. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
-    7. Value for `kafka.consumer.user-created.driverProperties.group.id`.
-    8. Value for `kafka.consumer.user-created.driverProperties.auto.offset.reset`.
-    9. Value for `kafka.consumer.user-created.driverProperties.enable.auto.commit`.
-    10. Enables the feature for this configuration section.
+    1. Kafka bootstrap servers passed straight to the Apache Kafka producer. Optional override from `KAFKA_BOOTSTRAP`.
+    2. Logs every published record while you are learning the flow.
+    3. Topic section referenced by `@Topic("kafka.producer.user-created-topic")`.
+    4. Topics this listener subscribes to.
+    5. How long each `poll` call waits for records. Defaults to `5s`.
+    6. Kafka bootstrap servers passed straight to the Apache Kafka consumer. Optional override from `KAFKA_BOOTSTRAP`.
+    7. Consumer group this listener joins.
+    8. Start from the earliest offset when the group has no committed position.
+    9. Let the driver commit offsets automatically.
+    10. Logs every consumed record while you are learning the flow.
 
 === ":simple-yaml: `YAML`"
 
@@ -698,23 +753,27 @@ For the full configuration reference, see [HTTP Server](../documentation/http-se
               enabled: true #(10)!
     ```
 
-    1. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
-    2. Enables the feature for this configuration section.
-    3. Topic or channel name used by the component.
-    4. Value for `kafka.consumer.user-created.topics`.
-    5. Value for `kafka.consumer.user-created.pollTimeout`.
-    6. Kafka bootstrap servers used by producer or consumer clients. Optional override from `KAFKA_BOOTSTRAP`.
-    7. Value for `kafka.consumer.user-created.driverProperties.group.id`.
-    8. Value for `kafka.consumer.user-created.driverProperties.auto.offset.reset`.
-    9. Value for `kafka.consumer.user-created.driverProperties.enable.auto.commit`.
-    10. Enables the feature for this configuration section.
+    1. Kafka bootstrap servers passed straight to the Apache Kafka producer. Optional override from `KAFKA_BOOTSTRAP`.
+    2. Logs every published record while you are learning the flow.
+    3. Topic section referenced by `@Topic("kafka.producer.user-created-topic")`.
+    4. Topics this listener subscribes to.
+    5. How long each `poll` call waits for records. Defaults to `5s`.
+    6. Kafka bootstrap servers passed straight to the Apache Kafka consumer. Optional override from `KAFKA_BOOTSTRAP`.
+    7. Consumer group this listener joins.
+    8. Start from the earliest offset when the group has no committed position.
+    9. Let the driver commit offsets automatically.
+    10. Logs every consumed record while you are learning the flow.
 
 What this configuration does:
 
 - defines one producer named `user-created`
+- defines a separate `user-created-topic` section holding only the topic name
 - defines one consumer named `user-created`
 - points both of them to the same Kafka topic
 - enables simple logging telemetry so you can see the flow while learning
+
+`driverProperties` is a passthrough to the Apache Kafka client, so anything the driver understands belongs there under its native key. Everything outside that block is Kora's own: besides `topics` and
+`pollTimeout`, a listener also accepts `threads`, `offset`, `backoffTimeout`, `partitionRefreshInterval`, `shutdownWait`, and `allowEmptyRecords`.
 
 ## Docker Compose { #docker-compose }
 
@@ -725,7 +784,7 @@ Create `docker-compose.yml` in the application module directory:
 ```yaml title="docker-compose.yml"
 services:
   kafka:
-    image: apache/kafka-native:4.1.0
+    image: apache/kafka-native:4.3.1
     restart: unless-stopped
     ports:
       - "9092:9092"
@@ -746,6 +805,9 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 ```
 
+`KAFKA_AUTO_CREATE_TOPICS_ENABLE` is what lets `user-created-events` appear on first publish, so the guide does not need a topic-creation step. Turn it off in any real environment and create topics
+deliberately.
+
 ## Run Application { #run-app }
 
 Start Kafka:
@@ -757,7 +819,7 @@ docker compose up -d kafka
 Then run the application:
 
 ```bash
-./gradlew run
+KAFKA_BOOTSTRAP=localhost:9092 ./gradlew run
 ```
 
 ## Check Application { #check-app }
@@ -797,8 +859,10 @@ Depending on timing, there may be a short gap before the user becomes visible. T
 
 - Keep event DTOs focused on business meaning. `UserCreatedEvent` should represent a fact, not an HTTP request shape.
 - Treat consumer code as another application boundary. Validate and log carefully.
+- Always accept a nullable event plus an `Exception` in listeners that must survive bad payloads, instead of letting a deserialization failure stall the partition.
 - Make consumers idempotent when possible. In real systems, the same event may be delivered more than once.
 - Keep the HTTP contract honest. Returning `202 Accepted` is better than pretending the write already finished.
+- Start with a blocking `void` publisher, and move to a `CompletionStage` or `suspend` signature only when the caller actually has other work to overlap with the send.
 - Reuse your existing service and repository layers when it keeps the design simple. Kafka should change the flow, not force needless rewrites.
 
 ## Summary { #summary }
@@ -818,7 +882,8 @@ That makes this guide a gentle introduction to asynchronous messaging. The appli
 - Kafka lets you move work out of the HTTP request path
 - producers publish events, consumers process them later
 - `202 Accepted` is a natural HTTP status for asynchronous creation
-- Kora can generate Kafka producers from interfaces
+- Kora generates Kafka producers from `@KafkaPublisher` interfaces, and the `@Topic` value is a config path, not a topic name
+- publisher methods may be blocking or return `Future`, `CompletionStage`, `CompletableFuture`, or in Kotlin be `suspend` or return `Deferred`
 - Kafka listeners can evolve from a simple event-only signature to a more defensive `event + exception` form
 - event-driven architecture can build on top of the same service and repository layers you already know
 
@@ -844,6 +909,10 @@ Check:
 
 Both producer and consumer must point to the same broker and the same topic.
 
+**Graph build fails on the `@Topic` path:**
+
+The value of `@Topic` is a configuration path whose section contains a `topic` key. Pointing it at the topic name itself, or at the producer section, will not resolve.
+
 **Deserialization errors in the consumer:**
 
 If JSON cannot be read correctly, the listener may receive `exception != null`.
@@ -854,6 +923,10 @@ That is why the final consumer signature in this guide accepts both:
 - `@Nullable Exception exception`
 
 This gives you a place to log or react to mapping failures explicitly.
+
+**Kotlin rejects the listener signature:**
+
+The event parameter has to be nullable (`UserCreatedEvent?`) whenever the listener also declares an `Exception?` parameter, because a record that failed to deserialize arrives with no value.
 
 ## What's Next? { #whats-next }
 
@@ -866,7 +939,7 @@ This gives you a place to log or react to mapping failures explicitly.
 
 If you encounter issues:
 
-- compare with [Kora Java Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-messaging-kafka-app) and [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-messaging-kafka-app)
+- compare with [Kora Java Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-messaging-kafka-app) and [Kora Kotlin Messaging Kafka App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-messaging-kafka-app)
 - revisit [HTTP Server](http-server.md) for the synchronous API baseline
 - check the [Kafka documentation](../documentation/kafka.md)
 - check the [JSON documentation](../documentation/json.md) for event payload mapping

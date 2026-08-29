@@ -4,9 +4,9 @@ search:
 hide:
 - navigation
 - toc
-description: "Explains Index in Kora documentation. Use when working with Index."
+description: "Overview of the Kora framework: a compile-time Java and Kotlin framework for server-side applications with reflection-free dependency injection, generated aspects and preconfigured modules for HTTP, databases, Kafka, gRPC, cache, resilience and observability. Use when you need to understand what Kora is, which modules it ships, what JDK and build tooling it requires, and where to start reading."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Index."
+  use_when: "Use this file for high-level questions about what Kora is and what it provides: the Simplicity, Performance, Efficiency and Transparency principles, the list of available modules and integrations, the JDK 25 / Gradle 9.5 / Kotlin 2.4.10 / KSP 2.3.11 requirements, the io.koraframework group and the io.koraframework:kora-bom BOM, and which guide a newcomer should read first."
 ---
 
 Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Simplicity, Performance, Efficiency, Transparency.
@@ -15,13 +15,13 @@ which at compile time are translated into hardware-performant and human-readable
 Both programming languages are first-level citizen languages for framework.
 
 Kora is completely original framework written from scratch in Java and has its own custom-written dependency container with inversion of control that works at compile time.
-Kora is cloud-oriented server framework and offers many modules for quickly building applications such as 
-[HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers, 
-database abstraction in the form of [repositories](documentation/database-common.md), telemetry, resilient module and much more.
+Kora is cloud-oriented server framework and offers many modules for quickly building applications such as
+[HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers,
+database abstraction in the form of [repositories](documentation/database-common.md), telemetry, resilience module and much more.
 
 Kora also places great emphasis on:
 
-- Observability, metrics and tracing of all modules according to the `OpenTelemetry` standard out of the box
+- Observability, [metrics](documentation/metrics.md) and [tracing](documentation/tracing.md) of all modules according to the `OpenTelemetry` standard out of the box
 - An approach where the contract is primary and code is generated from [OpenAPI specifications](documentation/openapi-codegen.md)
 
 `Performance` - Kora generates high-performant code at compile time,
@@ -49,20 +49,20 @@ in the event of sudden peak loads and improves user requests latency.
   <figcaption>Kora startup benchmark of PetClinic</figcaption>
 </figure>
 
-`Transparency` - Kora generates human-readable source code at compile time 
+`Transparency` - Kora generates human-readable source code at compile time
 with fine-grained abstractions and free aspects, which leads to high readability of code
 and a developer's understanding of the underlying mechanisms of the framework if required with no black box effect.
-High readability, one most effective solution per problem, familiar high-level abstractions, 
-all this gives transparency in the understanding of the code base on the part of the whole development team 
+High readability, one most effective solution per problem, familiar high-level abstractions,
+all this gives transparency in the understanding of the code base on the part of the whole development team
 and makes it easy to immerse new developers, especially interns. Developers are given the opportunity to understand and control
 how to work with the development tool, which allows them to use it effectively and not waste unnecessary time studying/learning
 and memorizing tricky techniques for working with the framework.
-Source code creation approach allows for dependency container checking at compile time 
+Source code creation approach allows for dependency container checking at compile time
 and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
-gent
+
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
 makes it easy to learn framework without the need for developers to spend years memorizing the "guts of the framework".
-Kora aims to do all framework optimizations in-house, 
+Kora aims to do all framework optimizations in-house,
 provide for you the most optimal implementations of integrations whether it is HTTP server or client,
 take the work off you as a developer and provide only productive and efficient solutions out of the box.
 Kora does not involve complex designs or abstractions,
@@ -82,14 +82,35 @@ allowing developers to transfer context from their heads into clear code that is
 
 Kora provides all the tools needed for modern Java or Kotlin server-side development:
 
-- Dependency injection and inversion via annotations
+- Dependency injection and inversion at compile time via [annotations](documentation/container.md)
 - Sufficiently high-level simple abstractions and development tools
 - Transparent aspect-oriented programming via annotations
-- Large set of preconfigured integrations
-- Observability, tracing and metrics according to `OpenTelemetry` standard and logging for all modules
+- Type-safe [configuration](documentation/config.md) in `HOCON` or `YAML` format
+- Large set of preconfigured integrations:
+    - [HTTP server](documentation/http-server.md) on `Undertow` and declarative [HTTP clients](documentation/http-client.md) on `JDK`, `OkHttp` or `Apache` transports
+    - [Database repositories](documentation/database-common.md) for [JDBC](documentation/database-jdbc.md) and [Cassandra](documentation/database-cassandra.md), plus [schema migrations](documentation/database-migration.md) via `Flyway` or `Liquibase`
+    - Messaging and remote calls: [Kafka](documentation/kafka.md) consumers and producers, [gRPC server](documentation/grpc-server.md) and [gRPC client](documentation/grpc-client.md), [SOAP client](documentation/soap-client.md), [S3 client](documentation/s3-client.md)
+    - Compile-time [Json](documentation/json.md) readers and writers, and object mapping via [MapStruct](documentation/mapstruct.md) or `Konvert`
+    - [Caching](documentation/cache.md) via `Caffeine` and `Redis`, and [resilience](documentation/resilient.md) with circuit breaker, retry, timeout, rate limiter and fallback
+    - [Scheduling](documentation/scheduling.md), [validation](documentation/validation.md) and [Camunda](documentation/camunda7-bpmn.md) integrations
+- Observability, [tracing](documentation/tracing.md) and [metrics](documentation/metrics.md) according to `OpenTelemetry` standard, [logging](documentation/logging-slf4j.md) and [probes](documentation/probes.md) for all modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)
 - Simple and detailed documentation supported by [guides and examples of working services](guides/home.md)
 
-## Start with a guide
+## Requirements { #requirements }
+
+Kora artifacts are published under the `io.koraframework` group and are compiled for `Java` `25`,
+so `JDK` `25` is the minimum required to compile and run an application on Kora, regardless of the language.
+Applications are built with `Gradle` `9.5+`, and `Kotlin` projects use `Kotlin` `2.4.10` together with `KSP` `2.3.11` -
+the same versions the framework itself is built with.
+
+Dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, so individual Kora dependencies are declared without an explicit version.
+Code generation is enabled by the `io.koraframework:annotation-processors` annotation processor for `Java`
+and by the `io.koraframework:symbol-processors` `KSP` processor for `Kotlin`.
+
+The exact toolchain requirements and a minimal build file are described in
+[Compatibility](documentation/general.md#compatibility) and [Build System](documentation/general.md#build-system).
+
+## Start with a guide { #start-with-a-guide }
 
 Continue with [Creating Your First Kora Application](guides/getting-started.md) to build a minimal HTTP service and see how `@KoraApp`, `@Component`, `@HttpController`, and `@HttpRoute` work together in a real project.

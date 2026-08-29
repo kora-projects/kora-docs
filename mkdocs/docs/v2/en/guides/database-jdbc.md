@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Database Integration with Kora
 summary: Learn how to integrate databases with Kora using JDBC and perform CRUD operations
+description: "Step-by-step PostgreSQL persistence with Kora JDBC: the io.koraframework:database-jdbc and database-flyway artifacts, JdbcDatabaseModule and FlywayJdbcDatabaseModule, an @EntityJdbc DAO with @Column mapping, a @Repository extending JdbcRepository with @Query, Optional and UpdateCount results, the jdbc configuration section with Hikari pool settings, flyway.locations and the generated repository and row mapper sources."
+agent:
+  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup."
 tags: database, jdbc, crud, persistence
 ---
 
@@ -18,7 +21,7 @@ database.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-database-jdbc-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-database-jdbc-app).
 
 ## What You'll Build { #youll-build }
 
@@ -33,9 +36,9 @@ You will turn the user HTTP API into a PostgreSQL-backed application with:
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
+- JDK 25 or later
 - PostgreSQL database (or Docker)
-- Gradle 7+
+- Gradle 9+
 - A text editor or IDE
 - Completed [HTTP Server](http-server.md) guide
 
@@ -158,7 +161,7 @@ The practical flow is:
 
 ## Dependencies { #dependencies }
 
-Now add the database-specific dependencies for PostgreSQL and JDBC support:
+Now add the database-specific dependencies for PostgreSQL, JDBC repositories, and Flyway migrations:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -168,8 +171,11 @@ Now add the database-specific dependencies for PostgreSQL and JDBC support:
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
 
@@ -181,10 +187,17 @@ Now add the database-specific dependencies for PostgreSQL and JDBC support:
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
+
+`database-jdbc` provides the repository infrastructure and the Hikari connection pool. `database-flyway` runs schema migrations before repositories are used, but it only brings `flyway-core` with it: since
+Flyway 10 every database dialect lives in its own artifact, so `org.flywaydb:flyway-database-postgresql` must be added explicitly. Without it the application fails at startup with `Unsupported Database:
+PostgreSQL`. Keep the dialect version aligned with the `flyway-core` version that Kora `2.0.0.RC1` brings, which is `13.3.0`. The PostgreSQL JDBC driver is only needed at runtime.
 
 ## Modules { #modules }
 
@@ -192,19 +205,19 @@ Update your Application interface to include JDBC and Flyway modules.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/Application.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc;
+    package io.koraframework.guide.databasejdbc;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule;
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule;
+    import io.koraframework.database.jdbc.JdbcDatabaseModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
@@ -213,7 +226,7 @@ Update your Application interface to include JDBC and Flyway modules.
             LogbackModule,
             JdbcDatabaseModule,  // <----- Connected module
             FlywayJdbcDatabaseModule,  // <----- Connected module
-            UndertowHttpServerModule {
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -223,19 +236,19 @@ Update your Application interface to include JDBC and Flyway modules.
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/Application.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc
+    package io.koraframework.guide.databasejdbc
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule
+    import io.koraframework.database.jdbc.JdbcDatabaseModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
@@ -244,7 +257,7 @@ Update your Application interface to include JDBC and Flyway modules.
         LogbackModule,
         JdbcDatabaseModule,  // <----- Connected module
         FlywayJdbcDatabaseModule,  // <----- Connected module
-        UndertowHttpServerModule
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -257,14 +270,14 @@ Replace the old in-memory `User` storage model with JDBC DAO model used by repos
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/repository/UserDAO.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/repository/UserDAO.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.repository;
+    package io.koraframework.guide.databasejdbc.repository;
 
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.database.common.annotation.Column;
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc;
+    import io.koraframework.database.common.annotation.Column;
+    import io.koraframework.database.jdbc.annotation.EntityJdbc;
 
     @EntityJdbc
     public record UserDAO(
@@ -276,14 +289,14 @@ Replace the old in-memory `User` storage model with JDBC DAO model used by repos
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/UserDAO.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/repository/UserDAO.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.repository
+    package io.koraframework.guide.databasejdbc.repository
 
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.database.common.annotation.Column
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc
+    import io.koraframework.database.common.annotation.Column
+    import io.koraframework.database.jdbc.annotation.EntityJdbc
 
     @EntityJdbc
     data class UserDAO(
@@ -302,17 +315,17 @@ For `update` and `delete`, use `UpdateCount` so service logic can decide whether
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/repository/UserRepository.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/repository/UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.repository;
+    package io.koraframework.guide.databasejdbc.repository;
 
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.database.common.UpdateCount;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
+    import io.koraframework.database.common.UpdateCount;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
+    import io.koraframework.database.jdbc.JdbcRepository;
 
     @Repository
     public interface UserRepository extends JdbcRepository {
@@ -336,15 +349,15 @@ For `update` and `delete`, use `UpdateCount` so service logic can decide whether
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/UserRepository.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/repository/UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.repository
+    package io.koraframework.guide.databasejdbc.repository
 
-    import ru.tinkoff.kora.database.common.UpdateCount
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
+    import io.koraframework.database.common.UpdateCount
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+    import io.koraframework.database.jdbc.JdbcRepository
 
     @Repository
     interface UserRepository : JdbcRepository {
@@ -374,17 +387,17 @@ After compilation, Kora generates the repository implementation and row mapper f
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserRepository_Impl.java
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.java
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserRepository_Impl.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserRepository_Impl.kt
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.kt
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserRepository_Impl.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.kt
     ```
 
 This shortened generated repository excerpt shows how named SQL parameters become JDBC prepared statement parameters:
@@ -400,26 +413,36 @@ This shortened generated repository excerpt shows how named SQL parameters becom
 
     @Override
     public long save(String name, String email) {
-        var _ctxCurrent = ru.tinkoff.kora.common.Context.current();
         var _query = QUERY_CONTEXT_3;
-        var _telemetry = this._connectionFactory.telemetry().createContext(_ctxCurrent, _query);
-        var _conToUse = this._connectionFactory.currentConnection();
-        Connection _conToClose;
-        if (_conToUse == null) {
-            _conToUse = this._connectionFactory.newConnection();
-            _conToClose = _conToUse;
-        } else {
-            _conToClose = null;
-        }
-        try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql())) {
-            _stmt.setString(1, name);
-            _stmt.setString(2, email);
-            try (var _rs = _stmt.executeQuery()) {
-                var _result = _result_mapper_3.apply(_rs);
-                _telemetry.close(null);
-                return _result;
-            }
-        }
+        var _observation = this._jdbcExecutor.telemetry().observe(_query);
+        return ScopedValue.where(Observation.VALUE, _observation)
+            .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+            .call(() -> {
+                var _conToUse = this._jdbcExecutor.currentConnection();
+                Connection _conToClose;
+                if (_conToUse == null) {
+                    _conToUse = this._jdbcExecutor.acquireConnection();
+                    _conToClose = _conToUse;
+                } else {
+                    _conToClose = null;
+                }
+                try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql())) {
+                    _stmt.setString(1, name);
+                    _stmt.setString(2, email);
+                    try (var _rs = _stmt.executeQuery()) {
+                        var _result = _result_mapper_3.apply(_rs);
+                        return _result;
+                    }
+                } catch (java.sql.SQLException e) {
+                    _observation.observeError(e);
+                    throw new io.koraframework.database.jdbc.exception.UncheckedSqlException(e);
+                } catch (Exception e) {
+                    _observation.observeError(e);
+                    throw e;
+                } finally {
+                    _observation.end();
+                }
+            });
     }
     ```
 
@@ -434,31 +457,39 @@ This shortened generated repository excerpt shows how named SQL parameters becom
 
     override fun save(name: String, email: String): Long {
       val _query = _queryContext_3
-      val _ctxCurrent = Context.current()
-      val _telemetry = _jdbcConnectionFactory.telemetry().createContext(_ctxCurrent, _query)
-      var _conToUse = _jdbcConnectionFactory.currentConnection()
-      val _conToClose = if (_conToUse == null) {
-        _conToUse = _jdbcConnectionFactory.newConnection()
-        _conToUse
-      } else {
-        null
-      }
-      try {
-        _conToClose.use {
-          _conToUse!!.prepareStatement(_query.sql()).use { _stmt ->
-            _stmt.setString(1, name)
-            _stmt.setString(2, email)
-            _stmt.executeQuery().use { _rs ->
-              val _result = _result_mapper_3.apply(_rs)
-                ?: throw NullPointerException("Result mapping is expected non-null, but was null")
-              _telemetry.close(null)
-              return _result
+      val _observation = _jdbcExecutor.telemetry().observe(_query)
+      return ScopedValue.where(Observation.VALUE, _observation)
+        .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+        .call<Long, RuntimeException> {
+          var _conToUse = _jdbcExecutor.currentConnection()
+          val _conToClose = if (_conToUse == null) {
+            _conToUse = _jdbcExecutor.acquireConnection()
+            _conToUse
+          } else {
+            null
+          }
+          try {
+            _conToClose.use {
+              _conToUse!!.prepareStatement(_query.sql()).use { _stmt ->
+                _stmt.setString(1, name)
+                _stmt.setString(2, email)
+                _stmt.executeQuery().use { _rs ->
+                  val _result = _result_mapper_3.apply(_rs)
+                    ?: throw NullPointerException("Result mapping is expected non-null, but was null")
+                  return@use _result
+                }
+              }
             }
+          } catch (_e: java.sql.SQLException) {
+            _observation.observeError(_e)
+            throw io.koraframework.database.jdbc.exception.UncheckedSqlException(_e)
+          } catch (_e: Exception) {
+            _observation.observeError(_e)
+            throw _e
+          } finally {
+            _observation.end()
           }
         }
-      } finally {
-        _ctxCurrent.inject()
-      }
     }
     ```
 
@@ -475,11 +506,24 @@ This shortened generated row mapper excerpt also shows why explicit `@Column` na
     var _createdAtColumn = _rs.findColumn("created_at");
 
     Long id = _rs.getLong(_idColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field id is not nullable but row id has null");
+    }
     String name = _rs.getString(_nameColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field name is not nullable but row name has null");
+    }
     String email = _rs.getString(_emailColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field email is not nullable but row email has null");
+    }
     LocalDateTime createdAt = _rs.getObject(_createdAtColumn, LocalDateTime.class);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field createdAt is not nullable but row created_at has null");
+    }
 
-    return new UserDAO(id, name, email, createdAt);
+    var _result = new UserDAO(id, name, email, createdAt);
+    return _result;
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -607,23 +651,23 @@ Important rules:
 - For invalid path id format, throw `HttpServerResponseException` with `400`.
 - For update/delete when no row is affected, throw `HttpServerResponseException` with `404`.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/guide/databasejdbc/service/UserService.java`:
+    Update `src/main/java/io/koraframework/guide/databasejdbc/service/UserService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.service;
+    package io.koraframework.guide.databasejdbc.service;
 
     import java.time.LocalDateTime;
     import java.util.Comparator;
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserResponse;
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO;
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.databasejdbc.dto.UserRequest;
+    import io.koraframework.guide.databasejdbc.dto.UserResponse;
+    import io.koraframework.guide.databasejdbc.repository.UserDAO;
+    import io.koraframework.guide.databasejdbc.repository.UserRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class UserService {
@@ -700,21 +744,21 @@ Important rules:
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/service/UserService.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/databasejdbc/service/UserService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.service
+    package io.koraframework.guide.databasejdbc.service
 
     import java.time.LocalDateTime
     import java.util.Comparator
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserResponse
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserRepository
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.databasejdbc.dto.UserRequest
+    import io.koraframework.guide.databasejdbc.dto.UserResponse
+    import io.koraframework.guide.databasejdbc.repository.UserDAO
+    import io.koraframework.guide.databasejdbc.repository.UserRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
 
     @Component
     class UserService(private val userRepository: UserRepository) {
@@ -782,45 +826,50 @@ see [Database JDBC](../documentation/database-jdbc.md) and [Database Migration](
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    db {
-      jdbcUrl = ${POSTGRES_JDBC_URL} //(1)!
-      username = ${POSTGRES_USER} //(2)!
-      password = ${POSTGRES_PASS} //(3)!
-      maxPoolSize = 10 //(4)!
-      poolName = "guide-jdbc" //(5)!
+    jdbc { //(1)!
+      jdbcUrl = ${POSTGRES_JDBC_URL} //(2)!
+      username = ${POSTGRES_USER} //(3)!
+      password = ${POSTGRES_PASS} //(4)!
+      maxPoolSize = 10 //(5)!
+      poolName = "guide-jdbc" //(6)!
     }
 
     flyway {
-      locations = "db/migration" //(6)!
+      locations = "db/migration" //(7)!
     }
     ```
 
-    1. JDBC connection URL. Optional override from `POSTGRES_JDBC_URL`.
-    2. Database user name. Optional override from `POSTGRES_USER`.
-    3. Database user password. Optional override from `POSTGRES_PASS`.
-    4. Maximum number of connections in the pool.
-    5. Human-readable connection pool name used in diagnostics.
-    6. Migration locations scanned by Flyway.
+    1. Configuration section read by `JdbcDatabaseModule`.
+    2. JDBC connection URL (required, no default). Taken from `POSTGRES_JDBC_URL`.
+    3. Database user name (required, no default). Taken from `POSTGRES_USER`.
+    4. Database user password (required, no default). Taken from `POSTGRES_PASS`.
+    5. Maximum number of connections in the Hikari pool (default: `10`).
+    6. Hikari connection pool name used in diagnostics (required, no default).
+    7. Migration locations scanned by Flyway (default: `db/migration`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    db:
-      jdbcUrl: ${POSTGRES_JDBC_URL} #(1)!
-      username: ${POSTGRES_USER} #(2)!
-      password: ${POSTGRES_PASS} #(3)!
-      maxPoolSize: 10 #(4)!
-      poolName: "guide-jdbc" #(5)!
+    jdbc: #(1)!
+      jdbcUrl: ${POSTGRES_JDBC_URL} #(2)!
+      username: ${POSTGRES_USER} #(3)!
+      password: ${POSTGRES_PASS} #(4)!
+      maxPoolSize: 10 #(5)!
+      poolName: "guide-jdbc" #(6)!
     flyway:
-      locations: "db/migration" #(6)!
+      locations: "db/migration" #(7)!
     ```
 
-    1. JDBC connection URL. Optional override from `POSTGRES_JDBC_URL`.
-    2. Database user name. Optional override from `POSTGRES_USER`.
-    3. Database user password. Optional override from `POSTGRES_PASS`.
-    4. Maximum number of connections in the pool.
-    5. Human-readable connection pool name used in diagnostics.
-    6. Migration locations scanned by Flyway.
+    1. Configuration section read by `JdbcDatabaseModule`.
+    2. JDBC connection URL (required, no default). Taken from `POSTGRES_JDBC_URL`.
+    3. Database user name (required, no default). Taken from `POSTGRES_USER`.
+    4. Database user password (required, no default). Taken from `POSTGRES_PASS`.
+    5. Maximum number of connections in the Hikari pool (default: `10`).
+    6. Hikari connection pool name used in diagnostics (required, no default).
+    7. Migration locations scanned by Flyway (default: `db/migration`).
+
+The section name is not free-form: `JdbcDatabaseModule` reads the `jdbc` section, and `FlywayJdbcDatabaseModule` reads the `flyway` section. A misplaced key is not a compilation error, it is a startup
+failure such as `ConfigValueException: Config value 'ROOT.jdbc.username' is required`.
 
 ## Database Setup { #database-setup }
 
@@ -829,16 +878,15 @@ see [Database JDBC](../documentation/database-jdbc.md) and [Database Migration](
 Create a `docker-compose.yml` file in the application module directory:
 
 ```yaml
-version: '3.8'
 services:
-    postgres:
-        image: postgres:17.6-alpine
-        environment:
-            POSTGRES_DB: postgres
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-        ports:
-            - "5432:5432"
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
 ```
 
 Start the database:
@@ -955,12 +1003,14 @@ You also inspected generated JDBC code to see how Kora turns repository annotati
 **Compilation Errors:**
 
 - Ensure JDBC and PostgreSQL dependencies are added.
-- Ensure annotation processing is enabled for Kora.
-- Verify Java version compatibility (17+).
+- Ensure annotation processing is enabled for Kora (`annotation-processors` for Java, `symbol-processors` for Kotlin).
+- Verify Java version compatibility (25+).
 
 **Runtime Errors:**
 
 - Check Flyway logs and database connectivity.
+- `Unsupported Database: PostgreSQL` means the Flyway dialect artifact `org.flywaydb:flyway-database-postgresql` is missing.
+- `ConfigValueException` about `ROOT.jdbc.*` means the connection settings are not under the `jdbc` section, or the referenced environment variables are unset.
 - Verify table schema matches `UserDAO` column mappings.
 - Review application logs for detailed SQL/HTTP error details.
 
@@ -976,7 +1026,7 @@ You also inspected generated JDBC code to see how Kora turns repository annotati
 
 If you encounter issues:
 
-- compare with [Kora Java Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-database-jdbc-app) and [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-database-jdbc-app)
+- compare with [Kora Java Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-database-jdbc-app) and [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-database-jdbc-app)
 - check the [Database JDBC documentation](../documentation/database-jdbc.md)
 - check the [Database Common documentation](../documentation/database-common.md)
 - check the [Database Migration documentation](../documentation/database-migration.md)

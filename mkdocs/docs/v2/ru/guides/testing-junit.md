@@ -1,8 +1,11 @@
-﻿---
+---
 search:
   exclude: true
 title: Компонентное тестирование в Kora
 summary: Learn comprehensive component and integration testing strategies for Kora applications including dependency injection testing and database integration with Testcontainers
+description: "Component testing for Kora 2.0 with JUnit 5: the io.koraframework:test-junit5 artifact, @KoraAppTest and @TestComponent from io.koraframework.test.extension.junit5, Mockito @Mock and MockK @MockK inside the application graph, KoraAppTestConfigModifier with KoraConfigModification, test graph lifecycle and the Gradle test setup with JUnit 6.1.3 and byte-buddy alignment."
+agent:
+  use_when: "Use this file for questions about writing JUnit 5 component tests for a Kora 2.0 service: io.koraframework:test-junit5, @KoraAppTest, @TestComponent, injecting graph components into a test, replacing a dependency with a Mockito @Mock or MockK @MockK, MockitoStrictness, KoraAppTestConfigModifier and KoraConfigModification.ofString, testAnnotationProcessor and kspTest in a test module, and test-scope Gradle configuration."
 tags: testing, junit, testcontainers, integration-tests, component-tests
 ---
 
@@ -30,8 +33,8 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+ (эталонные приложения используют Gradle Wrapper `9.5.1`)
 - текстовый редактор или среда разработки
 - пройденное руководство [HTTP-сервер](http-server.md)
 
@@ -73,6 +76,10 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 Важная идея в том, что тест Kora часто проверяет форму графа, а не только отдельный класс. Это полезно, когда поведение зависит от внедрения зависимостей, сгенерированных компонентов, конфигурации или
 модулей фреймворка.
 
+Контракты HTTP-контроллеров, HTTP-клиентов и JDBC-репозиториев в Kora 2.0 синхронные. Для тестов это прямое упрощение: компонентный тест вызывает метод службы и проверяет возвращенное значение —
+без `CompletionStage`, без реактивных издателей и без корутинных билдеров вокруг вызова. В Kotlin это значит, что тестовые методы остаются обычными `fun`, а заглушки MockK пишутся
+через `every { ... } returns ...`, а не через корутинный `coEvery`.
+
 ### Testcontainers и реалистичность { #testcontainers-realism }
 
 Проверки быстрые, но они не доказывают, что SQL выполняется, миграции соответствуют коду или внешние протоколы настроены правильно. Testcontainers дает тестам изолированную настоящую инфраструктуру,
@@ -83,7 +90,7 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 
 Практический ход такой:
 
-1. добавить зависимости JUnit, Mockito для Java, MockK для Kotlin, Kora test и Testcontainers
+1. добавить зависимости JUnit, Mockito для Java, MockK для Kotlin и тестовые модули Kora
 2. объявить тестовый граф Kora
 3. заменить выбранные зависимости подменами
 4. проверить поведение службы через компоненты, управляемые графом
@@ -92,24 +99,29 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 
 ## Зависимости { #dependencies }
 
+Расширение Kora для JUnit 5 живет в артефакте `io.koraframework:test-junit5`. Его версия берется из платформы `io.koraframework:kora-bom`, поэтому BOM должен быть виден не только конфигурации
+`implementation`, но и тестовым конфигурациям.
+
 ===! ":fontawesome-brands-java: `Java`"
 
     Добавьте следующие тестовые зависимости в `build.gradle`:
 
     ```groovy title="build.gradle"
     dependencies {
-        // ... существующие зависимости ...
+        // ... existing dependencies ...
 
-        testImplementation(platform("org.junit:junit-bom:5.14.3"))
-        testImplementation(project(":guide-http-server-app"))
-        testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:http-server-undertow")
+        testAnnotationProcessor "io.koraframework:annotation-processors" //(1)!
 
-        // Тестовый фреймворк Kora с интеграцией JUnit 5
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation platform("org.junit:junit-bom:6.1.3") //(2)!
+        testImplementation "org.junit.jupiter:junit-jupiter"
+        testImplementation project(":guide-http-server-app") //(3)!
+        testImplementation "io.koraframework:http-server-undertow"
 
-        // Фреймворк подмен для компонентного тестирования
-        testImplementation("org.mockito:mockito-core:5.23.0")
+        // Kora testing framework with JUnit 5 integration
+        testImplementation "io.koraframework:test-junit5" //(4)!
+
+        // Mocking framework for component testing
+        testImplementation "org.mockito:mockito-core:5.23.0" //(5)!
     }
 
     test {
@@ -122,24 +134,31 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
     }
     ```
 
+    1.  Обработчик аннотаций Kora в тестовой области. Он начинает что-то генерировать только тогда, когда тестовые исходники сами объявляют аннотации Kora — например, собственный `@KoraApp`
+        или `@Repository`. Тестовые исходники компилируются отдельной задачей, поэтому запись `annotationProcessor` основного набора исходников на них не распространяется.
+    2.  BOM JUnit 6. Kora 2.0 собирается и тестируется с JUnit `6.1.3`; пакеты `org.junit.jupiter.api` при этом не изменились со времен JUnit 5.
+    3.  Модуль, которому принадлежит тестируемый `@KoraApp`. Без него графа приложения для сборки просто нет.
+    4.  Расширение Kora для JUnit 5: `@KoraAppTest`, `@TestComponent`, модификаторы конфигурации и графа.
+    5.  Mockito. `test-junit5` не зависит ни от Mockito, ни от MockK, поэтому фреймворк подмен объявляет сам тестовый модуль.
+
 === ":simple-kotlin: `Kotlin`"
 
     Добавьте следующие тестовые зависимости в `build.gradle.kts`:
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        // ... существующие зависимости ...
+        // ... existing dependencies ...
 
-        testImplementation(platform("org.junit:junit-bom:5.14.3"))
-        testImplementation(project(":guide-http-server-app"))
+        testImplementation(platform("org.junit:junit-bom:6.1.3")) //(1)!
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:http-server-undertow")
+        testImplementation(project(":guide-http-server-app")) //(2)!
+        testImplementation("io.koraframework:http-server-undertow")
 
-        // Тестовый фреймворк Kora с интеграцией JUnit 5
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        // Kora testing framework with JUnit 5 integration
+        testImplementation("io.koraframework:test-junit5") //(3)!
 
-        // Фреймворк подмен для компонентного тестирования Kotlin
-        testImplementation("io.mockk:mockk:1.13.11")
+        // Mocking framework for Kotlin component testing
+        testImplementation("io.mockk:mockk:1.14.11") //(4)!
     }
 
     tasks.test {
@@ -152,7 +171,23 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
     }
     ```
 
-## Компонентные тесты { #kora-component-tests }
+    1.  BOM JUnit 6. Kora 2.0 собирается и тестируется с JUnit `6.1.3`; пакеты `org.junit.jupiter.api` при этом не изменились со времен JUnit 5.
+    2.  Модуль, которому принадлежит тестируемый `@KoraApp`. Без него графа приложения для сборки просто нет.
+    3.  Расширение Kora для JUnit 5: `@KoraAppTest`, `@TestComponent`, модификаторы конфигурации и графа.
+    4.  MockK. `test-junit5` не зависит ни от MockK, ни от Mockito, поэтому фреймворк подмен объявляет сам тестовый модуль. Mockito тоже работает в Kotlin, и эталонное приложение использует именно его;
+        MockK показан здесь потому, что его DSL избавляет от экранированного вызова `` `when` ``.
+
+    В этом модуле нет строки `kspTest("io.koraframework:symbol-processors")`. Обрабатывать KSP здесь нечего: тестовый класс только использует `Application` и его компоненты, а `ApplicationGraph`
+    уже был сгенерирован при компиляции модуля HTTP-сервера. Добавляйте `kspTest` только тогда, когда аннотации Kora объявлены в самих тестовых исходниках — именно так делает
+    руководство [Интеграционное тестирование](testing-integration.md) со своим `@KoraApp`.
+
+!!! warning "Byte Buddy и тулчейн Java 25"
+
+    Mockito `5.23.0` транзитивно подтягивает `net.bytebuddy:byte-buddy` `1.17.7`, тогда как Kora 2.0 собирается и тестируется с `1.18.11`. Подмены генерируются Byte Buddy поверх классов, скомпилированных
+    тулчейном Java 25, поэтому зафиксируйте в тестовом модуле более новую версию и держите ее согласованной с фреймворком. То же относится к MockK, который использует Byte Buddy через `mockk-agent`.
+    Готовый фрагмент Gradle есть в разделе [Устранение неполадок](#troubleshooting).
+
+## Компонентные тесты { #kora-di-component-tests }
 
 Компонентный тест в Kora находится между простой проверкой отдельного класса и полноценным запуском приложения. Вы не создаете `UserService` руками через `new` и не собираете его зависимости
 вручную. Вместо этого тест просит Kora построить небольшой тестовый граф, достать из него нужный компонент и внедрить этот компонент в тестовый класс.
@@ -181,22 +216,25 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 То есть Kora начинает с `UserService`, смотрит его конструктор, находит нужные зависимости и добавляет только необходимую часть графа. Если `UserService` зависит от `UserRepository`, то репозиторий
 тоже попадет в тестовый граф. Если HTTP-сервер, контроллеры или другие компоненты не нужны для создания `UserService`, они не обязаны инициализироваться в таком компонентном тесте.
 
+У `@KoraAppTest` есть еще два атрибута для случаев, когда типов полей недостаточно: `components()` принудительно добавляет компоненты в граф, даже если тест на них нигде не ссылается, а `modules()`
+дополняет список модулей, найденных по типу `@KoraApp`. Оба полезны для компонентов, которые существуют только ради выполнения на старте и никуда не внедряются.
+
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/test/java/ru/tinkoff/kora/guide/testingjunit/UserServiceComponentTest.java`:
+    Создайте `src/test/java/io/koraframework/guide/testingjunit/UserServiceComponentTest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.testingjunit;
+    package io.koraframework.guide.testingjunit;
 
     import static org.junit.jupiter.api.Assertions.assertEquals;
     import static org.junit.jupiter.api.Assertions.assertNotNull;
 
     import org.junit.jupiter.api.Test;
-    import ru.tinkoff.kora.guide.httpserver.Application;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.service.UserService;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
+    import io.koraframework.guide.httpserver.Application;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.service.UserService;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
 
     @KoraAppTest(Application.class)
     class UserServiceComponentTest {
@@ -219,19 +257,19 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/test/kotlin/ru/tinkoff/kora/guide/testingjunit/UserServiceComponentTest.kt`:
+    Создайте `src/test/kotlin/io/koraframework/guide/testingjunit/UserServiceComponentTest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingjunit
+    package io.koraframework.guide.testingjunit
 
     import org.junit.jupiter.api.Assertions.assertEquals
     import org.junit.jupiter.api.Assertions.assertNotNull
     import org.junit.jupiter.api.Test
-    import ru.tinkoff.kora.guide.httpserver.Application
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.service.UserService
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
+    import io.koraframework.guide.httpserver.Application
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.service.UserService
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
 
     @KoraAppTest(Application::class)
     class UserServiceComponentTest {
@@ -246,8 +284,8 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
             val result = userService.createUser(request)
 
             assertNotNull(result)
-            assertEquals("John", result.name())
-            assertEquals("john@example.com", result.email())
+            assertEquals("John", result.name)
+            assertEquals("john@example.com", result.email)
         }
     }
     ```
@@ -273,9 +311,9 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 - конструктор `UserService` вызывается Kora, а не тестом
 - зависимости `UserService` берутся из того же описания приложения, что и в реальном графе
 - компоненты, которые не нужны запрошенной части графа, не создаются только ради теста
-- если компонент имеет жизненный цикл, она выполняется в рамках инициализации тестового графа
+- если у компонента есть логика жизненного цикла, она выполняется в рамках инициализации тестового графа
 - после завершения тестового контекста Kora закрывает инициализированные ранее компоненты
-- по умолчанию такой контейнер создается с нуля для каждого тестового метода; если нужно один раз на весь класс, в документации Kora используется `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`
+- по умолчанию контейнер создается с нуля для каждого тестового метода; документация `@KoraAppTest` предлагает `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`, когда достаточно одного графа на класс
 
 Такой тест отвечает на вопрос: “может ли Kora построить нужную часть приложения, и ведет ли себя настоящий компонент правильно?” Но иногда настоящая зависимость мешает сфокусированной проверке. Например,
 вы хотите проверить сортировку, обработку `404` или вызов репозитория, не завися от состояния хранилища. Тогда нужна подмена.
@@ -312,6 +350,10 @@ real component          replacement component
 - через `userRepository` можно задать ответы зависимости
 - через `userService` можно вызвать настоящий код службы и проверить результат
 
+Расширение Kora распознает аннотации подмен по имени: `@Mock` и `@Spy` из Mockito, `@MockK` и `@SpyK` из MockK. Оба фреймворка работают из любого языка; выберите один на модуль и придерживайтесь его.
+Созданные так моки Mockito по умолчанию работают со строгостью `Strictness.WARN`, а `@MockitoStrictness` из `io.koraframework.test.extension.junit5.mockito` повышает или понижает ее для всего
+тестового класса. Подробности — в разделе [Строгость моков](../documentation/junit5.md#mock-strictness).
+
 ===! ":fontawesome-brands-java: `Java`"
 
     В Java используйте Mockito: `@Mock` создает мок `UserRepository`, а `when(...).thenReturn(...)` задает ответ для конкретного вызова зависимости.
@@ -319,7 +361,7 @@ real component          replacement component
     Обновите тестовый класс:
 
     ```java
-    package ru.tinkoff.kora.guide.testingjunit;
+    package io.koraframework.guide.testingjunit;
 
     import static org.junit.jupiter.api.Assertions.assertEquals;
     import static org.mockito.Mockito.verify;
@@ -329,12 +371,12 @@ real component          replacement component
     import java.util.Optional;
     import org.junit.jupiter.api.Test;
     import org.mockito.Mock;
-    import ru.tinkoff.kora.guide.httpserver.Application;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
-    import ru.tinkoff.kora.guide.httpserver.service.UserService;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
+    import io.koraframework.guide.httpserver.Application;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.repository.UserRepository;
+    import io.koraframework.guide.httpserver.service.UserService;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
 
     @KoraAppTest(Application.class)
     class UserServiceComponentTest {
@@ -366,19 +408,19 @@ real component          replacement component
     Обновите тестовый класс:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingjunit
+    package io.koraframework.guide.testingjunit
 
     import org.junit.jupiter.api.Assertions.assertEquals
     import org.junit.jupiter.api.Test
     import io.mockk.every
     import io.mockk.impl.annotations.MockK
     import io.mockk.verify
-    import ru.tinkoff.kora.guide.httpserver.Application
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
-    import ru.tinkoff.kora.guide.httpserver.service.UserService
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
+    import io.koraframework.guide.httpserver.Application
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.repository.UserRepository
+    import io.koraframework.guide.httpserver.service.UserService
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
     import java.time.LocalDateTime
 
     @KoraAppTest(Application::class)
@@ -406,6 +448,9 @@ real component          replacement component
 
 Теперь тест проверяет не репозиторий, а поведение `UserService` при заданном ответе репозитория. Это и есть основная ценность мока: вы фиксируете поведение зависимости и проверяете реакцию компонента,
 который находится над ней.
+
+Обратите внимание на форму заглушенного вызова. `UserRepository.findById` — синхронный метод, который возвращает `Optional<UserResponse>` в Java и `UserResponse?` в Kotlin, поэтому заглушка возвращает
+обычное значение. У контрактов репозиториев и HTTP в Kora 2.0 нет асинхронных вариантов, так что ждать в тесте нечего и корутинную область открывать не нужно.
 
 ### Что именно инициализируется { #what-is-initialized }
 
@@ -440,6 +485,10 @@ real component          replacement component
 В примерах ниже используются стандартные assertions из JUnit Jupiter: `assertEquals`, `assertNotNull`, `assertTrue`, `assertThrows`. Для более выразительных проверок в реальных проектах можно
 подключить AssertJ и писать проверки в стиле `assertThat(result.name()).isEqualTo("John")`, `assertThat(result).isNotNull()` или `assertThatThrownBy { ... }`.
 
+Отдельного внимания заслуживает случай с `404`. `UserService.deleteUser` сообщает об отсутствующем пользователе, бросая `HttpServerResponseException` из пакета
+`io.koraframework.http.server.common.response`. Метод `code()` возвращает HTTP-статус, которым ответило бы приложение, поэтому компонентный тест может проверить транспортный итог, не поднимая
+HTTP-сервер.
+
 ===! ":fontawesome-brands-java: `Java`"
 
     В Java-версии поведение мока задается через Mockito: `when(...).thenReturn(...)` говорит, что должен вернуть репозиторий при конкретном вызове. `verify(userRepository).save(...)` проверяет, что
@@ -455,8 +504,8 @@ real component          replacement component
     import static org.junit.jupiter.api.Assertions.assertTrue;
 
     import java.util.List;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
     ```
 
     Добавьте тестовые методы:
@@ -513,6 +562,7 @@ real component          replacement component
 
         assertEquals("1", result.id());
         assertEquals("John Updated", result.name());
+        assertEquals("john.updated@example.com", result.email());
         verify(userRepository).update("1", request.name(), request.email());
     }
 
@@ -521,6 +571,7 @@ real component          replacement component
         when(userRepository.deleteById("1")).thenReturn(true);
 
         userService.deleteUser("1");
+
         verify(userRepository).deleteById("1");
     }
 
@@ -537,17 +588,17 @@ real component          replacement component
 
 === ":simple-kotlin: `Kotlin`"
 
-    В Kotlin-версии используется MockK. Поведение мока задается DSL-выражением `every { ... } returns ...`: внутри фигурных скобок описывается вызов зависимости, а после `returns` — ответ для этого
-    вызова. Проверка взаимодействия пишется как `verify { userRepository.save(...) }`. Такой синтаксис хорошо ложится на Kotlin: не нужны экранированные вызовы вроде `` `when` ``, а проверяемый вызов
-    остается обычным Kotlin-кодом внутри блока.
+    В Kotlin-версии используется MockK. Поведение мока задается через DSL `every { ... } returns ...`: блок описывает вызов зависимости, а `returns` задает ответ на этот вызов. Проверка взаимодействия
+    пишется как `verify { userRepository.save(...) }`. Такой синтаксис хорошо ложится на Kotlin: не нужны экранированные вызовы вроде `` `when` ``, а проверяемый вызов остается обычным кодом Kotlin
+    внутри блока.
 
     Добавьте импорты:
 
     ```kotlin
     import org.junit.jupiter.api.Assertions.assertNotNull
     import org.junit.jupiter.api.Assertions.assertThrows
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.http.server.common.response.HttpServerResponseException
     ```
 
     Добавьте тестовые методы:
@@ -562,9 +613,9 @@ real component          replacement component
         val result = userService.createUser(request)
 
         assertNotNull(result)
-        assertEquals("1", result.id())
-        assertEquals("John", result.name())
-        assertEquals("john@example.com", result.email())
+        assertEquals("1", result.id)
+        assertEquals("John", result.name)
+        assertEquals("john@example.com", result.email)
         verify { userRepository.save("John", "john@example.com") }
     }
 
@@ -590,21 +641,22 @@ real component          replacement component
         val result = userService.getUsers(0, 10, "name")
 
         assertEquals(2, result.size)
-        assertEquals("Jane", result[0].name())
-        assertEquals("John", result[1].name())
+        assertEquals("Jane", result[0].name)
+        assertEquals("John", result[1].name)
         verify { userRepository.findAll() }
     }
 
     @Test
     fun updateUserShouldUpdateAndReturnUserWhenExists() {
         val request = UserRequest("John Updated", "john.updated@example.com")
-        every { userRepository.update("1", request.name(), request.email()) } returns true
+        every { userRepository.update("1", request.name, request.email) } returns true
 
         val result = userService.updateUser("1", request)
 
-        assertEquals("1", result.id())
-        assertEquals("John Updated", result.name())
-        verify { userRepository.update("1", request.name(), request.email()) }
+        assertEquals("1", result.id)
+        assertEquals("John Updated", result.name)
+        assertEquals("john.updated@example.com", result.email)
+        verify { userRepository.update("1", request.name, request.email) }
     }
 
     @Test
@@ -612,6 +664,7 @@ real component          replacement component
         every { userRepository.deleteById("1") } returns true
 
         userService.deleteUser("1")
+
         verify { userRepository.deleteById("1") }
     }
 
@@ -639,7 +692,64 @@ real component          replacement component
 
 Полные правила тестовой конфигурации Kora описаны в разделе [настройки конфигурации для тестов](../documentation/junit5.md#test-configuration).
 
-Kora предоставляет мощные возможности переопределения конфигурации для разных тестовых сценариев.
+Тестовый класс может реализовать `KoraAppTestConfigModifier` и вернуть `KoraConfigModification` из метода `config()`. Это подменяет конфигурацию, которую читает граф, не трогая ни `application.conf`,
+ни код приложения. Основные способы создания модификации:
+
+- `KoraConfigModification.ofString(...)` — встроенный фрагмент HOCON
+- `KoraConfigModification.ofResourceFile(...)` — файл из тестового каталога `resources`
+- `KoraConfigModification.ofSystemProperty(key, value)` — когда нужны только системные свойства
+- `withSystemProperty(...)` и `withSystemProperties(...)` — чтобы заполнить подстановки `${PLACEHOLDER}` внутри фрагмента
+
+Конфигурация здесь должна использовать ключи Kora 2.0. Порты — это `httpServer.port` для публичного сервера и `httpServer.system.port` для системного сервера, который отдает пробы и метрики; пул JDBC
+настраивается в секции `jdbc`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class UserServiceConfigTest implements KoraAppTestConfigModifier {
+
+        @TestComponent
+        private UserService userService;
+
+        @Override
+        public KoraConfigModification config() {
+            return KoraConfigModification.ofString("""
+                    httpServer {
+                      port = 0
+                      system.port = 0
+                      telemetry.logging.enabled = true
+                    }
+                    """);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class UserServiceConfigTest : KoraAppTestConfigModifier {
+
+        @TestComponent
+        lateinit var userService: UserService
+
+        override fun config(): KoraConfigModification {
+            return KoraConfigModification.ofString(
+                """
+                httpServer {
+                  port = 0
+                  system.port = 0
+                  telemetry.logging.enabled = true
+                }
+                """.trimIndent()
+            )
+        }
+    }
+    ```
+
+Порт `0` просит у операционной системы любой свободный порт, что избавляет параллельные запуски тестов от конфликтов на `8080` и `8085`. Это важно только тогда, когда тестовый граф действительно
+поднимает HTTP-сервер: компонентный тест, который запрашивает лишь `UserService`, вообще не занимает порт.
 
 !!! tip "Шаблоны переопределения конфигурации"
 
@@ -656,13 +766,13 @@ Kora предоставляет мощные возможности переоп
 Запустите тесты через Gradle:
 
 ```bash
-# Запустить все тесты
+# Run all tests
 ./gradlew test
 
-# Запустить с подробным выводом
+# Run with detailed output
 ./gradlew test --info
 
-# Запустить тесты параллельно
+# Run tests in parallel
 ./gradlew test --parallel
 ```
 
@@ -671,13 +781,13 @@ Kora предоставляет мощные возможности переоп
 Проекты Kora включают встроенные отчеты о тестах и покрытии:
 
 ```bash
-# Сформировать отчеты о тестах
+# Generate test reports
 ./gradlew test
 
-# Сформировать отчеты о покрытии
+# Generate coverage reports
 ./gradlew jacocoTestReport
 
-# Открыть HTML-отчет о покрытии
+# View HTML coverage report
 open build/jacocoHtml/index.html
 ```
 
@@ -735,9 +845,10 @@ open build/jacocoHtml/index.html
 
 Тестовый фреймворк Kora:
 
-- @KoraAppTest: аннотация, которая запускает внедрение зависимостей Kora для тестирования
-- Шаблон TestApplication: пользовательский класс приложения для тестовой конфигурации
-- Переопределения конфигурации: переменные окружения и системные свойства для тестовой конфигурации
+- `@KoraAppTest`: аннотация, которая поднимает граф зависимостей Kora для теста, с необязательными `components()` и `modules()`
+- `@TestComponent`: помечает поле или параметр, который нужно взять из графа, и делает его корнем тестового графа
+- `KoraAppTestConfigModifier` и `KoraAppTestGraphModifier`: точки входа для изменения конфигурации и графа
+- `KoraConfigModification` и `KoraGraphModification`: построители этих изменений
 
 Интеграция Testcontainers:
 
@@ -754,29 +865,62 @@ open build/jacocoHtml/index.html
 
 ## Устранение неполадок { #troubleshooting }
 
-**Testcontainers не запускается:**
+**Создание моков падает на тулчейне Java 25:**
 
-- Убедитесь, что Docker запущен и доступен
-- Проверьте, что зависимости Testcontainers подключены
-- Убедитесь, что имена Docker-образов указаны правильно и образы доступны
+И Mockito, и MockK генерируют подмены через Byte Buddy. Kora 2.0 фиксирует `net.bytebuddy:byte-buddy` и `net.bytebuddy:byte-buddy-agent` на версии `1.18.11`, тогда как Mockito `5.23.0` транзитивно
+подтягивает `1.17.7`. Зафиксируйте согласованную версию в тестовом модуле:
 
-**@KoraAppTest не работает:**
+===! ":fontawesome-brands-java: `Java`"
 
-- Убедитесь, что обработчик аннотаций настроен в build.gradle
-- Проверьте, что интерфейс Application включает TestModule
-- Убедитесь, что тестовый класс правильно помечен @KoraAppTest
+    ```groovy title="build.gradle"
+    configurations.testRuntimeClasspath {
+        resolutionStrategy {
+            force "net.bytebuddy:byte-buddy:1.18.11"
+            force "net.bytebuddy:byte-buddy-agent:1.18.11"
+        }
+    }
+    ```
 
-**Проблемы с подключением к базе данных:**
+=== ":simple-kotlin: `Kotlin`"
 
-- Убедитесь, что контейнер PostgreSQL запущен до выполнения теста
-- Проверьте конфигурацию подключения к базе данных в тестовых свойствах
-- Убедитесь, что схема базы данных соответствует определениям сущностей
+    ```kotlin title="build.gradle.kts"
+    configurations.testRuntimeClasspath {
+        resolutionStrategy {
+            force("net.bytebuddy:byte-buddy:1.18.11")
+            force("net.bytebuddy:byte-buddy-agent:1.18.11")
+        }
+    }
+    ```
+
+**`@KoraAppTest` не находит компонент:**
+
+- Проверьте, что тип `@KoraApp`, переданный в `@KoraAppTest`, действительно объявляет или наследует модуль, который дает этот компонент
+- Проверьте, что тестовый модуль зависит от модуля с `@KoraApp`, иначе сгенерированный `ApplicationGraph` не попадает в тестовый classpath
+- Добавьте компонент в `@KoraAppTest(components = ...)`, если тест не ссылается на него напрямую
+- Помните, что компонент с `@Tag` находится только тогда, когда на тестовом поле стоит такой же `@Tag`
+
+**Обработка аннотаций не запускается для тестовых исходников:**
+
+- В Java используйте `testAnnotationProcessor`, а не `annotationProcessor`: тестовые исходники компилируются отдельной задачей
+- В Kotlin используйте `kspTest`, а не `ksp`, и добавьте `build/generated/ksp/test/kotlin` в тестовый набор исходников
+- И то и другое нужно только тогда, когда аннотации Kora объявлены в самих тестовых исходниках
+
+**Мок создается, но граф использует настоящий компонент:**
+
+- Убедитесь, что на поле стоят обе аннотации: мок-фреймворка и `@TestComponent`
+- Убедитесь, что к классу не подключено второе JUnit-расширение мок-фреймворка
+- Проверьте объявленный тип поля: Kora сопоставляет подмену по типу, поэтому поле с типом реализации не заменит компонент, опубликованный как интерфейс
+
+**Ошибки о неиспользованных заглушках:**
+
+- Под `@KoraAppTest` моки Mockito по умолчанию работают со строгостью `Strictness.WARN`
+- Поднимите ее до `@MockitoStrictness(Strictness.STRICT_STUBS)`, если неиспользованные заглушки должны ронять тест, или опустите до `Strictness.LENIENT` для общей подготовки данных
 
 **Переопределения конфигурации не применяются:**
 
-- Убедитесь, что переменные окружения заданы до выполнения тестов
-- Проверьте, что системные свойства передаются в JVM тестов
-- Убедитесь, что имена свойств конфигурации соответствуют ожиданиям приложения
+- Тестовый класс должен реализовывать `KoraAppTestConfigModifier`; одного метода `config()` недостаточно
+- Подстановки `${PLACEHOLDER}` внутри `ofString(...)` разрешаются из системных свойств, поэтому каждой подстановке нужен свой `withSystemProperty(...)`
+- Сверьте имена ключей с конфигурацией Kora 2.0: `httpServer.port`, `httpServer.system.port`, `jdbc`
 
 **Проблемы выполнения тестов:**
 

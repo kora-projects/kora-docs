@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Создание первого приложения на Kora
 summary: Learn how to create a minimal Kora HTTP application and run your first endpoint
+description: "Step-by-step first Kora application: Gradle wrapper and JDK toolchain setup, the io.koraframework:kora-bom BOM, annotation-processors and symbol-processors, a @KoraApp graph root with HoconConfigModule, JsonModule, LogbackModule and UndertowPublicHttpServerModule, one @HttpController route, httpServer configuration and the generated graph and handler sources."
+agent:
+  use_when: "Use this file for questions about starting a new Kora project from scratch: Gradle setup, io.koraframework:kora-bom, annotation-processors and symbol-processors, @KoraApp, KoraApplication.run(ApplicationGraph::graph), UndertowPublicHttpServerModule, the first @HttpController and @HttpRoute, httpServer.port and httpServer.system.port, and reading Kora generated sources."
 tags: getting-started, http-server, quick-start
 ---
 
@@ -40,12 +43,13 @@ tags: getting-started, http-server, quick-start
 
 ## Что потребуется { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+ (в руководстве поднимается Gradle Wrapper `9.5.1` — та же версия, что и в эталонных приложениях)
 - Текстовый редактор или среда разработки
 - Базовое умение читать Java- или Kotlin-код
 
-Docker, база данных и внешние сервисы для этого руководства не нужны. Все запускается в одном процессе на вашей машине, поэтому это хороший первый шаг перед добавлением реальной инфраструктуры.
+Артефакты Kora собраны под Java 25, поэтому JDK, которым компилируется ваш код, должен быть версии 25 или новее. Docker, база данных и внешние сервисы для этого руководства не нужны. Все запускается
+в одном процессе на вашей машине, поэтому это хороший первый шаг перед добавлением реальной инфраструктуры.
 
 ## Требования { #prerequisites }
 
@@ -83,7 +87,7 @@ Docker, база данных и внешние сервисы для этого
 `@Component` — это объект, который Kora может создать и управлять им. Модуль добавляет фабрики компонентов или возможности фреймворка. В этом первом руководстве главная возможность фреймворка — модуль
 HTTP-сервера Undertow. Он предоставляет серверную инфраструктуру, а ваш контроллер описывает поведение приложения.
 
-В проектах на Kora вы будете встречать два вида модулей. Модули фреймворка, например `UndertowHttpServerModule`, дают готовую инфраструктуру. Прикладные модули — это ваши интерфейсы или классы,
+В проектах на Kora вы будете встречать два вида модулей. Модули фреймворка, например `UndertowPublicHttpServerModule`, дают готовую инфраструктуру. Прикладные модули — это ваши интерфейсы или классы,
 которые предоставляют фабрики для доменных компонентов. В этом руководстве используются только модули фреймворка, а дальше вы увидите, как приложение разделяется на сервисы, репозитории, клиенты, кэши
 и другие компоненты.
 
@@ -99,8 +103,11 @@ HTTP-сервера Undertow. Он предоставляет серверную
 а `@HttpRoute` связывает один метод с HTTP-методом и путем. Тело метода при этом остается обычным Java- или Kotlin-кодом. Kora не заставляет наследоваться от специального базового класса и не
 превращает контроллер в прокси-объект во время выполнения. Аннотации описывают, как метод должен быть опубликован по HTTP, а реализация метода остается обычным кодом приложения.
 
+HTTP-обработчики Kora синхронные. Undertow переносит каждый запрос на виртуальный поток еще до того, как сгенерированный обработчик вызовет метод контроллера, поэтому блокирующие вызовы внутри
+контроллера — это нормальный и ожидаемый стиль: в контракте контроллера нет ни реактивных типов, ни `CompletionStage`, ни `suspend`-функций.
+
 К концу руководства вы должны понимать минимальный набор движущихся частей сервиса на Kora: зависимости [Gradle](https://docs.gradle.org/current/userguide/userguide.html), граф приложения, модуль
-фреймворка, один компонент и один маршрут, опубликованный через HTTP-сервер [Undertow](https://undertow.io/undertow-docs/undertow-docs-2.3.0/index.html).
+фреймворка, один компонент и один маршрут, опубликованный через HTTP-сервер [Undertow](https://undertow.io/).
 
 Практический порядок такой:
 
@@ -128,15 +135,17 @@ HTTP-сервера Undertow. Он предоставляет серверную
     cd kora-guide-example
     ```
 
-Шаблон удобен, когда нужно быстро получить рабочий проект и сразу перейти к бизнес-логике. Ручная сборка ниже полезнее для первого знакомства: она показывает, какие Gradle-плагины нужны, какие модули
-Kora подключаются в корневой граф, где лежит конфигурация и какой минимальный код действительно требуется для запуска HTTP-приложения.
+Шаблон — это уже готовый к запуску Gradle-проект, но оба шаблона пока собраны под Kora 1.x: BOM в них — `ru.tinkoff.kora:kora-parent`, а в Kotlin-шаблоне зафиксированы toolchain JDK 17 и Kotlin
+`1.9.25`. Чтобы запустить их на Kora 2.0, файл сборки придется поправить руками: заменить платформу на `io.koraframework:kora-bom`, убрать группу `ru.tinkoff.kora` из всех зависимостей и поднять
+toolchain до JDK 25. Если нужен проект на Kora 2.0 без этих правок, используйте ручную настройку ниже.
 
-Если вы хотите лучше понять детали настройки, продолжайте ручную сборку ниже.
+Ручная сборка ниже полезнее для первого знакомства: она показывает, какие Gradle-плагины нужны, какие модули Kora подключаются в корневой граф, где лежит конфигурация и какой минимальный код
+действительно требуется для запуска HTTP-приложения.
 
 ## Установите JDK { #install-jdk }
 
-Перед Gradle нужен установленный JDK: именно JVM запускает Gradle Wrapper, компилятор Java и инструменты сборки. Для первого запуска поставьте Eclipse Temurin JDK 21: этого достаточно, чтобы запустить
-Gradle, а дальше Gradle-инструменты сможет автоматически скачать JDK, которая нужна конкретной сборке.
+Перед Gradle нужен установленный JDK: именно JVM запускает Gradle Wrapper, компилятор Java и инструменты сборки. Модули Kora публикуются под Java 25, и эталонные приложения настраивают toolchain на
+Java 25, поэтому поставьте Eclipse Temurin JDK 25 и запускайте Gradle именно на нем.
 
 ===! ":simple-linux: `Linux`"
 
@@ -148,7 +157,7 @@ Gradle, а дальше Gradle-инструменты сможет автома�
     wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
     echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo $VERSION_CODENAME) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
     sudo apt update
-    sudo apt install -y temurin-21-jdk
+    sudo apt install -y temurin-25-jdk
     ```
 
 === ":simple-apple: `macOS`"
@@ -156,8 +165,8 @@ Gradle, а дальше Gradle-инструменты сможет автома�
     Если установлен Homebrew, поставьте Temurin JDK через cask:
 
     ```bash
-    brew install --cask temurin@21
-    export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+    brew install --cask temurin@25
+    export JAVA_HOME=$(/usr/libexec/java_home -v 25)
     ```
 
 === ":material-microsoft-windows: `Windows`"
@@ -165,10 +174,10 @@ Gradle, а дальше Gradle-инструменты сможет автома�
     Если установлен `winget`, поставьте Temurin JDK из терминала PowerShell:
 
     ```powershell
-    winget install EclipseAdoptium.Temurin.21.JDK
+    winget install EclipseAdoptium.Temurin.25.JDK
     ```
 
-    Если `winget` недоступен, скачайте установщик Windows со [страницы загрузок Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21), выберите **JDK 21** для архитектуры вашего
+    Если `winget` недоступен, скачайте установщик Windows со [страницы загрузок Eclipse Temurin](https://adoptium.net/temurin/releases/?version=25), выберите **JDK 25** для архитектуры вашего
     процессора, запустите установщик и включите обновление `JAVA_HOME` и `PATH`, если установщик предложит такой пункт.
 
     После установки откройте новый терминал, чтобы обновились переменные окружения.
@@ -179,7 +188,13 @@ Gradle, а дальше Gradle-инструменты сможет автома�
 java -version
 ```
 
-В выводе должна быть версия Java 21. После этого можно создавать каталог проекта.
+В выводе должна быть версия Java 25. После этого можно создавать каталог проекта.
+
+!!! tip "JVM Gradle и toolchain — это разные вещи"
+
+    Toolchain выбирает JDK, которым компилируется ваш код. Сам процесс Gradle работает на JDK из `JAVA_HOME`, и часть плагинов резолвится на buildscript classpath именно этой JVM. Генератор OpenAPI
+    от Kora — как раз такой плагин, поэтому как только в проекте появится генерация кода из контракта, JVM самого Gradle тоже должна быть Java 25 или новее. Если сразу держать обе на одном JDK,
+    этот класс ошибок не возникнет вовсе.
 
 ## Каталог проекта { #project-directory }
 
@@ -192,10 +207,11 @@ cd kora-guide-example
 
 ## Настройка Gradle { #gradle-setup }
 
-Начнем с обычного Gradle-проекта. На этом этапе в нем еще нет ничего специфичного для Kora: мы только создаем стандартную структуру каталогов, выбираем язык, тестовый фреймворк и пакет приложения. Это
-важно, потому что Kora не требует специального генератора проекта: приложение остается обычным Java- или Kotlin-проектом, который Gradle умеет собирать стандартными задачами.
+Начнем с обычного Gradle-проекта. На этом этапе в нем еще нет ничего специфичного для Kora, и это намеренно: Kora подключается обычными зависимостями и обработчиками аннотаций, поэтому приложение
+остается стандартным Java- или Kotlin-проектом, который Gradle собирает привычными задачами.
 
-Дальше Gradle будет компилировать код приложения и запускать обработчики аннотаций или KSP-процессоры Kora, которые сгенерируют граф приложения.
+Имя пакета важно, потому что сгенерированные исходники раскладываются рядом с пакетом приложения. Стабильный пакет также упрощает последующий разбор сгенерированного кода. В руководстве используется
+`io.koraframework.guide.gettingstarted` — тот же пакет, что и в эталонных приложениях.
 
 Используйте начальную подготовку Gradle Wrapper для всех вариантов установки. Так путь настройки остается одинаковым для всех читателей: сначала создаем минимальные файлы wrapper в текущем каталоге,
 затем запускаем `init` через `GradleWrapperMain`. Для этого нужна только JDK из предыдущей главы.
@@ -276,9 +292,10 @@ cd kora-guide-example
       --type java-application \
       --dsl groovy \
       --test-framework junit-jupiter \
-      --package ru.tinkoff.kora.guide.gettingstarted \
+      --package io.koraframework.guide.gettingstarted \
       --project-name kora-example \
-      --java-version 24
+      --java-version 25 \
+      --overwrite
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -288,10 +305,22 @@ cd kora-guide-example
       --type kotlin-application \
       --dsl kotlin \
       --test-framework junit-jupiter \
-      --package ru.tinkoff.kora.guide.gettingstarted \
+      --package io.koraframework.guide.gettingstarted \
       --project-name kora-example \
-      --java-version 24
+      --java-version 25 \
+      --overwrite
     ```
+
+`--overwrite` здесь обязателен: в каталоге уже лежат файлы wrapper из предыдущих шагов, и без этой опции `init` прерывается с ошибкой `Aborting build initialization due to existing files in the project directory`.
+
+`init` создает каркас многомодульного проекта: подпроект `app` с файлом сборки и примерами исходников, плюс корневой файл настроек, который его подключает. В этом руководстве используется
+одномодульная раскладка, поэтому удалите подпроект — файлы сборки мы напишем сами в следующем разделе:
+
+```bash
+rm -rf app
+```
+
+Файл настроек, файл сборки и исходники, которые мы пишем дальше, лежат в корне проекта и заменяют собой все, что сгенерировал `init`, поэтому точные умолчания, выбранные им, большой роли не играют.
 
 ## Зависимости { #dependencies }
 
@@ -307,9 +336,11 @@ cd kora-guide-example
 
 ### Поиск JDK для сборки { #toolchain }
 
-Сначала обновите `settings.gradle`. Плагин `foojay-resolver-convention` помогает Gradle найти или скачать JDK, который указан в toolchain. Без него Gradle может использовать только уже установленные JDK и сборка станет сильнее зависеть от локальной машины.
+Сначала обновите файл настроек проекта. Плагин `foojay-resolver-convention` помогает Gradle найти или скачать JDK, который указан в toolchain. Без него Gradle может использовать только уже установленные JDK и сборка станет сильнее зависеть от локальной машины.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    `settings.gradle`:
 
     ```groovy
     plugins {
@@ -328,15 +359,17 @@ cd kora-guide-example
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```groovy
+    `settings.gradle.kts`:
+
+    ```kotlin
     plugins {
-        id "org.gradle.toolchains.foojay-resolver-convention" version "1.0.0"
+        id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     }
 
     rootProject.name = "kora-example"
     ```
 
-    Добавьте `gradle.properties`. Последнее свойство нужно из-за Kotlin 1.9.25: если Kotlin-компилятор не может выставить target ровно как JDK 24, он сообщит об этом как warning, а не остановит учебную сборку:
+    Затем добавьте `gradle.properties`. Последнее свойство повторяет настройку эталонных приложений: если компилятор Kotlin не может выставить JVM target ровно как в toolchain, он сообщит об этом предупреждением, а не остановит сборку:
 
     ```properties
     org.gradle.java.installations.auto-detect=true
@@ -346,14 +379,11 @@ cd kora-guide-example
 
 ### Импорты и плагины { #imports-plugins }
 
-Теперь начнем собирать Gradle-файл. Импорты нужны для читаемой настройки toolchain, а плагины включают сборку, запуск приложения и генерацию кода.
+Теперь начнем собирать Gradle-файл. Плагины включают сборку, запуск приложения и генерацию кода. Groovy DSL сам находит типы toolchain, а Kotlin DSL требует для них явных импортов.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    import org.gradle.jvm.toolchain.JavaLanguageVersion
-    import org.gradle.jvm.toolchain.JvmVendorSpec
-
     plugins {
         id "java"
         id "application"
@@ -369,13 +399,13 @@ cd kora-guide-example
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     plugins {
+        id("org.jetbrains.kotlin.jvm") version "2.4.10"
+        id("com.google.devtools.ksp") version "2.3.11"
         id("application")
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
     ```
 
-    `application` добавляет `run`, `kotlin("jvm")` компилирует Kotlin-код для JVM, а `com.google.devtools.ksp` запускает Kora symbol processor. Для Kotlin Kora использует KSP вместо Java `annotationProcessor`.
+    `application` добавляет `run`, `org.jetbrains.kotlin.jvm` компилирует Kotlin-код для JVM, а `com.google.devtools.ksp` запускает symbol processor Kora. Для Kotlin вместо Java-конфигурации `annotationProcessor` используется KSP. Версия плагина KSP привязана к версии Kotlin, поэтому поднимать их нужно вместе.
 
 ### Координаты проекта { #coordinates }
 
@@ -384,27 +414,27 @@ cd kora-guide-example
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
-    group = "ru.tinkoff.kora.guide.gettingstarted"
+    group = "io.koraframework.guide.gettingstarted"
     version = "1.0-SNAPSHOT"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    group = "ru.tinkoff.kora.guide.gettingstarted"
+    group = "io.koraframework.guide.gettingstarted"
     version = "1.0-SNAPSHOT"
     ```
 
 ### JDK инструментарий { #java-toolchain }
 
-Toolchain говорит Gradle, каким JDK компилировать код. Это отличается от `JAVA_HOME`: Gradle может быть запущен одним JDK, а компилировать приложение другим. В руководстве используется JDK 24 от Adoptium, чтобы сборка была воспроизводимой.
+Toolchain говорит Gradle, каким JDK компилировать код. Это отличается от `JAVA_HOME`: Gradle может быть запущен одним JDK, а компилировать приложение другим. Модули Kora требуют Java 25, а эталонные приложения фиксируют toolchain на Temurin JDK 25, чтобы сборка была воспроизводимой.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(24)
+            languageVersion = JavaLanguageVersion.of(25)
             vendor = JvmVendorSpec.ADOPTIUM
         }
     }
@@ -415,7 +445,7 @@ Toolchain говорит Gradle, каким JDK компилировать ко�
     ```kotlin
     kotlin {
         jvmToolchain {
-            languageVersion.set(JavaLanguageVersion.of(24))
+            languageVersion.set(JavaLanguageVersion.of(25))
             vendor.set(JvmVendorSpec.ADOPTIUM)
         }
         sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
@@ -424,7 +454,7 @@ Toolchain говорит Gradle, каким JDK компилировать ко�
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(24))
+            languageVersion.set(JavaLanguageVersion.of(25))
             vendor.set(JvmVendorSpec.ADOPTIUM)
         }
     }
@@ -454,9 +484,11 @@ Toolchain говорит Gradle, каким JDK компилировать ко�
 
 ### Конфигурация BOM { #bom }
 
-Kora состоит из нескольких модулей. Чтобы не указывать версию у каждого модуля отдельно, подключается BOM (`Bill of Materials`). Отдельная конфигурация `koraBom` хранит платформу с версиями, а затем распространяет эти версии на обычные Gradle-конфигурации.
+Kora состоит из нескольких модулей. Чтобы не указывать версию у каждого модуля отдельно, подключается BOM (`Bill of Materials`) `io.koraframework:kora-bom`. Он согласует версии всех модулей Kora и тех сторонних библиотек, с которыми Kora поставляется.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    В Java BOM кладут в отдельную конфигурацию `koraBom`, а конфигурации, которым нужны согласованные версии, наследуют ее:
 
     ```groovy
     configurations {
@@ -469,56 +501,67 @@ Kora состоит из нескольких модулей. Чтобы не у
     }
     ```
 
-    `annotationProcessor` получает BOM отдельно, потому что обработчики аннотаций живут в своем classpath. `implementation` получает BOM для зависимостей приложения.
+    `annotationProcessor` получает BOM отдельно, потому что обработчики аннотаций резолвятся в своем classpath. `implementation` получает BOM для зависимостей приложения.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin
-    val koraBom: Configuration by configurations.creating
+    В Kotlin BOM подключается прямо в `implementation`, который уже наследует `testImplementation`:
 
-    configurations {
-        ksp.get().extendsFrom(koraBom)
-        compileOnly.get().extendsFrom(koraBom)
-        implementation.get().extendsFrom(koraBom)
-        testImplementation.get().extendsFrom(koraBom)
+    ```kotlin
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
     }
     ```
 
-    `ksp` получает BOM отдельно, потому что процессор Kora работает в отдельном classpath, а `implementation` получает его для зависимостей приложения.
+    Конфигурация `ksp` не наследует `implementation`, поэтому symbol processor Kora — единственная зависимость, у которой остается явная версия.
 
 ### Зависимости { #gradle-dependencies }
 
-Теперь добавьте зависимости. Сначала подключается сам BOM Kora. После этого зависимости Kora можно указывать без версий: Gradle возьмет версии из `kora-parent`. Затем добавляется обработчик аннотаций или KSP-процессор и runtime-модули фреймворка.
+Теперь добавьте зависимости. Сначала подключается сам BOM Kora. После этого модули Kora можно указывать без версий: Gradle возьмет их из `kora-bom`. Затем добавляется обработчик аннотаций или KSP-процессор и runtime-модули фреймворка.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     dependencies {
-        koraBom platform("ru.tinkoff.kora:kora-parent:1.2.20")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
 
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors" //(2)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation "io.koraframework:config-hocon" //(3)!
+        implementation "io.koraframework:http-server-undertow" //(4)!
+        implementation "io.koraframework:json-common" //(5)!
+        implementation "io.koraframework:logging-logback" //(6)!
     }
     ```
+
+    1.  BOM Kora: согласует версии всех модулей Kora и библиотек, от которых Kora зависит.
+    2.  Обработчик аннотаций Kora: во время компиляции создает граф приложения, модули контроллеров и JSON-читатели/писатели.
+    3.  Чтение HOCON-конфигурации из `application.conf`.
+    4.  Транспорт HTTP-сервера на Undertow.
+    5.  Инфраструктура JSON, генерируемая на этапе компиляции.
+    6.  Реализация логирования Logback, встроенная в граф Kora.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     dependencies {
-        koraBom(platform("ru.tinkoff.kora:kora-parent:1.2.20"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
 
-        ksp("ru.tinkoff.kora:symbol-processor")
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon") //(3)!
+        implementation("io.koraframework:http-server-undertow") //(4)!
+        implementation("io.koraframework:json-common") //(5)!
+        implementation("io.koraframework:logging-logback") //(6)!
     }
     ```
+
+    1.  BOM Kora: согласует версии всех модулей Kora и библиотек, от которых Kora зависит.
+    2.  KSP-процессор Kora: во время компиляции создает граф приложения, модули контроллеров и JSON-читатели/писатели.
+    3.  Чтение HOCON-конфигурации из `application.conf`.
+    4.  Транспорт HTTP-сервера на Undertow.
+    5.  Инфраструктура JSON, генерируемая на этапе компиляции.
+    6.  Реализация логирования Logback, встроенная в граф Kora.
 
 Эти зависимости дают приложению HTTP-сервер Undertow, HOCON-конфигурацию, JSON-инфраструктуру, Logback-логирование и генерацию графа Kora во время компиляции.
 
@@ -531,7 +574,7 @@ Kora состоит из нескольких модулей. Чтобы не у
     ```groovy
     application {
         applicationName = "application"
-        mainClass = "ru.tinkoff.kora.guide.gettingstarted.Application"
+        mainClass = "io.koraframework.guide.gettingstarted.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
     ```
@@ -542,8 +585,8 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```kotlin
     application {
-        applicationName.set("application")
-        mainClass.set("ru.tinkoff.kora.guide.gettingstarted.ApplicationKt")
+        applicationName = "application"
+        mainClass.set("io.koraframework.guide.gettingstarted.ApplicationKt")
         applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
     }
     ```
@@ -556,49 +599,54 @@ Kora состоит из нескольких модулей. Чтобы не у
 
 ## Модули { #modules }
 
-Корневой интерфейс приложения — это место, где Kora начинает строить граф зависимостей. Аннотация `@KoraApp` говорит обработчику: этот тип является входной точкой приложения, из него нужно собрать все
-компоненты, фабрики и модули в один граф.
+Тип `Application` — корень приложения на Kora. Он намеренно является интерфейсом: вы не пишете логику запуска руками, а объявляете, из каких модулей состоит приложение, и Kora генерирует реализацию.
 
-Интерфейс расширяет модули Kora. Каждый модуль добавляет в граф набор готовых фабрик: `HoconConfigModule` умеет загрузить конфигурацию, `UndertowHttpServerModule` добавляет HTTP-сервер и
-обработчики, `JsonModule` добавляет JSON-отображения, а `LogbackModule` настраивает логирование. Вы не создаете эти объекты руками — Kora связывает их по типам и сгенерированным фабричным методам.
+Наследование модулей вроде `HoconConfigModule` и `UndertowPublicHttpServerModule` означает: включить компоненты и фабрики этих модулей в граф текущего приложения. Если нужный модуль не подключен,
+Kora обычно сообщает о недостающей зависимости прямо на компиляции.
 
-Метод `main` запускает уже сгенерированный класс `ApplicationGraph`. В исходниках его еще нет, но после компиляции Kora создаст его рядом с другими сгенерированными исходниками. Поэтому в Kora обычная
-последовательность такая: сначала описываем граф аннотациями и модулями, затем запускаем `./gradlew clean classes`, после чего сгенерированный класс становится доступен для запуска приложения.
+`UndertowPublicHttpServerModule` — это тот модуль, который нужен приложению с бизнес-маршрутами. Он наследует `UndertowSystemHttpServerModule`, поэтому одно наследование дает сразу два сервера:
+публичный на `httpServer.port` и служебный на `httpServer.system.port` с маршрутами readiness, liveness и метрик.
+
+Метод `main` вызывает `KoraApplication.run(ApplicationGraph::graph)`. Класс `ApplicationGraph` генерируется из `Application`, поэтому в исходниках его нет до запуска обработчика аннотаций или KSP.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/gettingstarted/Application.java`:
+    Создайте `src/main/java/io/koraframework/guide/gettingstarted/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.gettingstarted;
+    package io.koraframework.guide.gettingstarted;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
-    @KoraApp
+    @KoraApp //(1)!
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            UndertowHttpServerModule {  // <----- Подключили модуль
+            UndertowPublicHttpServerModule { //(2)!
 
         static void main(String[] args) {
-            KoraApplication.run(ApplicationGraph::graph);
+            KoraApplication.run(ApplicationGraph::graph); //(3)!
         }
     }
     ```
 
+    1.  Помечает корень графа. Обработчик аннотаций строит весь граф приложения, начиная с этого интерфейса.
+    2.  Подключенные модули фреймворка. Каждый модуль добавляет свои фабрики в тот же граф.
+    3.  Запускает сгенерированный граф и держит процесс, пока shutdown hook JVM не освободит его.
+
     ??? abstract "Java: фрагмент сгенерированного `ApplicationGraph`"
 
-        После `./gradlew clean classes` обработчик аннотаций создаст файл `build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/gettingstarted/ApplicationGraph.java`.
+        После `./gradlew clean classes` обработчик аннотаций создаст файл `build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/gettingstarted/ApplicationGraph.java`.
         Полный файл содержит все компоненты из подключенных модулей, поэтому ниже показан только фрагмент, который связывает ваш контроллер, HTTP-маршрут и Undertow-сервер:
 
         ```java
-        @Generated("ru.tinkoff.kora.kora.app.annotation.processor.KoraAppProcessor")
+        @Generated("io.koraframework.kora.app.annotation.processor.KoraAppProcessor")
         public class ApplicationGraph implements Supplier<ApplicationGraphDraw> {
             private static final ApplicationGraphDraw graphDraw;
             private static final ComponentHolder0 holder0;
@@ -609,6 +657,11 @@ Kora состоит из нескольких модулей. Чтобы не у
                 holder0 = new ComponentHolder0(graphDraw, impl);
             }
 
+            @Override
+            public ApplicationGraphDraw get() {
+                return graphDraw;
+            }
+
             public static ApplicationGraphDraw graph() {
                 return graphDraw;
             }
@@ -617,73 +670,76 @@ Kora состоит из нескольких модулей. Чтобы не у
 
         `ApplicationGraphDraw` — описание графа зависимостей, а `ComponentHolder0` хранит узлы графа. Метод `graph()` — именно та точка, которую вы передали в `KoraApplication.run(ApplicationGraph::graph)`.
 
-        Внутри `ComponentHolder0` Kora добавляет узлы примерно такого вида:
+        Внутри `ComponentHolder0` Kora добавляет узлы примерно такого вида. Номера компонентов зависят от того, сколько компонентов дают подключенные модули, поэтому в вашей сборке они будут другими:
 
         ```java
-        component21 = graphDraw.addNode0(_type_of_component21, new Class<?>[]{}, g -> new HelloController(), List.of());
+        var _type_of_component21 = map.get("component21");
+        component21 = graphDraw.addNode(_type_of_component21,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(),
+            g -> new HelloController());
 
-        component26 = graphDraw.addNode0(_type_of_component26, new Class<?>[]{}, g -> impl.module0.get_hello(
-            g.get(ApplicationGraph.holder0.component21),
-            g.get(ApplicationGraph.holder0.component25)
-        ), List.of(), component21, component25);
-
-        component29 = graphDraw.addNode0(_type_of_component29, new Class<?>[]{}, g -> impl.publicApiHandler(
-            All.of(g.get(ApplicationGraph.holder0.component26)),
-            All.of(),
-            g.get(ApplicationGraph.holder0.component28),
-            g.get(ApplicationGraph.holder0.component20)
-        ), List.of(), component26, component28, component20);
-
-        component32 = graphDraw.addNode0(_type_of_component32, new Class<?>[]{}, g -> impl.undertowHttpServer(
-            g.valueOf(ApplicationGraph.holder0.component20).map(v -> (HttpServerConfig) v),
-            g.valueOf(ApplicationGraph.holder0.component30).map(v -> (UndertowPublicApiHandler) v),
-            g.get(ApplicationGraph.holder0.component22).value(),
-            g.get(ApplicationGraph.holder0.component31)
-        ), List.of(), component20.valueOf(), component30.valueOf(), component22, component31);
+        var _type_of_component26 = map.get("component26");
+        component26 = graphDraw.addNode(_type_of_component26,
+            null,
+            null,
+            List.of(component21),
+            List.of(component21),
+            List.of(),
+            g -> impl.module0.get_hello(
+                g.get(ApplicationGraph.holder0.component21)
+            ));
         ```
 
         Что здесь происходит:
 
+        - `addNode(...)` регистрирует один узел графа: его тип, необязательный тег, необязательное условие, узлы, нужные для создания, узлы, вызывающие обновление, перехватчики и фабричную лямбду.
         - `new HelloController()` — Kora создает ваш `@Component`.
-        - `impl.module0.get_hello(...)` — Kora вызывает сгенерированную фабрику HTTP-маршрута для `GET /hello`.
-        - `publicApiHandler(...)` собирает публичные HTTP-маршруты в общий обработчик.
-        - `undertowHttpServer(...)` создает серверный компонент Undertow и получает конфигурацию из графа.
+        - `impl.module0.get_hello(...)` — Kora вызывает сгенерированную фабрику HTTP-маршрута для `GET /hello`, и единственной ее зависимостью является узел контроллера.
+        - Ниже в том же держателе Kora регистрирует HTTP-роутер и компонент `UndertowHttpServer`, который получает конфигурацию из графа.
 
         Поэтому при старте приложения Kora не сканирует classpath в runtime. Все связи уже рассчитаны на этапе компиляции и записаны в сгенерированный Java-код.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/Application.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/gettingstarted/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.gettingstarted
+    package io.koraframework.guide.gettingstarted
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
-    @KoraApp
+    @KoraApp //(1)!
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        UndertowHttpServerModule  // <----- Подключили модуль
+        UndertowPublicHttpServerModule //(2)!
 
     fun main() {
-        KoraApplication.run(ApplicationGraph::graph)
+        KoraApplication.run(ApplicationGraph::graph) //(3)!
     }
     ```
 
+    1.  Помечает корень графа. KSP строит весь граф приложения, начиная с этого интерфейса.
+    2.  Подключенные модули фреймворка. Каждый модуль добавляет свои фабрики в тот же граф.
+    3.  Запускает сгенерированный граф и держит процесс, пока shutdown hook JVM не освободит его.
+
     ??? abstract "Kotlin: фрагмент сгенерированного `ApplicationGraph`"
 
-        Для Kotlin Kora использует KSP и создает файл `build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/ApplicationGraph.kt`.
+        Для Kotlin Kora использует KSP и создает файл `build/generated/ksp/main/kotlin/io/koraframework/guide/gettingstarted/ApplicationGraph.kt`.
         Это Kotlin-код, сгенерированный из Kotlin-приложения:
 
         ```kotlin
-        @Generated("ru.tinkoff.kora.kora.app.ksp.KoraAppProcessor")
+        @Generated("io.koraframework.kora.app.ksp.KoraAppProcessor")
         public class ApplicationGraph : Supplier<ApplicationGraphDraw> {
             override fun `get`(): ApplicationGraphDraw = graphDraw
 
@@ -693,55 +749,35 @@ Kora состоит из нескольких модулей. Чтобы не у
         }
         ```
 
-        Внутри сгенерированного держателя компонентов KSP добавляет узлы графа:
+        Внутри сгенерированного держателя компонентов KSP добавляет узлы графа. Номера компонентов зависят от того, сколько компонентов дают подключенные модули, поэтому в вашей сборке они будут другими:
 
         ```kotlin
-        component26 = graphDraw.addNode0(map["component26"],
-            arrayOf(),
-            { HelloController() },
-            listOf()
+        component26 = graphDraw.addNode(map["component26"],
+            null,
+            null,
+            listOf(),
+            listOf(),
+            listOf(),
+            { HelloController() }
         )
 
-        component31 = graphDraw.addNode0(map["component31"],
-            arrayOf(),
+        component31 = graphDraw.addNode(map["component31"],
+            null,
+            null,
+            listOf(component26),
+            listOf(component26),
+            listOf(),
             { impl.module0.get_hello(
-                it.get(holder0.component26),
-                it.get(holder0.component30)
-            ) },
-            listOf(),
-            component26, component30
-        )
-
-        component34 = graphDraw.addNode0(map["component34"],
-            arrayOf(),
-            { impl.publicApiHandler(
-                All.of(it.get(holder0.component31)),
-                All.of(),
-                it.get(holder0.component33),
-                it.get(holder0.component24)
-            ) },
-            listOf(),
-            component31, component33, component24
-        )
-
-        component37 = graphDraw.addNode0(map["component37"],
-            arrayOf(),
-            { impl.undertowHttpServer(
-                it.valueOf(holder0.component24).map { it as HttpServerConfig },
-                it.valueOf(holder0.component35).map { it as UndertowPublicApiHandler },
-                it.get(holder0.component27).value(),
-                it.get(holder0.component36)
-            ) },
-            listOf(),
-            component24.valueOf(), component35.valueOf(), component27, component36
+                it.get(holder0.component26)
+            ) }
         )
         ```
 
-        Смысл тот же, что и в Java-версии: KSP заранее описывает, как создать `HelloController`, как превратить его метод в HTTP-маршрут, как добавить маршрут в публичный обработчик и как передать обработчик в Undertow-сервер.
+        Смысл тот же, что и в Java-версии: KSP заранее описывает, как создать `HelloController`, как превратить его метод в HTTP-маршрут, как добавить маршрут в роутер и как передать роутер в Undertow-сервер.
 
 ## Контроллер { #controller }
 
-Контроллер — первый собственный компонент приложения. `@Component` регистрирует класс в графе зависимостей, а `@HttpController` говорит HTTP-модулю, что внутри класса нужно искать HTTP-маршруты. Метод
+Контроллер — первый собственный компонент приложения. `@Component` регистрирует класс в графе зависимостей, а `@HttpController` говорит обработчику HTTP, что внутри класса нужно искать маршруты. Метод
 с `@HttpRoute` описывает конкретный маршрут: HTTP-метод, путь и Java/Kotlin-метод, который будет вызван при запросе.
 
 В этом первом примере метод возвращает `HttpServerResponse` напрямую. Такой вариант самый явный для старта: в одной строке видно HTTP-статус, тип тела ответа и сам текст. В следующих руководствах появятся
@@ -749,51 +785,52 @@ JSON DTO, тело запроса, проверка входных данных,
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/gettingstarted/HelloController.java`:
+    Создайте `src/main/java/io/koraframework/guide/gettingstarted/HelloController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.gettingstarted;
+    package io.koraframework.guide.gettingstarted;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponse;
 
-    @Component
-    @HttpController
+    @Component //(1)!
+    @HttpController //(2)!
     public final class HelloController {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        @HttpRoute(method = HttpMethod.GET, path = "/hello") //(3)!
         public HttpServerResponse hello() {
-            return HttpServerResponse.of(200, HttpBody.plaintext("Hello, Kora!"));
+            return HttpServerResponse.of(200, HttpBody.plaintext("Hello, Kora!")); //(4)!
         }
     }
     ```
 
+    1.  Регистрирует класс как компонент графа, чтобы Kora могла его создать и внедрить туда, где он нужен.
+    2.  Говорит HTTP-обработчику просканировать класс на маршруты и сгенерировать модуль с обработчиками запросов.
+    3.  Привязывает метод к `GET /hello`. В `HttpMethod` лежат стандартные названия HTTP-методов.
+    4.  Формирует ответ явно: статус `200` и тело `text/plain`.
+
     ??? abstract "Java: сгенерированный модуль маршрута `HelloControllerModule`"
 
-        После компиляции HTTP-процессор создаст файл `build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/gettingstarted/HelloControllerModule.java`:
+        После компиляции HTTP-процессор создаст файл `build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/gettingstarted/HelloControllerModule.java`:
 
         ```java
-        package ru.tinkoff.kora.guide.gettingstarted;
+        package io.koraframework.guide.gettingstarted;
 
-        import ru.tinkoff.kora.common.Module;
-        import ru.tinkoff.kora.common.annotation.Generated;
-        import ru.tinkoff.kora.http.server.common.handler.BlockingRequestExecutor;
-        import ru.tinkoff.kora.http.server.common.handler.HttpServerRequestHandler;
-        import ru.tinkoff.kora.http.server.common.handler.HttpServerRequestHandlerImpl;
+        import io.koraframework.common.annotation.Generated;
+        import io.koraframework.common.annotation.Module;
+        import io.koraframework.http.server.common.request.HttpServerRequestHandler;
+        import io.koraframework.http.server.common.request.HttpServerRequestHandlerImpl;
 
-        @Generated("ru.tinkoff.kora.http.server.annotation.processor.ControllerModuleGenerator")
+        @Generated("io.koraframework.http.server.annotation.processor.ControllerModuleGenerator")
         @Module
         public interface HelloControllerModule {
-            default HttpServerRequestHandler get_hello(HelloController _controller,
-                BlockingRequestExecutor _executor) {
-                return HttpServerRequestHandlerImpl.of("GET", "/hello", (_ctx, _request) -> {
-                    return _executor.execute(_ctx, () -> {
-                        return _controller.hello();
-                    });
+            default HttpServerRequestHandler get_hello(HelloController _controller) {
+                return HttpServerRequestHandlerImpl.of("GET", "/hello", (_request) -> {
+                    return _controller.hello();
                 });
             }
         }
@@ -802,71 +839,60 @@ JSON DTO, тело запроса, проверка входных данных,
         Этот файл показывает, что делает `@HttpController`:
 
         - `@Module` добавляет сгенерированную фабрику в граф Kora.
-        - Метод `get_hello(...)` создает `HttpServerRequestHandler` для `GET /hello`.
+        - Метод `get_hello(...)` создает `HttpServerRequestHandler` для `GET /hello`; имя метода собирается из HTTP-метода и пути.
         - `HelloController _controller` берется из графа как обычный компонент.
-        - `BlockingRequestExecutor _executor` выполняет синхронный метод контроллера в подходящем executor, чтобы не блокировать event loop HTTP-сервера.
-        - `HttpServerRequestHandlerImpl.of(...)` связывает HTTP-метод, путь и вызов `_controller.hello()`.
+        - `HttpServerRequestHandlerImpl.of(...)` связывает HTTP-метод, шаблон пути и вызов `_controller.hello()`.
+        - Обработчик синхронный. Undertow переносит запрос на виртуальный поток до запуска этой лямбды, поэтому блокирующая работа в контроллере не блокирует IO-потоки сервера.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/HelloController.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/gettingstarted/HelloController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.gettingstarted
+    package io.koraframework.guide.gettingstarted
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponse
 
-    @Component
-    @HttpController
+    @Component //(1)!
+    @HttpController //(2)!
     class HelloController {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello")
+        @HttpRoute(method = HttpMethod.GET, path = "/hello") //(3)!
         fun hello(): HttpServerResponse {
-            return HttpServerResponse.of(200, HttpBody.plaintext("Hello, Kora!"))
+            return HttpServerResponse.of(200, HttpBody.plaintext("Hello, Kora!")) //(4)!
         }
     }
     ```
 
+    1.  Регистрирует класс как компонент графа, чтобы Kora могла его создать и внедрить туда, где он нужен.
+    2.  Говорит HTTP-обработчику просканировать класс на маршруты и сгенерировать модуль с обработчиками запросов.
+    3.  Привязывает метод к `GET /hello`. В `HttpMethod` лежат стандартные названия HTTP-методов.
+    4.  Формирует ответ явно: статус `200` и тело `text/plain`.
+
     ??? abstract "Kotlin: сгенерированный модуль маршрута `HelloControllerModule`"
 
-        В Kotlin-приложении KSP создает файл `build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/HelloControllerModule.kt`:
+        В Kotlin-приложении KSP создает файл `build/generated/ksp/main/kotlin/io/koraframework/guide/gettingstarted/HelloControllerModule.kt`:
 
         ```kotlin
-        package ru.tinkoff.kora.guide.gettingstarted
+        package io.koraframework.guide.gettingstarted
 
-        import java.util.concurrent.CompletableFuture
-        import ru.tinkoff.kora.common.Module
-        import ru.tinkoff.kora.common.`annotation`.Generated
-        import ru.tinkoff.kora.http.server.common.HttpServerResponse
-        import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-        import ru.tinkoff.kora.http.server.common.handler.BlockingRequestExecutor
-        import ru.tinkoff.kora.http.server.common.handler.HttpServerRequestHandler
-        import ru.tinkoff.kora.http.server.common.handler.HttpServerRequestHandlerImpl
+        import io.koraframework.common.`annotation`.Generated
+        import io.koraframework.common.`annotation`.Module
+        import io.koraframework.http.server.common.request.HttpServerRequestHandler
+        import io.koraframework.http.server.common.request.HttpServerRequestHandlerImpl
 
-        @Generated("ru.tinkoff.kora.http.server.symbol.procesor.HttpControllerProcessor")
+        @Generated("io.koraframework.http.server.symbol.procesor.HttpControllerProcessor")
         @Module
         public interface HelloControllerModule {
-            public fun get_hello(_controller: HelloController, _executor: BlockingRequestExecutor):
-                HttpServerRequestHandler = HttpServerRequestHandlerImpl.of("GET", "/hello") { _ctx,
-                _request ->
-                try {
-                    _executor.execute(_ctx) {
-                        val _result = _controller.hello()
-                        return@execute _result
-                    }
-                } catch (_e: Exception) {
-                    if (_e is HttpServerResponse) {
-                        CompletableFuture.failedFuture(_e)
-                    } else {
-                        CompletableFuture.failedFuture(HttpServerResponseException.of(400, _e))
-                    }
-                }
-            }
+          public fun get_hello(_controller: HelloController): HttpServerRequestHandler = HttpServerRequestHandlerImpl.of("GET", "/hello") process@{ _request ->
+            val _result = _controller.hello()
+            return@process _result
+          }
         }
         ```
 
@@ -874,82 +900,100 @@ JSON DTO, тело запроса, проверка входных данных,
 
         - Фабрика также помечена `@Module`, поэтому попадет в общий граф.
         - `get_hello(...)` возвращает `HttpServerRequestHandler` для `GET /hello`.
-        - Вызов `_controller.hello()` выполняется через `BlockingRequestExecutor`.
-        - Исключения преобразуются в failed future: если исключение уже является `HttpServerResponse`, оно передается как HTTP-ответ; иначе Kora оборачивает его в `HttpServerResponseException` со статусом `400`.
+        - Лямбда помечена меткой `process@`, чтобы сгенерированный разбор параметров и код перехватчиков могли досрочно выйти из обработчика.
+        - Обработчик синхронный, а `suspend`-методы контроллера процессор отклоняет с ошибкой компиляции.
 
 ## Конфигурация { #config }
 
-Kora ожидает, что инфраструктурные настройки будут вынесены из кода в конфигурацию. Даже в маленьком приложении это полезно: порт публичного HTTP API, порт служебного API и уровень логирования
-меняются без перекомпиляции. В реальных сервисах по тому же принципу задаются подключения к базам данных, Kafka, HTTP-клиентам, кешам и системам наблюдаемости.
-
-В этом руководстве используется HOCON, потому что он хорошо подходит для вложенных настроек и подстановки переменных окружения. Если проект использует YAML, структура ключей остается такой же: меняется
-только синтаксис файла.
+Конфигурация — это место, где приложение получает значения времени выполнения без изменения исходного кода. Даже в этом первом приложении есть два HTTP-сервера: публичный для бизнес-маршрутов и
+служебный для эксплуатационных маршрутов вроде проб readiness и liveness.
 
 Создайте `src/main/resources/application.conf`:
-
-Полную справку по настройкам смотрите в документации [HTTP-сервер](../documentation/http-server.md), [журналирование SLF4J](../documentation/logging-slf4j.md) и [Config](../documentation/config.md).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
+      port = 8080 //(1)!
+      system.port = 8085 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
     logging {
       levels {
-        "ROOT": "WARN" //(4)!
-        "ru.tinkoff.kora": "INFO" //(5)!
+        "root": "WARN" //(4)!
+        "io.koraframework": "INFO" //(5)!
       }
     }
     ```
 
-    1. Публичный HTTP-порт по умолчанию для маршрутов приложения.
-    2. Приватный HTTP-порт по умолчанию для проб, метрик и служебных маршрутов.
-    3. Включает указанную возможность в этой секции конфигурации.
-    4. Уровень логирования для `ROOT`.
-    5. Уровень логирования для `ru.tinkoff.kora`.
+    1.  Публичный HTTP-порт для маршрутов приложения (по умолчанию: `8080`).
+    2.  Служебный HTTP-порт для проб, метрик и управляющих маршрутов (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Уровень логирования корневого логгера.
+    5.  Уровень логирования для логгеров фреймворка Kora.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
+      port: 8080 #(1)!
+      system:
+        port: 8085 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     logging:
       levels:
-        ROOT: "WARN" #(4)!
-        "ru.tinkoff.kora": "INFO" #(5)!
+        root: "WARN" #(4)!
+        "io.koraframework": "INFO" #(5)!
     ```
 
-    1. Публичный HTTP-порт по умолчанию для маршрутов приложения.
-    2. Приватный HTTP-порт по умолчанию для проб, метрик и служебных маршрутов.
-    3. Включает указанную возможность в этой секции конфигурации.
-    4. Уровень логирования для `ROOT`.
-    5. Уровень логирования для `ru.tinkoff.kora`.
+    1.  Публичный HTTP-порт для маршрутов приложения (по умолчанию: `8080`).
+    2.  Служебный HTTP-порт для проб, метрик и управляющих маршрутов (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Уровень логирования корневого логгера.
+    5.  Уровень логирования для логгеров фреймворка Kora.
+
+Здесь показаны оба формата. В наборе зависимостей выше подключен `config-hocon`, который читает `application.conf`; если удобнее `application.yaml`, замените его на `config-yaml` и наследуйте
+`YamlConfigModule`. Имена ключей в обоих форматах одинаковые.
+
+У каждого ключа в этом файле уже есть значение по умолчанию, поэтому приложение стартует и вовсе без `application.conf` — именно на это полагаются эталонные приложения. Файл становится нужен, как
+только требуется сменить порт, поднять уровень логирования или прочитать секрет из переменной окружения.
+
+Полную справку по настройкам смотрите в документации [HTTP-сервер](../documentation/http-server.md), [журналирование SLF4J](../documentation/logging-slf4j.md) и [Config](../documentation/config.md).
 
 ## Запуск приложения { #run-app }
 
-Перед запуском полезно выполнить три команды именно в таком порядке. `clean classes` заставляет Gradle пересобрать проект и заново сгенерировать код Kora, поэтому ошибки графа находятся еще до старта
-приложения. `test` проверяет, что тестовая инфраструктура проекта корректна. `run` запускает приложение через плагин Gradle `application` и использует `mainClass`, который мы указали в сборке.
+Перед запуском соберите проект. В Kora задача `classes` особенно полезна: она запускает обработку аннотаций и проверяет, что граф зависимостей вообще может быть сгенерирован:
+
+```bash
+./gradlew clean classes
+```
+
+Затем запустите приложение через плагин `application`, который использует `mainClass` из файла сборки:
 
 ```bash
 ./gradlew run
 ```
 
+Лог запуска заканчивается строкой `Application initialized in ...`, когда граф построен и оба HTTP-сервера слушают свои порты.
+
 ## Проверка приложения { #check-app }
 
-Когда приложение запущено, публичный HTTP-сервер слушает порт `8080`. Запрос к `/hello` проходит через Undertow, затем через сгенерированный обработчик Kora и в итоге вызывает
-метод `HelloController#hello`.
+Когда приложение запущено, обратитесь к публичному маршруту через публичный HTTP-порт. Успешный ответ подтверждает, что модуль сервера стартовал, компонент-контроллер создан и сгенерированный
+обработчик маршрута зарегистрирован.
 
 ```bash
 curl http://localhost:8080/hello
-# Ожидаемый вывод: Hello, Kora!
+# Expected output: Hello, Kora!
+```
+
+Служебный сервер работает в том же процессе на своем порту и отвечает на пробу readiness строкой `OK`:
+
+```bash
+curl http://localhost:8085/system/readiness
+# Expected output: OK
 ```
 
 ## Сгенерированный код { #generated-code }
@@ -963,13 +1007,13 @@ Kotlin-код. Это один из лучших способов изучать
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-getting-started-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/gettingstarted/HelloControllerModule.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/gettingstarted/HelloControllerModule.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-getting-started-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/HelloControllerModule.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/gettingstarted/HelloControllerModule.kt
     ```
 
 В нем находится `HttpServerRequestHandler`, который Kora сгенерировала для `@HttpController` и `@HttpRoute`. Этот обработчик является мостом между входящим HTTP-запросом Undertow и обычным методом
@@ -978,15 +1022,12 @@ Kotlin-код. Это один из лучших способов изучать
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Generated("ru.tinkoff.kora.http.server.annotation.processor.ControllerModuleGenerator")
+    @Generated("io.koraframework.http.server.annotation.processor.ControllerModuleGenerator")
     @Module
     public interface HelloControllerModule {
-      default HttpServerRequestHandler get_hello(HelloController _controller,
-          BlockingRequestExecutor _executor) {
-        return HttpServerRequestHandlerImpl.of("GET", "/hello", (_ctx, _request) -> {
-          return _executor.execute(_ctx, () -> {
-            return _controller.hello();
-          });
+      default HttpServerRequestHandler get_hello(HelloController _controller) {
+        return HttpServerRequestHandlerImpl.of("GET", "/hello", (_request) -> {
+          return _controller.hello();
         });
       }
     }
@@ -995,23 +1036,12 @@ Kotlin-код. Это один из лучших способов изучать
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Generated("ru.tinkoff.kora.http.server.symbol.procesor.HttpControllerProcessor")
+    @Generated("io.koraframework.http.server.symbol.procesor.HttpControllerProcessor")
     @Module
     public interface HelloControllerModule {
-      public fun get_hello(_controller: HelloController, _executor: BlockingRequestExecutor):
-          HttpServerRequestHandler = HttpServerRequestHandlerImpl.of("GET", "/hello") { _ctx, _request ->
-        try {
-          _executor.execute(_ctx) {
-            val _result = _controller.hello()
-            return@execute _result
-          }
-        } catch (_e: Exception) {
-          if (_e is HttpServerResponse) {
-            CompletableFuture.failedFuture(_e)
-          } else {
-            CompletableFuture.failedFuture(HttpServerResponseException.of(400, _e))
-          }
-        }
+      public fun get_hello(_controller: HelloController): HttpServerRequestHandler = HttpServerRequestHandlerImpl.of("GET", "/hello") process@{ _request ->
+        val _result = _controller.hello()
+        return@process _result
       }
     }
     ```
@@ -1021,48 +1051,45 @@ Kotlin-код. Это один из лучших способов изучать
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-getting-started-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/gettingstarted/ApplicationGraph.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/gettingstarted/ApplicationGraph.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-getting-started-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/gettingstarted/ApplicationGraph.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/gettingstarted/ApplicationGraph.kt
     ```
 
 Вы увидите, что Kora регистрирует контроллер, а затем регистрирует сгенерированный HTTP-обработчик, который зависит от этого контроллера. Эта зависимость важна: обработчик не может существовать без
-экземпляра контроллера, и граф фиксирует эту связь явно:
+экземпляра контроллера, и граф фиксирует эту связь явно — и в списке узлов, нужных для создания, и в фабричной лямбде:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    component21 = graphDraw.addNode0(_type_of_component21, new Class<?>[]{},
-          g -> new HelloController(), List.of());
+    component21 = graphDraw.addNode(_type_of_component21,
+        null, null, List.of(), List.of(), List.of(),
+        g -> new HelloController());
 
-    component26 = graphDraw.addNode0(_type_of_component26, new Class<?>[]{},
-          g -> impl.module0.get_hello(
-            g.get(ApplicationGraph.holder0.component21),
-            g.get(ApplicationGraph.holder0.component25)
-          ), List.of(), component21, component25);
+    component26 = graphDraw.addNode(_type_of_component26,
+        null, null, List.of(component21), List.of(component21), List.of(),
+        g -> impl.module0.get_hello(
+          g.get(ApplicationGraph.holder0.component21)
+        ));
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    component26 = graphDraw.addNode0(map["component26"],
-      arrayOf(),
-      { HelloController() },
-      listOf()
+    component26 = graphDraw.addNode(map["component26"],
+      null, null, listOf(), listOf(), listOf(),
+      { HelloController() }
     )
 
-    component31 = graphDraw.addNode0(map["component31"],
-      arrayOf(),
+    component31 = graphDraw.addNode(map["component31"],
+      null, null, listOf(component26), listOf(component26), listOf(),
       { impl.module0.get_hello(
-        it.get(holder0.component26),
-        it.get(holder0.component30)
-      ) },
-      listOf(),
-      component26, component30
+        it.get(holder0.component26)
+      ) }
     )
     ```
 
@@ -1077,15 +1104,21 @@ Kotlin-код. Это один из лучших способов изучать
 
 ## Лучшие практики { #best-practices }
 
+Эти практики выглядят мелочами, но они масштабируются на все следующие руководства. Приложение на Kora проще всего поддерживать, когда корень графа явный, контроллеры занимаются только протоколом, а в
+сгенерированный код не страшно заглянуть во время отладки.
+
 - Держите граф приложения в одной точке входа `@KoraApp`. Так проще видеть, какие модули инфраструктуры подключены к сервису, и где начинается сборка приложения.
 - Подключайте модули фреймворка явно через `extends`. Это делает зависимости приложения читаемыми: по корневому интерфейсу сразу видно, что сервис использует HTTP, HOCON, JSON и Logback.
 - Оставляйте контроллеры тонкими и переносите бизнес-логику в сервисы, когда сложность растет. В первом руководстве контроллер сам возвращает строку, но в настоящем API он обычно только принимает
   HTTP-запрос, вызывает сервис и формирует HTTP-ответ.
+- Пишите методы контроллеров синхронно. Kora выполняет каждый запрос на виртуальном потоке, поэтому обычный блокирующий код — это и есть нужный стиль, а реактивные обертки ничего не добавляют.
 - Запускайте `./gradlew classes` после добавления новых компонентов. Внедрение зависимостей на этапе компиляции хорошо тем, что многие ошибки зависимостей находятся сразу при сборке, а не во
   время первого запроса при выполнении приложения.
 - Изучайте сгенерированные исходники, если хотите понять, что Kora скомпилировала из ваших аннотаций. Это помогает быстрее найти реальное связывание компонентов.
 
 ## Итоги { #summary }
+
+Первое приложение получилось маленьким, но оно уже прошло полный цикл разработки на Kora: объявить модули, добавить компонент, скомпилировать сгенерированный код, запустить граф и вызвать маршрут.
 
 Вы создали рабочее HTTP-приложение на Kora и прошли основной путь, который будет повторяться в следующих руководствах:
 
@@ -1101,31 +1134,44 @@ Kotlin-код. Это один из лучших способов изучать
 - `@KoraApp` определяет корень графа приложения.
 - Kora генерирует связывание компонентов на этапе компиляции.
 - `@HttpController` + `@HttpRoute` публикуют HTTP-маршруты.
+- `UndertowPublicHttpServerModule` поднимает и публичный сервер, и служебный сервер с маршрутами проб.
 - Сгенерированные исходники показывают код графа приложения и обработчик маршрута.
 
 ## Устранение неполадок { #troubleshooting }
 
 **Сборка падает с ошибками сгенерированного графа**
 
-- Проверьте, что annotation processing настроен: `annotationProcessor` для Java или `ksp` для Kotlin.
+Ошибки сгенерированного графа обычно означают, что Kora не смогла построить граф зависимостей: не настроена обработка аннотаций, не подключен нужный модуль фреймворка или конструктор компонента
+просит зависимость, которую никто не предоставляет.
+
+- Проверьте, что обработка аннотаций настроена: `annotationProcessor "io.koraframework:annotation-processors"` для Java или `ksp("io.koraframework:symbol-processors:<version>")` для Kotlin.
 - Проверьте, что корневой интерфейс помечен `@KoraApp` и расширяет нужные модули Kora.
 - Проверьте, что все классы с `@Component` доступны из набора исходных файлов приложения и находятся в корректном пакете.
 - Если ошибка говорит о недостающей зависимости, прочитайте ее как обычный граф зависимостей: Kora показывает, какой тип пыталась создать и какого компонента не хватило.
 
+**Сборка падает с `Dependency requires at least JVM runtime version 25`**
+
+- Модули Kora публикуются под Java 25. Укажите в toolchain JDK 25 или новее и запускайте сам Gradle на том же JDK.
+- Проверяйте, какой JDK реально использует Gradle, командой `./gradlew -version`, а не только `java -version`.
+
+**Ошибки обработчиков не исчезают после исправления исходников**
+
+- Обработчики аннотаций и KSP могут читать устаревший вывод предыдущей сборки. Прежде чем искать причину дальше, выполните `./gradlew clean classes`.
+
 **Приложение не запускается на порту 8080**
 
 - Проверьте `application.conf` и доступность порта.
-- Убедитесь, что другой процесс не использует `8080`.
+- Убедитесь, что другой процесс не использует `8080`, и помните, что в том же процессе служебный сервер занимает `8085`.
 
-**Smoke-check приватного API (`8085`)**
+**Smoke-check служебного API (`8085`)**
 
-- Проверьте, что маршрут приватного API доступен:
+- Проверьте, что служебный маршрут доступен:
 
   ```bash
   curl http://localhost:8085/system/readiness
   ```
 
-- Если маршрут недоступен, проверьте `privateApiHttpPort = 8085`, `privateApiHttpReadinessPath = "/system/readiness"` в `application.conf` и логи запуска приложения.
+- Если маршрут недоступен, проверьте `httpServer.system.port` и `httpServer.system.readinessPath` в `application.conf` и логи запуска приложения. Значения по умолчанию — `8085` и `/system/readiness`.
 
 **Gradle зависает или ведет себя неожиданно**
 
@@ -1151,4 +1197,5 @@ Kotlin-код. Это один из лучших способов изучать
 - сравните с [Kora Java Getting Started App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-getting-started-app) и [Kora Kotlin Getting Started App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-getting-started-app)
 - проверьте [документацию HTTP-сервера](../documentation/http-server.md)
 - проверьте [документацию контейнера](../documentation/container.md)
-- посмотрите [пример Hello World](https://github.com/kora-projects/kora-examples/tree/master/kora-java-helloworld)
+- проверьте [документацию по пробам](../documentation/probes.md)
+- посмотрите [пример Hello World](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-helloworld)

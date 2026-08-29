@@ -5,9 +5,9 @@ search:
 hide:
     - navigation
     - toc
-description: "Explains Index in Kora documentation. Use when working with Index."
+description: "Overview of the Kora framework: a compile-time Java and Kotlin framework for server-side applications with reflection-free dependency injection, generated aspects and preconfigured modules for HTTP, databases, Kafka, gRPC, cache, resilience and observability. Use when you need to understand what Kora is, which modules it ships, what JDK and build tooling it requires, and where to start reading."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Index."
+  use_when: "Use this file for high-level questions about what Kora is and what it provides: the Simplicity, Performance, Efficiency and Transparency principles, the list of available modules and integrations, the JDK 25 / Gradle 9.5 / Kotlin 2.4.10 / KSP 2.3.11 requirements, the io.koraframework group and the io.koraframework:kora-bom BOM, and which guide a newcomer should read first."
 ---
 
 Kora - это Java фреймворк общего назначения для написания серверных Java или Kotlin приложений с упором на Простоту, Производительность, Эффективность, Прозрачность.
@@ -81,14 +81,35 @@ Kora подразумевает ровно одно наиболее эффек�
 
 Kora предоставляет все необходимые для современной Java или Kotlin серверной разработки инструменты:
 
-- Внедрение и инверсию зависимостей посредствам аннотаций
+- Внедрение и инверсию зависимостей на этапе компиляции посредством [аннотаций](documentation/container.md)
 - Достаточно высокоуровневые простые абстракции и инструменты разработки
-- Прозрачное аспектно-ориентированное программирование посредствам аннотаций
-- Большой набор пред-сконфигурированных интеграций
-- Трассировка и метрики по `OpenTelemetry` стандарту и логирование всех модулей
+- Прозрачное аспектно-ориентированное программирование посредством аннотаций
+- Типобезопасную [конфигурацию](documentation/config.md) в формате `HOCON` или `YAML`
+- Большой набор пред-сконфигурированных интеграций:
+    - [HTTP сервер](documentation/http-server.md) на `Undertow` и декларативные [HTTP клиенты](documentation/http-client.md) на транспортах `JDK`, `OkHttp` или `Apache`
+    - [Репозитории](documentation/database-common.md) для [JDBC](documentation/database-jdbc.md) и [Cassandra](documentation/database-cassandra.md), а также [миграции схемы](documentation/database-migration.md) через `Flyway` или `Liquibase`
+    - Обмен сообщениями и удаленные вызовы: потребители и продюсеры [Kafka](documentation/kafka.md), [gRPC сервер](documentation/grpc-server.md) и [gRPC клиент](documentation/grpc-client.md), [SOAP клиент](documentation/soap-client.md), [S3 клиент](documentation/s3-client.md)
+    - Читатели и писатели [Json](documentation/json.md), создаваемые на этапе компиляции, и маппинг объектов через [MapStruct](documentation/mapstruct.md) или `Konvert`
+    - [Кеширование](documentation/cache.md) через `Caffeine` и `Redis`, а также [отказоустойчивость](documentation/resilient.md) с circuit breaker, retry, timeout, rate limiter и fallback
+    - Интеграции [планировщика задач](documentation/scheduling.md), [валидации](documentation/validation.md) и [Camunda](documentation/camunda7-bpmn.md)
+- Наблюдаемость, [трассировку](documentation/tracing.md) и [метрики](documentation/metrics.md) по стандарту `OpenTelemetry`, [логирование](documentation/logging-slf4j.md) и [пробы](documentation/probes.md) для всех модулей
 - Легкое и быстрое тестирование с помощью [JUnit5](documentation/junit5.md)
 - Простая документация с примерами, подкрепленная [примерами и руководствами рабочих сервисов](guides/home.md)
 
-## Начните с руководства
+## Требования { #requirements }
+
+Артефакты Kora публикуются в группе `io.koraframework` и собираются под `Java` `25`,
+поэтому `JDK` `25` - минимальная версия для компиляции и запуска приложения на Kora, независимо от языка.
+Приложения собираются `Gradle` `9.5+`, а для `Kotlin` проектов используются `Kotlin` `2.4.10` и `KSP` `2.3.11` -
+те же версии, с которыми собирается сам фреймворк.
+
+Версии зависимостей задаются через `BOM` `io.koraframework:kora-bom`, поэтому отдельные зависимости Kora объявляются без указания версии.
+Генерация кода включается обработчиком аннотаций `io.koraframework:annotation-processors` для `Java`
+и `KSP` обработчиком `io.koraframework:symbol-processors` для `Kotlin`.
+
+Точные требования к окружению и минимальный файл сборки описаны в разделах
+[Совместимость](documentation/general.md#compatibility) и [Система сборки](documentation/general.md#build-system).
+
+## Начните с руководства { #start-with-a-guide }
 
 Продолжите с руководства [Создание первого приложения на Kora](guides/getting-started.md), чтобы собрать минимальный HTTP-сервис и увидеть, как `@KoraApp`, `@Component`, `@HttpController` и `@HttpRoute` работают вместе в реальном проекте.

@@ -1,18 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Руководство по HTTP-серверу
 summary: Learn how to build your first Kora HTTP API step by step, from one controller method to a full CRUD service
+description: "Step-by-step Kora HTTP API: the io.koraframework:http-server-undertow module, UndertowPublicHttpServerModule, @HttpController and @HttpRoute routes, @Json request and response bodies, @Path and @Query binding, HttpResponseEntity and HttpServerResponse, HttpServerResponseException errors, a controller-service-repository split and the httpServer.port / httpServer.system.port configuration."
+agent:
+  use_when: "Use this file for questions about building a Kora REST API step by step: @HttpController, @HttpRoute, @Path, @Query, @Json DTOs, HttpResponseEntity, HttpServerResponse, HttpServerResponseException, UndertowPublicHttpServerModule, io.koraframework:http-server-undertow and json-common dependencies, httpServer.port and httpServer.system.port, readiness and liveness probes, and splitting a controller from a service and a repository."
 tags: http-server, rest-api, json, routing, beginner
 ---
 
 # Руководство по HTTP-серверу { #http-server-guide }
 
-Это руководство знакомит с основным процессом создания HTTP API в Kora. В нем разбирается, как `@HttpController` и `@HttpRoute` превращают методы Java в HTTP-конечные точки, как `@Json`, `@Path`
-и `@Query`
-связывают запросы с типизированным кодом приложения, и как явные API ответов и исключений дают каждому маршруту понятное HTTP-поведение. Вы также увидите, как граф зависимостей Kora, собираемый во
-время компиляции, соединяет
-контроллеры, прикладные сервисы, репозитории, преобразователи JSON, конфигурацию и сервер Undertow в одно запускаемое приложение.
+Это руководство знакомит с основным процессом создания HTTP API в Kora. В нем разбирается, как `@HttpController` и `@HttpRoute` превращают обычные методы в HTTP-конечные точки, как `@Json`, `@Path`
+и `@Query` связывают запросы с типизированным кодом приложения, и как явные API ответов и исключений дают каждому маршруту понятное HTTP-поведение. Вы также увидите, как граф зависимостей Kora,
+собираемый во время компиляции, соединяет контроллеры, прикладные сервисы, репозитории, преобразователи JSON, конфигурацию и сервер Undertow в одно запускаемое приложение.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -24,74 +25,81 @@ tags: http-server, rest-api, json, routing, beginner
 
 ## Что вы создадите { #youll-build }
 
-К концу руководства у вас будут:
+К концу руководства у вас будет:
 
 - `UserController` с CRUD-маршрутами
-- DTO запросов и ответов
-- хранящий данные в памяти `UserRepository`
-- `UserService`, который содержит прикладную логику
+- DTO запроса и ответа
+- `UserRepository` в памяти
+- `UserService` с прикладной логикой
 - публичный API на порту `8080`
-- приватный API управления на порту `8085`
+- системный API на порту `8085`
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- текстовый редактор или среда разработки
-- пройденное руководство [JSON Processing with Kora](json.md)
+- JDK 25 или новее
+- Gradle 9+
+- Текстовый редактор или IDE
+- Пройденное руководство [Работа с JSON в Kora](json.md)
+
+Артефакты Kora 2.0 собраны под Java 25, поэтому JDK, которым компилируется приложение, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
-!!! note "Обязательная основа"
+!!! note "Необходимая база"
 
-    Это руководство предполагает, что вы прошли **[JSON Processing with Kora](json.md)** и у вас есть рабочий проект Kora с доступным сопоставлением JSON DTO.
+    Руководство предполагает, что вы прошли **[Работа с JSON в Kora](json.md)** и у вас есть рабочий проект Kora с настроенным маппингом JSON-DTO.
 
-    Если вы еще не прошли руководство по JSON, сначала сделайте это, потому что оно уже опирается на начальное руководство и дает этому HTTP API нужные шаблоны сериализации JSON.
+    Если руководство по JSON еще не пройдено, начните с него: оно уже опирается на вводное руководство и дает этому HTTP API нужные приемы сериализации JSON.
 
 ## Обзор { #overview }
 
-HTTP-серверы Kora строятся вокруг простой идеи: обычные методы могут стать HTTP-конечными точками, когда их транспортный контракт объявлен явно. Вы пишете классы контроллеров, аннотируете маршруты и
-параметры, а Kora во время компиляции генерирует код обработки запросов.
+HTTP-серверы Kora ([HTTP](https://www.rfc-editor.org/rfc/rfc9110)) построены на простой идее: обычные методы становятся HTTP-конечными точками, если их транспортный контракт описан явно. Вы пишете
+классы-контроллеры, размечаете маршруты и параметры аннотациями, а Kora генерирует код обработки запроса во время компиляции.
 
-Это означает, что HTTP API в Kora строится не на низкоуровневом разборе запросов. Он строится на типизированных сигнатурах методов и аннотациях, которые описывают, как HTTP-данные сопоставляются с
-кодом приложения.
+Это значит, что HTTP API в Kora строится не из низкоуровневого разбора запроса, а из типизированных сигнатур методов и аннотаций, которые описывают, как HTTP-данные отображаются на код приложения.
 
 ### Контроллеры как транспортные адаптеры { #controllers-transport-adapters }
 
-Контроллер — это HTTP-граница приложения. Он должен понимать маршруты, тела запросов, переменные пути, параметры строки запроса, коды состояния и заголовки. Он не должен навсегда становиться местом,
-где живет каждое правило хранения или бизнес-правило. Именно поэтому это руководство постепенно разделяет ответственности контроллера, сервиса и репозитория.
+Контроллер — это HTTP-граница приложения. Он должен разбираться в маршрутах, телах запросов, переменных пути, параметрах строки запроса, кодах статуса и заголовках. Он не должен навсегда становиться
+местом, где живут все правила хранения и бизнес-логики. Поэтому руководство постепенно разделяет ответственность контроллера, сервиса и репозитория.
 
-Аннотации Kora описывают, как HTTP-данные входят в методы контроллера и выходят из них:
+Аннотации Kora описывают, как HTTP-данные попадают в методы контроллера и выходят из них:
 
 - `@HttpController` помечает класс как HTTP-контроллер
 - `@HttpRoute` объявляет HTTP-метод и путь
-- `@Json` сопоставляет JSON-тела запросов и ответов
-- `@Path` сопоставляет заполнители маршрута с параметрами метода
-- `@Query` сопоставляет значения строки запроса с параметрами метода
+- `@Json` связывает JSON-тела запроса и ответа
+- `@Path` отображает плейсхолдеры маршрута в параметры метода
+- `@Query` отображает значения строки запроса в параметры метода
+
+Обработка запросов **синхронная**. Undertow отправляет каждый запрос на виртуальный поток до того, как сгенерированный обработчик вызовет ваш метод, поэтому метод контроллера может свободно
+блокироваться: он возвращает результат напрямую и никогда не возвращает `CompletionStage`, `Mono`/`Flux` или `suspend`-функцию.
 
 ### Явное HTTP-поведение { #explicit-http-behavior }
 
-Простые методы могут возвращать DTO напрямую, но настоящим API часто нужно больше контроля. `HttpResponseEntity<T>` позволяет маршруту вернуть тело с конкретным кодом состояния или
-заголовками. `HttpServerResponse` полезен для ответов без JSON-тела, например `204 No Content`. `HttpServerResponseException` дает прямой способ завершить запрос понятной HTTP-ошибкой.
+Простые методы могут возвращать DTO напрямую, но реальным API часто нужен больший контроль. `HttpResponseEntity<T>` позволяет вернуть тело вместе с конкретным кодом статуса или заголовками.
+`HttpServerResponse` удобен для ответов без JSON-тела, например `204 No Content`. `HttpServerResponseException` дает прямой способ завершить запрос понятной HTTP-ошибкой.
 
-Эти типы сохраняют HTTP-поведение видимым в контроллере, а не прячут коды состояния внутри не относящегося к этому сервисного кода.
+Эти типы оставляют HTTP-поведение видимым в контроллере, а не прячут коды статуса внутри посторонней логики сервисов.
 
 ### Слои приложения { #application-layers }
 
-Руководство начинается с одного метода контроллера, затем вводит хранение данных и прикладную логику как отдельные ответственности. Репозиторий отвечает за доступ к данным. Сервис отвечает за
-прикладное поведение. Контроллер отвечает за HTTP-представление. Это разделение намеренно небольшое, но именно такую форму позже переиспользуют руководства по базам данных, проверке данных,
-кешированию, устойчивости и наблюдаемости.
+Руководство начинается с одного метода контроллера, а затем выделяет хранение и прикладную логику в отдельные обязанности. Репозиторий владеет доступом к данным. Сервис владеет прикладным поведением.
+Контроллер владеет HTTP-представлением. Разделение намеренно небольшое, но это та же форма, которую переиспользуют последующие руководства по базам данных, валидации, кэшированию, отказоустойчивости
+и наблюдаемости.
 
-Практический путь такой:
+Практический порядок такой:
 
-1. добавить модули HTTP-сервера и JSON
-2. создать DTO запросов и ответов
+1. подключить модули HTTP-сервера и JSON
+2. создать DTO запроса и ответа
 3. открыть первый JSON-маршрут
-4. добавить сопоставление параметров пути и строки запроса
+4. добавить маппинг параметров пути и строки запроса
 5. ввести слои репозитория и сервиса
 6. возвращать явные статусы, заголовки и HTTP-ошибки
 
 ## Зависимости { #dependencies }
+
+HTTP-сервер живет в модуле `http-server-undertow`, а поддержка JSON — в `json-common`. Оба модуля относятся к Kora, поэтому их версии берутся из платформы `io.koraframework:kora-bom`, а не пишутся
+в каждой строке.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -99,14 +107,23 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
     ```groovy
     dependencies {
-        // ... existing dependencies ...
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        annotationProcessor "io.koraframework:annotation-processors" //(2)!
+
+        implementation "io.koraframework:config-hocon" //(3)!
+        implementation "io.koraframework:http-server-undertow" //(4)!
+        implementation "io.koraframework:json-common" //(5)!
+        implementation "io.koraframework:logging-logback" //(6)!
     }
     ```
+
+    1.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
+    2.  Аннотационный процессор Kora: генерирует граф приложения, модули контроллеров и JSON-читатели/писатели во время компиляции.
+    3.  Чтение конфигурации HOCON из `application.conf`.
+    4.  Транспорт HTTP-сервера Undertow.
+    5.  Инфраструктура JSON времени компиляции.
+    6.  Реализация логирования Logback, встроенная в граф Kora.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -114,37 +131,49 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
     ```kotlin
     dependencies {
-        // ... existing dependencies ...
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+
+        implementation("io.koraframework:config-hocon") //(3)!
+        implementation("io.koraframework:http-server-undertow") //(4)!
+        implementation("io.koraframework:json-common") //(5)!
+        implementation("io.koraframework:logging-logback") //(6)!
     }
     ```
 
+    1.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
+    2.  KSP-процессор Kora: генерирует граф приложения, модули контроллеров и JSON-читатели/писатели во время компиляции.
+    3.  Чтение конфигурации HOCON из `application.conf`.
+    4.  Транспорт HTTP-сервера Undertow.
+    5.  Инфраструктура JSON времени компиляции.
+    6.  Реализация логирования Logback, встроенная в граф Kora.
+
 ## Модули { #modules }
+
+`UndertowPublicHttpServerModule` — модуль, который нужно подключить приложению с бизнес-эндпоинтами. Он наследует `UndertowSystemHttpServerModule`, поэтому одно наследование дает сразу два сервера
+в одном процессе: публичный на `httpServer.port` и системный на `httpServer.system.port`, который отвечает на запросы readiness, liveness и метрик.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/httpserver/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/httpserver/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver;
+    package io.koraframework.guide.httpserver;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            UndertowHttpServerModule {  // <----- Подключили модуль
+            UndertowPublicHttpServerModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -154,24 +183,24 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/httpserver/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver
+    package io.koraframework.guide.httpserver
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        UndertowHttpServerModule  // <----- Подключили модуль
+        UndertowPublicHttpServerModule  // <----- Connected module
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -180,28 +209,28 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
 ## DTO { #dto }
 
-Прежде чем добавлять маршруты, нам нужны формы данных, которые мы хотим принимать и возвращать.
+Прежде чем добавлять маршрут, нужно описать формы данных, которые мы хотим принимать и возвращать.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/dto/UserRequest.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/dto/UserRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.dto;
+    package io.koraframework.guide.httpserver.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserRequest(String name, String email) {}
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/dto/UserResponse.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/dto/UserResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.dto;
+    package io.koraframework.guide.httpserver.dto;
 
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserResponse(String id, String name, String email, LocalDateTime createdAt) {}
@@ -209,12 +238,12 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/dto/UserRequest.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/dto/UserRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.dto
+    package io.koraframework.guide.httpserver.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class UserRequest(
@@ -223,13 +252,13 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
     )
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/dto/UserResponse.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/dto/UserResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.dto
+    package io.koraframework.guide.httpserver.dto
 
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Json
     data class UserResponse(
@@ -240,32 +269,32 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
     )
     ```
 
-`UserRequest` представляет входящий JSON от клиента.
+`UserRequest` описывает входящий JSON от клиента.
 
-`UserResponse` представляет JSON, который ваш API отправляет обратно.
+`UserResponse` описывает JSON, который ваш API отдает обратно.
 
-Начинать с DTO удобно, потому что сигнатура контроллера уже получает устойчивые именованные типы вместо безымянных словарей или сырых строк.
+Начинать с DTO удобно: сигнатура контроллера сразу получает стабильные именованные типы вместо безымянных словарей и «сырых» строк.
 
 ## Создание пользователя { #create-user }
 
-Теперь создадим первый контроллер и первый маршрут. На этом этапе мы **пока не будем** ничего сохранять. Цель этого шага — понять, как Kora сопоставляет HTTP-запрос с методом контроллера.
+Теперь создадим первый контроллер и первый маршрут. На этом шаге мы **ничего** не сохраняем. Цель — понять, как Kora отображает HTTP-запрос на метод контроллера.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/controller/UserController.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/controller/UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
     import java.time.LocalDateTime;
     import java.util.UUID;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -286,20 +315,20 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/controller/UserController.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/controller/UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
     import java.util.UUID
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -325,20 +354,20 @@ HTTP-серверы Kora строятся вокруг простой идеи: 
   Kora должна создать этот класс и поместить его в граф зависимостей.
 
 - `@HttpController`
-  Этот класс содержит HTTP-маршруты. Kora сканирует его и генерирует связку HTTP-обработчиков.
+  Класс содержит HTTP-маршруты. Kora сканирует его и генерирует обвязку HTTP-обработчиков.
 
 - `@HttpRoute(method = HttpMethod.POST, path = "/users")`
-  Этот метод должен обрабатывать `POST /users`.
+  Метод обрабатывает `POST /users`. В `HttpMethod` лежат стандартные имена HTTP-методов в виде строковых констант.
 
 - `@Json` на методе
-  Kora должна использовать преобразователь данных со специальной меткой `@Json`, чтобы сериализовать возвращаемое значение в JSON.
+  Kora использует преобразователь данных со специальным тегом `@Json`, чтобы сериализовать возвращаемое значение в JSON.
 
 - `@Json` на параметре
-  Kora должна использовать преобразователь данных со специальной меткой `@Json`, чтобы десериализовать тело запроса из JSON в `UserRequest`.
+  Kora использует преобразователь данных со специальным тегом `@Json`, чтобы десериализовать тело запроса из JSON в `UserRequest`.
 
-На этом этапе маршрут уже ощущается как настоящий API, но он еще ничего не запоминает. Каждый вызов создает новый объект ответа и сразу возвращает его.
+На этом этапе маршрут уже похож на настоящий API, но он ничего не запоминает. Каждый вызов создает новый объект ответа и сразу его возвращает.
 
-Попробуйте:
+Проверьте:
 
 ```bash
 curl -X POST http://localhost:8080/users \
@@ -348,28 +377,28 @@ curl -X POST http://localhost:8080/users \
 
 ## Получение пользователя { #get-user }
 
-Следующий естественный маршрут — `getUser`. Но как только мы добавляем его, мы сталкиваемся с важным вопросом проектирования: где живут пользователи после того, как `createUser` вернул ответ?
+Следующий естественный маршрут — `getUser`. Но как только мы его добавляем, возникает важный вопрос проектирования: где живут пользователи после того, как `createUser` вернул ответ?
 
-Пока мы добавим маршрут и намеренно вернем `404`, чтобы показать, что контроллер уже умеет выражать сбой на уровне HTTP.
+Пока что добавим маршрут и намеренно вернем `404`, чтобы показать, что контроллер уже умеет выражать отказ на уровне HTTP.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Обновите `UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
     import java.time.LocalDateTime;
     import java.util.UUID;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -389,7 +418,7 @@ curl -X POST http://localhost:8080/users \
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
         public UserResponse getUser(@Path String userId) {
-            throw HttpServerResponseException.of(404, "User not found");
+            throw HttpServerResponseException.of(404, "User not found: " + userId);
         }
     }
     ```
@@ -399,19 +428,19 @@ curl -X POST http://localhost:8080/users \
     Обновите `UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
     import java.util.UUID
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -432,7 +461,7 @@ curl -X POST http://localhost:8080/users \
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
         fun getUser(@Path userId: String): UserResponse {
-            throw HttpServerResponseException.of(404, "User not found")
+            throw HttpServerResponseException.of(404, "User not found: $userId")
         }
     }
     ```
@@ -443,30 +472,29 @@ curl -X POST http://localhost:8080/users \
   Kora берет часть `{userId}` из пути маршрута и передает ее в метод.
 
 - `HttpServerResponseException`
-  Это простой способ сказать: «этот запрос должен завершиться такой HTTP-ошибкой».
+  Простой способ сказать «этот запрос должен завершиться такой HTTP-ошибкой». Само исключение является `HttpServerResponse`, поэтому сервер пишет его статус и тело без дополнительного преобразования.
 
-Этот шаг намеренно неполный. Теперь у нас достаточно поведения контроллера, чтобы увидеть, зачем нужна отдельная абстракция хранения.
+Шаг намеренно неполный. Теперь поведения контроллера достаточно, чтобы увидеть, зачем нужна отдельная абстракция хранения.
 
 ## Репозиторий пользователей { #user-repository }
 
-Теперь добавим слой репозитория. Репозиторий отвечает за сохранение и получение данных. В этом руководстве мы используем хранящую данные в памяти карту, потому что так пример проще запускать, но сама
-абстракция
-позже позволит нам перейти на настоящую базу данных.
+Теперь добавим слой репозитория. Репозиторий отвечает за сохранение и получение данных. В этом руководстве используется словарь в памяти — так пример проще запускать, — но сама абстракция позже
+позволит перейти на настоящую базу данных.
 
-Сначала нам нужны только две операции:
+Сначала нужны всего две операции:
 
 - сохранить пользователя
-- получить пользователя по идентификатору
+- получить пользователя по ID
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/repository/UserRepository.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/repository/UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.util.Optional;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     public interface UserRepository {
 
@@ -476,18 +504,18 @@ curl -X POST http://localhost:8080/users \
     }
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/repository/InMemoryUserRepository.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/repository/InMemoryUserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.time.LocalDateTime;
     import java.util.Map;
     import java.util.Optional;
     import java.util.concurrent.ConcurrentHashMap;
     import java.util.concurrent.atomic.AtomicLong;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     @Component
     public final class InMemoryUserRepository implements UserRepository {
@@ -511,12 +539,12 @@ curl -X POST http://localhost:8080/users \
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/repository/UserRepository.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/repository/UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.dto.UserResponse
 
     interface UserRepository {
         fun save(name: String, email: String): String
@@ -524,16 +552,16 @@ curl -X POST http://localhost:8080/users \
     }
     ```
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/repository/InMemoryUserRepository.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/repository/InMemoryUserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserResponse
     import java.time.LocalDateTime
     import java.util.concurrent.ConcurrentHashMap
     import java.util.concurrent.atomic.AtomicLong
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
 
     @Component
     class InMemoryUserRepository : UserRepository {
@@ -551,30 +579,31 @@ curl -X POST http://localhost:8080/users \
     }
     ```
 
-Репозиторий ничего не знает об HTTP. Он знает только, как сохранять и загружать данные пользователей. Такое разделение важно, потому что задачи хранения и задачи HTTP меняются по разным причинам.
+Репозиторий ничего не знает про HTTP. Он умеет только сохранять и загружать данные пользователя. Это разделение важно, потому что задачи хранения и задачи HTTP меняются по разным причинам.
+
+Поскольку каждый запрос выполняется на своем виртуальном потоке, хранилище в памяти — это разделяемое состояние: `ConcurrentHashMap` и `AtomicLong` выбраны намеренно вместо небезопасных аналогов.
 
 ## Контроллер к репозиторию { #controller-repository }
 
-Теперь, когда у нас есть хранилище, можно вернуться к контроллеру и заставить `createUser` и `getUser` действительно работать вместе.
+Теперь, когда есть хранилище, вернемся к контроллеру и заставим `createUser` и `getUser` работать вместе.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Обновите `UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
-    import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.repository.UserRepository;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -598,7 +627,7 @@ curl -X POST http://localhost:8080/users \
         @Json
         public UserResponse getUser(@Path String userId) {
             return userRepository.findById(userId)
-                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found"));
+                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found: " + userId));
         }
     }
     ```
@@ -608,18 +637,18 @@ curl -X POST http://localhost:8080/users \
     Обновите `UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.repository.UserRepository
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -639,34 +668,37 @@ curl -X POST http://localhost:8080/users \
         @Json
         fun getUser(@Path userId: String): UserResponse {
             return userRepository.findById(userId)
-                ?: throw HttpServerResponseException.of(404, "User not found")
+                ?: throw HttpServerResponseException.of(404, "User not found: $userId")
         }
     }
     ```
 
-Это первый момент, когда API становится сохраняющим состояние. Теперь можно вызвать `createUser`, получить идентификатор и затем использовать этот идентификатор в `getUser`.
+Это первый момент, когда API становится stateful. Теперь можно вызвать `createUser`, получить ID и использовать его в `getUser`.
+
+`UserRepository` — интерфейс, а `InMemoryUserRepository` — реализующий его `@Component`. Контроллер запрашивает в конструкторе интерфейс, и Kora разрешает это ребро графа во время компиляции: если бы
+реализации не было, сборка упала бы с `No component found for dependency`, а не в рантайме.
 
 ## CRUD репозиторий { #crud-repository }
 
-API уже работает для создания и получения. Прежде чем добавлять новые HTTP-маршруты, сначала сделаем абстракцию хранения способной выполнить полный CRUD-поток:
+API уже умеет создавать и получать. Прежде чем добавлять новые HTTP-маршруты, сделаем абстракцию хранения способной на полный CRUD:
 
-- получить список пользователей
-- обновлять пользователей
-- удалять пользователей
+- список пользователей
+- обновление пользователей
+- удаление пользователей
 
-Так репозиторий остается сосредоточенным только на операциях хранения. Контроллер начнет использовать эти операции в следующем разделе, после того как мы введем сервисный слой между
-HTTP-маршрутизацией и хранением.
+Так репозиторий остается сосредоточен только на операциях хранения. Контроллер начнет использовать эти операции в следующем разделе, после того как между HTTP-маршрутизацией и хранением появится
+сервисный слой.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Расширьте `UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     public interface UserRepository {
 
@@ -685,7 +717,7 @@ HTTP-маршрутизацией и хранением.
     Расширьте `InMemoryUserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.time.LocalDateTime;
     import java.util.ArrayList;
@@ -694,8 +726,8 @@ HTTP-маршрутизацией и хранением.
     import java.util.Optional;
     import java.util.concurrent.ConcurrentHashMap;
     import java.util.concurrent.atomic.AtomicLong;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     @Component
     public final class InMemoryUserRepository implements UserRepository {
@@ -738,9 +770,9 @@ HTTP-маршрутизацией и хранением.
     Расширьте `UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.dto.UserResponse
 
     interface UserRepository {
         fun findAll(): List<UserResponse>
@@ -754,13 +786,13 @@ HTTP-маршрутизацией и хранением.
     Расширьте `InMemoryUserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserResponse
     import java.time.LocalDateTime
     import java.util.concurrent.ConcurrentHashMap
     import java.util.concurrent.atomic.AtomicLong
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
 
     @Component
     class InMemoryUserRepository : UserRepository {
@@ -779,47 +811,45 @@ HTTP-маршрутизацией и хранением.
         }
 
         override fun update(id: String, name: String, email: String): Boolean {
-            val current = users[id] ?: return false
-            users[id] = UserResponse(id, name, email, current.createdAt)
-            return true
+            return users.computeIfPresent(id) { key, current -> UserResponse(key, name, email, current.createdAt) } != null
         }
 
         override fun deleteById(id: String): Boolean = users.remove(id) != null
     }
     ```
 
-На этом этапе репозиторий умеет хранить, выводить список, обновлять и удалять пользователей, но HTTP API все еще открывает только маршруты из предыдущего раздела. Дальше мы добавим сервисный слой и
-затем подключим полное CRUD-поведение к контроллеру.
+На этом этапе репозиторий умеет сохранять, перечислять, обновлять и удалять пользователей, но HTTP API по-прежнему открывает только маршруты из предыдущего раздела. Дальше добавим сервисный слой,
+а затем подключим к контроллеру полное CRUD-поведение.
 
 ## Сервисный слой { #service-layer }
 
-Во многих приложениях контроллер считается слоем представления, а сервисный слой содержит прикладную логику. Это особенно часто встречается в приложениях в стиле MVC и в сервисах, которые позже
+Во многих приложениях контроллер считают слоем представления, а прикладная логика живет в сервисном слое. Это особенно характерно для приложений в стиле MVC и для сервисов, которые со временем
 обрастают правилами, интеграциями и точками переиспользования.
 
-Теперь в репозитории есть все операции хранения, которые нужны API. Сервисный слой превращает эти операции в прикладное поведение:
+В репозитории уже есть все операции хранения, нужные API. Сервисный слой превращает их в прикладное поведение:
 
-- создает пользователей из DTO запросов
-- сортирует и разбивает список в памяти на страницы
-- сопоставляет результаты обновления и удаления из репозитория с бизнес-ошибками
+- создает пользователей из DTO запроса
+- сортирует и разбивает на страницы список из памяти
+- превращает результаты обновления и удаления в бизнес-ошибки
 
-После этого контроллер может оставаться сосредоточенным на HTTP-маршрутизации, привязке запросов, кодах ответов и заголовках.
+После этого контроллер может сосредоточиться на HTTP-маршрутизации, связывании запроса, кодах ответа и заголовках.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/httpserver/service/UserService.java`:
+    Создайте `src/main/java/io/koraframework/guide/httpserver/service/UserService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.service;
+    package io.koraframework.guide.httpserver.service;
 
     import java.time.LocalDateTime;
     import java.util.Comparator;
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.repository.UserRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class UserService {
@@ -850,7 +880,7 @@ HTTP-маршрутизацией и хранением.
         public UserResponse updateUser(String id, UserRequest request) {
             boolean updated = userRepository.update(id, request.name(), request.email());
             if (!updated) {
-                throw HttpServerResponseException.of(404, "User not found");
+                throw HttpServerResponseException.of(404, "User not found: " + id);
             }
             return new UserResponse(id, request.name(), request.email(), LocalDateTime.now());
         }
@@ -858,7 +888,7 @@ HTTP-маршрутизацией и хранением.
         public void deleteUser(String id) {
             boolean deleted = userRepository.deleteById(id);
             if (!deleted) {
-                throw HttpServerResponseException.of(404, "User not found");
+                throw HttpServerResponseException.of(404, "User not found: " + id);
             }
         }
 
@@ -875,17 +905,17 @@ HTTP-маршрутизацией и хранением.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/service/UserService.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/httpserver/service/UserService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.service
+    package io.koraframework.guide.httpserver.service
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.repository.UserRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
 
     @Component
     class UserService(
@@ -899,76 +929,77 @@ HTTP-маршрутизацией и хранением.
 
         fun getUser(id: String): UserResponse? = userRepository.findById(id)
 
-        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> {
-            return userRepository.findAll()
+        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> =
+            userRepository.findAll()
                 .sortedWith(getComparator(sort))
                 .drop(page * size)
                 .take(size)
-        }
 
         fun updateUser(id: String, request: UserRequest): UserResponse {
-            val updated = userRepository.update(id, request.name, request.email)
-            if (!updated) {
-                throw HttpServerResponseException.of(404, "User not found")
+            if (!userRepository.update(id, request.name, request.email)) {
+                throw HttpServerResponseException.of(404, "User not found: $id")
             }
             return UserResponse(id, request.name, request.email, LocalDateTime.now())
         }
 
         fun deleteUser(id: String) {
-            val deleted = userRepository.deleteById(id)
-            if (!deleted) {
-                throw HttpServerResponseException.of(404, "User not found")
+            if (!userRepository.deleteById(id)) {
+                throw HttpServerResponseException.of(404, "User not found: $id")
             }
         }
 
-        private fun getComparator(sort: String): Comparator<UserResponse> {
-            return when (sort.lowercase()) {
-                "name" -> compareBy(UserResponse::name)
-                "email" -> compareBy(UserResponse::email)
-                "createdat" -> compareBy(UserResponse::createdAt)
-                else -> compareBy(UserResponse::name)
-            }
+        private fun getComparator(sort: String): Comparator<UserResponse> = when (sort.lowercase()) {
+            "name" -> compareBy { it.name }
+            "email" -> compareBy { it.email }
+            "createdat" -> compareBy { it.createdAt }
+            else -> compareBy { it.name }
         }
     }
     ```
 
+`UserService` бросает `HttpServerResponseException` для «не найдено», чтобы руководство оставалось коротким. В более крупном приложении сервис обычно бросал бы доменное исключение, а один глобальный
+перехватчик переводил бы его в HTTP-статус — именно это строит следующее руководство [Продвинутый HTTP-сервер](http-server-advanced.md).
+
 ## Контроллер и сервис { #controller-service }
 
-Теперь контроллер может открыть полный CRUD API, не владея хранением данных или прикладной логикой. Он принимает HTTP-запросы, привязывает параметры маршрута и строки запроса, делегирует
-работу `UserService` и выбирает форму HTTP-ответа для каждого маршрута.
+Теперь контроллер может открыть полный CRUD API, не владея ни хранением, ни прикладной логикой. Он принимает HTTP-запросы, связывает параметры маршрута и строки запроса, делегирует работу
+`UserService` и выбирает форму HTTP-ответа для каждого маршрута.
 
-Этот шаг также добавляет оставшиеся HTTP-специфичные части:
+На этом шаге добавляются оставшиеся HTTP-специфичные элементы:
 
-- `@Query` сопоставляет значения строки запроса, например `?page=0&size=10&sort=name`, с параметрами контроллера
-- `@Nullable` помечает необязательные параметры строки запроса
-- `HttpResponseEntity<T>` возвращает JSON-тело вместе с явным кодом состояния или заголовками
+- `@Query` отображает значения строки запроса вида `?page=0&size=10&sort=name` в параметры контроллера
+- nullable-тип параметра помечает необязательный параметр строки запроса
+- `HttpResponseEntity<T>` возвращает JSON-тело вместе с явным кодом статуса или заголовками
 - `HttpServerResponse` возвращает ответы без JSON-тела, например `204 No Content`
+
+В Java необязательные параметры помечаются JSpecify-аннотацией `@Nullable` из `org.jspecify.annotations`; в Kotlin достаточно `?` в типе параметра, никакой аннотации не нужно. Параметр `@Query`,
+который не является ни nullable, ни `Optional`, считается обязательным, и запрос без него получает `400` еще до вызова метода контроллера.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Перепишите `UserController.java`, чтобы он делегировал работу сервису:
+    Перепишите `UserController.java` так, чтобы он делегировал работу сервису:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.time.Instant;
     import java.util.List;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.service.UserService;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.HttpResponseEntity;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.common.annotation.Query;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.common.header.HttpHeaders;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.service.UserService;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.HttpResponseEntity;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.common.annotation.Query;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.common.header.HttpHeaders;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponse;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -984,7 +1015,7 @@ HTTP-маршрутизацией и хранением.
         @Json
         public UserResponse getUser(@Path String userId) {
             return userService.getUser(userId)
-                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found"));
+                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found: " + userId));
         }
 
         @HttpRoute(method = HttpMethod.GET, path = "/users")
@@ -1023,28 +1054,27 @@ HTTP-маршрутизацией и хранением.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Перепишите `UserController.kt`, чтобы он делегировал работу сервису:
+    Перепишите `UserController.kt` так, чтобы он делегировал работу сервису:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
-    import jakarta.annotation.Nullable
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.service.UserService
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.HttpResponseEntity
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.common.annotation.Query
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.common.header.HttpHeaders
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponse
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
     import java.time.Instant
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.service.UserService
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.HttpResponseEntity
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.common.annotation.Query
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.common.header.HttpHeaders
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -1054,37 +1084,31 @@ HTTP-маршрутизацией и хранением.
 
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
-        fun getUser(@Path userId: String): UserResponse {
-            return userService.getUser(userId)
-                ?: throw HttpServerResponseException.of(404, "User not found")
-        }
+        fun getUser(@Path userId: String): UserResponse =
+            userService.getUser(userId) ?: throw HttpServerResponseException.of(404, "User not found: $userId")
 
         @HttpRoute(method = HttpMethod.GET, path = "/users")
         @Json
         fun getUsers(
-            @Nullable @Query("page") page: Int?,
-            @Nullable @Query("size") size: Int?,
-            @Nullable @Query("sort") sort: String?
-        ): List<UserResponse> {
-            val pageNum = page ?: 0
-            val pageSize = size ?: 10
-            val sortBy = sort ?: "name"
-            return userService.getUsers(pageNum, pageSize, sortBy)
-        }
+            @Query("page") page: Int?,
+            @Query("size") size: Int?,
+            @Query("sort") sort: String?
+        ): List<UserResponse> =
+            userService.getUsers(page ?: 0, size ?: 10, sort ?: "name")
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
         @Json
-        fun createUser(@Json request: UserRequest): HttpResponseEntity<UserResponse> {
-            val user = userService.createUser(request)
-            return HttpResponseEntity.of(201, HttpHeaders.of(), user)
-        }
+        fun createUser(@Json request: UserRequest): HttpResponseEntity<UserResponse> =
+            HttpResponseEntity.of(201, HttpHeaders.of(), userService.createUser(request))
 
         @HttpRoute(method = HttpMethod.PUT, path = "/users/{userId}")
         @Json
-        fun updateUser(@Path userId: String, @Json request: UserRequest): HttpResponseEntity<UserResponse> {
-            val updated = userService.updateUser(userId, request)
-            return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
-        }
+        fun updateUser(@Path userId: String, @Json request: UserRequest): HttpResponseEntity<UserResponse> =
+            HttpResponseEntity.of(
+                200,
+                HttpHeaders.of("X-Updated-At", Instant.now().toString()),
+                userService.updateUser(userId, request)
+            )
 
         @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
         fun deleteUser(@Path userId: String): HttpServerResponse {
@@ -1094,70 +1118,78 @@ HTTP-маршрутизацией и хранением.
     }
     ```
 
-Это финальная структура, которую использует запускаемое сопровождающее приложение. Поведение не изменилось, но архитектура стала чище:
+Это финальная структура, которую использует готовое приложение-спутник. Поведение не изменилось, но архитектура стала чище:
 
 - контроллер = HTTP-представление
 - репозиторий = абстракция хранения
 - сервис = прикладная логика
 
+Обратите внимание, как тип возвращаемого значения каждого маршрута определяет, какой преобразователь Kora ищет во время компиляции:
+
+- `UserResponse` и `List<UserResponse>` с `@Json` требуют `JsonWriter` для типа, который генерирует `@Json` на DTO
+- `HttpResponseEntity<UserResponse>` переиспользует тот же JSON-писатель и добавляет сверху код статуса и заголовки
+- `HttpServerResponse` возвращается как есть и вообще не нуждается в преобразователе
+
 ## Конфигурация { #config }
 
-Теперь, когда структура приложения готова, можно подключить саму конфигурацию HTTP-сервера.
+Теперь, когда структура приложения на месте, можно настроить сам HTTP-сервер.
 
 Создайте или обновите `src/main/resources/application.conf`:
 
-Полный справочник по конфигурации смотрите в [HTTP-сервер](../documentation/http-server.md) и [журналирование SLF4J](../documentation/logging-slf4j.md).
+Полный справочник по конфигурации — в [HTTP-сервере](../documentation/http-server.md#configuration) и [Logging SLF4J](../documentation/logging-slf4j.md).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
+      port = 8080 //(1)!
+      system.port = 8085 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
     logging {
       levels {
         "ROOT": "WARN" //(4)!
-        "ru.tinkoff.kora": "INFO" //(5)!
+        "io.koraframework": "INFO" //(5)!
       }
     }
     ```
 
-    1. Публичный HTTP-порт по умолчанию, используемый конечными точками приложения.
-    2. Приватный HTTP-порт по умолчанию, используемый пробами, метриками и конечными точками управления.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Уровень логирования для `ROOT`.
-    5. Уровень логирования для `ru.tinkoff.kora`.
+    1.  Публичный HTTP-порт для эндпоинтов приложения (по умолчанию: `8080`).
+    2.  Системный HTTP-порт для проб, метрик и служебных эндпоинтов (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Уровень логирования корневого логгера.
+    5.  Уровень логирования логгеров фреймворка Kora.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
+      port: 8080 #(1)!
+      system:
+        port: 8085 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     logging:
       levels:
         ROOT: "WARN" #(4)!
-        "ru.tinkoff.kora": "INFO" #(5)!
+        "io.koraframework": "INFO" #(5)!
     ```
 
-    1. Публичный HTTP-порт по умолчанию, используемый конечными точками приложения.
-    2. Приватный HTTP-порт по умолчанию, используемый пробами, метриками и конечными точками управления.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Уровень логирования для `ROOT`.
-    5. Уровень логирования для `ru.tinkoff.kora`.
+    1.  Публичный HTTP-порт для эндпоинтов приложения (по умолчанию: `8080`).
+    2.  Системный HTTP-порт для проб, метрик и служебных эндпоинтов (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Уровень логирования корневого логгера.
+    5.  Уровень логирования логгеров фреймворка Kora.
 
-Это дает два порта:
+Так вы получаете два порта:
 
-- `8080` для основного API приложения
-- `8085` для конечных точек управления, таких как готовность и живучесть
+- `8080` — основной API приложения
+- `8085` — системные эндпоинты, такие как readiness и liveness
 
-Такое разделение полезно в настоящих системах, потому что проверки состояния и эксплуатационные конечные точки обычно держат отдельно от публичного бизнес-трафика.
+Такое разделение полезно в реальных системах, потому что проверки здоровья и эксплуатационные эндпоинты обычно отделяют от публичного бизнес-трафика. Оба ключа уже имеют эти значения по умолчанию,
+поэтому приложение запускается и вовсе без `application.conf`; файл становится нужен, как только требуется перенести порт, поднять уровень логирования или прочитать значение из переменной окружения.
 
 ## Проверка приложения { #check-app }
 
@@ -1166,6 +1198,9 @@ HTTP-маршрутизацией и хранением.
 ./gradlew test
 ./gradlew run
 ```
+
+`classes` — осмысленная первая проверка в Kora: она запускает аннотационный процессор или KSP, генерирует модуль контроллера и граф приложения и падает во время компиляции, если маршрут или
+зависимость не удается связать.
 
 Проверки публичного API:
 
@@ -1184,72 +1219,91 @@ curl -X PUT http://localhost:8080/users/1 \
 curl -X DELETE http://localhost:8080/users/1
 ```
 
-Проверки приватного API:
+Проверки системного API:
 
 ```bash
 curl http://localhost:8085/system/readiness
+# Expected output: OK
 curl http://localhost:8085/system/liveness
+# Expected output: OK
 ```
 
 ## Лучшие практики { #best-practices }
 
-- Держите методы контроллера тонкими, когда проект перерастает простые обработчики.
+- Держите методы контроллера тонкими, как только проект выходит за рамки тривиальных обработчиков.
 - Используйте репозитории для задач хранения, а сервисы — для прикладной логики.
-- Используйте `HttpResponseEntity`, когда нужны явные коды состояния или заголовки.
-- Выбрасывайте `HttpServerResponseException`, когда контроллеру или сервису нужно показать чистую HTTP-ошибку.
+- Используйте `HttpResponseEntity`, когда нужны явные коды статуса или заголовки.
+- Бросайте `HttpServerResponseException`, когда контроллеру или сервису нужно вернуть чистую HTTP-ошибку.
+- Держите методы контроллера синхронными и позволяйте виртуальным потокам Undertow нести блокирующую работу.
+- Защищайте любое состояние, разделяемое между запросами, потому что параллельные запросы выполняются на разных потоках.
 
 ## Итоги { #summary }
 
-Вы постепенно построили HTTP API на Kora:
+Вы построили HTTP API на Kora постепенно:
 
-- сначала один маршрут без постоянного хранения
+- сначала один маршрут без хранения
 - затем второй маршрут, который показал необходимость хранилища
 - затем абстракцию репозитория с реализацией в памяти
 - затем контракт репозитория, расширенный до полного CRUD
-- и наконец сервисный слой плюс маршруты контроллера, которые открывают полный API
+- и, наконец, сервисный слой и маршруты контроллера, открывающие полный API
 
 ## Ключевые понятия { #key-concepts }
 
-- HTTP-маршрутизация Kora с `@HttpRoute`
-- сопоставление JSON-запросов и JSON-ответов через `@Json`
-- сопоставление запросов через `@Path` и `@Query`
-- управление ответами через `HttpResponseEntity`
+- маршрутизация HTTP в Kora через `@HttpRoute`
+- маппинг JSON запроса и ответа через `@Json`
+- связывание запроса через `@Path` и `@Query`
+- контроль ответа через `HttpResponseEntity`
 - сигнализация HTTP-ошибок через `HttpServerResponseException`
-- разные ответственности контроллера, репозитория и сервиса
+- разные обязанности контроллера, репозитория и сервиса
+- один процесс, два HTTP-сервера: публичный и системный
 
 ## Устранение неполадок { #troubleshooting }
 
-**Сервер не запускается:**
+**Сервер не стартует:**
 
 - Проверьте доступность портов `8080` и `8085`.
-- Убедитесь, что `Application` включает `UndertowHttpServerModule` и `HoconConfigModule`.
+- Убедитесь, что `Application` подключает `UndertowPublicHttpServerModule` и `HoconConfigModule`.
+
+**Компиляция падает с `No component found for dependency`:**
+
+- Типа, указанного в сообщении, нет в графе. Добавьте `@Component` его реализации или предоставьте его методом модуля.
+- Частый случай — забытый `@Component` на `InMemoryUserRepository` или `UserService`.
+
+**Компиляция падает с `JsonWriter<T> was not found`:**
+
+- DTO, возвращаемое маршрутом, не помечено `@Json`, поэтому писатель для него не сгенерирован.
 
 **`getUser` всегда возвращает 404:**
 
-- Проверьте, что `createUser` и `getUser` уже подключены к слою репозитория.
-- Убедитесь, что вызываете `getUser` с идентификатором, который действительно вернул `createUser`.
+- Проверьте, что `createUser` и `getUser` уже связаны со слоем репозитория.
+- Убедитесь, что вызываете `getUser` с тем ID, который реально вернул `createUser`.
 
-**Необязательные параметры строки запроса обрабатываются неправильно:**
+**Необязательные параметры строки запроса обрабатываются неверно:**
 
-- В Java используйте nullable-обертки с `@Nullable @Query`, например `Integer` и `String`.
-- Избегайте `Optional<T>` в параметрах строки запроса контроллера.
+- В Java используйте nullable-обертки с `@Nullable @Query`, например `Integer` и `String`, и импортируйте `@Nullable` из `org.jspecify.annotations`.
+- В Kotlin объявляйте тип параметра nullable, например `page: Int?`.
+- Отсутствующий обязательный параметр строки запроса получает `400` еще до вызова метода.
 
-**Сборка зависает или неожиданно падает:**
+**Сборка Kotlin падает с `Suspend methods are not supported by the HTTP server controller generator`:**
 
-- Выполните `./gradlew --stop`, затем повторите.
+- Уберите `suspend` из метода контроллера. HTTP-обработчики Kora синхронные и уже выполняются на виртуальном потоке.
+
+**Сборка зависает или падает неожиданно:**
+
+- Выполните `./gradlew --stop` и повторите.
 
 ## Что дальше? { #whats-next }
 
-- [JSON Processing](json.md), чтобы сделать сопоставление DTO HTTP-запросов и ответов явным.
-- [Валидация](validation.md), чтобы добавить проверки на границе того же HTTP API.
-- [База данных JDBC](database-jdbc.md) или [База данных Cassandra](database-cassandra.md), чтобы заменить репозиторий в памяти настоящим постоянным хранением.
-- [Продвинутый HTTP-сервер](http-server-advanced.md), когда базовая CRUD-форма станет понятной.
-- [HTTP-клиент](http-client.md), когда вы захотите, чтобы другое приложение Kora вызывало этот API.
+- [Работа с JSON](json.md) — чтобы маппинг DTO запроса и ответа стал явным.
+- [Валидация](validation.md) — чтобы добавить проверки на границе того же HTTP API.
+- [База данных JDBC](database-jdbc.md) или [База данных Cassandra](database-cassandra.md) — чтобы заменить репозиторий в памяти настоящим хранилищем.
+- [Продвинутый HTTP-сервер](http-server-advanced.md) — когда базовая форма CRUD станет привычной.
+- [HTTP-клиент](http-client.md) — когда захочется вызывать этот API из другого приложения Kora.
 
 ## Помощь { #help }
 
-Если вы столкнулись с проблемами:
+Если возникли сложности:
 
 - сравните с [Kora Java HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-server-app) и [Kora Kotlin HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-server-app)
-- проверьте [документацию HTTP-сервера](../documentation/http-server.md)
-- проверьте [документацию JSON](../documentation/json.md)
+- посмотрите [документацию по HTTP-серверу](../documentation/http-server.md)
+- посмотрите [документацию по JSON](../documentation/json.md)

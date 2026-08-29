@@ -1,10 +1,11 @@
 ---
-description: "Explains Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures. Use when working with @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule."
+description: "Explains Kora Cassandra repositories, Cassandra driver configuration, execution profiles, entity and UDT mapping, manual CQL queries, and repository signatures. Use when working with @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraDatabaseModule, CassandraExecutor."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Cassandra repositories, Cassandra driver configuration, profiles, entity and UDT mapping, async access, and repository signatures; key triggers include @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraModule, CassandraRepository."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Cassandra repositories, Cassandra driver configuration, execution profiles, entity and UDT mapping, manual CQL queries via CassandraQuery, and repository signatures; key triggers include @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, @CassandraProfile, CassandraDatabaseModule, CassandraRepository, CassandraExecutor, CassandraSession."
 ---
 
-Module provides a repository implementation for the [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) database using the [DataStax](https://docs.datastax.com/en/developer/java-driver/4.17/) driver.
+Module provides a repository implementation for the [Cassandra](https://cassandra.apache.org/_/cassandra-basics.html) database
+on top of the [Cassandra Java driver](https://docs.datastax.com/en/developer/java-driver/4.17/) (`org.apache.cassandra:java-driver-core` version `4.19.3`, brought in by the module transitively).
 `Cassandra` is a distributed column-oriented database where queries are written in `CQL`, and the data model is usually designed around specific read scenarios.
 In Kora, the Cassandra module provides declarative repositories on top of `CqlSession`: the application writes `CQL` queries in `@Query`, and Kora generates query preparation, parameter binding, and result mapping code at compile time.
 
@@ -19,7 +20,7 @@ For a step-by-step walkthrough before the reference details, see [Cassandra Data
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:database-cassandra"
+    implementation "io.koraframework:database-cassandra"
     ```
 
     Module:
@@ -32,7 +33,7 @@ For a step-by-step walkthrough before the reference details, see [Cassandra Data
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:database-cassandra")
+    implementation("io.koraframework:database-cassandra")
     ```
 
     Module:
@@ -40,6 +41,10 @@ For a step-by-step walkthrough before the reference details, see [Cassandra Data
     @KoraApp
     interface Application : CassandraDatabaseModule
     ```
+
+`CassandraDatabaseModule` extends `CassandraMapperModule`, so the standard row, column, and parameter mappers come with it.
+The module registers a `CassandraSession` component that owns the driver `CqlSession`: it is opened when the application graph starts and closed on shutdown.
+`CassandraSession` is a `Wrapped<CqlSession>`, so the raw `CqlSession` can also be injected into any component directly.
 
 ## Configuration { #configuration }
 
@@ -56,13 +61,13 @@ Simple configuration example:
             contactPoints = "127.0.0.1:9042, 127.0.0.2:9042" //(1)!
             dc = "datacenter1"  //(2)!
             sessionKeyspace = "test-db" //(3)!
-            request { 
+            request {
                 timeout = "5s" //(4)!
             }
         }
         auth {
             login = "username" //(5)!
-            password = "password" //(6)! 
+            password = "password" //(6)!
         }
     }
     ```
@@ -295,12 +300,13 @@ Simple configuration example:
                 logging.enabled = false //(115)!
                 metrics {
                     enabled = true //(116)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000 ] //(117)!
-                    tags = { "key1" = "value1", "key2" = "value2" } //(118)!
+                    driverMetrics = true //(117)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000 ] //(118)!
+                    tags = { "key1" = "value1", "key2" = "value2" } //(119)!
                 }
                 tracing {
-                    enabled = true //(119)!
-                    attributes = { "key1" = "value1", "key2" = "value2" } //(120)!
+                    enabled = true //(120)!
+                    attributes = { "key1" = "value1", "key2" = "value2" } //(121)!
                 }
             }
         }
@@ -480,11 +486,12 @@ Simple configuration example:
               enabled: false #(115)!
             metrics:
               enabled: true #(116)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000 ] #(117)!
-              tags: { key1: "value1", key2: "value2" } #(118)!
+              driverMetrics: true #(117)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000 ] #(118)!
+              tags: { key1: "value1", key2: "value2" } #(119)!
             tracing:
-              enabled: true #(119)!
-              attributes: { key1: "value1", key2: "value2" } #(120)!
+              enabled: true #(120)!
+              attributes: { key1: "value1", key2: "value2" } #(121)!
         ```
 
     1. Username for authentication in `Cassandra` (not specified by default, optional).
@@ -533,23 +540,23 @@ Simple configuration example:
     44. Logs warnings returned by Cassandra with a query response (not specified by default, optional).
     45. Driver metric identifier generator name (default: `TaggingMetricIdGenerator`).
     46. Driver metric name prefix (not specified by default, optional).
-    47. Enabled node-level metrics (default: `open-connections`, `in-flight`, `bytes-received`, `bytes-sent`, `write-timeouts`, `read-timeouts`, `aborted-requests`).
+    47. Enabled node-level driver metrics (default: `open-connections`, `in-flight`, `bytes-received`, `bytes-sent`, `write-timeouts`, `read-timeouts`, `aborted-requests`).
     48. Lowest expected latency for the `node.cqlMessages` metric histogram (default: `1ms`).
     49. Highest expected latency for the `node.cqlMessages` metric histogram (default: `90s`).
     50. Number of significant digits for the `node.cqlMessages` metric histogram (not specified by default, optional).
     51. Snapshot refresh interval for the `node.cqlMessages` metric histogram (not specified by default, optional).
-    52. `SLO` boundaries for the `node.cqlMessages` metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    53. Enabled session-level metrics (default: `connected-nodes`, `cql-requests`, `cql-client-timeouts`, `cql-prepared-cache-size`, `throttling.delay`, `throttling.queue-size`).
+    52. `SLO` boundaries for the `node.cqlMessages` metric (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    53. Enabled session-level driver metrics (default: `connected-nodes`, `cql-requests`, `cql-client-timeouts`, `cql-prepared-cache-size`, `throttling.delay`, `throttling.queue-size`).
     54. Lowest expected latency for the `session.cqlRequests` metric histogram (default: `1ms`).
     55. Highest expected latency for the `session.cqlRequests` metric histogram (default: `90s`).
     56. Number of significant digits for the `session.cqlRequests` metric histogram (not specified by default, optional).
     57. Snapshot refresh interval for the `session.cqlRequests` metric histogram (not specified by default, optional).
-    58. `SLO` boundaries for the `session.cqlRequests` metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    58. `SLO` boundaries for the `session.cqlRequests` metric (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
     59. Lowest expected latency for the `session.throttlingDelay` metric histogram (default: `1ms`).
     60. Highest expected latency for the `session.throttlingDelay` metric histogram (default: `90s`).
     61. Number of significant digits for the `session.throttlingDelay` metric histogram (not specified by default, optional).
     62. Snapshot refresh interval for the `session.throttlingDelay` metric histogram (not specified by default, optional).
-    63. `SLO` boundaries for the `session.throttlingDelay` metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    63. `SLO` boundaries for the `session.throttlingDelay` metric (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
     64. Publishes percentile histograms for driver metrics (default: `false`).
     65. Enables `TCP_NODELAY`, which disables Nagle's algorithm (not specified by default, optional).
     66. Enables `SO_KEEPALIVE` for TCP sockets (not specified by default, optional).
@@ -602,27 +609,40 @@ Simple configuration example:
     113. `advanced.request.trace.attempts` override for the `someProfile` profile (not specified by default, optional).
     114. `advanced.request.trace.consistency` override for the `someProfile` profile (not specified by default, optional).
     115. Enables Kora query logging (default: `false`).
-    116. Enables Kora query metrics (default: `true`).
-    117. Kora metrics `SLO` boundaries (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
-    118. Additional Kora metric tags (default: `{}`).
-    119. Enables Kora query tracing (default: `true`).
-    120. Additional Kora tracing attributes (default: `{}`).
+    116. Enables Kora query metrics (default: `false`).
+    117. Registers the driver's own metrics in the application `MeterRegistry`; when disabled, the whole `advanced.metrics` block has no effect (default: `true`).
+    118. Kora metrics `SLO` boundaries (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+    119. Additional Kora metric tags (default: `{}`).
+    120. Enables Kora query tracing (default: `true`).
+    121. Additional Kora tracing attributes (default: `{}`).
 
 ### Code configuration { #code-configuration }
 
-You can configure the driver manually in your code by registering a `CassandraConfigurer` component.
-The `configure` method receives the `CqlSessionBuilder` and the `ProgrammaticDriverConfigLoaderBuilder`,
-so you can adjust the session builder and override raw driver options that are not exposed through the `cassandra` configuration section:
+Not every driver option is exposed through the `cassandra` section. What is missing can be set in code with `Configurer` components:
+
+- `Configurer<CqlSessionBuilder>` — changes the session builder itself, for example the client identifier, a custom codec registry, or a node state listener;
+- `Configurer<ProgrammaticDriverConfigLoaderBuilder>` — writes raw driver options into the configuration loader that Kora assembles from the `cassandra` section.
+
+Both are optional, and both are applied last, after everything read from configuration, so a value set here wins:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyCassandraConfigurer implements CassandraConfigurer {
+    public final class MyCqlSessionConfigurer implements Configurer<CqlSessionBuilder> {
 
         @Override
-        public CqlSessionBuilder configure(CqlSessionBuilder builder, ProgrammaticDriverConfigLoaderBuilder loaderBuilder) {
+        public CqlSessionBuilder configure(CqlSessionBuilder builder) {
             return builder.withClientId(UUID.randomUUID());
+        }
+    }
+
+    @Component
+    public final class MyDriverOptionsConfigurer implements Configurer<ProgrammaticDriverConfigLoaderBuilder> {
+
+        @Override
+        public ProgrammaticDriverConfigLoaderBuilder configure(ProgrammaticDriverConfigLoaderBuilder builder) {
+            return builder.withString(DefaultDriverOption.RETRY_POLICY_CLASS, "DefaultRetryPolicy");
         }
     }
     ```
@@ -631,13 +651,75 @@ so you can adjust the session builder and override raw driver options that are n
 
     ```kotlin
     @Component
-    class MyCassandraConfigurer : CassandraConfigurer {
+    class MyCqlSessionConfigurer : Configurer<CqlSessionBuilder> {
 
-        override fun configure(builder: CqlSessionBuilder, loaderBuilder: ProgrammaticDriverConfigLoaderBuilder): CqlSessionBuilder {
+        override fun configure(builder: CqlSessionBuilder): CqlSessionBuilder {
             return builder.withClientId(UUID.randomUUID())
         }
     }
+
+    @Component
+    class MyDriverOptionsConfigurer : Configurer<ProgrammaticDriverConfigLoaderBuilder> {
+
+        override fun configure(builder: ProgrammaticDriverConfigLoaderBuilder): ProgrammaticDriverConfigLoaderBuilder {
+            return builder.withString(DefaultDriverOption.RETRY_POLICY_CLASS, "DefaultRetryPolicy")
+        }
+    }
     ```
+
+`Configurer` is `io.koraframework.common.Configurer`, a single-method contract `T configure(T t)`.
+
+### Multiple clusters { #multiple-clusters }
+
+`CassandraDatabaseModule` builds its session from the `cassandra` section by declaring a `CassandraDatabaseFactoryModule("cassandra")`.
+A second cluster is added by declaring one more factory module with its own config path and its own tag,
+and repositories select it with `@Repository(executorTag = …)`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends CassandraDatabaseModule {
+
+        final class Analytics { }
+
+        @Tag(Analytics.class)
+        @FactoryModule
+        default CassandraDatabaseFactoryModule analyticsCassandra() {
+            return new CassandraDatabaseFactoryModule("cassandraAnalytics"); //(1)!
+        }
+    }
+
+    @Repository(executorTag = Application.Analytics.class)
+    public interface AnalyticsRepository extends CassandraRepository { }
+    ```
+
+    1.  Section of the configuration file that describes this cluster; it has the same shape as the `cassandra` section.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : CassandraDatabaseModule {
+
+        class Analytics
+
+        @Tag(Analytics::class)
+        @FactoryModule
+        fun analyticsCassandra(): CassandraDatabaseFactoryModule {
+            return CassandraDatabaseFactoryModule("cassandraAnalytics") //(1)!
+        }
+    }
+
+    @Repository(executorTag = Application.Analytics::class)
+    interface AnalyticsRepository : CassandraRepository
+    ```
+
+    1.  Section of the configuration file that describes this cluster; it has the same shape as the `cassandra` section.
+
+The tag on the factory module propagates to everything it builds, so the `Configurer` components of that cluster must carry the same tag.
+Repositories that use the primary connection need no tag.
+The general rules are described in the [common database section](database-common.md#multiple-databases).
 
 ## Usage { #usage }
 
@@ -675,15 +757,15 @@ so that `Kora` generates the view mapper at compile time (see [View](#view)):
 
     1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
         ```sql
-        SELECT id, value1, value2, value3 
-        FROM entities 
+        SELECT id, value1, value2, value3
+        FROM entities
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
     2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
+        INSERT INTO entities(id, value1, value2, value3)
         VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
         ```
         Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
@@ -706,6 +788,9 @@ so that `Kora` generates the view mapper at compile time (see [View](#view)):
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: String): Entity?
 
+        @Query("SELECT id, value1, value2, value3 FROM entities") //(2)!
+        fun findAll(): List<Entity>
+
         @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity)
     }
@@ -713,15 +798,15 @@ so that `Kora` generates the view mapper at compile time (see [View](#view)):
 
     1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
         ```sql
-        SELECT id, value1, value2, value3 
-        FROM entities 
+        SELECT id, value1, value2, value3
+        FROM entities
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
     2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
+        INSERT INTO entities(id, value1, value2, value3)
         VALUES(:entity.id, :entity.value1, :entity.value2, :entity.value3)
         ```
         Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
@@ -732,13 +817,14 @@ Common rules for entities, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch`, an
 [Common database rules](database-common.md#macros).
 
 **Parameter binding:** Kora performs typed injection of arguments into the CQL query at compile time.
-Query parameters (e.g., `:id`, `:entity.field1`) are replaced in the generated code with corresponding Cassandra driver calls.
-For example, for a `String id` parameter, something like `statement.setString(1, id)` will be generated, where the index corresponds to the parameter order in the query.
+Named placeholders (`:id`, `:entity.field1`) are rewritten into positional `?` placeholders, and the generated code binds each value
+through the driver, for example `_stmt.setString(0, id)`, where the index corresponds to the parameter order in the query.
 This ensures security (protection against CQL injection) and performance (using driver prepared statements).
 
 Unlike relational databases, `Cassandra` has no transactions.
-When you need several statements to be applied atomically, use a `@Batch` method (a `CQL` `BATCH`) as shown above;
-its semantics and macros are documented in the [common database section](database-common.md).
+When you need several statements to be applied atomically, use a `@Batch` method: Kora builds an `UNLOGGED` `CQL` `BATCH`
+and binds one bound statement per element of the `@Batch List<T>` argument.
+Its semantics and macros are documented in the [common database section](database-common.md#batch-query).
 
 ### Profile { #profile }
 
@@ -796,21 +882,28 @@ In order to apply the settings from the `someProfile` profile, just do the follo
 
 The settings specified in the profile will be applied to each request, specifically in this case - a timeout of 10s will be set.
 The profile applies only to the method annotated with `@CassandraProfile`; other repository methods continue to use the base configuration.
+Under the hood, the generated code calls `setExecutionProfileName("someProfile")` on the bound statement, so the profile name must exist in the `cassandra.profiles` section.
 
 ## Mapping { #mapping }
 
 It is possible to override the mapping of different parts of [view](database-common.md) and query parameters, Kora provides special interfaces for this.
-Out of the box, `CassandraModule` provides mappers for common types: `String`, numeric types, `Boolean`, `BigDecimal`, `BigInteger`, `UUID`, `ByteBuffer`, `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, and `Instant`.
+Out of the box, `CassandraMapperModule` provides mappers for `String`, `Byte`, `Short`, `Integer`, `Long`, `Float`, `Double`, `Boolean`,
+`BigDecimal`, `BigInteger`, `UUID`, `ByteBuffer`, `byte[]`, `LocalTime`, `LocalDate`, `LocalDateTime`, `ZonedDateTime`, `Instant`, and `CqlDuration`.
 If a type is not covered by that set, or if it needs a custom representation in `CQL`, add a custom mapper through `@Mapping`.
+
+A mapper with constructor dependencies must be declared as a `@Component` so the container can build it.
+A mapper without dependencies must not be annotated with `@Component` — Kora instantiates it itself, and an extra component declaration ends the build with `Multiple components match`.
 
 ### View { #view }
 
 Use the `@EntityCassandra` annotation for optimal view mapping.
-The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
+The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing:
+a `CassandraRowMapper<T>`, a `CassandraResultSetMapper<T>` for a single result, and a `CassandraResultSetMapper<List<T>>` for a list.
 Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
 This is the recommended way to map every view returned from or bound into a repository.
 
 All nested views and [UDT](#udt) types are also expected to use this annotation.
+`@EntityCassandra` is applicable only to records and Java bean-like classes (`data class` in Kotlin).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -857,12 +950,11 @@ It receives `ResultSet` and returns the repository method value: a single object
 
 === ":simple-kotlin: `Kotlin`"
 
-    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
-
     ```kotlin
     class ResultMapper : CassandraResultSetMapper<List<UUID>> {
+
         override fun apply(rows: ResultSet): List<UUID> {
-            return rows.map { it.getUuid("id") }
+            return rows.map { it.getUuid("id")!! }
         }
     }
 
@@ -879,13 +971,15 @@ Each result-mapper interface also exposes static factory helpers that build a fu
 so you can reuse a single row mapper across signatures:
 
 - `CassandraResultSetMapper` — `singleResultSetMapper`, `optionalResultSetMapper`, `listResultSetMapper`;
-- `CassandraAsyncResultSetMapper` — `one`, `list` (auto-paginates across result pages);
-- `CassandraReactiveResultSetMapper` — `flux`, `mono`, `monoVoid`, `monoList`.
+- `CassandraAsyncResultSetMapper` — `one`, `list` (auto-paginates across result pages).
+
+`CassandraMapperModule` also derives a `CassandraResultSetMapper<Optional<T>>` from any `CassandraRowMapper<T>` in the graph,
+so `Optional<T>` signatures need no extra mapper.
 
 ### Row { #row }
 
 If you need to convert one result row manually, use `CassandraRowMapper<T>`.
-This mapper is applied to every row and suits return values like `T`, `Optional<T>`, `List<T>`, `Flux<T>`, and `Flow<T>`.
+This mapper is applied to every row and suits return values like `T`, `Optional<T>`, and `List<T>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -909,13 +1003,11 @@ This mapper is applied to every row and suits return values like `T`, `Optional<
 
 === ":simple-kotlin: `Kotlin`"
 
-    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
-
     ```kotlin
     class RowMapper : CassandraRowMapper<UUID> {
 
         override fun apply(row: Row): UUID {
-            return UUID.fromString(row.getString(0))
+            return UUID.fromString(row.getString(0)!!)
         }
     }
 
@@ -956,19 +1048,17 @@ If you need to convert the column value manually, it is suggested to use the `Ca
 
 === ":simple-kotlin: `Kotlin`"
 
-    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
-
     ```kotlin
     class ColumnMapper : CassandraRowColumnMapper<UUID> {
 
         override fun apply(row: GettableByName, index: Int): UUID {
-            return UUID.fromString(row.getString(index))
+            return UUID.fromString(row.getString(index)!!)
         }
     }
 
     @Table("entities")
     data class Entity(
-        @Id @Mapping(ColumnMapper::class) val id: UUID,
+        @field:Id @Mapping(ColumnMapper::class) val id: UUID,
         val name: String
     )
 
@@ -980,10 +1070,13 @@ If you need to convert the column value manually, it is suggested to use the `Ca
     }
     ```
 
+`CassandraRowColumnMapper` is also what a `@UDT` type is read through, so the same interface can be used to take over the mapping of a user-defined type.
+
 ### Parameter { #parameter }
 
 If you want to convert the value of a query parameter manually, use `CassandraParameterColumnMapper<T>`.
 It receives `SettableByName<?>`, the parameter index, and the value from the repository method.
+The value is nullable, so the implementation is responsible for leaving the placeholder unset when there is nothing to write.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1008,10 +1101,8 @@ It receives `SettableByName<?>`, the parameter index, and the value from the rep
 
 === ":simple-kotlin: `Kotlin`"
 
-    In Kotlin, you only need to write mappers for `T?` types, so the type is specified as `@Nullable` in the interfaces.
-
     ```kotlin
-    class ParameterMapper : CassandraParameterColumnMapper<UUID?> {
+    class ParameterMapper : CassandraParameterColumnMapper<UUID> {
 
         override fun apply(stmt: SettableByName<*>, index: Int, value: UUID?) {
             if (value != null) {
@@ -1030,58 +1121,86 @@ It receives `SettableByName<?>`, the parameter index, and the value from the rep
 
 ### Async { #async }
 
-For `CompletionStage<T>` and `CompletableFuture<T>`, use `CassandraAsyncResultSetMapper<T>`, which receives `AsyncResultSet` and returns `CompletionStage<T>`.
-Its `list` helper automatically requests subsequent result pages, so a `List<T>` result gathers every page before completing.
-For reactive types `Mono<T>` / `Flux<T>`, use `CassandraReactiveResultSetMapper<T, P>`, which receives `ReactiveResultSet` and returns the required `Publisher`.
+Java repository methods may return `CompletionStage<T>` or `CompletableFuture<T>`.
+For such methods Kora executes the statement with `CqlSession#executeAsync` and maps the outcome with `CassandraAsyncResultSetMapper<T>`,
+which receives `AsyncResultSet` and returns `CompletionStage<T>`.
 
-===! ":fontawesome-brands-java: `Java`"
+For an `@EntityCassandra` view no extra mapper is needed: Kora derives the async mapper from the generated `CassandraRowMapper<T>`,
+using `CassandraAsyncResultSetMapper.list(...)` for a `List<T>` result and `CassandraAsyncResultSetMapper.one(...)` otherwise.
+The `list` helper walks the result pages, requesting the next one until the result set is exhausted, so a `List<T>` gathers every page before the future completes;
+`one` maps only the first row.
 
-    ```java
-    final class ReactiveResultMapper implements CassandraReactiveResultSetMapper<UUID, Flux<UUID>> {
+```java
+@Repository
+public interface EntityRepository extends CassandraRepository {
 
-        @Override
-        public Flux<UUID> apply(ReactiveResultSet rows) {
-            return Flux.from(rows).map(r -> UUID.fromString(r.getString(0)));
-        }
+    @EntityCassandra
+    @Table("entities")
+    record Entity(@Id String id,
+                  @Column("value1") int field1,
+                  String value2,
+                  @Nullable String value3) {}
+
+    @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id")
+    CompletableFuture<Entity> findById(String id);
+
+    @Query("SELECT %{return#selects} FROM %{return#table}")
+    CompletionStage<List<Entity>> findAll();
+
+    @Query("INSERT INTO %{entity#inserts}")
+    CompletionStage<Void> insert(Entity entity);
+}
+```
+
+A custom async mapper is provided the same way as a synchronous one, through `@Mapping`:
+
+```java
+final class AsyncResultMapper implements CassandraAsyncResultSetMapper<List<UUID>> {
+
+    private static final CassandraAsyncResultSetMapper<List<UUID>> DELEGATE =
+        CassandraAsyncResultSetMapper.list(row -> row.getUuid("id"));
+
+    @Override
+    public CompletionStage<List<UUID>> apply(AsyncResultSet rows) {
+        return DELEGATE.apply(rows);
     }
+}
 
-    @Repository
-    public interface EntityRepository extends CassandraRepository {
+@Repository
+public interface EntityRepository extends CassandraRepository {
 
-        @Mapping(ReactiveResultMapper.class)
-        @Query("SELECT id FROM entities")
-        Flux<UUID> getIds();
-    }
-    ```
+    @Mapping(AsyncResultMapper.class)
+    @Query("SELECT id FROM entities")
+    CompletionStage<List<UUID>> getIds();
+}
+```
 
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    class ReactiveResultMapper : CassandraReactiveResultSetMapper<UUID, Flux<UUID>> {
-        override fun apply(rows: ReactiveResultSet): Flux<UUID> {
-            return Flux.from(rows).map { r -> UUID.fromString(r.getString(0)) }
-        }
-    }
-
-    @Repository
-    interface EntityRepository : CassandraRepository {
-
-        @Mapping(ReactiveResultMapper::class)
-        @Query("SELECT id FROM entities")
-        fun getIds(): Flux<UUID>
-    }
-    ```
+Kotlin repositories have no asynchronous signatures: methods are synchronous and use `CassandraResultSetMapper` / `CassandraRowMapper`,
+see [Result](#result) and [Signatures](#signatures).
 
 ## Manual Query { #query }
 
 If a query is hard to express as a single static `@Query`, you can declare a regular method with an implementation and build `CQL` manually.
-The repository exposes `getCassandraConnectionFactory()`, and `CassandraConnectionFactory#query` executes such a query:
-it prepares the statement through the current `CqlSession`, wraps execution in `Kora` telemetry, and returns the value produced by the callback.
-The `currentSession()` accessor returns the active `CqlSession`, and `telemetry()` returns the `DataBaseTelemetry` used for reporting.
+The repository exposes `executor()`, which returns a `CassandraExecutor`:
 
-`QueryContext` carries the query identifier and the final `CQL`.
-The identifier is reported to telemetry, so use a stable name such as `Repository.method`.
-Bind values through a `BoundStatement` obtained from the prepared statement; never concatenate values directly into the query string.
+- `currentSession()` — the active driver `CqlSession`;
+- `telemetry()` — the `DatabaseTelemetry` used for reporting;
+- `query(CassandraQuery, CassandraResultSetMapper<T>)`, `queryOne(...)`, `queryOptional(...)`, `queryList(...)` — run a built query and map the result;
+- `query(CassandraQuery, Function<BoundStatement, T>)` — run a built query and handle the bound statement yourself;
+- `query(QueryContext, Function<PreparedStatement, T>)` — the lowest level: prepare a raw `CQL` string and do everything by hand.
+
+Every one of them wraps the call in `Kora` telemetry, so a manual query is logged, measured, and traced exactly like a generated one.
+
+`CQL` is assembled through the `CassandraQuery` builder, which keeps the query text and the parameter values apart:
+
+- `CassandraQuery.named()` — `CQL` with `:name` placeholders, bound with `bind(name, value)`, `bindAll(map)`, `bindIn(name, values)` for `IN (:name)` clauses,
+  and the conditional forms `cqlIf`, `bindIf`, `bindInIf`;
+- `CassandraQuery.template()` and `CassandraQuery.template(cql, args...)` — `CQL` that already uses positional `?` placeholders;
+- `opts(...)` — per-statement options: `consistencyLevel`, `serialConsistencyLevel`, `pageSize`, `timeout`, `idempotent`, `tracing`.
+
+`build()` validates the query and fails with `IllegalArgumentException` when a placeholder is not bound, when a bound parameter is never used in `CQL`,
+or when a `bindIn` collection is empty.
+Named parameters are converted to positional `?` placeholders, so the driver still receives a prepared statement and values are never concatenated into the query text.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1090,29 +1209,17 @@ Bind values through a `BoundStatement` obtained from the prepared statement; nev
     public interface EntityRepository extends CassandraRepository {
 
         default List<Entity> findByFilter(@Nullable String value2) {
-            var sql = new StringBuilder("SELECT id, value1, value2, value3 FROM entities");
-            if (value2 != null) {
-                sql.append(" WHERE value2 = ? ALLOW FILTERING");
-            }
+            var query = CassandraQuery.named()
+                .cql("SELECT id, value1, value2, value3 FROM entities")
+                .cqlIf(" WHERE value2 = :value2 ALLOW FILTERING", value2 != null)
+                .bindIf("value2", value2, value2 != null)
+                .build();
 
-            var connectionFactory = getCassandraConnectionFactory();
-            var queryContext = new QueryContext("EntityRepository.findByFilter", sql.toString());
-            return connectionFactory.query(queryContext, statement -> {
-                var boundStatement = (value2 != null)
-                    ? statement.bind(value2)
-                    : statement.bind();
-                var resultSet = connectionFactory.currentSession().execute(boundStatement);
-
-                var result = new ArrayList<Entity>();
-                for (var row : resultSet) {
-                    result.add(new Entity(
-                        row.getString("id"),
-                        row.getInt("value1"),
-                        row.getString("value2"),
-                        row.getString("value3")));
-                }
-                return result;
-            });
+            return executor().queryList(query, row -> new Entity(
+                row.getString("id"),
+                row.getInt("value1"),
+                row.getString("value2"),
+                row.getString("value3")));
         }
     }
     ```
@@ -1124,25 +1231,81 @@ Bind values through a `BoundStatement` obtained from the prepared statement; nev
     interface EntityRepository : CassandraRepository {
 
         fun findByFilter(value2: String?): List<Entity> {
-            val sql = StringBuilder("SELECT id, value1, value2, value3 FROM entities")
-            if (value2 != null) {
-                sql.append(" WHERE value2 = ? ALLOW FILTERING")
+            val query = CassandraQuery.named()
+                .cql("SELECT id, value1, value2, value3 FROM entities")
+                .cqlIf(" WHERE value2 = :value2 ALLOW FILTERING", value2 != null)
+                .bindIf("value2", value2, value2 != null)
+                .build()
+
+            return executor().queryList(query) { row ->
+                Entity(
+                    row.getString("id")!!,
+                    row.getInt("value1"),
+                    row.getString("value2")!!,
+                    row.getString("value3")
+                )
             }
+        }
+    }
+    ```
 
-            val connectionFactory = cassandraConnectionFactory
-            val queryContext = QueryContext("EntityRepository.findByFilter", sql.toString())
-            return connectionFactory.query(queryContext) { statement ->
-                val boundStatement = if (value2 != null) statement.bind(value2) else statement.bind()
-                val resultSet = connectionFactory.currentSession().execute(boundStatement)
+When you need full control over statement preparation, use the `QueryContext` overload.
+`QueryContext` carries the query identifier, the executable `CQL`, and the operation name:
+the identifier is reported as the `db.query.text` telemetry attribute, and the operation name becomes the span name,
+so use a stable value such as `Repository.method` — this is exactly what generated repositories do.
+The two-argument constructor defaults the operation to `db_query`.
 
-                resultSet.map { row ->
-                    Entity(
-                        row.getString("id"),
-                        row.getInt("value1"),
-                        row.getString("value2"),
-                        row.getString("value3")
-                    )
-                }
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends CassandraRepository {
+
+        default List<Entity> findAllValues() {
+            var executor = executor();
+            var queryContext = new QueryContext(
+                "SELECT id, value1, value2, value3 FROM entities",
+                "SELECT id, value1, value2, value3 FROM entities",
+                "EntityRepository.findAllValues");
+
+            return executor.query(queryContext, statement -> executor.currentSession()
+                .execute(statement.bind())
+                .map(row -> new Entity(
+                    row.getString("id"),
+                    row.getInt("value1"),
+                    row.getString("value2"),
+                    row.getString("value3")))
+                .all());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : CassandraRepository {
+
+        fun findAllValues(): List<Entity> {
+            val executor = executor()
+            val queryContext = QueryContext(
+                "SELECT id, value1, value2, value3 FROM entities",
+                "SELECT id, value1, value2, value3 FROM entities",
+                "EntityRepository.findAllValues"
+            )
+
+            return executor.query(queryContext) { statement ->
+                executor.currentSession()
+                    .execute(statement.bind())
+                    .map { row ->
+                        Entity(
+                            row.getString("id")!!,
+                            row.getInt("value1"),
+                            row.getString("value2")!!,
+                            row.getString("value3")
+                        )
+                    }
+                    .all()
             }
         }
     }
@@ -1154,6 +1317,8 @@ Because `Cassandra` has no transactions, `query` simply runs on the current sess
 
 There is support for [UDT](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useCreateUDT.html) types through the `@UDT` annotation.
 `UDT` describes a Cassandra user-defined type and can be used as a field of a regular entity.
+For every `@UDT` type Kora generates a reader and a writer, so the type works both in results and as a query parameter,
+including nested `@UDT` types and `List<T>` of a `@UDT` type.
 The `@UDT` type is mapped like any other entity, so the enclosing entity is annotated with `@EntityCassandra`.
 
 Given the following schema, where `username` is a user-defined type stored as a `FROZEN` column:
@@ -1220,12 +1385,14 @@ the view and repository look like this:
     }
     ```
 
-If the `UDT` type is not used through an enclosing entity, but as a standalone Cassandra type, mapper generation can be enabled explicitly with `@EntityCassandra`.
-This is useful when the mapper is needed as a separate graph component.
+If the `UDT` type is not used through an enclosing entity, but is itself the result of a query, add `@EntityCassandra` next to `@UDT`.
+`@UDT` alone generates the column reader and writer; `@EntityCassandra` additionally generates the row and result-set mappers,
+which is what a repository method returning that type needs.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @UDT
     @EntityCassandra
     public record Name(String first, String last) { }
     ```
@@ -1233,6 +1400,7 @@ This is useful when the mapper is needed as a separate graph component.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @UDT
     @EntityCassandra
     data class Name(val first: String, val last: String)
     ```
@@ -1255,13 +1423,11 @@ Available signatures for repository methods out of the box:
     - `T myMethod()`
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
-    - `Flux<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/CompletableFuture.html)
 
-    The `CompletionStage<T>`, `CompletableFuture<T>`, and `Mono<T>` wrappers can also wrap `List<T>`,
-    for example `CompletionStage<List<Entity>>` or `Mono<List<Entity>>`.
+    The `CompletionStage<T>` and `CompletableFuture<T>` wrappers can also wrap `List<T>` or `Void`,
+    for example `CompletionStage<List<Entity>>` or `CompletableFuture<Void>`.
 
     Method parameters can include regular values, DTOs, `@Batch List<T>` for batch execution, and `CqlSession` when the method needs access to the current driver session.
 
@@ -1270,12 +1436,20 @@ Available signatures for repository methods out of the box:
     `T` means the return value type, `T?`, `List<T>`, or `Unit`.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
-    - `myMethod(): Flow<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `myMethod(): T?`
+    - `myMethod(): List<T>`
+    - `myMethod()` for a query with no result
+
+    Kotlin repository methods are synchronous. A `suspend` method annotated with `@Query` is rejected by the symbol processor
+    with `Suspend methods are not supported by the repository generator` — run the blocking call and compose concurrency above the repository instead.
 
     Method parameters can include regular values, DTOs, `@Batch List<T>` for batch execution, and `CqlSession` when the method needs access to the current driver session.
+
+Reactive return types are not supported: there are no `Mono` / `Flux` signatures and no reactive result mapper in the module.
 
 ## Telemetry { #telemetry }
 
 Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+By default query logging and metrics are off (`telemetry.logging.enabled = false`, `telemetry.metrics.enabled = false`) and tracing is on (`telemetry.tracing.enabled = true`).
+The driver's own metrics are controlled separately by `telemetry.metrics.driverMetrics` and are configured through the `advanced.metrics` block.
 To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

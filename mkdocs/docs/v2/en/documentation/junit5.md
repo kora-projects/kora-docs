@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization. Use when working with @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
+description: "Explains the Kora JUnit 5 test extension: application graph tests, component injection, tags, Mockito and MockK mocks, test configuration, container modification and lifecycle. Use when working with @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
+  use_when: "Use this file for Kora docs or implementation questions about JUnit 5 testing: the io.koraframework:test-junit5 artifact, the io.koraframework.test.extension.junit5 package, limiting the application graph in a test, injecting components, Mockito and MockK mocks, overriding test configuration and modifying the dependency container; key triggers include @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness, Testcontainers."
 ---
 
 Module provides an extension for [JUnit 5](https://junit.org/junit5/docs/current/user-guide/) that allows testing an application through the same component graph that is used at runtime.
@@ -16,6 +16,8 @@ Module allows you to conduct:
 - `Inter-component tests` - testing of several components and their interaction with each other.
 - `Integration tests` - testing of components and interaction with external systems.
 
+All types of the extension live in the `io.koraframework.test.extension.junit5` package.
+
 It is recommended to additionally test the service artifact packaged in the final image,
 as a black box using the [Testcontainers library](https://java.testcontainers.org/).
 
@@ -27,10 +29,17 @@ For a step-by-step walkthrough before the reference details, see [Component Test
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    testImplementation "ru.tinkoff.kora:test-junit5"
+    testImplementation platform("org.junit:junit-bom:6.1.3")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "io.koraframework:test-junit5"
     ```
 
-    Setup [JUnit platform](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle`: 
+    Kora annotation processor for test sources `build.gradle`:
+    ```groovy
+    testAnnotationProcessor "io.koraframework:annotation-processors"
+    ```
+
+    Setup [JUnit platform](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle`:
     ```groovy
     test {
         useJUnitPlatform()
@@ -46,13 +55,23 @@ For a step-by-step walkthrough before the reference details, see [Component Test
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    testImplementation("ru.tinkoff.kora:test-junit5")
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.koraframework:test-junit5")
     ```
 
-    Setup [JUnit platform](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle.kts`: 
+    Kora symbol processor for test sources `build.gradle.kts`:
+    ```groovy
+    kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
+    ```
+
+    `kspTest` is required only when the test sources declare their own `@KoraApp`, see [Test graph](#test-graph).
+    A test that only uses the graph of an application from the main sources does not need it.
+
+    Setup [JUnit platform](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle.kts`:
     ```groovy
     tasks.test {
-        useJUnitPlatform() 
+        useJUnitPlatform()
         testLogging {
             showStandardStreams = true
             events("passed", "skipped", "failed")
@@ -96,7 +115,8 @@ Examples will be shown relative to such an application:
         }
 
         @Root
-        fun supplierTagged(): @Tag(Supplier::class) Supplier<String> {
+        @Tag(Supplier::class)
+        fun supplierTagged(): Supplier<String> {
             return Supplier<String> { "tag1" }
         }
     }
@@ -110,16 +130,18 @@ The annotation connects the `JUnit 5` extension, finds the generated graph of th
 Parameters of the `@KoraAppTest` annotation:
 
 - `value` - class annotated with `@KoraApp` whose component graph will be used in the test (`required`, no default).
-- `components` - additional component classes that should be included in the test graph in addition to components discovered through `@TestComponent` (default: `{}`).
-- `modules` - additional modules with component factory methods that should be connected to the test graph (default: `{}`).
+- `components` - additional component classes that must be present in the test graph in addition to components discovered through `@TestComponent` (default: `{}`).
+- `modules` - module interfaces whose factory-method components must be present in the test graph in addition to components discovered through `@TestComponent` (default: `{}`).
 
-Only module interfaces can be specified in `modules`. If the whole graph needs to be tested, inject `KoraAppGraph` or do not limit the graph to individual `@TestComponent` components.
+Only interfaces can be specified in `modules`, otherwise the extension fails the test with a configuration error.
+In a Java module interface only `default` methods are treated as factory methods, in a Kotlin module interface all methods are.
+If the whole graph needs to be tested, inject `KoraAppGraph` or do not limit the graph to individual `@TestComponent` components.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KoraAppTest(value = Application.class, 
-                 components = { SomeComponent.class }, 
+    @KoraAppTest(value = Application.class,
+                 components = { SomeComponent.class },
                  modules = { SomeModule.class })
     class SomeTests {
 
@@ -128,8 +150,8 @@ Only module interfaces can be specified in `modules`. If the whole graph needs t
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(value = Application::class, 
-                 components = [SomeComponent::class], 
+    @KoraAppTest(value = Application::class,
+                 components = [SomeComponent::class],
                  modules = [SomeModule::class])
     class SomeTests {
 
@@ -178,6 +200,9 @@ An example of a test where components are injected in fields:
         }
     }
     ```
+
+Injected fields must not be `static` or `final`, otherwise the extension fails the test with a configuration error.
+In Kotlin this means a `lateinit var` field rather than a `val` field.
 
 Example of a test where components are injected in a constructor:
 
@@ -241,6 +266,9 @@ Example of a test where components are injected in method arguments:
     }
     ```
 
+If a component is provided in the graph as a `Wrapped<T>` wrapper, the test asks for `T`: the extension unwraps such a component before injecting it.
+The wrapper itself is only injected when the declared type is the wrapper type.
+
 #### Injection Rules { #injection-rules }
 
 Components can be injected in three ways: into a test class field, into the constructor, or into a test method parameter.
@@ -268,7 +296,7 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
         @Test
         void example(@Tag(Supplier.class) @TestComponent Supplier<String> component1) {
-            assertEquals("?", component1.get());
+            assertEquals("tag1", component1.get());
         }
     }
     ```
@@ -281,10 +309,16 @@ In order to inject a dependency/mock that has an `@Tag`, you must specify the ap
 
         @Test
         fun example(@Tag(Supplier::class) @TestComponent component1: Supplier<String>) {
-            assertEquals("?", component1.get())
+            assertEquals("tag1", component1.get())
         }
     }
     ```
+
+The `@Tag` annotation accepts a single tag class.
+A custom annotation that is itself annotated with `@Tag` also works: the extension reads the tag from such a meta-annotation.
+
+An injection point without `@Tag` matches only components without a tag,
+so a graph where the same type is registered both with and without a tag does not become ambiguous.
 
 ### Application Graph { #application-graph }
 
@@ -293,10 +327,12 @@ It can retrieve one or several components by type and can also account for `@Tag
 
 Main `KoraAppGraph` methods:
 
-- `getFirst(Type type)` / `getFirst(Class<T> type)` - return the first found component or `null`.
-- `getFirst(Type type, Class<?>... tags)` / `getFirst(Class<T> type, Class<?>... tags)` - return the first component with the specified tags or `null`.
+- `getFirst(Type type)` / `getFirst(Class<T> type)` - return the first found component without a tag or `null`.
+- `getFirst(Type type, Class<?> tag)` / `getFirst(Class<T> type, Class<?> tag)` - return the first component with the specified tag or `null`.
 - `findFirst(...)` - returns `Optional<T>` instead of `null`.
-- `getAll(...)` - returns all components of the specified type, optionally accounting for tags.
+- `getAll(...)` - returns all components of the specified type; the overloads without a tag use `Tag.Any` and therefore return components with any tag as well.
+
+For a component with generic parameters, describe the type with `TypeRef`, because a raw `Class` does not match a parameterized graph node:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -306,9 +342,10 @@ Main `KoraAppGraph` methods:
 
         @Test
         void example(KoraAppGraph graph) {
-            var component = graph.getFirst(Supplier.class, Supplier.class);
+            var component = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class), Supplier.class);
 
             assertNotNull(component);
+            assertEquals("tag1", component.get());
         }
     }
     ```
@@ -321,14 +358,17 @@ Main `KoraAppGraph` methods:
 
         @Test
         fun example(graph: KoraAppGraph) {
-            val component = graph.getFirst(Supplier::class.java, Supplier::class.java)
+            val component = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java) as Supplier<String>
 
             assertNotNull(component)
+            assertEquals("tag1", component.get())
         }
     }
     ```
 
-`KoraAppGraph` cannot be used as a target for `@Mock`, `@Spy`, `@MockK`, or `@SpyK`, because it is a service object of the test extension, not an application component.
+The initialized `Graph` of the application can be injected the same way if a test needs the low level container contract.
+
+`KoraAppGraph` and `Graph` cannot be used as a target for `@Mock`, `@Spy`, `@MockK`, or `@SpyK`, because they are service objects of the test extension, not application components.
 
 ### Mock { #mock }
 
@@ -338,16 +378,19 @@ Main `KoraAppGraph` methods:
 
     It is required to add the [Mockito](https://site.mockito.org/) library as a `build.gradle` dependency:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.18.0"
+    testImplementation "org.mockito:mockito-core:5.23.0"
     ```
+
+    Kora is compiled for `Java 25`, so the mocking library must bring a `Byte Buddy` version that understands `Java 25` class files.
+    An outdated `mockito-core` fails at runtime with `IllegalArgumentException: Java 25 (69) is not supported by the current version of Byte Buddy`.
 
     **Important**, it is assumed that `MockitoExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
 
     [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) and [@Spy](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Spy.html) annotations and all parameters of these annotations are supported.
     It is recommended to read more about how these annotations work in the [official Mockito library documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html).
 
-    The [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) annotation allows you to make a class stub of a 
-    annotated component and control the behavior of its methods with `Mockito` or the methods will return default values: `void`, default values for primitives, empty collections and `null` for all other objects. 
+    The [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) annotation allows you to make a class stub of a
+    annotated component and control the behavior of its methods with `Mockito` or the methods will return default values: `void`, default values for primitives, empty collections and `null` for all other objects.
 
     The stub component will be injected as a dependency into the arguments and/or fields of the test class and into all components that required it as a dependency.
     All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
@@ -423,24 +466,33 @@ Main `KoraAppGraph` methods:
 
     The [MockK](https://mockk.io/) library is required to be attached as a ``build.gradle.kts`` dependency:
     ```groovy
-    testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("io.mockk:mockk:1.14.11")
     ```
+
+    Kora is compiled for `Java 25`, and `MockK` older than `1.14.9` brings `Byte Buddy 1.14.x`, which cannot transform such classes.
+    In that case the graph fails to initialize and the log contains `Failed to transform class ... Java 25 (69) is not supported`.
 
     **Important**, it is assumed that `MockkExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
 
     [@MockK](https://mockk.io/#annotations) and [@SpyK](https://mockk.io/#annotations) annotations and all parameters of these annotations are supported.
+    Declare them as `@field:MockK` and `@field:SpyK` so the annotation lands on the backing field; a property level `@MockK` also works when `kotlin-reflect` is on the test classpath.
 
-    It is also possible to use [Mockito](https://site.mockito.org/) if desired. 
+    Kora contracts are synchronous, so tests do not need `runTest` or `runBlocking`, and mocks are described with `every`, not `coEvery`.
+
+    It is also possible to use [Mockito](https://site.mockito.org/) if desired.
     For a more detailed description of how Kora and [Mockito](https://site.mockito.org/) work, you should read the Java tab of this paragraph.
     In order to improve the interaction between Mockito and Kotlin you can use the [Mockito Kotlin](https://github.com/mockito/mockito-kotlin) library.
     ```groovy
+    testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
+
+    `mockito-kotlin` pins its own older `mockito-core`, so declare `mockito-core` explicitly next to it, otherwise `Byte Buddy` rejects `Java 25` class files.
 
     **Important**, it is assumed that `MockitoExtension` will not be used and will be disabled, you can't combine it together with `@KoraAppTest`.
 
     [@MockK](https://mockk.io/#annotations) annotation allows you to make a class mock
-    annotated component and control the behavior of its methods using `MockK`. 
+    annotated component and control the behavior of its methods using `MockK`.
 
     Mock component will be injected as a dependency into the arguments and/or fields of the test class and into all components that required it as a dependency.
     All dependent components that are not required anywhere else within the test will be excluded as unnecessary.
@@ -449,7 +501,11 @@ Main `KoraAppGraph` methods:
 
     ```kotlin
     @KoraAppTest(Application::class)
-    class SomeTests(@MockK @TestComponent val component1: Supplier<String>) {
+    class SomeTests {
+
+        @field:MockK
+        @TestComponent
+        lateinit var component1: Supplier<String>
 
         @BeforeEach
         fun mock() {
@@ -496,18 +552,18 @@ Main `KoraAppGraph` methods:
 
         @field:SpyK
         @TestComponent
-        val component1: Supplier<String> = Supplier { "1" }
+        var component1: Supplier<String> = Supplier { "12345" }
 
         @Test
         fun example() {
-            assertEquals("?", component1.get())
+            assertEquals("12345", component1.get())
         }
     }
     ```
 
 #### Mock strictness { #mock-strictness }
 
-`Mockito` mocks can be checked with the `@MockitoStrictness` annotation.
+`Mockito` mocks can be checked with the `@MockitoStrictness` annotation from the `io.koraframework.test.extension.junit5.mockito` package.
 It sets the verification level for `Mockito` mocks created by the Kora extension within the test class.
 
 The extension behaves similarly to `MockitoSession`: after the test completes, it passes the created mocks to `Mockito` verification and reports unused or suspicious stubbing.
@@ -581,7 +637,7 @@ Or, you may need some save/delete/update functions just for testing as a quick t
 
 ???+ warning "Recommendation"
 
-    **Highly Recommend Testing** applications as a [black box](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java)
+    **Highly Recommend Testing** applications as a [black box](../guides/testing-black-box.md)
     and rely on this approach as the primary source of truth and correctness of the application.
 
     Application may work differently depending on the JVM flags,
@@ -653,8 +709,9 @@ but the tests and will not otherwise be included in the graph:
     public interface TestApplication extends Application {
 
         @Root
-        default Integer someOtherComponent() {
-            return 1;
+        @Tag(TestApplication.class)
+        default String someTestOnlyComponent() {
+            return "test";
         }
     }
     ```
@@ -666,8 +723,9 @@ but the tests and will not otherwise be included in the graph:
     interface TestApplication : Application {
 
         @Root
-        fun someOtherComponent(): Integer {
-            return 1
+        @Tag(TestApplication::class)
+        fun someTestOnlyComponent(): String {
+            return "test"
         }
     }
     ```
@@ -678,7 +736,7 @@ but the tests and will not otherwise be included in the graph:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.20"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
     }
     ```
 
@@ -688,7 +746,7 @@ but the tests and will not otherwise be included in the graph:
 
     ```groovy
     dependencies {
-        kspTest("ru.tinkoff.kora:symbol-processors:1.2.20")
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
     }
     ```
 
@@ -698,7 +756,7 @@ It may be required to exclude scanning of Kora generated classes by JUnit (somet
 
     Classes start with `$` symbol, exclude them in `build.gradle`:
 
-    ```java
+    ```groovy
     test {
         exclude("**/\$*")
     }
@@ -724,12 +782,14 @@ You can now use the extended application graph in your tests:
 
         @TestComponent
         private String component1;
+        @Tag(TestApplication.class)
         @TestComponent
-        private Integer component2;
+        private String component2;
 
         @Test
-        void testSame() {
-            assertEquals(component1, String.valueOf(component2));
+        void testBoth() {
+            assertEquals("1", component1);
+            assertEquals("test", component2);
         }
     }
     ```
@@ -738,36 +798,49 @@ You can now use the extended application graph in your tests:
 
     ```kotlin
     @KoraAppTest(TestApplication::class)
-    class SomeTests(val component1: String, val component2: Integer) {
+    class SomeTests {
+
+        @TestComponent
+        lateinit var component1: String
+
+        @Tag(TestApplication::class)
+        @TestComponent
+        lateinit var component2: String
 
         @Test
-        fun testSame() {
-            assertEquals(component1, component2.toString());
+        fun testBoth() {
+            assertEquals("1", component1)
+            assertEquals("test", component2)
         }
     }
     ```
 
-If inheritance from the main `@KoraApp` is not needed and only factory methods from a separate module should be added,
-use the `modules` parameter of `@KoraAppTest`.
-`modules` accepts module interfaces, not component classes:
+If the generated graph class cannot be found, the extension reports `Cannot find generated Kora application graph`
+and lists what to check: the processor for the test source set and `kora.app.submodule.enabled` for the main application.
+
+The `modules` parameter of `@KoraAppTest` does not connect new modules to the graph, it declares which components must be present in the limited test graph.
+The listed module must already belong to the graph of the tested `@KoraApp`: either the application interface extends it,
+or the module is annotated with `@Module` and is compiled together with the application, including the test sources when the test application itself is declared in `src/test`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface TestModule {
 
         @Root
-        default Integer testOnlyComponent() {
-            return 1;
+        @Tag(TestModule.class)
+        default String testOnlyComponent() {
+            return "module";
         }
     }
 
-    @KoraAppTest(value = Application.class, modules = TestModule.class)
+    @KoraAppTest(value = TestApplication.class, modules = TestModule.class)
     class SomeTests {
 
         @Test
-        void test(@TestComponent Integer component) {
-            assertEquals(1, component);
+        void test(@Tag(TestModule.class) @TestComponent String component) {
+            assertEquals("module", component);
         }
     }
     ```
@@ -775,20 +848,22 @@ use the `modules` parameter of `@KoraAppTest`.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Module
     interface TestModule {
 
         @Root
-        fun testOnlyComponent(): Int {
-            return 1
+        @Tag(TestModule::class)
+        fun testOnlyComponent(): String {
+            return "module"
         }
     }
 
-    @KoraAppTest(value = Application::class, modules = [TestModule::class])
+    @KoraAppTest(value = TestApplication::class, modules = [TestModule::class])
     class SomeTests {
 
         @Test
-        fun test(@TestComponent component: Int) {
-            assertEquals(1, component)
+        fun test(@Tag(TestModule::class) @TestComponent component: String) {
+            assertEquals("module", component)
         }
     }
     ```
@@ -796,7 +871,8 @@ use the `modules` parameter of `@KoraAppTest`.
 Summary:
 
 - `kora.app.submodule.enabled=true` is needed when a test `@KoraApp` extends the main `@KoraApp`.
-- `@KoraAppTest(modules = ...)` suits cases where additional modules simply need to be connected to the test graph.
+- The processor must be connected to the test source set as `testAnnotationProcessor` in Java and `kspTest` in Kotlin when the test sources declare their own `@KoraApp`.
+- `@KoraAppTest(modules = ...)` suits cases where components of an already connected module must be present in the limited test graph.
 - Components that should appear in the limited test graph must still be reachable from `@TestComponent`, `components`, or `KoraAppGraph`.
 
 ## Test configuration { #test-configuration }
@@ -809,6 +885,8 @@ and the `config()` method should return a `KoraConfigModification`.
 `KoraAppTestConfigModifier` cannot be used together with component injection into the test class constructor:
 the extension needs to obtain the configuration modification before creating the test graph, and for that the test instance must already exist.
 
+The values passed through `withSystemProperty` are set as JVM system properties only for the time the test graph is built and are restored afterwards.
+
 #### Environment variables { #environment-variables }
 
 In case the test needs to use the [default configuration](config.md#file) that would be used when the application is running,
@@ -819,7 +897,7 @@ and you only need to substitute environment variables, you can use the `SystemPr
     Suppose there is such a configuration `application.conf`:
 
     ```javascript
-    db {
+    jdbc {
         jdbcUrl = ${POSTGRES_JDBC_URL}
         username = ${POSTGRES_USER}
         password = ${POSTGRES_PASS}
@@ -833,7 +911,7 @@ and you only need to substitute environment variables, you can use the `SystemPr
     Suppose there is such a configuration `application.yaml`:
 
     ```yaml
-    db:
+    jdbc:
       jdbcUrl: ${POSTGRES_JDBC_URL}
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASS}
@@ -849,7 +927,6 @@ In order to use such a config and pass only environment variables, you need to r
     @KoraAppTest(Application.class)
     class SomeTests implements KoraAppTestConfigModifier {
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification
@@ -883,7 +960,6 @@ If several values need to be passed at once, use `withSystemProperties(Map<Strin
     @KoraAppTest(Application.class)
     class SomeTests implements KoraAppTestConfigModifier {
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification
@@ -917,7 +993,7 @@ If several values need to be passed at once, use `withSystemProperties(Map<Strin
 
 ### Configuration file { #configuration-file }
 
-An example of providing a configuration as a file:
+An example of providing a configuration as a file, the file is looked up in the test `resources` directory:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -926,7 +1002,7 @@ An example of providing a configuration as a file:
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofResourceFile("application-test.conf");
         }
     }
@@ -956,7 +1032,7 @@ in this case only this configuration will be used without any configuration file
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
                 myconfig {
                     myproperty = 1
@@ -997,7 +1073,7 @@ This is convenient when the whole configuration is described in the test, but so
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
                 myconfig {
                     myinnerconfig {
@@ -1014,6 +1090,8 @@ This is convenient when the whole configuration is described in the test, but so
 
 === ":simple-kotlin: `Kotlin`"
 
+    In a Kotlin raw string the `$` character has to be escaped as `${'$'}`, otherwise it is treated as a string template:
+
     ```kotlin
     @KoraAppTest(Application::class)
     class SomeTests : KoraAppTestConfigModifier {
@@ -1023,8 +1101,8 @@ This is convenient when the whole configuration is described in the test, but so
                 """
                 myconfig {
                     myinnerconfig {
-                        first = \${ENV_FIRST}
-                        second = \${ENV_SECOND}
+                        first = ${'$'}{ENV_FIRST}
+                        second = ${'$'}{ENV_SECOND}
                     }
                 }
                 """.trimIndent()
@@ -1049,8 +1127,8 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
 
     Add the [Testcontainers](https://java.testcontainers.org/) dependencies in `build.gradle`:
     ```groovy
-    testImplementation "org.testcontainers:junit-jupiter:1.21.4"
-    testImplementation "org.testcontainers:postgresql:1.21.4"
+    testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5"
+    testImplementation "org.testcontainers:testcontainers-postgresql:2.0.5"
     ```
 
     ```java
@@ -1059,20 +1137,19 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
     class SomeIntegrationTests implements KoraAppTestConfigModifier {
 
         @Container
-        private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+        static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
         @TestComponent
         private SomeService service;
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
-                db {
+                jdbc {
                     jdbcUrl = ${POSTGRES_JDBC_URL}
                     username = ${POSTGRES_USER}
                     password = ${POSTGRES_PASS}
-                    poolName = "kora"
+                    poolName = "kora-test"
                 }
                 """)
                 .withSystemProperty("POSTGRES_JDBC_URL", POSTGRES.getJdbcUrl())
@@ -1091,8 +1168,8 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
 
     Add the [Testcontainers](https://java.testcontainers.org/) dependencies in `build.gradle.kts`:
     ```groovy
-    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
-    testImplementation("org.testcontainers:postgresql:1.21.4")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
     ```
 
     ```kotlin
@@ -1103,7 +1180,7 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
         companion object {
             @Container
             @JvmStatic
-            val POSTGRES = PostgreSQLContainer("postgres:16")
+            val POSTGRES = PostgreSQLContainer("postgres:16-alpine")
         }
 
         @TestComponent
@@ -1112,11 +1189,11 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
         override fun config(): KoraConfigModification {
             return KoraConfigModification.ofString(
                 """
-                db {
-                    jdbcUrl = \${POSTGRES_JDBC_URL}
-                    username = \${POSTGRES_USER}
-                    password = \${POSTGRES_PASS}
-                    poolName = "kora"
+                jdbc {
+                    jdbcUrl = ${'$'}{POSTGRES_JDBC_URL}
+                    username = ${'$'}{POSTGRES_USER}
+                    password = ${'$'}{POSTGRES_PASS}
+                    poolName = "kora-test"
                 }
                 """.trimIndent()
             )
@@ -1132,6 +1209,8 @@ For the same reason `KoraAppTestConfigModifier` is incompatible with [constructo
     }
     ```
 
+The `jdbc` section shown above is the [JDBC](database-jdbc.md) connection configuration, the same section the application uses at runtime.
+
 For a full walkthrough — dependencies, a test `@KoraApp`, migrations and repository setup — see the [Integration Testing](../guides/testing-integration.md) guide.
 
 ## Container modification { #container-modification }
@@ -1145,11 +1224,11 @@ the extension needs to obtain the graph modification before creating the graph a
 `KoraGraphModification` supports these operations:
 
 - `addComponent(...)` - adds a new component to the test graph.
-- `replaceComponent(...)` - replaces an existing component, while its dependencies remain in the graph.
-- `mockComponent(...)` - replaces an existing component with a mock and removes the replaced component's real dependencies from the graph if they are no longer needed by the test.
+- `replaceComponent(...)` - replaces an existing component. With a `Supplier` the dependencies of the replaced component are not created, with a `Function<KoraAppGraph, T>` they stay in the graph, because the replacement is built from already initialized graph components.
+- `mockComponent(...)` - replaces an existing component with a mock, the dependencies of the replaced component are not created.
 
-`addComponent(...)` and `replaceComponent(...)` have overloads with `Function<KoraAppGraph, T>` if the new component should be built from already initialized graph components.
-For components with `@Tag`, use overloads with `List<Class<?>> tags`.
+Each of these methods has an overload that accepts a tag as a `Class<?>` between the type and the factory, for components declared with `@Tag`.
+If no component matches the type and tag, the extension fails the test with `Cannot replace Kora component`.
 
 ### Adding { #adding }
 
@@ -1162,7 +1241,7 @@ An example of adding a component to a graph:
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
                 .addComponent(TypeRef.of(Supplier.class, Integer.class), () -> (Supplier<Integer>) () -> 1);
         }
@@ -1182,7 +1261,7 @@ An example of adding a component to a graph:
 
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .addComponent(TypeRef.of(Supplier::class.java, Int::class.java), Supplier { Supplier { 1 } })
+                .addComponent(TypeRef.of(Supplier::class.java, Int::class.javaObjectType), Supplier { Supplier { 1 } })
         }
 
         @Test
@@ -1191,6 +1270,9 @@ An example of adding a component to a graph:
         }
     }
     ```
+
+In Kotlin the factory is wrapped in an explicit `Supplier { ... }` SAM constructor, because `addComponent` also has an overload with `Function<KoraAppGraph, T>`
+and a bare lambda would be ambiguous. Generic type arguments in the graph are boxed types, so `Int::class.javaObjectType` is used and not `Int::class.java`, which is the primitive `int`.
 
 In case it is required to add components using a real component from the graph, this is also available through another method signature:
 
@@ -1201,18 +1283,18 @@ In case it is required to add components using a real component from the graph, 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                    .addComponent(TypeRef.of(Supplier.class, String.class),
+                    .addComponent(TypeRef.of(Supplier.class, Long.class),
                             (graph) -> {
-                                final Supplier<Integer> existingComponent = (Supplier<Integer>) graph.getFirst(TypeRef.of(Supplier.class, Integer.class));
-                                return (Supplier<String>) () -> "1" + existingComponent.get();
+                                final Supplier<String> existingComponent = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class));
+                                return (Supplier<Long>) () -> Long.parseLong(existingComponent.get());
                             });
         }
 
         @Test
-        void example(@TestComponent Supplier<String> supplier) {
-            assertEquals(1, supplier.get());
+        void example(@TestComponent Supplier<Long> supplier) {
+            assertEquals(1L, supplier.get());
         }
     }
     ```
@@ -1223,20 +1305,19 @@ In case it is required to add components using a real component from the graph, 
     @KoraAppTest(value = Application::class)
     class SomeTests : KoraAppTestGraphModifier {
 
-        @Nonnull
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .addComponent(TypeRef.of(Supplier::class.java, String::class.java))
+                .addComponent(TypeRef.of(Supplier::class.java, Long::class.javaObjectType))
                 { graph ->
-                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, Int::class.java))
-                            as Supplier<Int>
-                    Supplier { "1" + existingComponent.get() }
+                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java))
+                            as Supplier<String>
+                    Supplier { existingComponent.get().toLong() }
                 }
         }
 
         @Test
-        fun example(@TestComponent supplier: Supplier<String>) {
-            assertEquals(1, supplier.get())
+        fun example(@TestComponent supplier: Supplier<Long>) {
+            assertEquals(1L, supplier.get())
         }
     }
     ```
@@ -1252,9 +1333,9 @@ An example of replacing a component in a dependency container, this mechanism ca
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier.class, String.class), List.of(Supplier.class), () -> (Supplier<String>) () -> "?");
+                .replaceComponent(TypeRef.of(Supplier.class, String.class), Supplier.class, () -> (Supplier<String>) () -> "?");
         }
 
         @Test
@@ -1272,7 +1353,7 @@ An example of replacing a component in a dependency container, this mechanism ca
 
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), listOf(Supplier::class.java), Supplier { Supplier { "?" } })
+                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java, Supplier { Supplier { "?" } })
         }
 
         @Test
@@ -1291,18 +1372,18 @@ In case it is required to replace components using a real component from the gra
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                    .replaceComponent(TypeRef.of(Supplier.class, Integer.class),
+                    .replaceComponent(TypeRef.of(Supplier.class, String.class), Supplier.class,
                             (graph) -> {
-                                final Supplier<Integer> existingComponent = (Supplier<Integer>) graph.getFirst(TypeRef.of(Supplier.class, Integer.class));
-                                return (Supplier<Integer>) () -> 1 + existingComponent.get();
+                                final Supplier<String> existingComponent = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class));
+                                return (Supplier<String>) () -> existingComponent.get() + "2";
                             });
         }
 
         @Test
-        void example(@TestComponent Supplier<Integer> supplier) {
-            assertEquals(1, supplier.get());
+        void example(@Tag(Supplier.class) @TestComponent Supplier<String> supplier) {
+            assertEquals("12", supplier.get());
         }
     }
     ```
@@ -1313,28 +1394,30 @@ In case it is required to replace components using a real component from the gra
     @KoraAppTest(value = Application::class)
     class SomeTests : KoraAppTestGraphModifier {
 
-        @Nonnull
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier::class.java, Int::class.java))
+                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java)
                 { graph ->
-                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, Int::class.java))
-                            as Supplier<Int>
-                    Supplier { 1 + existingComponent.get() }
+                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java))
+                            as Supplier<String>
+                    Supplier { existingComponent.get() + "2" }
                 }
         }
 
         @Test
-        fun example(@TestComponent supplier: Supplier<Int>) {
-            assertEquals(1, supplier.get())
+        fun example(@Tag(Supplier::class) @TestComponent supplier: Supplier<String>) {
+            assertEquals("12", supplier.get())
         }
     }
     ```
 
+The replacement above reads the component without a tag and replaces the one with the `Supplier` tag,
+a factory must never request the very component it replaces, otherwise the graph initialization loops.
+
 ### Programmatic Mock { #programmatic-mock }
 
 If a component should be replaced specifically as a mock, use `mockComponent(...)`.
-Unlike `replaceComponent(...)`, this method tells the extension that the real dependencies of the replaced component are not needed and can be excluded from the test graph.
+Just like the `Supplier` form of `replaceComponent(...)`, this method tells the extension that the real dependencies of the replaced component are not needed and can be excluded from the test graph.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1343,7 +1426,7 @@ Unlike `replaceComponent(...)`, this method tells the extension that the real de
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
                 .mockComponent(TypeRef.of(Supplier.class, String.class), () -> Mockito.mock(Supplier.class));
         }
@@ -1404,6 +1487,7 @@ If the container should be initialized once for the whole test class, annotate t
 
 With `PER_CLASS`, one graph instance is used by all test methods in the class, and cleanup runs after the whole class completes.
 This speeds up heavy integration tests, but mutable component and mock state should be handled more carefully.
+Before each test method the extension resets all mocks and spies of the shared graph, so stubbing must be declared per test method.
 
 Lifecycle restrictions:
 

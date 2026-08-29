@@ -1,16 +1,20 @@
 ---
-description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerModule, UndertowHttpServerModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system."
 ---
 
 Модуль `HTTP-сервера` описывает входящую HTTP-границу приложения: прием запроса, разбор параметров, чтение тела,
 выбор обработчика, формирование ответа, телеметрию и перехватчики. В Kora можно описывать контроллеры декларативно
-через `@HttpController` и `@HttpRoute` как тонкий слой абстракции, либо регистрировать обработчики императивно через `HttpServerRequestHandler`.
+через `@HttpController` и `@HttpRoute`, либо регистрировать обработчики императивно через `HttpServerRequestHandler`.
 
 Декларативный подход подходит для большинства API: сигнатура метода описывает HTTP-контракт, а Kora во время компиляции
-создает обработчик. Императивный подход полезен для низкоуровневых
+создает обработчик без использования `Reflection` в рантайме. Императивный подход полезен для низкоуровневых
 или динамических маршрутов, где запрос удобнее обрабатывать вручную.
+
+Обработка запросов **синхронная**. Каждый запрос выполняется на виртуальном потоке, поэтому обработчик
+может блокироваться: методы контроллеров, перехватчики и мапперы возвращают результат напрямую и никогда не возвращают
+`CompletionStage`, `Mono`/`Flux` или `suspend`-функцию.
 
 ???+ tip "Совет"
 
@@ -33,27 +37,31 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-server-undertow"
+    implementation "io.koraframework:http-server-undertow"
     ```
 
     Модуль:
     ```java
     @KoraApp
-    public interface Application extends UndertowHttpServerModule { }
+    public interface Application extends UndertowPublicHttpServerModule { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-server-undertow")
+    implementation("io.koraframework:http-server-undertow")
     ```
 
     Модуль:
     ```kotlin
     @KoraApp
-    interface Application : UndertowHttpServerModule
+    interface Application : UndertowPublicHttpServerModule
     ```
+
+`UndertowPublicHttpServerModule` поднимает **два** сервера: публичный для контроллеров приложения
+и системный для [проб](probes.md) и [метрик](metrics.md).
+Если приложению нужен только системный сервер, подключите `UndertowSystemHttpServerModule`.
 
 ## Конфигурация { #configuration }
 
@@ -63,76 +71,76 @@ agent:
 
     ```javascript
     httpServer {
-        publicApiHttpPort = 8080 //(1)!
-        privateApiHttpPort = 8085 //(2)!
-        virtualThreadsEnabled = false //(3)!
-        maxRequestBodySize = "256MiB" //(4)!
+        port = 8080 //(1)!
+        system.port = 8085 //(2)!
+        maxRequestBodySize = "256MiB" //(3)!
+        telemetry.logging.enabled = false //(4)!
     }
     ```
 
-    1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
-    2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
-    3.  Включает виртуальные потоки для блокирующей обработки запросов вместо пула `blockingThreads`, требует `Java 21+` (по умолчанию: `false`)
-    4.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+    1.  Порт публичного `HTTP` сервера (по умолчанию: `8080`)
+    2.  Порт системного `HTTP` сервера (по умолчанию: `8085`)
+    3.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+    4.  Включает логирование запросов и ответов (по умолчанию: `false`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
-      virtualThreadsEnabled: false #(3)!
-      maxRequestBodySize: "256MiB" #(4)!
+      port: 8080 #(1)!
+      system:
+        port: 8085 #(2)!
+      maxRequestBodySize: "256MiB" #(3)!
+      telemetry:
+        logging:
+          enabled: false #(4)!
     ```
 
-    1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
-    2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
-    3.  Включает виртуальные потоки для блокирующей обработки запросов вместо пула `blockingThreads`, требует `Java 21+` (по умолчанию: `false`)
-    4.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+    1.  Порт публичного `HTTP` сервера (по умолчанию: `8080`)
+    2.  Порт системного `HTTP` сервера (по умолчанию: `8085`)
+    3.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+    4.  Включает логирование запросов и ответов (по умолчанию: `false`)
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации, описанной в классе `HttpServerConfig` (указаны примеры значений или значения по умолчанию):
+    Пример полной конфигурации, описанной в классе `HttpServerConfig` (указаны значения по умолчанию либо примеры значений):
 
     ===! ":material-code-json: `Hocon`"
 
         ```javascript
         httpServer {
-            publicApiHttpPort = 8080 //(1)!
-            privateApiHttpPort = 8085 //(2)!
-            privateApiHttpMetricsPath = "/metrics" //(3)!
-            privateApiHttpReadinessPath = "/system/readiness" //(4)!
-            privateApiHttpLivenessPath = "/system/liveness" //(5)!
-            ignoreTrailingSlash = false //(6)!
-            ioThreads = 2 //(7)!
-            blockingThreads = 2 //(8)!
-            shutdownWait = "30s" //(9)!
-            threadKeepAliveTimeout = "60s" //(10)!
-            socketReadTimeout = "0s" //(11)!
-            socketWriteTimeout = "0s" //(12)!
-            socketKeepAliveEnabled = false //(13)!
-            virtualThreadsEnabled = false //(14)!
-            maxRequestBodySize = "256MiB" //(15)!
+            port = 8080 //(1)!
+            ignoreTrailingSlash = false //(2)!
+            shutdownWait = "30s" //(3)!
+            socketReadTimeout = "0s" //(4)!
+            socketWriteTimeout = "0s" //(5)!
+            socketKeepAliveEnabled = false //(6)!
+            headerKeepAliveEnabled = false //(7)!
+            headerServerDateEnabled = true //(8)!
+            maxRequestBodySize = "256MiB" //(9)!
             telemetry {
                 logging {
-                    enabled = false //(16)!
-                    stacktrace = true //(17)!
-                    mask = "***" //(18)!
-                    maskQueries = [ ] //(19)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(20)!
-                    pathTemplate = true //(21)!
+                    enabled = false //(10)!
+                    stacktrace = true //(11)!
+                    mask = "***" //(12)!
+                    maskQueries = [ ] //(13)!
+                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
+                    pathFull = false //(15)!
+                    maxRequestBodyLogSize = "2MiB" //(16)!
+                    maxResponseBodyLogSize = "2MiB" //(17)!
                 }
                 metrics {
-                    enabled = true //(22)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(23)!
-                    tags = { // (24)!
+                    enabled = false //(18)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(19)!
+                    tags = { // (20)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(25)!
-                    attributes = { // (26)!
+                    enabled = true //(21)!
+                    tracePathFull = true //(22)!
+                    attributes = { // (23)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -141,109 +149,224 @@ agent:
         }
         ```
 
-        1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
-        2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
-        3.  Путь для получения [метрик](metrics.md) на служебном сервере (по умолчанию: `/metrics`)
-        4.  Путь для получения статуса [проб готовности](probes.md) на служебном сервере (по умолчанию: `/system/readiness`)
-        5.  Путь для получения статуса [проб жизнеспособности](probes.md) на служебном сервере (по умолчанию: `/system/liveness`)
-        6.  Игнорировать ли завершающий `/` в пути: если включено, `/my/path` и `/my/path/` будут считаться одним маршрутом (по умолчанию: `false`)
-        7.  Количество потоков сетевого ввода-вывода (по умолчанию: количество доступных процессоров, но не меньше `2`)
-        8.  Количество потоков для блокирующей обработки запросов (по умолчанию: `min(max(доступные процессоры, 2) * 8, 200)`)
-        9.  Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#component-lifecycle) (по умолчанию: `30s`)
-        10.  Максимальное время жизни потока обработчика запроса без работы (по умолчанию: `60s`)
-        11.  Максимальное время ожидания чтения данных из сокета или соединения; `0s` отключает тайм-аут (по умолчанию: `0s`)
-        12.  Максимальное время ожидания записи данных в сокет или соединение; `0s` отключает тайм-аут (по умолчанию: `0s`)
-        13.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
-        14.  Включает виртуальные потоки для блокирующей обработки запросов вместо пула `blockingThreads`, требует `Java 21+` (по умолчанию: `false`)
-        15.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
-        16.  Включает логирование модуля (по умолчанию: `false`)
-        17.  Включает логирование стека вызовов при исключении (по умолчанию: `true`)
-        18.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        19.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        20.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        21.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        22.  Включает метрики модуля (по умолчанию: `true`)
-        23.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        24.  Настройка тегов для метрик (по умолчанию: `{}`)
-        25.  Включает трассировку модуля (по умолчанию: `true`)
-        26.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1.  Порт публичного `HTTP` сервера (по умолчанию: `8080`)
+        2.  Игнорировать ли завершающий `/` в пути: при включении `/my/path` и `/my/path/` считаются одним маршрутом (по умолчанию: `false`)
+        3.  Время ожидания обработки запросов перед остановкой сервера при [graceful shutdown](container.md#component-lifecycle) (по умолчанию: `30s`)
+        4.  Максимальное время ожидания чтения данных из сокета или соединения, `0s` отключает таймаут (по умолчанию: `0s`)
+        5.  Максимальное время ожидания записи данных в сокет или соединение, `0s` отключает таймаут (по умолчанию: `0s`)
+        6.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
+        7.  Всегда ли отправлять заголовок ответа `Connection: keep-alive` (по умолчанию: `false`)
+        8.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
+        9.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+        10.  Включает логирование модуля (по умолчанию: `false`)
+        11.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
+        12.  Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
+        13.  Список параметров запроса, которые надо скрыть (по умолчанию: `[]`)
+        14.  Список заголовков запроса или ответа, которые надо скрыть (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        15.  Логировать ли полный путь запроса вместо шаблона маршрута; если не указано, используется шаблон, а на уровне `TRACE` — полный путь (по умолчанию не указано, опционально)
+        16.  Максимальный размер тела запроса, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
+        17.  Максимальный размер тела ответа, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
+        18.  Включает метрики модуля (по умолчанию: `false`)
+        19.  Настраивает [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        20.  Настраивает теги метрик (по умолчанию: `{}`)
+        21.  Включает трассировку модуля (по умолчанию: `true`)
+        22.  Записывать ли полный путь запроса в атрибут спана `url.path` (по умолчанию: `true`)
+        23.  Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
         httpServer:
-          publicApiHttpPort: 8080 #(1)!
-          privateApiHttpPort: 8085 #(2)!
-          privateApiHttpMetricsPath: "/metrics" #(3)!
-          privateApiHttpReadinessPath: "/system/readiness" #(4)!
-          privateApiHttpLivenessPath: "/system/liveness" #(5)!
-          ignoreTrailingSlash: false #(6)!
-          ioThreads: 2 #(7)!
-          blockingThreads: 2 #(8)!
-          shutdownWait: "30s" #(9)!
-          threadKeepAliveTimeout: "60s" #(10)!
-          socketReadTimeout: "0s" #(11)!
-          socketWriteTimeout: "0s" #(12)!
-          socketKeepAliveEnabled: false #(13)!
-          virtualThreadsEnabled: false #(14)!
-          maxRequestBodySize: "256MiB" #(15)!
+          port: 8080 #(1)!
+          ignoreTrailingSlash: false #(2)!
+          shutdownWait: "30s" #(3)!
+          socketReadTimeout: "0s" #(4)!
+          socketWriteTimeout: "0s" #(5)!
+          socketKeepAliveEnabled: false #(6)!
+          headerKeepAliveEnabled: false #(7)!
+          headerServerDateEnabled: true #(8)!
+          maxRequestBodySize: "256MiB" #(9)!
           telemetry:
             logging:
-              enabled: false #(16)!
-              stacktrace: true #(17)!
-              mask: "***" #(18)!
-              maskQueries: [ ] #(19)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(20)!
-              pathTemplate: true #(21)!
+              enabled: false #(10)!
+              stacktrace: true #(11)!
+              mask: "***" #(12)!
+              maskQueries: [ ] #(13)!
+              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
+              pathFull: false #(15)!
+              maxRequestBodyLogSize: "2MiB" #(16)!
+              maxResponseBodyLogSize: "2MiB" #(17)!
             metrics:
-              enabled: true #(22)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(23)!
-              tags: #(24)!
+              enabled: false #(18)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
+              tags: #(20)!
                 key1: value1
                 key2: value2
             tracing:
-              enabled: true #(25)!
-              attributes: #(26)!
+              enabled: true #(21)!
+              tracePathFull: true #(22)!
+              attributes: #(23)!
                 key1: value1
                 key2: value2
         ```
 
-        1.  Порт публичного `HTTP`-сервера (по умолчанию: `8080`)
-        2.  Порт служебного `HTTP`-сервера (по умолчанию: `8085`)
-        3.  Путь для получения [метрик](metrics.md) на служебном сервере (по умолчанию: `/metrics`)
-        4.  Путь для получения статуса [проб готовности](probes.md) на служебном сервере (по умолчанию: `/system/readiness`)
-        5.  Путь для получения статуса [проб жизнеспособности](probes.md) на служебном сервере (по умолчанию: `/system/liveness`)
-        6.  Игнорировать ли завершающий `/` в пути: если включено, `/my/path` и `/my/path/` будут считаться одним маршрутом (по умолчанию: `false`)
-        7.  Количество потоков сетевого ввода-вывода (по умолчанию: количество доступных процессоров, но не меньше `2`)
-        8.  Количество потоков для блокирующей обработки запросов (по умолчанию: `min(max(доступные процессоры, 2) * 8, 200)`)
-        9.  Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#component-lifecycle) (по умолчанию: `30s`)
-        10.  Максимальное время жизни потока обработчика запроса без работы (по умолчанию: `60s`)
-        11.  Максимальное время ожидания чтения данных из сокета или соединения; `0s` отключает тайм-аут (по умолчанию: `0s`)
-        12.  Максимальное время ожидания записи данных в сокет или соединение; `0s` отключает тайм-аут (по умолчанию: `0s`)
-        13.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
-        14.  Включает виртуальные потоки для блокирующей обработки запросов вместо пула `blockingThreads`, требует `Java 21+` (по умолчанию: `false`)
-        15.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
-        16.  Включает логирование модуля (по умолчанию: `false`)
-        17.  Включает логирование стека вызовов при исключении (по умолчанию: `true`)
-        18.  Маска, которая используется для скрытия указанных заголовков и параметров запроса или ответа (по умолчанию: `***`)
-        19.  Список параметров запроса, которые следует скрывать (по умолчанию: `[]`)
-        20.  Список заголовков запроса или ответа, которые следует скрывать (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
-        21.  Использовать ли шаблон пути запроса при логировании; если не указано, шаблон используется всегда, кроме уровня `TRACE`, где используется полный путь (по умолчанию не указано, необязательно)
-        22.  Включает метрики модуля (по умолчанию: `true`)
-        23.  Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        24.  Настройка тегов для метрик (по умолчанию: `{}`)
-        25.  Включает трассировку модуля (по умолчанию: `true`)
-        26.  Настройка атрибутов для трассировки (по умолчанию: `{}`)
+        1.  Порт публичного `HTTP` сервера (по умолчанию: `8080`)
+        2.  Игнорировать ли завершающий `/` в пути: при включении `/my/path` и `/my/path/` считаются одним маршрутом (по умолчанию: `false`)
+        3.  Время ожидания обработки запросов перед остановкой сервера при [graceful shutdown](container.md#component-lifecycle) (по умолчанию: `30s`)
+        4.  Максимальное время ожидания чтения данных из сокета или соединения, `0s` отключает таймаут (по умолчанию: `0s`)
+        5.  Максимальное время ожидания записи данных в сокет или соединение, `0s` отключает таймаут (по умолчанию: `0s`)
+        6.  Включать ли `TCP keep-alive` для сокета или соединения (по умолчанию: `false`)
+        7.  Всегда ли отправлять заголовок ответа `Connection: keep-alive` (по умолчанию: `false`)
+        8.  Всегда ли отправлять заголовок ответа `Date` (по умолчанию: `true`)
+        9.  Максимально допустимый размер тела входящего запроса (по умолчанию: `256MiB`)
+        10.  Включает логирование модуля (по умолчанию: `false`)
+        11.  Включает логирование стектрейса при исключении (по умолчанию: `true`)
+        12.  Маска, которой скрываются указанные заголовки и параметры запроса или ответа (по умолчанию: `***`)
+        13.  Список параметров запроса, которые надо скрыть (по умолчанию: `[]`)
+        14.  Список заголовков запроса или ответа, которые надо скрыть (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`)
+        15.  Логировать ли полный путь запроса вместо шаблона маршрута; если не указано, используется шаблон, а на уровне `TRACE` — полный путь (по умолчанию не указано, опционально)
+        16.  Максимальный размер тела запроса, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
+        17.  Максимальный размер тела ответа, который может быть записан в лог; тело большего размера логируется без содержимого (по умолчанию: `2MiB`)
+        18.  Включает метрики модуля (по умолчанию: `false`)
+        19.  Настраивает [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрик (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        20.  Настраивает теги метрик (по умолчанию: `{}`)
+        21.  Включает трассировку модуля (по умолчанию: `true`)
+        22.  Записывать ли полный путь запроса в атрибут спана `url.path` (по умолчанию: `true`)
+        23.  Настраивает атрибуты трассировки (по умолчанию: `{}`)
 
-Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-server).
+Метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-server).
 
-Kora предоставляет тонкую настройку `HTTP`-сервера `Undertow` через два специализированных интерфейса конфигурации: `UndertowConfigurer` и `HttpHandlerConfigurer`.  
-Они позволяют настраивать поведение сервера и конвейер обработки запросов, не жертвуя интеграцией с модульной архитектурой Kora.
+### Системный сервер { #system-server }
 
-## Контроллер декларативный { #somecontroller-declarative }
+Системный сервер настраивается в собственной секции `httpServer.system`.
+`SystemHttpServerConfig` наследует `HttpServerConfig`, поэтому там доступны все перечисленные выше опции,
+плюс пути системных эндпоинтов:
 
-Для создания контроллера следует использовать `@HttpController` аннотацию, а для его регистрации как зависимость `@Component`.
-Аннотация `@HttpRoute` отвечает за указания пути и метода HTTP для конкретного метода обработчика.
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer.system {
+        port = 8085 //(1)!
+        metricsPath = "/metrics" //(2)!
+        readinessPath = "/system/readiness" //(3)!
+        livenessPath = "/system/liveness" //(4)!
+        telemetry.tracing.enabled = false //(5)!
+    }
+    ```
+
+    1.  Порт системного `HTTP` сервера (по умолчанию: `8085`)
+    2.  Путь для получения [метрик](metrics.md) на системном сервере (по умолчанию: `/metrics`)
+    3.  Путь для получения статуса [readiness пробы](probes.md) на системном сервере (по умолчанию: `/system/readiness`)
+    4.  Путь для получения статуса [liveness пробы](probes.md) на системном сервере (по умолчанию: `/system/liveness`)
+    5.  Включает трассировку запросов системного сервера (по умолчанию: `false`, в отличие от публичного сервера)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      system:
+        port: 8085 #(1)!
+        metricsPath: "/metrics" #(2)!
+        readinessPath: "/system/readiness" #(3)!
+        livenessPath: "/system/liveness" #(4)!
+        telemetry:
+          tracing:
+            enabled: false #(5)!
+    ```
+
+    1.  Порт системного `HTTP` сервера (по умолчанию: `8085`)
+    2.  Путь для получения [метрик](metrics.md) на системном сервере (по умолчанию: `/metrics`)
+    3.  Путь для получения статуса [readiness пробы](probes.md) на системном сервере (по умолчанию: `/system/readiness`)
+    4.  Путь для получения статуса [liveness пробы](probes.md) на системном сервере (по умолчанию: `/system/liveness`)
+    5.  Включает трассировку запросов системного сервера (по умолчанию: `false`, в отличие от публичного сервера)
+
+### Undertow { #undertow }
+
+Транспортные настройки самого `Undertow` вынесены в отдельную секцию `httpServer.undertow` и общие для обоих серверов,
+поскольку настраивают единый `XnioWorker`:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer.undertow {
+        ioThreads = 4 //(1)!
+        threadKeepAliveTimeout = "60s" //(2)!
+    }
+    ```
+
+    1.  Количество потоков сетевого ввода-вывода (по умолчанию: количество доступных процессоров, но не меньше `2`)
+    2.  Максимальное время простоя рабочего потока (по умолчанию: `60s`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      undertow:
+        ioThreads: 4 #(1)!
+        threadKeepAliveTimeout: "60s" #(2)!
+    ```
+
+    1.  Количество потоков сетевого ввода-вывода (по умолчанию: количество доступных процессоров, но не меньше `2`)
+    2.  Максимальное время простоя рабочего потока (по умолчанию: `60s`)
+
+Сама обработка запроса не использует ограниченный пул блокирующих потоков: каждое соединение обслуживается
+виртуальным потоком, поэтому опций `blockingThreads` и `virtualThreadsEnabled` больше нет.
+
+Для всего, что не вынесено в конфигурацию, Kora предоставляет точки расширения `Configurer<T>`.
+`Configurer<T>` получает собираемый объект и возвращает тот, который будет использован:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends UndertowPublicHttpServerModule {
+
+        default Configurer<Undertow.Builder> undertowConfigurer() { //(1)!
+            return builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
+        }
+
+        default Configurer<HttpHandler> handlerConfigurer() { //(2)!
+            return handler -> new RequestDumpingHandler(handler);
+        }
+
+        default Configurer<XnioWorker.Builder> workerConfigurer() { //(3)!
+            return builder -> builder.setWorkerName("my-worker");
+        }
+    }
+    ```
+
+    1.  Настраивает билдер `Undertow` публичного сервера до его старта
+    2.  Оборачивает корневой `HttpHandler` публичного сервера
+    3.  Настраивает `XnioWorker`, общий для обоих серверов
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : UndertowPublicHttpServerModule {
+
+        fun undertowConfigurer(): Configurer<Undertow.Builder> = //(1)!
+            Configurer { builder -> builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true) }
+
+        fun handlerConfigurer(): Configurer<HttpHandler> = //(2)!
+            Configurer { handler -> RequestDumpingHandler(handler) }
+
+        fun workerConfigurer(): Configurer<XnioWorker.Builder> = //(3)!
+            Configurer { builder -> builder.setWorkerName("my-worker") }
+    }
+    ```
+
+    1.  Настраивает билдер `Undertow` публичного сервера до его старта
+    2.  Оборачивает корневой `HttpHandler` публичного сервера
+    3.  Настраивает `XnioWorker`, общий для обоих серверов
+
+`Configurer<Undertow.Builder>` или `Configurer<HttpHandler>` без тега применяется к **публичному** серверу.
+Чтобы настроить системный сервер, пометьте компонент тегом `@SystemApi`.
+
+## SomeController декларативный { #somecontroller-declarative }
+
+Для создания контроллера используется аннотация `@HttpController`, а для регистрации его как зависимости — аннотация `@Component`.
+Аннотация `@HttpRoute` отвечает за указание HTTP-пути и метода для конкретного метода-обработчика.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -261,11 +384,11 @@ Kora предоставляет тонкую настройку `HTTP`-серв�
     }
     ```
 
-    1. Указывает что класс является компонентом и его требуется зарегистрировать в контейнере приложения
-    2. Указывает что класс является контроллером и содержит HTTP-обработчики
-    3. Указывает что метод является обработчиком пути в контроллере
-    4. Указывает тип `HTTP`-метода обработчика
-    5. Указывает путь метода обработчика
+    1. Указывает, что класс является компонентом и должен быть зарегистрирован в контейнере зависимостей приложения
+    2. Указывает, что класс является контроллером и содержит HTTP-обработчики
+    3. Указывает, что метод является обработчиком пути в контроллере
+    4. Указывает тип `HTTP` метода обработчика
+    5. Указывает путь метода-обработчика
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -283,34 +406,39 @@ Kora предоставляет тонкую настройку `HTTP`-серв�
     }
     ```
 
-    1. Указывает что класс является компонентом и его требуется зарегистрировать в контейнере приложения
-    2. Указывает что класс является контроллером и содержит HTTP-обработчики
-    3. Указывает что метод является обработчиком пути в контроллере
-    4. Указывает тип `HTTP`-метода обработчика
-    5. Указывает путь метода обработчика
+    1. Указывает, что класс является компонентом и должен быть зарегистрирован в контейнере зависимостей приложения
+    2. Указывает, что класс является контроллером и содержит HTTP-обработчики
+    3. Указывает, что метод является обработчиком пути в контроллере
+    4. Указывает тип `HTTP` метода обработчика
+    5. Указывает путь метода-обработчика
+
+`HttpRoute.method()` имеет тип `String`, а `HttpMethod` — это набор констант (`GET`, `HEAD`, `POST`, `PUT`, `DELETE`,
+`CONNECT`, `OPTIONS`, `TRACE`, `PATCH`, `QUERY`), поэтому нестандартный метод можно указать литералом:
+`@HttpRoute(method = "PURGE", path = "/cache")`.
 
 ### Запрос { #request }
 
-Раздел описывает преобразование `HTTP`-запроса в аргументы метода контроллера.
+В этом разделе описано, как `HTTP` запрос превращается в аргументы метода контроллера.
 Для частей запроса используются специальные аннотации, а тело запроса передается аргументом без такой аннотации.
 
-#### Преобразование параметров из строки { #string-parameter-reader }
+#### Конвертация строковых параметров { #string-parameter-reader }
 
-Значения из пути, параметров запроса, заголовков и `cookie` приходят как строки.
-Для преобразования строки в нужный тип Kora использует `StringParameterReader<T>`:
+Значения из пути, параметров запроса, заголовков и `cookie` приходят строками.
+Для преобразования строки в целевой тип Kora использует `HttpServerParameterReader<T>`:
 
 ```java
-public interface StringParameterReader<T> {
+public interface HttpServerParameterReader<T> {
     T read(String string);
 }
 ```
 
-`StringParameterReader<T>` ищется как компонент графа по точному типу параметра. Если параметр объявлен как `List<T>` или `Set<T>`,
-преобразователь применяется к каждому значению отдельно.
+`HttpServerParameterReader<T>` ищется как компонент графа по точному типу параметра. Если параметр объявлен как `List<T>` или `Set<T>`,
+конвертер применяется к каждому значению по отдельности.
 
-Из коробки поддерживаются `String`, `Boolean`, `Integer`, `Long`, `Float`, `Double`, `UUID`, `BigInteger`, `BigDecimal`,
-`Duration`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime`, `ZonedDateTime` и `enum`.
-Для `enum` по умолчанию используется имя значения через `Enum.name()`. Если значение невозможно преобразовать, запрос завершается
+`String`, `Boolean`, `Integer`, `Long`, `Double` и `UUID` разбираются самим сгенерированным обработчиком и конвертера не требуют.
+Из коробки Kora также предоставляет конвертеры для `Float`, `BigInteger`, `BigDecimal`, `Duration`,
+`LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetTime`, `OffsetDateTime`, `ZonedDateTime` и любого `enum`.
+Для `enum` по умолчанию используется имя значения через `Enum.name()`. Если значение не удалось сконвертировать, запрос завершается
 ответом `400` через `HttpServerResponseException`.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -321,8 +449,8 @@ public interface StringParameterReader<T> {
     @Module
     public interface UserIdModule {
 
-        default StringParameterReader<UserId> userIdStringParameterReader() {
-            return StringParameterReader.of(
+        default HttpServerParameterReader<UserId> userIdParameterReader() {
+            return HttpServerParameterReader.of(
                 value -> new UserId(Long.parseLong(value)),
                 value -> "Invalid user id: " + value
             );
@@ -338,8 +466,8 @@ public interface StringParameterReader<T> {
     @Module
     interface UserIdModule {
 
-        fun userIdStringParameterReader(): StringParameterReader<UserId> {
-            return StringParameterReader.of(
+        fun userIdParameterReader(): HttpServerParameterReader<UserId> {
+            return HttpServerParameterReader.of(
                 { value -> UserId(value.toLong()) },
                 { value -> "Invalid user id: $value" }
             )
@@ -347,7 +475,7 @@ public interface StringParameterReader<T> {
     }
     ```
 
-После регистрации преобразователя пользовательский тип можно использовать в параметрах контроллера:
+После регистрации конвертера пользовательский тип можно использовать в параметрах контроллера:
 
 ```java
 @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
@@ -358,9 +486,9 @@ public User get(@Path("id") UserId id) {
 
 #### Параметр пути { #path-parameter }
 
-`@Path` — обозначает значение части пути запроса, сам параметр указывается в `{кавычках}` в пути
-и имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
-Значение преобразуется через `StringParameterReader<T>`, поэтому можно использовать как встроенные типы, так и пользовательские.
+`@Path` — обозначает значение части пути запроса, сам параметр указывается в пути как `{path}`,
+а имя параметра задается в `value` либо по умолчанию равно имени аргумента метода.
+Значение преобразуется через `HttpServerParameterReader<T>`, поэтому доступны как встроенные, так и пользовательские типы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -392,11 +520,14 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
+Параметр пути всегда обязателен: если указанное в `@Path` имя отсутствует в шаблоне маршрута,
+компиляция завершается ошибкой `Path parameter '...' is not present in the request mapping path`.
+
 #### Параметр запроса { #query-parameter }
 
-`@Query` — значение параметра запроса, имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
-Поддерживаются одиночные значения, `List<T>` и `Set<T>`. Для `List<T>` сохраняются все значения параметра,
-для `Set<T>` повторяющиеся значения удаляются с сохранением порядка первого появления.
+`@Query` — значение параметра запроса, имя параметра задается в `value` либо по умолчанию равно имени аргумента метода.
+Поддерживаются одиночные значения, `List<T>` и `Set<T>`. `List<T>` сохраняет все значения параметра,
+а `Set<T>` убирает дубликаты и сохраняет порядок первого вхождения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -430,11 +561,13 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
+Параметр без значения (`/hello/world?queryName`) считается отсутствующим:
+обязательный параметр приведет к ответу `400` с сообщением `Query parameter 'queryName' is required`.
+
 #### Заголовок запроса { #request-header }
 
-`@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
-Поддерживаются одиночные значения, `List<T>` и `Set<T>`.
-Для `List<T>` и `Set<T>` используются все значения заголовка.
+`@Header` — значение [заголовка запроса](https://developer.mozilla.org/ru/docs/Web/HTTP/Headers), имя параметра задается в `value` либо по умолчанию равно имени аргумента метода.
+Поддерживаются одиночные значения, `List<T>` и `Set<T>`. `List<T>` и `Set<T>` используют все значения заголовка.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -459,7 +592,7 @@ public User get(@Path("id") UserId id) {
     class SomeController {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        operator fun helloWorld(
+        fun helloWorld(
             @Header("headerName") headerValue: String,
             @Header("headerNameList") headerValues: List<String>
         ): String {
@@ -470,12 +603,15 @@ public User get(@Path("id") UserId id) {
 
 #### Тело запроса { #request-body }
 
-Для указания тела запроса требуется использовать аргумент метода без специальных аннотаций.
-По умолчанию поддерживаются `byte[]`, `ByteBuffer`, `String`, `FormUrlEncoded`, `FormMultipart` и пользовательские типы через `HttpServerRequestMapper<T>`.
+Для указания тела запроса используется аргумент метода без специальных аннотаций.
+По умолчанию поддерживаются `byte[]`, `ByteBuffer`, `String`, `InputStream`, `HttpBodyInput`, `FormUrlEncoded`, `FormMultipart`,
+а также пользовательские типы через `HttpServerRequestMapper<T>`.
+
+`InputStream` и `HttpBodyInput` дают доступ к телу без буферизации его в памяти, что удобно для больших загрузок.
 
 ##### JSON { #json }
 
-Для указания, что тело является `JSON` и для него требуется автоматически создать и внедрить `JsonReader<T>`,
+Чтобы указать, что тело является `JSON` и требует автоматически созданного и внедренного `JsonReader<T>`,
 используется аннотация `@Json`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -485,6 +621,7 @@ public User get(@Path("id") UserId id) {
     @HttpController
     public final class SomeController {
 
+        @Json
         public record Request(String name) {}
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
@@ -494,7 +631,7 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1. Указывает что тело должно быть прочитано как `JSON`
+    1. Указывает, что тело должно читаться как `JSON`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -503,6 +640,7 @@ public User get(@Path("id") UserId id) {
     @HttpController
     class SomeController {
 
+        @Json
         data class Request(val name: String)
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
@@ -512,13 +650,13 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1. Указывает что тело должно быть прочитано как `JSON`
+    1. Указывает, что тело должно читаться как `JSON`
 
-Требуется подключить модуль [JSON](json.md).
+Требуется модуль [JSON](json.md).
 
-##### Текстовая форма { #form-urlencoded }
+##### Form UrlEncoded { #form-urlencoded }
 
-Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
+В качестве типа аргумента тела можно использовать `FormUrlEncoded`, и оно будет обработано как [данные формы](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -529,10 +667,13 @@ public User get(@Path("id") UserId id) {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         public String helloWorld(FormUrlEncoded body) {
+            var part = body.get("name"); //(1)!
             return "Hello World";
         }
     }
     ```
+
+    1. `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -543,14 +684,17 @@ public User get(@Path("id") UserId id) {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         fun helloWorld(body: FormUrlEncoded): String {
+            val part = body.get("name") //(1)!
             return "Hello World"
         }
     }
     ```
 
-##### Бинарная форма { #form-multipart }
+    1. `FormUrlEncoded.get(String)` возвращает `FormPart(String name, List<String> values)` либо `null`
 
-Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
+##### Form Multipart { #form-multipart }
+
+В качестве типа аргумента тела можно использовать `FormMultipart`, и оно будет обработано как [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -561,10 +705,15 @@ public User get(@Path("id") UserId id) {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         public String helloWorld(FormMultipart body) {
+            for (var part : body.parts()) { //(1)!
+                System.out.println(part.name());
+            }
             return "Hello World";
         }
     }
     ```
+
+    1. `FormMultipart.parts()` возвращает запечатанный `FormPart`: `MultipartData`, `MultipartFile` либо `MultipartFileStream`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -575,15 +724,20 @@ public User get(@Path("id") UserId id) {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         fun helloWorld(body: FormMultipart): String {
+            for (part in body.parts()) { //(1)!
+                println(part.name())
+            }
             return "Hello World"
         }
     }
     ```
 
-#### Куки { #cookie }
+    1. `FormMultipart.parts()` возвращает запечатанный `FormPart`: `MultipartData`, `MultipartFile` либо `MultipartFileStream`
 
-`@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра указывается в `value` либо по умолчанию равно имени аргумента метода.
-Можно получить значение как `String`, как тип `Cookie` с именем, значением и атрибутами, либо как другой тип через `StringParameterReader<T>`.
+#### Cookie { #cookie }
+
+`@Cookie` — значение [Cookie](https://developer.mozilla.org/ru/docs/Glossary/Cookie), имя параметра задается в `value` либо по умолчанию равно имени аргумента метода.
+Значение можно получить как `String`, как тип `Cookie` с именем, значением и атрибутами, либо как другой тип через `HttpServerParameterReader<T>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -607,7 +761,7 @@ public User get(@Path("id") UserId id) {
     class SomeController {
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        operator fun helloWorld(
+        fun helloWorld(
             @Cookie("cookieName") cookieValue: String
         ): String {
             return "Hello World";
@@ -617,8 +771,8 @@ public User get(@Path("id") UserId id) {
 
 #### Пользовательский параметр { #custom-parameter }
 
-Если требуется собрать аргумент метода из запроса вручную, можно использовать специальный интерфейс `HttpServerRequestMapper<T>`.
-Такой подход удобен для пользовательского контекста, авторизации, сложной проверки заголовков или нескольких частей запроса сразу:
+Если аргумент метода нужно собрать из запроса вручную, используется интерфейс `HttpServerRequestMapper<T>`.
+Это удобно для пользовательского контекста, авторизации, сложной валидации заголовков или сразу нескольких частей запроса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -629,6 +783,7 @@ public User get(@Path("id") UserId id) {
 
         public record UserContext(String userId, String traceId) {}
 
+        @Component //(1)!
         public static final class RequestMapper implements HttpServerRequestMapper<UserContext> {
 
             @Override
@@ -644,16 +799,20 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
+    1. Сгенерированный модуль контроллера **внедряет** маппер как зависимость, поэтому класс маппера обязан быть компонентом графа
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
     @HttpController
-    class MapperRequestController {
+    class SomeController {
 
-        data class UserContext(val userId: String, val traceId: String)
+        data class UserContext(val userId: String?, val traceId: String?)
 
+        @Component //(1)!
         class RequestMapper : HttpServerRequestMapper<UserContext> {
+
             override fun apply(request: HttpServerRequest): UserContext {
                 return UserContext(
                     request.headers().getFirst("x-user-id"),
@@ -663,31 +822,95 @@ public User get(@Path("id") UserId id) {
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        @Mapping(RequestMapper::class)
-        operator fun get(@Mapping(RequestMapper::class) context: UserContext): String {
+        fun get(@Mapping(RequestMapper::class) context: UserContext): String {
             return "Hello World"
         }
     }
     ```
 
+    1. Сгенерированный модуль контроллера **внедряет** маппер как зависимость, поэтому класс маппера обязан быть компонентом графа
+
+???+ warning "No component found for dependency"
+
+    Класс маппера, указанный в `@Mapping`, никогда не создается сгенерированным модулем — он запрашивается из контейнера.
+    Забытая аннотация `@Component` приводит к ошибке сборки графа:
+
+    ```
+    No component found for dependency:
+      SomeController.RequestMapper (no tags)
+    ```
+
+    То же самое относится к классам перехватчиков из `@InterceptWith`.
+
+Исключение, выброшенное маппером, превращается в ответ `400`, если только оно само не является `HttpServerResponse`,
+поэтому маппер — еще и удобное место, чтобы отклонить некорректный запрос с точным статус-кодом.
+
+#### Полный запрос { #full-request }
+
+Метод контроллера может принимать сам `HttpServerRequest`, когда обработчику нужен исходный запрос:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    @HttpController
+    public final class SomeController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/request")
+        public HttpServerResponse get(HttpServerRequest request) {
+            var header = request.headers().getFirst("header"); //(1)!
+            var query = request.queryParams().get("query"); //(2)!
+            var path = request.pathParams().get("path"); //(3)!
+            return HttpServerResponse.of(200, HttpBody.plaintext(request.path()));
+        }
+    }
+    ```
+
+    1. `HttpHeaders` с методами `getFirst` и `getAll`
+    2. `Map<String, List<String>>` параметров запроса
+    3. `Map<String, String>` параметров пути, разобранных по шаблону маршрута
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    @HttpController
+    class SomeController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/request")
+        fun get(request: HttpServerRequest): HttpServerResponse {
+            val header = request.headers().getFirst("header") //(1)!
+            val query = request.queryParams()["query"] //(2)!
+            val path = request.pathParams()["path"] //(3)!
+            return HttpServerResponse.of(200, HttpBody.plaintext(request.path()))
+        }
+    }
+    ```
+
+    1. `HttpHeaders` с методами `getFirst` и `getAll`
+    2. `Map<String, List<String>>` параметров запроса
+    3. `Map<String, String>` параметров пути, разобранных по шаблону маршрута
+
+`HttpServerRequest` также предоставляет `host()`, `scheme()`, `method()`, `path()`, `pathTemplate()`, `cookies()` и `body()`.
+
 #### Обязательные параметры { #required-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    По умолчанию все аргументы, объявленные в методе, являются **обязательными**.
-    Если обязательное значение отсутствует в запросе, Kora вернет ответ `400`.
+    По умолчанию все объявленные в методе аргументы **обязательны**.
+    Если обязательное значение отсутствует в запросе, Kora возвращает ответ `400`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    По умолчанию все аргументы метода, которые не используют синтаксис [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html),
-    считаются **обязательными**. Если обязательное значение отсутствует в запросе, Kora вернет ответ `400`.
+    По умолчанию обязательны все аргументы метода, которые не используют синтаксис [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html).
+    Если обязательное значение отсутствует в запросе, Kora возвращает ответ `400`.
 
 #### Необязательные параметры { #optional-parameters }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если аргумент метода является необязательным, то есть может отсутствовать в запросе,
-    можно использовать аннотацию `@Nullable` или `Optional<T>` для одиночных значений:
+    Если аргумент метода необязателен, то есть может отсутствовать в запросе,
+    используйте `@Nullable` либо `Optional<T>` для одиночных значений:
 
     ```java
     @Component
@@ -701,11 +924,11 @@ public User get(@Path("id") UserId id) {
     }
     ```
 
-    1.  Подойдет любая аннотация `@Nullable`, например `javax.annotation.Nullable`, `jakarta.annotation.Nullable` или `org.jetbrains.annotations.Nullable`.
+    1.  Kora и примеры используют `org.jspecify.annotations.Nullable`; подойдет любая аннотация с простым именем `Nullable`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Предполагается использовать синтаксис [Kotlin Nullability](https://kotlinlang.ru/docs/null-safety.html) и помечать такой параметр как необязательный:
+    Используйте синтаксис [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) и отметьте такой параметр как необязательный:
 
     ```kotlin
     @Component
@@ -721,16 +944,17 @@ public User get(@Path("id") UserId id) {
 
 ### Ответ { #response }
 
-По умолчанию можно использовать стандартные типы возвращаемых значений: `byte[]`, `ByteBuffer`, `String`.
-Они будут обработаны со статусом `200` и соответствующим заголовком типа ответа.
+По умолчанию можно использовать стандартные типы возвращаемых значений: `byte[]`, `ByteBuffer`, `String`, `HttpBodyOutput`.
+Они обрабатываются со статусом `200` и соответствующим заголовком типа содержимого ответа.
+Метод с типом `void` также отвечает `200` с пустым телом.
 
-Если нужно вручную указать статус, заголовки или тело, метод может вернуть `HttpServerResponse`.
-Основной контракт `HttpServerResponse` состоит из кода ответа, заголовков и необязательного тела:
+Если статус, заголовки или тело нужно указать вручную, метод может возвращать `HttpServerResponse`.
+Основной контракт `HttpServerResponse` состоит из кода ответа, заголовков и опционального тела:
 
 ```java
 public interface HttpServerResponse {
     int code();
-    MutableHttpHeaders headers();
+    HttpHeaders headers();
     @Nullable
     HttpBodyOutput body();
 }
@@ -749,12 +973,12 @@ public interface HttpServerResponse {
                     200, //(1)!
                     HttpHeaders.of("headerName", "headerValue"), //(2)!
                     HttpBody.plaintext("Hello World") //(3)!
-            ); 
+            );
         }
     }
     ```
 
-    1. Код состояния `HTTP`-ответа
+    1. Статус-код `HTTP` ответа
     2. Заголовки ответа
     3. Тело ответа
 
@@ -776,14 +1000,17 @@ public interface HttpServerResponse {
     }
     ```
 
-    1. Код состояния `HTTP`-ответа
+    1. Статус-код `HTTP` ответа
     2. Заголовки ответа
     3. Тело ответа
 
+`HttpBody` предоставляет фабричные методы `empty()`, `plaintext(...)`, `json(...)`, `octetStream(...)` и `of(contentType, ...)`.
+Для потокового ответа используйте `HttpBodyOutput.of(contentType, InputStream)` либо `HttpBodyOutput.of(contentType, os -> ...)`.
+
 #### JSON { #json-2 }
 
-Если предполагается отвечать в формате `JSON`, требуется использовать аннотацию `@Json` над методом.
-Для типа ответа Kora найдет или создаст `JsonWriter<T>`:
+Если ответ нужно вернуть в виде `JSON`, используется аннотация `@Json` на методе.
+Kora найдет или создаст `JsonWriter<T>` для типа ответа:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -792,6 +1019,7 @@ public interface HttpServerResponse {
     @HttpController
     public final class SomeController {
 
+        @Json
         public record Response(String greeting) {}
 
         @Json //(1)!
@@ -802,7 +1030,7 @@ public interface HttpServerResponse {
     }
     ```
 
-    1. Указывает что ответ должен быть в формате `JSON`
+    1. Указывает, что ответ должен быть в формате `JSON`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -811,6 +1039,7 @@ public interface HttpServerResponse {
     @HttpController
     class SomeController {
 
+        @Json
         data class Response(val greeting: String)
 
         @Json //(1)!
@@ -821,16 +1050,16 @@ public interface HttpServerResponse {
     }
     ```
 
-    1. Указывает что ответ должен быть в формате `JSON`
+    1. Указывает, что ответ должен быть в формате `JSON`
 
-Требуется подключить модуль [JSON](json.md).
+Требуется модуль [JSON](json.md).
 
 #### Сущность ответа { #response-entity }
 
-Если требуется вернуть тело, заголовки и код состояния ответа вместе,
+Если тело, заголовки и статус-код ответа нужно вернуть вместе,
 используется `HttpResponseEntity<T>` — обертка над телом ответа.
 
-Ниже показан пример, аналогичный примеру `JSON`, вместе с оберткой `HttpResponseEntity`:
+Ниже пример, аналогичный примеру с `JSON`, но с оберткой `HttpResponseEntity`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -839,6 +1068,7 @@ public interface HttpServerResponse {
     @HttpController
     public final class SomeController {
 
+        @Json
         public record Response(String greeting) {}
 
         @Json
@@ -856,6 +1086,7 @@ public interface HttpServerResponse {
     @HttpController
     class SomeController {
 
+        @Json
         data class Response(val greeting: String)
 
         @Json
@@ -866,13 +1097,16 @@ public interface HttpServerResponse {
     }
     ```
 
-#### Ответ исключение { #respond-exception }
+Если переопределить нужно только статус-код, доступен `HttpResponseEntity.of(code, body)`.
+Заголовок `content-type`, заданный в сущности, имеет приоритет над тем, который сформировал нижележащий маппер.
 
-Если требуется прервать обработку и сразу вернуть ошибку, можно бросить `HttpServerResponseException`.
-Это одновременно исключение и `HttpServerResponse`, поэтому его можно выбросить из контроллера, сервиса или преобразователя параметра.
+#### Ответ исключением { #respond-exception }
 
-Фабричные методы `HttpServerResponseException.of(...)` позволяют указать код состояния, текст ответа, причину и заголовки.
-Тело ответа будет записано как `text/plain; charset=utf-8`.
+Если обработку нужно прервать и сразу вернуть ошибку, выбрасывается `HttpServerResponseException`.
+Он одновременно является исключением и `HttpServerResponse`, поэтому его можно бросить из контроллера, сервиса или конвертера параметров.
+
+Фабричные методы `HttpServerResponseException.of(...)` позволяют указать статус-код, текст ответа, причину и заголовки.
+Тело ответа записывается как `text/plain;charset=utf-8`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -910,8 +1144,8 @@ public interface HttpServerResponse {
 
 #### Пользовательский ответ { #custom-response }
 
-Если требуется сформировать ответ нестандартным способом, можно использовать специальный интерфейс `HttpServerResponseMapper<T>`.
-Он получает `Context`, исходный `HttpServerRequest` и результат метода контроллера, а возвращает готовый `HttpServerResponse`:
+Если ответ нужно формировать особым образом, используется интерфейс `HttpServerResponseMapper<T>`.
+Он получает исходный `HttpServerRequest` и результат метода контроллера, а возвращает готовый `HttpServerResponse`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -922,10 +1156,11 @@ public interface HttpServerResponse {
 
         public record HelloWorldResponse(String greeting, String name) {}
 
+        @Component //(1)!
         public static final class ResponseMapper implements HttpServerResponseMapper<HelloWorldResponse> {
 
             @Override
-            public HttpServerResponse apply(Context ctx, HttpServerRequest request, HelloWorldResponse result) {
+            public HttpServerResponse apply(HttpServerRequest request, HelloWorldResponse result) {
                 return HttpServerResponse.of(200, HttpBody.plaintext(result.greeting() + " - " + result.name()));
             }
         }
@@ -938,6 +1173,8 @@ public interface HttpServerResponse {
     }
     ```
 
+    1. Как и мапперы запроса, класс внедряется в сгенерированный модуль и обязан быть компонентом графа
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
@@ -947,9 +1184,12 @@ public interface HttpServerResponse {
 
         data class HelloWorldResponse(val greeting: String, val name: String)
 
+        @Component //(1)!
         class ResponseMapper : HttpServerResponseMapper<HelloWorldResponse> {
-            fun apply(ctx: Context, request: HttpServerRequest, result: HelloWorldResponse): HttpServerResponse {
-                return HttpServerResponse.of(200, HttpBody.plaintext(result.greeting + " - " + result.name))
+
+            override fun apply(request: HttpServerRequest, result: HelloWorldResponse?): HttpServerResponse { //(2)!
+                requireNotNull(result)
+                return HttpServerResponse.of(200, HttpBody.plaintext("${result.greeting} - ${result.name}"))
             }
         }
 
@@ -961,69 +1201,160 @@ public interface HttpServerResponse {
     }
     ```
 
-### Сигнатуры { #signatures }
+    1. Как и мапперы запроса, класс внедряется в сгенерированный модуль и обязан быть компонентом графа
+    2. Контракт объявляет результат nullable, поэтому Kotlin-переопределение обязано принимать `HelloWorldResponse?` — иначе оно не будет распознано как override
 
-Доступные сигнатуры для методов декларативного HTTP обработчика из коробки:
+### Маршруты { #routes }
+
+Маршрут складывается из префикса пути `@HttpController` и пути `@HttpRoute`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Void`.
+    ```java
+    @Component
+    @HttpController("/api/v1") //(1)!
+    public final class SomeController {
 
-    - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+        @HttpRoute(method = HttpMethod.GET, path = "/pets/{id}") //(2)!
+        public String get(@Path long id) {
+            return "OK";
+        }
+
+        @HttpRoute(method = HttpMethod.GET, path = "/files/*") //(3)!
+        public String file() {
+            return "OK";
+        }
+    }
+    ```
+
+    1. Префикс пути, применяемый ко всем маршрутам контроллера
+    2. Маршрут с параметром пути, итоговый маршрут — `/api/v1/pets/{id}`
+    3. Маршрут с завершающим шаблоном, итоговый маршрут — `/api/v1/files/*`
 
 === ":simple-kotlin: `Kotlin`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
+    ```kotlin
+    @Component
+    @HttpController("/api/v1") //(1)!
+    class SomeController {
+
+        @HttpRoute(method = HttpMethod.GET, path = "/pets/{id}") //(2)!
+        fun get(@Path id: Long): String = "OK"
+
+        @HttpRoute(method = HttpMethod.GET, path = "/files/*") //(3)!
+        fun file(): String = "OK"
+    }
+    ```
+
+    1. Префикс пути, применяемый ко всем маршрутам контроллера
+    2. Маршрут с параметром пути, итоговый маршрут — `/api/v1/pets/{id}`
+    3. Маршрут с завершающим шаблоном, итоговый маршрут — `/api/v1/files/*`
+
+Правила сопоставления маршрутов:
+
+- Параметр пути `{name}` соответствует одному сегменту пути.
+- Шаблон `*` допустим **один раз** и только в **последнем** сегменте: `/files/*`, `/files/*.js`, `/files/file-*.txt`,
+  `/tenant/{id}/report-*.json`. Все остальное (`/foo/*/bar`, `/foo/**`, `/foo/a*b*c`, `/foo/{*}`) не компилируется с ошибкой
+  `HTTP server route path is invalid`.
+- Два обработчика с эквивалентными шаблонами для одного метода приводят к падению сервера на старте с сообщением
+  `Cannot add path template ..., matcher already contains an equivalent pattern ...`.
+- Неизвестный путь отвечает `404`; известный путь с неподдерживаемым методом отвечает `405`
+  и заголовком `Allow` со списком зарегистрированных методов.
+- При `httpServer.ignoreTrailingSlash = true` для каждого маршрута без шаблона регистрируется дополнительный вариант,
+  поэтому `/my/path` и `/my/path/` попадают в один обработчик.
+
+### Сигнатуры { #signatures }
+
+Доступные из коробки сигнатуры декларативных методов-обработчиков `HTTP`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Под `T` подразумевается тип возвращаемого значения.
+
+    - `T myMethod()`
+    - `void myMethod()` — отвечает `200` с пустым телом
+
+    Возврат `CompletionStage<T>`, `Future<T>` либо реактивного `Publisher<T>` **не поддерживается**:
+    процессор выводит предупреждение, что такой тип *"is unsupported and has no meaning"*,
+    а сборка графа затем падает, потому что для такого типа нет `HttpServerResponseMapper`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Под `T` подразумевается тип возвращаемого значения.
 
     - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): Unit` — отвечает `200` с пустым телом
+
+    `suspend`-методы **не поддерживаются** и отклоняются на этапе компиляции с сообщением
+    *"Suspend methods are not supported by the HTTP server controller generator"*.
+    Для параллельной работы внутри обработчика используйте `StructuredTaskScope` вместо корутин.
 
 ## Перехватчики { #interceptors }
 
-Можно создавать перехватчики для изменения поведения или добавления общей логики вокруг обработки запроса.
-Для этого используется интерфейс `HttpServerInterceptor`:
+Перехватчики позволяют изменить поведение или добавить общую логику вокруг обработки запроса.
+Используется интерфейс `HttpServerInterceptor`:
 
 ```java
 public interface HttpServerInterceptor {
-    CompletionStage<HttpServerResponse> intercept(Context context, HttpServerRequest request, InterceptChain chain) throws Exception;
+    HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception;
 
     interface InterceptChain {
-        CompletionStage<HttpServerResponse> process(Context ctx, HttpServerRequest request) throws Exception;
+        HttpServerResponse process(HttpServerRequest request) throws Exception;
     }
 }
 ```
 
-Перехватчик получает текущий `Context`, `HttpServerRequest` и цепочку дальнейшей обработки.
-Чтобы передать запрос дальше, нужно вызвать `chain.process(context, request)`. Если перехватчик возвращает ответ сам,
-обработчик контроллера дальше не вызывается.
+Перехватчик получает `HttpServerRequest` и цепочку дальнейшей обработки.
+Чтобы передать запрос дальше, вызывается `chain.process(request)`. Если перехватчик сам возвращает ответ,
+обработчик контроллера не вызывается. Поскольку вызов синхронный, исключение из глубины цепочки
+перехватывается обычным `try/catch`.
 
-Перехватчики можно использовать на:
+Перехватчики можно применять:
 
-- Конкретных методах контроллера
-- Контроллере целиком
-- Всех контроллерах сразу: для этого компонент перехватчика должен быть зарегистрирован с тегом `@Tag(HttpServerModule.class)`;
-  таких глобальных перехватчиков может быть несколько
+- К конкретным методам контроллера — `@InterceptWith` на методе
+- Ко всему контроллеру — `@InterceptWith` на классе
+- Сразу ко всем контроллерам — зарегистрировать компонент перехватчика с тегом `@Tag(HttpServer.class)`; глобальных перехватчиков может быть несколько
+
+`@InterceptWith` — повторяемая аннотация, при этом перехватчики, объявленные на классе, выполняются раньше объявленных на методе.
+Глобальные перехватчики применяются в детерминированном порядке, отсортированном по простому имени класса перехватчика.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     @HttpController
+    @InterceptWith(SomeController.ControllerInterceptor.class) //(1)!
     public final class SomeController {
 
-        public static final class MethodInterceptor implements HttpServerInterceptor {
+        @Component
+        public static final class ControllerInterceptor implements HttpServerInterceptor {
 
             @Override
-            public CompletionStage<HttpServerResponse> intercept(Context context, 
-                                                                 HttpServerRequest request, 
-                                                                 InterceptChain chain) throws Exception {
-                return chain.process(context, request);
+            public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+                return chain.process(request);
             }
         }
 
-        @InterceptWith(MethodInterceptor.class)
+        @Component
+        public static final class MethodInterceptor implements HttpServerInterceptor {
+
+            @Override
+            public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+                return chain.process(request);
+            }
+        }
+
+        @Tag(HttpServer.class) //(2)!
+        @Component
+        public static final class ServerInterceptor implements HttpServerInterceptor {
+
+            @Override
+            public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+                return chain.process(request);
+            }
+        }
+
+        @InterceptWith(MethodInterceptor.class) //(3)!
         @HttpRoute(method = HttpMethod.POST, path = "/intercepted")
         public String helloWorld() {
             return "Hello World";
@@ -1031,25 +1362,44 @@ public interface HttpServerInterceptor {
     }
     ```
 
+    1. Перехватывает все маршруты этого контроллера
+    2. Перехватывает все маршруты публичного сервера, включая ответы `404` и `405`
+    3. Перехватывает только этот маршрут
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
     @HttpController
+    @InterceptWith(SomeController.ControllerInterceptor::class) //(1)!
     class SomeController {
 
-        class MethodInterceptor : HttpServerInterceptor {
+        @Component
+        class ControllerInterceptor : HttpServerInterceptor {
 
-            override fun intercept(
-                context: Context,
-                request: HttpServerRequest,
-                chain: HttpServerInterceptor.InterceptChain
-            ): CompletionStage<HttpServerResponse> {
-                return chain.process(context, request)
+            override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+                return chain.process(request)
             }
         }
 
-        @InterceptWith(MethodInterceptor::class)
+        @Component
+        class MethodInterceptor : HttpServerInterceptor {
+
+            override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+                return chain.process(request)
+            }
+        }
+
+        @Tag(HttpServer::class) //(2)!
+        @Component
+        class ServerInterceptor : HttpServerInterceptor {
+
+            override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+                return chain.process(request)
+            }
+        }
+
+        @InterceptWith(MethodInterceptor::class) //(3)!
         @HttpRoute(method = HttpMethod.POST, path = "/intercepted")
         fun helloWorld(): String {
             return "Hello World"
@@ -1057,151 +1407,198 @@ public interface HttpServerInterceptor {
     }
     ```
 
+    1. Перехватывает все маршруты этого контроллера
+    2. Перехватывает все маршруты публичного сервера, включая ответы `404` и `405`
+    3. Перехватывает только этот маршрут
+
+???+ warning "Тег глобального перехватчика"
+
+    Фреймворк собирает глобальные перехватчики **только** по тегу `@Tag(HttpServer.class)` —
+    в `HttpServerModule` зависимость объявлена как `@Tag(HttpServer.class) All<HttpServerInterceptor> interceptors`.
+    Любой другой тег компилируется без ошибок, а перехватчик просто никогда не вызывается,
+    и обработка ошибок, аутентификация или логирование исчезают без единого предупреждения. Проверяйте это тестом.
+
+    Чтобы перехватывать все запросы **системного** сервера, используйте тег `@SystemApi`.
+
 ### Обработка ошибок { #error-handling }
 
-Обработка ошибок на уровне всех `HTTP`-ответов может быть реализована через перехватчик.
-Ниже представлен простой пример такого перехватчика.
+Обработку ошибок для всех `HTTP` ответов также можно реализовать через перехватчик.
+Ниже пример глобального обработчика, который превращает исключения в `JSON` ответ.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag(HttpServerModule.class)
+    @Tag(HttpServer.class)
     @Component
     public final class ErrorInterceptor implements HttpServerInterceptor {
 
-        @Override
-        public CompletionStage<HttpServerResponse> intercept(Context context, 
-                                                             HttpServerRequest request, 
-                                                             InterceptChain chain) throws Exception {
-            return chain.process(context, request).exceptionally(e -> {
-                if(e instanceof CompletionException) {
-                    e = e.getCause();
-                }
-                if (e instanceof HttpServerResponseException ex) {
-                    return ex;
-                }
+        private static final Logger logger = LoggerFactory.getLogger(ErrorInterceptor.class);
 
-                var body = HttpBody.plaintext(e.getMessage());
+        private final JsonWriter<ErrorTO> errorWriter;
+
+        public ErrorInterceptor(JsonWriter<ErrorTO> errorWriter) { //(1)!
+            this.errorWriter = errorWriter;
+        }
+
+        @Override
+        public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) {
+            try {
+                return chain.process(request);
+            } catch (HttpServerResponseException e) { //(2)!
+                return e;
+            } catch (Exception e) {
+                var body = HttpBody.json(errorWriter.toByteArray(new ErrorTO(e.getMessage()))); //(3)!
                 if (e instanceof IllegalArgumentException) {
                     return HttpServerResponse.of(400, body);
                 } else if (e instanceof TimeoutException) {
                     return HttpServerResponse.of(408, body);
                 } else {
+                    logger.error("Request '{} {}' failed", request.method(), request.path(), e);
                     return HttpServerResponse.of(500, body);
-                }
-            });
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Tag(HttpServerModule.class)
-    @Component
-    class ErrorInterceptor : HttpServerInterceptor {
-
-        override fun intercept(
-            context: Context,
-            request: HttpServerRequest,
-            chain: HttpServerInterceptor.InterceptChain
-        ): CompletionStage<HttpServerResponse> {
-            return chain.process(context, request).exceptionally { e ->
-                val error = if (e is CompletionException) e.cause!! else e
-                if (error is HttpServerResponseException) {
-                    return@exceptionally error
-                }
-
-                val body = HttpBody.plaintext(error.message)
-                when (error) {
-                    is IllegalArgumentException -> HttpServerResponse.of(400, body)
-                    is TimeoutException -> HttpServerResponse.of(408, body)
-                    else -> HttpServerResponse.of(500, body)
                 }
             }
         }
     }
     ```
 
-## Контроллер императивный { #somecontroller-imperative }
+    1. У перехватчика есть зависимость в конструкторе, поэтому он обязан быть компонентом графа
+    2. `HttpServerResponseException` сам является ответом, поэтому он возвращается в том виде, в каком его должен увидеть клиент
+    3. `JsonWriter.toByteArray(...)` не объявляет проверяемых исключений, поэтому обрабатывать `IOException` не нужно
 
-Для создания контроллера следует реализовать `HttpServerRequestHandler.HandlerFunction` интерфейс,
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(HttpServer::class)
+    @Component
+    class ErrorInterceptor(private val errorWriter: JsonWriter<ErrorTO>) : HttpServerInterceptor { //(1)!
+
+        private val logger = LoggerFactory.getLogger(ErrorInterceptor::class.java)
+
+        override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+            try {
+                return chain.process(request)
+            } catch (e: HttpServerResponseException) { //(2)!
+                return e
+            } catch (e: Exception) {
+                val body = HttpBody.json(errorWriter.toByteArray(ErrorTO(e.message))) //(3)!
+                return when (e) {
+                    is IllegalArgumentException -> HttpServerResponse.of(400, body)
+                    is TimeoutException -> HttpServerResponse.of(408, body)
+                    else -> {
+                        logger.error("Request '{} {}' failed", request.method(), request.path(), e)
+                        HttpServerResponse.of(500, body)
+                    }
+                }
+            }
+        }
+    }
+    ```
+
+    1. У перехватчика есть зависимость в конструкторе, поэтому он обязан быть компонентом графа
+    2. `HttpServerResponseException` сам является ответом, поэтому он возвращается в том виде, в каком его должен увидеть клиент
+    3. `JsonWriter.toByteArray(...)` не объявляет проверяемых исключений, поэтому обрабатывать `IOException` не нужно
+
+Ошибки разбора параметров Kora обрабатывает до вызова метода контроллера: значение, которое не удалось прочитать,
+приводит к ответу `400` с сообщением от `HttpServerParameterReader`. Такой ответ тоже проходит через цепочку перехватчиков,
+поэтому глобальный обработчик может его переформировать.
+
+## SomeController императивный { #somecontroller-imperative }
+
+Чтобы создать контроллер, надо реализовать интерфейс `HttpServerRequestHandler.HandlerFunction`,
 а затем зарегистрировать его в обработчике `HttpServerRequestHandler`.
 
-Ниже показан пример по обработке всех описанных декларативных параметров запроса из примеров выше:
+Следующий пример показывает, как обработать все описанные выше декларативные параметры запроса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface SomeModule {
 
         default HttpServerRequestHandler someHttpHandler() {
             return HttpServerRequestHandlerImpl.of(HttpMethod.POST, //(1)!
                                                    "/hello/{world}", //(2)!
-                                                   (context, request) -> {
-                var path = RequestHandlerUtils.parseStringPathParameter(request, "world");
-                var query = RequestHandlerUtils.parseOptionalStringQueryParameter(request, "query");
-                var queries = RequestHandlerUtils.parseOptionalStringListQueryParameter(request, "Queries");
-                var header = RequestHandlerUtils.parseOptionalStringHeaderParameter(request, "header");
-                var headers = RequestHandlerUtils.parseOptionalStringListHeaderParameter(request, "Headers");
-                return CompletableFuture.completedFuture(HttpServerResponse.of(200, HttpBody.plaintext("Hello World")));
+                                                   (request) -> {
+                var path = HttpRequestHandlerUtils.parsePathString(request, "world");
+                var query = HttpRequestHandlerUtils.parseQueryStringNullable(request, "query");
+                var queries = HttpRequestHandlerUtils.parseQueryStringListNullable(request, "Queries");
+                var header = HttpRequestHandlerUtils.parseHeaderStringNullable(request, "header");
+                var headers = HttpRequestHandlerUtils.parseHeaderStringListNullable(request, "Headers");
+                return HttpServerResponse.of(200, HttpBody.plaintext("Hello World"));
             });
         }
     }
     ```
 
-    1. Указывает тип `HTTP`-метода обработчика
-    2. Указывает путь метода обработчика
+    1. Указывает тип `HTTP` метода обработчика
+    2. Указывает путь метода-обработчика
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Module
     interface SomeModule {
 
-        fun someHttpHandler(): HttpServerRequestHandler? {
+        fun someHttpHandler(): HttpServerRequestHandler {
             return HttpServerRequestHandlerImpl.of(
                 HttpMethod.POST, //(1)!
                 "/hello/{world}" //(2)!
-            ) { context: Context, request: HttpServerRequest ->
-                val path = RequestHandlerUtils.parseStringPathParameter(request, "world")
-                val query = RequestHandlerUtils.parseOptionalStringQueryParameter(request, "query")
-                val queries = RequestHandlerUtils.parseOptionalStringListQueryParameter(request, "Queries")
-                val header = RequestHandlerUtils.parseOptionalStringHeaderParameter(request, "header")
-                val headers = RequestHandlerUtils.parseOptionalStringListHeaderParameter(request, "Headers")
-                CompletableFuture.completedFuture(HttpServerResponse.of(200, HttpBody.plaintext("Hello World")))
+            ) { request: HttpServerRequest ->
+                val path = HttpRequestHandlerUtils.parsePathString(request, "world")
+                val query = HttpRequestHandlerUtils.parseQueryStringNullable(request, "query")
+                val queries = HttpRequestHandlerUtils.parseQueryStringListNullable(request, "Queries")
+                val header = HttpRequestHandlerUtils.parseHeaderStringNullable(request, "header")
+                val headers = HttpRequestHandlerUtils.parseHeaderStringListNullable(request, "Headers")
+                HttpServerResponse.of(200, HttpBody.plaintext("Hello World"))
             }
         }
     }
     ```
 
-    1. Указывает тип `HTTP`-метода обработчика
-    2. Указывает путь метода обработчика
+    1. Указывает тип `HTTP` метода обработчика
+    2. Указывает путь метода-обработчика
+
+У `HttpServerRequestHandlerImpl` есть и сокращенные фабрики под каждый метод — `get`, `head`, `post`, `put`, `delete`,
+`connect`, `options`, `trace`, `patch` — а также перегрузка с флагом `enabled`, позволяющая исключить обработчик из маршрутизации,
+не убирая его из графа.
+
+`HttpServerRequestHandler` без тега регистрируется на публичном сервере; обработчик с тегом `@SystemApi`
+регистрируется на системном сервере.
 
 ## Авторизация { #authorization }
 
-Kora предоставляет механизм извлечения контекста авторизации из HTTP запроса через интерфейс `HttpServerPrincipalExtractor`.
+Kora предоставляет механизм извлечения контекста авторизации из HTTP-запросов через интерфейс `HttpServerPrincipalExtractor`.
 Этот интерфейс позволяет реализовать любую схему аутентификации: [Basic/ApiKey/Bearer/OAuth](https://swagger.io/docs/specification/authentication/).
 
-### Принцип работы { #how-it-works }
+### Как это работает { #how-it-works }
 
-`HttpServerPrincipalExtractor<T>` извлекает токен из запроса (обычно из заголовка `Authorization`) и возвращает объект `Principal`.
-Полученный `Principal` сохраняется в `Context` запроса и может быть получен в любом месте обработки запроса через `Principal.current()`.
+`HttpServerPrincipalExtractor<T, P>` получает извлеченные из запроса учетные данные и возвращает объект `Principal`
+либо `null`, если данные не приняты.
 
 ```java
-public interface HttpServerPrincipalExtractor<T extends Principal> {
-    CompletionStage<T> extract(HttpServerRequest request, @Nullable String value);
+public interface HttpServerPrincipalExtractor<T, P extends Principal> {
+    @Nullable
+    P extract(HttpServerRequest request, @Nullable T token);
 }
 ```
 
 Где:
 
-- `request` — текущий HTTP запрос, из которого можно извлечь дополнительные данные (заголовки, параметры)
-- `value` — значение токена, извлеченное из заголовка `Authorization` (или другого источника)
-- `T extends Principal` — тип контекста авторизации, который будет сохранен в `Context`
+- `request` — текущий HTTP-запрос, из которого можно извлечь дополнительные данные (заголовки, параметры)
+- `token` — учетные данные, взятые из запроса (заголовок `Authorization`, заголовок с API-ключом, параметр запроса либо cookie)
+- `T` — тип учетных данных: `String` для одной схемы безопасности либо сгенерированная запись `AuthData`, если схем несколько
+- `P extends Principal` — тип контекста авторизации
+
+Экстрактор **вызывается перехватчиками, сгенерированными из OpenAPI-контракта** — смотрите [Интеграцию с OpenAPI](#openapi).
+Сгенерированный перехватчик читает учетные данные, вызывает `extract(...)` и при ненулевом результате выполняет остаток цепочки
+внутри `Principal.with(principal, () -> chain.process(request))`. Если результат `null` (либо не хватает требуемых scope),
+он выбрасывает `HttpServerResponseException.of(401, "Unauthorized")`.
+
+Для сервиса без OpenAPI-контракта пишется обычный [перехватчик](#interceptors) — смотрите [Авторизацию без OpenAPI](#authorization-manual).
 
 ### Пользовательский Principal { #custom-principal }
 
-Пользователь может создать простой принципал для API при необходимости, с полями или без них:
+При необходимости можно создать простой principal для API с полями или без них:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1215,21 +1612,21 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     data class ApiPrincipal(val client: String) : Principal
     ```
 
-Для передачи дополнительной информации об авторизации (userId, роли, scope) создайте собственную реализацию `Principal`:
+Чтобы передавать дополнительную информацию об авторизации (userId, роли, scope), создайте свою реализацию `Principal`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public record UserContext(String userId, List<String> roles) implements Principal {}
+    public record UserPrincipal(String userId, List<String> roles) implements Principal {}
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    data class UserContext(val userId: String, val roles: List<String>) : Principal
+    data class UserPrincipal(val userId: String, val roles: List<String>) : Principal
     ```
 
-Если требуется работа с scope (областями видимости), используйте интерфейс `PrincipalWithScopes`:
+Если требуется работа со scope, используется интерфейс `PrincipalWithScopes`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1243,9 +1640,9 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     data class ScopedUser(val userId: String, val scopes: Collection<String>) : PrincipalWithScopes
     ```
 
-### Базовый пример { #basic-example }
+### Простой пример { #basic-example }
 
-Простой пример извлечения API ключа из заголовка `Authorization`:
+Простой пример проверки API-ключа, где `ApiKeyAuth` — имя схемы безопасности из OpenAPI-контракта:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1258,18 +1655,20 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
             String value();
         }
 
-        default HttpServerPrincipalExtractor<Principal> apiKeyExtractor(ApiKeyAuthConfig config) {
+        @Tag(ApiSecurity.ApiKeyAuth.class) //(1)!
+        default HttpServerPrincipalExtractor<String, Principal> apiKeyExtractor(ApiKeyAuthConfig config) {
             return (request, value) -> {
                 if (value == null || !config.value().equals(value)) {
-                    return CompletableFuture.failedFuture(
-                        new IllegalAccessException("Invalid API key")
-                    );
+                    return null; //(2)!
                 }
-                return CompletableFuture.completedFuture(new ApiPrincipal("api-client"));
+                return new ApiPrincipal("api-client");
             };
         }
     }
     ```
+
+    1. Тег назван по имени схемы безопасности из контракта
+    2. Возврат `null` заставляет сгенерированный перехватчик ответить `401 Unauthorized`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1282,22 +1681,26 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
             fun value(): String
         }
 
-        fun apiKeyExtractor(config: ApiKeyAuthConfig): HttpServerPrincipalExtractor<Principal> {
+        @Tag(ApiSecurity.ApiKeyAuth::class) //(1)!
+        fun apiKeyExtractor(config: ApiKeyAuthConfig): HttpServerPrincipalExtractor<String, Principal> {
             return HttpServerPrincipalExtractor { request, value ->
                 if (value == null || config.value() != value) {
-                    return@HttpServerPrincipalExtractor CompletableFuture.failedFuture(
-                        IllegalAccessException("Invalid API key")
-                    )
+                    null //(2)!
+                } else {
+                    ApiPrincipal("api-client")
                 }
-                CompletableFuture.completedFuture(ApiPrincipal("api-client"))
             }
         }
     }
     ```
 
-### Bearer токен { #bearer }
+    1. Тег назван по имени схемы безопасности из контракта
+    2. Возврат `null` заставляет сгенерированный перехватчик ответить `401 Unauthorized`
 
-Пример извлечения Bearer токена с пользовательской реализацией `Principal`:
+### Bearer-токен { #bearer }
+
+Пример проверки Bearer-токена с собственной реализацией `Principal`.
+Для схем `Bearer`, `Basic` и `OAuth` сгенерированный перехватчик передает целиком значение заголовка `Authorization`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1305,17 +1708,18 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @Module
     public interface BearerAuthModule {
 
-        default HttpServerPrincipalExtractor<UserContext> bearerExtractor(TokenValidator validator) {
+        @Tag(ApiSecurity.BearerAuth.class)
+        default HttpServerPrincipalExtractor<String, Principal> bearerExtractor(TokenValidator validator) {
             return (request, value) -> {
                 if (value == null || !value.startsWith("Bearer ")) {
-                    return CompletableFuture.failedFuture(
-                        new IllegalAccessException("No Bearer token")
-                    );
+                    return null;
                 }
-                
-                String token = value.substring(7);
-                return validator.validate(token)
-                    .thenApply(userData -> new UserContext(userData.userId(), userData.roles()));
+
+                var token = value.substring("Bearer ".length());
+                var userData = validator.validate(token);
+                return userData == null
+                    ? null
+                    : new UserPrincipal(userData.userId(), userData.roles());
             };
         }
     }
@@ -1327,19 +1731,16 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @Module
     interface BearerAuthModule {
 
-        fun bearerExtractor(validator: TokenValidator): HttpServerPrincipalExtractor<UserContext> {
+        @Tag(ApiSecurity.BearerAuth::class)
+        fun bearerExtractor(validator: TokenValidator): HttpServerPrincipalExtractor<String, Principal> {
             return HttpServerPrincipalExtractor { request, value ->
                 if (value == null || !value.startsWith("Bearer ")) {
-                    return CompletableFuture.failedFuture(
-                        IllegalAccessException("No Bearer token")
-                    )
+                    null
+                } else {
+                    val token = value.substring("Bearer ".length)
+                    validator.validate(token)
+                        ?.let { UserPrincipal(it.userId, it.roles) }
                 }
-                
-                val token = value.substring(7)
-                validator.validate(token)
-                    .thenApply { userData ->
-                        UserContext(userData.userId, userData.roles)
-                    }
             }
         }
     }
@@ -1347,7 +1748,7 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
 
 ### Получение Principal { #getting-principal }
 
-Получить текущий контекст авторизации можно в любом месте обработки запроса:
+Текущий контекст авторизации привязан к `ScopedValue` и доступен в любом месте обработки запроса:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1358,14 +1759,16 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
 
         @HttpRoute(method = HttpMethod.GET, path = "/secure")
         public String getSecureData() {
-            Principal principal = Principal.current();
-            if (principal instanceof UserContext user) {
+            Principal principal = Principal.current(); //(1)!
+            if (principal instanceof UserPrincipal user) {
                 return "Hello, user: " + user.userId();
             }
             throw new SecurityException("Not authenticated");
         }
     }
     ```
+
+    1. Возвращает `null`, если для текущего запроса principal не привязан
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1376,8 +1779,8 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
 
         @HttpRoute(method = HttpMethod.GET, path = "/secure")
         fun getSecureData(): String {
-            val principal = Principal.current()
-            return if (principal is UserContext) {
+            val principal = Principal.current() //(1)!
+            return if (principal is UserPrincipal) {
                 "Hello, user: ${principal.userId}"
             } else {
                 throw SecurityException("Not authenticated")
@@ -1386,9 +1789,12 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     }
     ```
 
+    1. Возвращает `null`, если для текущего запроса principal не привязан
+
 ### OAuth2 { #oauth2 }
 
-Для OAuth2 авторизации создайте `HttpServerPrincipalExtractor`, который проверяет токен через OAuth2 provider:
+Для авторизации OAuth2 создается `HttpServerPrincipalExtractor`, который проверяет токен через OAuth2-провайдер.
+Для схемы безопасности `OAuth` сгенерированный код ожидает `PrincipalWithScopes`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1396,22 +1802,18 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @Module
     public interface OAuth2Module {
 
-        default HttpServerPrincipalExtractor<ScopedUser> oauth2Extractor(OAuth2Client oauth2Client) {
+        @Tag(ApiSecurity.OAuth.class)
+        default HttpServerPrincipalExtractor<String, PrincipalWithScopes> oauth2Extractor(OAuth2Client oauth2Client) {
             return (request, value) -> {
                 if (value == null || !value.startsWith("Bearer ")) {
-                    return CompletableFuture.failedFuture(
-                        new IllegalAccessException("No OAuth2 token")
-                    );
+                    return null;
                 }
-                
-                String token = value.substring(7);
-                return oauth2Client.introspect(token)
-                    .thenApply(introspection -> 
-                        new ScopedUser(
-                            introspection.subject(),
-                            introspection.scopes()
-                        )
-                    );
+
+                var token = value.substring("Bearer ".length());
+                var introspection = oauth2Client.introspect(token);
+                return introspection == null
+                    ? null
+                    : new ScopedUser(introspection.subject(), introspection.scopes());
             };
         }
     }
@@ -1423,27 +1825,28 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @Module
     interface OAuth2Module {
 
-        fun oauth2Extractor(oauth2Client: OAuth2Client): HttpServerPrincipalExtractor<ScopedUser> {
+        @Tag(ApiSecurity.OAuth::class)
+        fun oauth2Extractor(oauth2Client: OAuth2Client): HttpServerPrincipalExtractor<String, PrincipalWithScopes> {
             return HttpServerPrincipalExtractor { request, value ->
                 if (value == null || !value.startsWith("Bearer ")) {
-                    return CompletableFuture.failedFuture(
-                        IllegalAccessException("No OAuth2 token")
-                    )
+                    null
+                } else {
+                    val token = value.substring("Bearer ".length)
+                    oauth2Client.introspect(token)
+                        ?.let { ScopedUser(it.subject, it.scopes) }
                 }
-                
-                val token = value.substring(7)
-                oauth2Client.introspect(token)
-                    .thenApply { introspection ->
-                        ScopedUser(introspection.subject, introspection.scopes)
-                    }
             }
         }
     }
     ```
 
-#### Проверка scope { #scope-check }
+#### Проверка Scope { #scope-check }
 
-Для проверки scope можно создать перехватчик, который проверяет `PrincipalWithScopes`:
+Если scope объявлены в OpenAPI-контракте, сгенерированный перехватчик проверяет их сам:
+если возвращенный `PrincipalWithScopes.scopes()` не содержит требуемого scope, запрос завершается ответом `401`.
+
+Вне OpenAPI перехватчик проверяет scope и сам привязывает principal через `Principal.with(...)`,
+чтобы остаток цепочки мог прочитать его через `Principal.current()`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1451,73 +1854,64 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @Component
     public final class ScopeCheckingInterceptor implements HttpServerInterceptor {
 
-        private final String requiredScope;
+        private final AuthConfig config;
+        private final TokenValidator validator;
 
-        public ScopeCheckingInterceptor(@ConfigSource("auth.requiredScope") String requiredScope) {
-            this.requiredScope = requiredScope;
+        public ScopeCheckingInterceptor(AuthConfig config, TokenValidator validator) {
+            this.config = config;
+            this.validator = validator;
         }
 
         @Override
-        public CompletionStage<HttpServerResponse> intercept(Context context, 
-                                                             HttpServerRequest request, 
-                                                             InterceptChain chain) {
-            Principal principal = Principal.current(context);
-            if (principal instanceof PrincipalWithScopes scoped) {
-                if (!scoped.scopes().contains(requiredScope)) {
-                    return CompletableFuture.failedFuture(
-                        HttpServerResponseException.of(403, "Insufficient scope")
-                    );
-                }
-            } else {
-                return CompletableFuture.failedFuture(
-                    HttpServerResponseException.of(403, "No scopes available")
-                );
+        public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+            var principal = validator.validate(request.headers().getFirst("authorization"));
+            if (!(principal instanceof PrincipalWithScopes scoped)) {
+                throw HttpServerResponseException.of(403, "No scopes available");
             }
-            
-            return chain.process(context, request);
+            if (!scoped.scopes().contains(config.requiredScope())) {
+                throw HttpServerResponseException.of(403, "Insufficient scope");
+            }
+
+            return Principal.with(scoped, () -> chain.process(request)); //(1)!
         }
     }
     ```
+
+    1. Привязывает principal к текущему запросу, чтобы дальше по цепочке `Principal.current()` возвращал его
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
     class ScopeCheckingInterceptor(
-        @ConfigSource("auth.requiredScope") private val requiredScope: String
+        private val config: AuthConfig,
+        private val validator: TokenValidator
     ) : HttpServerInterceptor {
 
-        override fun intercept(
-            context: Context,
-            request: HttpServerRequest,
-            chain: HttpServerInterceptor.InterceptChain
-        ): CompletionStage<HttpServerResponse> {
-            val principal = Principal.current(context)
-            if (principal is PrincipalWithScopes) {
-                if (!principal.scopes.contains(requiredScope)) {
-                    return CompletableFuture.failedFuture(
-                        HttpServerResponseException.of(403, "Insufficient scope")
-                    )
-                }
-            } else {
-                return CompletableFuture.failedFuture(
-                    HttpServerResponseException.of(403, "No scopes available")
-                )
+        override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+            val principal = validator.validate(request.headers().getFirst("authorization"))
+            if (principal !is PrincipalWithScopes) {
+                throw HttpServerResponseException.of(403, "No scopes available")
             }
-            
-            return chain.process(context, request)
+            if (!principal.scopes.contains(config.requiredScope())) {
+                throw HttpServerResponseException.of(403, "Insufficient scope")
+            }
+
+            return Principal.with(principal) { chain.process(request) } //(1)!
         }
     }
     ```
 
-### OpenAPI интеграция { #openapi }
+    1. Привязывает principal к текущему запросу, чтобы дальше по цепочке `Principal.current()` возвращал его
 
-При использовании Kora OpenAPI Generator авторизация настраивается автоматически на основе спецификации OpenAPI.
+### Интеграция с OpenAPI { #openapi }
+
+При использовании [генератора OpenAPI](openapi-codegen.md) авторизация настраивается автоматически на основе OpenAPI-спецификации.
 Генератор создает:
 
-1. Интерфейс `ApiSecurity` с классами-маркерами для каждого типа авторизации
-2. `HttpServerInterceptor` для каждого security scheme
-3. Требует предоставить `HttpServerPrincipalExtractor` с соответствующим `@Tag`
+1. Интерфейс `ApiSecurity` с классом-маркером для каждой схемы безопасности, названным по имени схемы (`ApiKeyAuth`, `BearerAuth`, `BasicAuth`, `CookieAuth`, `OAuth`)
+2. `HttpServerInterceptor` для каждого требования безопасности, применяемый к сгенерированному контроллеру
+3. Требование предоставить `HttpServerPrincipalExtractor` с соответствующим `@Tag`
 
 Пример из [kora-examples](https://github.com/kora-projects/kora-examples):
 
@@ -1527,18 +1921,16 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @KoraApp
     public interface Application extends
             HoconConfigModule,
-            UndertowHttpServerModule,
+            UndertowPublicHttpServerModule,
             JsonModule {
 
         @Tag(ApiSecurity.ApiKeyAuth.class)
-        default HttpServerPrincipalExtractor<Principal> apiKeyExtractor(DataApiAuthConfig config) {
+        default HttpServerPrincipalExtractor<String, Principal> apiKeyExtractor(DataApiAuthConfig config) {
             return (request, value) -> {
                 if (value == null || !config.value().equals(value)) {
-                    throw new SecurityException("Invalid API key");
+                    return null;
                 }
-                return CompletableFuture.completedFuture(
-                    new DataApiPrincipal("data-api-client")
-                );
+                return new DataApiPrincipal("data-api-client");
             };
         }
     }
@@ -1556,18 +1948,17 @@ public interface HttpServerPrincipalExtractor<T extends Principal> {
     @KoraApp
     interface Application :
         HoconConfigModule,
-        UndertowHttpServerModule,
+        UndertowPublicHttpServerModule,
         JsonModule {
 
         @Tag(ApiSecurity.ApiKeyAuth::class)
-        fun apiKeyExtractor(config: DataApiAuthConfig): HttpServerPrincipalExtractor<Principal> {
+        fun apiKeyExtractor(config: DataApiAuthConfig): HttpServerPrincipalExtractor<String, Principal> {
             return HttpServerPrincipalExtractor { request, value ->
                 if (value == null || config.value() != value) {
-                    throw SecurityException("Invalid API key")
-                }
-                CompletableFuture.completedFuture(
+                    null
+                } else {
                     DataApiPrincipal("data-api-client")
-                )
+                }
             }
         }
     }
@@ -1587,34 +1978,84 @@ auth.apiKey {
 }
 ```
 
-### Обработка ошибок { #error-handling }
+Если одна операция требует сразу несколько схем, тег экстрактора склеивает имена схем через `With`
+(`BearerAuthWithApiKeyAuth`), а генератор добавляет запись `ApiSecurity.<Tag>AuthData` со всеми учетными данными,
+поэтому экстрактор объявляется как `HttpServerPrincipalExtractor<ApiSecurity.BearerAuthWithApiKeyAuthAuthData, Principal>`.
+Перехватчик для такого требования получает отдельный тег, где имена схем склеены через `And`
+(`ApiSecurity.BearerAuthAndApiKeyAuth`); альтернативные требования одной операции склеиваются через `_`.
 
-Если `HttpServerPrincipalExtractor` выбрасывает исключение или возвращает `null`, запрос отклоняется с кодом `403 Forbidden`.
-Для кастомной обработки ошибок авторизации используйте перехватчик:
+### Авторизация без OpenAPI { #authorization-manual }
+
+Без сгенерированного `ApiSecurity` никто не вызывает `HttpServerPrincipalExtractor`, поэтому авторизация реализуется
+обычным [перехватчиком](#interceptors) на контроллере, на маршруте либо глобально:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag(HttpServerModule.class)
+    @Component
+    public final class ApiKeyAuthInterceptor implements HttpServerInterceptor {
+
+        private final ApiKeyAuthConfig config;
+
+        public ApiKeyAuthInterceptor(ApiKeyAuthConfig config) {
+            this.config = config;
+        }
+
+        @Override
+        public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+            var authorization = request.headers().getFirst("authorization");
+            if (!this.config.value().equals(authorization)) {
+                throw new SecurityException("Invalid API key"); //(1)!
+            }
+            return chain.process(request);
+        }
+    }
+    ```
+
+    1. Исключение превращается в `403` глобальным [обработчиком ошибок авторизации](#auth-error-handling)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ApiKeyAuthInterceptor(private val config: ApiKeyAuthConfig) : HttpServerInterceptor {
+
+        override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+            val authorization = request.headers().getFirst("authorization")
+            if (config.value() != authorization) {
+                throw SecurityException("Invalid API key") //(1)!
+            }
+            return chain.process(request)
+        }
+    }
+    ```
+
+    1. Исключение превращается в `403` глобальным [обработчиком ошибок авторизации](#auth-error-handling)
+
+Далее перехватчик подключается через `@InterceptWith(ApiKeyAuthInterceptor.class)` на контроллере либо на отдельном маршруте.
+
+### Обработка ошибок авторизации { #auth-error-handling }
+
+Когда экстрактор возвращает `null` либо не хватает требуемых scope, сгенерированный перехватчик отвечает
+статусом `401` и телом `Unauthorized`.
+Чтобы формировать ошибки авторизации самостоятельно, добавьте глобальный перехватчик:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(HttpServer.class)
     @Component
     public final class AuthErrorInterceptor implements HttpServerInterceptor {
 
         @Override
-        public CompletionStage<HttpServerResponse> intercept(Context context, 
-                                                             HttpServerRequest request, 
-                                                             InterceptChain chain) {
-            return chain.process(context, request).exceptionally(e -> {
-                if (e instanceof CompletionException) {
-                    e = e.getCause();
-                }
-                if (e instanceof IllegalAccessException) {
-                    return HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: " + e.getMessage()));
-                }
-                if (e instanceof SecurityException) {
-                    return HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: " + e.getMessage()));
-                }
-                throw new CompletionException(e);
-            });
+        public HttpServerResponse intercept(HttpServerRequest request, InterceptChain chain) throws Exception {
+            try {
+                return chain.process(request);
+            } catch (IllegalAccessException e) {
+                return HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: " + e.getMessage()));
+            } catch (SecurityException e) {
+                return HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: " + e.getMessage()));
+            }
         }
     }
     ```
@@ -1622,41 +2063,67 @@ auth.apiKey {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(HttpServerModule::class)
+    @Tag(HttpServer::class)
     @Component
     class AuthErrorInterceptor : HttpServerInterceptor {
 
-        override fun intercept(
-            context: Context,
-            request: HttpServerRequest,
-            chain: HttpServerInterceptor.InterceptChain
-        ): CompletionStage<HttpServerResponse> {
-            return chain.process(context, request).exceptionally { e ->
-                val error = if (e is CompletionException) e.cause!! else e
-                when (error) {
-                    is IllegalAccessException -> 
-                        HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: ${error.message}"))
-                    is SecurityException -> 
-                        HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: ${error.message}"))
-                    else -> throw CompletionException(error)
-                }
+        override fun intercept(request: HttpServerRequest, chain: HttpServerInterceptor.InterceptChain): HttpServerResponse {
+            try {
+                return chain.process(request)
+            } catch (e: IllegalAccessException) {
+                return HttpServerResponse.of(401, HttpBody.plaintext("Unauthorized: ${e.message}"))
+            } catch (e: SecurityException) {
+                return HttpServerResponse.of(403, HttpBody.plaintext("Forbidden: ${e.message}"))
             }
         }
     }
     ```
 
+Поскольку глобальный перехватчик оборачивает сгенерированный перехватчик безопасности, он также видит
+`HttpServerResponseException` с кодом `401`, выброшенный сгенерированным кодом, и может заменить его собственным ответом.
+
 ## Телеметрия { #telemetry }
 
-HTTP Server использует контракт телеметрии для логирования, метрик и трассировки запросов.
+HTTP-сервер использует контракт телеметрии для логирования, метрик и трассировки запросов.
 Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
-Точки расширения находятся в `ru.tinkoff.kora.http.server.common.telemetry`.
+Точки расширения находятся в `io.koraframework.http.server.common.telemetry`.
 
-Для каждого HTTP-запроса создаётся `HttpServerTelemetry.HttpServerTelemetryContext`, который закрывается по завершении обработки запроса.
-Запрос описывается через параметры обработчика телеметрии, включая метод, путь, статус ответа и длительность.
+На каждый HTTP-запрос создается `HttpServerObservation`, который закрывается при завершении запроса.
+Он наблюдает запрос, ответ, `HttpResultCode` и возникшее исключение.
 
-Фабрика по умолчанию `DefaultHttpServerTelemetryFactory` объединяет три фабрики:
-- `HttpServerLoggerFactory` строит `HttpServerLogger` для логирования начала/конца обработки запроса;
-- `HttpServerMetricsFactory` строит `HttpServerMetrics` для записи метрик запросов;
-- `HttpServerTracerFactory` строит `HttpServerTracer` для распределённой трассировки.
+Фабрика по умолчанию `DefaultHttpServerTelemetryFactory` объединяет три части:
+
+- `DefaultHttpServerLoggerFactory` создает логгер начала и завершения запроса;
+- `DefaultHttpServerMetricsFactory` создает метрики запроса;
+- `io.opentelemetry.api.trace.Tracer`, если он есть в графе, создает спан запроса.
+
+Логи запроса и ответа пишутся двумя отдельными логгерами, поэтому их уровень настраивается независимо:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    logging.levels {
+        "io.koraframework.http.server.common.HttpServer.request" = "DEBUG" //(1)!
+        "io.koraframework.http.server.common.HttpServer.response" = "TRACE" //(2)!
+    }
+    ```
+
+    1. На уровне `INFO` логируется только операция, `DEBUG` добавляет заголовки и параметры запроса
+    2. `TRACE` дополнительно пишет тело, ограниченное `maxRequestBodyLogSize` / `maxResponseBodyLogSize`
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    logging:
+      levels:
+        "io.koraframework.http.server.common.HttpServer.request": "DEBUG" #(1)!
+        "io.koraframework.http.server.common.HttpServer.response": "TRACE" #(2)!
+    ```
+
+    1. На уровне `INFO` логируется только операция, `DEBUG` добавляет заголовки и параметры запроса
+    2. `TRACE` дополнительно пишет тело, ограниченное `maxRequestBodyLogSize` / `maxResponseBodyLogSize`
+
+Заголовки из `maskHeaders` и параметры запроса из `maskQueries` заменяются значением `mask`.
+В логируемой операции по умолчанию используется шаблон маршрута, а полный путь — при `pathFull = true` либо на уровне логгера `TRACE`.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).
