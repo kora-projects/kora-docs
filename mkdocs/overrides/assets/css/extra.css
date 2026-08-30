@@ -407,8 +407,12 @@ input {
 /* Primary sidebar (left navigation)                                      */
 /* ---------------------------------------------------------------------- */
 
-.md-sidebar--primary {
-    width: 15.5%;
+/* desktop-only column width — on mobile the drawer must keep Material's
+   fixed slide-out width, otherwise 15.5% collapses it to a few characters */
+@media screen and (min-width: 76.25em) {
+    .md-sidebar--primary {
+        width: 15.5%;
+    }
 }
 
 [data-md-color-scheme="slate"] .md-sidebar--primary,
