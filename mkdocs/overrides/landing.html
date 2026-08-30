@@ -2774,7 +2774,7 @@
                     <div class="hero-actions" id="start">
                         <a class="button primary" href="/kora-docs/en/guides/getting-started/">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
-                        <div class="command" aria-label="Gradle dependency example"><code><span>ru.tinkoff.kora</span>:kora-bom:2.0.0.RC1</code></div>
+                        <div class="command" aria-label="Gradle dependency example"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC1</code></div>
                     </div>
                     <div class="hero-note" aria-label="Framework highlights">
                         <div class="metric">
@@ -2885,60 +2885,75 @@
                     </div>
                 </div>
                 <div class="benchmark-chart">
-                    <div class="benchmark-row is-kora" style="--score: 100; --row: 0">
-                        <span class="benchmark-name">Kora JDBC</span>
+                    <div class="benchmark-row" style="--score: 100; --row: 0">
+                        <span class="benchmark-name">ntex tokio (Rust)</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">50,781</span>
+                        <span class="benchmark-value">197,868</span>
                     </div>
-                    <div class="benchmark-row is-kora" style="--score: 90.0; --row: 1">
-                        <span class="benchmark-name">Kora Reactive</span>
+                    <div class="benchmark-row is-kora" style="--score: 91.9; --row: 1">
+                        <span class="benchmark-name">Kora JDBC Repository</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">45,725</span>
+                        <span class="benchmark-value">181,904</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 88.3; --row: 2">
+                    <div class="benchmark-row" style="--score: 91.3; --row: 2">
+                        <span class="benchmark-name">Quarkus JPA Repository</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">180,624</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 84.3; --row: 3">
+                        <span class="benchmark-name">Quarkus jOOQ</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">166,896</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 84.0; --row: 4">
                         <span class="benchmark-name">Micronaut Data JDBC</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">44,860</span>
+                        <span class="benchmark-value">166,221</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 86.7; --row: 3">
-                        <span class="benchmark-name">Spring JDBC</span>
+                    <div class="benchmark-row" style="--score: 65.9; --row: 5">
+                        <span class="benchmark-name">Helidon MP JDBC Client</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">44,013</span>
+                        <span class="benchmark-value">130,367</span>
                     </div>
-                    <div class="benchmark-row is-kora" style="--score: 85.3; --row: 4">
-                        <span class="benchmark-name">Kora Coroutines</span>
+                    <div class="benchmark-row" style="--score: 64.4; --row: 6">
+                        <span class="benchmark-name">Spring JDBC Template</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">43,317</span>
+                        <span class="benchmark-value">127,355</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 79.3; --row: 5">
-                        <span class="benchmark-name">Micronaut JDBC</span>
+                    <div class="benchmark-row" style="--score: 50.3; --row: 7">
+                        <span class="benchmark-name">Micronaut Data JPA Reactive</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">40,278</span>
+                        <span class="benchmark-value">99,436</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 75.6; --row: 6">
-                        <span class="benchmark-name">Quarkus Hibernate</span>
+                    <div class="benchmark-row" style="--score: 49.7; --row: 8">
+                        <span class="benchmark-name">Ktor CIO JDBC Driver</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">38,384</span>
+                        <span class="benchmark-value">98,409</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 62.9; --row: 7">
-                        <span class="benchmark-name">Micronaut R2DBC</span>
+                    <div class="benchmark-row" style="--score: 42.3; --row: 9">
+                        <span class="benchmark-name">Spring Data JDBC</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">31,940</span>
+                        <span class="benchmark-value">83,793</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 62.1; --row: 8">
-                        <span class="benchmark-name">Micronaut Vert.x PG Client</span>
+                    <div class="benchmark-row" style="--score: 42.1; --row: 10">
+                        <span class="benchmark-name">Spring Data JPA</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">31,561</span>
+                        <span class="benchmark-value">83,343</span>
                     </div>
-                    <div class="benchmark-row" style="--score: 62.0; --row: 9">
-                        <span class="benchmark-name">Spring JPA</span>
+                    <div class="benchmark-row" style="--score: 30.7; --row: 11">
+                        <span class="benchmark-name">Spring Data R2DBC Reactive</span>
                         <span class="benchmark-track"><span class="benchmark-fill"></span></span>
-                        <span class="benchmark-value">31,480</span>
+                        <span class="benchmark-value">60,745</span>
+                    </div>
+                    <div class="benchmark-row" style="--score: 17.0; --row: 12">
+                        <span class="benchmark-name">Micronaut Data JPA</span>
+                        <span class="benchmark-track"><span class="benchmark-fill"></span></span>
+                        <span class="benchmark-value">33,544</span>
                     </div>
                 </div>
                 <div class="benchmark-note">
-                    <span>Values use the "Single query" interval from the linked external results.</span>
-                    <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fstatic.squiry.xyz%2Fresults%2F20240124114707.json&hw=ph&test=db">Open TechEmpower snapshot</a>
+                    <span>Values use the "Single query" interval from the linked external results. This is a local benchmark with a local environment and no network latency to the database, so all event-loop reactive systems running on EventLoop threads get a performance boost from it.</span>
+                    <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fraw.githubusercontent.com%2FGoodforGod%2FFrameworkBenchmarks%2Frefs%2Fheads%2Ffeature%2Fkora-and-others%2Fdeployment%2Fresults.json&test=db">Open TechEmpower snapshot</a>
                 </div>
             </div>
             <div class="philosophy-panel" id="philosophy">
@@ -2966,7 +2981,7 @@
                             <span>Integrations</span>
                         </div>
                         <figure class="philosophy-quote">
-                            <p>A Swiss Army knife offers a tool for almost every situation. But most backend development happens <strong>at the table</strong> &mdash; where a good knife, fork, and spoon cover nearly everything.</p>
+                            <p>A Swiss Army knife offers a tool for almost any situation, but rarely does everything equally well. Kora focuses on a targeted set of tools, each purpose-built for its specific task.</p>
                         </figure>
                     </div>
                 </div>
@@ -3180,7 +3195,8 @@
             <div class="startup-panel" aria-label="Kora startup and build time comparison">
                 <div class="startup-toggle" role="tablist" aria-label="Choose benchmark">
                     <button type="button" class="startup-tab is-active" data-chart="boot" aria-selected="true">Startup &amp; readiness</button>
-                    <button type="button" class="startup-tab" data-chart="build" aria-selected="false">Build time</button>
+                    <button type="button" class="startup-tab" data-chart="build" aria-selected="false">Clean build</button>
+                    <button type="button" class="startup-tab" data-chart="build-cached" aria-selected="false">Cached build</button>
                 </div>
 
                 <div class="startup-view" data-chart="boot">
@@ -3229,6 +3245,31 @@
                     </div>
                     <div class="startup-caption">
                         <span>10x PetClinic services with full production integrations. Clean artifact build: ./gradlew clean distTar (Kora) / bootJar (Spring — layered jar in the Docker image), run with --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.</span>
+                        <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
+                    </div>
+                </div>
+
+                <div class="startup-view" data-chart="build-cached" hidden>
+                    <div class="startup-chart">
+                        <div class="startup-bar is-kora" style="--startup-score: 77.8; --startup-duration: 2510ms; --startup-row: 0; --startup-top: #ffdf5d; --startup-bottom: #8f7a25; --startup-glow: rgba(255, 176, 46, 0.3)">
+                            <span class="startup-ready">Artifact built</span>
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="2.51" data-duration="2510">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Kora</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 58.6; --startup-duration: 1890ms; --startup-row: 1; --startup-top: #95bd63; --startup-bottom: #5b813f; --startup-glow: rgba(149, 230, 168, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="1.89" data-duration="1890">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring</span>
+                        </div>
+                        <div class="startup-bar" style="--startup-score: 88.0; --startup-duration: 2840ms; --startup-row: 2; --startup-top: #6f91cf; --startup-bottom: #395c9a; --startup-glow: rgba(114, 167, 255, 0.14)">
+                            <span class="startup-value-wrap"><span class="startup-value" data-target="2.84" data-duration="2840">0.00s</span></span>
+                            <span class="startup-column"></span>
+                            <span class="startup-label">Spring Heavy Optimized</span>
+                        </div>
+                    </div>
+                    <div class="startup-caption">
+                        <span>10x PetClinic services with full production integrations. Incremental artifact build with Gradle build cache, configuration cache, daemon, parallel and multi-module build, and incremental compilation enabled.</span>
                         <span>Average across 5 runs on MacBook Pro 2019 Intel i7-9750H<span class="startup-caption-break">(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).</span></span>
                     </div>
                 </div>
@@ -3390,9 +3431,7 @@
             "Resilience": "Отказоустойчивость",
             "Telemetry": "Телеметрия",
             "Integrations": "Интеграции",
-            "A Swiss Army knife offers a tool for almost every situation. But most backend development happens": "Швейцарский нож предлагает инструмент почти на любой случай. Но большая часть серверной разработки происходит",
-            "at the table": "за столом",
-            "— where a good knife, fork, and spoon cover nearly everything.": "— где хороший нож, вилка и ложка справляются практически со всем.",
+            "A Swiss Army knife offers a tool for almost any situation, but rarely does everything equally well. Kora focuses on a targeted set of tools, each purpose-built for its specific task.": "Швейцарский нож предлагает инструмент почти на любой случай, но редко делает всё одинаково хорошо. Kora делает ставку на точечный набор инструментов, которые заточены под свои задачи.",
             "GitHub": "GitHub",
             "Docs": "Документация",
             "Java and Kotlin comprehensive backend framework": "Комплексный серверный фреймворк для Java и Kotlin",
@@ -3448,7 +3487,7 @@
             "Single query": "Single query",
             "Metric": "Метрика",
             "Responses / sec": "Ответов / сек",
-            "Values use the \"Single query\" interval from the linked external results.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке.",
+            "Values use the \"Single query\" interval from the linked external results. This is a local benchmark with a local environment and no network latency to the database, so all event-loop reactive systems running on EventLoop threads get a performance boost from it.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке. Это локальный бенчмарк с локальным окружением и без сетевой задержки до базы данных, поэтому все реактивные системы на event-loop, работающие в потоках EventLoop, получают за счёт этого прирост производительности.",
             "Open TechEmpower snapshot": "Открыть срез TechEmpower",
             "A controlled stack,": "Контролируемый стек,",
             "one module at a time.": "по одному модулю за раз.",
@@ -3509,9 +3548,11 @@
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
             "(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).": "(схож с EPYC 7763 согласно GeekBench 5 Single-Core Benchmark).",
             "Startup & readiness": "Запуск и готовность",
-            "Build time": "Время сборки",
+            "Clean build": "Чистая сборка",
+            "Cached build": "Кешированная сборка",
             "Artifact built": "Артефакт собран",
             "10x PetClinic services with full production integrations. Clean artifact build: ./gradlew clean distTar (Kora) / bootJar (Spring — layered jar in the Docker image), run with --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.": "10x PetClinic-сервисов с полным набором боевых интеграций. Чистая сборка артефакта: ./gradlew clean distTar (Kora) / bootJar (Spring — послойный jar в Docker-образе), запуск с --no-build-cache, --no-configuration-cache, --no-parallel, -Dorg.gradle.daemon=false.",
+            "10x PetClinic services with full production integrations. Incremental artifact build with Gradle build cache, configuration cache, daemon, parallel and multi-module build, and incremental compilation enabled.": "10x PetClinic-сервисов с полным набором боевых интеграций. Инкрементальная сборка артефакта с включёнными кешами Gradle, конфигурационным кешем, демоном, параллельной и мультимодульной сборкой и инкрементальной компиляцией.",
             "Kora is based.": "База по Kora.",
             "Base principals of Kora engineering decisions keeps services transparent, fast to start, easy to maintain.": "Базовые принципы инженерных решений Kora делают сервисы прозрачными, быстрыми на старте и простыми в поддержке.",
             "Compile-time dependency injection": "Внедрение зависимостей во время компиляции",
