@@ -237,8 +237,80 @@ Basic HTTP server configuration parameters:
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-server) section.
 
-Kora provides fine-grained control over the `Undertow` `HTTP` server through two dedicated configuration interfaces: `UndertowConfigurer` and `HttpHandlerConfigurer`.
-They allow configuring server behavior and the request processing pipeline without sacrificing integration with Kora's modular architecture.
+### Public and private API { #public-private-api }
+
+The module starts **two** independent HTTP servers:
+
+* **Public API** on `publicApiHttpPort` (default `8080`) — serves all your `@HttpController` routes and imperative handlers. This is the port clients call.
+* **Private API** on `privateApiHttpPort` (default `8085`) — serves operational endpoints that must not be exposed to external traffic: [metrics](metrics.md) (`privateApiHttpMetricsPath`, default `/metrics`), and the [readiness](probes.md) and [liveness](probes.md) probes (`privateApiHttpReadinessPath` / `privateApiHttpLivenessPath`, defaults `/system/readiness` and `/system/liveness`).
+
+Separating the ports lets you publish only the public port through your ingress/load balancer while keeping metrics and probes reachable only from the internal network or the orchestrator (for example Kubernetes). The private endpoints are provided by the respective modules ([Metrics](metrics.md), [Probes](probes.md)) — you do not register them manually.
+
+### Native server configuration { #undertow-configurer }
+
+For low-level tuning that the configuration above does not cover, Kora exposes two `Undertow`-specific extension points. Provide either as a component and Kora will apply it while building the server.
+
+`UndertowConfigurer` gives direct access to the `Undertow.Builder` (worker/buffer settings, listeners, socket options, and other server-level options):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeUndertowConfigurer implements UndertowConfigurer {
+
+        @Override
+        public Undertow.Builder configure(Undertow.Builder builder) {
+            return builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeUndertowConfigurer : UndertowConfigurer {
+
+        override fun configure(builder: Undertow.Builder): Undertow.Builder {
+            return builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true)
+        }
+    }
+    ```
+
+`HttpHandlerConfigurer` wraps the root `HttpHandler`, which is the correct place to add cross-cutting behavior at the raw `Undertow` level (for example wrapping every request into an additional handler before Kora's routing runs):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeHandlerConfigurer implements HttpHandlerConfigurer {
+
+        @Override
+        public HttpHandler configure(HttpHandler handler) {
+            return exchange -> {
+                // custom logic before Kora routing
+                handler.handleRequest(exchange);
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeHandlerConfigurer : HttpHandlerConfigurer {
+
+        override fun configure(handler: HttpHandler): HttpHandler {
+            return HttpHandler { exchange ->
+                // custom logic before Kora routing
+                handler.handleRequest(exchange)
+            }
+        }
+    }
+    ```
+
+Prefer the [Configuration](#configuration) parameters and [interceptors](#interceptors) for anything they can express; reach for these interfaces only for behavior that is genuinely `Undertow`-specific.
 
 ## SomeController declarative { #somecontroller-declarative }
 
@@ -288,6 +360,38 @@ The `@HttpRoute` annotation is responsible for specifying the HTTP path and meth
     3. Indicates that the method is a path handler in the controller
     4. Indicates the type of the handler `HTTP` method
     5. Indicates the path of the handler method
+
+### Routing { #routing }
+
+`@HttpRoute` matches a request by its `method` (an [HTTP method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods) from `HttpMethod`) and its `path`.
+The `path` is a template that must start with `/` and may contain one or more `{name}` segments — each is a [path parameter](#path-parameter) bound with `@Path`:
+
+* `/users` — a static path
+* `/users/{id}` — one path parameter
+* `/users/{userId}/orders/{orderId}` — several path parameters, including in the middle of the path
+
+A path parameter always matches exactly one path segment; a value never spans a `/`.
+
+**Trailing slash.** By default the match is exact, so `/users` and `/users/` are **different** routes — a request to `/users/` against a `/users` route returns `404`.
+To treat them as the same route, enable `httpServer.ignoreTrailingSlash` (see [Configuration](#configuration)):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer {
+        ignoreTrailingSlash = true
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      ignoreTrailingSlash: true
+    ```
+
+**Method matching.** A path served with a method that has no matching route returns `405 Method Not Allowed`; an unknown path returns `404 Not Found`.
+The matched template is available at runtime as `HttpServerRequest.route()` and is used as the low-cardinality path label in metrics and tracing (see [Telemetry](#telemetry)).
 
 ### Request { #request }
 
@@ -474,8 +578,7 @@ By default, `byte[]`, `ByteBuffer`, `String`, `FormUrlEncoded`, `FormMultipart`,
 
 ##### JSON { #json }
 
-To indicate that the body is `JSON` and requires an automatically created and injected `JsonReader<T>`,
-use the `@Json` annotation:
+In request body should be treated as `JSON`, than it must be annotated via `@Json` tag to require handler for injection with `JsonReader<T>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -517,7 +620,15 @@ The [JSON](json.md) module is required.
 
 ##### Form UrlEncoded { #form-urlencoded }
 
-You can use `FormUrlEncoded` as the body argument type and it will be processed as [form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
+Declare a `FormUrlEncoded` (from `ru.tinkoff.kora.http.common.form`) argument to accept a request with the
+`application/x-www-form-urlencoded` content type ([form data](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)).
+No `@Json` or `@Mapping` annotation is needed — Kora has a built-in reader for this type.
+
+`FormUrlEncoded` is iterable and provides:
+
+* `get(String name)` — returns the `FormUrlEncoded.FormPart` with that name, or `null`
+* `FormPart.name()` — the field name
+* `FormPart.values()` — all values of that field (a field may be repeated in the form)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -526,12 +637,16 @@ You can use `FormUrlEncoded` as the body argument type and it will be processed 
     @HttpController
     public final class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        public String helloWorld(FormUrlEncoded body) {
-            return "Hello World";
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        public String handle(FormUrlEncoded body) {
+            FormUrlEncoded.FormPart name = body.get("name"); //(1)!
+            String firstName = (name != null) ? name.values().get(0) : null;
+            return "Hello " + firstName;
         }
     }
     ```
+
+    1. Reads the `name` field from the submitted form
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -540,16 +655,28 @@ You can use `FormUrlEncoded` as the body argument type and it will be processed 
     @HttpController
     class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun helloWorld(body: FormUrlEncoded): String {
-            return "Hello World"
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        fun handle(body: FormUrlEncoded): String {
+            val name = body.get("name") //(1)!
+            val firstName = name?.values()?.firstOrNull()
+            return "Hello $firstName"
         }
     }
     ```
+
+    1. Reads the `name` field from the submitted form
 
 ##### Form Multipart { #form-multipart }
 
-You can use `FormMultipart` as the body argument type and it will be treated as a [binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
+Declare a `FormMultipart` (from `ru.tinkoff.kora.http.common.form`) argument to accept a `multipart/form-data`
+request ([binary form](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2)), typically used for file uploads.
+No `@Json` or `@Mapping` annotation is needed.
+
+`FormMultipart.parts()` returns the list of parts, where each `FormMultipart.FormPart` is one of the following sealed subtypes:
+
+* `MultipartData` — a text field: `name()`, `content()` (`String`)
+* `MultipartFile` — a file loaded into memory: `name()`, `fileName()`, `contentType()`, `content()` (`byte[]`)
+* `MultipartFileStream` — a streamed file: `name()`, `fileName()`, `contentType()`, `content()` (`Flow.Publisher<ByteBuffer>`)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -558,12 +685,24 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
     @HttpController
     public final class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        public String helloWorld(FormMultipart body) {
-            return "Hello World";
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        public String handle(FormMultipart body) {
+            for (FormMultipart.FormPart part : body.parts()) {
+                if (part instanceof FormMultipart.FormPart.MultipartData data) { //(1)!
+                    String value = data.content();
+                } else if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(2)!
+                    String fileName = file.fileName();
+                    String contentType = file.contentType();
+                    byte[] content = file.content();
+                }
+            }
+            return "OK";
         }
     }
     ```
+
+    1. A text field of the form
+    2. A file uploaded within the form
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -572,12 +711,28 @@ You can use `FormMultipart` as the body argument type and it will be treated as 
     @HttpController
     class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun helloWorld(body: FormMultipart): String {
-            return "Hello World"
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        fun handle(body: FormMultipart): String {
+            for (part in body.parts()) {
+                when (part) {
+                    is FormMultipart.FormPart.MultipartData -> { //(1)!
+                        val value = part.content()
+                    }
+                    is FormMultipart.FormPart.MultipartFile -> { //(2)!
+                        val fileName = part.fileName()
+                        val contentType = part.contentType()
+                        val content = part.content()
+                    }
+                    else -> {}
+                }
+            }
+            return "OK"
         }
     }
     ```
+
+    1. A text field of the form
+    2. A file uploaded within the form
 
 #### Cookie { #cookie }
 
@@ -662,8 +817,7 @@ This is useful for user context, authorization, complex header validation, or se
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        @Mapping(RequestMapper::class)
-        operator fun get(@Mapping(RequestMapper::class) context: UserPrincipal): String {
+        fun get(@Mapping(RequestMapper::class) context: UserPrincipal): String {
             return "Hello World"
         }
     }
@@ -947,7 +1101,7 @@ It receives `Context`, the original `HttpServerRequest`, and the controller meth
         data class HelloWorldResponse(val greeting: String, val name: String)
 
         class ResponseMapper : HttpServerResponseMapper<HelloWorldResponse> {
-            fun apply(ctx: Context, request: HttpServerRequest, result: HelloWorldResponse): HttpServerResponse {
+            override fun apply(ctx: Context, request: HttpServerRequest, result: HelloWorldResponse): HttpServerResponse {
                 return HttpServerResponse.of(200, HttpBody.plaintext(result.greeting + " - " + result.name))
             }
         }
@@ -966,18 +1120,25 @@ Available signatures for declarative `HTTP` handler methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    The `T` refers to the type of the return value.
+    The `T` refers to the type of the return value. It can be a body type (`void`, `String`, `byte[]`, a `@Json` type, etc.),
+    an [`HttpResponseEntity<T>`](#response-entity) to also set status and headers, or the full [`HttpServerResponse`](#response).
 
-    - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (require [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `T myMethod()` — **blocking**: the handler runs on a thread from the `blockingThreads` pool (or a virtual thread when `virtualThreadsEnabled` is on, see [Configuration](#configuration))
+    - `CompletionStage<T> myMethod()` — **non-blocking**: the handler runs on an I/O thread and must not block it; see [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `Mono<T> myMethod()` — **non-blocking** via [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires the [reactor-core](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) dependency)
+
+    A `null` result (or `void`) produces an empty body with status `200`, unless the return type is `HttpServerResponse` / `HttpResponseEntity`, which carry their own status.
 
 === ":simple-kotlin: `Kotlin`"
 
-    By `T` we mean the type of the return value.
+    By `T` we mean the type of the return value — a body type, an [`HttpResponseEntity<T>`](#response-entity), or the full [`HttpServerResponse`](#response).
 
-    - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (require [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `myMethod(): T` — **blocking**: the handler runs on a thread from the `blockingThreads` pool (or a virtual thread when `virtualThreadsEnabled` is on, see [Configuration](#configuration))
+    - `suspend myMethod(): T` — **non-blocking** [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires the [kotlinx-coroutines-core](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) dependency as `implementation`)
+
+    A nullable return type (`T?`) is allowed for handlers that may produce an empty `200` body.
+
+Choose a blocking signature when the handler calls blocking code (JDBC, blocking clients); choose a non-blocking one only when the whole call chain is non-blocking, otherwise you will stall the I/O threads.
 
 ## Interceptors { #interceptors }
 
@@ -1003,6 +1164,16 @@ Interceptors can be used on:
 - Specific controller methods
 - Entire controller
 - All controllers at once: register the interceptor component with the `@Tag(HttpServerModule.class)` tag; there can be several global interceptors
+
+**Execution order:**
+
+Interceptors declared with `@InterceptWith` run in the order they are declared (top to bottom): controller-level interceptors
+wrap method-level ones, and within the same target the order follows the annotation order. Each interceptor may modify the request
+before `chain.process(...)`, short-circuit by returning a response without calling the chain, or handle the result/exception afterwards.
+
+Global interceptors registered with `@Tag(HttpServerModule.class)` have **no guaranteed order between each other**.
+If a strict order across global concerns is required (for example authorization must run before error mapping), do not register
+several global interceptors — implement a **single** global interceptor that invokes the concerns in the required order internally.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1095,7 +1266,7 @@ Below is a simple example of such an interceptor.
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(HttpServerModule.class)
+    @Tag(HttpServerModule::class)
     @Component
     class ErrorInterceptor : HttpServerInterceptor {
 
@@ -1657,3 +1828,64 @@ The default factory `DefaultHttpServerTelemetryFactory` combines three factories
 - `HttpServerTracerFactory` builds `HttpServerTracer` for distributed tracing.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#http-server) section.
+
+### Logging { #telemetry-logging }
+
+Server logging is written through `SLF4J` under the `ru.tinkoff.kora.http.server.common.HttpServer` logger. Enabling logging in the
+configuration (`httpServer.telemetry.logging.enabled = true`) turns the telemetry on, but **what** is actually written is governed by the
+log level of that logger, so you control verbosity from your logging framework (`logback`, etc.) without restarting with a different config:
+
+| Log level | What is logged |
+|-----------|----------------|
+| `INFO`    | Request start and end line: method, path template, response status, result code, and duration |
+| `DEBUG`   | Additionally request and response **headers** |
+| `TRACE`   | Additionally the full (non-templated) request path |
+
+The following configuration fields shape the output (see [Configuration](#configuration) for the full list):
+
+* `pathTemplate` — when `true` (default), the low-cardinality route template (`/users/{id}`) is logged and used as the metric/trace label instead of the resolved path (`/users/42`); at `TRACE` the resolved path is logged
+* `maskHeaders` — header names whose values are replaced with `mask` (default masks `authorization`, `cookie`, `set-cookie`)
+* `maskQueries` — query parameter names whose values are replaced with `mask`
+* `mask` — the replacement string (default `***`)
+* `stacktrace` — when `true` (default), logs the exception stack trace when a request fails
+
+Example `logback` configuration that enables full header logging for the server:
+
+```xml
+<logger name="ru.tinkoff.kora.http.server.common.HttpServer" level="DEBUG"/>
+```
+
+### Custom logger { #telemetry-custom-logger }
+
+To fully control the log format or destination, provide your own `HttpServerLoggerFactory` (or `HttpServerLogger`) component — it replaces the
+default `Slf4jHttpServerLoggerFactory`. The same applies to metrics (`HttpServerMetricsFactory`) and tracing (`HttpServerTracerFactory`):
+supplying any of these components overrides the corresponding default, while the others keep their default implementation.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyHttpServerLoggerFactory implements HttpServerLoggerFactory {
+
+        @Override
+        public HttpServerLogger get(HttpServerLoggerConfig logging) {
+            return new MyHttpServerLogger(); //(1)!
+        }
+    }
+    ```
+
+    1. Your `HttpServerLogger` implementation controlling exactly what and how to log
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyHttpServerLoggerFactory : HttpServerLoggerFactory {
+
+        override fun get(logging: HttpServerLoggerConfig): HttpServerLogger {
+            return MyHttpServerLogger() //(1)!
+        }
+    }
+    ```
+
+    1. Your `HttpServerLogger` implementation controlling exactly what and how to log
