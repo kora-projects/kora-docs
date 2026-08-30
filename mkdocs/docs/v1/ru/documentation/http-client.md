@@ -713,6 +713,50 @@ agent:
     }
     ```
 
+Эти теги выбирают, **какой** компонент внедрить, когда в графе присутствует несколько. Вторая часть — предоставить этот компонент
+под **тем же** `@Tag`. Например, чтобы дать одному клиенту выделенный транспорт (отдельный пул соединений, другие таймауты,
+свой `OkHttpConfigurer` и т.д.), предоставьте `HttpClient` с тегом и сошлитесь на тот же класс-тег из `httpClientTag`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class CustomTransport { } //(1)!
+
+    @Module
+    public interface TransportModule {
+
+        @Tag(CustomTransport.class) //(2)!
+        default HttpClient customHttpClient(okhttp3.OkHttpClient okHttp) {
+            return new OkHttpClient(okHttp); //(3)!
+        }
+    }
+    ```
+
+    1. Класс-маркер, используемый только как тег
+    2. Предоставляется под тем же тегом, на который ссылается `httpClientTag`
+    3. `ru.tinkoff.kora.http.client.ok.OkHttpClient` — транспорт Kora, оборачивающий `okhttp3.OkHttpClient`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class CustomTransport //(1)!
+
+    @Module
+    interface TransportModule {
+
+        @Tag(CustomTransport::class) //(2)!
+        fun customHttpClient(okHttp: okhttp3.OkHttpClient): HttpClient {
+            return OkHttpClient(okHttp) //(3)!
+        }
+    }
+    ```
+
+    1. Класс-маркер, используемый только как тег
+    2. Предоставляется под тем же тегом, на который ссылается `httpClientTag`
+    3. `ru.tinkoff.kora.http.client.ok.OkHttpClient` — транспорт Kora, оборачивающий `okhttp3.OkHttpClient`
+
+`telemetryTag` работает так же для `HttpClientTelemetryFactory` с тегом. Если тег не указан, используются транспорт и телеметрия по умолчанию.
+
 Основные параметры конфигурации декларативного клиента:
 
 ===! ":material-code-json: `Hocon`"
@@ -1175,13 +1219,24 @@ public interface StringParameterConverter<T> {
 
 #### Тело запроса { #request-body }
 
-Для указания тела запроса требуется использовать аргумент метода без специальных аннотации,
-по умолчанию поддерживаются такие типы как `byte[]`, `ByteBuffer` или `String`.
+Для указания тела запроса требуется использовать аргумент метода без специальных аннотаций.
+Kora предоставляет встроенные мапперы запроса для следующих типов, каждый из которых также устанавливает заголовок `Content-Type` по умолчанию:
+
+| Тип аргумента тела | `Content-Type` по умолчанию |
+|--------------------|-----------------------------|
+| `String` | `text/plain; charset=utf-8` |
+| `byte[]` / `ByteBuffer` | `application/octet-stream` |
+| `Flow.Publisher<ByteBuffer>` | `application/octet-stream` (потоково, без буферизации в памяти) |
+| `@Json T` (см. [Json](#json)) | `application/json` |
+| `FormUrlEncoded` (см. [Текстовая форма](#text-form)) | `application/x-www-form-urlencoded` |
+| `FormMultipart` (см. [Бинарная форма](#binary-form)) | `multipart/form-data` |
+
+Для любого другого типа или чтобы задать другой `Content-Type`, используйте [свой маппер тела](#custom-body) с `HttpClientRequestMapper<T>` и верните
+подходящий `HttpBody` (например `HttpBody.of(bytes, "application/x-protobuf")`). `Content-Type`, явно заданный через `@Header`, имеет приоритет над значением по умолчанию.
 
 ##### JSON { #json }
 
-Чтобы указать, что тело является `JSON` и для него требуется автоматически создать и внедрить `JsonWriter`,
-используется тег-аннотация `@Json`:
+Чтобы указать, что тело является `JSON` и для него требуется внедрить `JsonWriter<T>`, используя тег-аннотация `@Json`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1217,7 +1272,17 @@ public interface StringParameterConverter<T> {
 
 ##### Текстовая форма { #text-form }
 
-Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
+Используйте `FormUrlEncoded` (из `ru.tinkoff.kora.http.common.form`) как тип аргумента тела, чтобы отправить тело с
+типом содержимого `application/x-www-form-urlencoded` ([форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)).
+Аннотации `@Json` или `@Mapping` не требуются — для этого типа в Kora есть встроенный writer.
+
+`FormUrlEncoded` — это набор именованных частей, где каждая часть может содержать одно или несколько значений:
+
+* `FormUrlEncoded.FormPart(String name, String value)` — часть с одним значением
+* `FormUrlEncoded.FormPart(String name, List<String> values)` — часть с несколькими значениями (поле повторяется для каждого значения)
+* `new FormUrlEncoded(FormPart...)` / `new FormUrlEncoded(List<FormPart>)` / `new FormUrlEncoded(Map<String, FormPart>)` — создание формы; части с одинаковым именем объединяются в одну
+
+Объявите метод клиента с параметром `FormUrlEncoded`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1225,8 +1290,8 @@ public interface StringParameterConverter<T> {
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(FormUrlEncoded body);
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        HttpResponseEntity<String> formEncoded(FormUrlEncoded body);
     }
     ```
 
@@ -1236,36 +1301,53 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormUrlEncoded):
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        fun formEncoded(body: FormUrlEncoded): HttpResponseEntity<String>
     }
     ```
 
-Пример вызова метода с такой формой будет выглядеть так:
+Пример вызова с такой формой:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var response = httpClient.formEncoded(new FormUrlEncoded(
+    var response = someClient.formEncoded(new FormUrlEncoded(
             new FormUrlEncoded.FormPart("name", "Bob"),
-            new FormUrlEncoded.FormPart("password", "12345")
+            new FormUrlEncoded.FormPart("password", "12345"),
+            new FormUrlEncoded.FormPart("roles", List.of("admin", "user")) //(1)!
     ));
     ```
+
+    1. Отправляется как `roles=admin&roles=user`
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val response = httpClient.formEncoded(
+    val response = someClient.formEncoded(
         FormUrlEncoded(
             FormUrlEncoded.FormPart("name", "Bob"),
-            FormUrlEncoded.FormPart("password", "12345")
+            FormUrlEncoded.FormPart("password", "12345"),
+            FormUrlEncoded.FormPart("roles", listOf("admin", "user")) //(1)!
         )
     )
     ```
 
+    1. Отправляется как `roles=admin&roles=user`
+
 ##### Бинарная форма { #binary-form }
 
-Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
+Используйте `FormMultipart` (из `ru.tinkoff.kora.http.common.form`) как тип аргумента тела, чтобы отправить тело
+`multipart/form-data` ([бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2)), обычно используется для загрузки файлов вместе с текстовыми полями.
+Аннотации `@Json` или `@Mapping` не требуются.
+
+`FormMultipart` — это список частей, создаваемых через статические фабричные методы:
+
+* `FormMultipart.data(String name, String value)` — текстовое поле
+* `FormMultipart.file(String name, String fileName, String contentType, byte[] content)` — файловая часть, загруженная в память (`fileName` и `contentType` могут быть `null`)
+* `FormMultipart.file(String name, String fileName, String contentType, Flow.Publisher<ByteBuffer> content)` — потоковая файловая часть для больших данных, которые не следует полностью буферизовать в памяти
+* `new FormMultipart(List<? extends FormPart>)` — создание формы из частей
+
+Объявите метод клиента с параметром `FormMultipart`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1273,8 +1355,8 @@ public interface StringParameterConverter<T> {
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(FormMultipart body);
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        HttpResponseEntity<String> formMultipart(FormMultipart body);
     }
     ```
 
@@ -1284,39 +1366,46 @@ public interface StringParameterConverter<T> {
     @HttpClient
     interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(body: FormMultipart):
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        fun formMultipart(body: FormMultipart): HttpResponseEntity<String>
     }
     ```
 
-Пример вызова метода с такой формой будет выглядеть так:
+Пример вызова с такой формой:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    var response = httpClient.formMultipart(new FormMultipart(List.of(
-            FormMultipart.data("field1", "some data content"),
-            FormMultipart.file("field2", "example1.txt", "text/plain", "some file content".getBytes(StandardCharsets.UTF_8))
+    var response = someClient.formMultipart(new FormMultipart(List.of(
+            FormMultipart.data("field1", "some data content"), //(1)!
+            FormMultipart.file("field2", "example1.txt", "text/plain",
+                    "some file content".getBytes(StandardCharsets.UTF_8)) //(2)!
     )));
     ```
+
+    1. Текстовое поле
+    2. Файловая часть с именем файла и типом содержимого
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val response = httpClient.formMultipart(
+    val response = someClient.formMultipart(
         FormMultipart(
             listOf<FormMultipart.FormPart>(
-                FormMultipart.data("field1", "some data content"),
+                FormMultipart.data("field1", "some data content"), //(1)!
                 FormMultipart.file(
                     "field2",
                     "example1.txt",
                     "text/plain",
                     "some file content".toByteArray(StandardCharsets.UTF_8)
-                )
+                ) //(2)!
             )
         )
     )
     ```
+
+    1. Текстовое поле
+    2. Файловая часть с именем файла и типом содержимого
 
 ##### Самописное { #custom-body }
 
@@ -1483,7 +1572,7 @@ public interface StringParameterConverter<T> {
 
 ##### JSON { #json-2 }
 
-Если предполагается читать тело как `JSON`, то требуется использовать аннотацию `@Json` над методом.
+Если предполагается читать тело как `JSON`, то требуется использовать аннотацию `@Json` над методом, чтобы внедрить обработчик с `JsonReader<T>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1630,15 +1719,18 @@ public interface StringParameterConverter<T> {
 
             @Override
             public ApiResponse apply(HttpClientResponse response) throws IOException {
-                int statusCode = response.statusCode();
-                byte[] body = response.body();
-
-                if (statusCode >= 400) {
-                    // Обработка ошибки: логирование или выброс исключения
-                    throw new HttpClientResponseException(statusCode, body, response.headers());
+                int code = response.code();
+                final byte[] body;
+                try (var is = response.body().asInputStream()) {
+                    body = is.readAllBytes();
                 }
 
-                if (body == null || body.length == 0) {
+                if (code >= 400) {
+                    // Обработка ошибки: логирование или выброс исключения
+                    throw new HttpClientResponseException(code, response.headers(), body);
+                }
+
+                if (body.length == 0) {
                     return null;
                 }
 
@@ -1666,15 +1758,15 @@ public interface StringParameterConverter<T> {
 
             @Throws(IOException::class)
             override fun apply(response: HttpClientResponse): ApiResponse {
-                val statusCode = response.statusCode()
-                val body = response.body()
+                val code = response.code()
+                val body = response.body().asInputStream().use { it.readAllBytes() }
 
-                if (statusCode >= 400) {
+                if (code >= 400) {
                     // Обработка ошибки: логирование или выброс исключения
-                    throw HttpClientResponseException(statusCode, body, response.headers())
+                    throw HttpClientResponseException(code, response.headers(), body)
                 }
 
-                if (body == null || body.isEmpty()) {
+                if (body.isEmpty()) {
                     return null
                 }
 
@@ -1829,23 +1921,106 @@ try {
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Void`.
+    Под `T` подразумевается тип возвращаемого значения. Это может быть тип тела (`void`, `String`, `byte[]`, тип с `@Json` и т.д.) либо
+    [`HttpResponseEntity<T>`](#response-entity) для чтения также статуса и заголовков. Возврат `@Nullable T` допускает пустое успешное тело.
 
-    - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `T myMethod()` — **синхронная (блокирующая)**: вызывающий поток ждёт ответа
+    - `CompletionStage<T> myMethod()` — **асинхронная**: возвращает управление сразу, завершается по приходу ответа; см. [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `Mono<T> myMethod()` — **асинхронная** через [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
 
 === ":simple-kotlin: `Kotlin`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
+    Под `T` подразумевается тип возвращаемого значения — `T`, `T?` (nullable для пустого успешного тела) или `Unit`.
+    `T` может быть типом тела либо [`HttpResponseEntity<T>`](#response-entity) для чтения также статуса и заголовков.
 
-    - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): T` — **синхронная (блокирующая)**: вызывающий поток ждёт ответа
+    - `suspend myMethod(): T` — **асинхронная** [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+
+По умолчанию ответ со статусом не `2xx` бросает [`HttpClientResponseException`](#response-error) независимо от сигнатуры; используйте [`@ResponseCodeMapper`](#conversion-by-code) или [`HttpResponseEntity`](#response-entity), чтобы обрабатывать другие статусы без исключения.
 
 ## Перехватчики { #interceptors }
 
 Можно создавать перехватчики для изменения поведения либо создания дополнительного поведения используя интерфейс `HttpClientInterceptor`.
 Перехватчики можно подключить на определенные методы либо весь `@HttpClient` класс целиком с помощью аннотации `@InterceptWith`.
+
+Интерфейс получает текущий `Context`, исходящий `HttpClientRequest` и `InterceptChain`, продолжающий обработку:
+
+```java
+public interface HttpClientInterceptor {
+
+    CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
+
+    interface InterceptChain {
+        CompletionStage<HttpClientResponse> process(Context ctx, HttpClientRequest request) throws Exception; //(2)!
+    }
+}
+```
+
+1. Вызывается для каждого запроса, к которому подключён перехватчик
+2. Продолжает цепочку (следующий перехватчик или фактический вызов транспорта)
+
+Перехватчик может:
+
+* **Изменить запрос перед отправкой** — пересоберите его через `request.toBuilder()` (добавить заголовок, изменить URI, заменить тело), затем передайте новый запрос в `chain.process(ctx, newRequest)`
+* **Продолжить цепочку** — вернуть `chain.process(ctx, request)` без изменений
+* **Замкнуть накоротко** — вернуть ответ, не вызывая `chain.process(...)` (например, кэшированный ответ)
+* **Просмотреть или преобразовать ответ** — вызвать `chain.process(...)` и добавить `thenApply` / `thenCompose` / `exceptionally` к возвращённому `CompletionStage`
+* **Завершить вызов ошибкой** — бросить исключение или вернуть неуспешный `CompletionStage`, прервав цепочку
+
+Пример, добавляющий заголовок к каждому запросу и проверяющий статус ответа:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class TracingInterceptor implements HttpClientInterceptor {
+
+        @Override
+        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
+            HttpClientRequest modified = request.toBuilder()
+                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
+                .build();
+
+            return chain.process(ctx, modified).thenApply(response -> {
+                if (response.code() >= 500) {
+                    // наблюдаем серверные ошибки
+                }
+                return response;
+            });
+        }
+    }
+    ```
+
+    1. `request.toBuilder()` возвращает `HttpClientRequestBuilder`, инициализированный текущим запросом
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class TracingInterceptor : HttpClientInterceptor {
+
+        override fun processRequest(
+            ctx: Context,
+            chain: HttpClientInterceptor.InterceptChain,
+            request: HttpClientRequest
+        ): CompletionStage<HttpClientResponse> {
+            val modified = request.toBuilder()
+                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
+                .build()
+
+            return chain.process(ctx, modified).thenApply { response ->
+                if (response.code() >= 500) {
+                    // наблюдаем серверные ошибки
+                }
+                response
+            }
+        }
+    }
+    ```
+
+    1. `request.toBuilder()` возвращает `HttpClientRequestBuilder`, инициализированный текущим запросом
+
+Для императивного `HttpClient` перехватчик подключается через `httpClient.with(interceptor)` вместо `@InterceptWith`.
 
 **Перехватчик на метод:**
 
@@ -2460,9 +2635,9 @@ HttpClientException
             } catch (HttpClientConnectionException e) {
                 // Ошибка соединения: проверка доступности сервиса
             } catch (HttpClientResponseException e) {
-                // Ошибка ответа: statusCode, body, headers
-                int statusCode = e.getStatusCode();
-                byte[] body = e.getBody();
+                // Ошибка ответа: code, body, headers
+                int code = e.getCode();
+                byte[] body = e.getBytes();
             } catch (HttpClientEncoderException e) {
                 // Ошибка сериализации: проверка данных
             } catch (HttpClientDecoderException e) {
@@ -2489,9 +2664,9 @@ HttpClientException
             } catch (e: HttpClientConnectionException) {
                 // Ошибка соединения: проверка доступности сервиса
             } catch (e: HttpClientResponseException) {
-                // Ошибка ответа: statusCode, body, headers
-                val statusCode = e.statusCode
-                val body = e.body
+                // Ошибка ответа: code, body, headers
+                val code = e.code
+                val body = e.bytes
             } catch (e: HttpClientEncoderException) {
                 // Ошибка сериализации: проверка данных
             } catch (e: HttpClientDecoderException) {
@@ -2537,9 +2712,9 @@ HttpClientException
 Выбрасывается когда сервер вернул HTTP статус код ошибки (4xx или 5xx) и не указан собственный маппер через `@ResponseCodeMapper`.
 
 **Доступные данные:**
-- `statusCode` — HTTP статус код (400, 404, 500, etc.)
-- `body` — тело ответа (может содержать детали ошибки)
-- `headers` — заголовки ответа
+- `getCode()` — HTTP статус код (400, 404, 500, etc.)
+- `getBytes()` — тело ответа как `byte[]` (может содержать детали ошибки)
+- `getHeaders()` — заголовки ответа
 
 **Рекомендации:**
 - Используйте `@ResponseCodeMapper` для кастомной обработки статусов
@@ -2586,6 +2761,51 @@ HttpClientException
 - Проверьте логи HTTP клиента на уровне DEBUG/TRACE
 - Сообщите о баге если исключение воспроизводится
 
+### Устойчивость { #resilience }
+
+Приведённые выше рекомендации (повтор, circuit breaker, таймаут, fallback) предоставляются модулем [Resilient](resilient.md), а не самим HTTP-клиентом.
+Его аннотации применяются напрямую к методам декларативного `@HttpClient`, поэтому отказоустойчивость можно добавить, не меняя места вызова:
+
+* `@Retry` — повторить вызов при ошибке
+* `@CircuitBreaker` — перестать вызывать сбоящую зависимость и быстро завершать вызовы ошибкой до её восстановления
+* `@Timeout` — ограничить общее время вызова
+* `@Fallback` — вернуть запасной результат при ошибке вызова
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        @Retry("someClient.hello") //(1)!
+        @CircuitBreaker("someClient.hello") //(2)!
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        HttpResponseEntity<String> hello();
+    }
+    ```
+
+    1. Путь конфигурации повтора
+    2. Путь конфигурации circuit breaker
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        @Retry("someClient.hello") //(1)!
+        @CircuitBreaker("someClient.hello") //(2)!
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        fun hello(): HttpResponseEntity<String>
+    }
+    ```
+
+    1. Путь конфигурации повтора
+    2. Путь конфигурации circuit breaker
+
+Обратите внимание на отличие от транспортного `requestTimeout` ([Конфигурация клиента](#client-configuration)): `requestTimeout` ограничивает одну HTTP-попытку,
+тогда как `@Timeout` ограничивает весь вызов метода, включая повторы. Конфигурацию и семантику каждой аннотации см. в модуле [Resilient](resilient.md).
+
 ## Клиент императивный { #client-imperative }
 
 Базовый клиент представляет собой интерфейс `HttpClient` и доступен для внедрения:
@@ -2602,33 +2822,12 @@ public interface HttpClient {
 1. Метод исполнения запроса
 2. Метод позволяющий добавлять различные перехватчики в ручном режиме
 
-Для построения запросов вручную можно использовать `HttpClientRequestBuilder`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-            .templateParam("petId", "1")
-            .queryParam("page", 1)
-            .header("token", "12345")
-            .body(HttpBody.plaintext("refresh"))
-            .build();
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-        .templateParam("petId", "1")
-        .queryParam("page", 1)
-        .header("token", "12345")
-        .body(HttpBody.plaintext("refresh"))
-        .build()
-    ```
+Запросы строятся вручную через `HttpClientRequest.of(...)` (см. [Построитель запроса](#request-builder) ниже)
+и выполняются методом `execute`, который возвращает `CompletionStage<HttpClientResponse>`.
 
 ### Построитель запроса { #request-builder }
 
-`HttpClientRequestBuilder` позволяет строить HTTP запросы вручную.
+`HttpClientRequestBuilder` позволяет строить HTTP запросы вручную и создаётся через `HttpClientRequest.of(method, uri)`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2684,8 +2883,9 @@ public interface HttpClient {
 
 ### Тело запроса { #http-body-input }
 
-`HttpBodyInput` — интерфейс который описывает тело HTTP запроса как поток данных (Flow.Publisher<ByteBuffer>).
-Используется для стриминга больших данных без загрузки в память.
+`HttpBodyInput` — интерфейс который описывает входящее тело HTTP (на стороне клиента это тело ответа, получаемое через `response.body()`)
+как поток данных (`Flow.Publisher<ByteBuffer>`). Используется для стриминга больших данных без полной загрузки в память,
+либо для чтения целиком через вспомогательные методы ниже.
 
 **Методы:**
 
@@ -2697,16 +2897,19 @@ public interface HttpClient {
 
 ### Ответ клиента { #http-client-response }
 
-`HttpClientResponse` — интерфейс который представляет HTTP ответ от сервера.
+`HttpClientResponse` — интерфейс который представляет HTTP ответ от сервера. Он наследует `Closeable`, поэтому должен быть
+закрыт после прочтения тела (декларативные клиенты и мапперы делают это автоматически).
 
 **Методы:**
 
 | Метод | Возвращает | Описание |
 |-------|------------|----------|
-| `statusCode()` | `int` | HTTP статус код (200, 404, 500, etc.) |
-| `body()` | `byte[]` | Тело ответа как массив байтов |
+| `code()` | `int` | HTTP статус код (200, 404, 500, etc.) |
+| `body()` | `HttpBodyInput` | Тело ответа как читаемый поток (см. [HttpBodyInput](#http-body-input)) |
 | `headers()` | `HttpHeaders` | Заголовки ответа |
-| `cookies()` | `Cookies` | Cookies из ответа |
+| `close()` | `void` | Освобождает ответ и нижележащее соединение |
+
+Отдельного доступа к cookies у ответа клиента нет — значения читаются из заголовков `Set-Cookie` через `headers()`.
 
 ### Заголовки { #http-headers-imperative }
 
@@ -2734,7 +2937,7 @@ public interface HttpClient {
     val request = HttpClientRequest.of("GET", "http://localhost:8090/api/data").build()
     
     httpClient.execute(request).thenAccept { response ->
-        val headers = response.headers
+        val headers = response.headers()
         val contentType = headers.getFirst("Content-Type")
         val allValues = headers.get("X-Custom-Header")
         val hasHeader = headers.contains("Authorization")
@@ -2777,41 +2980,60 @@ public interface HttpClient {
 
 ### Cookies { #cookies-imperative }
 
-`Cookies` предоставляет доступ к cookies запроса и ответа в императивном клиенте.
+Императивный `HttpClientResponse` не предоставляет отдельного доступа к cookies — cookies ответа читаются из
+заголовков `Set-Cookie` через `headers()`. На стороне запроса cookie добавляется как заголовок `Cookie`.
 
-**Чтение cookies:**
+**Чтение cookies ответа:**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
         .build();
-    
+
     httpClient.execute(request).thenAccept(response -> {
-        Cookies cookies = response.cookies();
-        Cookie sessionCookie = cookies.get("SESSIONID");
-        if (sessionCookie != null) {
-            String value = sessionCookie.value();
-            String domain = sessionCookie.domain();
-            String path = sessionCookie.path();
+        List<String> setCookies = response.headers().get("set-cookie"); //(1)!
+        if (setCookies != null) {
+            for (String setCookie : setCookies) {
+                // например "SESSIONID=abc123; Path=/; HttpOnly"
+            }
         }
     });
     ```
+
+    1. Имена заголовков сопоставляются без учёта регистра
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile").build()
-    
+
     httpClient.execute(request).thenAccept { response ->
-        val cookies = response.cookies
-        val sessionCookie = cookies.get("SESSIONID")
-        if (sessionCookie != null) {
-            val value = sessionCookie.value()
-            val domain = sessionCookie.domain()
-            val path = sessionCookie.path()
+        val setCookies = response.headers().get("set-cookie") //(1)!
+        setCookies?.forEach { setCookie ->
+            // например "SESSIONID=abc123; Path=/; HttpOnly"
         }
     }
+    ```
+
+    1. Имена заголовков сопоставляются без учёта регистра
+
+**Отправка cookie в запросе:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
+        .header("cookie", "SESSIONID=abc123")
+        .build();
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
+        .header("cookie", "SESSIONID=abc123")
+        .build()
     ```
 
 ## Телеметрия { #telemetry }
@@ -2829,3 +3051,64 @@ HTTP Client использует контракт телеметрии для л
 - `HttpClientTracerFactory` строит `HttpClientTracer` для распределённой трассировки.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-client).
+
+### Логирование { #telemetry-logging }
+
+Логирование клиента пишется через `SLF4J` под двумя логгерами, названными по имени клиента: `<clientName>.request` и `<clientName>.response`
+(где `<clientName>` выводится из интерфейса `@HttpClient`). Включение логирования в конфигурации (`telemetry.logging.enabled = true`) активирует
+телеметрию, но **что именно** пишется, определяется уровнем логирования этих логгеров, поэтому детализацией вы управляете из вашего фреймворка логирования (`logback` и т.д.):
+
+| Уровень лога | Что логируется |
+|--------------|----------------|
+| `INFO`  | Строка начала запроса и конца ответа: метод, шаблон пути, статус ответа, код результата и длительность |
+| `DEBUG` | Дополнительно **заголовки** запроса и ответа |
+| `TRACE` | Дополнительно **тела** запроса и ответа, а также полный (нешаблонизированный) путь |
+
+Поля конфигурации формируют вывод (полный список см. в [Конфигурации](#configuration)):
+
+* `pathTemplate` — при `true` (по умолчанию) логируется шаблон маршрута с низкой кардинальностью (`/users/{id}`) и используется как метка метрик/трассировки вместо разрешённого пути (`/users/42`); на `TRACE` логируется разрешённый путь
+* `maskHeaders` — имена заголовков, значения которых заменяются на `mask` (по умолчанию маскируются `authorization`, `cookie`, `set-cookie`)
+* `maskQueries` — имена query-параметров, значения которых заменяются на `mask`
+* `mask` — строка замены (по умолчанию `***`)
+
+Для клиента, имя которого выводится как `someClient`, включить полное логирование тел можно так:
+
+```xml
+<logger name="someClient.request" level="TRACE"/>
+<logger name="someClient.response" level="TRACE"/>
+```
+
+### Свой логгер { #telemetry-custom-logger }
+
+Чтобы полностью управлять форматом или назначением лога, предоставьте свой компонент `HttpClientLoggerFactory` (или `HttpClientLogger`) — он заменит
+фабрику по умолчанию `Sl4fjHttpClientLoggerFactory`. То же касается метрик (`HttpClientMetricsFactory`) и трассировки (`HttpClientTracerFactory`):
+предоставление любого из этих компонентов переопределяет соответствующую реализацию по умолчанию, остальные сохраняют реализацию по умолчанию.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyHttpClientLoggerFactory implements HttpClientLoggerFactory {
+
+        @Override
+        public HttpClientLogger get(TelemetryConfig.LogConfig logging, String clientName) {
+            return new MyHttpClientLogger(clientName); //(1)!
+        }
+    }
+    ```
+
+    1. Ваша реализация `HttpClientLogger`, управляющая тем, что и как логировать
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyHttpClientLoggerFactory : HttpClientLoggerFactory {
+
+        override fun get(logging: TelemetryConfig.LogConfig, clientName: String): HttpClientLogger {
+            return MyHttpClientLogger(clientName) //(1)!
+        }
+    }
+    ```
+
+    1. Ваша реализация `HttpClientLogger`, управляющая тем, что и как логировать

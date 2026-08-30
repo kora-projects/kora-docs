@@ -237,8 +237,80 @@ agent:
 
 Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#http-server).
 
-Kora предоставляет тонкую настройку `HTTP`-сервера `Undertow` через два специализированных интерфейса конфигурации: `UndertowConfigurer` и `HttpHandlerConfigurer`.  
-Они позволяют настраивать поведение сервера и конвейер обработки запросов, не жертвуя интеграцией с модульной архитектурой Kora.
+### Публичный и приватный API { #public-private-api }
+
+Модуль запускает **два** независимых HTTP-сервера:
+
+* **Публичный API** на `publicApiHttpPort` (по умолчанию `8080`) — обслуживает все ваши маршруты `@HttpController` и императивные обработчики. Это порт, к которому обращаются клиенты.
+* **Приватный API** на `privateApiHttpPort` (по умолчанию `8085`) — обслуживает служебные эндпоинты, которые не должны быть доступны извне: [метрики](metrics.md) (`privateApiHttpMetricsPath`, по умолчанию `/metrics`), а также пробы [readiness](probes.md) и [liveness](probes.md) (`privateApiHttpReadinessPath` / `privateApiHttpLivenessPath`, по умолчанию `/system/readiness` и `/system/liveness`).
+
+Разделение портов позволяет публиковать через ingress/балансировщик только публичный порт, оставляя метрики и пробы доступными только из внутренней сети или оркестратора (например Kubernetes). Приватные эндпоинты предоставляются соответствующими модулями ([Метрики](metrics.md), [Пробы](probes.md)) — регистрировать их вручную не нужно.
+
+### Низкоуровневая настройка сервера { #undertow-configurer }
+
+Для низкоуровневой настройки, которую не покрывает конфигурация выше, Kora предоставляет две точки расширения, специфичные для `Undertow`. Предоставьте любую из них как компонент, и Kora применит её при построении сервера.
+
+`UndertowConfigurer` даёт прямой доступ к `Undertow.Builder` (настройки worker/буферов, слушатели, опции сокетов и другие серверные опции):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeUndertowConfigurer implements UndertowConfigurer {
+
+        @Override
+        public Undertow.Builder configure(Undertow.Builder builder) {
+            return builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeUndertowConfigurer : UndertowConfigurer {
+
+        override fun configure(builder: Undertow.Builder): Undertow.Builder {
+            return builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true)
+        }
+    }
+    ```
+
+`HttpHandlerConfigurer` оборачивает корневой `HttpHandler` — это подходящее место для сквозного поведения на уровне «сырого» `Undertow` (например, обернуть каждый запрос в дополнительный обработчик до того, как отработает маршрутизация Kora):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeHandlerConfigurer implements HttpHandlerConfigurer {
+
+        @Override
+        public HttpHandler configure(HttpHandler handler) {
+            return exchange -> {
+                // пользовательская логика до маршрутизации Kora
+                handler.handleRequest(exchange);
+            };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeHandlerConfigurer : HttpHandlerConfigurer {
+
+        override fun configure(handler: HttpHandler): HttpHandler {
+            return HttpHandler { exchange ->
+                // пользовательская логика до маршрутизации Kora
+                handler.handleRequest(exchange)
+            }
+        }
+    }
+    ```
+
+Для всего, что можно выразить параметрами [Конфигурации](#configuration) и [перехватчиками](#interceptors), используйте их; к этим интерфейсам прибегайте только для поведения, действительно специфичного для `Undertow`.
 
 ## Контроллер декларативный { #somecontroller-declarative }
 
@@ -288,6 +360,38 @@ Kora предоставляет тонкую настройку `HTTP`-серв�
     3. Указывает что метод является обработчиком пути в контроллере
     4. Указывает тип `HTTP`-метода обработчика
     5. Указывает путь метода обработчика
+
+### Маршрутизация { #routing }
+
+`@HttpRoute` сопоставляет запрос по его `method` ([HTTP-метод](https://developer.mozilla.org/ru/docs/Web/HTTP/Methods) из `HttpMethod`) и `path`.
+`path` — это шаблон, который должен начинаться с `/` и может содержать один или несколько сегментов `{name}` — каждый является [параметром пути](#path-parameter), связываемым через `@Path`:
+
+* `/users` — статический путь
+* `/users/{id}` — один параметр пути
+* `/users/{userId}/orders/{orderId}` — несколько параметров пути, в том числе в середине пути
+
+Параметр пути всегда соответствует ровно одному сегменту пути; значение никогда не охватывает `/`.
+
+**Завершающий слеш.** По умолчанию сопоставление точное, поэтому `/users` и `/users/` — это **разные** маршруты: запрос к `/users/` при маршруте `/users` вернёт `404`.
+Чтобы считать их одним маршрутом, включите `httpServer.ignoreTrailingSlash` (см. [Конфигурация](#configuration)):
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    httpServer {
+        ignoreTrailingSlash = true
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    httpServer:
+      ignoreTrailingSlash: true
+    ```
+
+**Сопоставление метода.** Путь, обслуживаемый методом без подходящего маршрута, вернёт `405 Method Not Allowed`; неизвестный путь вернёт `404 Not Found`.
+Сопоставленный шаблон доступен во время выполнения как `HttpServerRequest.route()` и используется как метка пути с низкой кардинальностью в метриках и трассировке (см. [Телеметрия](#telemetry)).
 
 ### Запрос { #request }
 
@@ -475,8 +579,7 @@ public User get(@Path("id") UserId id) {
 
 ##### JSON { #json }
 
-Для указания, что тело является `JSON` и для него требуется автоматически создать и внедрить `JsonReader<T>`,
-используется аннотация `@Json`:
+Для указания, что тело является `JSON` и для него требуется внедрить `JsonReader<T>`, используется аннотация `@Json`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -518,7 +621,15 @@ public User get(@Path("id") UserId id) {
 
 ##### Текстовая форма { #form-urlencoded }
 
-Можно использовать `FormUrlEncoded` как тип аргумента тела [форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1).
+Объявите аргумент `FormUrlEncoded` (из `ru.tinkoff.kora.http.common.form`), чтобы принять запрос с типом содержимого
+`application/x-www-form-urlencoded` ([форма данных](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)).
+Аннотации `@Json` или `@Mapping` не требуются — для этого типа в Kora есть встроенный reader.
+
+`FormUrlEncoded` итерируем и предоставляет:
+
+* `get(String name)` — возвращает `FormUrlEncoded.FormPart` с таким именем, либо `null`
+* `FormPart.name()` — имя поля
+* `FormPart.values()` — все значения поля (поле может повторяться в форме)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -527,12 +638,16 @@ public User get(@Path("id") UserId id) {
     @HttpController
     public final class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        public String helloWorld(FormUrlEncoded body) {
-            return "Hello World";
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        public String handle(FormUrlEncoded body) {
+            FormUrlEncoded.FormPart name = body.get("name"); //(1)!
+            String firstName = (name != null) ? name.values().get(0) : null;
+            return "Hello " + firstName;
         }
     }
     ```
+
+    1. Читает поле `name` из отправленной формы
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -541,16 +656,28 @@ public User get(@Path("id") UserId id) {
     @HttpController
     class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun helloWorld(body: FormUrlEncoded): String {
-            return "Hello World"
+        @HttpRoute(method = HttpMethod.POST, path = "/form/encoded")
+        fun handle(body: FormUrlEncoded): String {
+            val name = body.get("name") //(1)!
+            val firstName = name?.values()?.firstOrNull()
+            return "Hello $firstName"
         }
     }
     ```
+
+    1. Читает поле `name` из отправленной формы
 
 ##### Бинарная форма { #form-multipart }
 
-Можно использовать `FormMultipart` как тип аргумента тела [бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2).
+Объявите аргумент `FormMultipart` (из `ru.tinkoff.kora.http.common.form`), чтобы принять запрос `multipart/form-data`
+([бинарная форма](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2)), обычно используется для загрузки файлов.
+Аннотации `@Json` или `@Mapping` не требуются.
+
+`FormMultipart.parts()` возвращает список частей, где каждая `FormMultipart.FormPart` — один из sealed-подтипов:
+
+* `MultipartData` — текстовое поле: `name()`, `content()` (`String`)
+* `MultipartFile` — файл, загруженный в память: `name()`, `fileName()`, `contentType()`, `content()` (`byte[]`)
+* `MultipartFileStream` — потоковый файл: `name()`, `fileName()`, `contentType()`, `content()` (`Flow.Publisher<ByteBuffer>`)
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -559,12 +686,24 @@ public User get(@Path("id") UserId id) {
     @HttpController
     public final class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        public String helloWorld(FormMultipart body) {
-            return "Hello World";
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        public String handle(FormMultipart body) {
+            for (FormMultipart.FormPart part : body.parts()) {
+                if (part instanceof FormMultipart.FormPart.MultipartData data) { //(1)!
+                    String value = data.content();
+                } else if (part instanceof FormMultipart.FormPart.MultipartFile file) { //(2)!
+                    String fileName = file.fileName();
+                    String contentType = file.contentType();
+                    byte[] content = file.content();
+                }
+            }
+            return "OK";
         }
     }
     ```
+
+    1. Текстовое поле формы
+    2. Файл, загруженный в форме
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -573,9 +712,22 @@ public User get(@Path("id") UserId id) {
     @HttpController
     class SomeController {
 
-        @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun helloWorld(body: FormMultipart): String {
-            return "Hello World"
+        @HttpRoute(method = HttpMethod.POST, path = "/form/multipart")
+        fun handle(body: FormMultipart): String {
+            for (part in body.parts()) {
+                when (part) {
+                    is FormMultipart.FormPart.MultipartData -> { //(1)!
+                        val value = part.content()
+                    }
+                    is FormMultipart.FormPart.MultipartFile -> { //(2)!
+                        val fileName = part.fileName()
+                        val contentType = part.contentType()
+                        val content = part.content()
+                    }
+                    else -> {}
+                }
+            }
+            return "OK"
         }
     }
     ```
@@ -663,8 +815,7 @@ public User get(@Path("id") UserId id) {
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        @Mapping(RequestMapper::class)
-        operator fun get(@Mapping(RequestMapper::class) context: UserContext): String {
+        fun get(@Mapping(RequestMapper::class) context: UserContext): String {
             return "Hello World"
         }
     }
@@ -782,8 +933,7 @@ public interface HttpServerResponse {
 
 #### JSON { #json-2 }
 
-Если предполагается отвечать в формате `JSON`, требуется использовать аннотацию `@Json` над методом.
-Для типа ответа Kora найдет или создаст `JsonWriter<T>`:
+Если предполагается отвечать в формате `JSON` и для него требуется обработчик с `JsonWriter<T>`, для этого требуется использовать аннотацию `@Json` над методом.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -948,7 +1098,7 @@ public interface HttpServerResponse {
         data class HelloWorldResponse(val greeting: String, val name: String)
 
         class ResponseMapper : HttpServerResponseMapper<HelloWorldResponse> {
-            fun apply(ctx: Context, request: HttpServerRequest, result: HelloWorldResponse): HttpServerResponse {
+            override fun apply(ctx: Context, request: HttpServerRequest, result: HelloWorldResponse): HttpServerResponse {
                 return HttpServerResponse.of(200, HttpBody.plaintext(result.greeting + " - " + result.name))
             }
         }
@@ -967,18 +1117,25 @@ public interface HttpServerResponse {
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Void`.
+    Под `T` подразумевается тип возвращаемого значения. Это может быть тип тела (`void`, `String`, `byte[]`, тип с `@Json` и т.д.),
+    [`HttpResponseEntity<T>`](#response-entity) для указания также статуса и заголовков, либо полный [`HttpServerResponse`](#response).
 
-    - `T myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `T myMethod()` — **блокирующая**: обработчик выполняется на потоке из пула `blockingThreads` (либо на виртуальном потоке при `virtualThreadsEnabled`, см. [Конфигурация](#configuration))
+    - `CompletionStage<T> myMethod()` — **неблокирующая**: обработчик выполняется на I/O-потоке и не должен его блокировать; см. [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
+    - `Mono<T> myMethod()` — **неблокирующая** через [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (надо подключить [зависимость](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+
+    Результат `null` (или `void`) даёт пустое тело со статусом `200`, если только тип возврата не `HttpServerResponse` / `HttpResponseEntity`, которые несут собственный статус.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Под `T` подразумевается тип возвращаемого значения, либо `Unit`.
+    Под `T` подразумевается тип возвращаемого значения — тип тела, [`HttpResponseEntity<T>`](#response-entity) или полный [`HttpServerResponse`](#response).
 
-    - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+    - `myMethod(): T` — **блокирующая**: обработчик выполняется на потоке из пула `blockingThreads` (либо на виртуальном потоке при `virtualThreadsEnabled`, см. [Конфигурация](#configuration))
+    - `suspend myMethod(): T` — **неблокирующая** [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (надо подключить [зависимость](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) как `implementation`)
+
+    Nullable-тип возврата (`T?`) допустим для обработчиков, которые могут вернуть пустое тело `200`.
+
+Выбирайте блокирующую сигнатуру, когда обработчик вызывает блокирующий код (JDBC, блокирующие клиенты); неблокирующую — только когда вся цепочка вызова неблокирующая, иначе вы застопорите I/O-потоки.
 
 ## Перехватчики { #interceptors }
 
@@ -1005,6 +1162,18 @@ public interface HttpServerInterceptor {
 - Контроллере целиком
 - Всех контроллерах сразу: для этого компонент перехватчика должен быть зарегистрирован с тегом `@Tag(HttpServerModule.class)`;
   таких глобальных перехватчиков может быть несколько
+
+**Порядок выполнения:**
+
+Перехватчики, объявленные через `@InterceptWith`, выполняются в порядке объявления (сверху вниз): перехватчики уровня
+контроллера оборачивают перехватчики уровня метода, а в пределах одной цели порядок соответствует порядку аннотаций. Каждый
+перехватчик может изменить запрос перед `chain.process(...)`, прервать цепочку, вернув ответ без её вызова, либо обработать
+результат/исключение после.
+
+Глобальные перехватчики, зарегистрированные через `@Tag(HttpServerModule.class)`, **не имеют гарантированного порядка между собой**.
+Если требуется строгий порядок между глобальными обработчиками (например, авторизация должна выполняться до обработки ошибок),
+не регистрируйте несколько глобальных перехватчиков — реализуйте **один** глобальный перехватчик, который вызывает нужные
+шаги в требуемом порядке внутри себя.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1097,7 +1266,7 @@ public interface HttpServerInterceptor {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(HttpServerModule.class)
+    @Tag(HttpServerModule::class)
     @Component
     class ErrorInterceptor : HttpServerInterceptor {
 
@@ -1660,3 +1829,64 @@ HTTP Server использует контракт телеметрии для л
 - `HttpServerTracerFactory` строит `HttpServerTracer` для распределённой трассировки.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#http-server).
+
+### Логирование { #telemetry-logging }
+
+Логирование сервера пишется через `SLF4J` под логгером `ru.tinkoff.kora.http.server.common.HttpServer`. Включение логирования в конфигурации
+(`httpServer.telemetry.logging.enabled = true`) активирует телеметрию, но **что именно** пишется, определяется уровнем логирования этого логгера,
+поэтому детализацией вы управляете из вашего фреймворка логирования (`logback` и т.д.) без перезапуска с другой конфигурацией:
+
+| Уровень лога | Что логируется |
+|--------------|----------------|
+| `INFO`  | Строка начала и конца запроса: метод, шаблон пути, статус ответа, код результата и длительность |
+| `DEBUG` | Дополнительно **заголовки** запроса и ответа |
+| `TRACE` | Дополнительно полный (нешаблонизированный) путь запроса |
+
+Следующие поля конфигурации формируют вывод (полный список см. в [Конфигурации](#configuration)):
+
+* `pathTemplate` — при `true` (по умолчанию) логируется шаблон маршрута с низкой кардинальностью (`/users/{id}`) и используется как метка метрик/трассировки вместо разрешённого пути (`/users/42`); на `TRACE` логируется разрешённый путь
+* `maskHeaders` — имена заголовков, значения которых заменяются на `mask` (по умолчанию маскируются `authorization`, `cookie`, `set-cookie`)
+* `maskQueries` — имена query-параметров, значения которых заменяются на `mask`
+* `mask` — строка замены (по умолчанию `***`)
+* `stacktrace` — при `true` (по умолчанию) логирует стектрейс исключения при ошибке обработки запроса
+
+Пример конфигурации `logback`, включающей логирование заголовков сервера:
+
+```xml
+<logger name="ru.tinkoff.kora.http.server.common.HttpServer" level="DEBUG"/>
+```
+
+### Свой логгер { #telemetry-custom-logger }
+
+Чтобы полностью управлять форматом или назначением лога, предоставьте свой компонент `HttpServerLoggerFactory` (или `HttpServerLogger`) — он заменит
+фабрику по умолчанию `Slf4jHttpServerLoggerFactory`. То же касается метрик (`HttpServerMetricsFactory`) и трассировки (`HttpServerTracerFactory`):
+предоставление любого из этих компонентов переопределяет соответствующую реализацию по умолчанию, остальные сохраняют реализацию по умолчанию.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyHttpServerLoggerFactory implements HttpServerLoggerFactory {
+
+        @Override
+        public HttpServerLogger get(HttpServerLoggerConfig logging) {
+            return new MyHttpServerLogger(); //(1)!
+        }
+    }
+    ```
+
+    1. Ваша реализация `HttpServerLogger`, управляющая тем, что и как логировать
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyHttpServerLoggerFactory : HttpServerLoggerFactory {
+
+        override fun get(logging: HttpServerLoggerConfig): HttpServerLogger {
+            return MyHttpServerLogger() //(1)!
+        }
+    }
+    ```
+
+    1. Ваша реализация `HttpServerLogger`, управляющая тем, что и как логировать
