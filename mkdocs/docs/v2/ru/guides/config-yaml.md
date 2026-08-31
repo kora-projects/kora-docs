@@ -1,16 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Управление YAML-конфигурацией в Kora
 summary: Learn how to bind YAML configuration to type-safe interfaces, separate required and defaulted values, and reuse one config shape across multiple integrations
-tags: configuration, yaml, configsource, configvalueextractor
+description: "Step-by-step type-safe YAML configuration for a Kora 2.0 service: the io.koraframework:config-yaml artifact, YamlConfigModule, @ConfigSource for an application section, @ConfigMapper plus ConfigValueMapper.mapOrThrow for a reusable library shape, @Tag to bind one config type to several paths, the Kora ${path}, ${?path} and ${path:default} substitution forms, application.yaml and reference.yaml resolution, config.resource and config.file selection, and the generated config mapper and module sources."
+agent:
+  use_when: "Use this file for questions about typed YAML configuration in a Kora 2.0 service: io.koraframework:config-yaml, YamlConfigModule, @ConfigSource, @ConfigMapper, ConfigValueMapper with map and mapOrThrow, Config.get, @Tag for two instances of one config type, required values versus @Nullable and default methods, ${APP_VERSION} and ${APP_NAME:default} substitutions, why ${?path:default} does not work, application.yaml versus reference.yaml, -Dconfig.resource and -Dconfig.file, and generated $Type_ConfigValueMapper sources."
+tags: configuration, yaml, configsource, configmapper
 ---
 
 # Управление YAML-конфигурацией в Kora { #yaml-configuration-management-kora }
 
-Это руководство знакомит с типобезопасной конфигурацией в Kora и YAML. Оно показывает, как записи конфигурации извлекаются из `application.yaml`, как обязательные значения и значения по умолчанию
-выражаются в Java-коде, и как переиспользуемые фрагменты конфигурации можно внедрять в несколько компонентов без дублирования всего блока. Также вы увидите, как переменные окружения и вывод значений
-во время выполнения помогают легко проверять итоговую конфигурацию.
+Это руководство знакомит с типобезопасной конфигурацией в Kora и YAML. Оно показывает, как значения конфигурации отображаются из `application.yaml` в типизированные интерфейсы, как обязательные значения
+и значения по умолчанию выражаются в коде на Java и Kotlin, и как один переиспользуемый формат конфигурации можно привязать к нескольким секциям без дублирования целого блока. Также вы увидите, как
+переменные окружения и вывод значений во время выполнения помогают легко проверять итоговую конфигурацию.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -25,73 +28,86 @@ tags: configuration, yaml, configsource, configvalueextractor
 Вы соберете небольшое запускаемое приложение Kora, которое:
 
 - связывает `app.name`, `app.version` и `app.environment` через `@ConfigSource`
-- считает `APP_VERSION` обязательным значением, а `APP_NAME` переопределением из окружения со значением по умолчанию
+- считает `APP_VERSION` обязательным значением, а `APP_NAME` — переопределением из окружения со значением по умолчанию
 - определяет один переиспользуемый `LibConfig` с `endpoint` и `requestTimeout`
-- извлекает тот же `LibConfig` для `lib1` и `lib2`
-- переиспользует один общий YAML-объект и переопределяет только одно поле для второй библиотеки
+- отображает тот же `LibConfig` для `lib1` и `lib2`
+- переиспользует одну общую YAML-секцию и переопределяет только одно поле для второй библиотеки
 - печатает все итоговые значения в `stdout` во время запуска
 
 ## Что потребуется { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- редактор кода или среда разработки
-- пройденное руководство [Создание первого приложения на Kora](getting-started.md)
+- JDK 25 или новее
+- Gradle 9+
+- Текстовый редактор или IDE
+- Пройденное руководство [Создание первого приложения Kora](getting-started.md)
+
+Артефакты Kora 2.0 собраны под Java 25, поэтому JDK, которым компилируется приложение, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
-!!! note "Требуется: завершить начальное руководство"
+!!! note "Обязательно: пройденное вводное руководство"
 
-    Это руководство предполагает, что вы прошли **[Создание первого приложения на Kora](getting-started.md)** и уже имеете запускаемый проект Kora с плагином `application` и сгенерированным графом приложения.
+    Это руководство предполагает, что вы прошли **[Создание первого приложения Kora](getting-started.md)** и у вас уже есть запускаемый проект Kora с плагином `application` и сгенерированным графом приложения.
 
-    Если вы еще не создали такую базовую заготовку, сначала пройдите начальное руководство, потому что этот материал сосредоточен на типизированной конфигурации, а не на первоначальной настройке проекта.
+    Если такой основы еще нет, сначала пройдите вводное руководство: здесь мы сосредоточены на типизированной конфигурации, а не на начальной настройке проекта.
 
 ## Обзор { #overview }
 
-Конфигурация — это способ, которым окружения времени выполнения влияют на поведение приложения без изменения кода. Порты, учетные данные, переключатели возможностей, тайм-ауты и адреса внешних
-сервисов должны жить вне скомпилированных классов, но коду приложения все равно нужен типобезопасный способ читать эти значения.
+Конфигурация — это способ влиять на поведение приложения из среды выполнения, не меняя код. Порты, учетные данные, переключатели функциональности, таймауты и адреса внешних сервисов должны жить вне
+скомпилированных классов, но коду приложения все равно нужен типобезопасный способ их читать.
 
-Главный урок: конфигурация должна быть явной на границе приложения. Компоненты не должны сами искать переменные окружения или разбирать файлы; они должны получать типизированную конфигурацию из графа.
+Главный урок в том, что конфигурация должна быть явной на границе приложения. Компоненты не должны сами искать переменные окружения или разбирать файлы; они должны получать типизированную конфигурацию
+из графа.
 
-### YAML и типобезопасное извлечение { #yaml-type-safe-extraction }
+### YAML и типобезопасное отображение { #yaml-type-safe-extraction }
 
-Kora умеет читать конфигурацию [YAML](https://yaml.org/spec/) через [SnakeYAML](https://github.com/snakeyaml/snakeyaml) и извлекать ее в Java-интерфейсы или записи. Вместо передачи сырых строк и
-словарей через приложение, компоненты получают типизированные объекты конфигурации. Это делает обязательные значения явными и позволяет компилятору помогать при использовании конфигурации.
+Kora умеет читать конфигурацию в формате [YAML](https://yaml.org/spec/) через [SnakeYAML](https://github.com/snakeyaml/snakeyaml) и отображать ее в интерфейсы Java или Kotlin. Вместо того чтобы
+протаскивать через приложение сырые строки и словари, компоненты получают типизированные объекты конфигурации. Это делает обязательные значения явными и позволяет компилятору помогать с использованием
+конфигурации.
 
-В этом руководстве используются два взаимодополняющих стиля отображения:
+В этом руководстве используются два дополняющих друг друга стиля отображения:
 
-- `@ConfigSource("app")` связывает одну фиксированную секцию конфигурации с типобезопасной зависимостью
-- `@ConfigValueExtractor` описывает переиспользуемую форму конфигурации, которую можно извлекать из разных путей
+- `@ConfigSource("app")` отображает одну фиксированную секцию конфигурации в типобезопасную зависимость
+- `@ConfigMapper` отображает переиспользуемый формат конфигурации, который можно привязать к разным путям
 
-Используйте `@ConfigSource`, когда компоненту нужна одна стабильная секция конфигурации приложения. Используйте `@ConfigValueExtractor`, когда одна и та же структура встречается в нескольких местах и
-нужен один переиспользуемый извлекатель.
+Используйте `@ConfigSource`, когда компоненту нужна одна стабильная секция конфигурации приложения. Используйте `@ConfigMapper`, когда та же структура встречается в нескольких местах и нужно одно
+переиспользуемое правило отображения, путь для которого выбирается в фабрике модуля.
+
+Обе аннотации генерируют реализацию `ConfigValueMapper<T>` на этапе компиляции. Разница только в том, кто выбирает путь: `@ConfigSource` зашивает его в сгенерированный модуль, а `@ConfigMapper`
+оставляет выбор вам. Сам слой отображения не зависит от формата, поэтому все изученное здесь без изменений применимо к HOCON.
 
 ### Обязательные и значения по умолчанию { #required-default }
 
-YAML поддерживает полезные возможности композиции:
+У YAML нет собственного синтаксиса подстановок, поэтому ссылки разрешает сама Kora после слияния всех слоев конфигурации. Поддерживаются три формы:
 
-- обязательную подстановку из переменной окружения, например `${APP_VERSION}`
-- подстановку из переменной окружения со значением по умолчанию, например `${APP_NAME:Task Management App}`
-- переиспользование объекта через подстановки Kora из другой YAML-секции
+- `${path}` — обязательная: неразрешенная ссылка роняет приложение при запуске
+- `${?path}` — необязательная: неразрешенная ссылка не дает значения, и ключ ведет себя так, как будто его нет
+- `${path:defaultValue}` — неразрешенная ссылка откатывается к `defaultValue`
 
-Эти возможности помогают одному файлу конфигурации оставаться читаемым и при этом адаптироваться к локальной разработке, тестам и развернутым окружениям.
+Те же формы работают и для переменных окружения, и для ссылок на другие ключи конфигурации, потому что переменные окружения и системные свойства сами являются слоями конфигурации. Эти возможности
+позволяют одному файлу конфигурации оставаться читаемым и при этом подстраиваться под локальную разработку, тесты и развернутые окружения.
 
-Как контракт protobuf в gRPC или контракт кеша в кешировании, тип конфигурации является контрактом границы. Он говорит, какие значения времени выполнения ожидает приложение и какую форму эти значения
-должны иметь.
+???+ warning "Внимание"
+
+    `?` и значение по умолчанию нельзя комбинировать: в `${?path:defaultValue}` весь текст `path:defaultValue` считается именем ссылки, и ключ не разрешается ни во что. Используйте
+    `${path:defaultValue}` — эта форма уже откатывается к значению по умолчанию, когда ссылка отсутствует.
+
+Со стороны кода правило столь же короткое: каждый метод интерфейса конфигурации — обязательное значение, если он не помечен как допускающий `null` и не имеет реализации `default`. Как protobuf-контракт
+в gRPC или контракт кэша в кэшировании, тип конфигурации — это контракт границы. Он говорит, какие значения среды выполнения ожидает приложение и какую форму эти значения должны иметь.
 
 ### Конфигурация как зависимость графа { #configuration-graph-dependency }
 
-В Kora конфигурация является частью графа зависимостей. Компонент может запросить типизированный объект конфигурации в конструкторе так же, как репозиторий или клиент. Это делает зависимости от
-конфигурации видимыми и тестируемыми. Также это удерживает разбор конфигурации на границе графа, а не размазывает его по коду приложения.
+В Kora конфигурация — часть графа зависимостей. Компонент может запросить типизированный объект конфигурации в конструкторе так же, как запрашивает репозиторий или клиент. Это делает зависимости от
+конфигурации видимыми и тестируемыми, а разбор конфигурации остается на границе графа, а не размазывается по коду приложения.
 
-Практический поток:
+Практический порядок действий:
 
-1. добавить модуль конфигурации YAML
+1. подключить модуль конфигурации YAML
 2. определить фиксированный источник конфигурации приложения
 3. связать обязательные значения и значения по умолчанию
-4. определить переиспользуемый извлекатель значений
-5. переиспользовать одну форму конфигурации для настроек нескольких библиотек
-6. запустить приложение и посмотреть итоговую конфигурацию
+4. определить переиспользуемый маппер конфигурации
+5. переиспользовать один формат конфигурации для настроек нескольких библиотек
+6. запустить приложение и изучить итоговую конфигурацию
 
 ## Зависимости { #dependencies }
 
@@ -107,8 +123,8 @@ YAML поддерживает полезные возможности компо
     }
 
     dependencies {
-        implementation "ru.tinkoff.kora:config-yaml"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-yaml"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
@@ -122,37 +138,40 @@ YAML поддерживает полезные возможности компо
     }
 
     dependencies {
-        implementation("ru.tinkoff.kora:config-yaml")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-yaml")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
 Почему это важно:
 
-- `config-yaml` включает загрузку YAML-файла в граф приложения
-- `logging-logback` делает запуск и диагностику неполадок видимыми, пока приложение работает
+- `config-yaml` включает загрузку YAML-файлов в графе приложения
+- `logging-logback` сохраняет видимость логов запуска и диагностики во время работы приложения
+
+Версии берутся из платформы `io.koraframework:kora-bom`, которую проект уже импортирует, поэтому указывать версию здесь не нужно. Подключайте либо `config-yaml`, либо `config-hocon`, но не оба сразу:
+каждый из них поставляет графу конфигурацию приложения.
 
 ## Модули { #modules }
 
-Начните с минимального графа приложения, который может загрузить YAML-конфигурацию и запустить приложение Kora.
+Начните с минимально возможного графа приложения, который умеет загружать YAML-конфигурацию и запускать приложение Kora.
 
-На этом этапе мы еще не добавляем конфигурацию, специфичную для приложения. Мы только подготавливаем граф, чтобы на следующих шагах связать типизированную конфигурацию и напечатать итоговые значения.
+На этом шаге мы еще не добавляем конфигурацию, специфичную для приложения. Мы только готовим граф, чтобы дальше можно было связать типизированную конфигурацию и вывести итоговые значения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/yaml/Application.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/yaml/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.yaml;
+    package io.koraframework.guide.config.yaml;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.yaml.YamlConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.yaml.YamlConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            YamlConfigModule,  // <----- Подключили модуль
+            YamlConfigModule,  // <----- Connected module
             LogbackModule {
 
         static void main(String[] args) {
@@ -163,19 +182,19 @@ YAML поддерживает полезные возможности компо
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/yaml/Application.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/yaml/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.yaml
+    package io.koraframework.guide.config.yaml
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.yaml.YamlConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.yaml.YamlConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        YamlConfigModule,  // <----- Подключили модуль
+        YamlConfigModule,  // <----- Connected module
         LogbackModule
 
     fun main() {
@@ -185,28 +204,31 @@ YAML поддерживает полезные возможности компо
 
 Почему это важно:
 
-- `YamlConfigModule` активирует загрузку конфигурации в формате YAML
-- `LogbackModule` подключает базовое логирование для запуска и диагностики
-- граф пока остается минимальным: он только умеет стартовать приложение и читать файл конфигурации
+- `YamlConfigModule` активирует загрузку конфигурации на основе YAML
+- `LogbackModule` добавляет базовые логи запуска и диагностики
+- граф пока остается минимальным: он умеет запустить приложение и прочитать файл конфигурации
 
-Типизированные секции появятся постепенно: сначала секция приложения, затем отдельная форма для библиотек и только после этого явное связывание путей `libs.lib1` и `libs.lib2` с двумя экземплярами одного типа.
+`YamlConfigModule` также решает, какой файл читать. Если системные свойства не заданы, он ищет `application.yaml` в classpath и подкладывает под него все найденные там `reference.yaml`;
+`config.resource` и `config.file` переопределяют файл приложения, и первое из них мы используем в конце руководства.
 
-Если хотите больше контекста о связывании графа и фабриках, смотрите [документацию по контейнеру](../documentation/container.md).
+Типизированные секции вводятся постепенно: сначала секция приложения, затем переиспользуемый формат для библиотеки, и только после этого явное отображение `libs.lib1` и `libs.lib2` в два экземпляра одного типа.
+
+Если нужно больше контекста про связывание графа и фабрики, посмотрите [документацию по контейнеру](../documentation/container.md).
 
 ## Конфигурация приложения { #app-config }
 
-Теперь добавим первый типизированный контракт конфигурации: стабильную секцию приложения с именем `app`.
+Теперь введем первый типизированный контракт конфигурации: стабильную секцию приложения с именем `app`.
 
-Это самый простой и самый частый шаблон конфигурации в Kora. Вместо ручного чтения ключей вы один раз объявляете форму и внедряете ее туда, где она нужна.
+Это самый простой и самый частый паттерн конфигурации в Kora. Вместо ручного чтения ключей вы один раз объявляете форму и внедряете ее там, где она нужна.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/yaml/AppConfig.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/yaml/AppConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.yaml;
+    package io.koraframework.guide.config.yaml;
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource;
+    import io.koraframework.config.common.annotation.ConfigSource;
 
     @ConfigSource("app")
     public interface AppConfig {
@@ -221,12 +243,12 @@ YAML поддерживает полезные возможности компо
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/yaml/AppConfig.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/yaml/AppConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.yaml
+    package io.koraframework.guide.config.yaml
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource
+    import io.koraframework.config.common.annotation.ConfigSource
 
     @ConfigSource("app")
     interface AppConfig {
@@ -239,54 +261,60 @@ YAML поддерживает полезные возможности компо
 Почему это важно:
 
 - `@ConfigSource("app")` делает секцию `app` полноценной зависимостью
-- контракт остается рядом с кодом, который его использует
+- контракт находится рядом с кодом, который его использует
 - рефакторинг ключей конфигурации становится безопаснее, потому что структура явно описана в одном месте
+
+Все три метода возвращают типы, не допускающие `null`, поэтому все три значения обязательны. Сделать одно из них необязательным — это правка кода, а не файла: пометьте его `@Nullable` в Java или
+верните nullable-тип в Kotlin. Имена методов сопоставляются нестрого, поэтому `someBarString()` читается также из `some-bar-string` и `some_bar_string`.
 
 ## Обязательные значения { #required-values }
 
-Когда `AppConfig` определен, можно решить, какие значения обязательны, а какие могут использовать значения по умолчанию.
+Теперь, когда `AppConfig` определен, можно решить, какие значения обязательны, а какие могут опираться на значения по умолчанию.
 
 Обновите `src/main/resources/application.yaml`:
 
 ```yaml title="src/main/resources/application.yaml"
 app:
-    name: ${APP_NAME:Task Management App}
-    version: ${APP_VERSION}
-    environment: "development"
+  name: ${APP_NAME:Task Management App}
+  version: ${APP_VERSION}
+  environment: "development"
 ```
 
 Что это означает:
 
-- `version: ${APP_VERSION}` является обязательным, поэтому запуск завершается ошибкой, если `APP_VERSION` отсутствует
-- `name: ${APP_NAME:Task Management App}` использует `APP_NAME`, когда переменная существует, а иначе возвращается к значению по умолчанию
-- `environment` остается обычным статическим значением, потому что в этом руководстве его пока не нужно менять
+- `version: ${APP_VERSION}` обязателен, поэтому запуск падает, если `APP_VERSION` отсутствует
+- `name: ${APP_NAME:Task Management App}` использует `APP_NAME`, когда переменная существует, и иначе откатывается к значению по умолчанию
+- `environment` остается обычным статическим значением, потому что в этом руководстве его менять не требуется
 
-Это важный шаблон YAML: критически важные значения должны завершать запуск с ошибкой как можно раньше, а косметические или зависящие от окружения значения должны легко переопределяться.
+Это важный паттерн YAML: критичные значения должны падать сразу, а косметические или зависящие от окружения значения должны легко переопределяться.
 
-Подробнее о правилах подстановки и поддерживаемых типах значений смотрите в [документации по конфигурации](../documentation/config.md).
+В отличие от HOCON, YAML не выражает значение по умолчанию повторным присваиванием того же ключа — вторая запись отображения просто заменила бы первую. Значение по умолчанию принадлежит самой
+подстановке, поэтому и существует форма `${VAR:default}`.
+
+Подробнее о правилах подстановки и поддерживаемых типах значений — в [документации по конфигурации](../documentation/config.md).
 
 ## Конфигурация библиотек { #library-config }
 
-Теперь создадим переиспользуемую форму конфигурации для одной библиотеки.
+Дальше создадим переиспользуемый формат конфигурации для одной библиотеки.
 
-Представим, что абстрактной библиотеке нужны две настройки:
+Представим, что некоторой абстрактной библиотеке нужны две настройки:
 
 - `endpoint`
 - `requestTimeout`
 
-Вместо хранения этих значений как сырых ключей, опишите их один раз как тип.
+Вместо того чтобы держать их как сырые ключи, опишем их один раз как тип.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/yaml/LibConfig.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/yaml/LibConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.yaml;
+    package io.koraframework.guide.config.yaml;
 
     import java.time.Duration;
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor;
+    import io.koraframework.config.common.annotation.ConfigMapper;
 
-    @ConfigValueExtractor
+    @ConfigMapper
     public interface LibConfig {
 
         String endpoint();
@@ -297,61 +325,57 @@ app:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/yaml/LibConfig.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/yaml/LibConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.yaml
+    package io.koraframework.guide.config.yaml
 
+    import io.koraframework.config.common.annotation.ConfigMapper
     import java.time.Duration
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor
 
-    @ConfigValueExtractor
+    @ConfigMapper
     interface LibConfig {
         fun endpoint(): String
         fun requestTimeout(): Duration
     }
     ```
 
-Теперь, когда тип `LibConfig` уже объявлен, можно вернуться к графу приложения и явно показать, откуда берутся две библиотечные конфигурации.
+Теперь, когда `LibConfig` существует, вернемся к графу приложения и явно покажем, откуда берутся две конфигурации библиотек.
 
-`@ConfigValueExtractor` генерирует извлекатель для формы `LibConfig`, а методы графа выбирают конкретные ветки файла конфигурации. Так Kora получает два разных экземпляра одного типа: один для `libs.lib1`, второй для `libs.lib2`.
+`@ConfigMapper` генерирует `ConfigValueMapper<LibConfig>` для этой формы, но не привязывает путь, а методы графа выбирают конкретные ветки файла конфигурации. Так Kora получает два разных экземпляра одного типа: один для `libs.lib1` и один для `libs.lib2`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/config/yaml/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/config/yaml/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.yaml;
+    package io.koraframework.guide.config.yaml;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.common.Config;
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor;
-    import ru.tinkoff.kora.config.yaml.YamlConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.common.Config;
+    import io.koraframework.config.common.mapper.ConfigValueMapper;
+    import io.koraframework.config.yaml.YamlConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
-            YamlConfigModule,  // <----- Подключили модуль
+            YamlConfigModule,  // <----- Connected module
             LogbackModule {
 
-        final class Lib1Tag {
-            private Lib1Tag() {}
-        }
+        final class Lib1Tag {}
 
-        final class Lib2Tag {
-            private Lib2Tag() {}
-        }
+        final class Lib2Tag {}
 
         @Tag(Lib1Tag.class)
-        default LibConfig lib1Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib1"));
+        default LibConfig lib1Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib1"));
         }
 
         @Tag(Lib2Tag.class)
-        default LibConfig lib2Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib2"));
+        default LibConfig lib2Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib2"));
         }
 
         static void main(String[] args) {
@@ -362,35 +386,35 @@ app:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/config/yaml/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/config/yaml/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.yaml
+    package io.koraframework.guide.config.yaml
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.common.Config
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor
-    import ru.tinkoff.kora.config.yaml.YamlConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.common.Config
+    import io.koraframework.config.common.mapper.ConfigValueMapper
+    import io.koraframework.config.yaml.YamlConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
-        YamlConfigModule,  // <----- Подключили модуль
+        YamlConfigModule,  // <----- Connected module
         LogbackModule {
 
         class Lib1Tag private constructor()
         class Lib2Tag private constructor()
 
         @Tag(Lib1Tag::class)
-        fun lib1Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib1"))
+        fun lib1Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib1"))
         }
 
         @Tag(Lib2Tag::class)
-        fun lib2Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib2"))
+        fun lib2Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib2"))
         }
     }
 
@@ -403,49 +427,55 @@ app:
 
 - `Lib1Tag` и `Lib2Tag` различают два экземпляра `LibConfig` в графе
 - `config.get("libs.lib1")` и `config.get("libs.lib2")` выбирают разные ветки конфигурации
-- `ConfigValueExtractor<LibConfig>` преобразует каждую ветку в типизированный объект
+- `ConfigValueMapper<LibConfig>` превращает каждую ветку в типизированный объект
 
-Добавьте первую секцию библиотеки в `application.yaml`:
+У `ConfigValueMapper<T>` есть два метода чтения. `map(...)` может вернуть `null`, а `mapOrThrow(...)` превращает этот `null` в `ConfigValueException`. В фабричных методах обычно используют
+`mapOrThrow(...)`, потому что отсутствующая секция библиотеки — это ошибка запуска, а не допустимое состояние.
+
+Теперь обе фабрики входят в граф, поэтому обе секции обязаны существовать. Добавьте их в `application.yaml`:
 
 ```yaml title="src/main/resources/application.yaml"
 app:
-    name: ${APP_NAME:Task Management App}
-    version: ${APP_VERSION}
-    environment: "development"
+  name: ${APP_NAME:Task Management App}
+  version: ${APP_VERSION}
+  environment: "development"
 
 libs:
-    lib1:
-        endpoint: "https://integration.local/api"
-        requestTimeout: "5s"
+  lib1:
+    endpoint: "https://integration.local/api"
+    requestTimeout: "5s"
+  lib2:
+    endpoint: "https://integration-2.local/api"
+    requestTimeout: "5s"
 ```
 
-На этом этапе `LibConfig` используется только для `lib1`. Граф приложения извлекает его из `libs.lib1`, а Kora напрямую преобразует `"5s"` в `Duration`.
+На этом шаге приложение запускается, а Kora преобразует `"5s"` прямо в `Duration`. Но две секции почти одинаковы, и именно это дублирование убирает следующий шаг.
 
 ## Файл конфигурации { #config-file }
 
-Теперь представим, что второй библиотеке нужна ровно такая же форма.
+Обеим библиотекам нужна ровно одна и та же форма, а сейчас общие значения скопированы дважды.
 
-Можно продублировать весь блок конфигурации, но YAML вместе с подстановками Kora дает лучший вариант: положить общие скалярные значения в одну секцию и ссылаться на эти значения там, где нужно.
+В YAML нет собственного оператора переиспользования объектов, но подстановки Kora работают между ключами конфигурации, поэтому общие значения могут жить в одной секции, а остальные могут на них ссылаться.
 
 Снова обновите `application.yaml`:
 
 ```yaml title="src/main/resources/application.yaml"
 app:
-    name: ${APP_NAME:Task Management App}
-    version: ${APP_VERSION}
-    environment: "development"
+  name: ${APP_NAME:Task Management App}
+  version: ${APP_VERSION}
+  environment: "development"
 
 commonLib:
-    endpoint: "https://integration.local/api"
-    requestTimeout: "5s"
+  endpoint: "https://integration.local/api"
+  requestTimeout: "5s"
 
 libs:
-    lib1:
-        endpoint: ${commonLib.endpoint}
-        requestTimeout: ${commonLib.requestTimeout}
-    lib2:
-        endpoint: "https://integration-2.local/api"
-        requestTimeout: ${commonLib.requestTimeout}
+  lib1:
+    endpoint: ${commonLib.endpoint}
+    requestTimeout: ${commonLib.requestTimeout}
+  lib2:
+    endpoint: "https://integration-2.local/api"
+    requestTimeout: ${commonLib.requestTimeout}
 ```
 
 Что изменилось:
@@ -453,30 +483,32 @@ libs:
 - `commonLib` хранит общие скалярные значения один раз
 - `libs.lib1` ссылается на оба общих значения
 - `libs.lib2` переопределяет только `endpoint`
-- `libs.lib2.requestTimeout` все еще переиспользует общий тайм-аут
+- `libs.lib2.requestTimeout` по-прежнему переиспользует общий таймаут
 
-В этом и есть выигрыш от сочетания переиспользования YAML с `@ConfigValueExtractor`: одна форма конфигурации, несколько извлеченных экземпляров, минимум дублирования.
+Ссылки разрешаются после слияния всех слоев, поэтому порядок секций в файле не важен, а ссылка может указывать на ключ, значение которого в итоге приходит из переменной окружения.
+
+В этом и польза от сочетания YAML-ссылок с `@ConfigMapper`: один формат конфигурации, несколько отображенных экземпляров, минимум дублирования.
 
 ## Итоговые значения { #resolved-values }
 
-Последний шаг — доказать, что все внедрилось корректно.
+Последний шаг — убедиться, что все было внедрено правильно.
 
-Вместо HTTP-маршрута это руководство использует маленький компонент `@Root`, который печатает все итоговые значения в стандартный вывод во время запуска. Это похоже на проверку через консоль из руководства по
-внедрению зависимостей.
+Вместо HTTP-эндпоинта в этом руководстве используется небольшой `@Root`-компонент, который печатает все итоговые значения в стандартный вывод во время запуска. Это повторяет консольную проверку из
+руководства по внедрению зависимостей.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/config/yaml/ConfigRunner.java`:
+    Создайте `src/main/java/io/koraframework/guide/config/yaml/ConfigRunner.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.yaml;
+    package io.koraframework.guide.config.yaml;
 
     import java.util.LinkedHashMap;
     import java.util.Map;
-    import ru.tinkoff.kora.application.graph.Lifecycle;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
+    import io.koraframework.application.graph.Lifecycle;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
 
     @Root
     @Component
@@ -523,15 +555,15 @@ libs:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/config/yaml/ConfigRunner.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/config/yaml/ConfigRunner.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.yaml
+    package io.koraframework.guide.config.yaml
 
-    import ru.tinkoff.kora.application.graph.Lifecycle
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
+    import io.koraframework.application.graph.Lifecycle
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
 
     @Root
     @Component
@@ -566,31 +598,113 @@ libs:
 
 Почему это важно:
 
-- `@Root` гарантирует, что запускаемый компонент действительно будет создан при старте приложения
-- `Lifecycle` дает естественное место для печати или проверки внедренных значений
+- `@Root` гарантирует, что компонент действительно будет создан при запуске приложения
+- `Lifecycle` дает естественное место для вывода или проверки внедренных значений
 - `snapshot()` удерживает вывод во время выполнения и тесты вокруг одного контракта
+
+Те же маркеры `@Tag`, которые различали две фабрики, теперь выбирают, какой `LibConfig` получит каждый параметр конструктора. Без них граф не смог бы отличить два компонента друг от друга.
+
+## Сгенерированный код конфигурации { #config-code }
+
+Как и все остальное в Kora, отображение конфигурации генерируется на этапе компиляции. После `./gradlew clean classes` посмотрите, что создал обработчик:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```text
+    guides/java/kora-java-guide-config-yaml-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/yaml/AppConfigModule.java
+    guides/java/kora-java-guide-config-yaml-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/yaml/$AppConfig_ConfigValueMapper.java
+    guides/java/kora-java-guide-config-yaml-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/yaml/$LibConfig_ConfigValueMapper.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/kora-kotlin-guide-config-yaml-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/yaml/AppConfigModule.kt
+    guides/kotlin/kora-kotlin-guide-config-yaml-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/yaml/$AppConfig_ConfigValueMapper.kt
+    guides/kotlin/kora-kotlin-guide-config-yaml-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/yaml/$LibConfig_ConfigValueMapper.kt
+    ```
+
+`@ConfigSource` создал целый модуль, и выглядит он ровно так же, как фабрики, написанные вами вручную для `LibConfig`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AppConfigModule {
+      default AppConfig appConfig(Config config, ConfigValueMapper<AppConfig> mapper) {
+        return mapper.mapOrThrow(config.get("app"));
+      }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    public interface AppConfigModule {
+      public fun appConfig(config: Config, mapper: ConfigValueMapper<AppConfig>): AppConfig = mapper.mapOrThrow(config.get("app"))
+    }
+    ```
+
+В этом и вся разница между двумя аннотациями: `@ConfigSource` пишет этот модуль за вас для фиксированного пути, а `@ConfigMapper` — нет, поэтому для `LibConfig` вы написали две фабрики с тегами.
+
+Сам маппер показывает, где именно проверяются обязательные значения:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    private String parse_endpoint(ConfigValue.ObjectValue config) {
+      var value = config.get(_endpoint_path);
+      if (value instanceof ConfigValue.NullValue nullValue) {
+        throw ConfigValueException.missingValue(nullValue);
+      }
+      return value.asString();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    private fun parse_endpoint(config: ConfigValue.ObjectValue): String {
+      val value = config.get(_endpoint_path)
+      if (value is ConfigValue.NullValue) {
+        throw ConfigValueException.missingValue(value)
+      }
+      return value.asString()
+    }
+    ```
+
+Ничто в этом сгенерированном коде не упоминает YAML. Тот же маппер был бы создан и для проекта на HOCON, потому что формат разбирается в одно общее дерево конфигурации еще до начала отображения.
+
+`requestTimeout` обрабатывается иначе: вместо написанной вручную ветки сгенерированный маппер принимает `ConfigValueMapper<Duration>` как зависимость конструктора. Любой поддерживаемый тип значения
+попадает в маппер тем же путем — так позже можно добавить собственный тип, не трогая интерфейс конфигурации.
 
 ## Запуск приложения { #run-app }
 
-Используйте стандартную последовательность действий из руководств:
+Используйте стандартный порядок из руководств:
 
 ```bash
 ./gradlew clean classes
 ./gradlew test
-./gradlew run
 ```
 
-В запускаемом примере задача `run` внедряет `APP_VERSION` из `koraVersion` в `gradle.properties`, поэтому обычный `./gradlew run` работает из коробки.
-
-Если хотите также переопределить имя приложения, добавьте `APP_NAME` перед запуском:
+`app.version` обязателен, поэтому `APP_VERSION` должен присутствовать до запуска приложения:
 
 ```bash
-APP_NAME="Custom Task App" ./gradlew run
+APP_VERSION=1.0.0 ./gradlew run
+```
+
+В запускаемом Java-примере задача `run` уже подставляет `APP_VERSION` из `koraVersion` в `gradle.properties`, поэтому там обычный `./gradlew run` работает сразу.
+
+Если нужно переопределить еще и имя приложения, добавьте `APP_NAME` перед запуском:
+
+```bash
+APP_VERSION=1.0.0 APP_NAME="Custom Task App" ./gradlew run
 ```
 
 ## Вывод приложения { #output }
 
-Когда приложение стартует, оно должно напечатать примерно такой вывод:
+При запуске приложение печатает:
 
 ```text
 Config guide start
@@ -603,87 +717,129 @@ lib2.endpoint=https://integration-2.local/api
 lib2.requestTimeout=PT5S
 ```
 
-Если вы передадите `APP_NAME`, напечатанная строка `name=` должна показать переопределение.
+`PT5S` — это запись `Duration.ofSeconds(5)` в формате ISO-8601, что подтверждает: `"5s"` был отображен в настоящий `Duration`, а не в строку. Если задать `APP_NAME`, выведенная строка `name=` отразит
+переопределение:
+
+```text
+name=Custom Task App
+```
 
 ## Вторая конфигурация { #config-2 }
 
-Частый следующий шаг — держать отдельные файлы конфигурации для разных окружений, например разработки, стенда или промышленного окружения.
+Частый следующий шаг — держать отдельные файлы конфигурации для разных окружений: разработки, тестового стенда или продакшена.
 
 Например, создайте `src/main/resources/application-prod.yaml`:
 
-```yaml
+```yaml title="src/main/resources/application-prod.yaml"
 app:
-    name: ${APP_NAME:Task Management App}
-    version: ${APP_VERSION}
-    environment: "production"
+  name: ${APP_NAME:Task Management App}
+  version: ${APP_VERSION}
+  environment: "production"
 
 commonLib:
-    endpoint: "https://integration.local/api"
-    requestTimeout: "5s"
+  endpoint: "https://integration.local/api"
+  requestTimeout: "5s"
 
 libs:
-    lib1:
-        endpoint: ${commonLib.endpoint}
-        requestTimeout: ${commonLib.requestTimeout}
-    lib2:
-        endpoint: "https://integration-2.local/api"
-        requestTimeout: ${commonLib.requestTimeout}
+  lib1:
+    endpoint: ${commonLib.endpoint}
+    requestTimeout: ${commonLib.requestTimeout}
+  lib2:
+    endpoint: "https://integration-2.local/api"
+    requestTimeout: ${commonLib.requestTimeout}
 ```
 
-Этот файл сохраняет ту же форму, что и `application.yaml`, и меняет только значение окружения. YAML-конфигурация выбирается через свойство Kora `config.resource`, поэтому альтернативный ресурс должен
-быть достаточно полным, чтобы приложение могло стартовать самостоятельно.
+В YAML нет директивы `include`, поэтому альтернативный файл приложения заменяет `application.yaml`, а не накладывается поверх него. Именно поэтому этот файл повторяет всю форму и меняет только значение
+окружения: тот файл, который выбран, обязан быть достаточно полным, чтобы приложение запустилось само по себе.
 
-Запустить приложение с этой конфигурацией можно через системное свойство Kora `config.resource`:
+Альтернативный файл выбирается системным свойством `config.resource`. Плагин Gradle `application` не передает флаги `-D` из командной строки в процесс приложения, поэтому объявите свойство в задаче
+`run`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy title="build.gradle"
+    run {
+        jvmArgs += [
+                "-Dconfig.resource=application-prod.yaml"
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="build.gradle.kts"
+    tasks.named<JavaExec>("run") {
+        jvmArgs("-Dconfig.resource=application-prod.yaml")
+    }
+    ```
+
+Собранный дистрибутив принимает то же свойство через `JAVA_OPTS`:
 
 ```bash
-./gradlew run -Dconfig.resource=application-prod.yaml
+JAVA_OPTS="-Dconfig.resource=application-prod.yaml" ./bin/application
 ```
 
-С таким переопределением вывод при запуске должен напечатать:
+С этим переопределением вывод при запуске печатает:
 
 ```text
 environment=production
 ```
 
-Подробнее о поиске файлов и внешних файлах конфигурации смотрите в [документации по конфигурации](../documentation/config.md).
+Используйте `config.file` вместо `config.resource`, чтобы читать файл с диска, а не из classpath. Одновременно можно задать только одно из двух: если заданы оба, приложение падает при запуске с
+`Application config source is ambiguous`.
+
+Значения, действительно общие для всех окружений, лучше держать в `reference.yaml`, который подкладывается под любой выбранный файл приложения. Каждый `reference.yaml` обязан разрешаться сам по себе,
+поэтому давайте его ссылкам литеральное значение по умолчанию или делайте их необязательными.
+
+Подробнее о выборе файла и внешних файлах конфигурации — в [документации по конфигурации](../documentation/config.md).
 
 ## Лучшие практики { #best-practices }
 
-- Используйте `@ConfigSource` для стабильной конфигурации уровня приложения, которая принадлежит одной хорошо известной секции.
-- Используйте `@ConfigValueExtractor`, когда одна форма конфигурации переиспользуется под несколькими путями.
-- Держите обязательные значения явными через `${VAR_NAME}`, а значения по умолчанию явными через `${VAR_NAME:default}`.
-- Предпочитайте общие YAML-секции плюс подстановки Kora вместо копирования одинаковых скалярных значений в несколько секций.
-- Пока изучаете поведение конфигурации, держите диагностику запуска простой; `System.out.println(...)` достаточно для учебной последовательности действий.
+- Используйте `@ConfigSource` для стабильной конфигурации уровня приложения, относящейся к одной известной секции.
+- Используйте `@ConfigMapper`, когда один формат конфигурации переиспользуется по нескольким путям, и выбирайте путь в фабрике модуля.
+- Предпочитайте `mapOrThrow(...)` вместо `map(...)` в фабриках, чтобы отсутствующая секция падала при запуске, а не давала `null`.
+- Делайте обязательные значения явными через `${VAR_NAME}`, а значения по умолчанию — через `${VAR_NAME:default}`.
+- Никогда не пишите `${?VAR_NAME:default}`; эти две формы нельзя комбинировать.
+- Предпочитайте общие YAML-секции с подстановками Kora копированию одних и тех же скалярных значений в несколько секций.
+- Держите диагностику при запуске простой, пока изучаете поведение конфигурации; `System.out.println(...)` вполне достаточно для учебных сценариев.
 
 ## Итоги { #summary }
 
-Теперь у вас есть рабочее приложение Kora на основе YAML, которое связывает конфигурацию двумя способами. `AppConfig` отображает стабильную секцию `app`, а `LibConfig` дважды извлекается из двух
-разных путей с разными метками. Переиспользование YAML делает файл компактным, а одно переопределение меняет только `endpoint` второй библиотеки.
+Теперь у вас есть рабочее приложение Kora на YAML, которое связывает конфигурацию двумя способами. `AppConfig` отображает стабильную секцию `app`, а `LibConfig` отображается дважды из двух разных путей
+с разными тегами. YAML-ссылки делают файл компактным, а одно переопределение меняет только endpoint второй библиотеки.
 
 ## Ключевые понятия { #key-concepts }
 
 **`@ConfigSource`:**
 
-- отображает одну фиксированную секцию конфигурации на типобезопасный интерфейс
+- отображает одну фиксированную секцию конфигурации в типобезопасный интерфейс
+- генерирует модуль, который сам вызывает `mapOrThrow(config.get("app"))`
 - хорошо подходит для настроек приложения вроде `app.name` и `app.environment`
 
 **Обязательные значения и значения по умолчанию:**
 
-- `${APP_VERSION}` является обязательным и завершает запуск с ошибкой как можно раньше, если значение отсутствует
-- `${APP_NAME:Task Management App}` использует значение из окружения, когда оно присутствует, а иначе возвращается к настроенному значению по умолчанию
+- каждый метод интерфейса обязателен, если он не допускает `null` и не имеет реализации `default`
+- `${APP_VERSION}` обязателен и падает сразу, когда значение отсутствует
+- `${APP_NAME:Task Management App}` использует значение из окружения, когда оно есть, и иначе откатывается к заданному значению по умолчанию
+- `${?APP_NAME}` не дает значения вовсе, когда переменная отсутствует, и не может нести значение по умолчанию
 
-**`@ConfigValueExtractor` и переиспользование:**
+**`@ConfigMapper` и переиспользование:**
 
-- одну форму конфигурации можно извлекать из нескольких путей
+- генерирует `ConfigValueMapper<T>` без привязки к пути
+- один формат конфигурации можно отобразить из нескольких путей, различая их через `@Tag`
 - общая секция вроде `commonLib` может один раз хранить скалярные значения по умолчанию
-- подстановки вроде `${commonLib.requestTimeout}` переиспользуют эти скалярные значения в нескольких типизированных секциях конфигурации
+- подстановки вида `${commonLib.requestTimeout}` переиспользуют эти скалярные значения в нескольких типизированных секциях конфигурации
 
 ## Устранение неполадок { #troubleshooting }
 
-**Приложение падает при старте из-за неразрешенной подстановки:**
+**Приложение падает при запуске из-за неразрешенной подстановки:**
 
-`app.version: ${APP_VERSION}` является обязательным. В запускаемом примере задача `run` предоставляет его автоматически из `koraVersion`. Если вы удалите это связывание Gradle, нужно
-задать `APP_VERSION` перед запуском.
+`app.version: ${APP_VERSION}` обязателен. В запускаемом Java-примере задача `run` подставляет его автоматически из `koraVersion`. В остальных случаях нужно задать `APP_VERSION` перед запуском.
+
+**Запуск падает с `Config expected value, but got null at path: '...'`:**
+
+В итоговой конфигурации отсутствует обязательное значение. Либо добавьте ключ в файл, либо сделайте метод необязательным через `@Nullable` в Java или nullable-тип возврата в Kotlin, либо дайте ему
+реализацию `default`.
 
 **`APP_NAME` не меняет имя по умолчанию:**
 
@@ -693,11 +849,22 @@ environment=production
 name: ${APP_NAME:Task Management App}
 ```
 
-**Значения конфигурации библиотеки дублируются между секциями:**
+Одиночный `${?APP_NAME}` оставляет ключ отсутствующим вместо отката к значению по умолчанию, а `${?APP_NAME:Task Management App}` читается как одно длинное имя ссылки и не разрешается ни во что.
 
-Перенесите общие скалярные значения в секцию вроде `commonLib` и ссылайтесь на них через подстановки вида `${commonLib.requestTimeout}` вместо копирования одного и того же значения в обе библиотеки.
+**Значения конфигурации библиотек дублируются между секциями:**
 
-**Сборка зависает или падает неожиданно:**
+Перенесите общие скалярные значения в одну секцию, например `commonLib`, и ссылайтесь на них через `${commonLib.endpoint}` вместо копирования одних и тех же литералов в обе библиотеки.
+
+**`Reference config ... cannot be resolved without external application config`:**
+
+В `reference.yaml` есть ссылка, которую может удовлетворить только файл приложения. Дайте ключу литеральное значение по умолчанию, сделайте ссылку необязательной через `${?path}` или используйте
+`${path:defaultValue}`.
+
+**`Application config source is ambiguous`:**
+
+Заданы одновременно `config.resource` и `config.file`. Уберите одно из двух системных свойств.
+
+**Сборка зависает или неожиданно падает:**
 
 Остановите демоны Gradle и повторите:
 
@@ -706,9 +873,9 @@ name: ${APP_NAME:Task Management App}
 ./gradlew clean classes
 ```
 
-**`AccessDeniedException` в кеше Gradle на Windows:**
+**`AccessDeniedException` в кэше Gradle на Windows:**
 
-Если кешированные файлы заблокированы другим процессом, повторите запуск со свежим кешем текущего запуска:
+Если закэшированные файлы заблокированы другим процессом, повторите со свежим кэшем сессии:
 
 ```bash
 GRADLE_USER_HOME=.gradle-user-home ./gradlew test
@@ -716,16 +883,17 @@ GRADLE_USER_HOME=.gradle-user-home ./gradlew test
 
 ## Что дальше? { #whats-next }
 
-- [Конфигурация HOCON](config-hocon.md), чтобы сравнить YAML с распространенной для Kora настройкой на основе HOCON.
-- [Работа с JSON](json.md), чтобы сделать DTO запросов и ответов явными в небольшом приложении, которое у вас уже есть.
-- [Создание HTTP-сервера](http-server.md) после JSON, потому что это руководство опирается на отображение JSON DTO и превращает приложение в более полноценный HTTP API.
-- [Изучите основы внедрения зависимостей](dependency-injection-introduction.md), если сгенерированный граф и фабрики конфигурации все еще кажутся неочевидными.
+- [HOCON-конфигурация](config-hocon.md), чтобы увидеть ту же модель типизированной конфигурации в другом формате файла.
+- [Работа с JSON](json.md), чтобы сделать DTO запросов и ответов явными в том небольшом приложении, которое у вас уже есть.
+- [Создание HTTP-сервера](http-server.md) после JSON, так как это руководство опирается на отображение JSON-DTO и превращает приложение в более полноценное HTTP API.
+- [Основы внедрения зависимостей](dependency-injection-introduction.md), если сгенерированный граф и фабрики конфигурации все еще кажутся непонятными.
 
 ## Помощь { #help }
 
-Если возникли проблемы:
+Если возникли сложности:
 
 - сравните с [Kora Java Config YAML App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-config-yaml-app) и [Kora Kotlin Config YAML App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-config-yaml-app)
-- проверьте [документацию по конфигурации](../documentation/config.md)
-- проверьте [документацию по контейнеру](../documentation/container.md)
+- посмотрите [документацию по конфигурации](../documentation/config.md)
+- посмотрите [документацию по контейнеру](../documentation/container.md)
+- посмотрите [пример конфигурации YAML](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-config-yaml)
 - прочитайте [спецификацию YAML](https://yaml.org/spec/)

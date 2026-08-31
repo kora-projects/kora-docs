@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf."
+description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf, All, PromiseOf."
+  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."
 ---
 
 The dependency container is the core of the `Kora` framework. It builds the dependency graph, validates it,
@@ -12,6 +12,9 @@ at compile time and generates regular `Java` code for application startup.
 Container work in `Kora` is split into two parts: compile time and runtime.
 At compile time, `Kora` checks that all dependencies can be found and connected. At runtime, the container creates
 components, manages their lifecycle, and updates affected graph parts when changes happen.
+
+All container annotations live in the `io.koraframework.common.annotation` package,
+and all runtime graph contracts live in `io.koraframework.application.graph`.
 
 For a step-by-step walkthrough before the reference details, see [Dependency Injection Introduction](../guides/dependency-injection-introduction.md) and [Dependency Injection](../guides/dependency-injection.md).
 
@@ -26,6 +29,8 @@ The core of the dependency container is the interface marked with the `@KoraApp`
 This annotation should be used on the interface that contains factory methods for creating components
 and connects [external modules](#external-module-factory).
 There can be only one such interface within an application.
+
+`@KoraApp` can only be applied to an interface. Applying it to a class fails compilation.
 
 `Kora` annotation processors analyze source code in the compilation module where `@KoraApp` is declared,
 and in modules where [`@KoraSubmodule`](#submodule-factory) is declared. Regular project modules without
@@ -59,15 +64,15 @@ The `@Component` annotation marks the class as accessible via the container. The
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    * The class must not be abstract
-    * A class should have only one public constructor
+    * The class must not be abstract (`@Component` on an abstract class or an interface is ignored)
+    * The class must have exactly one public constructor
     * The class must be `final` (only if it has no aspects)
-    
+
     ```java
     @Component
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(OtherService otherService) {
             this.otherService = otherService;
@@ -77,13 +82,13 @@ The `@Component` annotation marks the class as accessible via the container. The
 
 === ":simple-kotlin: `Kotlin`"
 
-    * The class must not be abstract
-    * A class should have only one public constructor
+    * The class must not be abstract (`@Component` on an abstract class or an interface is ignored)
+    * The class must have exactly one public constructor
     * The class must not be `open` (only if it has no aspects)
 
     ```kotlin
     @Component
-    class SomeService(val otherService: OtherService) { }
+    class SomeService(val otherService: OtherService)
     ```
 
 #### Method factory { #method-factory }
@@ -124,14 +129,17 @@ This is the most basic way in which components can be registered in a container:
     }
     ```
 
-The factory method **should not provide** a `null` value as a component.
+The factory method **should not provide** a `null` value as a component,
+and it must return a reference type: a factory that returns a primitive or `void` fails compilation.
 
 #### Module factory { #module-factory }
 
 Components for a dependency container can also be located in modules within an application project.
 A module refers to an interface that contains the factory methods.
 The `@Module` annotation marks the interface as a module to be injected into the application container at compile time.
-The module must be within the same source code directory as the class marked with `@KoraApp`.
+The module must be within the same compilation module as the interface marked with `@KoraApp`.
+
+`@Module` is only supported on interfaces.
 
 All factory methods within the module become available to the dependency container:
 
@@ -169,6 +177,7 @@ All required external modules from dependencies must be connected explicitly in 
 
 Such a module can be declared in any interface: in a third-party library, in a separate project module, or next to `@KoraApp` itself.
 The important part is that the `@KoraApp` interface explicitly connects it through inheritance.
+An external module does not need the `@Module` annotation — inheritance is what connects it.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -194,8 +203,9 @@ and the application with `@KoraApp` is assembled in a separate compilation modul
 This approach helps structure a large project by domain areas and improve build time:
 changes in one project module do not force the annotation processor to analyze the entire application code again.
 
-An inheritor interface will be generated for the interface. It will inherit all interfaces marked with `@Module`
-and create factory methods for classes marked as `@Component`.
+An inheritor interface named `<InterfaceName>SubmoduleImpl` will be generated for the interface. It will inherit all interfaces marked with `@Module`
+and create factory methods for classes marked as `@Component`. The application connects the annotated interface itself,
+and `Kora` resolves the generated implementation for it.
 
 For example, you have a separate application module that contains this `@KoraSubmodule`:
 
@@ -284,6 +294,153 @@ generated submodules the same way it connects any other module:
     interface Application : PetModule, VetModule
     ```
 
+#### Factory module { #factory-module }
+
+The `@FactoryModule` annotation marks a module method whose **return value is itself a module**.
+The returned object is registered in the container as a regular component, and its public methods are
+processed as component factories.
+
+This makes it possible to build a module whose behavior is parameterized by ordinary constructor arguments,
+which a plain `interface` module cannot do. `Kora` itself uses this: `JdbcDatabaseModule` provides its components
+through `new JdbcDatabaseFactoryModule("jdbc")`, where the string is the configuration path the module reads.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class InnerModule {
+
+        private final Config config;
+
+        public InnerModule(Config config) {
+            this.config = config;
+        }
+
+        public SomeService someService() {
+            return new SomeService(config);
+        }
+    }
+
+    @Module
+    public interface OuterModule {
+
+        @FactoryModule
+        default InnerModule inner(Config config) { //(1)!
+            return new InnerModule(config);
+        }
+    }
+    ```
+
+    1.  The method may take any graph components as arguments, just like a regular factory method.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class InnerModule(private val config: Config) {
+
+        fun someService(): SomeService = SomeService(config)
+    }
+
+    @Module
+    interface OuterModule {
+
+        @FactoryModule
+        fun inner(config: Config): InnerModule { //(1)!
+            return InnerModule(config)
+        }
+    }
+    ```
+
+    1.  The method may take any graph components as arguments, just like a regular factory method.
+
+The graph in the example above contains two nodes: `InnerModule` and the `SomeService` it produces.
+Methods inherited by the returned type from its supertypes are processed as factories too.
+`@FactoryModule` also works on methods declared directly in the `@KoraApp` interface,
+and the annotated method must return a class or an interface type.
+
+##### Factory module tag { #factory-module-tag }
+
+A `@Tag` placed on the `@FactoryModule` method tags the **module instance**.
+Inside the module class, `@Tag(Tag.Factory.class)` means "use the tag of the enclosing factory module".
+This is how one factory module type can be declared several times with different tags and produce several
+independently configured sets of components:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class DataSourceModule {
+
+        private final String configPath;
+
+        public DataSourceModule(String configPath) {
+            this.configPath = configPath;
+        }
+
+        @Tag(Tag.Factory.class) //(1)!
+        public DataSourceConfig config(Config config, ConfigValueMapper<DataSourceConfig> mapper) {
+            return mapper.mapOrThrow(config.get(this.configPath));
+        }
+
+        @Tag(Tag.Factory.class)
+        public DataSource dataSource(@Tag(Tag.Factory.class) DataSourceConfig config) { //(2)!
+            return new DataSource(config);
+        }
+    }
+
+    @KoraApp
+    public interface Application {
+
+        @Tag(MainDb.class)
+        @FactoryModule
+        default DataSourceModule mainDb() {
+            return new DataSourceModule("db.main");
+        }
+
+        @Tag(ReplicaDb.class)
+        @FactoryModule
+        default DataSourceModule replicaDb() {
+            return new DataSourceModule("db.replica");
+        }
+    }
+    ```
+
+    1.  The produced component gets the tag of the factory module method, so `@Tag(MainDb.class)` and `@Tag(ReplicaDb.class)` respectively.
+    2.  On a parameter, `@Tag(Tag.Factory.class)` requests the component that was produced by the **same** factory module instance.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class DataSourceModule(private val configPath: String) {
+
+        @Tag(Tag.Factory::class) //(1)!
+        fun config(config: Config, mapper: ConfigValueMapper<DataSourceConfig>): DataSourceConfig {
+            return mapper.mapOrThrow(config.get(configPath))
+        }
+
+        @Tag(Tag.Factory::class)
+        fun dataSource(@Tag(Tag.Factory::class) config: DataSourceConfig): DataSource { //(2)!
+            return DataSource(config)
+        }
+    }
+
+    @KoraApp
+    interface Application {
+
+        @Tag(MainDb::class)
+        @FactoryModule
+        fun mainDb(): DataSourceModule = DataSourceModule("db.main")
+
+        @Tag(ReplicaDb::class)
+        @FactoryModule
+        fun replicaDb(): DataSourceModule = DataSourceModule("db.replica")
+    }
+    ```
+
+    1.  The produced component gets the tag of the factory module method, so `@Tag(MainDb::class)` and `@Tag(ReplicaDb::class)` respectively.
+    2.  On a parameter, `@Tag(Tag.Factory::class)` requests the component that was produced by the **same** factory module instance.
+
+If the factory module method has no tag, `@Tag(Tag.Factory)` resolves to "no tag" and the produced components are untagged.
+Using `@Tag(Tag.Factory)` outside a factory module is a compile-time error.
+
 #### Generic factory { #generic-factory }
 
 If the dependency container could not find a factory for a particular type, the `Kora` container can try to find
@@ -346,6 +503,8 @@ This is useful for infrastructure components that create a dependency by the sha
 
 `TypeRef<T>` carries generic type information through `Java` type erasure. Most application components do not need it,
 but it is useful for universal factories, mappers, and container extensions.
+`TypeRef<T>` is not a graph node: the container fills it in from the resolved type of the claim, so
+requesting it never fails with a missing dependency.
 
 #### Extension mechanism { #extension-mechanism }
 
@@ -353,8 +512,9 @@ In case none of the factories were able to provide a component, `Kora` can try t
 The extensions mechanism is provided for this purpose. Each extension is able to tell if it can create a component of the desired type.
 If the extension can do this, it performs the required code generation and reports how to obtain that component.
 
-For example, there are extensions that know how to create optimal `JsonReader` and `JsonWriter` components, repositories, and other components.
-Available extensions are discovered through the `ServiceLocator` mechanism from all dependencies provided in the annotation processor scope.
+For example, there are extensions that know how to create optimal `JsonReader` and `JsonWriter` components, repositories,
+declarative `HTTP` clients, `gRPC` stubs, configuration mappers, validators, and `MapStruct`/`Konvert` mappers.
+Available extensions are discovered through the `ServiceLoader` mechanism from all dependencies provided in the annotation processor scope.
 
 This mechanism is system-level and is most often used by internal `Kora` modules.
 
@@ -389,21 +549,27 @@ the user component will be preferred during injection.
     }
     ```
 
-#### Auto creation { #auto-creation }
+`@DefaultComponent` can be placed both on a factory method and on a `@Component` class.
+A `@DefaultComponent` candidate is also skipped when a [list of components](#list-of-components) is collected
+and at least one non-default candidate of the same type exists.
 
-If none of the methods above were able to provide a component,
-then `Kora` can try to create a component on its own if it meets the requirements similar to [auto factory](#auto-factory):
+#### Explicit registration { #explicit-registration }
+
+Every component in the graph comes from an explicit declaration: a [`@Component`](#auto-factory) class,
+a [factory method](#method-factory) in the `@KoraApp` interface or in a connected [module](#module-factory),
+a [factory module](#factory-module), a [generic factory](#generic-factory), or the [extension mechanism](#extension-mechanism).
+
+`Kora` does not instantiate a class that was never registered. If a class is used as a dependency but is not
+declared anywhere, compilation fails with a `No component found for dependency` error rather than silently
+constructing the class. See [graph build errors](#graph-build-errors) for the exact diagnostics.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    * The class must not be abstract
-    * A class should have only one public constructor
-    * The class must be `final` (only if it has no aspects)
-
     ```java
+    @Component //(1)!
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(OtherService otherService) {
             this.otherService = otherService;
@@ -417,20 +583,20 @@ then `Kora` can try to create a component on its own if it meets the requirement
             return new SomeOtherService(someService);
         }
 
-        default OtherService otherService() {
+        default OtherService otherService() { //(2)!
             return new OtherService();
         }
     }
     ```
 
+    1.  Without `@Component` (or a factory method returning `SomeService`) the graph does not build.
+    2.  `OtherService` is registered by a factory method, so `SomeService` can be constructed.
+
 === ":simple-kotlin: `Kotlin`"
 
-    * The class must not be abstract
-    * A class should have only one public constructor
-    * The class must not be `open` (only if it has no aspects)
-
     ```kotlin
-    class SomeService(val otherService: OtherService) { }
+    @Component //(1)!
+    class SomeService(val otherService: OtherService)
 
     @KoraApp
     interface Application {
@@ -439,9 +605,20 @@ then `Kora` can try to create a component on its own if it meets the requirement
             return SomeOtherService(someService)
         }
 
-        fun otherService(): OtherService = OtherService()
+        fun otherService(): OtherService = OtherService() //(2)!
     }
     ```
+
+    1.  Without `@Component` (or a factory method returning `SomeService`) the graph does not build.
+    2.  `OtherService` is registered by a factory method, so `SomeService` can be constructed.
+
+There is one deliberate exception to this rule. Types that `Kora` builds itself — mappers, converters, cache key mappers
+and similar contracts referenced through `@Mapping` — must **not** be annotated with `@Component` when they have no
+constructor dependencies, because `Kora` already instantiates them directly and a second declaration produces a
+`Multiple components match dependency` error. Decide by the constructor:
+
+* the class takes constructor dependencies — it must be a graph component (`@Component` or a factory method)
+* the class has no constructor dependencies — leave it unannotated
 
 ### Component override { #component-override }
 
@@ -450,6 +627,59 @@ it is possible to create a factory in an application without the `@DefaultCompon
 
 Since all external modules are connected as interfaces to the `@KoraApp` container core and their factories are available,
 you can simply override them as a method and provide your custom implementation.
+Any [tags](#tags) declared on the original factory method have to be repeated on the override,
+because the tag is what identifies the component in the graph:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface EmailModule {
+
+        final class EmailTag {
+            private EmailTag() {}
+        }
+
+        @Tag(EmailTag.class)
+        @DefaultComponent
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL DEFAULT] ";
+        }
+    }
+
+    @KoraApp
+    public interface Application extends EmailModule {
+
+        @Tag(EmailModule.EmailTag.class)
+        @Override
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL OVERRIDDEN] ";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface EmailModule {
+
+        class EmailTag private constructor()
+
+        @Tag(EmailTag::class)
+        @DefaultComponent
+        fun emailNotifierHeaderSupplier(): Supplier<String> {
+            return Supplier { "[EMAIL DEFAULT] " }
+        }
+    }
+
+    @KoraApp
+    interface Application : EmailModule {
+
+        @Tag(EmailModule.EmailTag::class)
+        override fun emailNotifierHeaderSupplier(): Supplier<String> {
+            return Supplier { "[EMAIL OVERRIDDEN] " }
+        }
+    }
+    ```
 
 ### Root component { #root-component }
 
@@ -482,19 +712,128 @@ An example of such a component might be an `HTTP` server, a `Kafka` consumer, a 
     }
     ```
 
+Roots are the entry points of graph resolution: everything that is not reachable from a root is dropped from the container.
+An application that declares no root at all fails to compile:
+
+```
+@KoraApp has no root components.
+
+Fix:
+  - Check that modules with @Root components are plugged-in.
+  - Annotate at least one component or module method with @Root.
+  - Check that root component is visible from this @KoraApp module set.
+```
+
+This is also the reason why a [`Lifecycle`](#component-lifecycle) component that only prepares external state,
+and that nobody depends on, needs `@Root` — otherwise it silently disappears from the graph together with everything it pulled in.
+
+### Conditional components { #conditional-component }
+
+A component can be excluded from the container at startup based on a condition evaluated at runtime.
+The condition itself is a component implementing `GraphCondition`, registered under a `@Tag` that names it,
+and the component that depends on it is marked with `@Conditional(tag = ...)`.
+
+```java
+public interface GraphCondition {
+
+    ConditionResult eval();
+
+    sealed interface ConditionResult {
+
+        record Matched(String reason) implements ConditionResult {}
+
+        record Failed(String reason) implements ConditionResult {}
+    }
+}
+```
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class OnPrimaryNode implements GraphCondition {
+
+        @Override
+        public ConditionResult eval() {
+            return "primary".equals(System.getenv("NODE_ROLE"))
+                    ? ConditionResult.matched("NODE_ROLE is primary")
+                    : ConditionResult.failed("NODE_ROLE is not primary");
+        }
+    }
+
+    @KoraApp
+    public interface Application {
+
+        @Tag(OnPrimaryNode.class) //(1)!
+        default GraphCondition onPrimaryNode() {
+            return new OnPrimaryNode();
+        }
+
+        @Root
+        @Conditional(tag = OnPrimaryNode.class) //(2)!
+        default LeaderElectionJob leaderElectionJob() {
+            return new LeaderElectionJob();
+        }
+    }
+    ```
+
+    1.  The condition is an ordinary component of type `GraphCondition`, identified by its tag.
+    2.  Exactly one `GraphCondition` component must exist for the tag, otherwise compilation fails.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class OnPrimaryNode : GraphCondition {
+
+        override fun eval(): GraphCondition.ConditionResult {
+            return if (System.getenv("NODE_ROLE") == "primary") {
+                GraphCondition.ConditionResult.matched("NODE_ROLE is primary")
+            } else {
+                GraphCondition.ConditionResult.failed("NODE_ROLE is not primary")
+            }
+        }
+    }
+
+    @KoraApp
+    interface Application {
+
+        @Tag(OnPrimaryNode::class) //(1)!
+        fun onPrimaryNode(): GraphCondition = OnPrimaryNode()
+
+        @Root
+        @Conditional(tag = OnPrimaryNode::class) //(2)!
+        fun leaderElectionJob(): LeaderElectionJob = LeaderElectionJob()
+    }
+    ```
+
+    1.  The condition is an ordinary component of type `GraphCondition`, identified by its tag.
+    2.  Exactly one `GraphCondition` component must exist for the tag, otherwise compilation fails.
+
+Conditions are evaluated when the graph is initialized, and again on every graph refresh:
+
+* if the condition is `Matched`, the component is created as usual
+* if the condition is `Failed`, the node stays empty and reading it throws `Graph node value was not initialized because condition failed: <reason>`
+* a [list of components](#list-of-components) silently skips components whose condition failed
+* `@Conditional` is also allowed on `@Root` components, in which case the whole subtree behind that root is not created
+
+When several candidates of one type compete for the same injection point and **all** of them are conditional,
+`Kora` does not fail at compile time: it picks the one whose condition matched at runtime.
+If none matched, or more than one matched, the graph fails to initialize.
+
+`GraphCondition` also provides `GraphCondition.and(...)` and `GraphCondition.or(...)` for composing conditions.
+
 ### Optional dependencies { #optional-dependencies }
 
 ===! ":fontawesome-brands-java: `Java`"
 
     If you want to introduce an optional dependency that may not exist, then
-    it is supposed to mark such a component with any `@Nullable` annotation,
+    it is supposed to mark such a component with a `@Nullable` annotation,
     then the dependency container will not crash at compile time due to the absence of the component:
 
     ```java
     @Component
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(@Nullable OtherService otherService) { //(1)!
             this.otherService = otherService;
@@ -502,7 +841,10 @@ An example of such a component might be an `HTTP` server, a `Kafka` consumer, a 
     }
     ```
 
-    1.  Any `@Nullable` annotation will do, for example `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable`.
+    1.  `Kora` recognizes any annotation whose simple name is `Nullable`; the one shipped with `Kora` is
+        [JSpecify](https://jspecify.dev) `org.jspecify.annotations.Nullable`, available transitively from the framework core.
+        JSpecify annotations are **type-use** annotations, so their position matters in qualified and generic types
+        (`Outer.@Nullable Inner`, `List<@Nullable String>`).
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -512,10 +854,11 @@ An example of such a component might be an `HTTP` server, a `Kafka` consumer, a 
 
     ```kotlin
     @Component
-    class SomeService(val otherService: OtherService?) { }
+    class SomeService(val otherService: OtherService?)
     ```
 
-Optionality can be combined with container wrappers: `ValueOf<Optional<T>>`, `Optional<ValueOf<T>>`,
+An absent dependency can also be requested as `java.util.Optional<T>`, in which case the container injects an empty
+`Optional` instead of failing. Optionality can be combined with container wrappers: `ValueOf<Optional<T>>`, `Optional<ValueOf<T>>`,
 `PromiseOf<Optional<T>>`, and `Optional<PromiseOf<T>>`. This is useful when a dependency may be absent,
 but the component still needs deferred access or the ability to refresh it through the container.
 
@@ -564,12 +907,49 @@ For example, we have some entity `Handler` and it is injected by N different typ
 The `All` type itself has the following contract:
 
 ```java
-public sealed interface All<T> extends List<T> permits AllImpl {}
+public sealed interface All<T> extends Iterable<T> { }
 ```
 
-This is a token type that extends `List` and can be given to constructors that expect `List`.
-If you need to collect references to components instead of the components themselves, the container also supports
-`All<ValueOf<T>>` and `All<PromiseOf<T>>`.
+`All<T>` is an `Iterable<T>`, not a `List<T>`: iterate it with a `for` loop, or copy it into a collection if you need
+random access. If you need to collect references to components instead of the components themselves, the container also supports
+`All<ValueOf<T>>` and `All<PromiseOf<T>>`. Requesting `All<T>` for a type that nothing provides is not an error —
+the collection is simply empty. `All.of(...)` builds a static instance, which is convenient in tests.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Root
+    @Component
+    public final class NotifyRunner {
+
+        private final All<Notifier> notifiers;
+
+        public NotifyRunner(All<Notifier> notifiers) {
+            this.notifiers = notifiers;
+        }
+
+        public void notifyAll(String user, String message) {
+            for (var notifier : notifiers) {
+                notifier.notify(user, message);
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Root
+    @Component
+    class NotifyRunner(private val notifiers: All<Notifier>) {
+
+        fun notifyAll(user: String, message: String) {
+            for (notifier in notifiers) {
+                notifier.notify(user, message)
+            }
+        }
+    }
+    ```
 
 ### Tags { #tags }
 
@@ -596,11 +976,11 @@ This is how you can inject different instances of a class with a common interfac
             return new SomeService2();
         }
 
-        default ServiceC serviceA(@Tag(MyTag1.class) SomeService service) {
+        default ServiceA serviceA(@Tag(MyTag1.class) SomeService service) {
             return new ServiceA(service);
         }
 
-        default ServiceD serviceB(@Tag(MyTag2.class) SomeService service) {
+        default ServiceB serviceB(@Tag(MyTag2.class) SomeService service) {
             return new ServiceB(service);
         }
     }
@@ -628,22 +1008,21 @@ This is how you can inject different instances of a class with a common interfac
     ```
 
 Tags above the method tell you which tag to register the component with, and tags at injection points tell you which tagged component to expect.
-Tags also work on constructor parameters, in conjunction with `@Component` or final classes.
+Tags also work on `@Component` classes and their constructor parameters.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(MyTag1.class)
-    class SomeService1 implements SomeService {
-
-    }
+    @Component
+    public final class SomeService1 implements SomeService { }
 
     @Tag(MyTag2.class)
-    final class SomeService2 implements SomeService {
+    @Component
+    public final class SomeService2 implements SomeService { }
 
-    }
-
-    final class ServiceA {
+    @Component
+    public final class ServiceA {
 
         private final SomeService service;
 
@@ -652,7 +1031,8 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
         }
     }
 
-    final class ServiceB {
+    @Component
+    public final class ServiceB {
 
         private final SomeService service;
 
@@ -668,15 +1048,21 @@ Tags also work on constructor parameters, in conjunction with `@Component` or fi
     interface SomeService
 
     @Tag(MyTag1::class)
+    @Component
     class SomeService1 : SomeService
 
     @Tag(MyTag2::class)
+    @Component
     class SomeService2 : SomeService
 
-    class ServiceA(private val service: @Tag(MyTag1::class) SomeService)
+    @Component
+    class ServiceA(@Tag(MyTag1::class) private val service: SomeService)
 
-    class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
+    @Component
+    class ServiceB(@Tag(MyTag2::class) private val service: SomeService)
     ```
+
+In `Kotlin` the annotation is placed on the constructor **parameter**, before the parameter name, not inside the type.
 
 #### Tag custom { #tag-custom }
 
@@ -800,6 +1186,9 @@ To get a list of all components with and without a tag, you need to use a specia
     }
     ```
 
+`@Tag.Any` only makes sense at the injection point: it declares that any tag is acceptable there.
+An injection point without a tag matches only components registered without a tag.
+
 ### Circular dependencies { #circular-dependencies }
 
 Because `Kora` builds and validates the whole dependency graph at compile time, a dependency cycle
@@ -807,20 +1196,26 @@ Because `Kora` builds and validates the whole dependency graph at compile time, 
 rather than blowing up at runtime. How such a cycle is handled depends on how the dependency inside the cycle is declared.
 
 **Direct dependency on a `final` class (or any non-interface type).**
-Such a cycle cannot be resolved and compilation fails. The error points at the type that closes the cycle and lists the
-cycle candidates:
+Such a cycle cannot be resolved and compilation fails. The error names the type that closes the cycle, prints the cycle,
+and suggests the ways out:
 
 ```
-Encountered circular dependency in graph for source type: ru.tinkoff.kora.example.ServiceA (no tags)
-  Cycle dependency candidates:
-  - ru.tinkoff.kora.example.ServiceA
-  - ru.tinkoff.kora.example.ServiceB
-Please check that you are not using cycle dependency in ru.tinkoff.kora.application.graph.Lifecycle, this is forbidden.
+Circular dependency found:
+  io.koraframework.example.ServiceA (no tags)
+
+  Dependency cycle:
+    @--- component  io.koraframework.example.ServiceB
+    ^--- component  io.koraframework.example.ServiceA [CYCLE]
+
+Fix:
+  - Break the cycle with ValueOf<T> or PromiseOf<T> where lazy access is valid.
+  - Move shared state into a separate component.
+  - Do not create dependency cycles in io.koraframework.application.graph.Lifecycle.
 ```
 
 **Dependency declared through an interface (or a non-`final` class).**
 `Kora` breaks the cycle automatically: for the interface-typed dependency it generates a lazy proxy that implements
-`ru.tinkoff.kora.common.PromisedProxy<T>` and injects the proxy instead of the real component. The proxy resolves the
+`io.koraframework.common.PromisedProxy<T>` and injects the proxy instead of the real component. The proxy resolves the
 actual component from the graph on first access (and re-resolves it after a graph refresh), so both components can be
 constructed. No action is required from the developer, but keep in mind that the proxied side becomes usable only after
 the graph is fully bound, so it must not be called from a constructor.
@@ -883,9 +1278,69 @@ component's lifecycle, so the container no longer treats the two as a hard cycle
     class ServiceAImpl(serviceB: ValueOf<ServiceB>) : ServiceA
     ```
 
+### Graph build errors { #graph-build-errors }
+
+All graph errors are compile-time errors reported on the exact source element that caused them.
+Each message states what failed, where it was required from, and a `Fix:` block with the possible resolutions.
+
+**A dependency has no provider.** The message prints the whole path from the root down to the missing claim:
+
+```
+No component found for dependency:
+  io.koraframework.example.PetRepository (no tags)
+
+Required at:
+  io.koraframework.example.Application#petService(io.koraframework.example.PetRepository)
+  parameter: io.koraframework.example.PetRepository repository
+
+Dependency resolution path:
+  ^--- factory  io.koraframework.example.Application#petController(...)
+  ^--- factory  io.koraframework.example.Application#petService(...)
+  ^--- io.koraframework.example.PetRepository    [MISSING]
+
+Fix:
+  - Add @Component to an implementation of io.koraframework.example.PetRepository.
+  - Add a module method that returns io.koraframework.example.PetRepository.
+  - Include a module that provides io.koraframework.example.PetRepository in @KoraApp.
+```
+
+The message can carry two extra blocks:
+
+* a `Note:` block listing components of the same type registered under a **different** tag — the usual sign of a forgotten or mismatched `@Tag`
+* a `Hint:` block for well-known types, for example telling you to annotate a model with `@Json` when a `JsonWriter` is missing
+
+**Several providers match one injection point.** The candidates are listed with the factory or component that declared them:
+
+```
+Multiple components match dependency:
+  io.koraframework.example.PetService (no tags)
+
+Required at:
+  petController(io.koraframework.example.PetService)
+  parameter: io.koraframework.example.PetService petService
+
+  Candidates:
+  - factory  io.koraframework.example.Application#petServicePrimary()
+  - factory  io.koraframework.example.Application#petServiceSecondary()
+
+Fix:
+  - Add different @Tag(...) annotations to candidates and request the needed tag.
+  - Mark fallback candidate with @DefaultComponent.
+  - Remove one duplicate provider.
+```
+
+**Other frequent build failures:**
+
+* `@KoraApp has no root components.` — nothing in the graph is annotated with [`@Root`](#root-component)
+* `Circular dependency found:` — see [circular dependencies](#circular-dependencies)
+* `Component condition cannot be resolved:` — a [`@Conditional`](#conditional-component) tag has no `GraphCondition` component
+* `@Component class must have exactly one public constructor.` — see [auto factory](#auto-factory)
+* `Kora submodule was not generated yet:` — the [`@KoraSubmodule`](#submodule-factory) module was compiled without the `Kora` annotation processor
+
 ## Runtime { #runtime }
 
 The dependency container uses as much parallelism as possible within the graph that has been built.
+Each node is created, initialized, and released on its own virtual thread, in dependency order.
 
 During application execution, the container does the following:
 
@@ -901,8 +1356,8 @@ All components use eager initialization, which means they are initialized immedi
 The application entry point should call `KoraApplication.run` using the dependency container created at compile time.
 
 If the interface marked with `@KoraApp` is named `Application`, then during compilation a class named `ApplicationGraph`
-will be generated in the same package. It represents the dependency container implementation, and the entry point
-in the same package will look like this:
+will be generated in the same package. It implements `Supplier<ApplicationGraphDraw>` and exposes a static `graph()` method,
+so the entry point in the same package will look like this:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -923,13 +1378,17 @@ in the same package will look like this:
     interface Application
 
     fun main() {
-        KoraApplication.run { ApplicationGraph.graph() }
+        KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-`KoraApplication.run` boots the container and returns a `RefreshableGraph` (a `Graph` combined with [`Lifecycle`](#component-lifecycle)).
-For a running application you usually do not interact with it directly, but it is useful in tests and advanced flows where
-you need to look up a component from the graph or trigger a refresh manually.
+`KoraApplication.run` has the signature `public static void run(Supplier<ApplicationGraphDraw> supplier)`.
+It builds the graph, logs how long initialization took, registers a shutdown hook that releases the graph,
+and then blocks the calling thread until shutdown. If initialization fails, the error is logged and the JVM exits with code `-1`.
+
+If you need the graph object itself — in tests or in advanced flows where you look up a component or trigger a refresh
+manually — call `ApplicationGraph.graph().init()`, which returns an `InitializedGraph` (a `RefreshableGraph` with
+`init()` and `release()`).
 
 ### Container lifecycle { #container-lifecycle }
 
@@ -938,8 +1397,9 @@ The dependency container knows how to initialize all components in the correct o
 When the container is no longer needed, it starts the mechanism to release the components in the reverse order.
 
 In the middle of the lifecycle, a component may be updated and then the container updates all components,
-that depend on the changed component. This happens atomically: at the beginning of the process, a transaction is opened,
-which closes only if all components are successfully initialized and rolls back if at least one error occurs.
+that depend on the changed component. This happens atomically: the container builds the affected part of the graph
+into a temporary copy, and only when every component in it has been initialized successfully does it swap the copy in
+and release the replaced objects. If at least one component fails, the temporary objects are released and the old graph stays in place.
 
 ### Component lifecycle { #component-lifecycle }
 
@@ -948,14 +1408,15 @@ If you need to do some actions when the component is initialized, or before it i
 
 ```java
 public interface Lifecycle {
-    
+
     void init() throws Exception;
 
     void release() throws Exception;
 }
 ```
 
-In a dependency container, all components are initialized asynchronously and in parallel as much as possible.
+In a dependency container, all components are initialized in parallel as much as the graph allows,
+each on its own virtual thread.
 
 If you need to provide a component with a lifecycle from a factory method, you can use the `LifecycleWrapper` class.
 It implements two contracts at once:
@@ -966,6 +1427,7 @@ It implements two contracts at once:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface SomeModule {
 
         default Wrapped<SomeService> someService() {
@@ -1008,13 +1470,18 @@ public interface Wrapped<T> {
 }
 ```
 
+A component provided as `Wrapped<T>` can be injected both as `T` (the container unwraps it) and as `Wrapped<T>` itself,
+including through the `ValueOf`, `PromiseOf`, and `All` wrappers.
+
 ### Graceful shutdown { #graceful-shutdown }
 
 All integrations that `Kora` provides, such as [HTTP server](http-server.md) and [Kafka consumer](kafka.md),
 support [graceful shutdown](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) out of the box using
 [component lifecycle](#component-lifecycle).
 
-All components that implement `AutoCloseable` will also be automatically closed by the dependency container before release.
+Components are released in reverse dependency order. For each component the container first runs the
+[graph interceptors](#component-inspection) `beforeRelease`, then `Lifecycle.release()`, and finally `AutoCloseable.close()`,
+so a component that implements `AutoCloseable` is closed automatically even without implementing `Lifecycle`.
 
 ### Indirect dependency { #indirect-dependency }
 
@@ -1060,14 +1527,12 @@ that `ServiceC` is not connected to the lifecycle of `ServiceB`, and if `Service
 
 #### Updating components { #updating-components }
 
-Component refresh is possible if the `ValueOf` wrapper is used for dependency injection:
+The `ValueOf` wrapper gives a component a live reference to another component instead of a fixed instance:
 
 ```java
 public interface ValueOf<T> {
-    
-    T get();
 
-    void refresh();
+    T get();
 }
 ```
 
@@ -1076,15 +1541,24 @@ This mechanism is used in components that cannot be reloaded while the applicati
 For example, this applies to various servers that listen on sockets (`HTTP`, `gRPC`): request handlers that may change
 are supplied to them through `ValueOf`.
 
-With the `refresh()` method, you can initiate a component refresh. This mechanism is used, for example, by a component
-that tracks configuration file changes on disk.
-When the file content changes, it initiates a refresh of the configuration component, and then all changes propagate
-through the chain of components connected by direct dependencies.
-
 `ValueOf` also has additional methods for convenient work with the wrapped value:
 
 * `map(...)` — transforms the value inside `ValueOf` without changing the connection to the source component
 * `optional()` — converts `ValueOf<T>` to `ValueOf<Optional<T>>`
+
+A refresh itself is initiated through the graph, by passing the `Node<T>` of the component that changed:
+
+```java
+public interface RefreshableGraph extends Graph {
+
+    void refresh(Node<?> fromNode);
+}
+```
+
+Everything that depends on that node through a **direct** dependency is rebuilt; everything that is connected only
+through `ValueOf` or `PromiseOf` keeps its instance and just observes the new value.
+This is how the built-in configuration file watcher works: it injects `RefreshableGraph` together with the
+`Node<ConfigOrigin>` of the application config, and calls `graph.refresh(node)` when the file on disk changes.
 
 If a component needs a deferred reference, it can use `PromiseOf<T>`.
 The `get()` method returns `Optional<T>`: before graph binding it is empty, and after binding it receives the current component from the container.
@@ -1101,7 +1575,7 @@ Most business code only needs a direct dependency or `ValueOf`; `PromiseOf` is i
 where a component needs deferred access to another graph part.
 
 If a component received through `ValueOf<Wrapped<T>>` needs to be passed further as a regular `ValueOf<T>`,
-you can use `Wrapped.UnwrappedValue.unwrap(...)`. This is useful for wrappers that add lifecycle or other behavior
+you can use `Wrapped.unwrap(...)`. This is useful for wrappers that add lifecycle or other behavior
 but should expose a regular value outward.
 
 #### Refresh listeners { #refresh-listener }
@@ -1122,6 +1596,67 @@ it can implement the combined `WrappedRefreshListener<T>` interface.
 to recreate a component. If a refresh affects a component or its dependencies, and other components injected it directly,
 without `ValueOf` or `PromiseOf`, those dependent components will also be refreshed automatically.
 
+### Graph access { #graph-access }
+
+Infrastructure components sometimes need the container itself rather than a particular dependency.
+Three types can be injected for that:
+
+* `Graph` — read-only access: `get(Node<T>)`, `valueOf(Node<T>)`, `promiseOf(Node<T>)`
+* `RefreshableGraph` — the same plus `refresh(Node<?>)`
+* `Node<T>` — the handle of a specific component in the graph, resolved by type and tag exactly like a normal dependency
+
+`Graph` and `RefreshableGraph` are not components themselves: the container passes itself in, so requesting them
+never adds a node and never fails. `Node<T>`, on the contrary, resolves a real component and pulls it into the graph.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Root
+    @Component
+    public final class ConfigReloader implements Lifecycle {
+
+        private final RefreshableGraph graph;
+        private final Node<AppConfig> configNode;
+
+        public ConfigReloader(RefreshableGraph graph, Node<AppConfig> configNode) {
+            this.graph = graph;
+            this.configNode = configNode;
+        }
+
+        public void reload() {
+            graph.refresh(configNode);
+        }
+
+        @Override
+        public void init() { }
+
+        @Override
+        public void release() { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Root
+    @Component
+    class ConfigReloader(
+        private val graph: RefreshableGraph,
+        private val configNode: Node<AppConfig>
+    ) : Lifecycle {
+
+        fun reload() {
+            graph.refresh(configNode)
+        }
+
+        override fun init() { }
+
+        override fun release() { }
+    }
+    ```
+
+`Node<T>` cannot be requested for a nullable type; inject the dependency directly if nullable access is required.
+
 ### Component inspection { #component-inspection }
 
 There are situations where a component in the container needs to be additionally modified or initialized,
@@ -1131,27 +1666,28 @@ For this case, there is a component interception mechanism. Put an object implem
 ```java
 public interface GraphInterceptor<T> {
 
-    T init(T value);
+    T afterInit(T value);
 
-    T release(T value);
+    T beforeRelease(T value);
 }
 ```
 
-For example, this mechanism can be used to warm up the cache based on `JdbcDatabase`:
+For example, this mechanism can be used to warm up the cache based on `JdbcDataSource`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class CacheWarmupInterceptor implements GraphInterceptor<JdbcDatabase> {
+    public final class CacheWarmupInterceptor implements GraphInterceptor<JdbcDataSource> {
 
         @Override
-        public JdbcDatabase init(JdbcDatabase value) {
+        public JdbcDataSource afterInit(JdbcDataSource value) {
             // warm up cache
+            return value;
         }
 
         @Override
-        public JdbcDatabase release(JdbcDatabase value) {
+        public JdbcDataSource beforeRelease(JdbcDataSource value) {
             return value;
         }
     }
@@ -1161,19 +1697,29 @@ For example, this mechanism can be used to warm up the cache based on `JdbcDatab
 
     ```kotlin
     @Component
-    class CacheWarmupInterceptor : GraphInterceptor<JdbcDatabase> {
+    class CacheWarmupInterceptor : GraphInterceptor<JdbcDataSource> {
 
-        override fun init(value: JdbcDatabase): JdbcDatabase {
+        override fun afterInit(value: JdbcDataSource): JdbcDataSource {
             // warm up cache
+            return value
         }
 
-        override fun release(value: JdbcDatabase): JdbcDatabase {
+        override fun beforeRelease(value: JdbcDataSource): JdbcDataSource {
             return value
         }
     }
     ```
 
+An interceptor is an ordinary component: it can be declared with `@Component` or by a factory method,
+and it may take dependencies of its own.
+
 The `GraphInterceptor` interface is almost the same as the `Lifecycle` contract, except for the return type.
-The `init(T value)` method receives an already fully initialized component. The method may return a modified or completely different
+The `afterInit(T value)` method is called after the component has been created and its own `Lifecycle.init()` has finished.
+The method may return a modified or completely different
 instance of the given type, and that object will be used as a dependency by other components.
-The `release(T value)` method receives the component before release, meaning it is still a working and not yet cleaned-up instance.
+The `beforeRelease(T value)` method receives the component before release, meaning it is still a working and not yet cleaned-up instance,
+and it runs before `Lifecycle.release()` and `AutoCloseable.close()`.
+
+An interceptor is bound to a component by the **exact** declared type of that component — `GraphInterceptor<JdbcDataSource>`
+intercepts a component declared as `JdbcDataSource`, not its subtypes — and by tag: an untagged interceptor intercepts
+untagged components, and `@Tag(Tag.Any.class)` on the interceptor makes it intercept components with any tag.

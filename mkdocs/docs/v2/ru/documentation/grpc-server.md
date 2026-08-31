@@ -1,14 +1,15 @@
 ---
-description: "Explains Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, ServerInterceptor interceptors and their execution order, lifecycle and readiness, telemetry, and reflection. Use when working with GrpcServerModule, GrpcServerConfig, GrpcServerBuilderConfigurer, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection."
+description: "Explains the Kora gRPC server: protobuf Gradle plugin setup, GrpcServerConfig options, unary and streaming StreamObserver handlers, io.grpc.Status error handling, the virtual-thread execution model, ServerInterceptor interceptors and their order, TLS through ServerCredentials, builder tuning through Configurer, lifecycle and readiness, telemetry and reflection. Use when working with GrpcServerModule, GrpcServerConfig, Configurer, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, lifecycle and readiness, telemetry, and reflection; key triggers include GrpcServerModule, GrpcServerConfig, GrpcServerBuilderConfigurer, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection. Note: gRPC server interceptors are global io.grpc.ServerInterceptor beans only; there is no @GrpcService or @InterceptWith annotation in this module."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, the per-connection virtual-thread execution model, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, TLS, lifecycle and readiness, telemetry and reflection; key triggers include GrpcServerModule, GrpcServerConfig, Configurer, ForwardingServerBuilder, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection. Note: the server runs on the gRPC OkHttp transport, handlers are synchronous StreamObserver-based generated stubs, and interceptors are global io.grpc.ServerInterceptor components only — there is no @GrpcService or @InterceptWith annotation in this module."
 ---
 
 Модуль запускает `gRPC-сервер` на основе [`grpc-java`](https://grpc.io/docs/languages/java/basics/) и подключает к нему обработчики из графа приложения.
 Обработчик — это `BindableService`, обычно класс, который наследует сгенерированный `...ImplBase` и реализует унарные или потоковые методы `RPC`.
 
-Kora создает `NettyServerBuilder`, добавляет сервисы сервера, пользовательские и стандартные `ServerInterceptor`, управляет жизненным циклом сервера и участвует в проверках готовности приложения.
-Если параметров конфигурации недостаточно, итоговый `NettyServerBuilder` можно дополнительно настроить в коде через `GrpcServerBuilderConfigurer`.
+Kora строит сервер на транспорте `gRPC OkHttp`, добавляет сервисы и реализации `ServerInterceptor` из графа вместе со своим перехватчиком телеметрии,
+управляет жизненным циклом сервера и участвует в проверках готовности приложения.
+Если параметров конфигурации недостаточно, итоговый билдер можно дополнительно настроить в коде через компонент `Configurer`.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC-сервер](../guides/grpc-server.md) и [продвинутый gRPC-сервер](../guides/grpc-server-advanced.md).
 
@@ -18,8 +19,8 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.74.0"
+    implementation "io.koraframework:grpc-server"
+    implementation "io.grpc:grpc-protobuf:1.83.1"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -33,8 +34,8 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:grpc-server")
-    implementation("io.grpc:grpc-protobuf:1.74.0")
+    implementation("io.koraframework:grpc-server")
+    implementation("io.grpc:grpc-protobuf:1.83.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -43,6 +44,9 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
     @KoraApp
     interface Application : GrpcServerModule
     ```
+
+Вместе с `io.koraframework:grpc-server` приходит рантайм `gRPC` версии `1.83.1`.
+Все остальные артефакты `io.grpc` — `grpc-protobuf`, `grpc-services` и всё, что подключается в тестовой области, — должны быть той же версии, смотрите [Тестирование](#testing).
 
 ### Плагин { #plugin }
 
@@ -53,13 +57,13 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
     Плагин в `build.gradle`:
     ```groovy
     plugins {
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -67,9 +71,11 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
     }
 
     sourceSets {
-        main.java {
-            srcDirs "build/generated/source/proto/main/grpc"
-            srcDirs "build/generated/source/proto/main/java"
+        main {
+            java {
+                srcDirs "build/generated/source/proto/main/grpc"
+                srcDirs "build/generated/source/proto/main/java"
+            }
         }
     }
     ```
@@ -81,31 +87,50 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
     import com.google.protobuf.gradle.id
 
     plugins {
-        id("com.google.protobuf") version ("0.9.4")
+        id("com.google.protobuf") version ("0.10.0")
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
-            ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
+            all().forEach { task -> task.plugins { id("grpc") } }
         }
     }
 
-    kotlin {
-        sourceSets.main {
-            kotlin.srcDir("build/generated/source/proto/main/grpc")
-            kotlin.srcDir("build/generated/source/proto/main/java")
-        }
+    sourceSets.main {
+        java.srcDir(layout.buildDirectory.dir("generated/source/proto/main/grpc"))
+        java.srcDir(layout.buildDirectory.dir("generated/source/proto/main/java"))
     }
     ```
+
+Плагин генерирует классы на `Java`, поэтому в проекте на `Kotlin` сгенерированные исходники всё равно подключаются к набору исходников `java`.
 
 ## Конфигурация { #configuration }
 
 Обычно нужно задать только `port`; все остальные параметры имеют значения по умолчанию.
 Минимальная конфигурация, которая привязывает порт и включает логирование:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    grpcServer {
+        port = 8090
+        telemetry.logging.enabled = true
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    grpcServer:
+      port: 8090
+      telemetry:
+        logging:
+          enabled: true
+    ```
 
 Основные параметры конфигурации:
 
@@ -122,7 +147,6 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
     1. Порт `gRPC-сервера` (по умолчанию: `8090`).
     2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`).
     3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
-    4. Включает виртуальные потоки для обработки вызовов, требует `Java 21+` (по умолчанию: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -139,7 +163,7 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
 
 ??? note "Полная конфигурация"
 
-    Пример полной конфигурации, описанной в классе `GrpcServerConfig`:
+    Пример полной конфигурации, описанной в `GrpcServerConfig`:
 
     ===! ":material-code-json: `Hocon`"
 
@@ -149,16 +173,16 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
             maxMessageSize = "4MiB" //(2)!
             reflectionEnabled = false //(3)!
             shutdownWait = "30s" //(4)!
-            maxConnectionAge = "0s" //(5)!
-            maxConnectionAgeGrace = "0s" //(6)!
-            keepAliveTime = "0s" //(7)!
-            keepAliveTimeout = "0s" //(8)!
+            maxConnectionAge = "5m" //(5)!
+            maxConnectionAgeGrace = "30s" //(6)!
+            keepAliveTime = "30s" //(7)!
+            keepAliveTimeout = "10s" //(8)!
             telemetry {
                 logging {
                     enabled = false //(9)!
                 }
                 metrics {
-                    enabled = true //(10)!
+                    enabled = false //(10)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
                     tags = { // (12)!
                         "key1" = "value1"
@@ -179,16 +203,16 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
         1. Порт `gRPC-сервера` (по умолчанию: `8090`).
         2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
         3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
-        4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
-        5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
-        6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
-        7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
-        8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        4. Время ожидания завершения выполняющихся вызовов перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
+        5. Максимальное время жизни соединения, после которого соединение штатно завершается (опционально, без значения по умолчанию). К значению добавляется случайное отклонение +/-10%.
+        6. Дополнительное время на штатное завершение соединения после достижения максимального времени жизни (опционально, без значения по умолчанию). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло закрыться.
+        7. Интервал между кадрами `PING` (опционально, без значения по умолчанию).
+        8. Тайм-аут подтверждения кадра `PING` (опционально, без значения по умолчанию). Если подтверждение не получено за это время, соединение закрывается.
         9. Включает логирование модуля (по умолчанию: `false`).
-        10. Включает метрики модуля (по умолчанию: `true`).
-        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        10. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
         12. Теги метрик (по умолчанию: `{}`).
-        13. Включает трассировку модуля (по умолчанию: `true`).
+        13. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
         14. Атрибуты трассировки (по умолчанию: `{}`).
 
     === ":simple-yaml: `YAML`"
@@ -199,15 +223,15 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
           maxMessageSize: "4MiB" #(2)!
           reflectionEnabled: false #(3)!
           shutdownWait: "30s" #(4)!
-          maxConnectionAge: "0s" #(5)!
-          maxConnectionAgeGrace: "0s" #(6)!
-          keepAliveTime: "0s" #(7)!
-          keepAliveTimeout: "0s" #(8)!
+          maxConnectionAge: "5m" #(5)!
+          maxConnectionAgeGrace: "30s" #(6)!
+          keepAliveTime: "30s" #(7)!
+          keepAliveTimeout: "10s" #(8)!
           telemetry:
             logging:
               enabled: false #(9)!
             metrics:
-              enabled: true #(10)!
+              enabled: false #(10)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
               tags: #(12)!
                 key1: value1
@@ -222,18 +246,117 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
         1. Порт `gRPC-сервера` (по умолчанию: `8090`).
         2. Максимальный размер входящего сообщения (по умолчанию: `4MiB`). Может быть указан в виде числа байт или как `4MiB`, `4MB`, `1000Kb` и подобных значений.
         3. Включает сервис [`gRPC Server Reflection`](#reflection) (по умолчанию: `false`).
-        4. Время ожидания обработки перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
-        5. Задает пользовательское максимальное время жизни соединения, после которого соединение штатно завершается (по умолчанию: не задано, опционально). К значению добавляется случайное отклонение +/-10%.
-        6. Задает дополнительное время для штатного завершения соединения после достижения максимального времени жизни соединения (по умолчанию: не задано, опционально). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло завершиться.
-        7. Задает интервал между кадрами `PING` (по умолчанию: не задано, опционально).
-        8. Тайм-аут подтверждения кадра `PING` (по умолчанию: не задано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        4. Время ожидания завершения выполняющихся вызовов перед выключением сервера при [штатном завершении](container.md#graceful-shutdown) (по умолчанию: `30s`).
+        5. Максимальное время жизни соединения, после которого соединение штатно завершается (опционально, без значения по умолчанию). К значению добавляется случайное отклонение +/-10%.
+        6. Дополнительное время на штатное завершение соединения после достижения максимального времени жизни (опционально, без значения по умолчанию). Вызовы `RPC`, которые не успевают завершиться, отменяются, чтобы соединение могло закрыться.
+        7. Интервал между кадрами `PING` (опционально, без значения по умолчанию).
+        8. Тайм-аут подтверждения кадра `PING` (опционально, без значения по умолчанию). Если подтверждение не получено за это время, соединение закрывается.
         9. Включает логирование модуля (по умолчанию: `false`).
-        10. Включает метрики модуля (по умолчанию: `true`).
-        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        10. Включает метрики модуля (по умолчанию: `false`). Метрики пишутся только если модуль [метрик](metrics.md) также предоставляет `MeterRegistry`.
+        11. Настройка [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
         12. Теги метрик (по умолчанию: `{}`).
-        13. Включает трассировку модуля (по умолчанию: `true`).
+        13. Включает трассировку модуля (по умолчанию: `true`). Спаны экспортируются только если модуль [трассировки](tracing.md) также предоставляет `Tracer`.
         14. Атрибуты трассировки (по умолчанию: `{}`).
 
+Всё, что не покрыто конфигурацией, доступно через [настройку в коде](#builder-configurer).
+
+### Настройка в коде { #builder-configurer }
+
+Если параметров конфигурации недостаточно, зарегистрируйте компонент `Configurer<ForwardingServerBuilder<?>>` и донастройте билдер сервера в коде.
+Компонент вызывается последним: после применения конфигурации и после того, как добавлены сервисы, пользовательские реализации `ServerInterceptor` и стандартный перехватчик.
+Сервер собирается из того билдера, который вернул компонент.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class MyGrpcServerConfigurer implements Configurer<ForwardingServerBuilder<?>> {
+
+        @Override
+        public ForwardingServerBuilder<?> configure(ForwardingServerBuilder<?> builder) {
+            builder.maxInboundMetadataSize(16 * 1024); //(1)!
+            builder.handshakeTimeout(10, TimeUnit.SECONDS);
+
+            if (builder instanceof OkHttpServerBuilder okHttpBuilder) { //(2)!
+                okHttpBuilder.permitKeepAliveWithoutCalls(true);
+                okHttpBuilder.maxConcurrentCallsPerConnection(200);
+            }
+
+            return builder; //(3)!
+        }
+    }
+    ```
+
+    1. Опции, объявленные в `io.grpc.ServerBuilder`, доступны прямо на делегирующем билдере
+    2. Настройки конкретного транспорта требуют конкретного билдера: Kora поднимает сервер на транспорте `gRPC OkHttp`, поэтому это `io.grpc.okhttp.OkHttpServerBuilder`
+    3. Билдеры `gRPC` мутируют себя и возвращают самих себя, поэтому наружу отдаётся тот же экземпляр
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyGrpcServerConfigurer : Configurer<ForwardingServerBuilder<*>> {
+
+        override fun configure(builder: ForwardingServerBuilder<*>): ForwardingServerBuilder<*> {
+            builder.maxInboundMetadataSize(16 * 1024) //(1)!
+            builder.handshakeTimeout(10, TimeUnit.SECONDS)
+
+            if (builder is OkHttpServerBuilder) { //(2)!
+                builder.permitKeepAliveWithoutCalls(true)
+                builder.maxConcurrentCallsPerConnection(200)
+            }
+
+            return builder //(3)!
+        }
+    }
+    ```
+
+    1. Опции, объявленные в `io.grpc.ServerBuilder`, доступны прямо на делегирующем билдере
+    2. Настройки конкретного транспорта требуют конкретного билдера: Kora поднимает сервер на транспорте `gRPC OkHttp`, поэтому это `io.grpc.okhttp.OkHttpServerBuilder`
+    3. Билдеры `gRPC` мутируют себя и возвращают самих себя, поэтому наружу отдаётся тот же экземпляр
+
+Метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-server).
+
+### Защита транспорта { #tls }
+
+По умолчанию сервер принимает соединения без шифрования: если в графе нет `io.grpc.ServerCredentials`, Kora использует `InsecureServerCredentials`.
+Чтобы терминировать `TLS` на самом сервере, предоставьте `ServerCredentials` компонентом — например, через `io.grpc.TlsServerCredentials`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends GrpcServerModule {
+
+        default ServerCredentials grpcServerCredentials() throws IOException { //(1)!
+            return TlsServerCredentials.create(
+                new File("/etc/certs/server.crt"), //(2)!
+                new File("/etc/certs/server.key"));
+        }
+    }
+    ```
+
+    1. Фабричный метод графа приложения: учётные данные подхватываются при создании билдера `gRPC-сервера`
+    2. Цепочка сертификатов в формате `PEM` и незашифрованный приватный ключ `PKCS#8`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : GrpcServerModule {
+
+        fun grpcServerCredentials(): ServerCredentials { //(1)!
+            return TlsServerCredentials.create(
+                File("/etc/certs/server.crt"), //(2)!
+                File("/etc/certs/server.key"))
+        }
+    }
+    ```
+
+    1. Фабричный метод графа приложения: учётные данные подхватываются при создании билдера `gRPC-сервера`
+    2. Цепочка сертификатов в формате `PEM` и незашифрованный приватный ключ `PKCS#8`
+
+Для взаимного `TLS` и собственного хранилища доверенных сертификатов собирайте учётные данные через `TlsServerCredentials.newBuilder()`.
 
 ## Обработчики { #handlers }
 
@@ -246,7 +369,7 @@ Kora создает `NettyServerBuilder`, добавляет сервисы се
 ```protobuf title="src/main/proto/message.proto"
 syntax = "proto3";
 
-package ru.tinkoff.kora.generated.grpc;
+package io.koraframework.generated.grpc;
 
 service UserService {
   rpc createUser(RequestEvent) returns (ResponseEvent) {} //(1)!
@@ -468,7 +591,7 @@ message ResponseEvent {
 Чтобы завершить вызов с ошибкой, завершите observer ответа вызовом `responseObserver.onError(status.asRuntimeException())`
 или выбросьте `StatusRuntimeException` из обработчика.
 Автоматически зарегистрированный [`TelemetryInterceptor`](#default) наблюдает финальный `Status` при закрытии вызова
-(в `close`, `onHalfClose`, `onCancel` и `onComplete`) и соответствующим образом записывает логирование, метрики и трассировку.
+и соответствующим образом записывает логирование, метрики и трассировку.
 
 **Причины**: выбирайте код `Status`, соответствующий сбою, — например, `Status.NOT_FOUND` для отсутствующей сущности,
 `Status.INVALID_ARGUMENT` для некорректных входных данных, `Status.UNAUTHENTICATED` или `Status.PERMISSION_DENIED` для сбоев авторизации
@@ -550,8 +673,8 @@ message ResponseEvent {
     - Клиентская потоковая передача: `StreamObserver<Req> myMethod(StreamObserver<Resp> responseObserver)`
     - Двунаправленная потоковая передача: `StreamObserver<Req> myMethod(StreamObserver<Resp> responseObserver)`
 
-    Сгенерированный метод возвращает `void` (или `StreamObserver` для запроса), поэтому результаты доставляются асинхронно через колбэки `StreamObserver`;
-    ответы могут завершаться из другого потока.
+    Сгенерированный метод возвращает `void` (или `StreamObserver` для запроса), поэтому результаты доставляются через колбэки `StreamObserver`,
+    а не через возвращаемое значение.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -562,10 +685,20 @@ message ResponseEvent {
     - Клиентская потоковая передача: `myMethod(responseObserver: StreamObserver<Resp>): StreamObserver<Req>`
     - Двунаправленная потоковая передача: `myMethod(responseObserver: StreamObserver<Resp>): StreamObserver<Req>`
 
-    Когда вы генерируете корутинные заглушки с помощью плагина [`grpc-kotlin`](https://github.com/grpc/grpc-kotlin) (`io.grpc:protoc-gen-grpc-kotlin`)
-    и наследуете сгенерированный `...CoroutineImplBase`, методы обработчика могут быть `suspend`-функциями (а потоковые методы могут использовать `Flow`).
-    Kora автоматически регистрирует [`CoroutineContextInjectInterceptor`](#default), который внедряет `Context` Kora в `CoroutineContext` обработчика;
-    он активируется только при наличии `kotlinx-coroutines` в classpath.
+    Сгенерированный метод возвращает `Unit` (или `StreamObserver` для запроса), поэтому результаты доставляются через колбэки `StreamObserver`,
+    а не через возвращаемое значение.
+
+Обработчики блокирующие: из метода обработчика можно напрямую обращаться к базе данных, [HTTP-клиенту](http-client.md) или [gRPC-клиенту](grpc-client.md).
+Асинхронных, реактивных и `suspend`-сигнатур обработчиков нет — сервер выполняет обработчики на виртуальных потоках, смотрите [Модель выполнения](#execution-model).
+
+### Модель выполнения { #execution-model }
+
+Каждому клиентскому соединению выделяется собственный однопоточный исполнитель на виртуальном потоке с именем `grpc-<адрес клиента>`.
+Исполнитель создается, когда транспорт готов, и останавливается, когда транспорт завершается.
+
+- Все колбэки перехватчиков и обработчиков для вызовов одного соединения выполняются на этом единственном виртуальном потоке — по одному за раз и в порядке поступления.
+- Блокироваться внутри обработчика безопасно: несущий поток освобождается. Но блокировка задерживает остальные вызовы **того же** соединения. Клиенту, которому нужны параллельные вызовы, следует открыть несколько соединений.
+- На время каждого колбэка Kora привязывает к этому потоку свой [`MDC`](logging-slf4j.md) и контекст `OpenTelemetry`, поэтому контекст логирования доступен внутри обработчика.
 
 ## Перехватчики { #interceptors }
 
@@ -578,28 +711,28 @@ message ResponseEvent {
 
 ### Стандартные { #default }
 
-При запуске сервера Kora добавляет стандартные перехватчики:
+При запуске сервера Kora добавляет один стандартный перехватчик:
 
-- `TelemetryInterceptor` — включает телеметрию сервера (логирование, метрики, трассировку) в зависимости от подключенных модулей и настроек `grpcServer.telemetry`, а также сопоставляет финальный `Status`/исключение при закрытии вызова
-- `ContextServerInterceptor` — пробрасывает `Context` Kora в обработку вызова, чтобы он был доступен внутри обработчика
-- `CoroutineContextInjectInterceptor` — добавляет поддержку `CoroutineContext` для корутинных обработчиков на `Kotlin` (активен только при наличии `kotlinx-coroutines` в classpath)
+- `TelemetryInterceptor` — открывает `GrpcServerObservation` на каждый вызов, привязывает текущее наблюдение и контекст `OpenTelemetry` на время вызова и по его закрытию записывает логирование, метрики и трассировку в зависимости от подключенных модулей и настроек `grpcServer.telemetry`
 
-Пользовательские бины `ServerInterceptor` из графа приложения добавляются в `NettyServerBuilder` перед стандартными перехватчиками.
-Для полной настройки `NettyServerBuilder` используйте [GrpcServerBuilderConfigurer](#builder-configurer).
+Пользовательские компоненты `ServerInterceptor` из графа приложения добавляются в билдер перед стандартным перехватчиком.
+Для полной настройки билдера используйте [настройку в коде](#builder-configurer).
+
+Компоненты перехватчиков читаются через обновляемый граф, поэтому перехватчик, пересозданный при обновлении конфигурации, подхватывается без перезапуска сервера.
 
 ### Порядок выполнения { #execution-order }
 
 gRPC вызывает перехватчики в **обратном** порядке их регистрации, поэтому последний добавленный перехватчик выполняется первым (самый внешний).
-Поскольку Kora регистрирует пользовательские перехватчики первыми, а стандартные — последними, входящий вызов обрабатывается в таком порядке:
+Поскольку Kora регистрирует пользовательские перехватчики первыми, а стандартный — последним, входящий вызов обрабатывается в таком порядке:
 
 ```
-CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterceptor -> user interceptors -> handler
+TelemetryInterceptor -> user interceptors -> handler
 ```
 
 Следствия такого порядка:
 
-- `Context` Kora и `CoroutineContext` Kotlin устанавливаются вокруг ваших перехватчиков и обработчика, поэтому они доступны внутри колбэков слушателя обработчика.
-- `TelemetryInterceptor` оборачивает ваши перехватчики и обработчик, поэтому он наблюдает финальный `Status` (включая ошибки, выброшенные или переданные через observer ответа).
+- `TelemetryInterceptor` оборачивает ваши перехватчики и обработчик, поэтому он наблюдает финальный `Status` — включая ошибки, выброшенные вашими перехватчиками или переданные через observer ответа.
+- Текущее наблюдение и контекст `OpenTelemetry` устанавливаются вокруг ваших перехватчиков и обработчика, поэтому они доступны внутри колбэков слушателя обработчика.
 - Когда пользовательских перехватчиков несколько, они выполняются в порядке, обратном порядку их регистрации в графе; не полагайтесь на конкретный порядок между ними для корректности.
 
 ### Пользовательские { #custom }
@@ -610,36 +743,46 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
 
     ```java
     @Component
-    public class GrpcExceptionHandlerServerInterceptor implements ServerInterceptor {
+    public final class LoggingServerInterceptor implements ServerInterceptor {
+
+        private static final Logger logger = LoggerFactory.getLogger(LoggingServerInterceptor.class);
 
         @Override
-        public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, 
-                                                                     Metadata metadata,
-                                                                     ServerCallHandler<ReqT, RespT> serverCallHandler) {
-            // do something
-            
-            return serverCallHandler.startCall(serverCall, metadata);
+        public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
+                                                                     Metadata headers,
+                                                                     ServerCallHandler<ReqT, RespT> next) {
+            logger.info("Incoming gRPC call: {}", call.getMethodDescriptor().getFullMethodName()); //(1)!
+
+            return next.startCall(call, headers); //(2)!
         }
     }
     ```
+
+    1. `getFullMethodName()` возвращает `service/method` для перехватываемого вызова
+    2. Передает вызов дальше; если вернуться, не вызвав `startCall`, вызов придется закрыть самостоятельно
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class GrpcExceptionHandlerServerInterceptor : ServerInterceptor {
+    class LoggingServerInterceptor : ServerInterceptor {
 
-        override fun <ReqT, RespT> interceptCall(
-            serverCall: ServerCall<ReqT, RespT>,
-            metadata: Metadata,
-            serverCallHandler: ServerCallHandler<ReqT, RespT>
+        private val logger = LoggerFactory.getLogger(LoggingServerInterceptor::class.java)
+
+        override fun <ReqT : Any, RespT : Any> interceptCall(
+            call: ServerCall<ReqT, RespT>,
+            headers: Metadata,
+            next: ServerCallHandler<ReqT, RespT>
         ): ServerCall.Listener<ReqT> {
-            // do something
-            
-            return serverCallHandler.startCall(serverCall, metadata)
+            logger.info("Incoming gRPC call: {}", call.methodDescriptor.fullMethodName) //(1)!
+
+            return next.startCall(call, headers) //(2)!
         }
     }
     ```
+
+    1. `fullMethodName` возвращает `service/method` для перехватываемого вызова
+    2. Передает вызов дальше; если вернуться, не вызвав `startCall`, вызов придется закрыть самостоятельно
 
 ### Ограничение области и авторизация { #authorization }
 
@@ -653,11 +796,25 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @ConfigSource("auth.apiKey")
+    public interface ApiKeyConfig {
+
+        String value();
+    }
+    ```
+
+    ```java
     @Component
     public final class ApiKeyServerInterceptor implements ServerInterceptor {
 
         private static final Metadata.Key<String> AUTHORIZATION =
             Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER); //(1)!
+
+        private final ApiKeyConfig config;
+
+        public ApiKeyServerInterceptor(ApiKeyConfig config) {
+            this.config = config;
+        }
 
         @Override
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
@@ -668,7 +825,7 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
             }
 
             var apiKey = headers.get(AUTHORIZATION); //(3)!
-            if (apiKey == null || !apiKey.equals("secret")) {
+            if (!config.value().equals(apiKey)) {
                 call.close(Status.UNAUTHENTICATED.withDescription("Invalid API key"), new Metadata()); //(4)!
                 return new ServerCall.Listener<>() {}; //(5)!
             }
@@ -687,10 +844,18 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
-    class ApiKeyServerInterceptor : ServerInterceptor {
+    @ConfigSource("auth.apiKey")
+    interface ApiKeyConfig {
 
-        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        fun value(): String
+    }
+    ```
+
+    ```kotlin
+    @Component
+    class ApiKeyServerInterceptor(private val config: ApiKeyConfig) : ServerInterceptor {
+
+        override fun <ReqT : Any, RespT : Any> interceptCall(
             call: ServerCall<ReqT, RespT>,
             headers: Metadata,
             next: ServerCallHandler<ReqT, RespT>
@@ -700,7 +865,7 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
             }
 
             val apiKey = headers.get(AUTHORIZATION) //(3)!
-            if (apiKey != "secret") {
+            if (config.value() != apiKey) {
                 call.close(Status.UNAUTHENTICATED.withDescription("Invalid API key"), Metadata()) //(4)!
                 return object : ServerCall.Listener<ReqT>() {} //(5)!
             }
@@ -723,13 +888,14 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
 
 ## Жизненный цикл и готовность { #lifecycle }
 
-Сервером управляет компонент `GrpcNettyServer`, который создается как компонент [`@Root`](container.md#root-component)
+Сервером управляет компонент `GrpcServer`, который создается как компонент [`@Root`](container.md#root-component)
 и следует [жизненному циклу приложения](container.md#component-lifecycle):
 
-- При запуске он создает и стартует сервер `Netty` на настроенном `port`. Если порт уже занят, запуск завершается с понятной ошибкой.
+- При запуске он собирает и стартует сервер на настроенном `port`. Если порт уже занят, запуск завершается ошибкой
+  `gRPC server failed to start on port '8090': port is already in use; stop the other process or configure a different port`.
 - При выключении он выполняет [штатное завершение](container.md#graceful-shutdown): перестает принимать новые вызовы и ждет до `shutdownWait` завершения выполняющихся вызовов, затем принудительно завершает оставшиеся вызовы.
 
-`GrpcNettyServer` также реализует [пробу готовности](probes.md): сервер сообщает о **неготовности** во время запуска или выключения
+`GrpcServer` также реализует [пробу готовности](probes.md): сервер сообщает о **неготовности** во время запуска или выключения
 и о **готовности** только во время работы. В развертывании `Kubernetes` это позволяет пробе готовности отражать реальное состояние сервера и сливать трафик во время штатного завершения.
 
 ## Рефлексия { #reflection }
@@ -749,20 +915,20 @@ CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterc
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "io.grpc:grpc-services:1.74.0"
+    implementation "io.grpc:grpc-services:1.83.1"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("io.grpc:grpc-services:1.74.0")
+    implementation("io.grpc:grpc-services:1.83.1")
     ```
 
 ### Конфигурация { #configuration-2 }
 
 Также необходимо включить сервис `gRPC Server Reflection` в конфигурации.
-Kora добавляет его на сервер только при наличии в приложении класса `io.grpc.protobuf.services.ProtoReflectionService`, поэтому одной конфигурации без зависимости недостаточно.
+Kora добавляет его на сервер только при наличии в приложении класса `io.grpc.protobuf.services.ProtoReflectionServiceV1`, поэтому одной конфигурации без зависимости недостаточно.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -790,9 +956,9 @@ Kora добавляет его на сервер только при налич�
 
 ```bash
 grpcurl -plaintext localhost:8090 list #(1)!
-grpcurl -plaintext localhost:8090 describe ru.tinkoff.kora.generated.grpc.UserService #(2)!
+grpcurl -plaintext localhost:8090 describe io.koraframework.generated.grpc.UserService #(2)!
 grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
-    localhost:8090 ru.tinkoff.kora.generated.grpc.UserService/createUser #(3)!
+    localhost:8090 io.koraframework.generated.grpc.UserService/createUser #(3)!
 ```
 
 1. Выводит список сервисов, предоставляемых сервером
@@ -801,18 +967,152 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 
 ## Телеметрия { #telemetry }
 
-gRPC Server использует контракт телеметрии для логирования, метрик и трассировки вызовов.
-Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
-Точки расширения находятся в `ru.tinkoff.kora.grpc.server.common.telemetry`.
-
 Наблюдаемость сервера обеспечивается `TelemetryInterceptor` через фасад `GrpcServerTelemetry` и настраивается в [`grpcServer.telemetry`](#configuration).
+Точки расширения находятся в `io.koraframework.grpc.server.telemetry`.
 
-Для каждого gRPC-вызова создаётся `GrpcServerTelemetry.GrpcServerTelemetryContext`, который закрывается по завершении вызова.
-Вызов описывается через параметры обработчика телеметрии, включая сервис, метод, статус ответа и длительность.
+На каждый gRPC-вызов создается `GrpcServerObservation`: он собирает заголовки, отправленные и полученные сообщения, финальный `Status`
+и ошибку, а закрывается по завершении вызова.
+Фабрика `GrpcServerTelemetryFactory` по умолчанию зарегистрирована как `@DefaultComponent`, поэтому ее можно заменить целиком; либо отдельные части
+можно переопределить, зарегистрировав компонентом наследника `DefaultGrpcServerLoggerFactory`, `DefaultGrpcServerMetricsFactory` или `DefaultGrpcServerBodyConverter`.
+Если логирование, метрики и трассировка выключены все сразу, фабрика возвращает пустую реализацию телеметрии и вызовы не несут накладных расходов на наблюдаемость.
 
-Фабрика по умолчанию `DefaultGrpcServerTelemetryFactory` объединяет три фабрики:
-- `GrpcServerLoggerFactory` строит `GrpcServerLogger` для логирования начала/конца вызова;
-- `GrpcServerMetricsFactory` строит `GrpcServerMetrics` для записи метрик вызовов;
-- `GrpcServerTracerFactory` строит `GrpcServerTracer` для распределённой трассировки.
+В логах, метриках и спанах сервер представляется именем `kora-grpc`.
 
-Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#grpc-server).
+### Логирование { #telemetry-logging }
+
+Логирование вызовов включается через `grpcServer.telemetry.logging.enabled` и пишется двумя логгерами:
+
+- `io.koraframework.grpc.server.GrpcServer.request` — `GrpcCall received` со структурированным полем `grpcRequest`
+- `io.koraframework.grpc.server.GrpcServer.response` — `GrpcCall responded` со структурированным полем `grpcResponse`
+
+Структурированные поля содержат `serverName`, `serverPort`, `serviceName` и `operation` (`service/method`);
+в ответе дополнительно есть `processingTime` в миллисекундах, код `Status` в поле `status` и, для неудачного вызова, `exceptionType`.
+Вызов, завершившийся ошибкой, логируется на уровне `WARN` с приложенным исключением, успешный — на уровне `INFO`.
+
+Уровень логгера добавляет детализацию сверх этого: `DEBUG` на логгере запроса добавляет `Metadata` запроса в поле `headers`,
+а `TRACE` добавляет тело сообщения, отрендеренное через `DefaultGrpcServerBodyConverter`.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    logging.levels {
+        "io.koraframework.grpc.server.GrpcServer.request" = "DEBUG"
+        "io.koraframework.grpc.server.GrpcServer.response" = "TRACE"
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    logging:
+      levels:
+        "io.koraframework.grpc.server.GrpcServer.request": "DEBUG"
+        "io.koraframework.grpc.server.GrpcServer.response": "TRACE"
+    ```
+
+### Метрики { #telemetry-metrics }
+
+Метрикам нужен `grpcServer.telemetry.metrics.enabled` **и** `MeterRegistry`, который предоставляет модуль [метрик](metrics.md).
+Модуль пишет единственный таймер `rpc.server.duration` с корзинами из `grpcServer.telemetry.metrics.slo` и тегами
+`server.name`, `server.port`, `rpc.system` (всегда `grpc`), `rpc.service`, `rpc.method` и `rpc.grpc.status_code`,
+плюс всё, что объявлено в `grpcServer.telemetry.metrics.tags`.
+
+Метрики описаны в разделе [Справочник метрик](metrics.md#grpc-server).
+
+### Трассировка { #telemetry-tracing }
+
+Трассировке нужен `grpcServer.telemetry.tracing.enabled` **и** `Tracer`, который предоставляет модуль [трассировки](tracing.md).
+На каждый вызов создается спан вида `SERVER` с именем `<service>/<method>`; его родитель извлекается из `Metadata` запроса
+пропагатором `W3C Trace Context`, поэтому трасса, начатая вызывающей стороной, продолжается на сервере.
+
+Спан несет атрибуты `server.port`, `server.name`, `rpc.system`, `rpc.service`, `rpc.method` и `network.peer.address`,
+плюс всё, что объявлено в `grpcServer.telemetry.tracing.attributes`; при закрытии добавляется `rpc.grpc.status_code`.
+Каждое отправленное и полученное сообщение добавляет событие `rpc.message` с атрибутом `rpc.message.type`.
+Статус `Status`, отличный от OK, или исключение переводят статус спана в `ERROR`.
+
+## Тестирование { #testing }
+
+`gRPC-сервер` занимает настоящий порт, поэтому [`@KoraAppTest`](junit5.md) поднимает его, а тест обращается к нему через обычный `ManagedChannel`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class UserServiceTests {
+
+        @Test
+        void createUser() {
+            var channel = ManagedChannelBuilder.forAddress("localhost", 8090) //(1)!
+                .usePlaintext()
+                .build();
+
+            try {
+                var stub = UserServiceGrpc.newBlockingStub(channel); //(2)!
+                var response = stub.createUser(Message.RequestEvent.newBuilder()
+                    .setName("Bob")
+                    .setCode("123")
+                    .build());
+
+                assertFalse(response.getId().isEmpty());
+            } finally {
+                channel.shutdownNow();
+            }
+        }
+    }
+    ```
+
+    1. Порт, на котором поднят сервер, то есть `grpcServer.port` из тестовой конфигурации
+    2. Блокирующая заглушка, сгенерированная из контракта `proto`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class UserServiceTests {
+
+        @Test
+        fun createUser() {
+            val channel = ManagedChannelBuilder.forAddress("localhost", 8090) //(1)!
+                .usePlaintext()
+                .build()
+
+            try {
+                val stub = UserServiceGrpc.newBlockingStub(channel) //(2)!
+                val response = stub.createUser(
+                    Message.RequestEvent.newBuilder()
+                        .setName("Bob")
+                        .setCode("123")
+                        .build()
+                )
+
+                assertFalse(response.id.isEmpty)
+            } finally {
+                channel.shutdownNow()
+            }
+        }
+    }
+    ```
+
+    1. Порт, на котором поднят сервер, то есть `grpcServer.port` из тестовой конфигурации
+    2. Блокирующая заглушка, сгенерированная из контракта `proto`
+
+**Согласование версий**: клиентской стороне теста нужен транспорт `gRPC` в тестовом classpath, и его версия должна совпадать с рантаймом `gRPC`,
+который приходит с `io.koraframework:grpc-server`, — `1.83.1`.
+Закрепленная более старая версия компилируется без замечаний и падает только в рантайме с
+`AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Зависимость](general.md#dependencies) `build.gradle`:
+    ```groovy
+    testImplementation "io.koraframework:test-junit5"
+    testImplementation "io.grpc:grpc-netty:1.83.1"
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Зависимость](general.md#dependencies) `build.gradle.kts`:
+    ```groovy
+    testImplementation("io.koraframework:test-junit5")
+    testImplementation("io.grpc:grpc-netty:1.83.1")
+    ```

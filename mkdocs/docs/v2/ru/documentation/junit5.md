@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization. Use when working with @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
+description: "Explains the Kora JUnit 5 test extension: application graph tests, component injection, tags, Mockito and MockK mocks, test configuration, container modification and lifecycle. Use when working with @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JUnit 5 testing support, application graph tests, component replacement, mocks, tags, test configuration, and initialization; key triggers include @KoraAppTest, @TestComponent, @Tag, KoraAppTestConfigModifier, Graph, Mockito."
+  use_when: "Use this file for Kora docs or implementation questions about JUnit 5 testing: the io.koraframework:test-junit5 artifact, the io.koraframework.test.extension.junit5 package, limiting the application graph in a test, injecting components, Mockito and MockK mocks, overriding test configuration and modifying the dependency container; key triggers include @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness, Testcontainers."
 ---
 
 Модуль предоставляет расширение для [JUnit 5](https://junit.org/junit5/docs/current/user-guide/), которое позволяет тестировать приложение через тот же граф компонентов, что используется во время работы приложения.
@@ -16,6 +16,8 @@ agent:
 - `Межкомпонентные тесты` — тестирование нескольких компонентов и их взаимодействия друг с другом.
 - `Интеграционные тесты` — тестирование компонентов и взаимодействия с внешними системами.
 
+Все типы расширения находятся в пакете `io.koraframework.test.extension.junit5`.
+
 Рекомендуется дополнительно тестировать артефакт сервиса, упакованный в итоговый образ,
 как черный ящик с помощью [библиотеки Testcontainers](https://java.testcontainers.org/).
 
@@ -27,10 +29,17 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    testImplementation "ru.tinkoff.kora:test-junit5"
+    testImplementation platform("org.junit:junit-bom:6.1.3")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "io.koraframework:test-junit5"
     ```
 
-    Настройка [платформы JUnit](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle`: 
+    Обработчик аннотаций Kora для тестовых исходников `build.gradle`:
+    ```groovy
+    testAnnotationProcessor "io.koraframework:annotation-processors"
+    ```
+
+    Настройка [платформы JUnit](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle`:
     ```groovy
     test {
         useJUnitPlatform()
@@ -46,13 +55,23 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    testImplementation("ru.tinkoff.kora:test-junit5")
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.koraframework:test-junit5")
     ```
 
-    Настройка [платформы JUnit](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle.kts`: 
+    Обработчик символов Kora для тестовых исходников `build.gradle.kts`:
+    ```groovy
+    kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
+    ```
+
+    `kspTest` требуется только тогда, когда тестовые исходники объявляют собственное `@KoraApp`, смотрите [Тестовый граф](#test-graph).
+    Тесту, который использует граф приложения из основных исходников, он не нужен.
+
+    Настройка [платформы JUnit](https://docs.gradle.org/current/userguide/java_testing.html#using_junit5) `build.gradle.kts`:
     ```groovy
     tasks.test {
-        useJUnitPlatform() 
+        useJUnitPlatform()
         testLogging {
             showStandardStreams = true
             events("passed", "skipped", "failed")
@@ -96,7 +115,8 @@ agent:
         }
 
         @Root
-        fun supplierTagged(): @Tag(Supplier::class) Supplier<String> {
+        @Tag(Supplier::class)
+        fun supplierTagged(): Supplier<String> {
             return Supplier<String> { "tag1" }
         }
     }
@@ -110,16 +130,18 @@ agent:
 Параметры аннотации `@KoraAppTest`:
 
 - `value` — класс, помеченный `@KoraApp`, граф компонентов которого будет использоваться в тесте (`обязательный`, без значения по умолчанию).
-- `components` — дополнительные классы компонентов, которые должны быть включены в тестовый граф в дополнение к компонентам, найденным через `@TestComponent` (по умолчанию: `{}`).
-- `modules` — дополнительные модули с фабричными методами компонентов, которые должны быть подключены к тестовому графу (по умолчанию: `{}`).
+- `components` — дополнительные классы компонентов, которые должны присутствовать в тестовом графе помимо компонентов, найденных через `@TestComponent` (по умолчанию: `{}`).
+- `modules` — интерфейсы модулей, компоненты фабричных методов которых должны присутствовать в тестовом графе помимо компонентов, найденных через `@TestComponent` (по умолчанию: `{}`).
 
-В `modules` можно указывать только интерфейсы модулей. Если требуется протестировать весь граф, внедрите `KoraAppGraph` или не ограничивайте граф отдельными компонентами `@TestComponent`.
+В `modules` можно указывать только интерфейсы, иначе расширение завершит тест ошибкой конфигурации.
+В интерфейсе модуля на Java фабричными методами считаются только `default`-методы, в интерфейсе модуля на Kotlin — все методы.
+Если требуется протестировать весь граф, внедрите `KoraAppGraph` или не ограничивайте граф отдельными компонентами `@TestComponent`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @KoraAppTest(value = Application.class, 
-                 components = { SomeComponent.class }, 
+    @KoraAppTest(value = Application.class,
+                 components = { SomeComponent.class },
                  modules = { SomeModule.class })
     class SomeTests {
 
@@ -128,8 +150,8 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @KoraAppTest(value = Application::class, 
-                 components = [SomeComponent::class], 
+    @KoraAppTest(value = Application::class,
+                 components = [SomeComponent::class],
                  modules = [SomeModule::class])
     class SomeTests {
 
@@ -178,6 +200,9 @@ agent:
         }
     }
     ```
+
+Поля для внедрения не должны быть `static` или `final`, иначе расширение завершит тест ошибкой конфигурации.
+В Kotlin это означает поле `lateinit var`, а не `val`.
 
 Пример теста, где компоненты внедряются в конструктор:
 
@@ -241,6 +266,9 @@ agent:
     }
     ```
 
+Если компонент предоставляется в графе как обертка `Wrapped<T>`, тест запрашивает `T`: расширение разворачивает такой компонент перед внедрением.
+Сама обертка внедряется только тогда, когда объявленный тип — это тип обертки.
+
 #### Правила внедрения { #injection-rules }
 
 Компоненты можно внедрять тремя способами: в поле тестового класса, в конструктор или в параметр тестового метода.
@@ -268,7 +296,7 @@ agent:
 
         @Test
         void example(@Tag(Supplier.class) @TestComponent Supplier<String> component1) {
-            assertEquals("?", component1.get());
+            assertEquals("tag1", component1.get());
         }
     }
     ```
@@ -281,10 +309,16 @@ agent:
 
         @Test
         fun example(@Tag(Supplier::class) @TestComponent component1: Supplier<String>) {
-            assertEquals("?", component1.get())
+            assertEquals("tag1", component1.get())
         }
     }
     ```
+
+Аннотация `@Tag` принимает один класс тега.
+Подходит и собственная аннотация, помеченная `@Tag`: расширение считывает тег из такой мета-аннотации.
+
+Точка внедрения без `@Tag` соответствует только компонентам без тега,
+поэтому граф, где один и тот же тип зарегистрирован и с тегом, и без него, не становится неоднозначным.
 
 ### Граф приложения { #application-graph }
 
@@ -293,10 +327,12 @@ agent:
 
 Основные методы `KoraAppGraph`:
 
-- `getFirst(Type type)` / `getFirst(Class<T> type)` — возвращают первый найденный компонент или `null`.
-- `getFirst(Type type, Class<?>... tags)` / `getFirst(Class<T> type, Class<?>... tags)` — возвращают первый компонент с указанными тегами или `null`.
+- `getFirst(Type type)` / `getFirst(Class<T> type)` — возвращают первый найденный компонент без тега или `null`.
+- `getFirst(Type type, Class<?> tag)` / `getFirst(Class<T> type, Class<?> tag)` — возвращают первый компонент с указанным тегом или `null`.
 - `findFirst(...)` — возвращает `Optional<T>` вместо `null`.
-- `getAll(...)` — возвращает все компоненты указанного типа, при необходимости учитывая теги.
+- `getAll(...)` — возвращает все компоненты указанного типа; перегрузки без тега используют `Tag.Any` и поэтому возвращают в том числе компоненты с любыми тегами.
+
+Для компонента с параметрами обобщения описывайте тип через `TypeRef`, поскольку сырой `Class` не соответствует параметризованному узлу графа:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -306,9 +342,10 @@ agent:
 
         @Test
         void example(KoraAppGraph graph) {
-            var component = graph.getFirst(Supplier.class, Supplier.class);
+            var component = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class), Supplier.class);
 
             assertNotNull(component);
+            assertEquals("tag1", component.get());
         }
     }
     ```
@@ -321,14 +358,17 @@ agent:
 
         @Test
         fun example(graph: KoraAppGraph) {
-            val component = graph.getFirst(Supplier::class.java, Supplier::class.java)
+            val component = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java) as Supplier<String>
 
             assertNotNull(component)
+            assertEquals("tag1", component.get())
         }
     }
     ```
 
-`KoraAppGraph` нельзя использовать как цель для `@Mock`, `@Spy`, `@MockK` или `@SpyK`, поскольку это служебный объект тестового расширения, а не компонент приложения.
+Точно так же можно внедрить инициализированный `Graph` приложения, если тесту нужен низкоуровневый контракт контейнера.
+
+`KoraAppGraph` и `Graph` нельзя использовать как цель для `@Mock`, `@Spy`, `@MockK` или `@SpyK`, поскольку это служебные объекты тестового расширения, а не компоненты приложения.
 
 ### Заглушка { #mock }
 
@@ -338,8 +378,11 @@ agent:
 
     Требуется добавить библиотеку [Mockito](https://site.mockito.org/) как зависимость в `build.gradle`:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.18.0"
+    testImplementation "org.mockito:mockito-core:5.23.0"
     ```
+
+    Kora компилируется под `Java 25`, поэтому библиотека заглушек должна приносить версию `Byte Buddy`, которая понимает class-файлы `Java 25`.
+    Устаревший `mockito-core` падает во время выполнения с `IllegalArgumentException: Java 25 (69) is not supported by the current version of Byte Buddy`.
 
     **Важно**, предполагается, что `MockitoExtension` использоваться не будет и будет отключено, его нельзя совмещать вместе с `@KoraAppTest`.
 
@@ -347,7 +390,7 @@ agent:
     Рекомендуется подробнее ознакомиться с тем, как работают эти аннотации, в [официальной документации библиотеки Mockito](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html).
 
     Аннотация [@Mock](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mock.html) позволяет сделать заглушку класса
-    помеченного компонента и управлять поведением его методов с помощью `Mockito`, либо методы будут возвращать значения по умолчанию: `void`, значения по умолчанию для примитивов, пустые коллекции и `null` для всех остальных объектов. 
+    помеченного компонента и управлять поведением его методов с помощью `Mockito`, либо методы будут возвращать значения по умолчанию: `void`, значения по умолчанию для примитивов, пустые коллекции и `null` для всех остальных объектов.
 
     Компонент-заглушка будет внедрен как зависимость в аргументы и/или поля тестового класса и во все компоненты, которым он требовался как зависимость.
     Все зависимые компоненты, которые больше нигде в рамках теста не требуются, будут исключены как ненужные.
@@ -423,24 +466,33 @@ agent:
 
     Требуется подключить библиотеку [MockK](https://mockk.io/) как зависимость в ``build.gradle.kts``:
     ```groovy
-    testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("io.mockk:mockk:1.14.11")
     ```
+
+    Kora компилируется под `Java 25`, а `MockK` версии ниже `1.14.9` приносит `Byte Buddy 1.14.x`, который не умеет преобразовывать такие классы.
+    В этом случае граф не инициализируется, а в логе появляется `Failed to transform class ... Java 25 (69) is not supported`.
 
     **Важно**, предполагается, что `MockkExtension` использоваться не будет и будет отключено, его нельзя совмещать вместе с `@KoraAppTest`.
 
     Поддерживаются аннотации [@MockK](https://mockk.io/#annotations) и [@SpyK](https://mockk.io/#annotations), а также все параметры этих аннотаций.
+    Указывайте их как `@field:MockK` и `@field:SpyK`, чтобы аннотация попала на поле; аннотация на уровне свойства также работает, если в тестовом classpath есть `kotlin-reflect`.
 
-    При желании также можно использовать [Mockito](https://site.mockito.org/). 
+    Контракты Kora синхронные, поэтому тестам не нужны `runTest` или `runBlocking`, а поведение заглушек описывается через `every`, а не `coEvery`.
+
+    При желании также можно использовать [Mockito](https://site.mockito.org/).
     Для более подробного описания того, как работают Kora и [Mockito](https://site.mockito.org/), следует прочитать вкладку Java этого раздела.
     Для улучшения взаимодействия между Mockito и Kotlin можно использовать библиотеку [Mockito Kotlin](https://github.com/mockito/mockito-kotlin).
     ```groovy
+    testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
+
+    `mockito-kotlin` тянет собственную более старую версию `mockito-core`, поэтому указывайте `mockito-core` явно рядом, иначе `Byte Buddy` не примет class-файлы `Java 25`.
 
     **Важно**, предполагается, что `MockitoExtension` использоваться не будет и будет отключено, его нельзя совмещать вместе с `@KoraAppTest`.
 
     Аннотация [@MockK](https://mockk.io/#annotations) позволяет сделать заглушку класса
-    помеченного компонента и управлять поведением его методов с помощью `MockK`. 
+    помеченного компонента и управлять поведением его методов с помощью `MockK`.
 
     Компонент-заглушка будет внедрен как зависимость в аргументы и/или поля тестового класса и во все компоненты, которым он требовался как зависимость.
     Все зависимые компоненты, которые больше нигде в рамках теста не требуются, будут исключены как ненужные.
@@ -449,7 +501,11 @@ agent:
 
     ```kotlin
     @KoraAppTest(Application::class)
-    class SomeTests(@MockK @TestComponent val component1: Supplier<String>) {
+    class SomeTests {
+
+        @field:MockK
+        @TestComponent
+        lateinit var component1: Supplier<String>
 
         @BeforeEach
         fun mock() {
@@ -496,18 +552,18 @@ agent:
 
         @field:SpyK
         @TestComponent
-        val component1: Supplier<String> = Supplier { "1" }
+        var component1: Supplier<String> = Supplier { "12345" }
 
         @Test
         fun example() {
-            assertEquals("?", component1.get())
+            assertEquals("12345", component1.get())
         }
     }
     ```
 
 #### Строгость заглушек { #mock-strictness }
 
-Заглушки `Mockito` можно проверять с помощью аннотации `@MockitoStrictness`.
+Заглушки `Mockito` можно проверять с помощью аннотации `@MockitoStrictness` из пакета `io.koraframework.test.extension.junit5.mockito`.
 Она задает уровень проверки для заглушек `Mockito`, созданных расширением Kora в рамках тестового класса.
 
 Расширение ведет себя аналогично `MockitoSession`: после завершения теста оно передает созданные заглушки на проверку `Mockito` и сообщает о неиспользованных или подозрительных настройках поведения.
@@ -581,7 +637,7 @@ agent:
 
 ???+ warning "Рекомендация"
 
-    **Настоятельно рекомендуется тестировать** приложения как [черный ящик](https://github.com/kora-projects/kora-examples/blob/master/kora-java-crud/src/test/java/ru/tinkoff/kora/example/crud/BlackBoxTests.java)
+    **Настоятельно рекомендуется тестировать** приложения как [черный ящик](../guides/testing-black-box.md)
     и полагаться на этот подход как на основной источник истины и корректности приложения.
 
     Приложение может работать по-разному в зависимости от флагов JVM,
@@ -653,8 +709,9 @@ agent:
     public interface TestApplication extends Application {
 
         @Root
-        default Integer someOtherComponent() {
-            return 1;
+        @Tag(TestApplication.class)
+        default String someTestOnlyComponent() {
+            return "test";
         }
     }
     ```
@@ -666,8 +723,9 @@ agent:
     interface TestApplication : Application {
 
         @Root
-        fun someOtherComponent(): Integer {
-            return 1
+        @Tag(TestApplication::class)
+        fun someTestOnlyComponent(): String {
+            return "test"
         }
     }
     ```
@@ -678,7 +736,7 @@ agent:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.20"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
     }
     ```
 
@@ -688,7 +746,7 @@ agent:
 
     ```groovy
     dependencies {
-        kspTest("ru.tinkoff.kora:symbol-processors:1.2.20")
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
     }
     ```
 
@@ -698,7 +756,7 @@ agent:
 
     Классы начинаются с символа `$`, исключите их в `build.gradle`:
 
-    ```java
+    ```groovy
     test {
         exclude("**/\$*")
     }
@@ -724,12 +782,14 @@ agent:
 
         @TestComponent
         private String component1;
+        @Tag(TestApplication.class)
         @TestComponent
-        private Integer component2;
+        private String component2;
 
         @Test
-        void testSame() {
-            assertEquals(component1, String.valueOf(component2));
+        void testBoth() {
+            assertEquals("1", component1);
+            assertEquals("test", component2);
         }
     }
     ```
@@ -738,36 +798,49 @@ agent:
 
     ```kotlin
     @KoraAppTest(TestApplication::class)
-    class SomeTests(val component1: String, val component2: Integer) {
+    class SomeTests {
+
+        @TestComponent
+        lateinit var component1: String
+
+        @Tag(TestApplication::class)
+        @TestComponent
+        lateinit var component2: String
 
         @Test
-        fun testSame() {
-            assertEquals(component1, component2.toString());
+        fun testBoth() {
+            assertEquals("1", component1)
+            assertEquals("test", component2)
         }
     }
     ```
 
-Если наследование от основного `@KoraApp` не требуется и нужно добавить только фабричные методы из отдельного модуля,
-используйте параметр `modules` аннотации `@KoraAppTest`.
-`modules` принимает интерфейсы модулей, а не классы компонентов:
+Если сгенерированный класс графа найти не удалось, расширение сообщает `Cannot find generated Kora application graph`
+и перечисляет, что проверить: обработчик для тестового набора исходников и `kora.app.submodule.enabled` для основного приложения.
+
+Параметр `modules` аннотации `@KoraAppTest` не подключает новые модули к графу, он объявляет, какие компоненты должны присутствовать в ограниченном тестовом графе.
+Указанный модуль уже должен принадлежать графу тестируемого `@KoraApp`: либо интерфейс приложения его расширяет,
+либо модуль помечен `@Module` и компилируется вместе с приложением, включая тестовые исходники, когда само тестовое приложение объявлено в `src/test`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface TestModule {
 
         @Root
-        default Integer testOnlyComponent() {
-            return 1;
+        @Tag(TestModule.class)
+        default String testOnlyComponent() {
+            return "module";
         }
     }
 
-    @KoraAppTest(value = Application.class, modules = TestModule.class)
+    @KoraAppTest(value = TestApplication.class, modules = TestModule.class)
     class SomeTests {
 
         @Test
-        void test(@TestComponent Integer component) {
-            assertEquals(1, component);
+        void test(@Tag(TestModule.class) @TestComponent String component) {
+            assertEquals("module", component);
         }
     }
     ```
@@ -775,20 +848,22 @@ agent:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Module
     interface TestModule {
 
         @Root
-        fun testOnlyComponent(): Int {
-            return 1
+        @Tag(TestModule::class)
+        fun testOnlyComponent(): String {
+            return "module"
         }
     }
 
-    @KoraAppTest(value = Application::class, modules = [TestModule::class])
+    @KoraAppTest(value = TestApplication::class, modules = [TestModule::class])
     class SomeTests {
 
         @Test
-        fun test(@TestComponent component: Int) {
-            assertEquals(1, component)
+        fun test(@Tag(TestModule::class) @TestComponent component: String) {
+            assertEquals("module", component)
         }
     }
     ```
@@ -796,7 +871,8 @@ agent:
 Итого:
 
 - `kora.app.submodule.enabled=true` нужен, когда тестовое `@KoraApp` расширяет основное `@KoraApp`.
-- `@KoraAppTest(modules = ...)` подходит для случаев, когда к тестовому графу нужно просто подключить дополнительные модули.
+- Обработчик должен быть подключен к тестовому набору исходников как `testAnnotationProcessor` в Java и `kspTest` в Kotlin, когда тестовые исходники объявляют собственное `@KoraApp`.
+- `@KoraAppTest(modules = ...)` подходит для случаев, когда компоненты уже подключенного модуля должны присутствовать в ограниченном тестовом графе.
 - Компоненты, которые должны появиться в ограниченном тестовом графе, все равно должны быть достижимы из `@TestComponent`, `components` или `KoraAppGraph`.
 
 ## Конфигурация теста { #test-configuration }
@@ -809,6 +885,8 @@ agent:
 `KoraAppTestConfigModifier` нельзя использовать вместе с внедрением компонентов в конструктор тестового класса:
 расширению нужно получить изменение конфигурации до создания тестового графа, а для этого экземпляр теста должен уже существовать.
 
+Значения, переданные через `withSystemProperty`, устанавливаются как системные свойства JVM только на время построения тестового графа и затем восстанавливаются.
+
 #### Переменные окружения { #environment-variables }
 
 Если тесту нужно использовать [конфигурацию по умолчанию](config.md#file), которая использовалась бы при запуске приложения,
@@ -819,7 +897,7 @@ agent:
     Предположим, есть такая конфигурация `application.conf`:
 
     ```javascript
-    db {
+    jdbc {
         jdbcUrl = ${POSTGRES_JDBC_URL}
         username = ${POSTGRES_USER}
         password = ${POSTGRES_PASS}
@@ -833,7 +911,7 @@ agent:
     Предположим, есть такая конфигурация `application.yaml`:
 
     ```yaml
-    db:
+    jdbc:
       jdbcUrl: ${POSTGRES_JDBC_URL}
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASS}
@@ -849,7 +927,6 @@ agent:
     @KoraAppTest(Application.class)
     class SomeTests implements KoraAppTestConfigModifier {
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification
@@ -883,7 +960,6 @@ agent:
     @KoraAppTest(Application.class)
     class SomeTests implements KoraAppTestConfigModifier {
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification
@@ -917,7 +993,7 @@ agent:
 
 ### Файл конфигурации { #configuration-file }
 
-Пример предоставления конфигурации в виде файла:
+Пример предоставления конфигурации в виде файла, файл ищется в каталоге `resources` тестов:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -926,7 +1002,7 @@ agent:
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofResourceFile("application-test.conf");
         }
     }
@@ -956,7 +1032,7 @@ agent:
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
                 myconfig {
                     myproperty = 1
@@ -997,7 +1073,7 @@ agent:
     class SomeTests implements KoraAppTestConfigModifier {
 
         @Override
-        public @Nonnull KoraConfigModification config() {
+        public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
                 myconfig {
                     myinnerconfig {
@@ -1014,6 +1090,8 @@ agent:
 
 === ":simple-kotlin: `Kotlin`"
 
+    В необрабатываемой строке Kotlin символ `$` необходимо экранировать как `${'$'}`, иначе он будет воспринят как шаблон строки:
+
     ```kotlin
     @KoraAppTest(Application::class)
     class SomeTests : KoraAppTestConfigModifier {
@@ -1023,8 +1101,8 @@ agent:
                 """
                 myconfig {
                     myinnerconfig {
-                        first = \${ENV_FIRST}
-                        second = \${ENV_SECOND}
+                        first = ${'$'}{ENV_FIRST}
+                        second = ${'$'}{ENV_SECOND}
                     }
                 }
                 """.trimIndent()
@@ -1049,8 +1127,8 @@ Testcontainers назначает случайный порт хоста при 
 
     Добавьте зависимости [Testcontainers](https://java.testcontainers.org/) в `build.gradle`:
     ```groovy
-    testImplementation "org.testcontainers:junit-jupiter:1.21.4"
-    testImplementation "org.testcontainers:postgresql:1.21.4"
+    testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5"
+    testImplementation "org.testcontainers:testcontainers-postgresql:2.0.5"
     ```
 
     ```java
@@ -1059,20 +1137,19 @@ Testcontainers назначает случайный порт хоста при 
     class SomeIntegrationTests implements KoraAppTestConfigModifier {
 
         @Container
-        private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+        static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
         @TestComponent
         private SomeService service;
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
-                db {
+                jdbc {
                     jdbcUrl = ${POSTGRES_JDBC_URL}
                     username = ${POSTGRES_USER}
                     password = ${POSTGRES_PASS}
-                    poolName = "kora"
+                    poolName = "kora-test"
                 }
                 """)
                 .withSystemProperty("POSTGRES_JDBC_URL", POSTGRES.getJdbcUrl())
@@ -1091,8 +1168,8 @@ Testcontainers назначает случайный порт хоста при 
 
     Добавьте зависимости [Testcontainers](https://java.testcontainers.org/) в `build.gradle.kts`:
     ```groovy
-    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
-    testImplementation("org.testcontainers:postgresql:1.21.4")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
     ```
 
     ```kotlin
@@ -1103,7 +1180,7 @@ Testcontainers назначает случайный порт хоста при 
         companion object {
             @Container
             @JvmStatic
-            val POSTGRES = PostgreSQLContainer("postgres:16")
+            val POSTGRES = PostgreSQLContainer("postgres:16-alpine")
         }
 
         @TestComponent
@@ -1112,11 +1189,11 @@ Testcontainers назначает случайный порт хоста при 
         override fun config(): KoraConfigModification {
             return KoraConfigModification.ofString(
                 """
-                db {
-                    jdbcUrl = \${POSTGRES_JDBC_URL}
-                    username = \${POSTGRES_USER}
-                    password = \${POSTGRES_PASS}
-                    poolName = "kora"
+                jdbc {
+                    jdbcUrl = ${'$'}{POSTGRES_JDBC_URL}
+                    username = ${'$'}{POSTGRES_USER}
+                    password = ${'$'}{POSTGRES_PASS}
+                    poolName = "kora-test"
                 }
                 """.trimIndent()
             )
@@ -1132,6 +1209,8 @@ Testcontainers назначает случайный порт хоста при 
     }
     ```
 
+Показанная выше секция `jdbc` — это конфигурация подключения [JDBC](database-jdbc.md), та же самая секция, которую приложение использует во время работы.
+
 Полный разбор — зависимости, тестовое `@KoraApp`, миграции и настройка репозитория — смотрите в руководстве [Интеграционное тестирование](../guides/testing-integration.md).
 
 ## Изменение контейнера { #container-modification }
@@ -1145,11 +1224,11 @@ Testcontainers назначает случайный порт хоста при 
 `KoraGraphModification` поддерживает следующие операции:
 
 - `addComponent(...)` — добавляет новый компонент в тестовый граф.
-- `replaceComponent(...)` — заменяет существующий компонент, при этом его зависимости остаются в графе.
-- `mockComponent(...)` — заменяет существующий компонент заглушкой и удаляет реальные зависимости заменяемого компонента из графа, если они больше не нужны тесту.
+- `replaceComponent(...)` — заменяет существующий компонент. С `Supplier` зависимости заменяемого компонента не создаются, с `Function<KoraAppGraph, T>` они остаются в графе, поскольку замена строится из уже инициализированных компонентов графа.
+- `mockComponent(...)` — заменяет существующий компонент заглушкой, зависимости заменяемого компонента не создаются.
 
-`addComponent(...)` и `replaceComponent(...)` имеют перегрузки с `Function<KoraAppGraph, T>`, если новый компонент должен быть построен из уже инициализированных компонентов графа.
-Для компонентов с `@Tag` используйте перегрузки с `List<Class<?>> tags`.
+У каждого из этих методов есть перегрузка, принимающая тег как `Class<?>` между типом и фабрикой, для компонентов, объявленных с `@Tag`.
+Если ни один компонент не соответствует типу и тегу, расширение завершает тест ошибкой `Cannot replace Kora component`.
 
 ### Добавление { #adding }
 
@@ -1162,7 +1241,7 @@ Testcontainers назначает случайный порт хоста при 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
                 .addComponent(TypeRef.of(Supplier.class, Integer.class), () -> (Supplier<Integer>) () -> 1);
         }
@@ -1182,7 +1261,7 @@ Testcontainers назначает случайный порт хоста при 
 
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .addComponent(TypeRef.of(Supplier::class.java, Int::class.java), Supplier { Supplier { 1 } })
+                .addComponent(TypeRef.of(Supplier::class.java, Int::class.javaObjectType), Supplier { Supplier { 1 } })
         }
 
         @Test
@@ -1191,6 +1270,9 @@ Testcontainers назначает случайный порт хоста при 
         }
     }
     ```
+
+В Kotlin фабрика оборачивается в явный SAM-конструктор `Supplier { ... }`, поскольку у `addComponent` есть также перегрузка с `Function<KoraAppGraph, T>`
+и голая лямбда была бы неоднозначной. Параметры обобщений в графе — это обертки, поэтому используется `Int::class.javaObjectType`, а не `Int::class.java`, который является примитивом `int`.
 
 В случае, когда требуется добавить компоненты с использованием реального компонента из графа, это также доступно через другую сигнатуру метода:
 
@@ -1201,18 +1283,18 @@ Testcontainers назначает случайный порт хоста при 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                    .addComponent(TypeRef.of(Supplier.class, String.class),
+                    .addComponent(TypeRef.of(Supplier.class, Long.class),
                             (graph) -> {
-                                final Supplier<Integer> existingComponent = (Supplier<Integer>) graph.getFirst(TypeRef.of(Supplier.class, Integer.class));
-                                return (Supplier<String>) () -> "1" + existingComponent.get();
+                                final Supplier<String> existingComponent = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class));
+                                return (Supplier<Long>) () -> Long.parseLong(existingComponent.get());
                             });
         }
 
         @Test
-        void example(@TestComponent Supplier<String> supplier) {
-            assertEquals(1, supplier.get());
+        void example(@TestComponent Supplier<Long> supplier) {
+            assertEquals(1L, supplier.get());
         }
     }
     ```
@@ -1223,20 +1305,19 @@ Testcontainers назначает случайный порт хоста при 
     @KoraAppTest(value = Application::class)
     class SomeTests : KoraAppTestGraphModifier {
 
-        @Nonnull
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .addComponent(TypeRef.of(Supplier::class.java, String::class.java))
+                .addComponent(TypeRef.of(Supplier::class.java, Long::class.javaObjectType))
                 { graph ->
-                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, Int::class.java))
-                            as Supplier<Int>
-                    Supplier { "1" + existingComponent.get() }
+                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java))
+                            as Supplier<String>
+                    Supplier { existingComponent.get().toLong() }
                 }
         }
 
         @Test
-        fun example(@TestComponent supplier: Supplier<String>) {
-            assertEquals(1, supplier.get())
+        fun example(@TestComponent supplier: Supplier<Long>) {
+            assertEquals(1L, supplier.get())
         }
     }
     ```
@@ -1252,9 +1333,9 @@ Testcontainers назначает случайный порт хоста при 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier.class, String.class), List.of(Supplier.class), () -> (Supplier<String>) () -> "?");
+                .replaceComponent(TypeRef.of(Supplier.class, String.class), Supplier.class, () -> (Supplier<String>) () -> "?");
         }
 
         @Test
@@ -1272,7 +1353,7 @@ Testcontainers назначает случайный порт хоста при 
 
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), listOf(Supplier::class.java), Supplier { Supplier { "?" } })
+                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java, Supplier { Supplier { "?" } })
         }
 
         @Test
@@ -1291,18 +1372,18 @@ Testcontainers назначает случайный порт хоста при 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
-                    .replaceComponent(TypeRef.of(Supplier.class, Integer.class),
+                    .replaceComponent(TypeRef.of(Supplier.class, String.class), Supplier.class,
                             (graph) -> {
-                                final Supplier<Integer> existingComponent = (Supplier<Integer>) graph.getFirst(TypeRef.of(Supplier.class, Integer.class));
-                                return (Supplier<Integer>) () -> 1 + existingComponent.get();
+                                final Supplier<String> existingComponent = (Supplier<String>) graph.getFirst(TypeRef.of(Supplier.class, String.class));
+                                return (Supplier<String>) () -> existingComponent.get() + "2";
                             });
         }
 
         @Test
-        void example(@TestComponent Supplier<Integer> supplier) {
-            assertEquals(1, supplier.get());
+        void example(@Tag(Supplier.class) @TestComponent Supplier<String> supplier) {
+            assertEquals("12", supplier.get());
         }
     }
     ```
@@ -1313,28 +1394,30 @@ Testcontainers назначает случайный порт хоста при 
     @KoraAppTest(value = Application::class)
     class SomeTests : KoraAppTestGraphModifier {
 
-        @Nonnull
         override fun graph(): KoraGraphModification {
             return KoraGraphModification.create()
-                .replaceComponent(TypeRef.of(Supplier::class.java, Int::class.java))
+                .replaceComponent(TypeRef.of(Supplier::class.java, String::class.java), Supplier::class.java)
                 { graph ->
-                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, Int::class.java))
-                            as Supplier<Int>
-                    Supplier { 1 + existingComponent.get() }
+                    val existingComponent = graph.getFirst(TypeRef.of(Supplier::class.java, String::class.java))
+                            as Supplier<String>
+                    Supplier { existingComponent.get() + "2" }
                 }
         }
 
         @Test
-        fun example(@TestComponent supplier: Supplier<Int>) {
-            assertEquals(1, supplier.get())
+        fun example(@Tag(Supplier::class) @TestComponent supplier: Supplier<String>) {
+            assertEquals("12", supplier.get())
         }
     }
     ```
 
+Замена выше читает компонент без тега и заменяет компонент с тегом `Supplier`:
+фабрика никогда не должна запрашивать тот самый компонент, который она заменяет, иначе инициализация графа зациклится.
+
 ### Программная заглушка { #programmatic-mock }
 
 Если компонент нужно заменить именно как заглушку, используйте `mockComponent(...)`.
-В отличие от `replaceComponent(...)`, этот метод сообщает расширению, что реальные зависимости заменяемого компонента не нужны и могут быть исключены из тестового графа.
+Как и форма `replaceComponent(...)` с `Supplier`, этот метод сообщает расширению, что реальные зависимости заменяемого компонента не нужны и могут быть исключены из тестового графа.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1343,7 +1426,7 @@ Testcontainers назначает случайный порт хоста при 
     class SomeTests implements KoraAppTestGraphModifier {
 
         @Override
-        public @Nonnull KoraGraphModification graph() {
+        public KoraGraphModification graph() {
             return KoraGraphModification.create()
                 .mockComponent(TypeRef.of(Supplier.class, String.class), () -> Mockito.mock(Supplier.class));
         }
@@ -1404,6 +1487,7 @@ Testcontainers назначает случайный порт хоста при 
 
 С `PER_CLASS` один экземпляр графа используется всеми тестовыми методами класса, а очистка выполняется после завершения всего класса.
 Это ускоряет тяжелые интеграционные тесты, но с изменяемым состоянием компонентов и заглушек нужно обращаться аккуратнее.
+Перед каждым тестовым методом расширение сбрасывает все заглушки и шпионы общего графа, поэтому настройку поведения нужно объявлять в каждом тестовом методе.
 
 Ограничения жизненного цикла:
 

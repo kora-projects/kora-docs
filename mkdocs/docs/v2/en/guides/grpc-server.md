@@ -2,7 +2,10 @@
 search:
   exclude: true
 title: gRPC Server with Kora
-summary: Build a gRPC CRUD service with Protocol Buffers, generated handlers, and Kora modules
+summary: Build a gRPC CRUD service on Kora 2.0 with Protocol Buffers, generated handlers, and GrpcServerModule
+description: "Step-by-step unary gRPC server on Kora 2.0: the io.koraframework:grpc-server artifact and GrpcServerModule, the com.google.protobuf Gradle plugin with protoc 4.35.1 and the io.grpc runtime pinned to 1.83.1, a user_service.proto contract using google.protobuf.Empty and Timestamp, a @Component handler extending the generated UserServiceGrpc.UserServiceImplBase that answers through StreamObserver, Status.NOT_FOUND and Status.INTERNAL error mapping, and the grpcServer.port and grpcServer.telemetry.logging.enabled configuration."
+agent:
+  use_when: "Use this file for questions about exposing a Kora 2.0 service over gRPC: io.koraframework:grpc-server, GrpcServerModule, the com.google.protobuf Gradle plugin and generated protobuf and gRPC sources, writing a .proto contract, implementing the generated ImplBase class as a @Component, StreamObserver onNext, onCompleted and onError, mapping failures with Status.NOT_FOUND and Status.INTERNAL, grpcServer.port (default 8090), the 4MiB message cap and reflectionEnabled default, and fixing missing generated classes, an UNIMPLEMENTED response or an AbstractMethodError from mismatched io.grpc versions."
 tags: grpc-server, protobuf, rpc, microservices
 ---
 
@@ -18,7 +21,7 @@ alongside repository and service components.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-grpc-server-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-grpc-server-app).
 
 ## What You'll Build { #youll-build }
 
@@ -33,10 +36,12 @@ You will build a unary gRPC server application with:
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+ (the reference applications use Gradle Wrapper `9.5.1`)
 - A text editor or IDE
 - Optional: `grpcurl` for manual RPC checks
+
+Kora artifacts are compiled for Java 25, so the JDK that compiles your code must be 25 or newer.
 
 ## Prerequisites { #prerequisites }
 
@@ -61,6 +66,12 @@ protobuf generation instead of handwritten DTOs. The practical flow is:
 3. implement a Kora component that handles the generated service calls
 4. map protobuf messages to your existing service layer
 5. expose the gRPC server through Kora configuration
+
+Two runtime details are worth knowing before you start, because they shape how handler code should be written:
+
+- Kora builds the server on the **gRPC OkHttp** transport. You do not add a transport artifact yourself; `io.koraframework:grpc-server` already brings `grpc-okhttp` and `grpc-stub`.
+- Every client connection gets a dedicated single-threaded executor backed by a **virtual thread**. Blocking inside a handler is safe — the carrier thread is released — but it delays the other calls
+  arriving on the *same* connection. That is why handlers in this guide are plain synchronous methods with no thread pools of their own.
 
 ### What Is gRPC? { #grpc }
 
@@ -178,6 +189,13 @@ That keeps the guide beginner-friendly while still showing real gRPC architectur
 
 We start by adding the gRPC server module and the protobuf Gradle plugin.
 
+Versions of Kora modules come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora artifacts are declared without a version:
+
+```properties title="gradle.properties"
+koraVersion=2.0.0.RC1
+junitVersion=6.1.3
+```
+
 ===! ":fontawesome-brands-java: `Java`"
 
     Update `build.gradle`:
@@ -185,26 +203,38 @@ We start by adding the gRPC server module and the protobuf Gradle plugin.
     ```groovy title="build.gradle"
     plugins {
         id "application"
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
+    }
+
+    configurations {
+        koraBom
+        compileOnly.extendsFrom(koraBom)
+        annotationProcessor.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        testCompileOnly.extendsFrom(koraBom)
+        testAnnotationProcessor.extendsFrom(koraBom)
+        testImplementation.extendsFrom(koraBom)
     }
 
     dependencies {
-        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        koraBom platform("io.koraframework:kora-bom:$koraVersion")
 
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:grpc-server"
-        implementation "ru.tinkoff.kora:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.74.0"
-        implementation "io.grpc:grpc-services:1.74.0"
+        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
+        annotationProcessor "io.koraframework:annotation-processors"
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:grpc-server"
+        implementation "io.koraframework:logging-logback"
+        implementation "io.grpc:grpc-protobuf:1.83.1"
+        implementation "io.grpc:grpc-services:1.83.1"
 
         testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-netty:1.74.0"
+        testImplementation "io.grpc:grpc-netty:1.83.1"
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -219,35 +249,43 @@ We start by adding the gRPC server module and the protobuf Gradle plugin.
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("com.google.protobuf") version "0.9.4"
+        id("com.google.protobuf") version "0.10.0"
     }
 
     dependencies {
-        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:grpc-server")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.74.0")
-        implementation("io.grpc:grpc-services:1.74.0")
+        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:grpc-server")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.grpc:grpc-protobuf:1.83.1")
+        implementation("io.grpc:grpc-services:1.83.1")
 
         testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
-        kspTest("ru.tinkoff.kora:symbol-processors")
 
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-netty:1.74.0")
+        testImplementation("io.grpc:grpc-netty:1.83.1")
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
 Why these dependencies matter:
 
-- `ru.tinkoff.kora:grpc-server` integrates a gRPC server into the Kora application graph
+- `io.koraframework:grpc-server` integrates a gRPC server into the Kora application graph and brings the gRPC runtime with it
 - `io.grpc:grpc-protobuf` gives runtime support for protobuf message serialization
-- `io.grpc:grpc-services` is useful for standard gRPC services and reflection-related support
+- `io.grpc:grpc-services` provides the standard gRPC services, including the reflection service used by the [advanced guide](grpc-server-advanced.md#server-reflection)
+- `javax.annotation:javax.annotation-api` is needed only at compile time, because generated stubs reference `@javax.annotation.Generated`
 - the protobuf Gradle plugin generates the Java classes from `.proto` files
+
+!!! warning "Keep every `io.grpc` artifact on one version"
+
+    The gRPC runtime shipped with `io.koraframework:grpc-server` is `1.83.1`. Every other `io.grpc` artifact you declare — `grpc-protobuf`, `grpc-services`, and anything in test scope such as
+    `grpc-netty` — must use exactly that version. A pinned older version compiles fine and fails only at runtime with
+    `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
 ## Code Generation { #code-generation }
 
@@ -259,9 +297,9 @@ Now we teach Gradle how to turn `.proto` files into Java code.
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -284,9 +322,9 @@ Now we teach Gradle how to turn `.proto` files into Java code.
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all().forEach { task ->
@@ -309,7 +347,8 @@ This generates two groups of code:
 - protobuf message classes such as `CreateUserRequest`
 - gRPC service classes such as `UserServiceGrpc`
 
-That generated code becomes part of your normal application sources.
+That generated code becomes part of your normal application sources. The plugin emits **Java** classes even in a Kotlin project, which is why the generated directories are registered in the `java`
+source set in both variants.
 
 ## Modules { #modules }
 
@@ -317,20 +356,20 @@ Next we enable the gRPC server in the Kora app itself.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcserver/Application.java"
-    package ru.tinkoff.kora.guide.grpcserver;
+    ```java title="src/main/java/io/koraframework/guide/grpcserver/Application.java"
+    package io.koraframework.guide.grpcserver;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.grpc.server.GrpcServerModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.grpc.server.GrpcServerModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
         HoconConfigModule,
-        GrpcServerModule,  // <----- Connected module
-        LogbackModule {
+        LogbackModule,
+        GrpcServerModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -340,14 +379,14 @@ Next we enable the gRPC server in the Kora app itself.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcserver/Application.kt"
-    package ru.tinkoff.kora.guide.grpcserver
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcserver/Application.kt"
+    package io.koraframework.guide.grpcserver
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.grpc.server.GrpcServerModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.grpc.server.GrpcServerModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
@@ -360,7 +399,8 @@ Next we enable the gRPC server in the Kora app itself.
     }
     ```
 
-At this point Kora knows that this application should start a gRPC server.
+At this point Kora knows that this application should start a gRPC server. Every `BindableService` found in the application graph — that is, every `@Component` extending a generated `...ImplBase` —
+is registered on that server automatically. There is no `@GrpcService` annotation and no manual `addService` call.
 
 ## Protobuf API { #protobuf-api }
 
@@ -372,13 +412,13 @@ Create:
 
     ```protobuf title="src/main/proto/user_service.proto"
     syntax = "proto3";
-    
-    package ru.tinkoff.kora.guide.grpcserver;
+
+    package io.koraframework.guide.grpcserver;
     option java_multiple_files = true;
-    
+
     import "google/protobuf/empty.proto";
     import "google/protobuf/timestamp.proto";
-    
+
     service UserService {
       rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
       rpc GetUser(GetUserRequest) returns (UserResponse) {}
@@ -386,36 +426,36 @@ Create:
       rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
       rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {}
     }
-    
+
     message CreateUserRequest {
       string name = 1;
       string email = 2;
     }
-    
+
     message GetUserRequest {
       string user_id = 1;
     }
-    
+
     message GetUsersRequest {
       int32 page = 1;
       int32 size = 2;
       string sort = 3;
     }
-    
+
     message GetUsersResponse {
       repeated UserResponse users = 1;
     }
-    
+
     message UpdateUserRequest {
       string user_id = 1;
       string name = 2;
       string email = 3;
     }
-    
+
     message DeleteUserRequest {
       string user_id = 1;
     }
-    
+
     message UserResponse {
       string id = 1;
       string name = 2;
@@ -461,8 +501,8 @@ This is the point where gRPC replaces the HTTP controller.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcserver/grpc/UserServiceGrpcHandler.java"
-    package ru.tinkoff.kora.guide.grpcserver.grpc;
+    ```java title="src/main/java/io/koraframework/guide/grpcserver/grpc/UserServiceGrpcHandler.java"
+    package io.koraframework.guide.grpcserver.grpc;
 
     import com.google.protobuf.Empty;
     import com.google.protobuf.Timestamp;
@@ -473,18 +513,18 @@ This is the point where gRPC replaces the HTTP controller.
 
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersResponse;
-    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.UserResponse;
-    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc;
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.service.UserNotFoundException;
-    import ru.tinkoff.kora.guide.grpcserver.service.UserService;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.grpcserver.CreateUserRequest;
+    import io.koraframework.guide.grpcserver.DeleteUserRequest;
+    import io.koraframework.guide.grpcserver.GetUserRequest;
+    import io.koraframework.guide.grpcserver.GetUsersRequest;
+    import io.koraframework.guide.grpcserver.GetUsersResponse;
+    import io.koraframework.guide.grpcserver.UpdateUserRequest;
+    import io.koraframework.guide.grpcserver.UserResponse;
+    import io.koraframework.guide.grpcserver.UserServiceGrpc;
+    import io.koraframework.guide.grpcserver.dto.UserRequest;
+    import io.koraframework.guide.grpcserver.service.UserNotFoundException;
+    import io.koraframework.guide.grpcserver.service.UserService;
 
     @Component
     public final class UserServiceGrpcHandler extends UserServiceGrpc.UserServiceImplBase {
@@ -566,7 +606,7 @@ This is the point where gRPC replaces the HTTP controller.
             }
         }
 
-        private UserResponse toGrpcUser(ru.tinkoff.kora.guide.grpcserver.dto.UserResponse user) {
+        private UserResponse toGrpcUser(io.koraframework.guide.grpcserver.dto.UserResponse user) {
             return UserResponse.newBuilder()
                 .setId(user.id())
                 .setName(user.name())
@@ -582,20 +622,20 @@ This is the point where gRPC replaces the HTTP controller.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcserver/grpc/UserServiceGrpcHandler.kt"
-    package ru.tinkoff.kora.guide.grpcserver.grpc
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcserver/grpc/UserServiceGrpcHandler.kt"
+    package io.koraframework.guide.grpcserver.grpc
 
     import com.google.protobuf.Empty
     import com.google.protobuf.Timestamp
     import io.grpc.Status
     import io.grpc.stub.StreamObserver
     import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.grpcserver.*
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.grpcserver.service.UserNotFoundException
-    import ru.tinkoff.kora.guide.grpcserver.service.UserService
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.grpcserver.*
+    import io.koraframework.guide.grpcserver.dto.UserRequest
+    import io.koraframework.guide.grpcserver.dto.UserResponse
+    import io.koraframework.guide.grpcserver.service.UserNotFoundException
+    import io.koraframework.guide.grpcserver.service.UserService
     import java.time.ZoneOffset
 
     @Component
@@ -607,7 +647,7 @@ This is the point where gRPC replaces the HTTP controller.
 
         override fun createUser(
             request: CreateUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 logger.info("Creating user: name={}, email={}", request.name, request.email)
@@ -624,7 +664,7 @@ This is the point where gRPC replaces the HTTP controller.
 
         override fun getUser(
             request: GetUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 logger.info("Getting user: id={}", request.userId)
@@ -658,7 +698,7 @@ This is the point where gRPC replaces the HTTP controller.
 
         override fun updateUser(
             request: UpdateUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 val updated = userService.updateUser(request.userId, UserRequest(request.name, request.email))
@@ -681,8 +721,8 @@ This is the point where gRPC replaces the HTTP controller.
             }
         }
 
-        private fun toGrpcUser(user: UserResponse): ru.tinkoff.kora.guide.grpcserver.UserResponse {
-            return ru.tinkoff.kora.guide.grpcserver.UserResponse.newBuilder()
+        private fun toGrpcUser(user: UserResponse): io.koraframework.guide.grpcserver.UserResponse {
+            return io.koraframework.guide.grpcserver.UserResponse.newBuilder()
                 .setId(user.id)
                 .setName(user.name)
                 .setEmail(user.email)
@@ -697,12 +737,14 @@ This is the point where gRPC replaces the HTTP controller.
     }
     ```
 
-There are two especially important ideas here:
+There are three especially important ideas here:
 
-- the handler extends the generated `UserServiceGrpc.UserServiceImplBase`
+- the handler extends the generated `UserServiceGrpc.UserServiceImplBase` and is registered in the graph with plain `@Component`
 - transport errors are expressed through gRPC `Status`, not HTTP exceptions
+- every method is a synchronous, blocking method — Kora runs it on the connection's virtual thread, so there is no reactive wrapper and no `CompletionStage` to return
 
-That second point matters a lot. This is not an HTTP application anymore, so the transport language must be gRPC-native.
+That second point matters a lot. This is not an HTTP application anymore, so the transport language must be gRPC-native. An exception that escapes the handler without being reported through the
+observer is closed by gRPC as `UNKNOWN`, which tells the caller nothing useful — always map failures to an explicit `Status`.
 
 ## Configuration { #config }
 
@@ -723,17 +765,17 @@ For the full configuration reference, see [gRPC Server](../documentation/grpc-se
     logging {
       levels {
         "ROOT": "WARN" //(3)!
-        "ru.tinkoff.kora": "INFO" //(4)!
-        "ru.tinkoff.kora.guide.grpcserver": "INFO" //(5)!
+        "io.koraframework": "INFO" //(4)!
+        "io.koraframework.guide.grpcserver": "INFO" //(5)!
       }
     }
     ```
 
-    1. Default gRPC server port used by this guide.
-    2. Enables the feature for this configuration section.
+    1. gRPC server port (default: `8090`).
+    2. Enables gRPC call logging for this server (default: `false`).
     3. Log level for `ROOT`.
-    4. Log level for `ru.tinkoff.kora`.
-    5. Log level for `ru.tinkoff.kora.guide.grpcserver`.
+    4. Log level for `io.koraframework`.
+    5. Log level for `io.koraframework.guide.grpcserver`.
 
 === ":simple-yaml: `YAML`"
 
@@ -746,21 +788,24 @@ For the full configuration reference, see [gRPC Server](../documentation/grpc-se
     logging:
       levels:
         ROOT: "WARN" #(3)!
-        "ru.tinkoff.kora": "INFO" #(4)!
-        "ru.tinkoff.kora.guide.grpcserver": "INFO" #(5)!
+        "io.koraframework": "INFO" #(4)!
+        "io.koraframework.guide.grpcserver": "INFO" #(5)!
     ```
 
-    1. Default gRPC server port used by this guide.
-    2. Enables the feature for this configuration section.
+    1. gRPC server port (default: `8090`).
+    2. Enables gRPC call logging for this server (default: `false`).
     3. Log level for `ROOT`.
-    4. Log level for `ru.tinkoff.kora`.
-    5. Log level for `ru.tinkoff.kora.guide.grpcserver`.
+    4. Log level for `io.koraframework`.
+    5. Log level for `io.koraframework.guide.grpcserver`.
 
 This gives us:
 
 - gRPC server on port `8090`
 - Kora gRPC request logging
 - readable logs for the demo module
+
+Everything else has a working default: message size is capped at `4MiB`, graceful shutdown waits `30s`, and gRPC reflection stays **off** (`reflectionEnabled = false`). The
+[advanced guide](grpc-server-advanced.md#server-reflection) turns reflection on.
 
 ## Run Application { #run-app }
 
@@ -776,21 +821,26 @@ Run it:
 ./gradlew run
 ```
 
-Then call it with `grpcurl`:
+Then call it with `grpcurl`. Because reflection is disabled in this guide, point `grpcurl` at the contract explicitly:
 
 ```bash
-grpcurl -plaintext -d "{\"name\":\"Alice\",\"email\":\"alice@example.com\"}" \
-  localhost:8090 ru.tinkoff.kora.guide.grpcserver.UserService/CreateUser
+grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
+  -d '{"name":"Alice","email":"alice@example.com"}' \
+  localhost:8090 io.koraframework.guide.grpcserver.UserService/CreateUser
 ```
 
 ```bash
-grpcurl -plaintext -d "{\"page\":0,\"size\":10,\"sort\":\"name\"}" \
-  localhost:8090 ru.tinkoff.kora.guide.grpcserver.UserService/GetUsers
+grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
+  -d '{"page":0,"size":10,"sort":"name"}' \
+  localhost:8090 io.koraframework.guide.grpcserver.UserService/GetUsers
 ```
 
 ## Testing { #testing }
 
 The companion app includes JUnit tests that use a real gRPC channel against the application.
+
+`@KoraAppTest` starts the whole graph, so the gRPC server binds a real port and the test talks to it through an ordinary `ManagedChannel`. The client side of such a test needs a gRPC transport on the
+test classpath, which is why `io.grpc:grpc-netty:1.83.1` is declared in test scope — pinned to the same version as the gRPC runtime shipped by `io.koraframework:grpc-server`.
 
 Run them with:
 
@@ -805,8 +855,10 @@ The tests verify the unary CRUD flow separately, not as one giant scenario. That
 - Keep protobuf contracts focused on transport concerns, not domain implementation details.
 - Keep business logic in `UserService`, not in the gRPC handler.
 - Map missing resources to `Status.NOT_FOUND`, not to generic internal errors.
+- Always finish a call through the response observer: `onNext` + `onCompleted`, or `onError` with an explicit `Status`.
 - Reuse the same application architecture across transports whenever possible.
 - Treat generated protobuf code as transport types, not as domain models.
+- Keep every `io.grpc` artifact on the version that ships with `io.koraframework:grpc-server`.
 - Annotate handwritten DTOs with `@Json` only when they cross an HTTP/JSON boundary; generated protobuf messages do not need JSON annotations.
 
 ## Summary { #summary }
@@ -823,9 +875,10 @@ The key idea was simple:
 
 - what gRPC is and why it is useful for service-to-service communication
 - how Protocol Buffers define a shared RPC contract
-- how Kora starts and wires a gRPC server
+- how Kora starts a gRPC server and picks up every `BindableService` from the graph
 - how unary RPC methods map to familiar CRUD operations
 - how gRPC `Status` errors replace HTTP-style transport errors
+- why handlers stay synchronous on Kora's virtual-thread execution model
 
 ## Troubleshooting { #troubleshooting }
 
@@ -835,11 +888,20 @@ Run `./gradlew clean classes` after changing the `.proto` file and verify the pr
 
 **Server does not start:**
 
-Check that the gRPC port in `application.conf` is free and that `GrpcServerModule` is included in the application graph.
+Check that the gRPC port in `application.conf` is free and that `GrpcServerModule` is included in the application graph. A busy port fails the graph with
+`gRPC server failed to start on port '8090': port is already in use`.
 
 **RPC returns `UNIMPLEMENTED`:**
 
 Verify that the generated service name and method names match the `.proto` contract used by the client.
+
+**Tests fail with `AbstractMethodError` mentioning `buildClientTransportServers`:**
+
+A gRPC artifact in test scope is pinned to a different version than the runtime that ships with `io.koraframework:grpc-server`. Align every `io.grpc` dependency on `1.83.1`.
+
+**`grpcurl` reports that the server does not support reflection:**
+
+Reflection is off by default. Either pass `-import-path`/`-proto` as shown above, or enable it as described in [Advanced gRPC Server](grpc-server-advanced.md#server-reflection).
 
 ## What's Next? { #whats-next }
 
@@ -852,7 +914,7 @@ Verify that the generated service name and method names match the `.proto` contr
 
 If something does not work:
 
-- compare with [Kora Java gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-grpc-server-app) and [Kora Kotlin gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-grpc-server-app)
+- compare with [Kora Java gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-grpc-server-app) and [Kora Kotlin gRPC Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-grpc-server-app)
 - check the [gRPC Server documentation](../documentation/grpc-server.md)
 - check the [gRPC Client documentation](../documentation/grpc-client.md) when client/server contracts disagree
 - make sure you regenerated code after changing the `.proto` file

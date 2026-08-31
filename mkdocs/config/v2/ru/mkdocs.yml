@@ -33,6 +33,7 @@ nav:
           - Отказоустойчивость: guides/resilient.md
           - Валидация: guides/validation.md
       - Наблюдаемость:
+          - Обзор: guides/observability.md
           - Метрики: guides/observability-metrics.md
           - Трассировка: guides/observability-tracing.md
           - Пробы: guides/observability-probes.md
@@ -68,8 +69,6 @@ nav:
       - Базы данных:
         - Общее: documentation/database-common.md
         - JDBC: documentation/database-jdbc.md
-        - R2DBC: documentation/database-r2dbc.md
-        - Vertx: documentation/database-vertx.md
         - Cassandra: documentation/database-cassandra.md
         - Миграции: documentation/database-migration.md
       - Интеграции:

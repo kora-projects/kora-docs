@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf."
+description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factories, tags, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @Root, @Tag, @DefaultComponent, ValueOf, All, PromiseOf."
+  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."
 ---
 
 Контейнер зависимостей — это ядро фреймворка `Kora`. Он строит граф зависимостей, проверяет его,
@@ -12,6 +12,9 @@ agent:
 Работа контейнера в `Kora` разделена на две части: время компиляции и время выполнения.
 Во время компиляции `Kora` проверяет, что все зависимости могут быть найдены и связаны. Во время выполнения контейнер создает
 компоненты, управляет их жизненным циклом и обновляет затронутые части графа при возникновении изменений.
+
+Все аннотации контейнера находятся в пакете `io.koraframework.common.annotation`,
+а все контракты графа времени выполнения — в пакете `io.koraframework.application.graph`.
 
 Пошаговый разбор перед справочным описанием смотрите в разделах [Введение во внедрение зависимостей](../guides/dependency-injection-introduction.md) и [Внедрение зависимостей](../guides/dependency-injection.md).
 
@@ -26,6 +29,8 @@ agent:
 Эту аннотацию следует использовать на интерфейсе, который содержит фабричные методы для создания компонентов
 и подключает [внешние модули](#external-module-factory).
 В приложении может быть только один такой интерфейс.
+
+`@KoraApp` можно ставить только на интерфейс — на классе аннотация приводит к ошибке компиляции.
 
 Обработчики аннотаций `Kora` анализируют исходный код в модуле компиляции, где объявлен `@KoraApp`,
 а также в модулях, где объявлен [`@KoraSubmodule`](#submodule-factory). Обычные модули проекта без
@@ -59,15 +64,15 @@ agent:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    * Класс не должен быть абстрактным
-    * У класса должен быть только один публичный конструктор
+    * Класс не должен быть абстрактным (`@Component` на абстрактном классе или интерфейсе игнорируется)
+    * У класса должен быть ровно один публичный конструктор
     * Класс должен быть `final` (только если у него нет аспектов)
-    
+
     ```java
     @Component
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(OtherService otherService) {
             this.otherService = otherService;
@@ -77,22 +82,22 @@ agent:
 
 === ":simple-kotlin: `Kotlin`"
 
-    * Класс не должен быть абстрактным
-    * У класса должен быть только один публичный конструктор
+    * Класс не должен быть абстрактным (`@Component` на абстрактном классе или интерфейсе игнорируется)
+    * У класса должен быть ровно один публичный конструктор
     * Класс не должен быть `open` (только если у него нет аспектов)
 
     ```kotlin
     @Component
-    class SomeService(val otherService: OtherService) { }
+    class SomeService(val otherService: OtherService)
     ```
 
-#### Фабрика метод { #method-factory }
+#### Фабричный метод { #method-factory }
 
 Фабричный метод — это метод с модификатором `default`, который возвращает компонент.
 Метод может принимать другие компоненты-зависимости в качестве аргументов.
 
 Контейнер зависимостей ниже описывает две фабрики, где фабрика `otherService` требует компонент, созданный фабрикой `someService`.
-Это самый базовый способ, которым компоненты могут быть зарегистрированы в контейнере:
+Это самый простой способ зарегистрировать компоненты в контейнере:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -124,14 +129,17 @@ agent:
     }
     ```
 
-Фабричный метод **не должен предоставлять** значение `null` в качестве компонента.
+Фабричный метод **не должен** возвращать `null` в качестве компонента,
+и он обязан возвращать ссылочный тип: фабрика с примитивным типом или `void` не компилируется.
 
-#### Фабрика модуль { #module-factory }
+#### Модуль { #module-factory }
 
-Компоненты для контейнера зависимостей также могут располагаться в модулях внутри проекта приложения.
-Модуль — это интерфейс, который содержит фабричные методы.
-Аннотация `@Module` помечает интерфейс как модуль, который должен быть внедрен в контейнер приложения во время компиляции.
-Модуль должен находиться в той же директории исходного кода, что и класс, помеченный `@KoraApp`.
+Компоненты контейнера зависимостей также могут находиться в модулях внутри проекта приложения.
+Модулем называется интерфейс, содержащий фабричные методы.
+Аннотация `@Module` помечает интерфейс как модуль, который во время компиляции будет внедрен в контейнер приложения.
+Модуль должен находиться в том же модуле компиляции, что и интерфейс, помеченный `@KoraApp`.
+
+`@Module` поддерживается только на интерфейсах.
 
 Все фабричные методы внутри модуля становятся доступны контейнеру зависимостей:
 
@@ -157,18 +165,19 @@ agent:
     }
     ```
 
-#### Фабрика внешний модуль { #external-module-factory }
+#### Внешний модуль { #external-module-factory }
 
-Компоненты для контейнера зависимостей также могут быть найдены во внешних модулях из сторонних зависимостей.
-Модуль — это интерфейс, который содержит фабричные методы.
-`Kora` не выполняет автоматический поиск модулей из внешних зависимостей, как это делают некоторые другие DI-решения.
-Это позволяет разработчику точно контролировать, какие зависимости используются в приложении, и избегать
+Компоненты контейнера зависимостей также можно искать во внешних модулях из сторонних зависимостей.
+Модулем называется интерфейс, содержащий фабричные методы.
+`Kora` не выполняет автоматический поиск модулей во внешних зависимостях, как это делают некоторые другие DI-решения.
+Это позволяет разработчику точно контролировать, какие зависимости используются в приложении, и избежать
 инициализации ненужных компонентов.
 
-Все необходимые внешние модули из зависимостей должны быть подключены явно в интерфейсе, помеченном аннотацией `@KoraApp`, через наследование:
+Все необходимые внешние модули из зависимостей должны подключаться явно в интерфейсе, помеченном аннотацией `@KoraApp`, через наследование:
 
 Такой модуль может быть объявлен в любом интерфейсе: в сторонней библиотеке, в отдельном модуле проекта или рядом с самим `@KoraApp`.
-Важно то, что интерфейс `@KoraApp` явно подключает его через наследование.
+Важно лишь то, что интерфейс `@KoraApp` явно подключает его через наследование.
+Внешнему модулю не нужна аннотация `@Module` — подключает его именно наследование.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -184,18 +193,19 @@ agent:
     interface Application : LogbackModule, JsonModule
     ```
 
-#### Фабрика подмодуль { #submodule-factory }
+#### Подмодуль { #submodule-factory }
 
-Аннотация `@KoraSubmodule` помечает интерфейс, для которого должен быть построен модуль в рамках текущего модуля компиляции.
+Аннотация `@KoraSubmodule` помечает интерфейс, для которого должен быть построен модуль текущего модуля компиляции.
 Он будет содержать все компоненты, помеченные аннотациями `@Module` и `@Component`.
-Эта аннотация полезна, когда вы разбиваете проект на [многомодульное приложение](https://docs.gradle.org/current/userguide/multi_project_builds.html)
-с точки зрения инструмента сборки `Gradle`, где каждый модуль отвечает за свою часть функциональности,
+Эта аннотация полезна, когда проект разделен на [многомодульное приложение](https://docs.gradle.org/current/userguide/multi_project_builds.html)
+с точки зрения системы сборки `Gradle`, где каждый модуль отвечает за свою часть функциональности,
 а приложение с `@KoraApp` собирается в отдельном модуле компиляции.
-Такой подход помогает структурировать большой проект по доменным областям и улучшить время сборки:
+Такой подход помогает структурировать большой проект по предметным областям и улучшить время сборки:
 изменения в одном модуле проекта не заставляют обработчик аннотаций заново анализировать весь код приложения.
 
-Для интерфейса будет сгенерирован интерфейс-наследник. Он унаследует все интерфейсы, помеченные `@Module`,
-и создаст фабричные методы для классов, помеченных как `@Component`.
+Для интерфейса будет сгенерирован интерфейс-наследник с именем `<ИмяИнтерфейса>SubmoduleImpl`. Он унаследует все интерфейсы, помеченные `@Module`,
+и создаст фабричные методы для классов, помеченных `@Component`. Приложение подключает сам аннотированный интерфейс,
+а `Kora` сама находит для него сгенерированную реализацию.
 
 Например, у вас есть отдельный модуль приложения, который содержит такой `@KoraSubmodule`:
 
@@ -237,7 +247,7 @@ agent:
     }
     ```
 
-И есть основной модуль приложения с точкой сборки для всего приложения:
+И есть главный модуль приложения с точкой сборки всего приложения:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -253,12 +263,12 @@ agent:
     interface Application : SomeSubModule
     ```
 
-Это подключит модуль `SomeModule`, найденный через `SomeSubModule`, к итоговому контейнеру приложения.
+Это подключит найденный через `SomeSubModule` модуль `SomeModule` к итоговому контейнеру приложения.
 
-Распространенный практический сценарий использования `@KoraSubmodule` — это отдельный модуль `Gradle`, который владеет одной доменной областью и просто
-агрегирует нужные ему [внешние модули](#external-module-factory) (базы данных, кэши и так далее) путем их наследования,
-вместе со своими собственными классами `@Component` и интерфейсами `@Module`. Модуль приложения затем подключает
-сгенерированные подмодули так же, как подключает любой другой модуль:
+Типичный практический сценарий использования `@KoraSubmodule` — отдельный `Gradle`-модуль, который владеет одной предметной областью
+и просто агрегирует нужные ему [внешние модули](#external-module-factory) (базы данных, кэши и так далее) через наследование,
+вместе со своими классами `@Component` и интерфейсами `@Module`. Модуль приложения затем подключает
+сгенерированные подмодули так же, как любой другой модуль:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -284,10 +294,157 @@ agent:
     interface Application : PetModule, VetModule
     ```
 
-#### Фабрика обобщенная { #generic-factory }
+#### Фабричный модуль { #factory-module }
 
-Если контейнер зависимостей не смог найти фабрику для конкретного типа, контейнер `Kora` может попытаться найти
-методы с обобщенными параметрами во время компиляции и использовать такой метод для создания экземпляра требуемого класса.
+Аннотация `@FactoryModule` помечает метод модуля, **возвращаемое значение которого само является модулем**.
+Возвращенный объект регистрируется в контейнере как обычный компонент, а его публичные методы
+обрабатываются как фабрики компонентов.
+
+Это позволяет собрать модуль, поведение которого параметризуется обычными аргументами конструктора, чего
+нельзя сделать в простом модуле-интерфейсе. Сама `Kora` использует этот механизм: `JdbcDatabaseModule` предоставляет свои компоненты
+через `new JdbcDatabaseFactoryModule("jdbc")`, где строка — это путь конфигурации, который читает модуль.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class InnerModule {
+
+        private final Config config;
+
+        public InnerModule(Config config) {
+            this.config = config;
+        }
+
+        public SomeService someService() {
+            return new SomeService(config);
+        }
+    }
+
+    @Module
+    public interface OuterModule {
+
+        @FactoryModule
+        default InnerModule inner(Config config) { //(1)!
+            return new InnerModule(config);
+        }
+    }
+    ```
+
+    1.  Метод может принимать любые компоненты графа в качестве аргументов, как и обычный фабричный метод.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class InnerModule(private val config: Config) {
+
+        fun someService(): SomeService = SomeService(config)
+    }
+
+    @Module
+    interface OuterModule {
+
+        @FactoryModule
+        fun inner(config: Config): InnerModule { //(1)!
+            return InnerModule(config)
+        }
+    }
+    ```
+
+    1.  Метод может принимать любые компоненты графа в качестве аргументов, как и обычный фабричный метод.
+
+В графе из примера выше будет два узла: `InnerModule` и созданный им `SomeService`.
+Методы, унаследованные возвращаемым типом от его супертипов, также обрабатываются как фабрики.
+`@FactoryModule` работает и на методах, объявленных прямо в интерфейсе `@KoraApp`,
+а аннотированный метод обязан возвращать класс или интерфейс.
+
+##### Тег фабричного модуля { #factory-module-tag }
+
+`@Tag` на методе `@FactoryModule` помечает **экземпляр модуля**.
+Внутри класса модуля `@Tag(Tag.Factory.class)` означает «использовать тег объемлющего фабричного модуля».
+Именно так один тип фабричного модуля можно объявить несколько раз с разными тегами и получить несколько
+независимо сконфигурированных наборов компонентов:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public class DataSourceModule {
+
+        private final String configPath;
+
+        public DataSourceModule(String configPath) {
+            this.configPath = configPath;
+        }
+
+        @Tag(Tag.Factory.class) //(1)!
+        public DataSourceConfig config(Config config, ConfigValueMapper<DataSourceConfig> mapper) {
+            return mapper.mapOrThrow(config.get(this.configPath));
+        }
+
+        @Tag(Tag.Factory.class)
+        public DataSource dataSource(@Tag(Tag.Factory.class) DataSourceConfig config) { //(2)!
+            return new DataSource(config);
+        }
+    }
+
+    @KoraApp
+    public interface Application {
+
+        @Tag(MainDb.class)
+        @FactoryModule
+        default DataSourceModule mainDb() {
+            return new DataSourceModule("db.main");
+        }
+
+        @Tag(ReplicaDb.class)
+        @FactoryModule
+        default DataSourceModule replicaDb() {
+            return new DataSourceModule("db.replica");
+        }
+    }
+    ```
+
+    1.  Созданный компонент получает тег метода фабричного модуля, то есть `@Tag(MainDb.class)` и `@Tag(ReplicaDb.class)` соответственно.
+    2.  На параметре `@Tag(Tag.Factory.class)` запрашивает компонент, созданный **тем же** экземпляром фабричного модуля.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class DataSourceModule(private val configPath: String) {
+
+        @Tag(Tag.Factory::class) //(1)!
+        fun config(config: Config, mapper: ConfigValueMapper<DataSourceConfig>): DataSourceConfig {
+            return mapper.mapOrThrow(config.get(configPath))
+        }
+
+        @Tag(Tag.Factory::class)
+        fun dataSource(@Tag(Tag.Factory::class) config: DataSourceConfig): DataSource { //(2)!
+            return DataSource(config)
+        }
+    }
+
+    @KoraApp
+    interface Application {
+
+        @Tag(MainDb::class)
+        @FactoryModule
+        fun mainDb(): DataSourceModule = DataSourceModule("db.main")
+
+        @Tag(ReplicaDb::class)
+        @FactoryModule
+        fun replicaDb(): DataSourceModule = DataSourceModule("db.replica")
+    }
+    ```
+
+    1.  Созданный компонент получает тег метода фабричного модуля, то есть `@Tag(MainDb::class)` и `@Tag(ReplicaDb::class)` соответственно.
+    2.  На параметре `@Tag(Tag.Factory::class)` запрашивает компонент, созданный **тем же** экземпляром фабричного модуля.
+
+Если у метода фабричного модуля тега нет, `@Tag(Tag.Factory)` разворачивается в «без тега», и созданные компоненты остаются нетегированными.
+Использование `@Tag(Tag.Factory)` вне фабричного модуля — ошибка компиляции.
+
+#### Обобщенная фабрика { #generic-factory }
+
+Если контейнер зависимостей не смог найти фабрику для конкретного типа, контейнер `Kora` может во время компиляции
+попытаться найти методы с обобщенными параметрами и использовать такой метод для создания экземпляра требуемого класса.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -313,11 +470,11 @@ agent:
     }
     ```
 
-Теперь, если какому-либо компоненту нужен `GenericValidator` в качестве зависимости, для его создания будет использована эта фабрика.
+Теперь, если какому-либо компоненту потребуется `GenericValidator` в качестве зависимости, для его создания будет использована эта фабрика.
 
 ##### Информация об обобщенном типе { #type-ref }
 
-Если фабричному методу нужно знать точный обобщенный тип, запрашиваемый контейнером в данный момент, он может внедрить `TypeRef<T>`.
+Если фабричному методу нужно знать точный обобщенный тип, который контейнер запрашивает в данный момент, он может внедрить `TypeRef<T>`.
 Это полезно для инфраструктурных компонентов, которые создают зависимость по форме типа, а не только по «сырому» классу.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -344,26 +501,29 @@ agent:
     }
     ```
 
-`TypeRef<T>` переносит информацию об обобщенном типе через стирание типов в `Java`. Большинству компонентов приложения он не нужен,
-но он полезен для универсальных фабрик, мапперов и расширений контейнера.
+`TypeRef<T>` переносит информацию об обобщенном типе через стирание типов `Java`. Большинству прикладных компонентов он не нужен,
+но полезен для универсальных фабрик, преобразователей и расширений контейнера.
+`TypeRef<T>` не является узлом графа: контейнер подставляет его из разрешенного типа запроса, поэтому
+его запрос никогда не завершается ошибкой об отсутствующей зависимости.
 
 #### Механизм расширений { #extension-mechanism }
 
-Если ни одна из фабрик не смогла предоставить компонент, `Kora` может попытаться создать эту зависимость самостоятельно во время компиляции.
-Для этого предоставляется механизм расширений. Каждое расширение способно сообщить, может ли оно создать компонент требуемого типа.
-Если расширение может это сделать, оно выполняет необходимую генерацию кода и сообщает, как получить этот компонент.
+Если ни одна из фабрик не смогла предоставить компонент, `Kora` может попробовать создать эту зависимость во время компиляции самостоятельно.
+Для этого предусмотрен механизм расширений. Каждое расширение может сообщить, способно ли оно создать компонент нужного типа.
+Если расширение это умеет, оно выполняет необходимую генерацию кода и сообщает, как получить такой компонент.
 
-Например, существуют расширения, которые умеют создавать оптимальные компоненты `JsonReader` и `JsonWriter`, репозитории и другие компоненты.
-Доступные расширения обнаруживаются через механизм `ServiceLocator` из всех зависимостей, предоставленных в области видимости обработчика аннотаций.
+Например, есть расширения, которые умеют создавать оптимальные компоненты `JsonReader` и `JsonWriter`, репозитории,
+декларативные `HTTP`-клиенты, `gRPC`-заглушки, преобразователи конфигурации, валидаторы, а также мапперы `MapStruct` и `Konvert`.
+Доступные расширения обнаруживаются через механизм `ServiceLoader` во всех зависимостях, поданных в область обработчика аннотаций.
 
-Этот механизм является системным и чаще всего используется внутренними модулями `Kora`.
+Этот механизм системного уровня и чаще всего используется внутренними модулями `Kora`.
 
-#### Фабрика по умолчанию { #default-factory }
+#### Компонент по умолчанию { #default-factory }
 
-Чтобы предоставить компоненты по умолчанию через фабричные методы, которые, как предполагается, пользователь может переопределить,
+Чтобы фабричные методы предоставляли компоненты по умолчанию, которые пользователь может переопределить,
 требуется использовать аннотацию `@DefaultComponent`.
-Если контейнер зависимостей находит во время компиляции любой компонент того же типа и с теми же тегами, но без `@DefaultComponent`,
-то при внедрении будет предпочтен пользовательский компонент.
+Если во время компиляции контейнер зависимостей найдет компонент того же типа и с теми же тегами, но без `@DefaultComponent`,
+при внедрении предпочтение будет отдано пользовательскому компоненту.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -389,21 +549,27 @@ agent:
     }
     ```
 
-#### Автоматическое создание { #auto-creation }
+`@DefaultComponent` можно ставить как на фабричный метод, так и на класс с `@Component`.
+Кандидат с `@DefaultComponent` также пропускается при сборе [списка компонентов](#list-of-components),
+если существует хотя бы один кандидат того же типа без этой аннотации.
 
-Если ни один из вышеперечисленных методов не смог предоставить компонент,
-то `Kora` может попытаться создать компонент самостоятельно, если он удовлетворяет требованиям, аналогичным [автоматической фабрике](#auto-factory):
+#### Явная регистрация { #explicit-registration }
+
+Каждый компонент графа появляется из явного объявления: класса с [`@Component`](#auto-factory),
+[фабричного метода](#method-factory) в интерфейсе `@KoraApp` или в подключенном [модуле](#module-factory),
+[фабричного модуля](#factory-module), [обобщенной фабрики](#generic-factory) либо [механизма расширений](#extension-mechanism).
+
+`Kora` не создает класс, который нигде не был зарегистрирован. Если класс используется как зависимость, но не
+объявлен ни одним из этих способов, компиляция падает с ошибкой `No component found for dependency`, а не молча
+конструирует класс. Подробности — в разделе [ошибки сборки графа](#graph-build-errors).
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    * Класс не должен быть абстрактным
-    * У класса должен быть только один публичный конструктор
-    * Класс должен быть `final` (только если у него нет аспектов)
-
     ```java
+    @Component //(1)!
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(OtherService otherService) {
             this.otherService = otherService;
@@ -417,20 +583,20 @@ agent:
             return new SomeOtherService(someService);
         }
 
-        default OtherService otherService() {
+        default OtherService otherService() { //(2)!
             return new OtherService();
         }
     }
     ```
 
+    1.  Без `@Component` (или фабричного метода, возвращающего `SomeService`) граф не соберется.
+    2.  `OtherService` зарегистрирован фабричным методом, поэтому `SomeService` может быть создан.
+
 === ":simple-kotlin: `Kotlin`"
 
-    * Класс не должен быть абстрактным
-    * У класса должен быть только один публичный конструктор
-    * Класс не должен быть `open` (только если у него нет аспектов)
-
     ```kotlin
-    class SomeService(val otherService: OtherService) { }
+    @Component //(1)!
+    class SomeService(val otherService: OtherService)
 
     @KoraApp
     interface Application {
@@ -439,24 +605,88 @@ agent:
             return SomeOtherService(someService)
         }
 
-        fun otherService(): OtherService = OtherService()
+        fun otherService(): OtherService = OtherService() //(2)!
     }
     ```
 
+    1.  Без `@Component` (или фабричного метода, возвращающего `SomeService`) граф не соберется.
+    2.  `OtherService` зарегистрирован фабричным методом, поэтому `SomeService` может быть создан.
+
+Из этого правила есть одно намеренное исключение. Типы, которые `Kora` создает сама — мапперы, преобразователи,
+мапперы ключей кэша и подобные контракты, на которые ссылаются через `@Mapping`, — **не должны** помечаться `@Component`,
+если у них нет зависимостей в конструкторе: `Kora` уже создает их напрямую, и второе объявление приводит к ошибке
+`Multiple components match dependency`. Решает конструктор:
+
+* класс принимает зависимости в конструкторе — он должен быть компонентом графа (`@Component` или фабричный метод)
+* у класса нет зависимостей в конструкторе — аннотацию не ставим
+
 ### Переопределение компонента { #component-override }
 
-В случае, если компонент предоставляется библиотекой как зависимость по умолчанию,
-можно создать фабрику в приложении без аннотации `@DefaultComponent`, и такая зависимость переопределит его.
+Если компонент предоставляется библиотекой как зависимость по умолчанию,
+в приложении можно создать фабрику без аннотации `@DefaultComponent`, и такая зависимость его переопределит.
 
 Поскольку все внешние модули подключаются как интерфейсы к ядру контейнера `@KoraApp` и их фабрики доступны,
-вы можете просто переопределить их как метод и предоставить свою собственную реализацию.
+их можно просто переопределить как метод и предоставить свою реализацию.
+Любые [теги](#tags), объявленные на исходном фабричном методе, необходимо повторить на переопределении,
+поскольку именно тег идентифицирует компонент в графе:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public interface EmailModule {
+
+        final class EmailTag {
+            private EmailTag() {}
+        }
+
+        @Tag(EmailTag.class)
+        @DefaultComponent
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL DEFAULT] ";
+        }
+    }
+
+    @KoraApp
+    public interface Application extends EmailModule {
+
+        @Tag(EmailModule.EmailTag.class)
+        @Override
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL OVERRIDDEN] ";
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    interface EmailModule {
+
+        class EmailTag private constructor()
+
+        @Tag(EmailTag::class)
+        @DefaultComponent
+        fun emailNotifierHeaderSupplier(): Supplier<String> {
+            return Supplier { "[EMAIL DEFAULT] " }
+        }
+    }
+
+    @KoraApp
+    interface Application : EmailModule {
+
+        @Tag(EmailModule.EmailTag::class)
+        override fun emailNotifierHeaderSupplier(): Supplier<String> {
+            return Supplier { "[EMAIL OVERRIDDEN] " }
+        }
+    }
+    ```
 
 ### Корневой компонент { #root-component }
 
-Когда требуется, чтобы компонент всегда инициализировался при запуске приложения, даже если он не является зависимостью других компонентов,
+Когда компонент обязан всегда инициализироваться при старте приложения, даже если он не является зависимостью других компонентов,
 предполагается использовать аннотацию `@Root` над фабричным методом или классом, помеченным `@Component`.
 
-Примером такого компонента может быть `HTTP`-сервер, потребитель `Kafka`, компонент прогрева кэша или обработчик выполняемой фоновой задачи.
+Примером такого компонента может быть `HTTP`-сервер, потребитель `Kafka`, компонент прогрева кэша или обработчик фоновых задач.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -482,19 +712,128 @@ agent:
     }
     ```
 
+Корни — это точки входа разрешения графа: все, что недостижимо из корня, выбрасывается из контейнера.
+Приложение, в котором нет ни одного корня, не компилируется:
+
+```
+@KoraApp has no root components.
+
+Fix:
+  - Check that modules with @Root components are plugged-in.
+  - Annotate at least one component or module method with @Root.
+  - Check that root component is visible from this @KoraApp module set.
+```
+
+По этой же причине компоненту с [`Lifecycle`](#component-lifecycle), который только подготавливает внешнее состояние
+и от которого никто не зависит, нужен `@Root` — иначе он молча исчезнет из графа вместе со всем, что тянул за собой.
+
+### Условные компоненты { #conditional-component }
+
+Компонент можно исключить из контейнера при старте по условию, вычисляемому во время выполнения.
+Само условие — это компонент, реализующий `GraphCondition`, зарегистрированный под `@Tag`, который его именует,
+а зависящий от него компонент помечается `@Conditional(tag = ...)`.
+
+```java
+public interface GraphCondition {
+
+    ConditionResult eval();
+
+    sealed interface ConditionResult {
+
+        record Matched(String reason) implements ConditionResult {}
+
+        record Failed(String reason) implements ConditionResult {}
+    }
+}
+```
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class OnPrimaryNode implements GraphCondition {
+
+        @Override
+        public ConditionResult eval() {
+            return "primary".equals(System.getenv("NODE_ROLE"))
+                    ? ConditionResult.matched("NODE_ROLE is primary")
+                    : ConditionResult.failed("NODE_ROLE is not primary");
+        }
+    }
+
+    @KoraApp
+    public interface Application {
+
+        @Tag(OnPrimaryNode.class) //(1)!
+        default GraphCondition onPrimaryNode() {
+            return new OnPrimaryNode();
+        }
+
+        @Root
+        @Conditional(tag = OnPrimaryNode.class) //(2)!
+        default LeaderElectionJob leaderElectionJob() {
+            return new LeaderElectionJob();
+        }
+    }
+    ```
+
+    1.  Условие — обычный компонент типа `GraphCondition`, который опознается по тегу.
+    2.  Для тега должен существовать ровно один компонент `GraphCondition`, иначе компиляция падает.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class OnPrimaryNode : GraphCondition {
+
+        override fun eval(): GraphCondition.ConditionResult {
+            return if (System.getenv("NODE_ROLE") == "primary") {
+                GraphCondition.ConditionResult.matched("NODE_ROLE is primary")
+            } else {
+                GraphCondition.ConditionResult.failed("NODE_ROLE is not primary")
+            }
+        }
+    }
+
+    @KoraApp
+    interface Application {
+
+        @Tag(OnPrimaryNode::class) //(1)!
+        fun onPrimaryNode(): GraphCondition = OnPrimaryNode()
+
+        @Root
+        @Conditional(tag = OnPrimaryNode::class) //(2)!
+        fun leaderElectionJob(): LeaderElectionJob = LeaderElectionJob()
+    }
+    ```
+
+    1.  Условие — обычный компонент типа `GraphCondition`, который опознается по тегу.
+    2.  Для тега должен существовать ровно один компонент `GraphCondition`, иначе компиляция падает.
+
+Условия вычисляются при инициализации графа и заново при каждом его обновлении:
+
+* если условие вернуло `Matched`, компонент создается как обычно
+* если условие вернуло `Failed`, узел остается пустым, а чтение бросает `Graph node value was not initialized because condition failed: <reason>`
+* [список компонентов](#list-of-components) молча пропускает компоненты, чье условие не выполнилось
+* `@Conditional` допустима и на компонентах `@Root` — тогда не создается все поддерево за этим корнем
+
+Когда за одну точку внедрения конкурирует несколько кандидатов одного типа и **все** они условные,
+`Kora` не падает во время компиляции: она выберет тот, чье условие выполнилось во время работы.
+Если не выполнилось ни одно или выполнилось больше одного, граф не инициализируется.
+
+`GraphCondition` также предоставляет `GraphCondition.and(...)` и `GraphCondition.or(...)` для композиции условий.
+
 ### Необязательные зависимости { #optional-dependencies }
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если вы хотите ввести необязательную зависимость, которой может не существовать, то
-    предполагается пометить такой компонент любой аннотацией `@Nullable`,
-    тогда контейнер зависимостей не завершится с ошибкой во время компиляции из-за отсутствия компонента:
+    Если требуется ввести необязательную зависимость, которой может не быть,
+    следует пометить такой компонент аннотацией `@Nullable` —
+    тогда контейнер зависимостей не упадет во время компиляции из-за отсутствия компонента:
 
     ```java
     @Component
     public final class SomeService {
 
-        private OtherService otherService;
+        private final OtherService otherService;
 
         public SomeService(@Nullable OtherService otherService) { //(1)!
             this.otherService = otherService;
@@ -502,26 +841,31 @@ agent:
     }
     ```
 
-    1.  Подойдет любая аннотация `@Nullable`, например `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable`.
+    1.  `Kora` распознает любую аннотацию с простым именем `Nullable`; вместе с фреймворком поставляется
+        [JSpecify](https://jspecify.dev) `org.jspecify.annotations.Nullable`, доступная транзитивно из ядра.
+        Аннотации JSpecify являются **type-use**, поэтому их позиция важна в квалифицированных и обобщенных типах
+        (`Outer.@Nullable Inner`, `List<@Nullable String>`).
 
 === ":simple-kotlin: `Kotlin`"
 
-    Если вы хотите внедрить необязательную зависимость, которая может отсутствовать, используйте [синтаксис null-безопасности `Kotlin`](https://kotlinlang.org/docs/null-safety.html)
-    и пометьте этот компонент как допускающий `null`,
-    тогда контейнер зависимостей не завершится с ошибкой во время компиляции из-за отсутствия компонента:
+    Если требуется внедрить необязательную зависимость, которой может не быть, используйте
+    [синтаксис null-безопасности `Kotlin`](https://kotlinlang.org/docs/null-safety.html)
+    и пометьте такой компонент как допускающий `null` —
+    тогда контейнер зависимостей не упадет во время компиляции из-за отсутствия компонента:
 
     ```kotlin
     @Component
-    class SomeService(val otherService: OtherService?) { }
+    class SomeService(val otherService: OtherService?)
     ```
 
-Необязательность можно комбинировать с обертками контейнера: `ValueOf<Optional<T>>`, `Optional<ValueOf<T>>`,
+Отсутствующую зависимость можно запросить и как `java.util.Optional<T>` — тогда контейнер внедрит пустой
+`Optional` вместо того, чтобы упасть. Необязательность комбинируется с обертками контейнера: `ValueOf<Optional<T>>`, `Optional<ValueOf<T>>`,
 `PromiseOf<Optional<T>>` и `Optional<PromiseOf<T>>`. Это полезно, когда зависимость может отсутствовать,
-но компоненту при этом все равно нужен отложенный доступ или возможность обновить ее через контейнер.
+но компоненту при этом нужен отложенный доступ или возможность обновить ее через контейнер.
 
 ### Список компонентов { #list-of-components }
 
-В контейнере может быть много экземпляров одного и того же типа, и если вы хотите собрать их все в одном месте, следует использовать специальный тип `All`.
+В контейнере может быть множество экземпляров одного типа, и если требуется собрать их все в одном месте, следует использовать специальный тип `All`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -557,29 +901,66 @@ agent:
     }
     ```
 
-Например, у нас есть некоторая сущность `Handler`, и она внедряется N различными типами в контейнере.
+Например, есть сущность `Handler`, и в контейнере она представлена N разными типами.
 `SomeProcessor` при этом потребляет все возможные реализации этого типа.
 **Важно**: пример выше берет все экземпляры `Handler` без тегов.
 
 Сам тип `All` имеет следующий контракт:
 
 ```java
-public sealed interface All<T> extends List<T> permits AllImpl {}
+public sealed interface All<T> extends Iterable<T> { }
 ```
 
-Это токен-тип, который расширяет `List` и может быть передан в конструкторы, ожидающие `List`.
-Если вам нужно собрать ссылки на компоненты вместо самих компонентов, контейнер также поддерживает
-`All<ValueOf<T>>` и `All<PromiseOf<T>>`.
+`All<T>` — это `Iterable<T>`, а не `List<T>`: обходите его циклом `for` или скопируйте в коллекцию, если нужен
+произвольный доступ. Если нужно собрать ссылки на компоненты, а не сами компоненты, контейнер также поддерживает
+`All<ValueOf<T>>` и `All<PromiseOf<T>>`. Запрос `All<T>` для типа, который никто не предоставляет, ошибкой не является —
+коллекция просто будет пустой. `All.of(...)` создает статический экземпляр, что удобно в тестах.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Root
+    @Component
+    public final class NotifyRunner {
+
+        private final All<Notifier> notifiers;
+
+        public NotifyRunner(All<Notifier> notifiers) {
+            this.notifiers = notifiers;
+        }
+
+        public void notifyAll(String user, String message) {
+            for (var notifier : notifiers) {
+                notifier.notify(user, message);
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Root
+    @Component
+    class NotifyRunner(private val notifiers: All<Notifier>) {
+
+        fun notifyAll(user: String, message: String) {
+            for (notifier in notifiers) {
+                notifier.notify(user, message)
+            }
+        }
+    }
+    ```
 
 ### Теги { #tags }
 
-Иногда возникает необходимость предоставить разные экземпляры одного и того же типа разным компонентам. Для этой цели их можно различать по тегам.
-Для этого существует аннотация `@Tag`, которая принимает на вход класс тега.
-Ожидается сопоставление, при котором компонент регистрируется с определенным тегом, а в точке внедрения объявляется с точно таким же тегом.
+Иногда требуется предоставлять разные экземпляры одного типа разным компонентам. Для этого их можно различать тегами.
+Для этого существует аннотация `@Tag`, которая принимает на вход класс-тег.
+Ожидается связка, где компонент регистрируется с определенным тегом, а в точке внедрения объявляется ровно тот же тег.
 
-Используется именно класс, а не строковый литерал, потому что так проще ориентироваться в коде и проще выполнять рефакторинг.
+Используется именно класс, а не строковый литерал, потому что по классу проще навигироваться в коде и проще выполнять рефакторинг.
 
-Вот как можно внедрять разные экземпляры класса с общим интерфейсом в разные точки внедрения:
+Так можно внедрять разные экземпляры класса с общим интерфейсом в разные точки внедрения:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -596,11 +977,11 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
             return new SomeService2();
         }
 
-        default ServiceC serviceA(@Tag(MyTag1.class) SomeService service) {
+        default ServiceA serviceA(@Tag(MyTag1.class) SomeService service) {
             return new ServiceA(service);
         }
 
-        default ServiceD serviceB(@Tag(MyTag2.class) SomeService service) {
+        default ServiceB serviceB(@Tag(MyTag2.class) SomeService service) {
             return new ServiceB(service);
         }
     }
@@ -627,23 +1008,22 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
     }
     ```
 
-Теги над методом сообщают, с каким тегом зарегистрировать компонент, а теги в точках внедрения сообщают, какой помеченный тегом компонент ожидать.
-Теги также работают на параметрах конструктора, в сочетании с `@Component` или финальными классами.
+Теги над методом говорят, с каким тегом зарегистрировать компонент, а теги в точках внедрения — какой тегированный компонент ожидать.
+Теги также работают на классах `@Component` и на параметрах их конструкторов.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(MyTag1.class)
-    class SomeService1 implements SomeService {
-
-    }
+    @Component
+    public final class SomeService1 implements SomeService { }
 
     @Tag(MyTag2.class)
-    final class SomeService2 implements SomeService {
+    @Component
+    public final class SomeService2 implements SomeService { }
 
-    }
-
-    final class ServiceA {
+    @Component
+    public final class ServiceA {
 
         private final SomeService service;
 
@@ -652,7 +1032,8 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
         }
     }
 
-    final class ServiceB {
+    @Component
+    public final class ServiceB {
 
         private final SomeService service;
 
@@ -668,19 +1049,25 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
     interface SomeService
 
     @Tag(MyTag1::class)
+    @Component
     class SomeService1 : SomeService
 
     @Tag(MyTag2::class)
+    @Component
     class SomeService2 : SomeService
 
-    class ServiceA(private val service: @Tag(MyTag1::class) SomeService)
+    @Component
+    class ServiceA(@Tag(MyTag1::class) private val service: SomeService)
 
-    class ServiceB(private val service: @Tag(MyTag2::class) SomeService)
+    @Component
+    class ServiceB(@Tag(MyTag2::class) private val service: SomeService)
     ```
 
-#### Собственный тег { #tag-custom }
+В `Kotlin` аннотация ставится на **параметр** конструктора, перед его именем, а не внутрь типа.
 
-Вы также можете создавать свои собственные аннотации-теги и работать с ними. Одним из примеров является [аннотация `@Json`](json.md).
+#### Пользовательский тег { #tag-custom }
+
+Также можно создавать собственные аннотации-теги и работать с ними. Один из примеров — [аннотация `@Json`](json.md).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -718,9 +1105,9 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
     }
     ```
 
-#### Все по тегу { #tag-all }
+#### Список по тегу { #tag-all }
 
-Вы также можете использовать тег, чтобы получить список всех компонентов по определенному тегу:
+Тег также можно использовать, чтобы получить список всех компонентов с определенным тегом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -762,7 +1149,7 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
 
 #### Любой тег { #tag-any }
 
-Чтобы получить список всех компонентов с тегом и без него, нужно использовать специальный тип тега `@Tag.Any`:
+Чтобы получить список всех компонентов и с тегом, и без него, нужно использовать специальный тип тега `@Tag.Any`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -800,33 +1187,42 @@ public sealed interface All<T> extends List<T> permits AllImpl {}
     }
     ```
 
+`@Tag.Any` имеет смысл только в точке внедрения: он объявляет, что там подойдет любой тег.
+Точка внедрения без тега соответствует только компонентам, зарегистрированным без тега.
+
 ### Циклические зависимости { #circular-dependencies }
 
 Поскольку `Kora` строит и проверяет весь граф зависимостей во время компиляции, цикл зависимостей
-(компоненту `A` нужен `B`, компоненту `B` нужен `A`, возможно, через несколько компонентов между ними) обнаруживается во время компиляции,
-а не приводит к сбою во время выполнения. То, как обрабатывается такой цикл, зависит от того, как объявлена зависимость внутри цикла.
+(компонент `A` нуждается в `B`, `B` — в `A`, возможно, через промежуточные компоненты) обнаруживается при компиляции,
+а не взрывается во время выполнения. Как именно обрабатывается такой цикл, зависит от того, как объявлена зависимость внутри него.
 
 **Прямая зависимость от `final`-класса (или любого не-интерфейсного типа).**
-Такой цикл не может быть разрешен, и компиляция завершается ошибкой. Ошибка указывает на тип, который замыкает цикл, и перечисляет
-кандидатов цикла:
+Такой цикл разрешить нельзя, и компиляция падает. Ошибка называет тип, который замыкает цикл, печатает сам цикл
+и предлагает способы выхода:
 
 ```
-Encountered circular dependency in graph for source type: ru.tinkoff.kora.example.ServiceA (no tags)
-  Cycle dependency candidates:
-  - ru.tinkoff.kora.example.ServiceA
-  - ru.tinkoff.kora.example.ServiceB
-Please check that you are not using cycle dependency in ru.tinkoff.kora.application.graph.Lifecycle, this is forbidden.
+Circular dependency found:
+  io.koraframework.example.ServiceA (no tags)
+
+  Dependency cycle:
+    @--- component  io.koraframework.example.ServiceB
+    ^--- component  io.koraframework.example.ServiceA [CYCLE]
+
+Fix:
+  - Break the cycle with ValueOf<T> or PromiseOf<T> where lazy access is valid.
+  - Move shared state into a separate component.
+  - Do not create dependency cycles in io.koraframework.application.graph.Lifecycle.
 ```
 
-**Зависимость, объявленная через интерфейс (или не-`final`-класс).**
-`Kora` разрывает цикл автоматически: для зависимости с типом-интерфейсом она генерирует ленивый прокси, реализующий
-`ru.tinkoff.kora.common.PromisedProxy<T>`, и внедряет прокси вместо реального компонента. Прокси разрешает
-фактический компонент из графа при первом обращении (и повторно разрешает его после обновления графа), так что оба компонента могут быть
-сконструированы. От разработчика никаких действий не требуется, но имейте в виду, что проксируемая сторона становится пригодной к использованию только после
-того, как граф полностью связан, поэтому ее нельзя вызывать из конструктора.
+**Зависимость объявлена через интерфейс (или не-`final`-класс).**
+`Kora` разрывает цикл автоматически: для зависимости с интерфейсным типом она генерирует ленивый прокси, реализующий
+`io.koraframework.common.PromisedProxy<T>`, и внедряет прокси вместо настоящего компонента. Прокси разрешает
+настоящий компонент из графа при первом обращении (и разрешает заново после обновления графа), поэтому оба компонента
+могут быть созданы. От разработчика ничего не требуется, но нужно помнить, что проксируемая сторона становится
+работоспособной только после полной сборки графа, поэтому вызывать ее из конструктора нельзя.
 
 В примере ниже `ServiceAImpl` и `ServiceBImpl` ссылаются друг на друга через интерфейсы, поэтому цикл разрывается
-автоматически сгенерированным `PromisedProxy`, и граф разрешается успешно:
+автоматически сгенерированным `PromisedProxy`, и граф успешно собирается:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -862,9 +1258,9 @@ Please check that you are not using cycle dependency in ru.tinkoff.kora.applicat
     class ServiceBImpl(serviceA: ServiceA) : ServiceB
     ```
 
-Надежный способ намеренно разорвать цикл — внедрить одну из сторон через [`ValueOf<T>`](#indirect-dependency)
-или [`PromiseOf<T>`](#updating-components) вместо прямой зависимости. Это отвязывает потребителя от жизненного цикла другого
-компонента, поэтому контейнер больше не рассматривает эти два компонента как жесткий цикл:
+Надежный способ разорвать цикл осознанно — внедрить одну из сторон через [`ValueOf<T>`](#indirect-dependency)
+или [`PromiseOf<T>`](#updating-components) вместо прямой зависимости. Это отвязывает потребителя от жизненного цикла
+другого компонента, и контейнер перестает считать эту пару жестким циклом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -883,26 +1279,86 @@ Please check that you are not using cycle dependency in ru.tinkoff.kora.applicat
     class ServiceAImpl(serviceB: ValueOf<ServiceB>) : ServiceA
     ```
 
+### Ошибки сборки графа { #graph-build-errors }
+
+Все ошибки графа — это ошибки времени компиляции, привязанные к конкретному элементу исходного кода, который их вызвал.
+Каждое сообщение говорит, что не получилось, откуда это потребовалось, и содержит блок `Fix:` с возможными решениями.
+
+**У зависимости нет поставщика.** Сообщение печатает весь путь от корня до отсутствующего запроса:
+
+```
+No component found for dependency:
+  io.koraframework.example.PetRepository (no tags)
+
+Required at:
+  io.koraframework.example.Application#petService(io.koraframework.example.PetRepository)
+  parameter: io.koraframework.example.PetRepository repository
+
+Dependency resolution path:
+  ^--- factory  io.koraframework.example.Application#petController(...)
+  ^--- factory  io.koraframework.example.Application#petService(...)
+  ^--- io.koraframework.example.PetRepository    [MISSING]
+
+Fix:
+  - Add @Component to an implementation of io.koraframework.example.PetRepository.
+  - Add a module method that returns io.koraframework.example.PetRepository.
+  - Include a module that provides io.koraframework.example.PetRepository in @KoraApp.
+```
+
+В сообщении могут появиться два дополнительных блока:
+
+* блок `Note:` со списком компонентов того же типа, зарегистрированных с **другим** тегом — обычный признак забытого или перепутанного `@Tag`
+* блок `Hint:` для хорошо известных типов, например с советом пометить модель `@Json`, когда не хватает `JsonWriter`
+
+**Одной точке внедрения соответствует несколько поставщиков.** Кандидаты перечисляются вместе с фабрикой или компонентом, который их объявил:
+
+```
+Multiple components match dependency:
+  io.koraframework.example.PetService (no tags)
+
+Required at:
+  petController(io.koraframework.example.PetService)
+  parameter: io.koraframework.example.PetService petService
+
+  Candidates:
+  - factory  io.koraframework.example.Application#petServicePrimary()
+  - factory  io.koraframework.example.Application#petServiceSecondary()
+
+Fix:
+  - Add different @Tag(...) annotations to candidates and request the needed tag.
+  - Mark fallback candidate with @DefaultComponent.
+  - Remove one duplicate provider.
+```
+
+**Другие частые ошибки сборки:**
+
+* `@KoraApp has no root components.` — ни один элемент графа не помечен [`@Root`](#root-component)
+* `Circular dependency found:` — смотрите [циклические зависимости](#circular-dependencies)
+* `Component condition cannot be resolved:` — для тега [`@Conditional`](#conditional-component) нет компонента `GraphCondition`
+* `@Component class must have exactly one public constructor.` — смотрите [автоматическую фабрику](#auto-factory)
+* `Kora submodule was not generated yet:` — модуль с [`@KoraSubmodule`](#submodule-factory) собран без обработчика аннотаций `Kora`
+
 ## Время выполнения { #runtime }
 
 Контейнер зависимостей использует максимально возможный параллелизм в рамках построенного графа.
+Каждый узел создается, инициализируется и освобождается в собственном виртуальном потоке, в порядке зависимостей.
 
-Во время выполнения приложения контейнер делает следующее:
+Во время работы приложения контейнер делает следующее:
 
-* Инициализирует все компоненты в контейнере зависимостей
+* Инициализирует все компоненты контейнера зависимостей
 * Отслеживает изменения в контейнере зависимостей
-* Атомарно обновляет контейнер зависимостей при внесении изменений
-* Выполняет [штатное завершение](#graceful-shutdown) при получении сигнала `SIGTERM`
+* Атомарно обновляет контейнер зависимостей при изменениях
+* Выполняет [плавную остановку](#graceful-shutdown) при получении сигнала `SIGTERM`
 
-Все компоненты используют энергичную инициализацию, что означает, что они инициализируются сразу при запуске приложения.
+Все компоненты используют жадную инициализацию, то есть инициализируются сразу при запуске приложения.
 
 ### Точка входа { #entrypoint }
 
 Точка входа приложения должна вызывать `KoraApplication.run`, используя контейнер зависимостей, созданный во время компиляции.
 
-Если интерфейс, помеченный `@KoraApp`, называется `Application`, то во время компиляции в том же пакете будет сгенерирован класс с именем `ApplicationGraph`.
-Он представляет собой реализацию контейнера зависимостей, а точка входа
-в том же пакете будет выглядеть так:
+Если интерфейс, помеченный `@KoraApp`, называется `Application`, то при компиляции в том же пакете будет сгенерирован класс
+`ApplicationGraph`. Он реализует `Supplier<ApplicationGraphDraw>` и предоставляет статический метод `graph()`,
+поэтому точка входа в том же пакете будет выглядеть так:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -923,49 +1379,56 @@ Please check that you are not using cycle dependency in ru.tinkoff.kora.applicat
     interface Application
 
     fun main() {
-        KoraApplication.run { ApplicationGraph.graph() }
+        KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-`KoraApplication.run` запускает контейнер и возвращает `RefreshableGraph` (`Graph` в сочетании с [`Lifecycle`](#component-lifecycle)).
-Для работающего приложения вы обычно не взаимодействуете с ним напрямую, но он полезен в тестах и продвинутых сценариях, где
-нужно найти компонент в графе или вручную инициировать обновление.
+Сигнатура `KoraApplication.run` — `public static void run(Supplier<ApplicationGraphDraw> supplier)`.
+Метод строит граф, логирует длительность инициализации, регистрирует shutdown-hook, освобождающий граф,
+и затем блокирует вызывающий поток до остановки. Если инициализация упала, ошибка логируется, а JVM завершается с кодом `-1`.
+
+Если нужен сам объект графа — в тестах или в продвинутых сценариях, где компонент достают вручную или инициируют обновление, —
+вызовите `ApplicationGraph.graph().init()`, который возвращает `InitializedGraph` (это `RefreshableGraph` с методами
+`init()` и `release()`).
 
 ### Жизненный цикл контейнера { #container-lifecycle }
 
-Контейнер зависимостей умеет инициализировать все компоненты в правильном порядке и делает это максимально параллельно, чтобы достичь максимально быстрого времени запуска.
+Контейнер зависимостей умеет инициализировать все компоненты в правильном порядке и делает это максимально параллельно, чтобы добиться наиболее быстрого старта.
 
 Когда контейнер больше не нужен, он запускает механизм освобождения компонентов в обратном порядке.
 
 В середине жизненного цикла компонент может быть обновлен, и тогда контейнер обновляет все компоненты,
-которые зависят от измененного компонента. Это происходит атомарно: в начале процесса открывается транзакция,
-которая закрывается только если все компоненты успешно инициализированы, и откатывается, если возникает хотя бы одна ошибка.
+которые зависят от изменившегося. Это происходит атомарно: контейнер собирает затронутую часть графа
+во временную копию, и только когда все компоненты в ней успешно инициализированы, подменяет ее и освобождает
+замененные объекты. Если хотя бы один компонент упал, временные объекты освобождаются, а старый граф остается на месте.
 
 ### Жизненный цикл компонента { #component-lifecycle }
 
 По умолчанию все компоненты создаются как синглтоны через конструктор или фабричный метод во время инициализации.
-Если вам нужно выполнить какие-либо действия при инициализации компонента или перед его освобождением, вы должны реализовать интерфейс `Lifecycle`:
+Если нужно выполнить какие-то действия при инициализации компонента или перед его освобождением, следует реализовать интерфейс `Lifecycle`:
 
 ```java
 public interface Lifecycle {
-    
+
     void init() throws Exception;
 
     void release() throws Exception;
 }
 ```
 
-В контейнере зависимостей все компоненты инициализируются асинхронно и максимально параллельно.
+В контейнере зависимостей все компоненты инициализируются параллельно настолько, насколько это позволяет граф,
+каждый в собственном виртуальном потоке.
 
-Если вам нужно предоставить компонент с жизненным циклом из фабричного метода, вы можете использовать класс `LifecycleWrapper`.
+Если нужно предоставить компонент с жизненным циклом из фабричного метода, можно использовать класс `LifecycleWrapper`.
 Он реализует сразу два контракта:
 
 * `Lifecycle` — контейнер вызовет `init()` при запуске и `release()` при освобождении компонента
-* `Wrapped<T>` — контейнер внедрит значение `T`, возвращаемое методом `value()`
+* `Wrapped<T>` — контейнер внедрит значение `T`, которое возвращает метод `value()`
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface SomeModule {
 
         default Wrapped<SomeService> someService() {
@@ -999,7 +1462,7 @@ public interface Lifecycle {
     }
     ```
 
-Если вам нужно вернуть собственную обертку, она должна реализовывать `Wrapped<T>`:
+Если нужно вернуть собственную обертку, она должна реализовывать `Wrapped<T>`:
 
 ```java
 public interface Wrapped<T> {
@@ -1008,13 +1471,18 @@ public interface Wrapped<T> {
 }
 ```
 
-### Штатное завершение { #graceful-shutdown }
+Компонент, предоставленный как `Wrapped<T>`, можно внедрять и как `T` (контейнер его разворачивает), и как сам `Wrapped<T>`,
+в том числе через обертки `ValueOf`, `PromiseOf` и `All`.
+
+### Плавная остановка { #graceful-shutdown }
 
 Все интеграции, которые предоставляет `Kora`, такие как [HTTP-сервер](http-server.md) и [потребитель Kafka](kafka.md),
-поддерживают [штатное завершение](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) из коробки, используя
-[жизненный цикл компонента](#component-lifecycle).
+поддерживают [плавную остановку](https://www.techtarget.com/whatis/definition/graceful-shutdown-and-hard-shutdown) из коробки за счет
+[жизненного цикла компонента](#component-lifecycle).
 
-Все компоненты, которые реализуют `AutoCloseable`, также будут автоматически закрыты контейнером зависимостей перед освобождением.
+Компоненты освобождаются в порядке, обратном порядку зависимостей. Для каждого компонента контейнер сначала выполняет
+`beforeRelease` у [перехватчиков графа](#component-inspection), затем `Lifecycle.release()` и в конце `AutoCloseable.close()`,
+так что компонент, реализующий `AutoCloseable`, закрывается автоматически даже без реализации `Lifecycle`.
 
 ### Косвенная зависимость { #indirect-dependency }
 
@@ -1053,41 +1521,48 @@ public interface Wrapped<T> {
     }
     ```
 
-У нас есть два сервиса и третий сервис, который зависит от них. Но есть разница в жизненном цикле.
-Если мы берем тип как зависимость напрямую, то мы сообщаем контейнеру, что при обновлении компонента `ServiceA` нам нужно точно так же обновить компонент `ServiceC`.
-Но когда мы используем обертку типа `ValueOf`, мы сообщаем контейнеру,
-что `ServiceC` не связан с жизненным циклом `ServiceB`, и если `ServiceB` изменяется, то `ServiceC` обновлять не нужно.
+Есть два сервиса и третий сервис, который от них зависит. Но есть разница в жизненном цикле.
+Если взять тип как зависимость напрямую, мы сообщаем контейнеру, что при обновлении компонента `ServiceA` точно так же нужно обновить компонент `ServiceC`.
+А когда используется обертка `ValueOf`, мы сообщаем контейнеру,
+что `ServiceC` не связан с жизненным циклом `ServiceB`, и если `ServiceB` изменится, `ServiceC` обновлять не нужно.
 
 #### Обновление компонентов { #updating-components }
 
-Обновление компонента возможно, если для внедрения зависимости используется обертка `ValueOf`:
+Обертка `ValueOf` дает компоненту «живую» ссылку на другой компонент вместо зафиксированного экземпляра:
 
 ```java
 public interface ValueOf<T> {
-    
-    T get();
 
-    void refresh();
+    T get();
 }
 ```
 
 Метод `get()` возвращает текущее состояние компонента в контейнере.
-Этот механизм используется в компонентах, которые не могут быть перезагружены во время работы приложения.
-Например, это касается различных серверов, которые слушают сокеты (`HTTP`, `gRPC`): обработчики запросов, которые могут изменяться,
-поставляются им через `ValueOf`.
+Этот механизм используется в компонентах, которые нельзя перезагрузить во время работы приложения.
+Например, это относится к серверам, слушающим сокеты (`HTTP`, `gRPC`): обработчики запросов, которые могут меняться,
+передаются им через `ValueOf`.
 
-С помощью метода `refresh()` вы можете инициировать обновление компонента. Этот механизм используется, например, компонентом,
-который отслеживает изменения файла конфигурации на диске.
-Когда содержимое файла изменяется, он инициирует обновление компонента конфигурации, и затем все изменения распространяются
-по цепочке компонентов, связанных прямыми зависимостями.
+У `ValueOf` также есть дополнительные методы для удобной работы с обернутым значением:
 
-`ValueOf` также имеет дополнительные методы для удобной работы с обернутым значением:
+* `map(...)` — преобразует значение внутри `ValueOf`, не разрывая связь с исходным компонентом
+* `optional()` — превращает `ValueOf<T>` в `ValueOf<Optional<T>>`
 
-* `map(...)` — преобразует значение внутри `ValueOf` без изменения связи с исходным компонентом
-* `optional()` — преобразует `ValueOf<T>` в `ValueOf<Optional<T>>`
+Само обновление инициируется через граф — передачей `Node<T>` изменившегося компонента:
+
+```java
+public interface RefreshableGraph extends Graph {
+
+    void refresh(Node<?> fromNode);
+}
+```
+
+Все, что зависит от этого узла **напрямую**, пересоздается; все, что связано с ним только через
+`ValueOf` или `PromiseOf`, сохраняет свой экземпляр и просто видит новое значение.
+Именно так работает встроенный наблюдатель за файлом конфигурации: он внедряет `RefreshableGraph` вместе с
+`Node<ConfigOrigin>` конфигурации приложения и вызывает `graph.refresh(node)`, когда файл на диске изменился.
 
 Если компоненту нужна отложенная ссылка, он может использовать `PromiseOf<T>`.
-Метод `get()` возвращает `Optional<T>`: до связывания графа он пуст, а после связывания получает текущий компонент из контейнера.
+Метод `get()` возвращает `Optional<T>`: до сборки графа он пуст, а после сборки получает текущий компонент из контейнера.
 
 ```java
 public interface PromiseOf<T> {
@@ -1097,14 +1572,14 @@ public interface PromiseOf<T> {
 ```
 
 Как и `ValueOf`, `PromiseOf` поддерживает `map(...)` и `optional()`.
-Большинству бизнес-кода нужна только прямая зависимость или `ValueOf`; `PromiseOf` предназначен для более низкоуровневых сценариев,
+Большинству прикладного кода достаточно прямой зависимости или `ValueOf`; `PromiseOf` предназначен для низкоуровневых сценариев,
 где компоненту нужен отложенный доступ к другой части графа.
 
-Если компонент, полученный через `ValueOf<Wrapped<T>>`, нужно передать дальше как обычный `ValueOf<T>`,
-вы можете использовать `Wrapped.UnwrappedValue.unwrap(...)`. Это полезно для оберток, которые добавляют жизненный цикл или другое поведение,
-но должны предоставлять наружу обычное значение.
+Если компонент, полученный как `ValueOf<Wrapped<T>>`, нужно передать дальше как обычный `ValueOf<T>`,
+можно использовать `Wrapped.unwrap(...)`. Это полезно для оберток, которые добавляют жизненный цикл или другое поведение,
+но наружу должны отдавать обычное значение.
 
-#### Слушатели обновлений { #refresh-listener }
+#### Слушатели обновления { #refresh-listener }
 
 Если компоненту нужно знать, что граф был успешно обновлен, он может реализовать `RefreshListener`:
 
@@ -1115,43 +1590,105 @@ public interface RefreshListener {
 }
 ```
 
-Контейнер вызывает `graphRefreshed()` после успешного обновления графа. Если компонент одновременно является оберткой значения и слушателем обновлений,
+Контейнер вызывает `graphRefreshed()` после успешного обновления графа. Если компонент является одновременно оберткой значения и слушателем обновления,
 он может реализовать комбинированный интерфейс `WrappedRefreshListener<T>`.
 
 `RefreshListener` нужен только для получения уведомления после завершения обновления. Он не требуется для того, чтобы контейнер
 пересоздал компонент. Если обновление затрагивает компонент или его зависимости, а другие компоненты внедрили его напрямую,
-без `ValueOf` или `PromiseOf`, то эти зависимые компоненты также будут обновлены автоматически.
+без `ValueOf` или `PromiseOf`, эти зависимые компоненты также будут обновлены автоматически.
 
-### Инспекция компонента { #component-inspection }
+### Доступ к графу { #graph-access }
+
+Инфраструктурным компонентам иногда нужен сам контейнер, а не конкретная зависимость.
+Для этого можно внедрить три типа:
+
+* `Graph` — доступ только на чтение: `get(Node<T>)`, `valueOf(Node<T>)`, `promiseOf(Node<T>)`
+* `RefreshableGraph` — то же самое плюс `refresh(Node<?>)`
+* `Node<T>` — дескриптор конкретного компонента в графе, разрешаемый по типу и тегу так же, как обычная зависимость
+
+`Graph` и `RefreshableGraph` сами компонентами не являются: контейнер подставляет самого себя, поэтому их запрос
+не добавляет узел и не может завершиться ошибкой. `Node<T>`, наоборот, разрешает реальный компонент и подтягивает его в граф.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Root
+    @Component
+    public final class ConfigReloader implements Lifecycle {
+
+        private final RefreshableGraph graph;
+        private final Node<AppConfig> configNode;
+
+        public ConfigReloader(RefreshableGraph graph, Node<AppConfig> configNode) {
+            this.graph = graph;
+            this.configNode = configNode;
+        }
+
+        public void reload() {
+            graph.refresh(configNode);
+        }
+
+        @Override
+        public void init() { }
+
+        @Override
+        public void release() { }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Root
+    @Component
+    class ConfigReloader(
+        private val graph: RefreshableGraph,
+        private val configNode: Node<AppConfig>
+    ) : Lifecycle {
+
+        fun reload() {
+            graph.refresh(configNode)
+        }
+
+        override fun init() { }
+
+        override fun release() { }
+    }
+    ```
+
+`Node<T>` нельзя запросить для nullable-типа; если нужен доступ, допускающий `null`, внедряйте зависимость напрямую.
+
+### Перехват компонента { #component-inspection }
 
 Бывают ситуации, когда компонент в контейнере нужно дополнительно изменить или инициализировать,
-но никто не должен начинать работать с этим компонентом до завершения этих действий.
+но никто не должен начать работать с этим компонентом до завершения этих действий.
 Для этого случая существует механизм перехвата компонентов. Поместите в контейнер объект, реализующий интерфейс `GraphInterceptor`.
 
 ```java
 public interface GraphInterceptor<T> {
 
-    T init(T value);
+    T afterInit(T value);
 
-    T release(T value);
+    T beforeRelease(T value);
 }
 ```
 
-Например, этот механизм можно использовать для прогрева кэша на основе `JdbcDatabase`:
+Например, этот механизм можно использовать для прогрева кэша на основе `JdbcDataSource`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class CacheWarmupInterceptor implements GraphInterceptor<JdbcDatabase> {
+    public final class CacheWarmupInterceptor implements GraphInterceptor<JdbcDataSource> {
 
         @Override
-        public JdbcDatabase init(JdbcDatabase value) {
+        public JdbcDataSource afterInit(JdbcDataSource value) {
             // warm up cache
+            return value;
         }
 
         @Override
-        public JdbcDatabase release(JdbcDatabase value) {
+        public JdbcDataSource beforeRelease(JdbcDataSource value) {
             return value;
         }
     }
@@ -1161,19 +1698,29 @@ public interface GraphInterceptor<T> {
 
     ```kotlin
     @Component
-    class CacheWarmupInterceptor : GraphInterceptor<JdbcDatabase> {
+    class CacheWarmupInterceptor : GraphInterceptor<JdbcDataSource> {
 
-        override fun init(value: JdbcDatabase): JdbcDatabase {
+        override fun afterInit(value: JdbcDataSource): JdbcDataSource {
             // warm up cache
+            return value
         }
 
-        override fun release(value: JdbcDatabase): JdbcDatabase {
+        override fun beforeRelease(value: JdbcDataSource): JdbcDataSource {
             return value
         }
     }
     ```
 
-Интерфейс `GraphInterceptor` почти такой же, как контракт `Lifecycle`, за исключением возвращаемого типа.
-Метод `init(T value)` получает уже полностью инициализированный компонент. Метод может вернуть измененный или совершенно другой
-экземпляр данного типа, и этот объект будет использован как зависимость другими компонентами.
-Метод `release(T value)` получает компонент перед освобождением, то есть это все еще работающий и еще не очищенный экземпляр.
+Перехватчик — это обычный компонент: его можно объявить через `@Component` или фабричным методом,
+и у него могут быть собственные зависимости.
+
+Интерфейс `GraphInterceptor` почти совпадает с контрактом `Lifecycle`, за исключением возвращаемого типа.
+Метод `afterInit(T value)` вызывается после того, как компонент создан и его собственный `Lifecycle.init()` завершился.
+Метод может вернуть измененный или совершенно другой
+экземпляр указанного типа, и именно этот объект будет использоваться другими компонентами как зависимость.
+Метод `beforeRelease(T value)` получает компонент перед освобождением, то есть это все еще рабочий и еще не очищенный экземпляр,
+и он выполняется до `Lifecycle.release()` и `AutoCloseable.close()`.
+
+Перехватчик привязывается к компоненту по **точному** объявленному типу этого компонента — `GraphInterceptor<JdbcDataSource>`
+перехватывает компонент, объявленный как `JdbcDataSource`, а не его подтипы — и по тегу: перехватчик без тега перехватывает
+компоненты без тега, а `@Tag(Tag.Any.class)` на перехватчике заставляет его перехватывать компоненты с любым тегом.

@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Validation with Kora
 summary: Continue the HTTP Server guide and add body, path, and query validation with structured JSON validation errors
+description: "Step-by-step request validation for a Kora 2.0 HTTP API: the io.koraframework:validation-module artifact and ValidationModule, Kora's own constraint annotations in io.koraframework.validation.common.annotation, @Valid on a record and on a parameter, @Validate for method argument and result validation, the generated $UserRequest_Validator and $UserController__AopProxy sources, ViolationException and Violation.path().full(), and a global ViolationExceptionHttpServerResponseMapper plus ValidationHttpServerInterceptor tagged with @Tag(HttpServer.class)."
+agent:
+  use_when: "Use this file for questions about validating HTTP input in a Kora 2.0 service: io.koraframework:validation-module, ValidationModule, the Kora constraint annotations (@NotBlank, @NotEmpty, @Pattern, @Size, @Range, @Min, @Max, @Positive, @Negative, @Digits, @OneOf, @UUID, @Uri, @Url, @Past, @Future, @AssertTrue, @AssertFalse), @Valid on types and parameters, @Validate and its failFast attribute, @ValidatedBy custom constraints, Validator and ValidatorFactory, ViolationException, Violation.path().full(), turning violations into HTTP 400 with ViolationExceptionHttpServerResponseMapper and ValidationHttpServerInterceptor bound with @Tag(HttpServer.class), and why Kora validation is not Jakarta Bean Validation."
 tags: validation, http-server, json, api
 ---
 
@@ -18,7 +21,7 @@ behavior.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-validation-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-validation-app).
 
 ## What You'll Build { #youll-build }
 
@@ -32,8 +35,8 @@ You will extend the existing HTTP server with:
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+
 - A text editor or IDE
 - Completed [HTTP Server Guide](http-server.md)
 
@@ -47,12 +50,17 @@ You will extend the existing HTTP server with:
 
 ## Overview { #overview }
 
-[Jakarta Bean Validation](https://jakarta.ee/specifications/bean-validation/) protects the boundary between external input and application behavior. A controller can deserialize JSON into a DTO, but
-deserialization only proves that the payload has the right general shape. It does not prove that an email looks like an email, a name is not blank, a page size is within limits, or a path parameter
-follows the expected format.
+Validation protects the boundary between external input and application behavior. A controller can deserialize JSON into a DTO, but deserialization only proves that the payload has the right general
+shape. It does not prove that an email looks like an email, a name is not blank, a page size is within limits, or a path parameter follows the expected format.
 
 Without validation, the application accepts bad input and lets deeper layers discover the problem later. That usually produces weaker errors, more defensive service code, and data rules that are
 scattered across the codebase. With validation, the API can reject invalid input early and return a response that clearly belongs to the client request.
+
+!!! warning "Kora validation is not Jakarta Bean Validation"
+
+    Kora ships its own validation API in `io.koraframework.validation.common.annotation`. The annotation names deliberately look familiar, but they are Kora's own types, they are enforced by
+    compile-time generated code rather than by a reflective runtime, and they are **not** interchangeable with `jakarta.validation.constraints`. Importing the Jakarta annotation of the same name
+    produces a class that compiles and silently validates nothing.
 
 ### How Validation Fits into an HTTP API { #validation-fits-http-api }
 
@@ -69,7 +77,7 @@ This separation is useful because invalid HTTP input should usually be rejected 
 Kora supports two styles here:
 
 - declarative validation through annotations such as `@Valid` and `@Validate`
-- imperative usage through validation components described in the Kora [Validation documentation](../documentation/validation.md)
+- imperative usage by injecting a generated `Validator<T>` and calling `validate(...)` or `validateAndThrow(...)` yourself, as described in [Manual validation](../documentation/validation.md#manual-validation)
 
 In this guide we use the declarative controller-based approach because it is the most natural continuation of `http-server.md`.
 
@@ -84,12 +92,31 @@ guide, validation appears in three places:
 
 This does not replace business validation. A DTO rule can say "email must be syntactically valid"; a service rule might say "this email must be unique". Those are different layers of validation.
 
+### Constraint Annotations { #constraint-annotations }
+
+The set is considerably wider than the four constraints this guide happens to need. Every one of them lives in `io.koraframework.validation.common.annotation` and can be placed on a field, a method, or
+a method parameter:
+
+| Group      | Annotations                                                                          |
+|------------|--------------------------------------------------------------------------------------|
+| Text       | `@NotBlank`, `@Pattern`, `@Size`, `@OneOf`, `@UUID`, `@Uri`, `@Url`                   |
+| Numeric    | `@Min`, `@Max`, `@Range`, `@Positive`, `@PositiveOrZero`, `@Negative`, `@NegativeOrZero`, `@Digits` |
+| Temporal   | `@Past`, `@PastOrPresent`, `@Future`, `@FutureOrPresent`                              |
+| Boolean    | `@AssertTrue`, `@AssertFalse`                                                         |
+| Collection | `@NotEmpty`, `@Size`                                                                  |
+| Structural | `@Valid`, `@Validate`, `@ValidatedBy`                                                 |
+
+`@Valid` and `@Validate` are not constraints: `@Valid` says "descend into this type and apply its own rules", and `@Validate` turns on method validation. `@ValidatedBy` is the extension point you use to
+build a custom constraint on top of your own `ValidatorFactory`. The full reference, including the exact violation messages each constraint produces, is in
+[Validation annotations](../documentation/validation.md#validation-annotations).
+
 ### Generated Validation and `@Validate` { #generated-validation-validate }
 
 The full rules for generated validators, class validation, and method validation are covered in [Class validation](../documentation/validation.md#class-validation) and [Method validation](../documentation/validation.md#method-validation).
 
-Kora validation uses annotations to describe constraints and generated code to enforce them. `@Validate` activates method validation, and the validation module contributes the required graph
-components. Because validation wiring is generated, missing validators or unsupported shapes are found during build time rather than discovered only after a bad request reaches production.
+Kora validation uses annotations to describe constraints and generated code to enforce them. `@Valid` on a type generates a `Validator<T>` implementation for it, `@Validate` activates method
+validation, and the validation module contributes the required graph components. Because validation wiring is generated, missing validators or unsupported shapes are found during build time rather
+than discovered only after a bad request reaches production.
 
 This guide also looks at generated AOP code so you can see where validation actually runs. That matters because validation is not magic hidden inside JSON parsing. It is a generated boundary check
 around controller methods.
@@ -112,9 +139,9 @@ part of this guide adds a JSON error contract so validation failures become part
 
 Validation in this guide relies on a few Kora modules working together:
 
-- `validation-module` enables validator generation and method validation
+- `validation-module` enables validator generation, method validation, and the HTTP interceptor that turns violations into responses
 - `http-server-undertow` exposes the controller as HTTP endpoints
-- `json-module` serializes request and response DTOs
+- `json-common` serializes request and response DTOs
 - `config-hocon` and `logging-logback` provide the standard runtime setup used across the guides
 
 For more background, see the Kora [Validation documentation](../documentation/validation.md), [HTTP Server documentation](../documentation/http-server.md)
@@ -128,11 +155,11 @@ and [JSON documentation](../documentation/json.md).
     dependencies {
         // ... existing dependencies from http-server.md ...
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:validation-module")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.koraframework:validation-module")
     }
     ```
 
@@ -144,13 +171,16 @@ and [JSON documentation](../documentation/json.md).
     dependencies {
         // ... existing dependencies from http-server.md ...
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:validation-module")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.koraframework:validation-module")
     }
     ```
+
+There is one artifact for validation, not two. `validation-module` brings `validation-common` with it, and the code generator lives in the `annotation-processors` / `symbol-processors` artifact you
+already apply.
 
 ## Modules { #modules }
 
@@ -160,18 +190,18 @@ At this point we only enable the module itself. We will add custom HTTP handling
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/guide/validation/Application.java`:
+    Update `src/main/java/io/koraframework/guide/validation/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation;
+    package io.koraframework.guide.validation;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.validation.module.ValidationModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.validation.module.ValidationModule;
 
     @KoraApp
     public interface Application extends
@@ -179,7 +209,7 @@ At this point we only enable the module itself. We will add custom HTTP handling
             JsonModule,
             LogbackModule,
             ValidationModule,  // <----- Connected module
-            UndertowHttpServerModule {
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -189,18 +219,18 @@ At this point we only enable the module itself. We will add custom HTTP handling
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/validation/Application.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/validation/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation
+    package io.koraframework.guide.validation
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.validation.module.ValidationModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.validation.module.ValidationModule
 
     @KoraApp
     interface Application :
@@ -208,7 +238,7 @@ At this point we only enable the module itself. We will add custom HTTP handling
         JsonModule,
         LogbackModule,
         ValidationModule,  // <----- Connected module
-        UndertowHttpServerModule
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -230,17 +260,19 @@ That gives us a good first example of DTO validation without changing the overal
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create or update `src/main/java/ru/tinkoff/kora/guide/validation/dto/UserRequest.java`:
+    Create or update `src/main/java/io/koraframework/guide/validation/dto/UserRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
-    import ru.tinkoff.kora.validation.common.annotation.NotBlank;
-    import ru.tinkoff.kora.validation.common.annotation.Pattern;
-    import ru.tinkoff.kora.validation.common.annotation.Size;
+    import io.koraframework.json.common.annotation.Json;
+    import io.koraframework.validation.common.annotation.NotBlank;
+    import io.koraframework.validation.common.annotation.Valid;
+    import io.koraframework.validation.common.annotation.Pattern;
+    import io.koraframework.validation.common.annotation.Size;
 
     @Json
+    @Valid
     public record UserRequest(
         @NotBlank @Size(min = 2, max = 100) String name,
         @NotBlank @Pattern("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") String email
@@ -249,17 +281,19 @@ That gives us a good first example of DTO validation without changing the overal
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create or update `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/UserRequest.kt`:
+    Create or update `src/main/kotlin/io/koraframework/guide/validation/dto/UserRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
-    import ru.tinkoff.kora.validation.common.annotation.NotBlank
-    import ru.tinkoff.kora.validation.common.annotation.Pattern
-    import ru.tinkoff.kora.validation.common.annotation.Size
+    import io.koraframework.json.common.annotation.Json
+    import io.koraframework.validation.common.annotation.NotBlank
+    import io.koraframework.validation.common.annotation.Pattern
+    import io.koraframework.validation.common.annotation.Size
+    import io.koraframework.validation.common.annotation.Valid
 
     @Json
+    @Valid
     data class UserRequest(
         @field:NotBlank
         @field:Size(min = 2, max = 100)
@@ -269,6 +303,11 @@ That gives us a good first example of DTO validation without changing the overal
         val email: String
     )
     ```
+
+The `@Valid` on the type itself is what makes the annotation processor emit a `Validator<UserRequest>` component named `$UserRequest_Validator`. Without it the field constraints are inert: nothing
+generates a validator, and nothing in the graph can be injected to run them.
+
+In Kotlin the `@field:` use-site target is required. A bare `@NotBlank` on a constructor property lands on the constructor parameter, not on the backing field, and the processor will not see it.
 
 Notice that at this step we only described the rules. They still need to be applied at the controller boundary, which we do next.
 
@@ -280,7 +319,7 @@ Now we connect those DTO rules to the real HTTP endpoints from `http-server.md`.
 
 This is where two annotations matter most:
 
-- `@Valid` says that the complex object argument should be validated using the generated validator for that DTO
+- `@Valid` on a parameter says that the complex object argument should be validated using the generated validator for that DTO
 - `@Validate` turns on method-level validation for the controller method itself
 
 `@Validate` is important because it tells Kora to generate validation logic around the method call. `@Valid` is important because it tells that generated logic to descend into the `UserRequest` object
@@ -288,7 +327,7 @@ and validate its fields.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update the `POST` and `PUT` methods in `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Update the `POST` and `PUT` methods in `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.POST, path = "/users")
@@ -312,13 +351,13 @@ and validate its fields.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update the same methods in `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Update the same methods in `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.POST, path = "/users")
     @Json
     @Validate
-    open fun createUser(@Json @Valid request: UserRequest): HttpResponseEntity<UserResponse> {
+    open fun createUser(@Valid @Json request: UserRequest): HttpResponseEntity<UserResponse> {
         val user = userService.createUser(request)
         return HttpResponseEntity.of(201, HttpHeaders.of(), user)
     }
@@ -328,7 +367,7 @@ and validate its fields.
     @Validate
     open fun updateUser(
         @Path userId: String,
-        @Json @Valid request: UserRequest
+        @Valid @Json request: UserRequest
     ): HttpResponseEntity<UserResponse> {
         val updated = userService.updateUser(userId, request)
         return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
@@ -341,12 +380,15 @@ At this point:
 - well-formed JSON with invalid field values now fails at validation time
 - valid JSON continues into the same service and repository flow you already built earlier
 
+By default `@Validate` collects every violation before throwing. If you would rather stop at the first one, use `@Validate(failFast = true)`: the generated code then throws as soon as a single
+constraint fails, which is cheaper but reports only one problem per request.
+
 After compilation, the generated AOP proxy shows how `@Valid` delegates into the generated `UserRequest` validator before the controller method is called:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -376,7 +418,7 @@ After compilation, the generated AOP proxy shows how `@Valid` delegates into the
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -397,7 +439,8 @@ After compilation, the generated AOP proxy shows how `@Valid` delegates into the
     }
     ```
 
-The important detail is that `validator6.validate(request, ...)` runs before `super.createUser(request)`, so invalid DTO fields never reach your controller body.
+The important detail is that `validator6.validate(request, ...)` runs before `super.createUser(request)`, so invalid DTO fields never reach your controller body. `validator6` is the injected
+`$UserRequest_Validator`; the numbering is just the order in which the proxy allocated its validator fields.
 
 ### Path Parameters { #path-parameters }
 
@@ -412,7 +455,7 @@ This is method-argument validation rather than DTO validation. It is useful when
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update the `GET`, `PUT`, and `DELETE` methods in `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Update the `GET`, `PUT`, and `DELETE` methods in `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
@@ -443,7 +486,7 @@ This is method-argument validation rather than DTO validation. It is useful when
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update the same methods in `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Update the same methods in `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
@@ -451,7 +494,7 @@ This is method-argument validation rather than DTO validation. It is useful when
     @Validate
     open fun getUser(@Path @NotBlank @Pattern("^\\d+$") userId: String): UserResponse {
         return userService.getUser(userId)
-            .orElseThrow { HttpServerResponseException.of(404, "User not found") }
+            ?: throw HttpServerResponseException.of(404, "User not found")
     }
 
     @HttpRoute(method = HttpMethod.PUT, path = "/users/{userId}")
@@ -459,7 +502,7 @@ This is method-argument validation rather than DTO validation. It is useful when
     @Validate
     open fun updateUser(
         @Path @NotBlank @Pattern("^\\d+$") userId: String,
-        @Json @Valid request: UserRequest
+        @Valid @Json request: UserRequest
     ): HttpResponseEntity<UserResponse> {
         val updated = userService.updateUser(userId, request)
         return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
@@ -473,6 +516,8 @@ This is method-argument validation rather than DTO validation. It is useful when
     }
     ```
 
+Parameter constraints do not need the `@field:` target that DTO properties needed: here the annotation is already on a parameter, which is one of the targets every Kora constraint declares.
+
 This kind of validation is especially useful for path variables, headers, cookies, and other simple parameters that do not naturally live inside a request DTO.
 
 After compilation, the generated proxy shows how path parameter constraints become ordinary validator calls:
@@ -480,7 +525,7 @@ After compilation, the generated proxy shows how path parameter constraints beco
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -514,7 +559,7 @@ After compilation, the generated proxy shows how path parameter constraints beco
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -535,7 +580,8 @@ After compilation, the generated proxy shows how path parameter constraints beco
     }
     ```
 
-This makes the method boundary visible: Kora validates `userId` first, then delegates to your original `getUser(...)` implementation.
+This makes the method boundary visible: Kora validates `userId` first, then delegates to your original `getUser(...)` implementation. Each constraint becomes its own `validate(...)` call, which is why
+two annotations on one parameter produce `_argConstResult_userId_1` and `_argConstResult_userId_2`.
 
 ### Query Parameters { #query-parameters }
 
@@ -551,7 +597,7 @@ This kind of validation protects the API from invalid paging requests before any
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update `getUsers` in `src/main/java/ru/tinkoff/kora/guide/validation/controller/UserController.java`:
+    Update `getUsers` in `src/main/java/io/koraframework/guide/validation/controller/UserController.java`:
 
     ```java
     @HttpRoute(method = HttpMethod.GET, path = "/users")
@@ -570,15 +616,15 @@ This kind of validation protects the API from invalid paging requests before any
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update `getUsers` in `src/main/kotlin/ru/tinkoff/kora/guide/validation/controller/UserController.kt`:
+    Update `getUsers` in `src/main/kotlin/io/koraframework/guide/validation/controller/UserController.kt`:
 
     ```kotlin
     @HttpRoute(method = HttpMethod.GET, path = "/users")
     @Json
     @Validate
     open fun getUsers(
-        @Query("page") @Range(from = 0, to = 1_000) page: Int?,
-        @Query("size") @Range(from = 1, to = 100) size: Int?,
+        @Query("page") @Range(from = 0.0, to = 1_000.0) page: Int?,
+        @Query("size") @Range(from = 1.0, to = 100.0) size: Int?,
         @Query("sort") @Pattern("^(?i)(name|email|createdat)$") sort: String?
     ): List<UserResponse> {
         val pageNum = page ?: 0
@@ -587,6 +633,12 @@ This kind of validation protects the API from invalid paging requests before any
         return userService.getUsers(pageNum, pageSize, sortBy)
     }
     ```
+
+`@Range` declares `from` and `to` as `double`. Java widens the integer literals for you, but Kotlin does not, which is why the Kotlin version writes `0.0` and `1_000.0`. `@Range` also accepts a
+`boundary` attribute (`INCLUSIVE_INCLUSIVE` by default, plus the three other combinations) when an endpoint should be excluded.
+
+Nullability is what makes these parameters optional. In Java the parameter is marked `@Nullable`; in Kotlin the type is `Int?`. The generated code checks for `null` before validating, so an omitted
+query parameter is never a violation.
 
 After this step, the guide now covers three different validation targets in separate chapters:
 
@@ -601,7 +653,7 @@ After compilation, the generated proxy shows that optional query parameters are 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
     ```java
@@ -642,7 +694,7 @@ After compilation, the generated proxy shows that optional query parameters are 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
     ```kotlin
@@ -680,10 +732,13 @@ That generated code explains the optional behavior precisely: null means "parame
 
 ## Generated Code { #generated-code }
 
-`@Validate` is an AOP annotation.
+Validation produces two kinds of generated source, and it helps to keep them apart.
 
-That means Kora does not modify your controller source file directly. Instead, it generates a subclass around the validated component and puts the validation logic into that generated class. Your code
-still looks simple, but the generated proxy performs the checks before the call reaches your method body.
+`@Valid` on a type produces a **validator class**. For `UserRequest` that is `$UserRequest_Validator`, a `Validator<UserRequest>` published into the graph. It is an ordinary component: you can inject it
+anywhere and call `validate(value)` or `validateAndThrow(value)` without any AOP involved.
+
+`@Validate` on a method produces an **AOP proxy**. Kora does not modify your controller source file directly. Instead, it generates a subclass around the validated component and puts the validation
+logic into that generated class. Your code still looks simple, but the generated proxy performs the checks before the call reaches your method body.
 
 This is why:
 
@@ -696,13 +751,13 @@ After compilation you can inspect the generated source here:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
+    guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
     ```
 
 That file is the easiest place to see the real validation flow. You will find that Kora:
@@ -722,11 +777,14 @@ Kora [Validation documentation](../documentation/validation.md) and [Container d
 
 ## Validation Error Handling { #validation-errors }
 
-The HTTP response setup here connects validation with the general [HTTP Server error handling](../documentation/http-server.md#error-handling) rules.
+The HTTP response setup here connects validation with the general [HTTP Server error handling](../documentation/http-server.md#error-handling) rules, and is described in full under
+[Validation HTTP response](../documentation/validation.md#validation-response-http).
 
 So far validation works, but the HTTP client experience can still be improved.
 
-By default, you may only see framework-level failures. In a real API it is often better to return a stable JSON error contract that clients can parse and display.
+`ValidationModule` already contributes a `ValidationHttpServerInterceptor` as a `@DefaultComponent`, and that interceptor already turns a `ViolationException` into a `400` carrying the exception
+message. What it does not do is bind itself to the server or produce a machine-readable body. In a real API it is usually better to return a stable JSON error contract that clients can parse and
+display.
 
 Kora gives you flexibility here. You can define such handling only for selected endpoints, or register it globally for the whole HTTP application. In this guide we use the global approach because it
 is the easiest way to keep every controller consistent.
@@ -735,28 +793,28 @@ We will add:
 
 - `ValidationErrorDetails` and `ValidationErrorResponse` as explicit JSON DTOs
 - `ViolationExceptionHttpServerResponseMapper` to turn `ViolationException` into that DTO
-- `ValidationHttpServerInterceptor` to apply that mapping in the HTTP pipeline
+- `ValidationHttpServerInterceptor`, tagged with `@Tag(HttpServer.class)`, to apply that mapping in the HTTP pipeline
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/validation/dto/ValidationErrorDetails.java`:
+    Create `src/main/java/io/koraframework/guide/validation/dto/ValidationErrorDetails.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record ValidationErrorDetails(String field, String message) {}
     ```
 
-    Create `src/main/java/ru/tinkoff/kora/guide/validation/dto/ValidationErrorResponse.java`:
+    Create `src/main/java/io/koraframework/guide/validation/dto/ValidationErrorResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation.dto;
+    package io.koraframework.guide.validation.dto;
 
     import java.util.List;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record ValidationErrorResponse(String code, String message, List<ValidationErrorDetails> errors) {
@@ -767,30 +825,30 @@ We will add:
     }
     ```
 
-    Update `src/main/java/ru/tinkoff/kora/guide/validation/Application.java`:
+    Update `src/main/java/io/koraframework/guide/validation/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.validation;
+    package io.koraframework.guide.validation;
 
     import java.util.List;
     import java.util.stream.Collectors;
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorDetails;
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorResponse;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.server.common.HttpServerModule;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.common.JsonWriter;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.validation.common.Violation;
-    import ru.tinkoff.kora.validation.module.ValidationModule;
-    import ru.tinkoff.kora.validation.module.http.server.ValidationHttpServerInterceptor;
-    import ru.tinkoff.kora.validation.module.http.server.ViolationExceptionHttpServerResponseMapper;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.guide.validation.dto.ValidationErrorDetails;
+    import io.koraframework.guide.validation.dto.ValidationErrorResponse;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.server.common.HttpServer;
+    import io.koraframework.http.server.common.response.HttpServerResponse;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonWriter;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.validation.common.Violation;
+    import io.koraframework.validation.module.ValidationModule;
+    import io.koraframework.validation.module.http.server.ValidationHttpServerInterceptor;
+    import io.koraframework.validation.module.http.server.ViolationExceptionHttpServerResponseMapper;
 
     @KoraApp
     public interface Application extends
@@ -798,7 +856,7 @@ We will add:
             JsonModule,
             LogbackModule,
             ValidationModule,  // <----- Connected module
-            UndertowHttpServerModule {
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -808,11 +866,11 @@ We will add:
                 JsonWriter<ValidationErrorResponse> errorResponseJsonWriter) {
             return (request, exception) -> HttpServerResponse.of(
                     400,
-                    HttpBody.json(errorResponseJsonWriter.toByteArrayUnchecked(
+                    HttpBody.json(errorResponseJsonWriter.toByteArray(
                             ValidationErrorResponse.of(toValidationErrors(exception.getViolations())))));
         }
 
-        @Tag(HttpServerModule.class)
+        @Tag(HttpServer.class)
         default ValidationHttpServerInterceptor validationHttpServerInterceptor(
                 ViolationExceptionHttpServerResponseMapper violationExceptionHttpServerResponseMapper) {
             return new ValidationHttpServerInterceptor(violationExceptionHttpServerResponseMapper);
@@ -834,12 +892,12 @@ We will add:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/ValidationErrorDetails.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/validation/dto/ValidationErrorDetails.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class ValidationErrorDetails(
@@ -848,12 +906,12 @@ We will add:
     )
     ```
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/validation/dto/ValidationErrorResponse.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/validation/dto/ValidationErrorResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation.dto
+    package io.koraframework.guide.validation.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class ValidationErrorResponse(
@@ -873,28 +931,28 @@ We will add:
     }
     ```
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/validation/Application.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/validation/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.validation
+    package io.koraframework.guide.validation
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorDetails
-    import ru.tinkoff.kora.guide.validation.dto.ValidationErrorResponse
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.server.common.HttpServerModule
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.common.JsonWriter
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.validation.common.Violation
-    import ru.tinkoff.kora.validation.module.ValidationModule
-    import ru.tinkoff.kora.validation.module.http.server.ValidationHttpServerInterceptor
-    import ru.tinkoff.kora.validation.module.http.server.ViolationExceptionHttpServerResponseMapper
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.guide.validation.dto.ValidationErrorDetails
+    import io.koraframework.guide.validation.dto.ValidationErrorResponse
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.server.common.HttpServer
+    import io.koraframework.http.server.common.response.HttpServerResponse
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonWriter
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.validation.common.Violation
+    import io.koraframework.validation.module.ValidationModule
+    import io.koraframework.validation.module.http.server.ValidationHttpServerInterceptor
+    import io.koraframework.validation.module.http.server.ViolationExceptionHttpServerResponseMapper
 
     @KoraApp
     interface Application :
@@ -902,7 +960,7 @@ We will add:
         JsonModule,
         LogbackModule,
         ValidationModule,  // <----- Connected module
-        UndertowHttpServerModule {
+        UndertowPublicHttpServerModule {
 
         fun violationExceptionHttpServerResponseMapper(
             errorResponseJsonWriter: JsonWriter<ValidationErrorResponse>
@@ -911,7 +969,7 @@ We will add:
                 HttpServerResponse.of(
                     400,
                     HttpBody.json(
-                        errorResponseJsonWriter.toByteArrayUnchecked(
+                        errorResponseJsonWriter.toByteArray(
                             ValidationErrorResponse.of(toValidationErrors(exception.violations))
                         )
                     )
@@ -919,30 +977,43 @@ We will add:
             }
         }
 
-        @Tag(HttpServerModule::class)
-        fun validationHttpServerInterceptor(
-            violationExceptionHttpServerResponseMapper: ViolationExceptionHttpServerResponseMapper
+        // the module default is untagged, so it is overridden only to bind the interceptor to the server;
+        // 2.0 declares the mapper parameter as @Nullable, which Kotlin enforces on the override
+        @Tag(HttpServer::class)
+        override fun validationHttpServerInterceptor(
+            violationExceptionHttpServerResponseMapper: ViolationExceptionHttpServerResponseMapper?
         ): ValidationHttpServerInterceptor {
             return ValidationHttpServerInterceptor(violationExceptionHttpServerResponseMapper)
+        }
+
+        private fun toValidationErrors(violations: List<Violation>): List<ValidationErrorDetails> {
+            return violations.map { violation ->
+                ValidationErrorDetails(normalizeField(violation), violation.message())
+            }
+        }
+
+        private fun normalizeField(violation: Violation): String {
+            val fullPath = violation.path().full()
+            val lastDot = fullPath.lastIndexOf('.')
+            return if (lastDot >= 0) fullPath.substring(lastDot + 1) else fullPath
         }
     }
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
-
-    private fun toValidationErrors(violations: List<Violation>): List<ValidationErrorDetails> {
-        return violations.map { violation ->
-            ValidationErrorDetails(normalizeField(violation), violation.message())
-        }
-    }
-
-    private fun normalizeField(violation: Violation): String {
-        val fullPath = violation.path().full()
-        val lastDot = fullPath.lastIndexOf('.')
-        return if (lastDot >= 0) fullPath.substring(lastDot + 1) else fullPath
-    }
     ```
+
+Three details in that wiring are worth calling out.
+
+The tag is `HttpServer`, from `io.koraframework.http.server.common` — the marker the Undertow module uses to collect global interceptors. An untagged `ValidationHttpServerInterceptor` compiles and
+builds fine but never runs, which is exactly what the module's own `@DefaultComponent` is: available, but not attached to any server.
+
+`ViolationExceptionHttpServerResponseMapper` is a functional interface returning a `@Nullable HttpServerResponse`. Returning `null` from it is a deliberate opt-out for that request: the interceptor
+falls back to its plain `400` with the exception message.
+
+`Violation.path().full()` gives the full dotted path of the failing value, such as `request.email`. This example trims it to the last segment so the JSON reports `email`; keep the full path instead if
+your clients need to locate a value inside a nested object.
 
 The important split here is:
 
@@ -1050,6 +1121,8 @@ Expected response shape:
 
 - Add validation at the controller boundary when the goal is to protect HTTP input.
 - Use DTO validation for structured JSON bodies and method parameter validation for simple path or query values.
+- Import constraints from `io.koraframework.validation.common.annotation`, never from `jakarta.validation.constraints`. The names overlap; the behavior does not.
+- Put `@Valid` on the DTO type as well as on the parameter: the type-level annotation is what generates the validator, and the parameter-level one is what invokes it.
 - Keep `UserService` and `UserRepository` focused on business logic and storage instead of duplicating HTTP input rules there.
 - Remember that `@Validate` is AOP-based. In Java the validated class must not be `final`. In Kotlin the class and validated methods must be `open`.
 - When a validation failure should become a stable API contract, define an explicit error DTO instead of leaking raw framework exceptions.
@@ -1061,16 +1134,17 @@ You extended the CRUD application from `http-server.md` with validation in a gra
 
 First, you enabled `ValidationModule` in the application graph. Then you validated the `UserRequest` body used by `createUser` and `updateUser`. After that, you validated `userId` path parameters and
 the pagination and sorting query parameters on `getUsers`. Then you inspected the generated AOP source to see where method validation really runs. Finally, you introduced a global HTTP validation
-error mapping strategy with `ViolationExceptionHttpServerResponseMapper` and `ValidationHttpServerInterceptor`.
+error mapping strategy with `ViolationExceptionHttpServerResponseMapper` and a `ValidationHttpServerInterceptor` tagged with `@Tag(HttpServer.class)`.
 
 ## Key Concepts { #key-concepts }
 
+- Kora validation is Kora's own API in `io.koraframework.validation.common.annotation`, generated at compile time, not Jakarta Bean Validation.
 - `ValidationModule` enables Kora validation support in the application graph.
-- `@Valid` validates nested objects such as request DTOs.
-- `@Validate` enables method argument and return value validation through generated AOP code.
+- `@Valid` on a type generates a `Validator<T>`; `@Valid` on a parameter tells method validation to use it.
+- `@Validate` enables method argument and return value validation through generated AOP code, and `@Validate(failFast = true)` stops at the first violation.
 - DTO validation and method parameter validation solve different problems and are often used together.
 - `ViolationExceptionHttpServerResponseMapper` defines how validation failures become HTTP responses.
-- `ValidationHttpServerInterceptor` applies that mapper globally in the HTTP pipeline.
+- `ValidationHttpServerInterceptor` applies that mapper globally, but only when it is tagged with `@Tag(HttpServer.class)`.
 
 ## Troubleshooting { #troubleshooting }
 
@@ -1078,9 +1152,14 @@ error mapping strategy with `ViolationExceptionHttpServerResponseMapper` and `Va
 
 - Make sure `ValidationModule` is included in the application graph.
 - Make sure the controller method itself is annotated with `@Validate`.
-- For request DTOs, make sure the method parameter is annotated with `@Valid`.
+- For request DTOs, make sure the method parameter is annotated with `@Valid` and the DTO type is annotated with `@Valid` too.
+- Check the imports: `io.koraframework.validation.common.annotation.NotBlank`, not `jakarta.validation.constraints.NotBlank`.
 - Remember that `@Validate` works through generated AOP code. In Java, the validated class must not be `final`.
-- In Kotlin, the validated class and validated methods must be `open`.
+- In Kotlin, the validated class and validated methods must be `open`, and property constraints need the `@field:` target.
+
+**`Validator<UserRequest> not found` when building the graph:**
+
+- The DTO type is missing its own `@Valid`. Only a type-level `@Valid` makes the processor emit `$UserRequest_Validator`.
 
 **I want to see where validation really happens:**
 
@@ -1088,16 +1167,24 @@ error mapping strategy with `ViolationExceptionHttpServerResponseMapper` and `Va
 - Open the generated source under:
 
   ```text
-  guides/guide-validation-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.java
-  guides/kotlin/guide-kotlin-validation-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/validation/controller/$UserController__AopProxy.kt
+  guides/java/kora-java-guide-validation-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/validation/controller/$UserController__AopProxy.java
+  guides/kotlin/kora-kotlin-guide-validation-app/build/generated/ksp/main/kotlin/io/koraframework/guide/validation/controller/$UserController__AopProxy.kt
   ```
 
 - Inspect how the proxy validates arguments before delegating to your original controller method.
 
-**HTTP returns an exception instead of JSON:**
+**HTTP returns a plain text 400 instead of JSON:**
 
-- Make sure both `ViolationExceptionHttpServerResponseMapper` and `ValidationHttpServerInterceptor` are registered.
-- Make sure the interceptor is tagged with `@Tag(HttpServerModule.class)` in Java or `@Tag(HttpServerModule::class)` in Kotlin.
+- That is the module's default `ValidationHttpServerInterceptor` with no mapper. Make sure your own `ViolationExceptionHttpServerResponseMapper` is registered.
+- Make sure the interceptor is tagged with `@Tag(HttpServer.class)` in Java or `@Tag(HttpServer::class)` in Kotlin. Without the tag it is never attached to the server.
+
+**Kotlin refuses to compile the interceptor override:**
+
+- `ValidationModule` declares the mapper parameter as `@Nullable`, so the Kotlin override must accept `ViolationExceptionHttpServerResponseMapper?`.
+
+**Kotlin rejects `@Range(from = 0, to = 1_000)`:**
+
+- `from` and `to` are `double`. Write `0.0` and `1_000.0`.
 
 **Validation seems correct, but the endpoint still returns 404:**
 
@@ -1120,7 +1207,7 @@ error mapping strategy with `ViolationExceptionHttpServerResponseMapper` and `Va
 
 If you get stuck:
 
-- compare with [Kora Java Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-validation-app) and [Kora Kotlin Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-validation-app)
+- compare with [Kora Java Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-validation-app) and [Kora Kotlin Validation App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-validation-app)
 - review the [Validation documentation](../documentation/validation.md)
 - review the [HTTP Server documentation](../documentation/http-server.md)
 - review the [JSON documentation](../documentation/json.md)

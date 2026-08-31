@@ -191,7 +191,7 @@ hide:
 Добавлено:
 
 - Добавлена аннотация `@Mdc` для аспекта логирования
-- Добавлена поддержка OpenAPI генератора [множественной спецификации аутентификации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) HTTP-клиента через [параметр конфигурации](../documentation/openapi-codegen.md#_3)
+- Добавлена поддержка OpenAPI генератора [множественной спецификации аутентификации](https://swagger.io/docs/specification/v3_0/authentication/#using-multiple-authentication-types) HTTP-клиента через [параметр конфигурации](../documentation/openapi-codegen.md#client)
 - Добавлен `ProgrammaticDriverConfigLoaderBuilder` в метод конфигурации `CassandraConfigurer`
 - Добавлен виртуальный потоковый исполнитель и параметр `preconfigure` для движка Camunda BPMN
 - Добавлена поддержка `CORS` для Camunda BPMN REST модуля
@@ -282,16 +282,16 @@ hide:
 
 Добавлено:
 
-- Добавлена поддержка виртуальных потоков для обработки запросов HTTP-сервера [Undertow](../documentation/http-server.md#_2)
-- Добавлены аннотации `@DisallowConcurrentExecution` и `@PersistJobDataAfterExecution` для [задач Quartz](../documentation/scheduling.md#_16)
-- Добавлена поддержка вызовов `postCommit` и `postRollback` для метода [JdbcConnectionFactory#inTx](../documentation/database-jdbc.md#_15)
+- Добавлена поддержка виртуальных потоков для обработки запросов HTTP-сервера [Undertow](../documentation/http-server.md#undertow)
+- Добавлены аннотации `@DisallowConcurrentExecution` и `@PersistJobDataAfterExecution` для [задач Quartz](../documentation/scheduling.md#non-concurrent-execution)
+- Добавлена поддержка вызовов `postCommit` и `postRollback` для метода [JdbcConnectionFactory#inTx](../documentation/database-jdbc.md#post-commit-actions)
 - Добавлена поддержка `@Cookie` параметров в HTTP-клиент
 - Добавлена поддержка реализации методов из супер-интерфейсов в HTTP-клиенте
-- Добавлена поддержка `Mockito` сессии и проверки неиспользуемых заглушек в [JUnit-тестах](../documentation/junit5.md#_7)
+- Добавлена поддержка `Mockito` сессии и проверки неиспользуемых заглушек в [JUnit-тестах](../documentation/junit5.md#mock-strictness)
 - Добавлено прежнее поведение по умолчанию генератора OpenAPI без `@JsonInclude(Always)` для полей `isNullable` и `NonRequired` как до версии 1.1.13
 - Добавлена опция `forceIncludeOptional` для добавления `@JsonInclude(Always)` для полей `isNullable` и `NonRequired` в генератор OpenAPI
 - Добавлено маскирование заголовков `Cookie/Set-Cookie` в HTTP по умолчанию
-- Добавлен [LettuceConfigurator](../documentation/cache.md#_5) для Redis Lettuce клиента
+- Добавлен [LettuceConfigurator](../documentation/cache.md#configurator) для Redis Lettuce клиента
 - Добавлены метрики для Redis Lettuce клиента
 - Добавлено больше данных для телеметрии `@KafkaProducer`
 - Добавлен конфигуратор тегов метрик HTTP-клиента
@@ -316,9 +316,9 @@ hide:
 
 Добавлено:
 
-- Добавлена логика пропуска записей `@KafkaListener` через [KafkaSkipRecordException](../documentation/kafka.md#_7)
+- Добавлена логика пропуска записей `@KafkaListener` через [KafkaSkipRecordException](../documentation/kafka.md#exception-skipping)
 - Добавлены параметры конфигурации `SSL` для кэша `Redis`
-- Добавлены методы [OpentelemetryContext](../documentation/tracing.md#_3) для `getSpan` и `getTraceId`
+- Добавлены методы [OpentelemetryContext](../documentation/tracing.md#tracing-context) для `getSpan` и `getTraceId`
 - Добавлена возможность постобработки конфигурации `Cassandra` с помощью `CassandraConfigurer`
 - Добавлена опция `delegateMethodBodyMode` генератора HTTP-сервера OpenAPI
 - Добавлен `Javadoc` в делегаты и улучшен стиль кода для сгенерированных классов в генератор OpenAPI
@@ -557,7 +557,7 @@ hide:
 
 Добавлено:
 
-* Добавлены новые опции в [конфигурации HTTP-сервера](../documentation/http-server.md#_2)
+* Добавлены новые опции в [конфигурации HTTP-сервера](../documentation/http-server.md#configuration)
 
 Исправлено:
 
@@ -590,11 +590,11 @@ hide:
 
 Добавлено:
 
-* Добавлен специальный тип [JsonNullable](../documentation/json.md#jsonnullable)
-* Добавлен параметр конфигурации [KafkaConsumer](../documentation/kafka.md#_3), позволяющий обрабатывать пустые события после `poll()`
-* Добавлена поддержка параметра OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#_6) (**Изменено поведение по умолчанию**, теперь *nullable* и *non required* поля [Include.Always](../documentation/json.md#_9) по умолчанию, если не включен `JsonNullable`)
-* Добавлен Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#_2)
-* Улучшена телеметрия [Camunda Rest](../documentation/camunda7-rest.md#_2)
+* Добавлен специальный тип [JsonNullable](../documentation/json.md#jsonnullable-wrapper)
+* Добавлен параметр конфигурации [KafkaConsumer](../documentation/kafka.md#config-consumer), позволяющий обрабатывать пустые события после `poll()`
+* Добавлена поддержка параметра OpenAPI [enableJsonNullable](../documentation/openapi-codegen.md#server) (**Изменено поведение по умолчанию**, теперь *nullable* и *non required* поля [Include.Always](../documentation/json.md#serialization-levels) по умолчанию, если не включен `JsonNullable`)
+* Добавлен Camunda Rest [OpenAPI](../documentation/camunda7-rest.md#configuration)
+* Улучшена телеметрия [Camunda Rest](../documentation/camunda7-rest.md#configuration)
 * Улучшено штатное завершение работы HTTP-сервера, KafkaListener, gRPC-сервера, планировщиков
 
 Исправлено:
@@ -608,9 +608,9 @@ hide:
 
 Добавлено:
 
-* Добавлена опция OpenAPI для генерации авторизации HTTP-клиента в [качестве аргумента метода](../documentation/openapi-codegen.md#_3)
-* Добавлен [параметр](../documentation/junit5.md#_3) `@KoraAppTest#modules`
-* Добавлена возможность `@KoraApp` генерировать `@SubModule`, если это включено, для возможного расширения реального графа [в других средах](../documentation/junit5.md#_7)
+* Добавлена опция OpenAPI для генерации авторизации HTTP-клиента в [качестве аргумента метода](../documentation/openapi-codegen.md#client)
+* Добавлен [параметр](../documentation/junit5.md#test) `@KoraAppTest#modules`
+* Добавлена возможность `@KoraApp` генерировать `@SubModule`, если это включено, для возможного расширения реального графа [в других средах](../documentation/junit5.md#test-graph)
 * Добавлена трассировка и логирование в телеметрии `SOAP`
 
 Исправлено:
@@ -625,11 +625,11 @@ hide:
 
 Добавлено:
 
-* Добавлено [маскирование логов HTTP-клиента/сервера](../documentation/http-server.md#_2)
+* Добавлено [маскирование логов HTTP-клиента/сервера](../documentation/http-server.md#configuration)
 * Добавлены обогащенные контракты метрик HTTP-клиента и сервера
 * Добавлен параметр для указания собственных аннотаций над методами HTTP клиента/сервера в OpenAPI
-* Добавлена дополнительная аннотация для создания преобразователей результатов [JDBC](../documentation/database-jdbc.md#_6)
-* Добавлена поддержка виртуальных потоков в [повторителе и ограничителе времени](../documentation/resilient.md)
+* Добавлена дополнительная аннотация для создания преобразователей результатов [JDBC](../documentation/database-jdbc.md#view)
+* Добавлена поддержка виртуальных потоков в [повторителе и ограничителе времени](../documentation/resilient.md#retry)
 
 Исправлено:
 
@@ -667,10 +667,10 @@ hide:
 
 * Добавлены [Camunda BPMN](../documentation/camunda7-bpmn.md) и [Camunda REST](../documentation/camunda7-rest.md) **экспериментальные** модули
 * Добавлена поддержка [нескольких файлов OpenAPI](../documentation/openapi-management.md)
-* Добавлена поддержка [ConsumerAwareRebalanceListener](../documentation/kafka.md#_9)
+* Добавлена поддержка [ConsumerAwareRebalanceListener](../documentation/kafka.md#rebalance-events)
 * Добавлены дополнительные методы создаваемые OpenAPI, без необязательных параметров для HTTP-клиента со значениями по умолчанию
-* Добавлена поддержка Kafka потребителем [пользовательского тега](../documentation/kafka.md#_8)
-* Добавлена поддержка дополнительных сигнатур [аспектами логгирования](../documentation/logging-aspect.md#_8)
+* Добавлена поддержка Kafka потребителем [пользовательского тега](../documentation/kafka.md#custom-tag)
+* Добавлена поддержка дополнительных сигнатур [аспектами логгирования](../documentation/logging-aspect.md#signatures)
 * Включены по умолчанию метрики драйвера `Cassandra` (см конфигурацию)
 
 Исправлено:
@@ -694,8 +694,8 @@ hide:
 * Добавлен модуль [S3 Client](../documentation/s3-client.md) **экспериментальный**
 * Добавлен модуль [Liquibase](../documentation/database-migration.md#liquibase)
 * Добавлена опция конфигурации для указания файлов миграции в модуль [Flyway](../documentation/database-migration.md#flyway)
-* Добавлен [Тип размера](../documentation/config.md#_19)
-* Добавлена опция конфигурации [Размера сообщения сервера gRPC](../documentation/grpc-server.md#_3)
+* Добавлен [Тип размера](../documentation/config.md#size)
+* Добавлена опция конфигурации [Размера сообщения сервера gRPC](../documentation/grpc-server.md#configuration)
 * Добавлен дополнительный Javadoc
 
 Исправлено:
@@ -719,7 +719,7 @@ hide:
 * Исправлено требование `ReactorContextKt` для `CoroutineContextInjectInterceptor`
 * Исправлен NPE в метриках GrpcServer
 * Исправлена валидация аргументов метода через `@Pattern` в Kotlin
-* Исправлена установка `Content-Type` для [Response Entity](../documentation/http-server.md#_16)
+* Исправлена установка `Content-Type` для [Response Entity](../documentation/http-server.md#response-entity)
 * Исправлена коллизия псевдонимов в Kotlin для классов с одинаковыми именами
 * Удалена зависимость Prometheus JMX
 
@@ -746,7 +746,7 @@ hide:
 
 - Добавлена поддержка `@Nullable` параметров конструктора Record у баз данных
 - Добавлен выбор [транспорта Netty](../documentation/netty.md)
-- Добавлена возможность [отключение/включение](../documentation/config.md#_16) наблюдателя за конфигураций
+- Добавлена возможность [отключение/включение](../documentation/config.md#config-watcher) наблюдателя за конфигураций
 - Оптимизирована авторизация у генератора OpenAPI HTTP сервера
 
 Исправлено:
@@ -777,7 +777,7 @@ hide:
 
 - Исправлено `@Retry` для сигнатуры CompletableFuture
 - Исправлена обработка ошибок Cache AOP
-- Исправлена работа свойства [primaryAuth](../documentation/openapi-codegen.md#_3) генератора OpenAPI
+- Исправлена работа свойства [primaryAuth](../documentation/openapi-codegen.md#client) генератора OpenAPI
 - Исправлена телеметрия HttpClient, передающая Content-Length базовому клиенту
 - Исправлена поддержка `Wrapped` в расширении JUnit5 тестировании
 
@@ -829,7 +829,7 @@ hide:
 
 - Добавлен тег ошибок метрики баз данных
 - Добавлены метрики драйвера Cassandra
-- Добавлен контракт для [повторителя](../documentation/resilient.md#_7) для `CompletableStage` и оптимизирован аспект для `CompletableStage`
+- Добавлен контракт для [повторителя](../documentation/resilient.md#retry) для `CompletableStage` и оптимизирован аспект для `CompletableStage`
 
 Исправлено:
 
@@ -898,7 +898,7 @@ hide:
 
 Исправлено:
 
-- Исправлена ошибка захвата `CircuitBreaker` в полу открытом состоянии (`HalfOpen`) 
+- Исправлена ошибка захвата `CircuitBreaker` в полу открытом состоянии (`HalfOpen`)
 - Исправлено переопределение диспетчера при вызове gRPC сервера
 - Исправлено сохранение аннотаций аспектов для всех классов созданных фреймворком
 
@@ -922,7 +922,7 @@ hide:
 - Поддержка HTTP клиентом параметров `@Query` и `@Header` типа `Map` и `HttpHeaders`
 - Поддержка планировщиком `Quartz.properties` по умолчанию
 - Поддержка планировщиком JDK значения кол-ва потоков в конфигурации по умолчанию
- 
+
 Исправлено:
 
 - Исправлена обработка перехватчиками исключения `405` от HTTP сервера

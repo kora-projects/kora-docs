@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures. Use when working with @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule."
+description: "Explains Kora JDBC repositories, the jdbc configuration section, Hikari pool tuning, result and parameter mapping, generated identifiers, manual queries built with JdbcQuery, transactions and isolation levels. Use when working with @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, JDBC configuration, result and parameter mapping, generated identifiers, transactions, and repository method signatures; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcConnectionFactory, JdbcRepository."
+  use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, the jdbc configuration section, Hikari pool tuning, result and parameter mapping, generated identifiers, manual queries and transactions; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcRepository, JdbcExecutor, JdbcQuery, UncheckedSqlException."
 ---
 
 The module provides a repository implementation based on [JDBC](https://proselyte.net/tutorials/jdbc/introduction/) for
@@ -21,7 +21,7 @@ For a step-by-step walkthrough before the reference details, see [JDBC Database]
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:database-jdbc"
+    implementation "io.koraframework:database-jdbc"
     ```
 
     Module:
@@ -34,7 +34,7 @@ For a step-by-step walkthrough before the reference details, see [JDBC Database]
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:database-jdbc")
+    implementation("io.koraframework:database-jdbc")
     ```
 
     Module:
@@ -45,14 +45,18 @@ For a step-by-step walkthrough before the reference details, see [JDBC Database]
 
 You also **must provide** the database driver implementation as a dependency.
 
+The module registers the connection pool as a `JdbcDataSource` component. It implements `JdbcExecutor`,
+so repositories receive it automatically, and it wraps a `javax.sql.DataSource`,
+so a plain `javax.sql.DataSource` can be injected into your own components when a third-party library requires one.
+
 ## Configuration { #configuration }
 
-Basic JDBC configuration parameters:
+Basic JDBC configuration parameters are read from the `jdbc` config section:
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
-    db {
+    jdbc {
         jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
         username = "postgres" //(2)!
         password = "postgres" //(3)!
@@ -70,7 +74,7 @@ Basic JDBC configuration parameters:
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    db:
+    jdbc:
       jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
       username: "postgres" #(2)!
       password: "postgres" #(3)!
@@ -88,10 +92,10 @@ Basic JDBC configuration parameters:
 
     Example of the complete configuration described by `JdbcDatabaseConfig` (example values or default values are shown):
 
-    ===! ":material-code-json: `HOCON`"
+    ===! ":material-code-json: `Hocon`"
 
         ```javascript
-        db {
+        jdbc {
             jdbcUrl = "jdbc:postgresql://localhost:5432/postgres" //(1)!
             username = "postgres" //(2)!
             password = "postgres" //(3)!
@@ -104,7 +108,7 @@ Basic JDBC configuration parameters:
             idleTimeout = "10m" //(10)!
             maxLifetime = "15m" //(11)!
             leakDetectionThreshold = "0s" //(12)!
-            initializationFailTimeout = "0s" //(13)!
+            initializationFailTimeout = "10s" //(13)!
             readinessProbe = false //(14)!
             dsProperties { //(15)!
                 "hostRecheckSeconds": "2"
@@ -114,16 +118,17 @@ Basic JDBC configuration parameters:
                     enabled = false //(16)!
                 }
                 metrics {
-                    enabled = true //(17)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                    tags = { // (19)!
+                    enabled = false //(17)!
+                    driverMetrics = true //(18)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(19)!
+                    tags = { // (20)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(20)!
-                    attributes = { // (21)!
+                    enabled = true //(21)!
+                    attributes = { // (22)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -132,11 +137,11 @@ Basic JDBC configuration parameters:
         }
         ```
 
-        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-        2.  Username for the connection (`required`, default: not specified)
-        3.  User password for the connection (`required`, default: not specified)
-        4.  Database schema for the connection (default: not specified, optional)
-        5.  `Hikari` connection pool name (`required`, default: not specified)
+        1.  `JDBC URL` for connecting to the database (`required`, no default)
+        2.  Username for the connection (`required`, no default)
+        3.  User password for the connection (`required`, no default)
+        4.  Database schema for the connection (optional, no default)
+        5.  `Hikari` connection pool name (`required`, no default)
         6.  Maximum `Hikari` connection pool size (default: `10`)
         7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
         8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
@@ -144,20 +149,21 @@ Basic JDBC configuration parameters:
         10. Maximum idle time for a `Hikari` connection (default: `10m`)
         11. Maximum lifetime of a `Hikari` connection (default: `15m`)
         12. Time after which a busy connection is considered a possible leak (default: `0s`)
-        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        13. Maximum time to wait for connection validation at service startup. When it is not set, the service starts without touching the database (optional, no default)
         14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
         15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
         16. Enables module logging (default: `false`)
-        17. Enables module metrics (default: `true`)
-        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19. Configures metric tags (default: `{}`)
-        20. Enables module tracing (default: `true`)
-        21. Configures tracing attributes (default: `{}`)
+        17. Enables module metrics (default: `false`)
+        18. Whether to report the `Hikari` pool's own metrics, such as pool size and connection acquire time (default: `true`)
+        19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics in milliseconds (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        20. Configures metric tags (default: `{}`)
+        21. Enables module tracing (default: `true`)
+        22. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
-        db:
+        jdbc:
           jdbcUrl: "jdbc:postgresql://localhost:5432/postgres" #(1)!
           username: "postgres" #(2)!
           password: "postgres" #(3)!
@@ -170,31 +176,32 @@ Basic JDBC configuration parameters:
           idleTimeout: "10m" #(10)!
           maxLifetime: "15m" #(11)!
           leakDetectionThreshold: "0s" #(12)!
-          initializationFailTimeout: "0s" #(13)!
+          initializationFailTimeout: "10s" #(13)!
           readinessProbe: false #(14)!
           dsProperties: #(15)!
-            hostRecheckSeconds: "1"
+            hostRecheckSeconds: "2"
           telemetry:
             logging:
               enabled: false #(16)!
             metrics:
-              enabled: true #(17)!
-              slo: [ 2, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-              tags: #(19)!
+              enabled: false #(17)!
+              driverMetrics: true #(18)!
+              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
+              tags: #(20)!
                 key1: value1
                 key2: value2
             tracing:
-              enabled: true #(20)!
-              attributes: #(21)!
+              enabled: true #(21)!
+              attributes: #(22)!
                 key1: value1
                 key2: value2
         ```
 
-        1.  `JDBC URL` for connecting to the database (`required`, default: not specified)
-        2.  Username for the connection (`required`, default: not specified)
-        3.  User password for the connection (`required`, default: not specified)
-        4.  Database schema for the connection (default: not specified, optional)
-        5.  `Hikari` connection pool name (`required`, default: not specified)
+        1.  `JDBC URL` for connecting to the database (`required`, no default)
+        2.  Username for the connection (`required`, no default)
+        3.  User password for the connection (`required`, no default)
+        4.  Database schema for the connection (optional, no default)
+        5.  `Hikari` connection pool name (`required`, no default)
         6.  Maximum `Hikari` connection pool size (default: `10`)
         7.  Minimum number of idle ready connections in the `Hikari` pool (default: `0`)
         8.  Maximum time to wait for a connection from the `Hikari` pool (default: `10s`)
@@ -202,15 +209,125 @@ Basic JDBC configuration parameters:
         10. Maximum idle time for a `Hikari` connection (default: `10m`)
         11. Maximum lifetime of a `Hikari` connection (default: `15m`)
         12. Time after which a busy connection is considered a possible leak (default: `0s`)
-        13. Maximum time to wait for connection initialization at service startup (default: not specified, optional)
+        13. Maximum time to wait for connection validation at service startup. When it is not set, the service starts without touching the database (optional, no default)
         14. Whether to enable the [readiness probe](probes.md#readiness) for the database connection (default: `false`)
         15. Additional `JDBC` connection properties passed to `Hikari` `dataSourceProperties` (default: `{}`)
         16. Enables module logging (default: `false`)
-        17. Enables module metrics (default: `true`)
-        18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19. Configures metric tags (default: `{}`)
-        20. Enables module tracing (default: `true`)
-        21. Configures tracing attributes (default: `{}`)
+        17. Enables module metrics (default: `false`)
+        18. Whether to report the `Hikari` pool's own metrics, such as pool size and connection acquire time (default: `true`)
+        19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics in milliseconds (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        20. Configures metric tags (default: `{}`)
+        21. Enables module tracing (default: `true`)
+        22. Configures tracing attributes (default: `{}`)
+
+### Pool customization { #pool-customization }
+
+Configuration keys cover the `Hikari` settings that most services need.
+If you need a setting that is not exposed by `JdbcDatabaseConfig`, provide a `Configurer<HikariConfig>` component.
+`Kora` calls it with the `HikariConfig` it has already built from the configuration, right before the pool is created,
+so your component only adjusts what it cares about.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class HikariConfigurer implements Configurer<HikariConfig> {
+
+        @Override
+        public HikariConfig configure(HikariConfig config) {
+            config.setTransactionIsolation("TRANSACTION_REPEATABLE_READ"); //(1)!
+            return config;
+        }
+    }
+    ```
+
+    1.  Default isolation level of every connection in the pool, see also [Isolation level](#isolation)
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class HikariConfigurer : Configurer<HikariConfig> {
+
+        override fun configure(config: HikariConfig): HikariConfig {
+            config.transactionIsolation = "TRANSACTION_REPEATABLE_READ" //(1)!
+            return config
+        }
+    }
+    ```
+
+    1.  Default isolation level of every connection in the pool, see also [Isolation level](#isolation)
+
+### Additional data sources { #additional-data-sources }
+
+A service can talk to several databases at once. `JdbcDatabaseModule` declares the default data source
+over the `jdbc` config section, and every extra data source is declared as a tagged factory module
+with its own config section:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends JdbcDatabaseModule {
+
+        final class Analytics { } //(1)!
+
+        @Tag(Analytics.class)
+        @FactoryModule //(2)!
+        default JdbcDatabaseFactoryModule analyticsDatabase() {
+            return new JdbcDatabaseFactoryModule("analyticsJdbc"); //(3)!
+        }
+    }
+    ```
+
+    1.  Marker class that identifies this data source in the [application graph](container.md)
+    2.  The tag of the factory module is propagated to every component it creates, so the analytics pool is registered as `@Tag(Analytics.class) JdbcDataSource`
+    3.  Config section this data source reads, described by the same `JdbcDatabaseConfig`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : JdbcDatabaseModule {
+
+        class Analytics //(1)!
+
+        @Tag(Analytics::class)
+        @FactoryModule //(2)!
+        fun analyticsDatabase(): JdbcDatabaseFactoryModule {
+            return JdbcDatabaseFactoryModule("analyticsJdbc") //(3)!
+        }
+    }
+    ```
+
+    1.  Marker class that identifies this data source in the [application graph](container.md)
+    2.  The tag of the factory module is propagated to every component it creates, so the analytics pool is registered as `@Tag(Analytics::class) JdbcDataSource`
+    3.  Config section this data source reads, described by the same `JdbcDatabaseConfig`
+
+A repository points at a non-default data source with the `executorTag` attribute of `@Repository`;
+repositories without the attribute use the default `jdbc` data source:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository(executorTag = Application.Analytics.class)
+    public interface AnalyticsRepository extends JdbcRepository {
+
+        @Query("SELECT count(*) FROM events WHERE type = :type")
+        long countByType(String type);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository(executorTag = Application.Analytics::class)
+    interface AnalyticsRepository : JdbcRepository {
+
+        @Query("SELECT count(*) FROM events WHERE type = :type")
+        fun countByType(type: String): Long
+    }
+    ```
 
 ## Usage { #usage }
 
@@ -219,7 +336,7 @@ Each method annotated with `@Query` contains a regular `SQL` query. Method param
 `:parameter` syntax, and object fields can be referenced as `:entity.field`.
 
 Entities are described with the [common database annotations](database-common.md) and marked with `@EntityJdbc`
-so that `Kora` generates the view mapper at compile time (see [View](database-common.md#view)):
+so that `Kora` generates the view mapper at compile time (see [View](#view)):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -247,15 +364,15 @@ so that `Kora` generates the view mapper at compile time (see [View](database-co
 
     1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
         ```sql
-        SELECT id, name, description 
-        FROM entities 
+        SELECT id, name, description
+        FROM entities
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
     2.  Fields listed manually without macros — this is valid but requires maintenance when the view changes.
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
-        INSERT INTO entities(id, name, description) 
+        INSERT INTO entities(id, name, description)
         VALUES(:entity.id, :entity.name, :entity.description)
         ```
         Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
@@ -284,14 +401,14 @@ so that `Kora` generates the view mapper at compile time (see [View](database-co
 
     1.  Uses macros `%{return#selects}` and `%{return#table}`. Expands to query:
         ```sql
-        SELECT id, name, description 
-        FROM entities 
+        SELECT id, name, description
+        FROM entities
         WHERE id = :id
         ```
         Method uses macros for `SELECT`. Details: [Common Database Rules — Macros](database-common.md#macros)
     3.  Uses macro `%{entity#inserts}`. Expands to query:
         ```sql
-        INSERT INTO entities(id, name, description) 
+        INSERT INTO entities(id, name, description)
         VALUES(:entity.id, :entity.name, :entity.description)
         ```
         Method uses macros for `INSERT`. Details: [Common Database Rules — Macros](database-common.md#macros)
@@ -306,10 +423,25 @@ Query parameters (e.g., `:id`, `:entity.name`) are replaced in the generated cod
 For example, for a `String name` parameter, something like `statement.setString(1, name)` will be generated, where the index corresponds to the parameter order in the query.
 This ensures security (protection against SQL injection) and performance (using prepared statements).
 
+**Nullability:** in `Java`, a nullable result is marked with the [JSpecify](https://jspecify.dev) annotation `org.jspecify.annotations.Nullable`,
+in `Kotlin` it is expressed by the `T?` return type.
+When a method is not marked as nullable and the mapper still produces `null`,
+the generated code fails with `NullPointerException` and the message `Result mapping is expected non-null, but was null`.
+
+**Errors:** a `java.sql.SQLException` raised by the driver never leaves a repository method as a checked exception.
+It is wrapped into the unchecked `UncheckedSqlException` from `io.koraframework.database.jdbc.exception`,
+and the original exception is available through `getCause()`.
+
 ## Mapping { #mapping }
 
 You can override the mapping of different parts of an [entity](database-common.md), a query result, and query parameters.
 For this, `Kora` provides several mapper interfaces.
+
+A mapper class referenced from `@Mapping` is created by `Kora` itself when it is `final` (`Kotlin` classes are final unless declared `open`)
+and has a public constructor without arguments.
+Such a mapper must **not** be annotated with `@Component`.
+A mapper that has constructor dependencies is resolved from the [application graph](container.md) instead,
+so it must be declared as a `@Component` or provided by a `@Module`.
 
 ### Result { #result }
 
@@ -341,7 +473,6 @@ This mapper receives the whole query result and decides how many rows to read an
     ```kotlin
     class ResultMapper : JdbcResultSetMapper<UUID> {
 
-        @Throws(SQLException::class)
         override fun apply(rs: ResultSet): UUID {
             // mapping code
         }
@@ -352,7 +483,7 @@ This mapper receives the whole query result and decides how many rows to read an
 
         @Mapping(ResultMapper::class)
         @Query("SELECT id FROM entities")
-        fun countIds(): List<UUID>
+        fun getIds(): List<UUID>
     }
     ```
 
@@ -361,11 +492,10 @@ and `optionalResultSetMapper` that build a full-`ResultSet` mapper from a `JdbcR
 
 #### View { #view }
 
-Use the `@EntityJdbc` annotation for optimal view mapping.
-The annotation allows the annotation processor to generate all necessary mappers in **one round** of annotation processing.
-Without this annotation, mappers are generated on-demand, which can require **multiple rounds** of processing and significantly increase compilation time.
-
-All nested views are also expected to use this annotation.
+`Kora` generates result mappers for your own types at compile time, and it needs the `@EntityJdbc` annotation
+from `io.koraframework.database.jdbc.annotation` to know which types to generate them for.
+Annotate every type that is returned from a repository method, including the identifier type of an
+[`@Id`](#generated-identifier) method:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -380,6 +510,16 @@ All nested views are also expected to use this annotation.
     @EntityJdbc
     data class Entity(val id: String, val name: String)
     ```
+
+Without the annotation `Kora` has nothing to build a `JdbcResultSetMapper` / `JdbcRowMapper` from,
+and the [application graph](container.md) fails to build with an unresolved mapper dependency —
+unless you provide the mapper yourself with [`@Mapping`](#result).
+Types that only appear as [`@Embedded`](database-common.md#embedded-fields) fields of another entity
+are flattened into the enclosing view and do not need their own annotation,
+but annotating them as well keeps the mapping predictable when they later become a result type of their own.
+
+Built-in types such as `long` or `String` do not need anything: the module provides
+row, column, and parameter mappers for them out of the box, see [Supported Types](#supported-types).
 
 ### Row { #row }
 
@@ -411,7 +551,6 @@ Keep in mind that in `JDBC`, column indexes in `ResultSet` start from `1`:
     ```kotlin
     class RowMapper : JdbcRowMapper<UUID> {
 
-        @Throws(SQLException::class)
         override fun apply(rs: ResultSet): UUID {
             return UUID.fromString(rs.getString(1))
         }
@@ -425,6 +564,10 @@ Keep in mind that in `JDBC`, column indexes in `ResultSet` start from `1`:
         fun findAll(): List<UUID>
     }
     ```
+
+A `JdbcRowMapper<T>` is enough for any result shape: `Kora` wraps it with `singleResultSetMapper`,
+`optionalResultSetMapper`, or `listResultSetMapper` depending on whether the method returns
+`T`, `Optional<T>`, or `List<T>`.
 
 ### Column { #column }
 
@@ -458,7 +601,6 @@ Use `JdbcResultColumnMapper<T>` when you need to manually map a single column va
     ```kotlin
     class ColumnMapper : JdbcResultColumnMapper<UUID> {
 
-        @Throws(SQLException::class)
         override fun apply(row: ResultSet, index: Int): UUID {
             return UUID.fromString(row.getString(index))
         }
@@ -467,7 +609,7 @@ Use `JdbcResultColumnMapper<T>` when you need to manually map a single column va
     @EntityJdbc
     @Table("entities")
     data class Entity(
-        @Id @Mapping(ColumnMapper::class) val id: UUID,
+        @field:Id @Mapping(ColumnMapper::class) val id: UUID,
         val name: String
     )
 
@@ -481,7 +623,8 @@ Use `JdbcResultColumnMapper<T>` when you need to manually map a single column va
 
 ### Parameter { #parameter }
 
-Use `JdbcParameterColumnMapper<T>` when you need to manually map a query parameter value:
+Use `JdbcParameterColumnMapper<T>` when you need to manually map a query parameter value.
+The contract declares the value as nullable, so the mapper is also responsible for binding `NULL`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -490,7 +633,9 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
 
         @Override
         public void set(PreparedStatement stmt, int index, @Nullable UUID value) throws SQLException {
-            if (value != null) {
+            if (value == null) {
+                stmt.setNull(index, Types.VARCHAR);
+            } else {
                 stmt.setString(index, value.toString());
             }
         }
@@ -507,11 +652,12 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    class ParameterMapper : JdbcParameterColumnMapper<UUID?> {
+    class ParameterMapper : JdbcParameterColumnMapper<UUID> {
 
-        @Throws(SQLException::class)
         override fun set(stmt: PreparedStatement, index: Int, value: UUID?) {
-            if (value != null) {
+            if (value == null) {
+                stmt.setNull(index, Types.VARCHAR)
+            } else {
                 stmt.setString(index, value.toString())
             }
         }
@@ -525,6 +671,16 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
     }
     ```
 
+!!! warning "Kotlin"
+
+    Mapper contracts are annotated with [JSpecify](https://jspecify.dev), so the mapped value is nullable in the contract.
+    A `Kotlin` override must declare it as `T?` — `override fun set(stmt: PreparedStatement, index: Int, value: UUID?)`.
+    Declaring the parameter as non-null does not compile.
+
+In `Java`, `org.jspecify.annotations.Nullable` is a type-use annotation, so its position matters.
+For a nested type, the annotation goes before the nested part of the name:
+`void set(PreparedStatement stmt, int index, Entity.@Nullable Status value)`.
+
 ### Supported Types { #supported-types }
 
 ??? abstract "List of supported types for arguments/return values out of the box"
@@ -534,6 +690,7 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
 
     * void
     * boolean / Boolean
+    * byte / Byte
     * short / Short
     * int / Integer
     * long / Long
@@ -549,10 +706,11 @@ Use `JdbcParameterColumnMapper<T>` when you need to manually map a query paramet
     * OffsetTime
     * OffsetDateTime
 
-    View fields without an explicit `@Mapping` natively support `boolean` / `Boolean`, `short` / `Short`,
-    `int` / `Integer`, `long` / `Long`, `double` / `Double`, `float` / `Float`, `byte[]`, `String`,
-    `BigDecimal`, `LocalDate`, and `LocalDateTime`.
-    For other types, use built-in `JdbcResultColumnMapper<T>` / `JdbcParameterColumnMapper<T>` mappers or declare custom mappers.
+    View fields without an explicit `@Mapping` are read and written by inlined `ResultSet` / `PreparedStatement` calls
+    for `boolean` / `Boolean`, `short` / `Short`, `int` / `Integer`, `long` / `Long`, `double` / `Double`,
+    `float` / `Float`, `byte[]`, `String`, `BigDecimal`, `LocalDate`, and `LocalDateTime`.
+    For other types, the built-in `JdbcResultColumnMapper<T>` / `JdbcParameterColumnMapper<T>` mappers are used,
+    or you declare custom mappers.
 
 ## Select by List { #select-by-list }
 
@@ -566,11 +724,15 @@ The example below shows `Postgres` through a `JDBC Array`:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Component
-    class ListOfStringJdbcParameterMapper implements JdbcParameterColumnMapper<List<String>> {
+    public final class ListOfStringJdbcParameterMapper implements JdbcParameterColumnMapper<List<String>> {
 
         @Override
-        public void set(PreparedStatement stmt, int index, List<String> value) throws SQLException {
+        public void set(PreparedStatement stmt, int index, @Nullable List<String> value) throws SQLException {
+            if (value == null) {
+                stmt.setNull(index, Types.ARRAY);
+                return;
+            }
+
             String[] typedArray = value.toArray(String[]::new);
             Array sqlArray = stmt.getConnection().createArrayOf("VARCHAR", typedArray);
             stmt.setArray(index, sqlArray);
@@ -588,14 +750,15 @@ The example below shows `Postgres` through a `JDBC Array`:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
     class ListOfStringJdbcParameterMapper : JdbcParameterColumnMapper<List<String>> {
 
-        @Throws(SQLException::class)
-        override fun set(stmt: PreparedStatement, index: Int, value: List<String>) {
-            val typedArray = value.toTypedArray()
-            val sqlArray = stmt.connection.createArrayOf("VARCHAR", typedArray)
-            stmt.setArray(index, sqlArray)
+        override fun set(stmt: PreparedStatement, index: Int, value: List<String>?) {
+            if (value == null) {
+                stmt.setNull(index, Types.ARRAY)
+                return
+            }
+
+            stmt.setArray(index, stmt.connection.createArrayOf("VARCHAR", value.toTypedArray()))
         }
     }
 
@@ -607,10 +770,13 @@ The example below shows `Postgres` through a `JDBC Array`:
     }
     ```
 
+A [manually built query](#query) does not need such a mapper: `JdbcQuery` expands an `IN (:name)` clause
+into one `?` placeholder per element with `bindIn`.
+
 ## JSON / JSONB { #json }
 
 A `JSON` / `JSONB` column can be mapped to a view field by registering generic
-`JdbcParameterColumnMapper<T>` and `JdbcResultColumnMapper<T>` as default `@Module` components tagged with `@Json`.
+`JdbcParameterColumnMapper<T>` and `JdbcResultColumnMapper<T>` as `@Module` components tagged with `@Json`.
 These mappers bridge the [JSON](json.md) module `JsonWriter<T>` / `JsonReader<T>` to a driver-specific value.
 The `Postgres` example below serializes the value into a `PGobject` of type `jsonb` when binding a parameter,
 handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a `String`:
@@ -627,7 +793,7 @@ handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a 
                 if (value != null) {
                     PGobject jsonb = new PGobject();
                     jsonb.setType("jsonb");
-                    jsonb.setValue(writer.toStringUnchecked(value));
+                    jsonb.setValue(writer.toString(value));
                     stmt.setObject(index, jsonb);
                 } else {
                     stmt.setNull(index, Types.NULL);
@@ -642,7 +808,7 @@ handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a 
                 if (value == null) {
                     return null;
                 } else {
-                    return reader.readUnchecked(value);
+                    return reader.read(value);
                 }
             };
         }
@@ -663,7 +829,7 @@ handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a 
                 } else {
                     val jsonb = PGobject()
                     jsonb.type = "jsonb"
-                    jsonb.value = writer.toStringUnchecked(value)
+                    jsonb.value = writer.toString(value)
                     stmt.setObject(index, jsonb)
                 }
             }
@@ -673,7 +839,7 @@ handles `null` via `setNull(index, Types.NULL)`, and reads the column back as a 
         fun <T> jdbcJsonResultColumnMapper(reader: JsonReader<T>): JdbcResultColumnMapper<T> {
             return JdbcResultColumnMapper { row, index ->
                 val value = row.getString(index)
-                if (value == null) null else reader.readUnchecked(value)
+                if (value == null) null else reader.read(value)
             }
         }
     }
@@ -730,13 +896,14 @@ The `INSERT` uses the `::jsonb` cast so `Postgres` accepts the serialized string
     }
     ```
 
-The [JSON](json.md) module dependency is required so `Kora` can generate `JsonWriter` / `JsonReader` for the field type,
-and the mapper `@Module` must be added to the [application graph](container.md).
+The [JSON](json.md) module is required so `Kora` can generate `JsonWriter` / `JsonReader` for the field type,
+and the mapper `@Module` becomes part of the [application graph](container.md).
 
 ## Generated Identifier { #generated-identifier }
 
 If you need to return primary keys generated by the database,
 use the `@Id` annotation on the method.
+`Kora` then prepares the statement with `RETURN_GENERATED_KEYS` and maps `PreparedStatement#getGeneratedKeys`.
 This approach also works for `@Batch` queries.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -746,11 +913,20 @@ This approach also works for `@Batch` queries.
     public interface EntityRepository extends JdbcRepository {
 
         @EntityJdbc
-        public record Entity(Long id, String name) {}
+        record Entity(@Id Long id, String name) {
+
+            public Entity(String name) {
+                this(null, name);
+            }
+        }
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
-        long insert(Entity entity);
+        Long insert(Entity entity);
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        List<Long> insert(@Batch List<Entity> entities);
     }
     ```
 
@@ -761,11 +937,15 @@ This approach also works for `@Batch` queries.
     interface EntityRepository : JdbcRepository {
 
         @EntityJdbc
-        data class Entity(val id: Long, val name: String)
+        data class Entity(@field:Id val id: Long?, val name: String)
 
         @Query("INSERT INTO entities(name) VALUES (:entity.name)")
         @Id
         fun insert(entity: Entity): Long
+
+        @Query("INSERT INTO entities(name) VALUES (:entity.name)")
+        @Id
+        fun insert(@Batch entities: List<Entity>): List<Long>
     }
     ```
 
@@ -822,16 +1002,23 @@ the `@Id` method returns that record, and a `@Batch` insert returns a `List` of 
     }
     ```
 
+Without `@Id` a `@Batch` method cannot map arbitrary rows, so its return type is limited
+to `void` / `Unit`, `UpdateCount`, `int[]` / `IntArray`, or `long[]` / `LongArray`.
+
 ## Manual Query With Telemetry { #query }
 
-If a query is hard to express as a single static `@Query`, you can create a regular method with an implementation and build `SQL` manually.
-Use `JdbcConnectionFactory#query` to execute such a query.
-This method creates a `PreparedStatement`, runs the query through Kora telemetry, and uses the same connection as other repository methods.
-If `query` is called inside an active `inTx` transaction, the query is executed on the current transactional connection.
+If a query is hard to express as a single static `@Query`, declare a regular method with an implementation
+and build the `SQL` yourself.
+`JdbcRepository#executor()` returns the `JdbcExecutor` that the generated `@Query` methods use,
+so a manual query runs on the same connection, joins an active transaction, and is reported to telemetry.
 
-`QueryContext` contains the query identifier and the final `SQL`.
-The query identifier is reported to telemetry, so it is convenient to use a stable name such as `Repository.method`.
-Values must be passed through `PreparedStatement` parameters, not concatenated directly into the query string.
+The recommended way to assemble a dynamic query is `JdbcQuery`.
+`JdbcQuery.named()` builds `SQL` with `:name` placeholders and binds values by name,
+`JdbcQuery.template()` builds `SQL` with positional `?` placeholders.
+Both builders keep `SQL` fragments and values apart: `sql` / `sqlIf` append `SQL`,
+`bind` / `bindIf` supply values, and `bindIn` / `bindInIf` expand an `IN (:name)` clause
+into one placeholder per element.
+Every named parameter used in `SQL` must be bound, and every bound parameter must be used in `SQL`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -839,34 +1026,29 @@ Values must be passed through `PreparedStatement` parameters, not concatenated d
     @Repository
     public interface EntityRepository extends JdbcRepository {
 
-        default List<Entity> findByFilter(@Nullable String name, boolean onlyActive) {
-            var sql = new StringBuilder("SELECT id, name FROM entities WHERE 1 = 1");
-            var params = new ArrayList<String>();
+        @EntityJdbc
+        record Entity(long id, String name) {}
 
-            if (name != null) {
-                sql.append(" AND name = ?");
-                params.add(name);
-            }
-            if (onlyActive) {
-                sql.append(" AND active = true");
-            }
+        default List<Entity> findByFilter(@Nullable String name, List<Long> ids) {
+            var query = JdbcQuery.named()
+                    .sql("SELECT id, name FROM entities WHERE 1 = 1") //(1)!
+                    .sqlIf(" AND name = :name", name != null) //(2)!
+                    .bindIf("name", name, name != null) //(3)!
+                    .sqlIf(" AND id IN (:ids)", !ids.isEmpty())
+                    .bindInIf("ids", ids, !ids.isEmpty()) //(4)!
+                    .sql(" ORDER BY id")
+                    .build();
 
-            var queryContext = new QueryContext("EntityRepository.findByFilter", sql.toString());
-            return getJdbcConnectionFactory().query(queryContext, statement -> {
-                for (int i = 0; i < params.size(); i++) {
-                    statement.setString(i + 1, params.get(i));
-                }
-                try (var resultSet = statement.executeQuery()) {
-                    var result = new ArrayList<Entity>();
-                    while (resultSet.next()) {
-                        result.add(new Entity(resultSet.getLong("id"), resultSet.getString("name")));
-                    }
-                    return result;
-                }
-            });
+            return executor().queryList(query, rs -> new Entity(rs.getLong("id"), rs.getString("name"))); //(5)!
         }
     }
     ```
+
+    1.  Static part of the query. `SQL` identifiers and fragments are formatted before they reach the builder, values never are.
+    2.  Appends the `SQL` fragment only when the condition holds.
+    3.  Binds the value only when the same condition holds.
+    4.  Expands into one `?` placeholder per element, so `id IN (:ids)` becomes `id IN (?, ?, ?)`.
+    5.  `queryList` runs the statement through telemetry and maps every row with a `JdbcRowMapper`. `queryOne`, `queryOptional`, `executeUpdate`, and `executeUpdateBatch` are available as well.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -874,48 +1056,175 @@ Values must be passed through `PreparedStatement` parameters, not concatenated d
     @Repository
     interface EntityRepository : JdbcRepository {
 
-        fun findByFilter(name: String?, onlyActive: Boolean): List<Entity> {
-            val sql = StringBuilder("SELECT id, name FROM entities WHERE 1 = 1")
-            val params = mutableListOf<String>()
+        @EntityJdbc
+        data class Entity(val id: Long, val name: String)
 
-            if (name != null) {
-                sql.append(" AND name = ?")
-                params += name
-            }
-            if (onlyActive) {
-                sql.append(" AND active = true")
-            }
+        fun findByFilter(name: String?, ids: List<Long>): List<Entity> {
+            val query = JdbcQuery.named()
+                .sql("SELECT id, name FROM entities WHERE 1 = 1") //(1)!
+                .sqlIf(" AND name = :name", name != null) //(2)!
+                .bindIf("name", name, name != null) //(3)!
+                .sqlIf(" AND id IN (:ids)", ids.isNotEmpty())
+                .bindInIf("ids", ids, ids.isNotEmpty()) //(4)!
+                .sql(" ORDER BY id")
+                .build()
 
-            val queryContext = QueryContext("EntityRepository.findByFilter", sql.toString())
-            return jdbcConnectionFactory.query(queryContext) { statement ->
-                params.forEachIndexed { index, value ->
-                    statement.setString(index + 1, value)
+            return executor().queryList(query, JdbcRowMapper<Entity> { rs -> //(5)!
+                Entity(rs.getLong("id"), rs.getString("name"))
+            })
+        }
+    }
+    ```
+
+    1.  Static part of the query. `SQL` identifiers and fragments are formatted before they reach the builder, values never are.
+    2.  Appends the `SQL` fragment only when the condition holds.
+    3.  Binds the value only when the same condition holds.
+    4.  Expands into one `?` placeholder per element, so `id IN (:ids)` becomes `id IN (?, ?, ?)`.
+    5.  `queryList` runs the statement through telemetry and maps every row with a `JdbcRowMapper`. `queryOne`, `queryOptional`, `executeUpdate`, and `executeUpdateBatch` are available as well.
+
+When you already have the final `SQL` and want full control over the `PreparedStatement`,
+use `JdbcExecutor#query` with a `QueryContext`.
+`QueryContext` carries the query identifier reported to telemetry — a stable name such as `Repository.method` is convenient —
+and the final `SQL`.
+Values must be passed through `PreparedStatement` parameters, not concatenated into the query string:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        default int countByPrefix(String prefix) {
+            var queryContext = new QueryContext(
+                    "EntityRepository.countByPrefix", //(1)!
+                    "SELECT count(*) FROM entities WHERE name LIKE ?");
+
+            return executor().query(queryContext, statement -> { //(2)!
+                statement.setString(1, prefix + "%");
+                try (var rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
                 }
-                statement.executeQuery().use { resultSet ->
-                    val result = mutableListOf<Entity>()
-                    while (resultSet.next()) {
-                        result += Entity(resultSet.getLong("id"), resultSet.getString("name"))
-                    }
-                    result
-                }
+            });
+        }
+    }
+    ```
+
+    1.  Query identifier reported to telemetry
+    2.  Creates the `PreparedStatement`, wraps execution in telemetry, and reuses the current connection
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        fun countByPrefix(prefix: String): Int {
+            val queryContext = QueryContext(
+                "EntityRepository.countByPrefix", //(1)!
+                "SELECT count(*) FROM entities WHERE name LIKE ?"
+            )
+
+            return executor().query(queryContext) { statement -> //(2)!
+                statement.setString(1, "$prefix%")
+                statement.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
             }
         }
     }
     ```
 
+    1.  Query identifier reported to telemetry
+    2.  Creates the `PreparedStatement`, wraps execution in telemetry, and reuses the current connection
+
+### Statement options { #query-options }
+
+`JdbcQuery` can also configure the `PreparedStatement` it creates through `opts`:
+`fetchSize`, `maxRows`, `queryTimeoutSeconds`, `resultSetType`, `resultSetConcurrency`, `resultSetHoldability`,
+`generatedKeys`, and `returnGeneratedKeys(columns...)`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var query = JdbcQuery.template()
+            .sql("SELECT id, name FROM entities WHERE name LIKE ?")
+            .bind("prefix%")
+            .opts(o -> o.fetchSize(500).queryTimeoutSeconds(5)) //(1)!
+            .build();
+
+    var entities = executor().queryList(query, rs -> new Entity(rs.getLong("id"), rs.getString("name")));
+    ```
+
+    1.  `fetchSize` controls how many rows the driver reads at once, `queryTimeoutSeconds` limits statement execution time
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val query = JdbcQuery.template()
+        .sql("SELECT id, name FROM entities WHERE name LIKE ?")
+        .bind("prefix%")
+        .opts { o -> o.fetchSize(500).queryTimeoutSeconds(5) } //(1)!
+        .build()
+
+    val entities = executor().queryList(query, JdbcRowMapper<Entity> { rs ->
+        Entity(rs.getLong("id"), rs.getString("name"))
+    })
+    ```
+
+    1.  `fetchSize` controls how many rows the driver reads at once, `queryTimeoutSeconds` limits statement execution time
+
+### Manual batch { #query-batch }
+
+The same builders create a batch from a collection: `batch()` switches the builder into batch mode,
+and `executeUpdateBatch` sends it as a single `PreparedStatement#executeBatch`.
+The result is the total number of affected rows, or `UpdateCount(-1)` when the driver
+reports `Statement.SUCCESS_NO_INFO`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    default UpdateCount insertAll(List<Entity> entities) {
+        var batch = JdbcQuery.named()
+                .sql("INSERT INTO entities(id, name) VALUES (:id, :name)")
+                .batch()
+                .bindAll(entities, (row, entity) -> row
+                        .bind("id", entity.id())
+                        .bind("name", entity.name()))
+                .build();
+
+        return executor().executeUpdateBatch(batch);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun insertAll(entities: List<Entity>): UpdateCount {
+        val batch = JdbcQuery.named()
+            .sql("INSERT INTO entities(id, name) VALUES (:id, :name)")
+            .batch()
+            .bindAll(entities) { row, entity ->
+                row.bind("id", entity.id)
+                row.bind("name", entity.name)
+            }
+            .build()
+
+        return executor().executeUpdateBatch(batch)
+    }
+    ```
+
 ## Transactions { #transaction }
 
-For executing blocking queries, `Kora` provides the `JdbcConnectionFactory` interface through the `JdbcRepository` contract.
-All repository methods called inside the transaction lambda are executed in that same transaction.
+`JdbcRepository` exposes the `JdbcExecutor` contract through `executor()`.
+All repository methods called inside the transaction callback are executed in that same transaction,
+because they reuse the connection bound to the current scope.
 
 Use `inTx` to execute queries transactionally.
-If there is already an active transaction on the current thread, a nested `inTx` call uses the same connection and does not open
+If there is already an active transaction in the current scope, a nested `inTx` call uses the same connection and does not open
 a new transaction.
 
 A transactional sequence of operations can stay inside the repository itself as a regular method with an implementation.
 This is useful when several `@Query` methods or a complex manual `SQL` query should stay next to the rest of the repository queries,
 without moving technical database work to a service layer.
-Inside such a method, you can use both repository `@Query` methods and `JdbcConnectionFactory#query` for a manual query with telemetry.
+Inside such a method, you can use both repository `@Query` methods and [manual queries](#query).
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -929,8 +1238,8 @@ Inside such a method, you can use both repository `@Query` methods and `JdbcConn
         @Query("UPDATE entities SET name = :name WHERE id = :id")
         UpdateCount updateName(long id, String name);
 
-        public List<Entity> saveAll(Entity one, Entity two) {
-            return getJdbcConnectionFactory().inTx(() -> {
+        default List<Entity> saveAll(Entity one, Entity two) {
+            return executor().inTx(() -> {
                 insert(one); //(1)!
                 updateName(two.id(), two.name()); //(2)!
                 return List.of(one, two);
@@ -955,27 +1264,68 @@ Inside such a method, you can use both repository `@Query` methods and `JdbcConn
         fun updateName(id: Long, name: String): UpdateCount
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
-            return jdbcConnectionFactory.inTx<List<Entity>> {
-                insert(one) //(1)!
-                updateName(two.id, two.name) //(2)!
+            return executor().inTx(JdbcExecutor.SqlSupplier { //(1)!
+                insert(one) //(2)!
+                updateName(two.id, two.name) //(3)!
                 listOf(one, two)
-            }
+            })
         }
     }
     ```
 
-    1. Executed within the transaction, or rolled back if the whole lambda throws an exception
+    1. Explicit SAM constructor, see the warning below
     2. Executed within the transaction, or rolled back if the whole lambda throws an exception
+    3. Executed within the transaction, or rolled back if the whole lambda throws an exception
+
+!!! warning "Kotlin"
+
+    `inTx` has several overloads that all accept a single functional argument, so a bare `Kotlin` lambda cannot be resolved.
+    Pass an explicit SAM constructor instead: `JdbcExecutor.SqlSupplier { … }` when the block returns a value and
+    `JdbcExecutor.SqlRunnable { … }` when it does not.
+    Without it the compiler reports `Overload resolution ambiguity` or `Cannot infer type for type parameter T`,
+    neither of which points at the transaction.
 
 The transaction is considered successfully committed after the method completes if it did not throw an exception.
-If the method throws an exception, all database changes made within the transaction are not applied.
+If the method throws an exception, all database changes made within the transaction are rolled back
+and the exception is rethrown.
 
-The transaction isolation level is taken from the `Hikari` pool `dsProperties` configuration,
-or you can change it manually through `java.sql.Connection` before executing queries.
+The connection is bound to the executing scope, so work handed off to an unrelated thread does not join
+the current transaction — it acquires its own connection instead.
 
-```java
-connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-```
+### Isolation level { #isolation }
+
+By default a transaction runs with the isolation level configured for the driver, the database,
+or the [connection pool](#pool-customization) — for most databases that is `READ_COMMITTED`.
+To request another level for one transaction, pass a `JdbcExecutor.TxIsolation` value as the first argument of `inTx`:
+`READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, or `SERIALIZABLE`.
+The previous level of the connection is restored after the transaction completes.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    default List<Entity> saveAll(Entity one, Entity two) {
+        return executor().inTx(JdbcExecutor.TxIsolation.REPEATABLE_READ, () -> {
+            insert(one);
+            insert(two);
+            return List.of(one, two);
+        });
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    fun saveAll(one: Entity, two: Entity): List<Entity> {
+        return executor().inTx(JdbcExecutor.TxIsolation.REPEATABLE_READ, JdbcExecutor.SqlSupplier {
+            insert(one)
+            insert(two)
+            listOf(one, two)
+        })
+    }
+    ```
+
+The isolation level is applied only when `inTx` actually opens a transaction.
+A nested `inTx` inside an already open transaction reuses it and ignores the argument.
 
 ### Multi-repository Transactions
 
@@ -1066,21 +1416,15 @@ The `withConnection` method executes code with a connection, but does not open a
 
 `withConnection` works as follows:
 
-- if the current `Context` already contains a `ConnectionContext`, the method passes the current connection to the lambda;
-- if the current `Context` does not contain a connection, the method takes a new connection from the `DataSource`, stores it in `ConnectionContext` for the duration of the lambda, and closes it after completion;
-- nested calls to `withConnection`, `JdbcConnectionFactory#query`, and repository methods inside this lambda use the same current connection;
-- if a `JDBC` exception is a `SQLException`, it is wrapped in `RuntimeSqlException`.
+- if the current scope already contains a `ConnectionContext`, the method passes the current connection to the lambda;
+- if the current scope does not contain a connection, the method takes a new connection from the pool, binds it to a `ConnectionContext` for the duration of the lambda, and closes it after completion;
+- nested calls to `withConnection`, [manual queries](#query), and repository methods inside this lambda use the same current connection;
+- a `java.sql.SQLException` is wrapped into `UncheckedSqlException`.
 
-!!! note
-
-    Manual `query`, `withConnection`, and `inTx` calls surface a `JDBC` failure as an unchecked `RuntimeSqlException`
-    that wraps the original `java.sql.SQLException`. Catch `RuntimeSqlException` (not `SQLException`) at the call site,
-    and use `getCause()` to reach the underlying `SQLException`.
-
-The `inTx` method opens a transaction and is built on top of `withConnection`.
-If the current connection is already in an active transaction, meaning `autoCommit = false`, nested `inTx` uses the same transaction.
-If there is no active transaction, `inTx` disables `autoCommit`, executes the lambda, and then calls `commit` on success or `rollback` on exception.
-After the transaction completes, registered `addPostCommitAction` or `addPostRollbackAction` callbacks are executed.
+`withContext` is the same thing but hands over the `ConnectionContext` instead of the raw `Connection`,
+which is what you need to register [post-commit](#post-commit-actions) and [post-rollback](#post-rollback-actions) actions.
+`currentConnection` and `currentContext` return the connection bound to the current scope or `null` when there is none,
+and `acquireConnection` takes a brand new connection from the pool that the caller must close.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1095,8 +1439,8 @@ After the transaction completes, registered `addPostCommitAction` or `addPostRol
         }
 
         public List<Entity> saveAll(Entity one, Entity two) {
-            return repository.getJdbcConnectionFactory().inTx(connection -> {
-                // do some work
+            return repository.executor().withConnection(connection -> {
+                // do some work with java.sql.Connection
                 return List.of(one, two);
             });
         }
@@ -1110,19 +1454,50 @@ After the transaction completes, registered `addPostCommitAction` or `addPostRol
     class SomeService(private val repository: EntityRepository) {
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
-            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
-                // do some work
+            return repository.executor().withConnection(JdbcExecutor.SqlFunction<Connection, List<Entity>> { connection ->
+                // do some work with java.sql.Connection
                 listOf(one, two)
             })
         }
+    }
+    ```
+
+The `inTx` method opens a transaction and is built on top of `withContext`.
+If the current connection is already in an active transaction, meaning `autoCommit = false`, nested `inTx` uses the same transaction.
+If there is no active transaction, `inTx` disables `autoCommit`, executes the lambda, and then calls `commit` on success or `rollback` on exception.
+
+A `@Query` method can also accept a `java.sql.Connection` argument.
+The generated code prepares the statement on exactly that connection instead of the current one,
+which is useful when the connection comes from outside the repository:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        void insert(Connection connection, Entity entity);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Query("INSERT INTO entities(id, name) VALUES (:entity.id, :entity.name)")
+        fun insert(connection: Connection, entity: Entity)
     }
     ```
 
 ### Post-Commit Actions { #post-commit-actions }
 
-If you need to perform actions after a transaction is successfully committed, add them with `addPostCommitAction`.
-The action is executed after `commit` and only if the transaction completed successfully.
-Such actions can be added only inside an active transaction.
+If you need to perform actions after a transaction is successfully committed, register them on the `ConnectionContext`
+with `afterCommit`.
+The action receives the connection, is executed after `commit`, and only if the transaction completed successfully.
+Such actions can be added only inside an active transaction — otherwise `afterCommit` throws `IllegalStateException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1137,18 +1512,20 @@ Such actions can be added only inside an active transaction.
         }
 
         public List<Entity> saveAll(Entity one, Entity two) {
-            return repository.getJdbcConnectionFactory().inTx(connection -> {
-                var ccc = repository.getJdbcConnectionFactory().currentConnectionContext();
-                ccc.addPostCommitAction(conn -> {
-                    // do some work
+            return repository.executor().inTx(context -> { //(1)!
+                context.afterCommit(connection -> {
+                    // do some work after commit
                 });
 
-                // do some work
+                repository.insert(one);
+                repository.insert(two);
                 return List.of(one, two);
             });
         }
     }
     ```
+
+    1.  The single-argument `inTx` overload hands over the `ConnectionContext` of the current transaction
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1157,24 +1534,28 @@ Such actions can be added only inside an active transaction.
     class SomeService(private val repository: EntityRepository) {
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
-            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
-                val ccc = repository.jdbcConnectionFactory.currentConnectionContext()!!
-                ccc.addPostCommitAction { conn ->
-                    // do some work
+            return repository.executor().inTx(JdbcExecutor.SqlFunction<ConnectionContext, List<Entity>> { context -> //(1)!
+                context.afterCommit { connection ->
+                    // do some work after commit
                 }
 
-                // do some work
+                repository.insert(one)
+                repository.insert(two)
                 listOf(one, two)
             })
         }
     }
     ```
+
+    1.  The single-argument `inTx` overload hands over the `ConnectionContext` of the current transaction
+
+An exception thrown by a post-commit action is propagated to the caller, but the transaction stays committed.
 
 ### Post-Rollback Actions { #post-rollback-actions }
 
-If you need to perform actions after a transaction is rolled back, add them with `addPostRollbackAction`.
+If you need to perform actions after a transaction is rolled back, register them with `afterRollback`.
 The action receives the connection and the exception that caused the transaction to roll back.
-Such actions can be added only inside an active transaction.
+Such actions can be added only inside an active transaction — otherwise `afterRollback` throws `IllegalStateException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1189,13 +1570,13 @@ Such actions can be added only inside an active transaction.
         }
 
         public List<Entity> saveAll(Entity one, Entity two) {
-            return repository.getJdbcConnectionFactory().inTx(connection -> {
-                var ccc = repository.getJdbcConnectionFactory().currentConnectionContext();
-                ccc.addPostRollbackAction((conn, e) -> {
-                    // do some work
+            return repository.executor().inTx(context -> {
+                context.afterRollback((connection, e) -> {
+                    // do some work after rollback
                 });
 
-                // do some work
+                repository.insert(one);
+                repository.insert(two);
                 return List.of(one, two);
             });
         }
@@ -1209,72 +1590,58 @@ Such actions can be added only inside an active transaction.
     class SomeService(private val repository: EntityRepository) {
 
         fun saveAll(one: Entity, two: Entity): List<Entity> {
-            return repository.jdbcConnectionFactory.inTx(SqlFunction1 { connection: Connection ->
-                val ccc = repository.jdbcConnectionFactory.currentConnectionContext()!!
-                ccc.addPostRollbackAction { conn, e ->
-                    // do some work
+            return repository.executor().inTx(JdbcExecutor.SqlFunction<ConnectionContext, List<Entity>> { context ->
+                context.afterRollback { connection, e ->
+                    // do some work after rollback
                 }
 
-                // do some work
+                repository.insert(one)
+                repository.insert(two)
                 listOf(one, two)
             })
         }
     }
     ```
 
+An exception thrown by a post-rollback action does not replace the original failure:
+it is attached to it as a suppressed exception.
+
 ## Signatures { #signatures }
+
+`JDBC` repository contracts are synchronous — a method blocks the calling thread until the database answers.
+`Kora` server transports dispatch request handling onto virtual threads, so a blocking `JDBC` call does not hold a platform thread.
+There are no asynchronous or reactive repository signatures.
 
 Available repository method signatures out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `T` means the return value type, or `List<T>`, or `Void`, or `UpdateCount`.
-    `CompletionStage<T>`, `CompletableFuture<T>`, and `Mono<T>` require an `Executor` component.
+    `T` means the return value type.
 
-    - `T myMethod()`
+    - `T myMethod()` — the result must not be `null`
     - `@Nullable T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html) (requires `Executor`)
-    - `CompletableFuture<T> myMethod()` [CompletableFuture](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html) (requires `Executor`)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires `Executor` and the [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+    - `List<T> myMethod()`
+    - `void myMethod()`
+    - `UpdateCount myMethod()` — number of affected rows
+    - `int[] myMethod(@Batch List<T> values)` / `long[] myMethod(@Batch List<T> values)` — per-row results of a [batch query](database-common.md#batch-query)
 
 === ":simple-kotlin: `Kotlin`"
 
-    `T` means the return value type, or `T?`, or `List<T>`, or `Unit`, or `UpdateCount`.
-    `suspend` methods require an `Executor` component.
+    `T` means the return value type.
 
-    - `myMethod(): T`
-    - `suspend myMethod(): T` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires `Executor` and the [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `fun myMethod(): T` — the result must not be `null`
+    - `fun myMethod(): T?`
+    - `fun myMethod(): List<T>`
+    - `fun myMethod()` — returns `Unit`
+    - `fun myMethod(): UpdateCount` — number of affected rows
+    - `fun myMethod(@Batch values: List<T>): IntArray` / `fun myMethod(@Batch values: List<T>): LongArray` — per-row results of a [batch query](database-common.md#batch-query)
 
-For asynchronous methods, you can specify a separate `Executor` tag through the `executorTag` parameter in `@Repository`.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    public final class BlockingJdbcExecutorTag {}
-
-    @Repository(executorTag = @Tag(BlockingJdbcExecutorTag.class))
-    public interface EntityRepository extends JdbcRepository {
-
-        @Query("SELECT id, name FROM entities")
-        CompletionStage<List<Entity>> findAll();
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    class BlockingJdbcExecutorTag
-
-    @Repository(executorTag = Tag(BlockingJdbcExecutorTag::class))
-    interface EntityRepository : JdbcRepository {
-
-        @Query("SELECT id, name FROM entities")
-        suspend fun findAll(): List<Entity>
-    }
-    ```
+To bind a repository to a data source other than the default one, use the `executorTag` attribute
+of `@Repository`, see [Additional data sources](#additional-data-sources).
 
 ## Telemetry { #telemetry }
 
 Logging, metrics, and tracing are configured via the `telemetry` block in the [configuration](#configuration) and described in the [Metrics Reference](metrics.md#database) section.
+The `Hikari` pool reports its own metrics as long as `telemetry.metrics.driverMetrics` is enabled.
 To completely override telemetry, you can provide custom SPI factories; see the [Common Database Documentation](database-common.md#telemetry) for details.

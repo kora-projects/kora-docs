@@ -1,17 +1,17 @@
 ---
-description: "Explains Common Kora database model and repository conventions: entities, identifiers, naming, embedded fields, query macros, batch queries, and repository inheritance. Use when working with @Table, @Column, @Id, @Embedded, @Repository, @Query, @Batch, @Mapping."
+description: "Common Kora database model shared by the JDBC and Cassandra modules: entities, identifiers, naming, embedded fields, query parameters, SQL macros, batch queries, affected rows, several databases in one application, and query telemetry. Use when working with @Repository, @Query, @Table, @Column, @Id, @Embedded, @Batch, @Mapping and UpdateCount."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Common Kora database model and repository conventions: entities, identifiers, naming, embedded fields, query macros, batch queries, and repository inheritance; key triggers include @Table, @Column, @Id, @Embedded, @Repository, @Query, @Batch, @Mapping, Entity, Repository."
+  use_when: "Use this file for Kora docs or implementation questions about the common database model shared by the JDBC and Cassandra modules: entities and views, @Table, @Column, @Id, @Embedded, naming strategies, @Repository and @Query, query parameter binding, SQL macros (%{return#selects}, %{entity#inserts}, %{entity#where = @id}), @Batch, UpdateCount, several databases in one application, and DatabaseTelemetry."
 ---
 
 Базовые принципы и механизмы работы модулей баз данных в Kora.
-В этом разделе описана общая модель для `JDBC`, `Cassandra`, `R2DBC` и `Vertx`: отображения, репозитории, параметры запросов, пакетные запросы, количество затронутых строк и макросы.
+В этом разделе описана общая модель для `JDBC` и `Cassandra`: отображения, репозитории, параметры запросов, пакетные запросы, количество затронутых строк и макросы.
 Конфигурация подключения, транзакции, поддерживаемые сигнатуры и специфичные для драйвера отображатели описаны в документации для каждой реализации базы данных.
 
 Этот раздел намеренно не описывает специфичные для драйвера детали.
 Конфигурацию подключения, транзакции, типы возвращаемых значений, генерируемые базой данных идентификаторы, служебные параметры методов
 и точные интерфейсы отображателей смотрите в документации для нужной реализации:
-[`JDBC`](database-jdbc.md), [`Cassandra`](database-cassandra.md), [`R2DBC`](database-r2dbc.md) или [`Vertx`](database-vertx.md).
+[`JDBC`](database-jdbc.md) или [`Cassandra`](database-cassandra.md).
 
 Мы считаем, что лучший способ общения с базой данных SQL — это общение на её родном языке SQL.
 Другие инструменты часто имеют ограничения на использование специфичных функций конкретной базы данных
@@ -22,12 +22,13 @@ agent:
 
 ## Использование { #usage }
 
-Использование показано на примере [`JDBC`](database-jdbc.md) модуля, сначала репозиторий объявляется как интерфейс, помеченный аннотацией `@Repository`, и должен наследовать `JdbcRepository`.
+Использование показано на примере модуля [`JDBC`](database-jdbc.md): репозиторий объявляется как интерфейс, помеченный
+аннотацией `@Repository`, и наследует `JdbcRepository`.
 Каждый метод, помеченный `@Query`, содержит обычный `SQL`-запрос. Параметры метода связываются по имени с помощью
-синтаксиса `:parameter`, а к полям объекта можно обращаться как `:entity.field`.
+синтаксиса `:parameter`, а к полям сущности можно обращаться как `:entity.field`.
 
-Отображения описываются с помощью общих аннотаций отображений и помечаются `@EntityJdbc`,
-чтобы `Kora` сгенерировала отображатель на этапе компиляции оптимальнее:
+Отображения описываются с помощью общих аннотаций отображений и дополнительно помечаются `@EntityJdbc`
+(`@EntityCassandra` для `Cassandra`), чтобы Kora сгенерировала отображатель на этапе компиляции:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -53,20 +54,18 @@ agent:
     }
     ```
 
-    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+    1.  Использует [макросы](#macros) `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
         ```sql
-        SELECT id, name, description 
-        FROM entities 
+        SELECT id, name, description
+        FROM entities
         WHERE id = :id
         ```
-        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
-    2.  Поля перечислены вручную без использования макросов — это допустимо, но требует поддержки при изменении отображения.
-    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+    2.  Столбцы перечислены вручную без макросов — это допустимо, но требует поддержки при изменении сущности.
+    3.  Использует [макрос](#macros) `%{entity#inserts}`. Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, name, description) 
-        VALUES(:entity.id, :entity.name, :entity.description)
+        INSERT INTO entities(id, name, description)
+        VALUES (:entity.id, :entity.name, :entity.description)
         ```
-        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -85,50 +84,58 @@ agent:
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
         fun findById(id: Long): Entity?
 
+        @Query("SELECT id, name, description FROM entities") //(2)!
+        fun findAll(): List<Entity>
+
         @Query("INSERT INTO %{entity#inserts}") //(3)!
         fun insert(entity: Entity): UpdateCount
     }
     ```
 
-    1.  Использует макрос `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
+    1.  Использует [макросы](#macros) `%{return#selects}` и `%{return#table}`. Разворачивается в запрос:
         ```sql
-        SELECT id, name, description 
-        FROM entities 
+        SELECT id, name, description
+        FROM entities
         WHERE id = :id
         ```
-        Метод использует макросы для `SELECT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
-    3.  Использует макрос `%{entity#inserts}`. Разворачивается в запрос:
+    2.  Столбцы перечислены вручную без макросов — это допустимо, но требует поддержки при изменении сущности.
+    3.  Использует [макрос](#macros) `%{entity#inserts}`. Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, name, description) 
-        VALUES(:entity.id, :entity.name, :entity.description)
+        INSERT INTO entities(id, name, description)
+        VALUES (:entity.id, :entity.name, :entity.description)
         ```
-        Метод использует макросы для `INSERT`. Подробнее: [Общие правила работы с базами данных — Макросы](database-common.md#macros)
 
-`SQL` остается под контролем разработчика: вы можете использовать специфичные для базы данных возможности, тогда как `Kora`
-берет на себя только безопасное связывание параметров, выполнение запроса и отображение результата.
-Общие правила для отображений, `@Table`, `@Column`, `@Id`, `@Embedded`, `@Batch` или макросов описаны в разделе
-[макросы](#macros).
+`SQL` остаётся под контролем разработчика: вы можете использовать специфичные для базы данных возможности, тогда как Kora
+берёт на себя только безопасное связывание параметров, выполнение запроса и отображение результата.
 
-**Связывание параметров:** Kora выполняет типизированное внедрение аргументов в SQL-запрос на этапе компиляции.
-Параметры запроса (например, `:id`, `:entity.name`) заменяются в сгенерированном коде на соответствующие вызовы `PreparedStatement`.
-Например, для параметра `String name` будет сгенерировано что-то вроде `statement.setString(1, name)`, где индекс соответствует порядку параметра в запросе.
-Это обеспечивает безопасность (защита от SQL-инъекций) и производительность (использование подготовленных запросов).
+Репозиторий также можно объявить абстрактным классом, реализующим интерфейс драйвера — тогда методы запросов являются
+абстрактными методами этого класса, и видимость метода запроса не обязана быть `public`.
+В Kotlin метод запроса не может быть `suspend` — генератор репозиториев отвергает такой метод на этапе компиляции.
+Точный набор поддерживаемых типов возвращаемых значений специфичен для драйвера и описан на странице каждой реализации.
+
+**Связывание параметров:** Kora генерирует типизированное связывание аргументов `SQL`-запроса на этапе компиляции.
+Параметры запроса вида `:id` или `:entity.name` заменяются в сгенерированном коде на соответствующие вызовы драйвера.
+Например, для параметра `String name` будет сгенерировано что-то вроде `statement.setString(1, name)`, где индекс
+соответствует позиции параметра в запросе.
+Это даёт и безопасность (защиту от SQL-инъекций), и производительность (всегда используются подготовленные запросы).
 
 ## Отображение { #view }
 
 Отображение — это представление данных из базы данных в виде класса с полями.
 
-Отображения, используемые как возвращаемое значение, должны содержать единственный публичный
-конструктор. Это может быть либо конструктор по умолчанию, либо конструктор с параметрами.
-Если Kora находит конструктор с параметрами, объект отображения создаётся на его основе.
-В случае пустого конструктора поля заполняются [через сеттеры](https://docs.oracle.com/cd/E19316-01/819-3669/bnais/index.html).
-
 ===! ":fontawesome-brands-java: `Java`"
+
+    Отображение — это либо `record`, который создаётся через свой канонический конструктор,
+    либо `JavaBean` — класс с публичным конструктором без аргументов и парой `getX()` / `setX()` для каждого
+    отображаемого поля, который создаётся пустым и затем заполняется [через сеттеры](https://docs.oracle.com/cd/E19316-01/819-3669/bnais/index.html).
 
     ```java
     public record Entity(String id, String name) {}
     ```
+
 === ":simple-kotlin: `Kotlin`"
+
+    Отображение должно быть `data class`, оно создаётся через свой первичный конструктор.
 
     ```kotlin
     data class Entity(val id: String, val name: String)
@@ -157,7 +164,7 @@ agent:
 ### Идентификатор { #identifier }
 
 Поскольку все манипуляции с данными выполняются путём преобразования отображения в запрос драйвера,
-нет необходимости выделять внутри отображения специальный первичный ключ для работы с ней.
+нет необходимости выделять внутри отображения специальный первичный ключ для работы с ним.
 
 Определение того, что именно является первичным ключом, может быть полезно при использовании [макросов](#macros),
 для этого можно использовать аннотацию `@Id`.
@@ -190,9 +197,9 @@ CREATE TABLE IF NOT EXISTS entities
 );
 ```
 
-Идентификатор будет создан на этапе вставки в базу данных,
-а его получение в коде приложения предполагается выполнять с помощью [возврата значения идентификатора для JDBC или R2DBC](database-jdbc.md#generated-identifier) при вставке
-либо использовать [специальные конструкции](https://www.postgresql.org/docs/current/dml-returning.html) вашей базы данных:
+Идентификатор создаётся на этапе вставки в базу данных,
+а получение его в коде приложения предполагается через конструкцию [генерируемого идентификатора](database-jdbc.md#generated-identifier) при вставке
+либо через [специальные конструкции](https://www.postgresql.org/docs/current/dml-returning.html) вашей базы данных:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -228,9 +235,9 @@ CREATE TABLE IF NOT EXISTS entities
     ```
 
 Вместо специфичного для драйвера `RETURNING` первичный ключ, сгенерированный базой данных при вставке, можно вернуть,
-пометив сам **метод** репозитория аннотацией `@Id` (аннотация применима как к полю отображения, так и к методу).
-Точное поведение генерируемого идентификатора и поддерживаемые сигнатуры возвращаемого значения специфичны для драйвера и описаны
-для [JDBC](database-jdbc.md#generated-identifier) и [R2DBC](database-r2dbc.md#generated-identifier):
+пометив аннотацией `@Id` сам **метод** репозитория (аннотация применима и к полю отображения, и к методу).
+Генерируемые идентификаторы поддерживает драйвер [JDBC](database-jdbc.md#generated-identifier), точное поведение
+и поддерживаемые сигнатуры возвращаемых значений описаны там:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -242,7 +249,7 @@ CREATE TABLE IF NOT EXISTS entities
         public record Entity(@Id Long id, String name) {}
 
         @Id //(1)!
-        @Query("INSERT INTO %{entity#inserts -= id}") //(2)!
+        @Query("INSERT INTO %{entity#inserts -= @id}") //(2)!
         long insert(Entity entity);
     }
     ```
@@ -250,7 +257,7 @@ CREATE TABLE IF NOT EXISTS entities
     1.  Помечает метод так, чтобы возвращался идентификатор, сгенерированный базой данных.
     2.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(name) VALUES(:entity.name)
+        INSERT INTO entities(name) VALUES (:entity.name)
         ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -263,7 +270,7 @@ CREATE TABLE IF NOT EXISTS entities
         data class Entity(@field:Id val id: Long, val name: String)
 
         @Id //(1)!
-        @Query("INSERT INTO %{entity#inserts -= id}") //(2)!
+        @Query("INSERT INTO %{entity#inserts -= @id}") //(2)!
         fun insert(entity: Entity): Long
     }
     ```
@@ -271,7 +278,7 @@ CREATE TABLE IF NOT EXISTS entities
     1.  Помечает метод так, чтобы возвращался идентификатор, сгенерированный базой данных.
     2.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(name) VALUES(:entity.name)
+        INSERT INTO entities(name) VALUES (:entity.name)
         ```
 
 #### Случайный { #random }
@@ -289,12 +296,12 @@ CREATE TABLE IF NOT EXISTS entities
 );
 ```
 
-Идентификатор будет создан на этапе создания объекта в пользовательском коде приложения:
+Идентификатор создаётся на этапе создания объекта в пользовательском коде приложения:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public record Entity(UUID id, 
+    public record Entity(UUID id,
                          String name) {}
 
     @Repository
@@ -328,18 +335,18 @@ CREATE TABLE IF NOT EXISTS entities
 
 #### Составной { #composite }
 
-Когда требуется составной ключ, для создания [встроенных полей](#embedded-fields) предполагается использовать аннотацию `@Embedded`.
+Когда требуется составной ключ, предполагается использовать аннотацию `@Embedded` для создания [встроенных полей](#embedded-fields).
 
 ### Именование { #naming }
 
-По умолчанию имена полей отображения при получении результата преобразуются в [`snake_lower_case`](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
+По умолчанию имена полей отображения преобразуются в [`snake_lower_case`](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/) при получении результата.
 
-Если вы хотите настроить отображение конкретных полей из базы данных на отображение, можно использовать аннотацию `@Column`:
+Если требуется настроить соответствие конкретных полей базы данных отображению, можно использовать аннотацию `@Column`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public record Entity(@Column("ID") String id, 
+    public record Entity(@Column("ID") String id,
                          @Column("NAME") String name) {}
     ```
 
@@ -352,12 +359,12 @@ CREATE TABLE IF NOT EXISTS entities
 
 #### Стратегия именования { #naming-strategy }
 
-Если вы хотите использовать стратегию именования для всего отображения, предлагается создать реализацию `NameConverter`, а затем использовать её в аннотации `@NamingStrategy`.
-Требуется, чтобы реализация `NameConverter` имела конструктор без параметров.
+Если требуется применить стратегию именования ко всему отображению, предлагается создать реализацию `NameConverter` и указать её в аннотации `@NamingStrategy`.
+Реализация `NameConverter` обязана иметь доступный конструктор без параметров.
 
-Либо используйте доступные стратегии из Kora:
+Либо используйте готовые стратегии из Kora (`io.koraframework.common.naming`):
 
-- `NoopNameConverter` — стратегия использует имя поля по умолчанию.
+- `NoopNameConverter` — стратегия использует имя поля как есть.
 - `SnakeCaseNameConverter` — стратегия использует [`snake_lower_case`](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
 - `SnakeCaseUpperNameConverter` — стратегия использует [SNAKE_UPPER_CASE](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
 - `PascalCaseNameConverter` — стратегия использует [PascalCase](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/).
@@ -367,17 +374,19 @@ CREATE TABLE IF NOT EXISTS entities
 
     ```java
     @NamingStrategy(NoopNameConverter.class)
-    public record Entity(String id, 
+    public record Entity(String id,
                          String name) {}
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @NamingStrategy(NoopNameConverter::class.java)
+    @NamingStrategy(NoopNameConverter::class)
     data class Entity(val id: String,
                       val name: String)
     ```
+
+Аннотация `@Column` на поле всегда имеет приоритет над стратегией именования отображения.
 
 ### Обязательные поля { #required-fields }
 
@@ -404,22 +413,23 @@ CREATE TABLE IF NOT EXISTS entities
 ===! ":fontawesome-brands-java: `Java`"
 
     Если поле отображения необязательное, то есть может отсутствовать,
-    используйте аннотацию `@Nullable`, чтобы явно его пометить.
+    пометьте его явно аннотацией `@Nullable`.
 
     ```java
-    public record Entity(String id, 
+    public record Entity(String id,
                          @Nullable String name) {} //(1)!
     ```
 
-    1.  Подойдёт любая аннотация `@Nullable`, например `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / и т.д.
+    1.  Сама Kora использует [JSpecify](https://jspecify.dev/) `org.jspecify.annotations.Nullable`, но подойдёт любая
+        аннотация, имя которой заканчивается на `Nullable`, например `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` и т.д.
 
-    Также можно указать необязательные параметры конструктора в случае, если канонический конструктор Record переопределён:
+    Также можно указать необязательные параметры конструктора, если канонический конструктор Record переопределён:
 
     ```java
     public record Entity(String id,
                          String name) {
 
-        public Entity(String id, 
+        public Entity(String id,
                       @Nullable String name) { //(1)!
             this.id = id;
             this.name = name;
@@ -427,11 +437,12 @@ CREATE TABLE IF NOT EXISTS entities
     }
     ```
 
-    1.  Подойдёт любая аннотация `@Nullable`, например `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / и т.д.
+    1.  Сама Kora использует [JSpecify](https://jspecify.dev/) `org.jspecify.annotations.Nullable`, но подойдёт любая
+        аннотация, имя которой заканчивается на `Nullable`, например `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` и т.д.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Ожидается использование синтаксиса [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) и пометка такого параметра как Nullable:
+    Предполагается использование синтаксиса [Kotlin Nullability](https://kotlinlang.org/docs/null-safety.html) и пометка такого параметра как Nullable:
 
     ```kotlin
     data class Entity(val id: String,
@@ -440,9 +451,9 @@ CREATE TABLE IF NOT EXISTS entities
 
 ### Встроенные поля { #embedded-fields }
 
-Если вы хотите использовать вложенные поля, то есть преобразовать поля отображения в отдельные классы, можно использовать аннотацию `@Embedded`.
+Если требуется использовать вложенные поля, то есть преобразовывать поля отображения в отдельные классы, можно использовать аннотацию `@Embedded`.
 
-Предположим, есть SQL-таблица, в которой присутствует составной ключ, который мы хотим выразить как отдельный класс:
+Предположим, есть SQL-таблица с составным ключом, который мы хотим выразить отдельным классом:
 
 ```sql
 CREATE TABLE IF NOT EXISTS entities
@@ -481,7 +492,7 @@ CREATE TABLE IF NOT EXISTS entities
     }
     ```
 
-Тогда репозиторий для такого отображения выглядел бы так:
+Тогда репозиторий для такого отображения будет выглядеть так:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -528,7 +539,8 @@ CREATE TABLE IF NOT EXISTS entities
     }
     ```
 
-Если поля имеют общий префикс, его можно указать в аннотации `@Embedded("user_")`:
+По умолчанию встроенное поле не добавляет префикс к столбцам вложенного класса.
+Если у полей есть общий префикс, его можно указать в аннотации `@Embedded("user_")`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS entities
@@ -540,18 +552,41 @@ CREATE TABLE IF NOT EXISTS entities
 )
 ```
 
+Встроенное поле может быть `@Nullable`: если все столбцы вложенного класса в строке результата равны `NULL` —
+именно это даёт `LEFT JOIN` без совпадения — всё поле выставляется в `null`, а не конструируется.
+
+Встроенное поле также может быть `List` вложенного отображения: строки с одинаковыми значениями столбцов внешнего
+отображения схлопываются в один внешний объект, а собранные из этих строк вложенные отображения становятся его коллекцией.
+Так связь «один ко многим» через `JOIN` отображается в один объект:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public record UserOrdersView(@Embedded("u_") User user,
+                                 @Embedded("o_") List<Order> orders) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    data class UserOrdersView(
+        @field:Embedded("u_") val user: User,
+        @field:Embedded("o_") val orders: List<Order>
+    )
+    ```
+
 ## Репозиторий { #repository }
 
-Основной инструмент для работы с базами данных в Kora — использование [паттерна репозиторий](https://java-design-patterns.com/patterns/repository/#explanation) при проектировании абстракции доступа к базе данных.
+Основной инструмент работы с базами данных в Kora — использование [паттерна репозиторий](https://java-design-patterns.com/patterns/repository/#explanation) при проектировании абстракции доступа к базе данных.
 Интерфейс репозитория должен быть помечен аннотацией `@Repository`.
 Запросы для методов репозитория описываются с помощью аннотации `@Query`.
-Реализация репозитория создаётся во время компиляции, все методы `@Query` будут выполнять описанный запрос, оптимально собирать аргументы запроса и обрабатывать результат.
+Реализация репозитория создаётся на этапе компиляции: все методы с `@Query` выполняют описанный запрос, оптимально собирают аргументы запроса и обрабатывают результат.
 
-Предполагается, что `SQL`-запросы пишет разработчик, поскольку это повышает понимание разработчиком плана запроса,
-даёт больше представления и контекста о том, что делает запрос и как он будет работать.
-Вы можете использовать [макросы](#macros) для улучшения удобства работы, чтобы не писать все поля/столбцы модели.
+Предполагается, что `SQL`-запросы пишет разработчик, поскольку это повышает его понимание плана запроса,
+даёт больше информации и контекста о том, что запрос делает и как он будет работать.
+Чтобы не выписывать все поля и столбцы модели вручную, можно использовать [макросы](#macros).
 
-Репозиторий должен наследовать одну из реализаций, в примерах ниже будет рассмотрена реализация [JDBC](database-jdbc.md):
+Репозиторий должен наследовать одну из реализаций, в примерах ниже рассматривается реализация [JDBC](database-jdbc.md):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -592,7 +627,7 @@ CREATE TABLE IF NOT EXISTS entities
 
 Параметры метода репозитория связываются с именованными параметрами в `@Query`.
 Простой параметр указывается по имени параметра метода: `:id`, `:name`, `:status`.
-Если параметр является отображением или `DTO`, к его полям можно обращаться через точечную нотацию: `:entity.id`, `:entity.name`, `:filter.status`.
+Если параметр является сущностью или `DTO`, к его полям можно обращаться через точку: `:entity.id`, `:entity.name`, `:filter.status`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -630,7 +665,53 @@ CREATE TABLE IF NOT EXISTS entities
     ```
 
 Если параметр встречается в запросе более одного раза, Kora связывает его с каждым вхождением.
-Если параметр метода не используется в запросе и не является служебным параметром конкретного драйвера, компиляция завершается с ошибкой.
+
+Связывание проверяется на этапе компиляции в обе стороны:
+
+- если параметр метода не используется в запросе и не является служебным параметром конкретного драйвера, компиляция падает с ошибкой `Query parameter is unused`;
+- если в запросе есть плейсхолдер, которому не соответствует ни один параметр метода, компиляция падает с ошибкой `SQL query placeholder has no matching method parameter` и списком доступных параметров;
+- если в запросе указан `:entity.field` для отсутствующего поля сущности, компиляция падает с ошибкой `SQL query placeholder has no matching entity field` и списком доступных полей.
+
+Текст, который лишь выглядит как плейсхолдер, игнорируется, поэтому `SQL` с двоеточиями продолжает компилироваться.
+Kora пропускает `:name` внутри строк в одинарных кавычках, идентификаторов в двойных кавычках и обратных апострофах,
+идентификаторов в `[квадратных скобках]`, блоков `$$dollar quoted$$` и `$tag$dollar quoted$tag$`,
+однострочных комментариев `--` и блочных комментариев `/* */`, а оператор приведения типа Postgres `::` параметром не считается.
+
+### Запрос из ресурса { #query-resource }
+
+Запрос можно хранить в отдельном `SQL`-файле вместо аннотации. Если значение `@Query` начинается с `classpath:/`,
+остаток значения трактуется как путь к ресурсу относительно корней исходников и classpath модуля, а содержимое файла
+читается на этапе компиляции и используется как запрос.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface EntityRepository extends JdbcRepository {
+
+        @Query("classpath:/sql/find-all-entities.sql") //(1)!
+        List<Entity> findAll();
+    }
+    ```
+
+    1.  Файл `src/main/resources/sql/find-all-entities.sql` читается на этапе компиляции.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface EntityRepository : JdbcRepository {
+
+        @Query("classpath:/sql/find-all-entities.sql") //(1)!
+        fun findAll(): List<Entity>
+    }
+    ```
+
+    1.  Файл `src/main/resources/sql/find-all-entities.sql` читается на этапе компиляции.
+
+Файл проходит ровно ту же обработку, что и встроенный запрос: разворачиваются [макросы](#macros) и
+связываются с проверкой [параметры](#query-parameters).
+Если ресурс прочитать не удалось, компиляция падает с ошибкой `SQL query resource wasn't found`.
 
 ### Отображатели { #mappers }
 
@@ -644,9 +725,9 @@ CREATE TABLE IF NOT EXISTS entities
 Произвольный отображатель нельзя использовать в любом месте: его тип должен соответствовать месту применения.
 Отображатель параметра применяется к параметру запроса, отображатель столбца — к полю отображения, а отображатель результата или строки — к методу репозитория.
 Точный набор поддерживаемых интерфейсов зависит от драйвера: например, `JDBC` использует `JdbcRowMapper`, `JdbcResultSetMapper`, `JdbcResultColumnMapper` и `JdbcParameterColumnMapper`.
-Похожие интерфейсы для `Cassandra`, `R2DBC` и `Vertx`, а также детали их использования описаны в документации для каждой реализации базы данных.
-Все отображатели строк драйверов имеют общий маркерный интерфейс `RowMapper<T>` (`ru.tinkoff.kora.database.common.RowMapper`), который является базовым типом для специфичных для драйвера отображателей, таких как `JdbcRowMapper` и `CassandraRowMapper`.
-Сама аннотация `@Mapping` находится в основном модуле `common` (`ru.tinkoff.kora.common.Mapping`).
+Соответствующие интерфейсы для `Cassandra`, а также детали их использования описаны в документации этой реализации.
+Все отображатели строк драйверов имеют общий маркерный интерфейс `RowMapper<T>` (`io.koraframework.database.common.RowMapper`), который является базовым типом для специфичных для драйвера отображателей, таких как `JdbcRowMapper` и `CassandraRowMapper`.
+Сама аннотация `@Mapping` находится в основном модуле `common` (`io.koraframework.common.annotation.Mapping`), а каждый контракт отображателя реализует её маркер `Mapping.MappingFunction`.
 Если отображатель указан через `@Mapping`, Kora добавляет его как зависимость сгенерированного репозитория и использует вместо отображателя по умолчанию.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -671,6 +752,10 @@ CREATE TABLE IF NOT EXISTS entities
     )
     ```
 
+Отображатель **с** зависимостями в конструкторе обязан быть компонентом [графа приложения](container.md).
+Отображатель **без** зависимостей компонентом быть не должен: Kora создаёт его сама, а объявление его компонентом
+приводит к ошибке сборки графа `Multiple components match`.
+
 ### Пакетный запрос { #batch-query }
 
 Kora поддерживает пакетные запросы с помощью аннотации `@Batch`.
@@ -690,8 +775,8 @@ Kora поддерживает пакетные запросы с помощью 
     }
     ```
 
-    **Пакетный запрос** не может возвращать произвольные значения — такой метод может возвращать `void`, либо `UpdateCount`, 
-    либо генерируемые базой данных идентификаторы для драйверов [JDBC](database-jdbc.md#generated-identifier) или [R2DBC](database-r2dbc.md#generated-identifier).
+    **Пакетный запрос** не может возвращать произвольные значения — такой метод может возвращать `void`, `UpdateCount`, `int[]` или `long[]`,
+    либо генерируемые базой данных идентификаторы, если метод помечен `@Id`, для драйвера [JDBC](database-jdbc.md#generated-identifier).
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -704,13 +789,14 @@ Kora поддерживает пакетные запросы с помощью 
     }
     ```
 
-    **Пакетный запрос** не может возвращать произвольные значения — такой метод может возвращать `Unit`, либо `UpdateCount`, 
-    либо генерируемые базой данных идентификаторы для драйверов [JDBC](database-jdbc.md#generated-identifier) или [R2DBC](database-r2dbc.md#generated-identifier).
+    **Пакетный запрос** не может возвращать произвольные значения — такой метод может возвращать `Unit`, `UpdateCount`, `IntArray` или `LongArray`,
+    либо генерируемые базой данных идентификаторы, если метод помечен `@Id`, для драйвера [JDBC](database-jdbc.md#generated-identifier).
 
-`@Batch` ставится на параметр-коллекцию, и каждый элемент коллекции по очереди подставляется в один и тот же запрос.
+`@Batch` ставится на параметр типа `List`, и каждый элемент списка по очереди подставляется в один и тот же запрос.
+Любой другой тип коллекции отвергается на этапе компиляции с ошибкой `@Batch can be used only with java.util.List<T> parameters`.
 Все остальные параметры метода, если они есть, являются общими для всех элементов пакета.
 Например, в `INSERT INTO logs(tenant_id, id, value) VALUES (:tenantId, :entity.id, :entity.value)`
-параметр `tenantId` одинаков для каждого элемента, тогда как поля `entity` берутся из каждого элемента коллекции.
+параметр `tenantId` одинаков для каждого элемента, тогда как поля `entity` берутся из каждого элемента списка.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -726,15 +812,16 @@ Kora поддерживает пакетные запросы с помощью 
     fun insert(tenantId: String, @Batch entity: List<Entity>): UpdateCount
     ```
 
-Метод должен иметь не более одного параметра, помеченного `@Batch`.
+Метод может объявлять только один параметр с `@Batch`.
 Поддержка генерируемых базой данных идентификаторов в пакетных запросах зависит от конкретного драйвера и описана в соответствующем разделе.
 
 ### Затронутые строки { #affected-rows }
 
 Kora не обрабатывает содержимое запроса, результат метода всегда выводится из строк, возвращённых базой данных.
-Если вы хотите получить в результате количество затронутых строк, используйте специальный тип `UpdateCount`.
+Если вы хотите получить в результате количество затронутых строк, используйте специальный тип `UpdateCount` — запись с единственным компонентом `long value()`.
 Для обычного запроса `UpdateCount#value()` содержит количество строк, возвращённое драйвером для выполненного запроса.
-Для пакетного запроса значение обычно является суммой результатов по всем элементам пакета; точное поведение зависит от драйвера базы данных.
+Для пакетного запроса в `JDBC` значение равно сумме счётчиков по всем элементам пакета и равно `-1`, если хотя бы для одного
+элемента драйвер вернул `SUCCESS_NO_INFO` вместо количества строк.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -761,7 +848,10 @@ Kora не обрабатывает содержимое запроса, резу
 ### Ручной запрос { #manual-query }
 
 Если по какой-либо причине функциональности запросов в аннотации `@Query` недостаточно или требуется ручное управление соединением,
-можно использовать встроенный метод фабрики соединений, чтобы создать метод с полностью ручным управлением.
+можно использовать встроенный в репозиторий исполнитель, чтобы создать метод с полностью ручным управлением.
+
+Каждый интерфейс репозитория драйвера отдаёт свой исполнитель методом `executor()`: `JdbcRepository#executor()` возвращает
+`JdbcExecutor`, а `CassandraRepository#executor()` — `CassandraExecutor`.
 
 Внутри такого метода можно также использовать другие методы репозитория, и при необходимости они тоже будут выполняться в рамках одной транзакции.
 Подробнее о транзакциях смотрите в документации для конкретной реализации репозитория.
@@ -785,7 +875,7 @@ Kora не обрабатывает содержимое запроса, резу
         UpdateCount updateName(Long id, String name);
 
         default Entity saveAndRename(Entity entity, String name) {
-            return getJdbcConnectionFactory().inTx(() -> {
+            return executor().inTx(() -> { //(1)!
                 insert(entity);
                 updateName(entity.id(), name);
                 return new Entity(entity.id(), name);
@@ -793,6 +883,8 @@ Kora не обрабатывает содержимое запроса, резу
         }
     }
     ```
+
+    1.  `JdbcExecutor#inTx` выполняет callback в транзакции, переиспользуя текущую, если транзакция уже открыта.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -809,30 +901,33 @@ Kora не обрабатывает содержимое запроса, резу
         fun updateName(id: Long, name: String): UpdateCount
 
         fun saveAndRename(entity: Entity, name: String): Entity {
-            return jdbcConnectionFactory.inTx<Entity> {
+            return executor().inTx(JdbcExecutor.SqlSupplier { //(1)!
                 insert(entity)
                 updateName(entity.id, name)
                 Entity(entity.id, name)
-            }
+            })
         }
     }
     ```
 
-Когда вы строите `SQL` вручную через фабрику соединений драйвера, а не с помощью метода `@Query`,
+    1.  У `inTx` много перегрузок, поэтому Kotlin не может вывести, какой функциональный интерфейс реализует обычная лямбда —
+        SAM-конструктор `JdbcExecutor.SqlSupplier` (или `JdbcExecutor.SqlRunnable` для метода без результата) нужно указывать явно.
+
+Когда вы строите `SQL` вручную через исполнитель драйвера, а не с помощью метода `@Query`,
 запрос всё равно проходит через телеметрию Kora. Выполняемый запрос описывается общим
 `QueryContext(queryId, sql, operation)`: `queryId` — это стабильный идентификатор запроса, передаваемый в телеметрию
 (удобно использовать имя вида `Repository.method`), `sql` — итоговый текст запроса, а `operation` по умолчанию равно `db_query`.
-Точный метод фабрики соединений и его сигнатура специфичны для драйвера — рабочий пример смотрите в [JDBC](database-jdbc.md#query).
+Точный метод исполнителя и его сигнатура специфичны для драйвера — рабочий пример смотрите в [JDBC](database-jdbc.md#query).
 
 ### Несколько баз данных { #multiple-databases }
 
 Иногда в рамках одного приложения нужно обращаться к разным базам данных в разных репозиториях,
 это можно решить следующим образом.
-Нужно создать отдельный экземпляр базы данных и подключить его к репозиторию,
-ниже приведён пример для базы данных [JDBC](database-jdbc.md), но принцип аналогичен для других типов соединений.
+Ниже приведён пример для базы данных [JDBC](database-jdbc.md), но принцип тот же и для [Cassandra](database-cassandra.md).
 
-Требуется скопировать фабрики создания `JdbcDatabase` и его конфигурацию из модуля `JdbcDatabaseModule`
-и присвоить им собственный тег, который будет указывать, что это соединения для другой базы данных.
+Соединение с базой данных предоставляется модулем-фабрикой: `JdbcDatabaseModule` объявляет `new JdbcDatabaseFactoryModule("jdbc")`
+как `@FactoryModule`, и каждый компонент, созданный таким модулем-фабрикой, наследует тег метода-фабрики.
+Чтобы добавить вторую базу данных, объявите ещё один метод `@FactoryModule` со своим путём конфигурации и своим тегом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -842,21 +937,17 @@ Kora не обрабатывает содержимое запроса, резу
 
         final class OtherDatabase { }
 
-        @Tag(OtherDatabase.class)
-        default JdbcDatabaseConfig otherJdbcDataBaseConfig(Config config, 
-                                                           ConfigValueExtractor<JdbcDatabaseConfig> extractor) {
-            var value = config.get("db.other");
-            return extractor.extract(value);
-        }
-
-        @Tag(OtherDatabase.class)
-        default JdbcDatabase otherJdbcDataBase(@Tag(OtherDatabase.class) JdbcDatabaseConfig config,
-                                               DataBaseTelemetryFactory telemetryFactory,
-                                               @Tag(OtherDatabase.class) @Nullable Executor executor) {
-            return new JdbcDatabase(config, telemetryFactory, executor);
+        @Tag(OtherDatabase.class) //(1)!
+        @FactoryModule //(2)!
+        default JdbcDatabaseFactoryModule otherJdbcDatabase() {
+            return new JdbcDatabaseFactoryModule("otherDb"); //(3)!
         }
     }
     ```
+
+    1.  Тег, который получают все компоненты, созданные этим модулем-фабрикой.
+    2.  Сообщает Kora, что возвращаемый объект сам является модулем, а его методы — фабриками компонентов.
+    3.  Секция конфигурации второй базы данных.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -866,24 +957,52 @@ Kora не обрабатывает содержимое запроса, резу
 
         class OtherDatabase
 
-        @Tag(OtherDatabase::class)
-        fun otherJdbcDataBaseConfig(
-            config: Config,
-            extractor: ConfigValueExtractor<JdbcDatabaseConfig?>
-        ): JdbcDatabaseConfig {
-            val value = config.get("db.other")
-            return extractor.extract(value) ?: throw ConfigValueExtractionException.missingValue(value)
-        }
-
-        @Tag(OtherDatabase::class)
-        fun otherJdbcDataBase(
-            @Tag(OtherDatabase::class) config: JdbcDatabaseConfig?,
-            telemetryFactory: DataBaseTelemetryFactory?,
-            @Tag(OtherDatabase::class) executor: Executor?
-        ): JdbcDatabase {
-            return JdbcDatabase(config, telemetryFactory, executor)
+        @Tag(OtherDatabase::class) //(1)!
+        @FactoryModule //(2)!
+        fun otherJdbcDatabase(): JdbcDatabaseFactoryModule {
+            return JdbcDatabaseFactoryModule("otherDb") //(3)!
         }
     }
+    ```
+
+    1.  Тег, который получают все компоненты, созданные этим модулем-фабрикой.
+    2.  Сообщает Kora, что возвращаемый объект сам является модулем, а его методы — фабриками компонентов.
+    3.  Секция конфигурации второй базы данных.
+
+Каждое соединение читает свою секцию конфигурации:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    jdbc {
+        jdbcUrl = "jdbc:postgresql://localhost:5432/main"
+        username = "postgres"
+        password = "postgres"
+        poolName = "main"
+    }
+
+    otherDb {
+        jdbcUrl = "jdbc:postgresql://localhost:5432/other"
+        username = "postgres"
+        password = "postgres"
+        poolName = "other"
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    jdbc:
+      jdbcUrl: "jdbc:postgresql://localhost:5432/main"
+      username: "postgres"
+      password: "postgres"
+      poolName: "main"
+
+    otherDb:
+      jdbcUrl: "jdbc:postgresql://localhost:5432/other"
+      username: "postgres"
+      password: "postgres"
+      poolName: "other"
     ```
 
 А репозитории, которые будут использовать эту базу данных, теперь обязаны указывать тег этого соединения:
@@ -891,7 +1010,7 @@ Kora не обрабатывает содержимое запроса, резу
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Repository(executorTag = @Tag(OtherDatabase.class))
+    @Repository(executorTag = OtherDatabase.class)
     public interface OtherJdbcRepository extends JdbcRepository {
 
     }
@@ -900,9 +1019,9 @@ Kora не обрабатывает содержимое запроса, резу
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Repository(executorTag = Tag(value = [OtherDatabase::class]))
+    @Repository(executorTag = OtherDatabase::class)
     interface OtherJdbcRepository : JdbcRepository {
-    
+
     }
     ```
 
@@ -913,13 +1032,14 @@ Kora не обрабатывает содержимое запроса, резу
 Самой утомительной частью написания SQL-запросов может быть перечисление и поддержание в актуальном состоянии столбцов и полей отображения.
 
 Чтобы решить эту проблему, используйте специальные макросы внутри `SQL`-запроса в аннотации `@Query`.
-Эти конструкции оперируют целевым [отображением](#view), разворачивают её в конкретные `SQL`-конструкции и упрощают расширение `SQL`-запросов.
+Эти конструкции оперируют целевым [отображением](#view), разворачивают его в конкретные `SQL`-конструкции и упрощают расширение `SQL`-запросов.
 Макрос — это помощник для написания `SQL`-запросов, который разворачивается в конструкции, которые пользователь мог бы написать вручную.
 
 Синтаксис макросов выглядит следующим образом: `%{return#selects}`.
 
 1. Макрос ограничен синтаксической конструкцией `%{` и `}`
-2. Сначала указывается цель макроса — это может быть имя любого аргумента метода или возвращаемое значение с помощью ключевого слова `return`
+2. Сначала указывается цель макроса — это может быть имя любого аргумента метода, возвращаемое значение через ключевое слово `return`,
+   имя параметра типа репозитория или метода, либо вложенное поле любой из этих целей, записанное через точку: `return.user`
 3. Затем символ `#` используется для разделения цели макроса и команды макроса
 4. После этого указывается команда макроса, которая сообщает, в какую SQL-конструкцию развернуть отображение
 
@@ -930,8 +1050,8 @@ Kora не обрабатывает содержимое запроса, резу
     public interface EntityRepository extends JdbcRepository {
 
         @Table("entities")
-        public record Entity(@Id Long id, 
-                             @Column("entity_name") String name, 
+        public record Entity(@Id Long id,
+                             @Column("entity_name") String name,
                              String code) {}
 
         @Query("SELECT %{return#selects} FROM %{return#table}") //(1)!
@@ -951,8 +1071,8 @@ Kora не обрабатывает содержимое запроса, резу
     interface EntityRepository : JdbcRepository {
 
         @Table("entities")
-        data class Entity(@field:Id val id: Long, 
-                          @field:Column("entity_name") val name: String, 
+        data class Entity(@field:Id val id: Long,
+                          @field:Column("entity_name") val name: String,
                           val code: String)
 
         @Query("SELECT %{return#selects} FROM %{return#table}") //(1)!
@@ -965,28 +1085,59 @@ Kora не обрабатывает содержимое запроса, резу
         SELECT id, entity_name, code FROM entities
         ```
 
+Цель `return` разворачивает привычные контейнеры результата, поэтому `List<Entity>`, `Optional<Entity>` и просто `Entity`
+приводят к одному и тому же отображению.
+
 #### Команды { #commands }
 
 Доступные команды макросов:
 
-- `table` — разворачивает значение отображения из [аннотации](#table) `@Table`, либо, если она отсутствует, преобразует имя отображения в [`snake_lower_case`](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/)
+- `table` — разворачивается в значение отображения из [аннотации](#table) `@Table`, а при её отсутствии переводит имя отображения в [`snake_lower_case`](https://www.freecodecamp.org/news/snake-case-vs-camel-case-vs-pascal-case-vs-kebab-case-whats-the-difference/)
 - `selects` — создаёт конструкцию перечисления столбцов отображения для запроса `SELECT`
-- `inserts` — создаёт конструкцию перечисления таблицы, столбцов и соответствующих полей отображения для запроса `INSERT`
-- `updates` — создаёт конструкцию перечисления столбцов и соответствующих полей отображения для запроса `UPDATE`
+- `columns` — создаёт голое перечисление столбцов отображения, без квалификации таблицей и без псевдонимов
+- `values` — создаёт перечисление параметров запроса, соответствующих полям отображения
+- `inserts` — создаёт конструкцию из таблицы, перечисления столбцов и соответствующих полей отображения для запроса `INSERT`
+- `updates` — создаёт конструкцию перечисления столбцов и соответствующих полей отображения для запроса `UPDATE`, поле [идентификатора](#identifier) всегда исключается
 - `where` — создаёт конструкцию перечисления столбцов со значением из отображения для части `WHERE` запроса
+
+`columns` и `values` — это две половины `inserts`, они полезны, когда `INSERT` требуется написать вручную:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Query("INSERT INTO %{entity#table}(%{entity#columns -= @id}) VALUES (%{entity#values -= @id})") //(1)!
+    UpdateCount insert(Entity entity);
+    ```
+
+    1.  Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(entity_name, code) VALUES (:entity.name, :entity.code)
+        ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Query("INSERT INTO %{entity#table}(%{entity#columns -= @id}) VALUES (%{entity#values -= @id})") //(1)!
+    fun insert(entity: Entity): UpdateCount
+    ```
+
+    1.  Разворачивается в запрос:
+        ```sql
+        INSERT INTO entities(entity_name, code) VALUES (:entity.name, :entity.code)
+        ```
 
 #### Перечисление полей { #field-enumeration }
 
-Макрос поддерживает дополнительный синтаксис для перечисления определённых полей в команде,
-если вдруг нужно выполнить частичное обновление или получение данных.
+Макросы поддерживают дополнительный синтаксис перечисления определённых полей в команде,
+если вдруг требуется сделать частичное обновление или частичную выборку данных.
 Для этого после команды используется специальная конструкция: `%{return#updates=name}`.
 
-Пробелы можно ставить **только** между полями в перечислении или специальным символом перечисления.
+Пробелы можно ставить **только** между полями в перечислении или вокруг специального символа перечисления.
 
 Доступны специальные символы перечисления:
 
-1. `=` — в разворачивании команды будут участвовать только поля отображения, имена которых указаны после символа
-2. `-=` — в разворачивании команды будут участвовать все поля отображения, кроме указанных после символа
+1. `=` — в разворачивании команды участвуют только те поля отображения, имена которых указаны после символа
+2. `-=` — в разворачивании команды участвуют все поля отображения, кроме указанных после символа
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -995,8 +1146,8 @@ Kora не обрабатывает содержимое запроса, резу
     public interface EntityRepository extends JdbcRepository {
 
         @Table("entities")
-        public record Entity(@Id Long id, 
-                             @Column("entity_name") String name, 
+        public record Entity(@Id Long id,
+                             @Column("entity_name") String name,
                              String code) {}
 
         @Query("INSERT INTO %{entity#inserts=name,code}") //(1)!
@@ -1006,8 +1157,8 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(entity_name, code) 
-        VALUES(:entity.name, :entity.code)
+        INSERT INTO entities(entity_name, code)
+        VALUES (:entity.name, :entity.code)
         ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1017,8 +1168,8 @@ Kora не обрабатывает содержимое запроса, резу
     interface EntityRepository : JdbcRepository {
 
         @Table("entities")
-        data class Entity(@field:Id val id: Long, 
-                          @field:Column("entity_name") val name: String, 
+        data class Entity(@field:Id val id: Long,
+                          @field:Column("entity_name") val name: String,
                           val code: String)
 
         @Query("INSERT INTO %{entity#inserts=name,code}") //(1)!
@@ -1028,16 +1179,16 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(entity_name, code) 
-        VALUES(:entity.name, :entity.code)
+        INSERT INTO entities(entity_name, code)
+        VALUES (:entity.name, :entity.code)
         ```
 
 ##### Идентификатор { #identifier-2 }
 
 При перечислении полей в макросе можно использовать специальное ключевое слово `@id`,
-чтобы сразу обратиться к идентификатору отображения, помеченному [аннотацией](#identifier) `@Id`.
+чтобы сразу сослаться на идентификатор отображения, помеченный [аннотацией](#identifier) `@Id`.
 
-Это может быть особенно полезно, когда идентификатор является [составным ключом](#embedded-fields), чтобы перечислить сразу все столбцы.
+Это особенно полезно, когда идентификатор является [составным ключом](#embedded-fields), чтобы перечислить сразу все столбцы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1046,8 +1197,8 @@ Kora не обрабатывает содержимое запроса, резу
     public interface EntityRepository extends JdbcRepository {
 
         @Table("entities")
-        public record Entity(@Id Long id, 
-                             @Column("entity_name") String name, 
+        public record Entity(@Id Long id,
+                             @Column("entity_name") String name,
                              String code) {}
 
         @Query("INSERT INTO %{entity#inserts-=@id}") //(1)!
@@ -1057,8 +1208,8 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(entity_name, code) 
-        VALUES(:entity.name, :entity.code)
+        INSERT INTO entities(entity_name, code)
+        VALUES (:entity.name, :entity.code)
         ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1068,8 +1219,8 @@ Kora не обрабатывает содержимое запроса, резу
     interface EntityRepository : JdbcRepository {
 
         @Table("entities")
-        data class Entity(@field:Id val id: Long, 
-                          @field:Column("entity_name") val name: String, 
+        data class Entity(@field:Id val id: Long,
+                          @field:Column("entity_name") val name: String,
                           val code: String)
 
         @Query("INSERT INTO %{entity#inserts-=@id}") //(1)!
@@ -1079,13 +1230,86 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(entity_name, code) 
-        VALUES(:entity.name, :entity.code)
+        INSERT INTO entities(entity_name, code)
+        VALUES (:entity.name, :entity.code)
+        ```
+
+#### Псевдоним таблицы { #table-alias }
+
+Команда `table` принимает псевдоним таблицы через синтаксис `table as <псевдоним>`.
+Как только цели назначен псевдоним, все остальные макросы над этой же целью квалифицируют свои столбцы им:
+`selects` выдаёт `псевдоним.столбец` и, если отображение переименовывает столбец, добавляет `AS` с итоговым именем,
+а `where` выдаёт `псевдоним.столбец = :путь`.
+
+Именно это делает макросы применимыми в `JOIN`, где вложенная цель и [встроенное поле](#embedded-fields) с префиксом
+отображают соединяемые таблицы в одно отображение:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface UserOrderRepository extends JdbcRepository {
+
+        @Table("users")
+        record User(@Id String id, String name) {}
+
+        @Table("orders")
+        record Order(@Id String id, @Column("user_id") String userId, String number) {}
+
+        record UserOrderView(@Embedded("u_") User user, @Embedded("o_") Order order) {}
+
+        @Query("""
+            SELECT %{return#selects}
+            FROM %{return.user#table as u} JOIN %{return.order#table as o} ON o.user_id = u.id
+            WHERE u.id = :id
+            """) //(1)!
+        @Nullable
+        UserOrderView find(String id);
+    }
+    ```
+
+    1.  Разворачивается в запрос:
+        ```sql
+        SELECT u.id AS u_id, u.name AS u_name, o.id AS o_id, o.user_id AS o_user_id, o.number AS o_number
+        FROM users u JOIN orders o ON o.user_id = u.id
+        WHERE u.id = :id
+        ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface UserOrderRepository : JdbcRepository {
+
+        @Table("users")
+        data class User(@field:Id val id: String, val name: String)
+
+        @Table("orders")
+        data class Order(@field:Id val id: String, @field:Column("user_id") val userId: String, val number: String)
+
+        data class UserOrderView(@field:Embedded("u_") val user: User, @field:Embedded("o_") val order: Order)
+
+        @Query(
+            """
+            SELECT %{return#selects}
+            FROM %{return.user#table as u} JOIN %{return.order#table as o} ON o.user_id = u.id
+            WHERE u.id = :id
+            """
+        ) //(1)!
+        fun find(id: String): UserOrderView?
+    }
+    ```
+
+    1.  Разворачивается в запрос:
+        ```sql
+        SELECT u.id AS u_id, u.name AS u_name, o.id AS o_id, o.user_id AS o_user_id, o.number AS o_number
+        FROM users u JOIN orders o ON o.user_id = u.id
+        WHERE u.id = :id
         ```
 
 #### Пример репозитория { #repository-example }
 
-Пример полного репозитория со всеми основными методами для работы с отображением для [Postgres SQL](https://postgrespro.com/docs/postgresql):
+Пример полноценного репозитория со всеми базовыми методами работы с отображением для [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1125,32 +1349,32 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 
-        FROM entities 
+        SELECT id, value1, value2, value3
+        FROM entities
         WHERE id = :id
         ```
     2.  Разворачивается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 
+        SELECT id, value1, value2, value3
         FROM entities
         ```
     3.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
-        VALUES(:entity.id, :entity.field1, :entity.value2, :entity.value3)
+        INSERT INTO entities(id, value1, value2, value3)
+        VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
         ```
     4.  Разворачивается в запрос:
         ```sql
         UPDATE entities
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         WHERE id = :entity.id
         ```
     5.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
-        VALUES(:entity.id, :entity.field1, :entity.value2, :entity.value3)
-        ON CONFLICT (id) DO UPDATE 
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        INSERT INTO entities(id, value1, value2, value3)
+        VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+        ON CONFLICT (id) DO UPDATE
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1164,11 +1388,11 @@ Kora не обрабатывает содержимое запроса, резу
             @field:Id val id: String,
             @field:Column("value1") val field1: Int,
             val value2: String,
-            @field:Nullable val value3: String
+            val value3: String?
         )
 
         @Query("SELECT %{return#selects} FROM %{return#table} WHERE id = :id") //(1)!
-        fun findById(id: String?): Entity?
+        fun findById(id: String): Entity?
 
         @Query("SELECT %{return#selects} FROM %{return#table}") //(2)!
         fun findAll(): List<Entity>
@@ -1189,40 +1413,41 @@ Kora не обрабатывает содержимое запроса, резу
         fun deleteAll(): UpdateCount
     }
     ```
+
     1.  Разворачивается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 
-        FROM entities 
+        SELECT id, value1, value2, value3
+        FROM entities
         WHERE id = :id
         ```
     2.  Разворачивается в запрос:
         ```sql
-        SELECT id, value1, value2, value3 
+        SELECT id, value1, value2, value3
         FROM entities
         ```
     3.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
-        VALUES(:entity.id, :entity.field1, :entity.value2, :entity.value3)
+        INSERT INTO entities(id, value1, value2, value3)
+        VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
         ```
     4.  Разворачивается в запрос:
         ```sql
         UPDATE entities
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         WHERE id = :entity.id
         ```
     5.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(id, value1, value2, value3) 
-        VALUES(:entity.id, :entity.field1, :entity.value2, :entity.value3)
-        ON CONFLICT (id) DO UPDATE 
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        INSERT INTO entities(id, value1, value2, value3)
+        VALUES (:entity.id, :entity.field1, :entity.value2, :entity.value3)
+        ON CONFLICT (id) DO UPDATE
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         ```
 
 #### Пример с составным идентификатором { #composite-example }
 
-Пример репозитория с [составным идентификатором](#composite) и основными методами для работы с отображением,
-он практически идентичен предыдущему за исключением условий `WHERE` для поиска и удаления для [Postgres SQL](https://postgrespro.com/docs/postgresql):
+Пример репозитория с [составным идентификатором](#composite) и базовыми методами работы с сущностью:
+он почти идентичен предыдущему, за исключением условий `WHERE` для поиска и удаления, для [Postgres SQL](https://postgrespro.com/docs/postgresql):
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1235,7 +1460,7 @@ Kora не обрабатывает содержимое запроса, резу
                       @Column("value1") int field1,
                       String value2,
                       @Nullable String value3) {
-            
+
             public record EntityId(String code, String type) { }
         }
 
@@ -1255,7 +1480,7 @@ Kora не обрабатывает содержимое запроса, резу
         @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}")  //(5)!
         UpdateCount upsert(@Batch List<Entity> entity);
 
-        @Query("DELETE FROM entities WHERE %{id#where}")
+        @Query("DELETE FROM entities WHERE %{id#where}") //(6)!
         UpdateCount deleteById(EntityId id);
 
         @Query("DELETE FROM entities")
@@ -1265,32 +1490,37 @@ Kora не обрабатывает содержимое запроса, резу
 
     1.  Разворачивается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 
-        FROM entities 
-        WHERE code = :code AND type = :type
+        SELECT code, type, value1, value2, value3
+        FROM entities
+        WHERE code = :id.code AND type = :id.type
         ```
     2.  Разворачивается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 
+        SELECT code, type, value1, value2, value3
         FROM entities
         ```
     3.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(code, type, value1, value2, value3) 
-        VALUES(:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
+        INSERT INTO entities(code, type, value1, value2, value3)
+        VALUES (:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
         ```
     4.  Разворачивается в запрос:
         ```sql
         UPDATE entities
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         WHERE code = :entity.id.code AND type = :entity.id.type
         ```
     5.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(code, type, value1, value2, value3) 
-        VALUES(:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
-        ON CONFLICT (code, type) DO UPDATE 
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        INSERT INTO entities(code, type, value1, value2, value3)
+        VALUES (:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
+        ```
+    6.  Разворачивается в запрос:
+        ```sql
+        DELETE FROM entities
+        WHERE code = :id.code AND type = :id.type
         ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -1325,46 +1555,54 @@ Kora не обрабатывает содержимое запроса, резу
         @Query("INSERT INTO %{entity#inserts} ON CONFLICT (code, type) DO UPDATE SET %{entity#updates}") //(5)!
         fun upsert(@Batch entity: List<Entity>): UpdateCount
 
-        @Query("DELETE FROM entities WHERE %{id#where}")
+        @Query("DELETE FROM entities WHERE %{id#where}") //(6)!
         fun deleteById(id: EntityId): UpdateCount
 
         @Query("DELETE FROM entities")
         fun deleteAll(): UpdateCount
     }
     ```
+
     1.  Разворачивается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 
-        FROM entities 
-        WHERE code = :code AND type = :type
+        SELECT code, type, value1, value2, value3
+        FROM entities
+        WHERE code = :id.code AND type = :id.type
         ```
     2.  Разворачивается в запрос:
         ```sql
-        SELECT code, type, value1, value2, value3 
+        SELECT code, type, value1, value2, value3
         FROM entities
         ```
     3.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(code, type, value1, value2, value3) 
-        VALUES(:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
+        INSERT INTO entities(code, type, value1, value2, value3)
+        VALUES (:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
         ```
     4.  Разворачивается в запрос:
         ```sql
         UPDATE entities
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
         WHERE code = :entity.id.code AND type = :entity.id.type
         ```
     5.  Разворачивается в запрос:
         ```sql
-        INSERT INTO entities(code, type, value1, value2, value3) 
-        VALUES(:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
-        ON CONFLICT (code, type) DO UPDATE 
-        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3 
+        INSERT INTO entities(code, type, value1, value2, value3)
+        VALUES (:entity.id.code, :entity.id.type, :entity.field1, :entity.value2, :entity.value3)
+        ON CONFLICT (code, type) DO UPDATE
+        SET value1 = :entity.field1, value2 = :entity.value2, value3 = :entity.value3
+        ```
+    6.  Разворачивается в запрос:
+        ```sql
+        DELETE FROM entities
+        WHERE code = :id.code AND type = :id.type
         ```
 
 #### Пример с наследованием { #inheritance-example }
 
-Вы также можете создать абстрактный CRUD-репозиторий, а затем использовать его в наследовании для [Postgres SQL](https://postgrespro.com/docs/postgresql):
+Можно также создать абстрактный CRUD-репозиторий и затем использовать его через наследование для [Postgres SQL](https://postgrespro.com/docs/postgresql).
+Макросы разрешают параметры типа родительского репозитория по типовым аргументам конкретного репозитория,
+поэтому обобщённого родителя достаточно написать один раз:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1386,10 +1624,10 @@ Kora не обрабатывает содержимое запроса, резу
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         UpdateCount update(@Batch List<V> entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#columns = @id}) DO UPDATE SET %{entity#updates}")
         UpdateCount upsert(V entity);
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#columns = @id}) DO UPDATE SET %{entity#updates}")
         UpdateCount upsert(@Batch List<V> entity);
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
@@ -1437,10 +1675,10 @@ Kora не обрабатывает содержимое запроса, резу
         @Query("UPDATE %{entity#table} SET %{entity#updates} WHERE %{entity#where = @id}")
         fun update(@Batch entity: List<V>): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#columns = @id}) DO UPDATE SET %{entity#updates}")
         fun upsert(entity: V): UpdateCount
 
-        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#selects = @id}) DO UPDATE SET %{entity#updates}")
+        @Query("INSERT INTO %{entity#inserts} ON CONFLICT (%{entity#columns = @id}) DO UPDATE SET %{entity#updates}")
         fun upsert(@Batch entity: List<V>): UpdateCount
 
         @Query("DELETE FROM %{entity#table} WHERE %{entity#where = @id}")
@@ -1458,7 +1696,7 @@ Kora не обрабатывает содержимое запроса, резу
             @field:Id val id: String,
             @field:Column("value1") val field1: Int,
             val value2: String,
-            @field:Nullable val value3: String
+            val value3: String?
         )
 
         @Query("DELETE FROM entities WHERE id = :id")
@@ -1474,24 +1712,40 @@ Kora не обрабатывает содержимое запроса, резу
 Все драйверы баз данных используют общий контракт телеметрии для логирования, метрик и трассировки запросов.
 Конкретные параметры конфигурации (секция `telemetry { logging / metrics / tracing }`) описаны в документации
 для каждого драйвера, например [JDBC](database-jdbc.md#configuration); этот раздел документирует только общие точки расширения,
-которые находятся в `ru.tinkoff.kora.database.common.telemetry`.
+которые находятся в `io.koraframework.database.common.telemetry`.
 
-Для каждого выполняемого запроса создаётся `DataBaseTelemetry.DataBaseTelemetryContext`, который закрывается по завершении запроса
-(получая выброшенное исключение, если оно было).
-Выполняемый запрос описывается `QueryContext(queryId, sql, operation)`, где `queryId` — это стабильный идентификатор запроса,
+Телеметрию для пула соединений строит `DatabaseTelemetryFactory`:
+`DatabaseTelemetry get(DatabaseTelemetryConfig config, String name, String dbType)`,
+где `name` — имя пула соединений, а `dbType` — система базы данных, определённая по настройкам соединения.
+
+Для каждого выполняемого запроса драйвер запрашивает у `DatabaseTelemetry#observe(QueryContext)` объект `DatabaseObservation`.
+Выполняемый запрос описывается `QueryContext(queryId, sql, operation)`, где `queryId` — стабильный идентификатор запроса,
 передаваемый в телеметрию, `sql` — итоговый текст запроса, а `operation` по умолчанию равно `db_query`.
 
-Фабрика по умолчанию `DefaultDataBaseTelemetryFactory` объединяет три необязательные вложенные фабрики:
+`DatabaseObservation` расширяет общий контракт `Observation` и отмечает стадии запроса:
 
-- `DataBaseLoggerFactory` строит `DataBaseLogger`, который логирует начало/конец запроса (`logQueryBegin` / `logQueryEnd`);
-- `DataBaseMetricWriterFactory` строит `DataBaseMetricWriter`, который записывает метрики для каждого запроса (`recordQuery`);
-- `DataBaseTracerFactory` строит `DataBaseTracer`, который создаёт спаны запроса и вызова для распределённой трассировки.
+- `observeConnection()` — соединение получено;
+- `observeStatement()` — запрос подготовлен и начинается выполнение, здесь же логируется начало запроса;
+- `span()` — спан трассировки запроса;
+- `observeError(Throwable)` — запрос завершился ошибкой;
+- `end()` — запрос завершён, в этот момент записывается метрика и логируется завершение запроса.
 
-Если ни одна из вложенных фабрик не создаёт реализацию (например, когда логирование, [метрики](metrics.md) и [трассировка](tracing.md)
-все отключены в конфигурации), используется `DataBaseTelemetryFactory.EMPTY`, и телеметрия становится пустой операцией.
+Фабрика по умолчанию `DefaultDatabaseTelemetryFactory` объединяет `Tracer`, `MeterRegistry` и две необязательные вложенные фабрики:
 
-Чтобы полностью настроить свою собственную телеметрию, предоставьте собственную `DataBaseTelemetryFactory` в [графе приложения](container.md),
-которая [переопределяет](container.md#component-override) фабрику по умолчанию:
+- `DefaultDatabaseLoggerFactory` строит логгер, который пишет начало и завершение запроса (`logQueryBegin` / `logQueryEnd`)
+  структурированным аргументом `sqlQuery` с именем пула, операцией, идентификатором запроса и временем обработки;
+  полный текст `sql` пишется только при уровне `TRACE`, а упавший запрос логируется на уровне `WARN`;
+- `DefaultDatabaseMetricsFactory` строит писателя метрик, который для каждого запроса записывает таймер `db.client.operation.duration`.
+
+Если логирование, [метрики](metrics.md) и [трассировка](tracing.md) отключены в конфигурации целиком,
+используется `NoopDatabaseTelemetry`, и телеметрия становится пустой операцией.
+
+Помимо стандартных секций `logging`, `metrics` и `tracing`, общий `DatabaseTelemetryConfig` добавляет одну специфичную для баз данных опцию:
+
+- `telemetry.metrics.driverMetrics` — регистрировать метрики собственного пула соединений драйвера (по умолчанию: `true`)
+
+Обе вложенные фабрики являются необязательными зависимостями фабрики телеметрии по умолчанию, поэтому проще всего
+настроить телеметрию, добавив свою вложенную фабрику в [граф приложения](container.md) — никакой аннотации переопределения не требуется:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1499,16 +1753,27 @@ Kora не обрабатывает содержимое запроса, резу
     @KoraApp
     public interface Application extends JdbcDatabaseModule {
 
-        default DataBaseTelemetryFactory dataBaseTelemetryFactory() { //(1)!
-            return (config, name, driverType, dbType, username) -> {
-                // build and return a custom DataBaseTelemetry
-                return DataBaseTelemetryFactory.EMPTY;
+        default DefaultDatabaseLoggerFactory databaseLoggerFactory() { //(1)!
+            return new DefaultDatabaseLoggerFactory() {
+
+                @Override
+                public DefaultDatabaseLogger create(DefaultDatabaseTelemetry.TelemetryContext context) {
+                    var logger = LoggerFactory.getLogger("my.database." + context.poolName());
+                    return new DefaultDatabaseLogger(logger, context) { //(2)!
+
+                        @Override
+                        public void logQueryBegin(QueryContext query) {
+                            this.logger.debug("Executing {}", query.queryId());
+                        }
+                    };
+                }
             };
         }
     }
     ```
 
-    1.  Переопределяет фабрику `DataBaseTelemetryFactory` по умолчанию, предоставляемую `DataBaseModule`.
+    1.  Фабрика `DatabaseTelemetryFactory` по умолчанию принимает `DefaultDatabaseLoggerFactory` и `DefaultDatabaseMetricsFactory` как необязательные зависимости и использует их для каждого пула соединений.
+    2.  `DefaultDatabaseLogger` — обычный класс, поэтому переопределять нужно только те методы, которые действительно требуется изменить.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1516,13 +1781,26 @@ Kora не обрабатывает содержимое запроса, резу
     @KoraApp
     interface Application : JdbcDatabaseModule {
 
-        fun dataBaseTelemetryFactory(): DataBaseTelemetryFactory { //(1)!
-            return DataBaseTelemetryFactory { config, name, driverType, dbType, username ->
-                // build and return a custom DataBaseTelemetry
-                DataBaseTelemetryFactory.EMPTY
+        fun databaseLoggerFactory(): DefaultDatabaseLoggerFactory { //(1)!
+            return object : DefaultDatabaseLoggerFactory() {
+
+                override fun create(context: DefaultDatabaseTelemetry.TelemetryContext): DefaultDatabaseLogger {
+                    val logger = LoggerFactory.getLogger("my.database." + context.poolName())
+                    return object : DefaultDatabaseLogger(logger, context) { //(2)!
+
+                        override fun logQueryBegin(query: QueryContext) {
+                            this.logger.debug("Executing {}", query.queryId())
+                        }
+                    }
+                }
             }
         }
     }
     ```
 
-    1.  Переопределяет фабрику `DataBaseTelemetryFactory` по умолчанию, предоставляемую `DataBaseModule`.
+    1.  Фабрика `DatabaseTelemetryFactory` по умолчанию принимает `DefaultDatabaseLoggerFactory` и `DefaultDatabaseMetricsFactory` как необязательные зависимости и использует их для каждого пула соединений.
+    2.  `DefaultDatabaseLogger` — обычный класс, поэтому переопределять нужно только те методы, которые действительно требуется изменить.
+
+`DatabaseModule` предоставляет фабрику по умолчанию как [компонент по умолчанию](container.md#component-override),
+поэтому, если телеметрию нужно заменить целиком, объявите собственную `DatabaseTelemetryFactory` в
+[графе приложения](container.md) — она возьмёт верх над той, что даёт модуль.

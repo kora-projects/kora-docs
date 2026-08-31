@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags. Use when working with @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer."
+description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry tags; key triggers include @KafkaListener, @KafkaPublisher, @Topic, @Json, @Tag, KafkaModule, KafkaConsumer, KafkaProducer, KafkaSkipRecordException."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry; key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener."
 ---
 
 The `Kafka` module provides declarative integration with [Apache Kafka](https://kafka.apache.org/): reading messages through
@@ -20,8 +20,11 @@ For a step-by-step walkthrough before the reference details, see [Kafka Messagin
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:kafka"
+    annotationProcessor "io.koraframework:annotation-processors" //(1)!
+    implementation "io.koraframework:kafka"
     ```
+
+    1. The annotation processor generates consumer containers and publisher implementations at compile time. Without it neither `@KafkaListener` nor `@KafkaPublisher` produces anything and the graph fails with a missing dependency.
 
     Module:
     ```java
@@ -33,14 +36,20 @@ For a step-by-step walkthrough before the reference details, see [Kafka Messagin
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:kafka")
+    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    implementation("io.koraframework:kafka")
     ```
+
+    1. The `KSP` processor generates consumer containers and publisher implementations at compile time. Without it neither `@KafkaListener` nor `@KafkaPublisher` produces anything and the graph fails with a missing dependency.
 
     Module:
     ```kotlin
     @KoraApp
     interface Application : KafkaModule
     ```
+
+The module is built on the official `Apache Kafka` client and uses its `Consumer`, `Producer`, `ConsumerRecord`, `ProducerRecord`,
+`Serializer`, and `Deserializer` contracts directly, so any driver setting is available through `driverProperties`.
 
 ## Consumer { #consumer }
 
@@ -55,9 +64,9 @@ Creating a `Consumer` requires using the `@KafkaListener` annotation over a meth
     ```java
     @Component
     final class ConsumerService {
-        
+
         @KafkaListener("kafka.someConsumer")
-        void process(String key, String value) { 
+        void process(String key, String value) {
             // my code
         }
     }
@@ -77,6 +86,7 @@ Creating a `Consumer` requires using the `@KafkaListener` annotation over a meth
     ```
 
 The `@KafkaListener` annotation parameter points to the `Consumer` configuration path.
+The class that declares the method must itself be a graph component, because the generated container receives it as a dependency.
 
 In case you need different behavior for different topics, it is possible to create several such containers,
 each with its own individual configuration. It looks like this:
@@ -86,12 +96,12 @@ each with its own individual configuration. It looks like this:
     ```java
     @Component
     final class ConsumerService {
-        
+
         @KafkaListener("kafka.someConsumer1")
-        void processFirst(String key, String value) { 
+        void processFirst(String key, String value) {
             // some handler code
         }
-        
+
         @KafkaListener("kafka.someConsumer2")
         void processSecond(String key, String value) {
             // some handler code
@@ -184,14 +194,14 @@ Basic configuration parameters:
             someConsumer {
                 topics = ["topic1", "topic2"] //(1)!
                 topicsPattern = "topic*" //(2)!
-                partitions = ["0", "1"] //(3)!
-                allowEmptyRecords = false //(4)!
-                offset = "latest" //(5)!
-                pollTimeout = "5s" //(6)!
-                backoffTimeout = "15s" //(7)!
-                partitionRefreshInterval = "1m" //(8)!
-                threads = 1 //(9)!
-                shutdownWait = "30s" //(10)!
+                allowEmptyRecords = false //(3)!
+                offset = "latest" //(4)!
+                pollTimeout = "5s" //(5)!
+                backoffTimeout = "15s" //(6)!
+                partitionRefreshInterval = "1m" //(7)!
+                threads = 1 //(8)!
+                shutdownWait = "30s" //(9)!
+                initializationFailTimeout = "30s" //(10)!
                 driverProperties { //(11)!
                     "bootstrap.servers": "localhost:9093"
                     "group.id": "my-group-id"
@@ -201,16 +211,17 @@ Basic configuration parameters:
                         enabled = false //(12)!
                     }
                     metrics {
-                        enabled = true //(13)!
-                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(14)!
-                        tags = { // (15)!
+                        enabled = false //(13)!
+                        driverMetrics = false //(14)!
+                        slo = [1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000] //(15)!
+                        tags = { //(16)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(16)!
-                        attributes = { // (17)!
+                        enabled = true //(17)!
+                        attributes = { //(18)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -222,30 +233,32 @@ Basic configuration parameters:
 
         1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
         2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-        3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
-            If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
-        4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+            Supported by the `subscribe` strategy only; the `assign` strategy rejects it at startup and requires an explicit `topics` list.
+        3.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
             If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
             If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
-        5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
+        4.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
             1. `earliest` - earliest available `offset`
             2. `latest` - latest available `offset`
             3. string in `Duration` format, for example `5m`, - shift back by the specified duration
                Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
-        6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
-        7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+        5.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
+        6.  Initial delay between unexpected processing errors; with repeated errors the delay doubles up to `60s` (default: `15s`)
             If consumer throws unexpected exception (not `KafkaSkipRecordException`),
             Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
-        8.  Partition list refresh period for the `assign` strategy (default: `1m`)
-        9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
-        10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        7.  Partition list refresh period for the `assign` strategy (default: `1m`)
+        8.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
+        9.  Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        10. Maximum time the container waits during application startup until every consumer thread has completed its first `poll()` (not set by default, optional)
+            If the timeout expires, application startup fails. When it is not set, the consumer connects in the background and an unavailable broker does not block startup.
         11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
         12. Enables module logging (default: `false`)
-        13. Enables module metrics (default: `true`)
-        14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        15. Configures metric tags (default: `{}`)
-        16. Enables module tracing (default: `true`)
-        17. Configures tracing attributes (default: `{}`)
+        13. Enables module metrics (default: `false`)
+        14. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
+        15. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        16. Configures metric tags (default: `{}`)
+        17. Enables module tracing (default: `true`)
+        18. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -256,16 +269,14 @@ Basic configuration parameters:
               - "topic1"
               - "topic2"
             topicsPattern: "topic*" #(2)!
-            partitions: #(3)!
-              - "0"
-              - "1"
-            allowEmptyRecords: false #(4)!
-            offset: "latest" #(5)!
-            pollTimeout: "5s" #(6)!
-            backoffTimeout: "15s" #(7)!
-            partitionRefreshInterval: "1m" #(8)!
-            threads: 1 #(9)!
-            shutdownWait: "30s" #(10)!
+            allowEmptyRecords: false #(3)!
+            offset: "latest" #(4)!
+            pollTimeout: "5s" #(5)!
+            backoffTimeout: "15s" #(6)!
+            partitionRefreshInterval: "1m" #(7)!
+            threads: 1 #(8)!
+            shutdownWait: "30s" #(9)!
+            initializationFailTimeout: "30s" #(10)!
             driverProperties: #(11)!
               bootstrap.servers: "localhost:9093"
               group.id: "my-group-id"
@@ -273,51 +284,55 @@ Basic configuration parameters:
               logging:
                 enabled: false #(12)!
               metrics:
-                enabled: true #(13)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(14)!
-                tags: #(15)!
+                enabled: false #(13)!
+                driverMetrics: false #(14)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(15)!
+                tags: #(16)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(16)!
-                attributes: #(17)!
+                enabled: true #(17)!
+                attributes: #(18)!
                   key1: value1
                   key2: value2
         ```
 
         1.  List of `topic` values the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
         2.  `topic` pattern the `Consumer` subscribes to (not set by default, optional; either `topics` or `topicsPattern` must be specified)
-        3.  List of partitions used only for consumer name construction when `group.id`, `topics`, and `topicsPattern` are not specified; partition assignment is controlled by the `assign` container (not set by default, optional)
-            If specified, consumer will read only from specified partitions. Example: `["0", "1", "2"]`.
-        4.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
+            Supported by the `subscribe` strategy only; the `assign` strategy rejects it at startup and requires an explicit `topics` list.
+        3.  Whether to process empty batches when the signature accepts `ConsumerRecords` (default: `false`)
             If `false` and `ConsumerRecords` is empty (no messages), consumer method will not be called.
             If `true`, method will be called with empty `ConsumerRecords` (useful for periodic checks).
-        5.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
+        4.  Initial read position for the `assign` strategy when `group.id` is not specified (default: `latest`). Valid values:
             1. `earliest` - earliest available `offset`
             2. `latest` - latest available `offset`
             3. string in `Duration` format, for example `5m`, - shift back by the specified duration
                Format: number + unit (ms, s, m, h, d). Examples: `5m` = 5 minutes ago, `1h` = 1 hour ago.
-        6.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
-        7.  Initial delay between unexpected processing errors; with repeated errors the delay increases up to `60s` (default: `15s`)
+        5.  Maximum time to wait for messages from a `topic` within one `poll()` call (default: `5s`)
+        6.  Initial delay between unexpected processing errors; with repeated errors the delay doubles up to `60s` (default: `15s`)
             If consumer throws unexpected exception (not `KafkaSkipRecordException`),
             Kora will restart consumer with `backoffTimeout` delay to prevent cyclic errors.
-        8.  Partition list refresh period for the `assign` strategy (default: `1m`)
-        9.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
-        10. Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        7.  Partition list refresh period for the `assign` strategy (default: `1m`)
+        8.  Number of threads the consumer starts on; if set to `0`, the consumer is not started (default: `1`)
+        9.  Time to wait for processing before stopping the consumer during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`)
+        10. Maximum time the container waits during application startup until every consumer thread has completed its first `poll()` (not set by default, optional)
+            If the timeout expires, application startup fails. When it is not set, the consumer connects in the background and an unavailable broker does not block startup.
         11. Official `Kafka Consumer` `Properties`; see [Apache Kafka Consumer Configs](https://kafka.apache.org/documentation/#consumerconfigs) (`required`, not set by default)
         12. Enables module logging (default: `false`)
-        13. Enables module metrics (default: `true`)
-        14. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        15. Configures metric tags (default: `{}`)
-        16. Enables module tracing (default: `true`)
-        17. Configures tracing attributes (default: `{}`)
+        13. Enables module metrics (default: `false`)
+        14. Registers `Apache Kafka` driver metrics of the underlying `KafkaConsumer` in the `MeterRegistry` (default: `false`)
+        15. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        16. Configures metric tags (default: `{}`)
+        17. Enables module tracing (default: `true`)
+        18. Configures tracing attributes (default: `{}`)
 
 Module metrics are described in the [Metrics Reference](metrics.md#kafka) section.
 
 ### Consume strategy { #consume-strategy }
 
-`subscribe` strategy involves the use of [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/),
-to group the executors so that they do not duplicate the reading of records from their queue across multiple application instances.
+`subscribe` strategy is used when [group.id](https://www.confluent.io/blog/configuring-apache-kafka-consumer-group-ids/) is present in `driverProperties`.
+Application instances then join one `consumer group`, and `Kafka` distributes partitions between them
+so that different instances do not process the same records at the same time.
 
 Example of `subscribe` strategy configuration:
 
@@ -326,7 +341,7 @@ Example of `subscribe` strategy configuration:
     ```javascript
     kafka {
         someConsumer {
-            topics: "first"
+            topics = ["first"]
             driverProperties {
               "group.id": "my-group-id"
               "bootstrap.servers": "localhost:9093"
@@ -340,18 +355,21 @@ Example of `subscribe` strategy configuration:
     ```yaml
     kafka:
       someConsumer:
-        topics: "first"
+        topics:
+          - "first"
         driverProperties:
           "group.id": "my-group-id"
           "bootstrap.servers": "localhost:9093"
     ```
 
-`assign` connection strategy implies that each instance of the application reads messages from the topic simultaneously with others,
-i.e., messages are duplicated between all instances of the application within the topic.
+`assign` strategy is used when `group.id` is **not** specified in `driverProperties`.
+Each application instance then assigns partitions of the configured topics to itself, so every instance receives the same records independently.
 This strategy is useful, for example, when all application replicas must receive the same message at once: to reset a local cache,
 update local reference data, or handle a service event.
-To use this strategy, simply **do not specify** `group.id` in the consumer configuration.
-However, only one topic can be specified at a time in this strategy.
+
+The `assign` strategy requires an explicit `topics` list and does not support `topicsPattern`.
+The partition list is refreshed every `partitionRefreshInterval` and split between `threads` consumers, and the initial read position
+is controlled by `offset`.
 
 Example of `assign` strategy configuration:
 
@@ -360,7 +378,7 @@ Example of `assign` strategy configuration:
     ```javascript
     kafka {
         someConsumer {
-            topics: "first"
+            topics = ["first"]
             driverProperties {
               "bootstrap.servers": "localhost:9093"
             }
@@ -373,7 +391,8 @@ Example of `assign` strategy configuration:
     ```yaml
     kafka:
       someConsumer:
-        topics: "first"
+        topics:
+          - "first"
         driverProperties:
           "bootstrap.servers": "localhost:9093"
     ```
@@ -384,13 +403,17 @@ Available signatures for out-of-the-box `Kafka Consumer` methods, where `K` refe
 The generator supports three signature families: separate `key`/`value` arguments, a single `ConsumerRecord<K, V>`, or a whole `ConsumerRecords<K, V>` batch.
 These families cannot be mixed in the same method.
 
+Handlers are synchronous: the poll loop thread calls the method and waits for it to return before it polls again.
+In `Kotlin` a listener may be declared `suspend`; the generated handler then runs it through `runBlocking` on the same poll loop thread,
+so it still occupies the consumer thread for the whole processing time.
+
 #### Key and value { #key-value-signature }
 
 A signature with separate arguments accepts `value`, optional `key`, optional `Headers`, optional `Consumer<K, V>`, and optional deserialization errors.
 One user argument is treated as `value`; two user arguments are treated as `key` and `value` in that exact order.
 If `key` is not declared, the key deserialization type is considered to be `byte[]`.
 
-To handle deserialization errors, add `Exception`, `RecordKeyDeserializationException`, or `RecordValueDeserializationException`.
+To handle deserialization errors, add `Exception`, `Throwable`, `RecordKeyDeserializationException`, or `RecordValueDeserializationException`.
 When such an argument is present, Kora passes the deserialization error to it, and the corresponding `key` or `value` is passed as `null`.
 Without such an argument, the deserialization error is thrown from the handler, and the record is read again without committing the current offset.
 
@@ -441,8 +464,8 @@ Without such an argument, the deserialization error is thrown from the handler, 
 #### Whole record { #record-signature }
 
 A signature with `ConsumerRecord<K, V>` accepts one whole record, optional `Consumer<K, V>`, and optional deserialization errors:
-`Exception`, `RecordKeyDeserializationException`, or `RecordValueDeserializationException`.
-`Headers`, separate `key`/`value` arguments, and the telemetry context are not supported in this signature.
+`Exception`, `Throwable`, `RecordKeyDeserializationException`, or `RecordValueDeserializationException`.
+`Headers` and separate `key`/`value` arguments are not supported in this signature, because `ConsumerRecord` already carries them.
 
 If error arguments are not declared, the deserialization error can be thrown when calling `record.key()` or `record.value()`.
 If error arguments are declared, Kora calls `key()` and/or `value()` beforehand, catches the deserialization error, and passes it to the method.
@@ -524,7 +547,7 @@ If error arguments are declared, Kora calls `key()` and/or `value()` beforehand,
 #### Batch of records { #records-signature }
 
 A signature with `ConsumerRecords<K, V>` accepts the whole batch of records from one `poll()`.
-Together with it, only `Consumer<K, V>` and `KafkaConsumerRecordsTelemetryContext<K, V>` can be declared.
+Together with it, only `Consumer<K, V>` can be declared.
 Separate `key`/`value` arguments, `Headers`, and deserialization error arguments are not supported in this signature; deserialization errors should be handled while iterating over records.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -570,7 +593,10 @@ Separate `key`/`value` arguments, `Headers`, and deserialization error arguments
 #### Offset commit { #manual-commit }
 
 If the signature does not declare a `Consumer<K, V>` argument, Kora commits the offset automatically: after each record for `key`/`value` and `ConsumerRecord<K, V>` signatures, or after the whole batch for `ConsumerRecords<K, V>`.
-It does this by calling `commitSync()`.
+
+Automatic commit is only performed when the driver does not commit by itself.
+If `enable.auto.commit` is not set in `driverProperties`, Kora forces it to `false` and commits offsets itself.
+If `enable.auto.commit` is explicitly set to `true`, the driver owns the offsets and Kora does not commit anything.
 
 If the signature declares a `Consumer<K, V>` argument, automatic offset commit is disabled, and the handler is fully responsible for calling `commitSync()` or `commitAsync()`.
 This mode is useful when the offset should be committed only after an external operation, several records should be committed together, or the read position should be controlled manually.
@@ -733,11 +759,7 @@ If you provide `Deserializer<T>` as a component without a tag, it will be used f
 
         @Override
         public MyEvent deserialize(String topic, byte[] data) {
-            try {
-                return reader.read(data);
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
+            return reader.read(data);
         }
     }
 
@@ -760,11 +782,7 @@ If you provide `Deserializer<T>` as a component without a tag, it will be used f
     ) : Deserializer<MyEvent> {
 
         override fun deserialize(topic: String, data: ByteArray): MyEvent {
-            return try {
-                reader.read(data)
-            } catch (e: IOException) {
-                throw IllegalArgumentException(e)
-            }
+            return requireNotNull(reader.read(data)) { "Empty payload in topic $topic" }
         }
     }
 
@@ -777,6 +795,9 @@ If you provide `Deserializer<T>` as a component without a tag, it will be used f
         }
     }
     ```
+
+`JsonReader<T>.read(byte[])` throws an unchecked `JacksonException` on malformed payload and returns `null` for a `null` payload,
+so in `Kotlin` the result must be unwrapped with `requireNotNull` before it is returned as a non-null type.
 
 **Option 2: Point deserializer for specific consumer**
 
@@ -803,11 +824,7 @@ If you need to use different deserialization for different consumers of the same
 
             @Override
             public MyEvent deserialize(String topic, byte[] data) {
-                try {
-                    return reader.read(data);
-                } catch (IOException e) {
-                    throw new IllegalArgumentException(e);
-                }
+                return reader.read(data);
             }
         }
 
@@ -834,11 +851,7 @@ If you need to use different deserialization for different consumers of the same
         ) : Deserializer<MyEvent> {
 
             override fun deserialize(topic: String, data: ByteArray): MyEvent {
-                return try {
-                    reader.read(data)
-                } catch (e: IOException) {
-                    throw IllegalArgumentException(e)
-                }
+                return requireNotNull(reader.read(data)) { "Empty payload in topic $topic" }
             }
         }
 
@@ -849,10 +862,11 @@ If you need to use different deserialization for different consumers of the same
     }
     ```
 
-### Exception handling { #exception-handling-consumer }
+### Exception handling { #exception-handling }
 
-If the method labeled `@KafkaListener` throws an exception, Consumer will be restarted,
+If the method labeled `@KafkaListener` throws an exception, the poll loop is interrupted and the `Consumer` is restarted after `backoffTimeout`,
 because there is no general solution on how to handle this and the developer **must** decide how to handle it.
+With repeated errors the delay doubles up to `60s`, so a permanently failing handler does not spin the broker.
 
 #### Exception skipping { #exception-skipping }
 
@@ -869,7 +883,7 @@ In this case, all metrics will be correctly accounted for and recorded, processi
         @KafkaListener("kafka.someConsumer1")
         void process1(String key, String value) {
             if ("skip".equals(value)) {
-                throw new KafkaSkipRecordException(new IllegalArgumentException("Want to skip!"))
+                throw new KafkaSkipRecordException(new IllegalArgumentException("Want to skip!"));
             }
             // some handler code
         }
@@ -909,6 +923,8 @@ you can use the `SkippableRecordException` interface, which should be implemente
     class MyKafkaSkipRecordException : RuntimeException(), SkippableRecordException
     ```
 
+Skipping applies to the single-record signatures only: the batch signature receives the whole `ConsumerRecords` and decides itself which records to skip.
+
 #### Deserialization errors { #deserialization-errors }
 
 If you use a signature with `ConsumerRecord` or `ConsumerRecords`, you will get a value deserialization exception at the moment of calling the `key` or `value` methods.
@@ -916,9 +932,10 @@ At that point, it is worth handling it in the way you want.
 
 The following exceptions are thrown:
 
-* `ru.tinkoff.kora.kafka.common.exceptions.RecordKeyDeserializationException`.
-* `ru.tinkoff.kora.kafka.common.exceptions.RecordValueDeserializationException`.
+* `io.koraframework.kafka.common.exceptions.RecordKeyDeserializationException`.
+* `io.koraframework.kafka.common.exceptions.RecordValueDeserializationException`.
 
+Both extend `org.apache.kafka.common.errors.SerializationException`.
 From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>` using `getRecord()` method:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -928,9 +945,11 @@ From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>` using 
     final class ConsumerService {
 
         @KafkaListener("kafka.someConsumer")
-        public void process(String key, String value) {
+        public void process(ConsumerRecord<String, String> record) {
             try {
-                // Access key/value which may throw deserialization exception
+                var key = record.key();
+                var value = record.value();
+                // some value handling work
             } catch (RecordKeyDeserializationException e) {
                 ConsumerRecord<byte[], byte[]> rawRecord = e.getRecord();
                 // Handle raw record (log, send to DLQ, etc.)
@@ -949,22 +968,24 @@ From these exceptions, you can get a raw `ConsumerRecord<byte[], byte[]>` using 
     class ConsumerService {
 
         @KafkaListener("kafka.someConsumer")
-        fun process(key: String, value: String) {
+        fun process(record: ConsumerRecord<String, String>) {
             try {
-                // Access key/value which may throw deserialization exception
+                val key = record.key()
+                val value = record.value()
+                // some value handling work
             } catch (e: RecordKeyDeserializationException) {
-                val rawRecord = e.getRecord()
+                val rawRecord = e.record
                 // Handle raw record (log, send to DLQ, etc.)
             } catch (e: RecordValueDeserializationException) {
-                val rawRecord = e.getRecord()
+                val rawRecord = e.record
                 // Handle raw record (log, send to DLQ, etc.)
             }
         }
     }
     ```
 
-If you use a signature with unpacked `key`/`value`/`headers`, you can add `Exception`, `Throwable`, `RecordKeyDeserializationException`, `RecordKeyDeserializationException` with the last argument
-or `RecordValueDeserializationException`.
+If you use a signature with unpacked `key`/`value`/`headers`, you can add `Exception`, `Throwable`, `RecordKeyDeserializationException`
+or `RecordValueDeserializationException` as the last argument.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1001,10 +1022,12 @@ or `RecordValueDeserializationException`.
     ```
 
 Note that all arguments become optional, meaning we expect to either have a key and value or an exception.
+When both a key and a value fail to deserialize and a single `Exception` argument is declared, the key error is passed.
 
 ### Custom tag { #custom-tag }
 
-Automatic tag is created for the consumer by default, it can be viewed in the generated module at compile time.
+Automatic tag is created for the consumer by default; it is named `<ListenerClass>Module.<ListenerClass><Method>Tag`
+and can be viewed in the generated module at compile time.
 
 If for some reason you need to override the consumer tag, you can set it as an argument to the `@KafkaListener` annotation:
 
@@ -1016,7 +1039,7 @@ If for some reason you need to override the consumer tag, you can set it as an a
 
         @KafkaListener(value = "kafka.someConsumer", tag = ConsumerService.class)
         public void process(String value) {
-          
+
         }
     }
     ```
@@ -1033,6 +1056,9 @@ If for some reason you need to override the consumer tag, you can set it as an a
         }
     }
     ```
+
+The tag is applied to the generated `KafkaListenerConfig`, the handler, and the rebalance listener dependency of the container,
+so it is exactly the tag a `ConsumerAwareRebalanceListener` must be registered under.
 
 ### Rebalance events { #rebalance-events }
 
@@ -1079,7 +1105,7 @@ it should be provided as a component by the consumer tag:
             // Called before partitions are revoked from this consumer.
             // Use this to commit offsets or cleanup state.
         }
-        
+
         override fun onPartitionsAssigned(consumer: Consumer<*, *>, partitions: Collection<TopicPartition>) {
             // Called when partitions are assigned to this consumer.
             // Use this to initialize state for assigned partitions.
@@ -1094,39 +1120,89 @@ it should be provided as a component by the consumer tag:
     }
     ```
 
+`onPartitionsLost` has a default implementation that delegates to `onPartitionsRevoked`, so it only has to be overridden when lost
+partitions require different handling than revoked ones.
+
+Rebalance events exist only in the `subscribe` strategy: the `assign` container manages partitions itself and never consults the listener.
+
 ### Manual override { #manual-override }
 
 Kora provides a small wrapper over `KafkaConsumer` that allows you to easily trigger the handling of incoming events.
+Both containers implement `GeneratedListener`, so they take part in the application graph lifecycle like any generated container.
 
-The container constructor is as follows:
+The `subscribe` container constructor is as follows:
 
 ```java
-public KafkaSubscribeConsumerContainer(KafkaListenerConfig config,
+public KafkaSubscribeConsumerContainer(String listenerConfig,
+                                       String listenerImpl,
+                                       KafkaListenerConfig config,
                                        Deserializer<K> keyDeserializer,
                                        Deserializer<V> valueDeserializer,
-                                       BaseKafkaRecordsHandler<K, V> handler)
+                                       BaseKafkaRecordsHandler<K, V> handler,
+                                       KafkaConsumerTelemetry telemetry,
+                                       @Nullable ConsumerAwareRebalanceListener rebalanceListener)
 ```
+
+The `assign` container constructor is as follows:
+
+```java
+public KafkaAssignConsumerContainer(String listenerConfig,
+                                    String listenerImpl,
+                                    KafkaListenerConfig config,
+                                    Deserializer<K> keyDeserializer,
+                                    Deserializer<V> valueDeserializer,
+                                    KafkaConsumerTelemetry telemetry,
+                                    BaseKafkaRecordsHandler<K, V> handler)
+```
+
+`listenerConfig` is the configuration path used in telemetry, and `listenerImpl` is the logger name of the listener.
 
 `BaseKafkaRecordsHandler<K,V>` is the basic functional interface of the handler:
 ```java
 @FunctionalInterface
 public interface BaseKafkaRecordsHandler<K, V> {
-    void handle(ConsumerRecords<K, V> records, KafkaConsumer<K, V> consumer);
+
+    void handle(KafkaConsumerPollObservation observation,
+                ConsumerRecords<K, V> records,
+                Consumer<K, V> consumer,
+                boolean commitAllowed);
 }
 ```
 
-### Telemetry { #telemetry }
+`commitAllowed` reports whether the driver leaves offset management to the handler, that is whether `enable.auto.commit` is disabled.
+Ready-made wrappers for per-record and per-batch handling are available in `HandlerWrapper`.
+
+### Telemetry { #telemetry-consumer }
 
 Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
 Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-consumer) section.
 
-For each batch & message, `KafkaListener` creates a separate telemetry context, which is closed upon completion of processing.
-The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
+`KafkaConsumerTelemetryFactory` builds a `KafkaConsumerTelemetry` for each listener out of the listener configuration path,
+the listener class name, `driverProperties`, and `KafkaConsumerTelemetryConfig`.
+`KafkaConsumerTelemetry` opens a `KafkaConsumerPollObservation` for every `poll()` call, derives a `KafkaConsumerRecordObservation`
+for every record, and reports the consumer lag per partition:
 
-The default factory, `DefaultKafkaListenerTelemetryFactory`, combines three factories:
-- `KafkaListenerLoggerFactory` builds a `KafkaListenerLogger` to log the start and end of message processing;
-- `KafkaListenerMetricsFactory` builds a `KafkaListenerMetrics` to record message metrics;
-- `KafkaListenerTracerFactory` builds a `KafkaListenerTracer` for distributed tracing.
+```java
+public interface KafkaConsumerTelemetry {
+
+    MeterRegistry meterRegistry();
+
+    KafkaConsumerPollObservation observePoll();
+
+    void reportLag(TopicPartition partition, long lag);
+}
+```
+
+Every observation is closed when processing completes, and the record observation carries the topic, partition, offset, and processing duration.
+
+The default implementation is `DefaultKafkaConsumerTelemetryFactory`, registered by `KafkaModule` as a `@DefaultComponent`.
+It disables itself entirely when logging, metrics, and tracing are all off, and otherwise builds the enabled parts out of:
+
+- `DefaultKafkaConsumerLoggerFactory` builds the logger that records the start and end of polling and message processing;
+- `DefaultKafkaConsumerMetricsFactory` builds the meters for batch duration, record duration, and lag.
+
+Both factories are injected into `KafkaModule` as optional dependencies, so providing your own `@Component` subclass of either one
+replaces just that part of the default telemetry. Providing your own `KafkaConsumerTelemetryFactory` component replaces telemetry entirely.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
 
@@ -1181,10 +1257,12 @@ If typed methods are required for specific `topic` values, use the `@KafkaPublis
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
         fun send(value: String)
-    } 
+    }
     ```
 
 The annotation parameter indicates the path for the `topic` configuration.
+A path that starts with `.` is resolved relative to the `@KafkaPublisher` configuration path,
+so `@KafkaPublisher.Topic(".someTopic")` on a publisher configured at `kafka.someProducer` reads `kafka.someProducer.someTopic`.
 
 ### Configuration { #config-producer }
 
@@ -1234,16 +1312,17 @@ Basic configuration parameters:
                     enabled = false //(2)!
                   }
                   metrics {
-                    enabled = true //(3)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(4)!
-                    tags = { //(5)!
+                    enabled = false //(3)!
+                    driverMetrics = false //(4)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
+                    tags = { //(6)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
                   }
                   tracing {
-                    enabled = true //(6)!
-                    attributes = { //(7)!
+                    enabled = true //(7)!
+                    attributes = { //(8)!
                       "key1" = "value1"
                       "key2" = "value2"
                     }
@@ -1255,11 +1334,12 @@ Basic configuration parameters:
 
         1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
         2.  Enables module logging (default: `false`)
-        3.  Enables module metrics (default: `true`)
-        4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        5.  Configures metric tags (default: `{}`)
-        6.  Enables module tracing (default: `true`)
-        7.  Configures tracing attributes (default: `{}`)
+        3.  Enables module metrics (default: `false`)
+        4.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
+        5.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        6.  Configures metric tags (default: `{}`)
+        7.  Enables module tracing (default: `true`)
+        8.  Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -1270,27 +1350,29 @@ Basic configuration parameters:
               bootstrap.servers: "localhost:9093"
             telemetry:
               logging:
-                enabled: true #(2)!
+                enabled: false #(2)!
               metrics:
-                enabled: true #(3)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(4)!
-                tags: #(5)!
+                enabled: false #(3)!
+                driverMetrics: false #(4)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
+                tags: #(6)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(6)!
-                attributes: #(7)!
+                enabled: true #(7)!
+                attributes: #(8)!
                   key1: value1
                   key2: value2
         ```
 
         1.  Official `Kafka Producer` `Properties`; see [Apache Kafka Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) (`required`, not set by default)
         2.  Enables module logging (default: `false`)
-        3.  Enables module metrics (default: `true`)
-        4.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        5.  Configures metric tags (default: `{}`)
-        6.  Enables module tracing (default: `true`)
-        7.  Configures tracing attributes (default: `{}`)
+        3.  Enables module metrics (default: `false`)
+        4.  Registers `Apache Kafka` driver metrics of the underlying `KafkaProducer` in the `MeterRegistry` (default: `false`)
+        5.  Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        6.  Configures metric tags (default: `{}`)
+        7.  Enables module tracing (default: `true`)
+        8.  Configures tracing attributes (default: `{}`)
 
 `topic` configuration describes the settings of a particular `@KafkaPublisher.Topic`; below is an example for the `kafka.someProducer.someTopic` configuration path.
 
@@ -1329,624 +1411,7 @@ Example of the complete configuration described in the `KafkaPublisherConfig.Top
         If specified, all messages will be sent to the specified partition.
         If not specified, standard Kafka partitioning is used (by key or random).
 
-### Signatures { #signatures-2 }
-
-Allows `value` and `key` (optional) and `headers` (optional) to be sent from `ProducerRecord`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        void send(String key, String value, Headers headers);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(key: String, value: String, headers: Headers)
-    } 
-    ```
-
-Can be received as the result of a `RecordMetadata` operation:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Can be also obtained as the result of a `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` operation:
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        RecordMetadata send(String value);
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        Future<RecordMetadata> send(String value);
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        CompletionStage<RecordMetadata> sendStage(V value);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Can be also obtained as the result of a `suspend` or `Future<RecordMetadata>` or `CompletionStage<RecordMetadata>` or `Deferred<RecordMetadata>` operation:
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): RecordMetadata
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        suspend fun sendSuspend(value: V): RecordMetadata
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Future<RecordMetadata>
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): CompletionStage<RecordMetadata>
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Deferred<RecordMetadata>
-    } 
-    ```
-
-It is possible to send `ProducerRecord` with or without `Callback` and combine the response with the examples above:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-
-          void send(ProducerRecord<String, String> record, Callback callback);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        fun send(record: ProducerRecord<String, String>, callback: Callback)
-    }
-    ```
-
-### Serialization { #serialization }
-
-`Serializer` is used to serialize `ProducerRecord` keys and values.
-Kora provides `Serializer` components for basic types: `String`, `UUID`, `byte[]`, `Bytes`, `ByteBuffer`, `Double`, `Float`,
-`Integer`, `Long`, `Short`, and `Void`.
-
-To specify which `Serializer` to take from the container, tags can be used.
-Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyKafkaProducer {
-
-        void send(ProducerRecord<@Tag(MyTag1.class) String, @Tag(MyTag2.class) String> record);
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        void send(@Tag(MyTag1.class) String key, @Tag(MyTag2.class) String value);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyKafkaProducer {
-
-        fun send(record: ProducerRecord<@Tag(MyTag1::class) String, @Tag(MyTag2::class) String>)
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(@Tag(MyTag1::class) key: String, @Tag(MyTag2::class) value: String)
-    }
-    ```
-
-If serialization to `JSON` is required, use the `@Json` tag.
-In this case, Kora uses `JsonWriter<T>` and `JsonKafkaSerializer<T>` from the [JSON](json.md) module:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyKafkaProducer {
-
-        @Json
-        record JsonEvent(String name, Integer code) {}
-
-        void send(ProducerRecord<String, @Json JsonEvent> record);
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        void send(String key, @Json JsonEvent value);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyKafkaProducer {
-
-        @Json
-        data class JsonEvent(val name: String, val code: Int)
-
-        fun send(record: ProducerRecord<String, @Json JsonEvent>)
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(key: String, @Json value: JsonEvent)
-    }
-    ```
-
-### Custom Serializer { #custom-serializer }
-
-If custom serialization is required, you can implement your own `Serializer`.
-
-**Option 1: Default serializer for type**
-
-If you provide `Serializer<T>` as a component without a tag, it will be used for all producers of this type:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public static class MyEventSerializer implements Serializer<MyEvent> {
-
-        private final JsonWriter<MyEvent> writer;
-
-        public MyEventSerializer(JsonWriter<MyEvent> writer) {
-            this.writer = writer;
-        }
-
-        @Override
-        public byte[] serialize(String topic, MyEvent data) {
-            try {
-                return writer.toByteArray(data);
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
-
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.topic")
-        void send(MyEvent value); // Uses MyEventSerializer
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class MyEventSerializer(
-        private val writer: JsonWriter<MyEvent>
-    ) : Serializer<MyEvent> {
-
-        override fun serialize(topic: String, data: MyEvent): ByteArray {
-            return try {
-                writer.toByteArray(data)
-            } catch (e: IOException) {
-                throw IllegalArgumentException(e)
-            }
-        }
-    }
-
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.topic")
-        fun send(value: MyEvent) // Uses MyEventSerializer
-    }
-    ```
-
-**Option 2: Point serializer for specific producer**
-
-If you need to use different serialization for different producers of the same type, you can use tags:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyKafkaProducer {
-
-        @Json
-        record MyEvent(String username, int code) {}
-
-        @Tag(MyEvent.class)
-        @Component
-        class MySerializer implements Serializer<MyEvent> {
-
-            private final JsonWriter<MyEvent> writer;
-
-            public MySerializer(JsonWriter<MyEvent> writer) {
-                this.writer = writer;
-            }
-
-            @Override
-            public byte[] serialize(String topic, MyEvent data) {
-                try {
-                    return writer.toByteArray(data);
-                } catch (IOException e) {
-                    throw new IllegalArgumentException(e);
-                }
-            }
-        }
-
-        void send(ProducerRecord<String, @Tag(MyEvent.class) MyEvent> record);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyKafkaProducer {
-
-        @Json
-        data class MyEvent(val username: String, val code: Int)
-
-        @Tag(MyEvent::class)
-        @Component
-        class MySerializer(
-            private val writer: JsonWriter<MyEvent>
-        ) : Serializer<MyEvent> {
-
-            override fun serialize(topic: String, data: MyEvent): ByteArray {
-                return try {
-                    writer.toByteArray(data)
-                } catch (e: IOException) {
-                    throw IllegalArgumentException(e)
-                }
-            }
-        }
-
-        fun send(record: ProducerRecord<String, @Tag(MyEvent::class) MyEvent>)
-    }
-    ```
-
-### Exception handling { #exception-handling-producer }
-
-If a send error happens in a method annotated with `@KafkaPublisher.Topic` that does not return `Future<RecordMetadata>`,
-`ru.tinkoff.kora.kafka.common.exceptions.KafkaPublishException` is thrown.
-The original error from `KafkaProducer` is available in `cause`.
-
-To get the failed record, use the `getRecord()` method:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    class SomeService {
-
-        private final MyPublisher publisher;
-
-        public SomeService(MyPublisher publisher) {
-            this.publisher = publisher;
-        }
-
-        void sendMessage() {
-            try {
-                publisher.send("key", "value");
-            } catch (KafkaPublishException e) {
-                ProducerRecord<byte[], byte[]> failedRecord = e.getRecord();
-                // Handle the failed record (log, retry, etc.)
-            }
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class SomeService(
-        private val publisher: MyPublisher
-    ) {
-
-        fun sendMessage() {
-            try {
-                publisher.send("key", "value")
-            } catch (e: KafkaPublishException) {
-                val failedRecord = e.getRecord()
-                // Handle the failed record (log, retry, etc.)
-            }
-        }
-    }
-    ```
-
-#### Serialization errors { #serialization-errors }
-
-If a key or value serialization error happens in a method annotated with `@KafkaPublisher.Topic`,
-`org.apache.kafka.common.errors.SerializationException` is thrown, just like with a direct `org.apache.kafka.clients.producer.Producer#send` call.
-
-### Transactions { #transactions }
-
-Messages can be sent to `Kafka` [within a transaction](https://www.confluent.io/blog/transactions-apache-kafka/).
-For this, use the `@KafkaPublisher` annotation and extend `TransactionalPublisher`.
-
-First, describe a regular `KafkaProducer`, and then use its type to create a transactional `Producer`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        void send(String key, String value);
-    }
-
-    @KafkaPublisher("kafka.someTransactionalProducer")
-    public interface MyTransactionalPublisher extends TransactionalPublisher<MyPublisher> {
-
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-
-        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(key: String, value: String)
-    }
-
-
-    @KafkaPublisher("kafka.someTransactionalProducer")
-    interface MyTransactionalPublisher : TransactionalPublisher<MyPublisher> 
-    ```
-
-Use `inTx` methods to send messages in a transaction: all messages inside the `lambda` are committed on successful execution
-and aborted on error.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    transactionalPublisher.inTx(producer -> {
-        producer.send("username1");
-        producer.send("username2");
-    });
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    transactionalPublisher.inTx(TransactionalConsumer {
-        it.send("key1", "value1")
-        it.send("key2", "value2")
-    })
-    ```
-
-It is also possible to manage the transaction manually through `begin()`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    // commit will be called on try-with-resources close
-    try (var transaction = transactionalPublisher.begin()) {
-        transaction.producer().send(record);
-        if (somethingBad) {
-            transaction.abort();
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    // commit will be called on try-with-resources close
-    transactionalPublisher.begin().use { 
-        it.producer().send(record)
-        if (somethingBad) {
-            it.abort()
-        }
-    }
-    ```
-
-#### Configuration { #config-producer-tx }
-
-`KafkaPublisherConfig.TransactionConfig` is used to configure `@KafkaPublisher` with the `TransactionalPublisher` interface:
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    kafka {
-        someTransactionalProducer {
-            idPrefix = "kora-app-" //(1)!
-            maxPoolSize = 10 //(2)!
-            maxWaitTime = "10s" //(3)!
-        }
-    }
-    ```
-
-    1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
-        Format: `{idPrefix}-{uuid}`. Example: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
-    2.  Maximum size of the transactional `Producer` pool (default: `10`)
-    3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    kafka:
-      someTransactionalProducer:
-        idPrefix: "kora-app-" #(1)!
-        maxPoolSize: 10 #(2)!
-        maxWaitTime: "10s" #(3)!
-    ```
-
-    1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
-        Format: `{idPrefix}-{uuid}`. Example: `kafka-app-550e8400-e29b-41d4-a716-446655440000`.
-    2.  Maximum size of the transactional `Producer` pool (default: `10`)
-    3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
-
-### Advanced Transaction Usage { #advanced-transactions }
-
-#### Transaction Interface { #transaction-interface }
-
-The `begin()` method returns a `Transaction<P>` object that provides advanced transaction management capabilities:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    try (var tx = transactionalPublisher.begin()) {
-        // Sending messages
-        tx.publisher().send("key1", "value1");
-        tx.publisher().send("key2", "value2");
-        
-        // Commit consumer offsets within the transaction (exactly-once semantics)
-        Map<TopicPartition, OffsetAndMetadata> offsets = ...;
-        ConsumerGroupMetadata groupMetadata = ...;
-        tx.sendOffsetsToTransaction(offsets, groupMetadata);
-        
-        // Explicit flush to guarantee sending before commit
-        tx.flush();
-        
-        // commit() is called automatically on try-with-resources close
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    transactionalPublisher.begin().use { tx ->
-        // Sending messages
-        tx.publisher().send("key1", "value1")
-        tx.publisher().send("key2", "value2")
-        
-        // Commit consumer offsets within the transaction (exactly-once semantics)
-        val offsets: Map<TopicPartition, OffsetAndMetadata> = ...
-        val groupMetadata: ConsumerGroupMetadata = ...
-        tx.sendOffsetsToTransaction(offsets, groupMetadata)
-        
-        // Explicit flush to guarantee sending before commit
-        tx.flush()
-        
-        // commit() is called automatically on use close
-    }
-    ```
-
-**`Transaction<P>` methods:**
-
-| Method | Description |
-|--------|-------------|
-| `publisher()` | Returns typed publisher for sending messages |
-| `producer()` | Returns raw `Producer<byte[], byte[]>` for low-level operations |
-| `sendOffsetsToTransaction(offsets, groupMetadata)` | Commits consumer offsets within the same transaction |
-| `flush()` | Guarantees all messages are sent before commit |
-| `abort()` | Aborts the transaction |
-| `abort(cause)` | Aborts the transaction with specified cause |
-| `close()` | Closes the transaction (commits if no abort) |
-
-#### Transaction methods { #tx-methods }
-
-`TransactionalPublisher` provides 4 methods for working with transactions:
-
-| Method | Passes to callback | Returns value |
-|--------|-------------------|---------------|
-| `inTx(TransactionalConsumer)` | `P publisher` | `void` |
-| `inTx(TransactionalFunction)` | `P publisher` | `R` |
-| `withTx(TransactionConsumer)` | `Transaction<P> tx` | `void` |
-| `withTx(TransactionFunction)` | `Transaction<P> tx` | `R` |
-
-**Example with return value:**
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    // inTx with return value
-    Long messageId = transactionalPublisher.inTx(producer -> {
-        producer.send("key", "value");
-        return System.currentTimeMillis();
-    });
-    
-    // withTx with Transaction access
-    transactionalPublisher.withTx(tx -> {
-        tx.publisher().send("key", "value");
-        tx.sendOffsetsToTransaction(offsets, groupMetadata);
-        tx.flush(); // Explicit flush
-    });
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    // inTx with return value
-    val messageId = transactionalPublisher.inTx { producer ->
-        producer.send("key", "value")
-        System.currentTimeMillis()
-    }
-    
-    // withTx with Transaction access
-    transactionalPublisher.withTx { tx ->
-        tx.publisher().send("key", "value")
-        tx.sendOffsetsToTransaction(offsets, groupMetadata)
-        tx.flush() // Explicit flush
-    }
-    ```
-
-#### Default Serializers and Deserializers { #default-serializers }
-
-`KafkaModule` automatically provides serializers and deserializers for base types via `KafkaSerializersModule` and `KafkaDeserializersModule`.
-
-These serializers/deserializers are provided as components **without tags** and are used by default for all consumers/producers of corresponding types.
-
-**Supported types out of the box:**
-
-| Type | Serializer | Deserializer |
-|------|------------|--------------|
-| `String` | `StringSerializer` | `StringDeserializer` |
-| `byte[]` | `ByteArraySerializer` | `ByteArrayDeserializer` |
-| `ByteBuffer` | `ByteBufferSerializer` | `ByteBufferDeserializer` |
-| `Bytes` | `BytesSerializer` | `BytesDeserializer` |
-| `UUID` | `UUIDSerializer` | `UUIDDeserializer` |
-| `Integer` | `IntegerSerializer` | `IntegerDeserializer` |
-| `Long` | `LongSerializer` | `LongDeserializer` |
-| `Short` | `ShortSerializer` | `ShortDeserializer` |
-| `Double` | `DoubleSerializer` | `DoubleDeserializer` |
-| `Float` | `FloatSerializer` | `FloatDeserializer` |
-| `Void` | `VoidSerializer` | `VoidDeserializer` |
-
-To use, simply specify the type in the publisher/consumer method:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @KafkaPublisher("kafka.someProducer")
-    public interface MyPublisher {
-        @KafkaPublisher.Topic("kafka.someProducer.topic")
-        void send(UUID key, String value);
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KafkaPublisher("kafka.someProducer")
-    interface MyPublisher {
-        @KafkaPublisher.Topic("kafka.someProducer.topic")
-        fun send(key: UUID, value: String)
-    }
-    ```
-
-### Signatures { #signatures-3 }
+### Signatures { #signatures-producer }
 
 Available signatures for out-of-the-box `Kafka Producer` methods, where `K` refers to the key type and `V` to the message value type.
 The generator supports two signature families: sending a ready `ProducerRecord<K, V>` and sending through a method annotated with `@KafkaPublisher.Topic`.
@@ -1979,7 +1444,7 @@ One `Callback` can be passed additionally.
         fun send(record: ProducerRecord<K, V>)
 
         fun send(record: ProducerRecord<K, V>, callback: Callback)
-    } 
+    }
     ```
 
 #### Methods per topic { #topic-signature }
@@ -2071,32 +1536,624 @@ If the signature contains a `Callback`, Kora first completes its own send teleme
         suspend fun sendSuspend(value: V): RecordMetadata
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Future<RecordMetadata>
+        fun sendFuture(value: V): Future<RecordMetadata>
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): CompletionStage<RecordMetadata>
+        fun sendStage(value: V): CompletionStage<RecordMetadata>
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): CompletableFuture<RecordMetadata>
+        fun sendCompletableFuture(value: V): CompletableFuture<RecordMetadata>
 
         @KafkaPublisher.Topic("kafka.someProducer.someTopic")
-        fun send(value: String): Deferred<RecordMetadata>
-    } 
+        fun sendDeferred(value: V): Deferred<RecordMetadata>
+    }
     ```
 
 Invalid combinations are: `ProducerRecord<K, V>` together with `@KafkaPublisher.Topic`, `ProducerRecord<K, V>` together with separate `key`/`value`/`Headers`, more than one `Headers`, more than one `Callback`, and a method with separate `key`/`value` without `@KafkaPublisher.Topic`.
 
-### Telemetry { #telemetry }
+### Serialization { #serialization }
+
+`Serializer` is used to serialize `ProducerRecord` keys and values.
+Kora provides `Serializer` components for basic types: `String`, `UUID`, `byte[]`, `Bytes`, `ByteBuffer`, `Double`, `Float`,
+`Integer`, `Long`, `Short`, and `Void`.
+
+To specify which `Serializer` to take from the container, tags can be used.
+Tags should be set on `ProducerRecord` or `key`/`value` parameters of methods:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyKafkaProducer {
+
+        void send(ProducerRecord<@Tag(MyTag1.class) String, @Tag(MyTag2.class) String> record);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        void send(@Tag(MyTag1.class) String key, @Tag(MyTag2.class) String value);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyKafkaProducer {
+
+        fun send(record: ProducerRecord<@Tag(MyTag1::class) String, @Tag(MyTag2::class) String>)
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(@Tag(MyTag1::class) key: String, @Tag(MyTag2::class) value: String)
+    }
+    ```
+
+If serialization to `JSON` is required, use the `@Json` tag.
+In this case, Kora uses `JsonWriter<T>` and `JsonKafkaSerializer<T>` from the [JSON](json.md) module:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyKafkaProducer {
+
+        @Json
+        record JsonEvent(String name, Integer code) {}
+
+        void send(ProducerRecord<String, @Json JsonEvent> record);
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        void send(String key, @Json JsonEvent value);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyKafkaProducer {
+
+        @Json
+        data class JsonEvent(val name: String, val code: Int)
+
+        fun send(record: ProducerRecord<String, @Json JsonEvent>)
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(key: String, @Json value: JsonEvent)
+    }
+    ```
+
+### Default Serializers and Deserializers { #default-serializers }
+
+`KafkaModule` automatically provides serializers and deserializers for base types via `KafkaSerializersModule` and `KafkaDeserializersModule`.
+
+These serializers/deserializers are provided as `@DefaultComponent` components **without tags** and are used by default for all consumers/producers of corresponding types.
+Because they are default components, providing your own untagged `Serializer<T>`/`Deserializer<T>` for the same type overrides them without any conflict.
+
+**Supported types out of the box:**
+
+| Type | Serializer | Deserializer |
+|------|------------|--------------|
+| `String` | `StringSerializer` | `StringDeserializer` |
+| `byte[]` | `ByteArraySerializer` | `ByteArrayDeserializer` |
+| `ByteBuffer` | `ByteBufferSerializer` | `ByteBufferDeserializer` |
+| `Bytes` | `BytesSerializer` | `BytesDeserializer` |
+| `UUID` | `UUIDSerializer` | `UUIDDeserializer` |
+| `Integer` | `IntegerSerializer` | `IntegerDeserializer` |
+| `Long` | `LongSerializer` | `LongDeserializer` |
+| `Short` | `ShortSerializer` | `ShortDeserializer` |
+| `Double` | `DoubleSerializer` | `DoubleDeserializer` |
+| `Float` | `FloatSerializer` | `FloatDeserializer` |
+| `Void` | `VoidSerializer` | `VoidDeserializer` |
+
+Additionally, `JsonKafkaSerializer<T>` and `JsonKafkaDeserializer<T>` are provided under the `@Json` tag for any type that has a generated `JsonWriter<T>`/`JsonReader<T>`.
+
+To use, simply specify the type in the publisher/consumer method:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        void send(UUID key, String value);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        fun send(key: UUID, value: String)
+    }
+    ```
+
+### Custom Serializer { #custom-serializer }
+
+If custom serialization is required, you can implement your own `Serializer`.
+
+**Option 1: Default serializer for type**
+
+If you provide `Serializer<T>` as a component without a tag, it will be used for all producers of this type:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public static class MyEventSerializer implements Serializer<MyEvent> {
+
+        private final JsonWriter<MyEvent> writer;
+
+        public MyEventSerializer(JsonWriter<MyEvent> writer) {
+            this.writer = writer;
+        }
+
+        @Override
+        public byte[] serialize(String topic, MyEvent data) {
+            return writer.toByteArray(data);
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        void send(MyEvent value); // Uses MyEventSerializer
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class MyEventSerializer(
+        private val writer: JsonWriter<MyEvent>
+    ) : Serializer<MyEvent> {
+
+        override fun serialize(topic: String, data: MyEvent): ByteArray {
+            return writer.toByteArray(data)
+        }
+    }
+
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.topic")
+        fun send(value: MyEvent) // Uses MyEventSerializer
+    }
+    ```
+
+`JsonWriter<T>.toByteArray(T)` throws an unchecked `JacksonException`, so no checked exception has to be handled in the mapper.
+
+**Option 2: Point serializer for specific producer**
+
+If you need to use different serialization for different producers of the same type, you can use tags:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyKafkaProducer {
+
+        @Json
+        record MyEvent(String username, int code) {}
+
+        @Tag(MyEvent.class)
+        @Component
+        class MySerializer implements Serializer<MyEvent> {
+
+            private final JsonWriter<MyEvent> writer;
+
+            public MySerializer(JsonWriter<MyEvent> writer) {
+                this.writer = writer;
+            }
+
+            @Override
+            public byte[] serialize(String topic, MyEvent data) {
+                return writer.toByteArray(data);
+            }
+        }
+
+        void send(ProducerRecord<String, @Tag(MyEvent.class) MyEvent> record);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyKafkaProducer {
+
+        @Json
+        data class MyEvent(val username: String, val code: Int)
+
+        @Tag(MyEvent::class)
+        @Component
+        class MySerializer(
+            private val writer: JsonWriter<MyEvent>
+        ) : Serializer<MyEvent> {
+
+            override fun serialize(topic: String, data: MyEvent): ByteArray {
+                return writer.toByteArray(data)
+            }
+        }
+
+        fun send(record: ProducerRecord<String, @Tag(MyEvent::class) MyEvent>)
+    }
+    ```
+
+### Exception handling { #exception-handling-producer }
+
+If a send error happens in a method that returns `void`/`Unit` or `RecordMetadata`,
+`io.koraframework.kafka.common.exceptions.KafkaPublishException` is thrown.
+It extends `org.apache.kafka.common.KafkaException`, and the original error from `KafkaProducer` is available in `getCause()`.
+A `RuntimeException` reported by the driver is rethrown as is, without being wrapped.
+
+Methods that return `Future<RecordMetadata>`, `CompletionStage<RecordMetadata>`, or `CompletableFuture<RecordMetadata>` do not throw:
+the send error completes the returned future exceptionally instead.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    class SomeService {
+
+        private final MyPublisher publisher;
+
+        public SomeService(MyPublisher publisher) {
+            this.publisher = publisher;
+        }
+
+        void sendMessage() {
+            try {
+                publisher.send("key", "value");
+            } catch (KafkaPublishException e) {
+                // Handle the failed send (log, retry, etc.)
+                var cause = e.getCause();
+            }
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeService(
+        private val publisher: MyPublisher
+    ) {
+
+        fun sendMessage() {
+            try {
+                publisher.send("key", "value")
+            } catch (e: KafkaPublishException) {
+                // Handle the failed send (log, retry, etc.)
+                val cause = e.cause
+            }
+        }
+    }
+    ```
+
+#### Serialization errors { #serialization-errors }
+
+If a key or value serialization error happens in a method annotated with `@KafkaPublisher.Topic`,
+`org.apache.kafka.common.errors.SerializationException` is thrown, just like with a direct `org.apache.kafka.clients.producer.Producer#send` call.
+Serialization runs before the record is handed to the driver, so such an error is not wrapped into `KafkaPublishException`.
+
+### Transactions { #transactions }
+
+Messages can be sent to `Kafka` [within a transaction](https://www.confluent.io/blog/transactions-apache-kafka/).
+For this, use the `@KafkaPublisher` annotation and extend `TransactionalPublisher`.
+
+First, describe a regular `KafkaProducer`, and then use its type to create a transactional `Producer`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KafkaPublisher("kafka.someProducer")
+    public interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        void send(String key, String value);
+    }
+
+    @KafkaPublisher("kafka.someTransactionalProducer")
+    public interface MyTransactionalPublisher extends TransactionalPublisher<MyPublisher> {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KafkaPublisher("kafka.someProducer")
+    interface MyPublisher {
+
+        @KafkaPublisher.Topic("kafka.someProducer.someTopic")
+        fun send(key: String, value: String)
+    }
+
+
+    @KafkaPublisher("kafka.someTransactionalProducer")
+    interface MyTransactionalPublisher : TransactionalPublisher<MyPublisher>
+    ```
+
+The transactional publisher reuses `driverProperties` of the delegate publisher and only overrides `transactional.id`,
+so the broker connection is configured once, at the delegate publisher configuration path.
+
+Use `inTx` methods to send messages in a transaction: all messages inside the `lambda` are committed on successful execution
+and aborted on error.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    transactionalPublisher.inTx(publisher -> {
+        publisher.send("key1", "value1");
+        publisher.send("key2", "value2");
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    transactionalPublisher.inTx(TransactionalConsumer<MyPublisher, RuntimeException> { publisher ->
+        publisher.send("key1", "value1")
+        publisher.send("key2", "value2")
+    })
+    ```
+
+In `Kotlin`, `inTx` and `withTx` are overloaded for a value-returning and a void callback, so the lambda has to be wrapped
+into an explicitly typed `SAM` constructor for the compiler to choose the overload.
+
+It is also possible to manage the transaction manually through `begin()`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // commit will be called on try-with-resources close
+    try (var transaction = transactionalPublisher.begin()) {
+        transaction.publisher().send("key1", "value1");
+        if (somethingBad) {
+            transaction.abort();
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // commit will be called on use close
+    transactionalPublisher.begin().use {
+        it.publisher().send("key1", "value1")
+        if (somethingBad) {
+            it.abort()
+        }
+    }
+    ```
+
+#### Configuration { #config-producer-tx }
+
+`KafkaPublisherConfig.TransactionConfig` is used to configure `@KafkaPublisher` with the `TransactionalPublisher` interface:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    kafka {
+        someTransactionalProducer {
+            idPrefix = "kora-app-" //(1)!
+            maxPoolSize = 10 //(2)!
+            maxWaitTime = "10s" //(3)!
+        }
+    }
+    ```
+
+    1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
+        Format: `{idPrefix}-{uuid}`. Example: `my-transaction-550e8400-e29b-41d4-a716-446655440000`.
+    2.  Maximum size of the transactional `Producer` pool (default: `10`)
+    3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    kafka:
+      someTransactionalProducer:
+        idPrefix: "kora-app-" #(1)!
+        maxPoolSize: 10 #(2)!
+        maxWaitTime: "10s" #(3)!
+    ```
+
+    1.  Transaction identifier prefix; a random `UUID` will be appended to it (default: `kora-app-`)
+        Format: `{idPrefix}-{uuid}`. Example: `my-transaction-550e8400-e29b-41d4-a716-446655440000`.
+    2.  Maximum size of the transactional `Producer` pool (default: `10`)
+    3.  Maximum time to wait for a free `Producer` from the pool (default: `10s`)
+
+When the pool is exhausted, `begin()` waits up to `maxWaitTime` for a free `Producer` and then throws
+`org.apache.kafka.common.errors.TimeoutException`.
+
+### Advanced Transaction Usage { #advanced-transactions }
+
+#### Transaction Interface { #transaction-interface }
+
+The `begin()` method returns a `Transaction<P>` object that provides advanced transaction management capabilities:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try (var tx = transactionalPublisher.begin()) {
+        // Sending messages
+        tx.publisher().send("key1", "value1");
+        tx.publisher().send("key2", "value2");
+
+        // Commit consumer offsets within the transaction (exactly-once semantics)
+        Map<TopicPartition, OffsetAndMetadata> offsets = ...;
+        ConsumerGroupMetadata groupMetadata = ...;
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+
+        // Explicit flush to guarantee sending before commit
+        tx.flush();
+
+        // commit() is called automatically on try-with-resources close
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    transactionalPublisher.begin().use { tx ->
+        // Sending messages
+        tx.publisher().send("key1", "value1")
+        tx.publisher().send("key2", "value2")
+
+        // Commit consumer offsets within the transaction (exactly-once semantics)
+        val offsets: Map<TopicPartition, OffsetAndMetadata> = ...
+        val groupMetadata: ConsumerGroupMetadata = ...
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+
+        // Explicit flush to guarantee sending before commit
+        tx.flush()
+
+        // commit() is called automatically on use close
+    }
+    ```
+
+**`Transaction<P>` methods:**
+
+| Method | Description |
+|--------|-------------|
+| `publisher()` | Returns typed publisher for sending messages |
+| `producer()` | Returns raw `Producer<byte[], byte[]>` for low-level operations |
+| `sendOffsetsToTransaction(offsets, groupMetadata)` | Commits consumer offsets within the same transaction |
+| `flush()` | Guarantees all messages are sent before commit |
+| `abort()` | Aborts the transaction |
+| `abort(cause)` | Aborts the transaction with specified cause |
+| `close()` | Closes the transaction (commits if no abort) |
+
+A typical exactly-once pipeline reads a record, sends the result and the consumer offset inside one transaction,
+and therefore does not commit the offset through the `Consumer` at all:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class TransactionalPipelineListener {
+
+        private final MyTransactionalPublisher publisher;
+
+        public TransactionalPipelineListener(MyTransactionalPublisher publisher) {
+            this.publisher = publisher;
+        }
+
+        @KafkaListener("kafka.someConsumer")
+        public void process(ConsumerRecord<String, String> record, Consumer<String, String> consumer) {
+            publisher.withTx(transaction -> {
+                transaction.publisher().send("processed:" + record.value());
+                transaction.sendOffsetsToTransaction(
+                    Map.of(new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)),
+                    consumer.groupMetadata()
+                );
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class TransactionalPipelineListener(private val publisher: MyTransactionalPublisher) {
+
+        @KafkaListener("kafka.someConsumer")
+        fun process(record: ConsumerRecord<String, String>, consumer: Consumer<String, String>) {
+            publisher.begin().use { transaction ->
+                transaction.publisher().send("processed:${record.value()}")
+                transaction.sendOffsetsToTransaction(
+                    mapOf(TopicPartition(record.topic(), record.partition()) to OffsetAndMetadata(record.offset() + 1)),
+                    consumer.groupMetadata()
+                )
+            }
+        }
+    }
+    ```
+
+Such a consumer should read with `isolation.level = read_committed` and `enable.auto.commit = false`,
+otherwise aborted transactions become visible or the offset is committed outside the transaction.
+
+#### Transaction methods { #tx-methods }
+
+`TransactionalPublisher` provides 4 methods for working with transactions:
+
+| Method | Passes to callback | Returns value |
+|--------|-------------------|---------------|
+| `inTx(TransactionalConsumer)` | `P publisher` | `void` |
+| `inTx(TransactionalFunction)` | `P publisher` | `R` |
+| `withTx(TransactionConsumer)` | `Transaction<P> tx` | `void` |
+| `withTx(TransactionFunction)` | `Transaction<P> tx` | `R` |
+
+Any exception thrown from the callback aborts the transaction and is rethrown to the caller.
+
+**Example with return value:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // inTx with return value
+    Long messageId = transactionalPublisher.inTx(publisher -> {
+        publisher.send("key", "value");
+        return System.currentTimeMillis();
+    });
+
+    // withTx with Transaction access
+    transactionalPublisher.withTx(tx -> {
+        tx.publisher().send("key", "value");
+        tx.sendOffsetsToTransaction(offsets, groupMetadata);
+        tx.flush(); // Explicit flush
+    });
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // inTx with return value
+    val messageId = transactionalPublisher.inTx(TransactionalFunction<MyPublisher, RuntimeException, Long> { publisher ->
+        publisher.send("key", "value")
+        System.currentTimeMillis()
+    })
+
+    // withTx with Transaction access
+    transactionalPublisher.withTx(TransactionConsumer<MyPublisher, RuntimeException> { tx ->
+        tx.publisher().send("key", "value")
+        tx.sendOffsetsToTransaction(offsets, groupMetadata)
+        tx.flush() // Explicit flush
+    })
+    ```
+
+### Telemetry { #telemetry-producer }
 
 Kafka uses a telemetry contract for logging, metrics, and tracing of messages.
 Telemetry configuration (the `telemetry { logging / metrics / tracing }` section) is described in the [Configuration](#config-producer) section.
 
-For each message, `KafkaPublisher` creates a telemetry context, which is closed upon completion of processing.
-The message is described via telemetry handler parameters, including topic, partition, offset, and processing duration.
+`KafkaPublisherTelemetryFactory` builds a `KafkaPublisherTelemetry` for each publisher out of the publisher configuration path,
+the publisher interface name, `KafkaPublisherTelemetryConfig`, and `driverProperties`.
+`KafkaPublisherTelemetry` opens an observation per send and per transaction:
 
-The default factory, `DefaultKafkaPublisherTelemetryFactory`, combines three factories:
-- `KafkaPublisherLoggerFactory` builds a `KafkaPublisherLogger` to log the start and end of message processing;
-- `KafkaPublisherMetricsFactory` builds a `KafkaPublisherMetrics` to record message metrics;
-- `KafkaPublisherTracerFactory` builds a `KafkaPublisherTracer` for distributed tracing.
+```java
+public interface KafkaPublisherTelemetry {
+
+    MeterRegistry meterRegistry();
+
+    KafkaPublisherTransactionObservation observeTx();
+
+    KafkaPublisherRecordObservation observeSend(String topic);
+}
+```
+
+`KafkaPublisherRecordObservation` also implements `org.apache.kafka.clients.producer.Callback`, so the driver completes it
+as soon as the broker acknowledges the record; the observation carries the topic, partition, offset, and send duration.
+`KafkaPublisherTransactionObservation` records the offsets sent into the transaction, commits, and rollbacks.
+
+The default implementation is `DefaultKafkaPublisherTelemetryFactory`, registered by `KafkaModule` as a `@DefaultComponent`.
+It combines `DefaultKafkaPublisherLoggerFactory` for logging and `DefaultKafkaPublisherMetricsFactory` for metrics,
+both injected as optional dependencies so that either can be replaced by providing your own `@Component` subclass.
+Providing your own `KafkaPublisherTelemetryFactory` component replaces telemetry entirely.
 
 Metrics and tracing are described in the [Metrics Reference](metrics.md#kafka) section.
