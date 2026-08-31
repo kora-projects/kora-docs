@@ -172,4 +172,66 @@
         });
     })();
 </script>
+<script>
+    (() => {
+        if (window.koraWheelScrollBound) return;
+        window.koraWheelScrollBound = true;
+
+        let wheelFrame = 0;
+        let wheelTargetY = window.scrollY;
+
+        const maxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+        const cancelWheelScroll = () => {
+            if (wheelFrame) window.cancelAnimationFrame(wheelFrame);
+            wheelFrame = 0;
+            wheelTargetY = window.scrollY;
+        };
+
+        const canScrollInside = (target, deltaY) => {
+            const start = target instanceof Element ? target : target?.parentElement;
+            for (let element = start; element && element !== document.body; element = element.parentElement) {
+                const { overflowY } = getComputedStyle(element);
+                if (!/(auto|scroll)/.test(overflowY) || element.scrollHeight <= element.clientHeight) continue;
+                if (deltaY < 0 && element.scrollTop > 0) return true;
+                if (deltaY > 0 && element.scrollTop + element.clientHeight < element.scrollHeight - 1) return true;
+            }
+            return false;
+        };
+
+        const stepWheelScroll = () => {
+            const distance = wheelTargetY - window.scrollY;
+            if (Math.abs(distance) < 0.5) {
+                window.scrollTo(0, wheelTargetY);
+                wheelFrame = 0;
+                return;
+            }
+            window.scrollTo(0, window.scrollY + distance * 0.16);
+            wheelFrame = window.requestAnimationFrame(stepWheelScroll);
+        };
+
+        const onWheel = (event) => {
+            if (event.ctrlKey || event.defaultPrevented) return;
+
+            const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+                ? 40
+                : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+                    ? window.innerHeight
+                    : 1;
+            const deltaY = event.deltaY * unit;
+            if (!deltaY || canScrollInside(event.target, deltaY)) return;
+
+            event.preventDefault();
+            if (!wheelFrame) wheelTargetY = window.scrollY;
+            wheelTargetY = Math.max(0, Math.min(wheelTargetY + deltaY, maxScrollY()));
+            if (!wheelFrame) wheelFrame = window.requestAnimationFrame(stepWheelScroll);
+        };
+
+        window.addEventListener("wheel", onWheel, { passive: false });
+        window.addEventListener("pointerdown", cancelWheelScroll, { passive: true, capture: true });
+        window.addEventListener("mousedown", cancelWheelScroll, { passive: true, capture: true });
+        window.addEventListener("touchstart", cancelWheelScroll, { passive: true });
+        window.addEventListener("keydown", cancelWheelScroll);
+    })();
+</script>
 {% endblock %}

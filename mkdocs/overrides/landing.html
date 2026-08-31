@@ -1298,6 +1298,487 @@
             color: var(--brand-strong);
         }
 
+        /* "Why efficiency matters" expandable under the benchmark */
+        .perf-why {
+            margin-top: 22px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.06), transparent 42%),
+                rgba(255, 255, 255, 0.028);
+            overflow: hidden;
+        }
+
+        .perf-why > summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 20px 24px;
+            color: var(--text);
+            font-weight: 800;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .perf-why > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .perf-why > summary:hover {
+            color: var(--brand-strong);
+        }
+
+        .perf-why-chevron {
+            flex: none;
+            color: var(--brand);
+            font-size: 13px;
+            transition: transform 180ms ease;
+        }
+
+        .perf-why[open] .perf-why-chevron {
+            transform: rotate(180deg);
+        }
+
+        .perf-why-body {
+            padding: 2px 24px 26px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.62;
+        }
+
+        .perf-why-body p {
+            margin: 15px 0 0;
+        }
+
+        .perf-why-lead {
+            color: var(--text);
+        }
+
+        .perf-why-foot {
+            font-size: 12px;
+            color: var(--soft);
+        }
+
+        /* startup "why" — latency-through-a-deploy illustration */
+        .lat-anim {
+            margin: 18px 0 6px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(10, 10, 10, 0.4);
+            padding: 14px 14px 10px;
+        }
+
+        .lat-anim svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            overflow: visible;
+        }
+
+        .lat-axis { stroke: var(--line); stroke-width: 1; }
+        .lat-sla { stroke: var(--soft); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.7; }
+        .lat-deploy { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.6; }
+        .lat-sw-kora { fill: var(--brand); }
+        .lat-sw-other { fill: var(--red); }
+        .lat-label { fill: var(--soft); font-size: 11px; font-weight: 700; }
+        .lat-sla-label { fill: var(--soft); }
+
+        .lat-line {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 1600;
+            stroke-dashoffset: 1600;
+        }
+        .lat-line.is-kora { stroke: var(--brand); }
+        .lat-line.is-other { stroke: var(--red); }
+
+        .perf-why[open] .lat-line {
+            animation: latDraw 1500ms ease forwards;
+        }
+        .perf-why[open] .lat-line.is-other { animation-delay: 150ms; }
+
+        @keyframes latDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .lat-caption {
+            margin: 8px 0 0;
+            color: var(--soft);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* startup "why" — compact benefit cards with a staggered reveal */
+        .fast-why-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 16px 0 4px;
+        }
+
+        @media (max-width: 780px) {
+            .fast-why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 520px) {
+            .fast-why-grid { grid-template-columns: 1fr; }
+        }
+
+        .fast-why-card {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 13px 14px;
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        .perf-why[open] .fast-why-card {
+            animation: fastWhyIn 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation-delay: calc(var(--i) * 90ms);
+        }
+
+        @keyframes fastWhyIn {
+            to { opacity: 1; transform: none; }
+        }
+
+        .fast-why-icon { font-size: 18px; line-height: 1; }
+        .fast-why-card strong { color: var(--text); font-size: 13px; font-weight: 800; }
+        .fast-why-card span:last-child { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .lat-line { stroke-dashoffset: 0; animation: none; }
+            .fast-why-card { opacity: 1; transform: none; animation: none; }
+        }
+
+        .perf-why-calc {
+            margin-top: 20px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(10, 10, 10, 0.5);
+            padding: 14px 18px 16px;
+        }
+
+        .perf-why-calc-title {
+            display: block;
+            color: var(--soft);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .perf-why-calc-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .perf-why-calc-row + .perf-why-calc-row {
+            border-top: 1px solid var(--line);
+        }
+
+        .perf-why-calc-row span:first-child {
+            color: var(--muted);
+        }
+
+        .perf-why-calc-row span:last-child {
+            color: var(--text);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* scaling animation */
+        .scale-anim {
+            margin-top: 22px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(10, 10, 10, 0.5);
+            padding: 18px 18px 16px;
+        }
+
+        .scale-anim-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .scale-anim-title {
+            color: var(--soft);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .scale-replay {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--muted);
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color 140ms ease, border-color 140ms ease;
+        }
+
+        .scale-replay:hover {
+            color: var(--brand-strong);
+            border-color: var(--line-strong);
+        }
+
+        .scale-stages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .scale-stage {
+            flex: 1 1 130px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.02);
+            opacity: 0.32;
+            transform: translateY(4px);
+            transition: opacity 260ms ease, transform 260ms ease, border-color 260ms ease, background 260ms ease;
+        }
+
+        .scale-stage.is-on {
+            opacity: 1;
+            transform: none;
+            border-color: var(--line-strong);
+            background:
+                linear-gradient(135deg, rgba(255, 176, 46, 0.12), transparent 60%),
+                rgba(255, 255, 255, 0.03);
+        }
+
+        .scale-stage-mult {
+            color: var(--brand-strong);
+            font-weight: 900;
+            font-size: 16px;
+            line-height: 1.1;
+        }
+
+        .scale-stage-label {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .scale-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .scale-bar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .scale-bar-group-title {
+            color: var(--soft);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .scale-bar-row {
+            display: grid;
+            grid-template-columns: 58px 1fr auto;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scale-bar-name {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .scale-bar-track {
+            height: 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+
+        .scale-bar-fill {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            transition: width 620ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .scale-bar-fill.is-kora {
+            background: linear-gradient(90deg, var(--brand), var(--brand-strong));
+        }
+
+        .scale-bar-fill.is-spring {
+            background: linear-gradient(90deg, #b5502a, var(--red));
+        }
+
+        .scale-bar-val {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .scale-bar-val .scale-unit {
+            color: var(--soft);
+            font-weight: 600;
+        }
+
+        .scale-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .scale-summary-item {
+            flex: 1 1 180px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .scale-summary-item.is-delta {
+            border-color: var(--line-strong);
+            background:
+                linear-gradient(135deg, rgba(255, 114, 111, 0.1), transparent 65%),
+                rgba(255, 255, 255, 0.02);
+        }
+
+        .scale-summary-label {
+            display: block;
+            color: var(--soft);
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .scale-summary-item strong {
+            color: var(--text);
+            font-size: 18px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .scale-summary-item.is-delta strong {
+            color: var(--brand-strong);
+        }
+
+        .scale-summary-item strong .scale-unit {
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .scale-anim .perf-why-foot {
+            margin-top: 14px;
+        }
+
+        @media (max-width: 640px) {
+            .scale-bar-row {
+                grid-template-columns: 48px 1fr;
+                row-gap: 4px;
+            }
+            .scale-bar-val {
+                grid-column: 2;
+                text-align: right;
+            }
+        }
+
+        /* second animation: services multiplying as cubes */
+        .cube-anim {
+            margin-top: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(10, 10, 10, 0.5);
+            padding: 18px 18px 16px;
+        }
+
+        .cube-tier-label {
+            margin: 2px 0 14px;
+            min-height: 18px;
+        }
+
+        .cube-tier {
+            color: var(--brand-strong);
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .cube-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(13px, 1fr));
+            gap: 4px;
+            align-content: start;
+            min-height: 132px;
+        }
+
+        .cube {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            background: linear-gradient(135deg, var(--brand-strong), var(--brand) 55%, #8f7a25);
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28);
+            transform: scale(0);
+            animation: cubePop 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes cubePop {
+            to { transform: scale(1); }
+        }
+
+        .cube-count {
+            margin-top: 14px;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cube-count .scale-unit {
+            color: var(--soft);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cube {
+                animation: none;
+                transform: none;
+            }
+        }
+
         .philosophy-panel {
             margin-top: 140px;
             border: 1px solid var(--line);
@@ -2956,6 +3437,82 @@
                     <a href="https://www.techempower.com/benchmarks/#section=test&resultsurl=https%3A%2F%2Fraw.githubusercontent.com%2FGoodforGod%2FFrameworkBenchmarks%2Frefs%2Fheads%2Ffeature%2Fkora-and-others%2Fdeployment%2Fresults.json&test=db">Open TechEmpower snapshot</a>
                 </div>
             </div>
+            <details class="perf-why">
+                <summary>
+                    <span>Why efficiency matters even when you don't need the throughput</span>
+                    <span class="perf-why-chevron" aria-hidden="true">&#9662;</span>
+                </summary>
+                <div class="perf-why-body">
+                    <p class="perf-why-lead">For a single service, raw performance is rarely the goal — most services handle their load comfortably on either framework, so it is easy to conclude that efficiency is irrelevant here. For one service in isolation, that is true.</p>
+                    <p>Engineers often see the system only from their own vantage point — their service, their repository, their machine, at best their own production stand — and through that lens the conclusion holds. But step back to the level of a company's whole technical infrastructure and the picture, along with the priorities, looks very different.</p>
+                    <p>Because nothing runs as a single instance. A production service is redundant by default: at least two instances per data center, so a rolling deploy or a lost node never takes it down, and usually a second data center for regional failover — another two instances. That is four or more running copies of every service before a single real user arrives.</p>
+                    <p>This is where per-instance footprint stops being about speed and becomes about cost. A heavier runtime reserves more memory and CPU just to start and stay healthy within an acceptable time — headroom you pay for on every redundant copy, whether or not it is doing meaningful work.</p>
+                    <p>It is all about scale. Take that one service and multiply it out: a couple of instances for redundancy, then across two data centers, then every service the team owns, then every team in the department, then every department in the business line, then every business line in the company — and on top of all that, the spare CPU and RAM reserved for peak events like Black Friday, sitting idle most of the year. And operating infrastructure at this scale is nothing like buying a CPU or a PC for local use: every reserved core and gigabyte also carries its share of on-site operations staff, electricity, cooling, networking, and data-center overhead, billed every single month. The per-instance difference that looked negligible is now multiplied by tens of thousands. A lighter runtime like Kora turns performance you never needed into reserved memory and CPU you simply stop paying for — the same reliability, on far fewer cores.</p>
+                    <div class="scale-anim" id="scale-anim" aria-label="How reserved resources scale across a large organization">
+                        <div class="scale-anim-head">
+                            <span class="scale-anim-title">Watch it scale across an organization</span>
+                            <button class="scale-replay" type="button" hidden>&#8635; Replay</button>
+                        </div>
+                        <div class="scale-stages">
+                            <div class="scale-stage"><span class="scale-stage-mult">1</span><span class="scale-stage-label">service instance</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;2</span><span class="scale-stage-label">instances for redundancy</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;2</span><span class="scale-stage-label">data centers for failover</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;20</span><span class="scale-stage-label">services in the team</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;8</span><span class="scale-stage-label">teams in the department</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;6</span><span class="scale-stage-label">departments in a business line</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;4</span><span class="scale-stage-label">business lines in the company</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;1.5</span><span class="scale-stage-label">peak headroom for spikes (Black Friday)</span></div>
+                        </div>
+                        <div class="scale-bars">
+                            <div class="scale-bar-group">
+                                <span class="scale-bar-group-title">Reserved RAM</span>
+                                <div class="scale-bar-row">
+                                    <span class="scale-bar-name">Kora</span>
+                                    <span class="scale-bar-track"><span class="scale-bar-fill is-kora" data-fill="kora-ram"></span></span>
+                                    <span class="scale-bar-val"><span class="scale-num" data-track="kora-ram">0</span> <span class="scale-unit">GB</span></span>
+                                </div>
+                                <div class="scale-bar-row">
+                                    <span class="scale-bar-name">Other framework</span>
+                                    <span class="scale-bar-track"><span class="scale-bar-fill is-spring" data-fill="other-ram"></span></span>
+                                    <span class="scale-bar-val"><span class="scale-num" data-track="other-ram">0</span> <span class="scale-unit">GB</span></span>
+                                </div>
+                            </div>
+                            <div class="scale-bar-group">
+                                <span class="scale-bar-group-title">Reserved CPU</span>
+                                <div class="scale-bar-row">
+                                    <span class="scale-bar-name">Kora</span>
+                                    <span class="scale-bar-track"><span class="scale-bar-fill is-kora" data-fill="kora-cpu"></span></span>
+                                    <span class="scale-bar-val"><span class="scale-num" data-track="kora-cpu">0</span> <span class="scale-unit">vCPU</span></span>
+                                </div>
+                                <div class="scale-bar-row">
+                                    <span class="scale-bar-name">Other framework</span>
+                                    <span class="scale-bar-track"><span class="scale-bar-fill is-spring" data-fill="other-cpu"></span></span>
+                                    <span class="scale-bar-val"><span class="scale-num" data-track="other-cpu">0</span> <span class="scale-unit">vCPU</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="scale-summary">
+                            <div class="scale-summary-item">
+                                <span class="scale-summary-label">Provisioned instances (incl. peak reserve)</span>
+                                <strong><span class="scale-num" data-track="inst">0</span></strong>
+                            </div>
+                            <div class="scale-summary-item is-delta">
+                                <span class="scale-summary-label">How much more the Other framework needs than Kora</span>
+                                <strong><span class="scale-num" data-track="delta-ram">0</span> <span class="scale-unit">GB</span> &middot; <span class="scale-num" data-track="delta-cpu">0</span> <span class="scale-unit">vCPU</span> &middot; &asymp; $<span class="scale-num" data-track="cost">0</span> <span class="scale-unit">/ yr</span></strong>
+                            </div>
+                        </div>
+                        <p class="perf-why-foot">Figures are illustrative, not measured — real numbers depend on your services, JVM settings, SLAs, peak headroom, and cloud pricing. The shape is what matters: footprint × redundancy × services × teams × departments × business lines × peak reserve.</p>
+                    </div>
+                    <div class="cube-anim" id="cube-anim" aria-label="Services multiplying across the organization">
+                        <div class="scale-anim-head">
+                            <span class="scale-anim-title">Watch the services multiply</span>
+                        </div>
+                        <div class="cube-tier-label"><span class="cube-tier">one service</span></div>
+                        <div class="cube-grid" id="cube-grid" aria-hidden="true"></div>
+                        <div class="cube-count"><span class="scale-num" data-cube="count">1</span> <span class="scale-unit">services company-wide</span></div>
+                    </div>
+                </div>
+            </details>
             <div class="philosophy-panel" id="philosophy">
                 <div class="philosophy-copy">
                     <aside class="philosophy-aside">
@@ -3274,6 +3831,43 @@
                     </div>
                 </div>
             </div>
+            <details class="perf-why">
+                <summary>
+                    <span>Why fast startup and readiness save real money</span>
+                    <span class="perf-why-chevron" aria-hidden="true">&#9662;</span>
+                </summary>
+                <div class="perf-why-body">
+                    <p class="perf-why-lead">Startup and time-to-readiness read as local developer ergonomics. Across a service fleet they are an operational cost driver — in provisioned infrastructure and in engineer time.</p>
+                    <div class="lat-anim" aria-label="p95 latency through a deploy: Kora versus a heavier runtime">
+                        <svg viewBox="0 0 620 210" role="img">
+                            <line class="lat-axis" x1="50" y1="172" x2="602" y2="172"></line>
+                            <line class="lat-axis" x1="50" y1="20" x2="50" y2="172"></line>
+                            <line class="lat-sla" x1="50" y1="74" x2="602" y2="74"></line>
+                            <line class="lat-deploy" x1="210" y1="24" x2="210" y2="172"></line>
+                            <path class="lat-line is-other" d="M50,160 L205,160 C214,160 218,34 235,32 C270,32 300,60 350,96 C405,128 475,153 545,159 L602,160"></path>
+                            <path class="lat-line is-kora" d="M50,160 L205,160 C215,160 221,141 236,139 C251,141 259,160 276,160 L602,160"></path>
+                            <text class="lat-label" x="50" y="14">p95 latency</text>
+                            <text class="lat-label" x="210" y="14" text-anchor="middle">deploy</text>
+                            <text class="lat-label lat-sla-label" x="598" y="70" text-anchor="end">SLA</text>
+                            <text class="lat-label" x="598" y="192" text-anchor="end">time</text>
+                            <rect x="392" y="6" width="9" height="9" rx="2" class="lat-sw-kora"></rect>
+                            <text class="lat-label" x="405" y="14">Kora</text>
+                            <rect x="450" y="6" width="9" height="9" rx="2" class="lat-sw-other"></rect>
+                            <text class="lat-label" x="463" y="14">Other framework</text>
+                        </svg>
+                        <p class="lat-caption">p95 latency during a rolling deploy. A fresh Kora instance reaches steady-state latency almost immediately; a heavier runtime holds an elevated tail above the SLA threshold for longer while the JIT warms up.</p>
+                    </div>
+                    <div class="fast-why-grid">
+                        <div class="fast-why-card" style="--i:0"><strong>Elastic autoscaling</strong><span>Readiness in seconds lets a horizontal autoscaler add capacity within the load spike, instead of holding a statically over-provisioned baseline.</span></div>
+                        <div class="fast-why-card" style="--i:1"><strong>Shorter deploy windows</strong><span>Each rolling replacement reaches readiness sooner, narrowing the interval of reduced capacity and the associated error-budget and SLA risk across the fleet.</span></div>
+                        <div class="fast-why-card" style="--i:2"><strong>Scale-to-zero &amp; spot</strong><span>Fast cold start makes scale-to-zero and preemptible/spot instances viable: capacity is released when idle and restored on demand in seconds, shifting reserved cost to usage-based.</span></div>
+                        <div class="fast-why-card" style="--i:3"><strong>Low-utilization services</strong><span>Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.</span></div>
+                        <div class="fast-why-card" style="--i:4"><strong>Development and CI feedback</strong><span>Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.</span></div>
+                        <div class="fast-why-card" style="--i:5"><strong>Lower SLA impact</strong><span>Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.</span></div>
+                    </div>
+                    <p class="perf-why-foot">Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.</p>
+                </div>
+            </details>
         </section>
 
         <section class="section" id="architecture">
@@ -3489,6 +4083,32 @@
             "Responses / sec": "Ответов / сек",
             "Values use the \"Single query\" interval from the linked external results. This is a local benchmark with a local environment and no network latency to the database, so all event-loop reactive systems running on EventLoop threads get a performance boost from it.": "Значения взяты из интервала \"Single query\" во внешнем наборе результатов по ссылке. Это локальный бенчмарк с локальным окружением и без сетевой задержки до базы данных, поэтому все реактивные системы на event-loop, работающие в потоках EventLoop, получают за счёт этого прирост производительности.",
             "Open TechEmpower snapshot": "Открыть срез TechEmpower",
+            "Why efficiency matters even when you don't need the throughput": "Почему эффективность важна, даже когда производительность вам не нужна",
+            "For a single service, raw performance is rarely the goal — most services handle their load comfortably on either framework, so it is easy to conclude that efficiency is irrelevant here. For one service in isolation, that is true.": "Для одного сервиса чистая производительность редко является целью — большинство сервисов спокойно держат свою нагрузку на любом фреймворке, поэтому легко сделать вывод, что эффективность здесь неважна. Для одного сервиса в отрыве от остального это действительно так.",
+            "Engineers often see the system only from their own vantage point — their service, their repository, their machine, at best their own production stand — and through that lens the conclusion holds. But step back to the level of a company's whole technical infrastructure and the picture, along with the priorities, looks very different.": "Инженеры часто видят систему только со своей колокольни — свой сервис, свой репозиторий, своя машина, в лучшем случае свой продакшн-стенд — и через эту призму вывод выглядит верным. Но поднимитесь на уровень всей технической инфраструктуры компании — и картина, а вместе с ней и приоритеты, выглядят совсем иначе.",
+            "Because nothing runs as a single instance. A production service is redundant by default: at least two instances per data center, so a rolling deploy or a lost node never takes it down, and usually a second data center for regional failover — another two instances. That is four or more running copies of every service before a single real user arrives.": "Потому что ничто не работает в единственном экземпляре. Боевой сервис по умолчанию резервируется: минимум два инстанса на дата-центр, чтобы плавный деплой или потеря узла никогда не роняли сервис, и обычно второй дата-центр для отказоустойчивости между регионами — ещё два инстанса. Это четыре и более работающих копии каждого сервиса ещё до того, как придёт хотя бы один реальный пользователь.",
+            "This is where per-instance footprint stops being about speed and becomes about cost. A heavier runtime reserves more memory and CPU just to start and stay healthy within an acceptable time — headroom you pay for on every redundant copy, whether or not it is doing meaningful work.": "Именно здесь потребление на экземпляр перестаёт быть про скорость и становится про деньги. Более тяжёлый рантайм резервирует больше памяти и CPU только для того, чтобы стартовать и оставаться здоровым за разумное время, — это запас, за который вы платите на каждой резервной копии, независимо от того, делает она полезную работу или нет.",
+            "It is all about scale. Take that one service and multiply it out: a couple of instances for redundancy, then across two data centers, then every service the team owns, then every team in the department, then every department in the business line, then every business line in the company — and on top of all that, the spare CPU and RAM reserved for peak events like Black Friday, sitting idle most of the year. And operating infrastructure at this scale is nothing like buying a CPU or a PC for local use: every reserved core and gigabyte also carries its share of on-site operations staff, electricity, cooling, networking, and data-center overhead, billed every single month. The per-instance difference that looked negligible is now multiplied by tens of thousands. A lighter runtime like Kora turns performance you never needed into reserved memory and CPU you simply stop paying for — the same reliability, on far fewer cores.": "Всё дело в масштабе. Возьмите этот один сервис и размножьте его: пара инстансов для резервирования, затем на два дата-центра, затем каждый сервис команды, затем каждая команда в департаменте, затем каждый департамент в бизнес-линии, затем каждая бизнес-линия в компании — и вдобавок ко всему запас CPU и RAM, зарезервированный под пиковые события вроде «чёрной пятницы». А эксплуатация инфраструктуры такого масштаба — это совсем не то же самое, что купить процессор или ПК для локальной работы: каждое зарезервированное ядро и гигабайт несёт свою долю расходов на инженеров эксплуатации на местах, серверные стойки, электричество, охлаждение, сеть и прочие накладные расходы дата-центра, оплачиваемые каждый месяц. Разница на один инстанс, казавшаяся незначительной, теперь умножена на десятки тысяч. Более лёгкий рантайм вроде Kora превращает производительность, которая вам была не нужна, в зарезервированные память и CPU, за которые вы просто перестаёте платить, — та же надёжность, но на значительно меньшем числе ядер.",
+            "Watch it scale across an organization": "Посмотрите, как это масштабируется на всю организацию",
+            "↻ Replay": "↻ Повтор",
+            "service instance": "экземпляр сервиса",
+            "instances for redundancy": "инстанса для резервирования",
+            "data centers for failover": "дата-центра для отказоустойчивости",
+            "services in the team": "сервисов в команде",
+            "teams in the department": "команд в департаменте",
+            "departments in a business line": "департаментов в бизнес-линии",
+            "business lines in the company": "бизнес-линий в компании",
+            "peak headroom for spikes (Black Friday)": "запас под пиковые нагрузки",
+            "Reserved RAM": "Зарезервировано RAM",
+            "Reserved CPU": "Зарезервировано CPU",
+            "Other framework": "Другой фреймворк",
+            "Provisioned instances (incl. peak reserve)": "Выделено инстансов (с учётом пикового резерва)",
+            "How much more the Other framework needs than Kora": "Насколько больше может потребоваться по сравнению с Kora",
+            "GB": "ГБ",
+            "/ yr": "/ год",
+            "Watch the services multiply": "Смотрите, как множатся сервисы",
+            "services company-wide": "сервисов по всей компании",
+            "Figures are illustrative, not measured — real numbers depend on your services, JVM settings, SLAs, peak headroom, and cloud pricing. The shape is what matters: footprint × redundancy × services × teams × departments × business lines × peak reserve.": "Цифры приведены для иллюстрации, а не измерены — реальные значения зависят от ваших сервисов, настроек JVM, SLA, пикового запаса и цен облака. Важна форма: потребление × резервирование × сервисы × команды × департаменты × бизнес-линии × пиковый резерв.",
             "A controlled stack,": "Контролируемый стек,",
             "one module at a time.": "по одному модулю за раз.",
             "Start small, add only integrations your service needs, and keep every dependency in controll.": "Начинайте с малого, добавляйте только те интеграции, которые нужны сервису, и держите каждую зависимость под контролем.",
@@ -3547,6 +4167,25 @@
             "10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.": "10x PetClinic-сервисы с полным набором боевых интеграций в Docker-контейнере: 1 CPU, 1 GB памяти, запуск и готовность к обслуживанию.",
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
             "(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).": "(схож с EPYC 7763 согласно GeekBench 5 Single-Core Benchmark).",
+            "Why fast startup and readiness save real money": "Почему быстрый старт и готовность реально экономят деньги",
+            "Startup and time-to-readiness read as local developer ergonomics. Across a service fleet they are an operational cost driver — in provisioned infrastructure and in engineer time.": "Время старта и выхода в готовность воспринимается как локальная эргономика разработчика. В масштабах парка сервисов это операционный драйвер затрат — и в выделяемой инфраструктуре, и во времени инженеров.",
+            "p95 latency during a rolling deploy. A fresh Kora instance reaches steady-state latency almost immediately; a heavier runtime holds an elevated tail above the SLA threshold for longer while the JIT warms up.": "Задержка p95 во время плавного деплоя. Свежий экземпляр Kora выходит на установившуюся задержку почти сразу; более тяжёлый рантайм дольше удерживает повышенный хвост выше порога SLA, пока прогревается JIT.",
+            "p95 latency": "задержка p95",
+            "deploy": "деплой",
+            "time": "время",
+            "Elastic autoscaling": "Плавное автомасштабирование",
+            "Readiness in seconds lets a horizontal autoscaler add capacity within the load spike, instead of holding a statically over-provisioned baseline.": "Готовность за секунды позволяет горизонтальному автоскейлеру добавлять мощность в пределах всплеска нагрузки, а не держать статически переразмеренный базовый уровень.",
+            "Shorter deploy windows": "Короче окна деплоя",
+            "Each rolling replacement reaches readiness sooner, narrowing the interval of reduced capacity and the associated error-budget and SLA risk across the fleet.": "Каждая замена в rolling-деплое быстрее выходит в готовность, сокращая интервал сниженной мощности и связанный с ним риск по error budget и SLA по всему парку.",
+            "Scale-to-zero & spot": "Scale-to-zero и spot",
+            "Fast cold start makes scale-to-zero and preemptible/spot instances viable: capacity is released when idle and restored on demand in seconds, shifting reserved cost to usage-based.": "Быстрый холодный старт делает жизнеспособными scale-to-zero и прерываемые/spot-инстансы: мощность освобождается при простое и восстанавливается по требованию за секунды, переводя зарезервированную стоимость в оплату по факту использования.",
+            "Low-utilization services": "Низконагруженные сервисы",
+            "Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.": "У админок, внутренних инструментов и задач по расписанию расход определяется базовыми накладными расходами рантайма, а не нагрузкой запросами; тонкий рантайм снижает нижний порог памяти и CPU на экземпляр — сервис на Kora может работать всего на 0.1 vCPU, потенциально на 0.05 — высвобождая мощности по всему большому низконагруженному парку.",
+            "Development and CI feedback": "Обратная связь разработки и CI",
+            "Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.": "Интеграционные и black-box наборы запускают всё приложение на каждом прогоне; меньшее время старта сокращает реальное время на итерацию и на стадию пайплайна, укорачивая цикл обратной связи — дефицитный ресурс здесь — время инженеров.",
+            "Lower SLA impact": "Меньше влияние на SLA",
+            "Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.": "Связывание во время компиляции, тонкие абстракции и отсутствие рефлексии в рантайме делают прогрев в разы меньше — не нулевым — поэтому новый экземпляр близок к установившейся пропускной способности с первых запросов, удерживая хвост p95–p98 при деплоях и масштабировании значительно ниже, чем у рантайма, зависящего от прогрева.",
+            "Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.": "Секунды на экземпляр × весь парк × каждый перезапуск → меньше машин, меньший счёт и более быстрый цикл. Kora строит граф во время компиляции, а на старте всё инициализируется максимально параллельно, насколько возможно, и имеет значительно меньший след прогрева.",
             "Startup & readiness": "Запуск и готовность",
             "Clean build": "Чистая сборка",
             "Cached build": "Кешированная сборка",
@@ -3705,8 +4344,8 @@
             }
 
             window.koraLanguage = lang;
-            window.localStorage?.setItem("kora-home-language", lang);
-            document.cookie = "kora_lang=" + lang + "; path=/; max-age=31536000; SameSite=Lax";
+            try { window.localStorage.setItem("kora-home-language", lang); } catch (e) { /* storage disabled */ }
+            try { document.cookie = "kora_lang=" + lang + "; path=/; max-age=31536000; SameSite=Lax"; } catch (e) { /* cookies disabled */ }
             window.dispatchEvent(new CustomEvent("kora:languagechange", { detail: { lang } }));
         };
 
@@ -3718,7 +4357,9 @@
         });
 
         window.setKoraLanguage = applyLanguage;
-        window.koraLanguage = window.localStorage?.getItem("kora-home-language") === "ru" ? "ru" : "en";
+        let storedLang = null;
+        try { storedLang = window.localStorage.getItem("kora-home-language"); } catch (e) { /* storage disabled */ }
+        window.koraLanguage = storedLang === "ru" ? "ru" : "en";
         applyLanguage(window.koraLanguage);
     })();
 
@@ -3730,10 +4371,62 @@
             : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
         let activeScroll = 0;
+        let wheelFrame = 0;
+        let wheelTargetY = window.scrollY;
+
+        const maxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+        const cancelWheelScroll = () => {
+            if (wheelFrame) window.cancelAnimationFrame(wheelFrame);
+            wheelFrame = 0;
+            wheelTargetY = window.scrollY;
+        };
+
+        const canScrollInside = (target, deltaY) => {
+            const start = target instanceof Element ? target : target?.parentElement;
+            for (let element = start; element && element !== document.body; element = element.parentElement) {
+                const { overflowY } = getComputedStyle(element);
+                if (!/(auto|scroll)/.test(overflowY) || element.scrollHeight <= element.clientHeight) continue;
+                if (deltaY < 0 && element.scrollTop > 0) return true;
+                if (deltaY > 0 && element.scrollTop + element.clientHeight < element.scrollHeight - 1) return true;
+            }
+            return false;
+        };
+
+        const stepWheelScroll = () => {
+            const distance = wheelTargetY - window.scrollY;
+            if (Math.abs(distance) < 0.5) {
+                window.scrollTo(0, wheelTargetY);
+                wheelFrame = 0;
+                return;
+            }
+            window.scrollTo(0, window.scrollY + distance * 0.16);
+            wheelFrame = window.requestAnimationFrame(stepWheelScroll);
+        };
+
+        const onWheel = (event) => {
+            // Wheel smoothing is an explicit page-navigation behavior. Keep it active
+            // even when decorative motion is disabled at OS level.
+            if (event.ctrlKey || event.defaultPrevented) return;
+
+            const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+                ? 40
+                : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+                    ? window.innerHeight
+                    : 1;
+            const deltaY = event.deltaY * unit;
+            if (!deltaY || canScrollInside(event.target, deltaY)) return;
+
+            event.preventDefault();
+            activeScroll += 1;
+            if (!wheelFrame) wheelTargetY = window.scrollY;
+            wheelTargetY = Math.max(0, Math.min(wheelTargetY + deltaY, maxScrollY()));
+            if (!wheelFrame) wheelFrame = window.requestAnimationFrame(stepWheelScroll);
+        };
 
         const scrollToY = (targetY) => {
-            const maxY = document.documentElement.scrollHeight - window.innerHeight;
-            targetY = Math.max(0, Math.min(targetY, maxY));
+            cancelWheelScroll();
+            targetY = Math.max(0, Math.min(targetY, maxScrollY()));
 
             if (prefersReducedMotion.matches) {
                 window.scrollTo(0, targetY);
@@ -3761,9 +4454,16 @@
         window.koraScrollToY = scrollToY;
 
         // Let manual input take over instantly instead of fighting the animation.
-        const cancelScroll = () => { activeScroll += 1; };
-        window.addEventListener("wheel", cancelScroll, { passive: true });
+        const cancelScroll = () => {
+            activeScroll += 1;
+            cancelWheelScroll();
+        };
+        window.addEventListener("wheel", onWheel, { passive: false });
+        window.addEventListener("pointerdown", cancelScroll, { passive: true, capture: true });
+        window.addEventListener("mousedown", cancelScroll, { passive: true, capture: true });
         window.addEventListener("touchstart", cancelScroll, { passive: true });
+        window.addEventListener("keydown", cancelScroll);
+        prefersReducedMotion.addEventListener("change", cancelScroll);
 
         document.addEventListener("click", (event) => {
             const link = event.target.closest('a[href^="#"]');
@@ -4943,6 +5643,207 @@ BUILD FAILED in 1s`
                     run();
                 }
             });
+        } else {
+            run();
+        }
+    })();
+
+    (() => {
+        const scaleRoot = document.getElementById("scale-anim");
+        const cubeRoot = document.getElementById("cube-anim");
+        if (!scaleRoot || !cubeRoot) {
+            return;
+        }
+
+        /* ---- scale (bars + counters) ---- */
+        const stages = Array.from(scaleRoot.querySelectorAll(".scale-stage"));
+        /* per-stage multiplier: instance, +redundant instances, +2nd DC,
+           services/team, teams/dept, depts/business-line, business-lines/company,
+           peak headroom */
+        const mults = [1, 2, 2, 20, 8, 6, 4, 1.5];
+        const P = { koraRam: 0.5, otherRam: 1.0, koraCpu: 1.0, otherCpu: 3.0 }; /* reserved / instance */
+        const ramPerYear = 48;   /* illustrative $/GB-year */
+        const cpuPerYear = 300;  /* illustrative $/vCPU-year */
+
+        /* cumulative instance-equivalents: [1, 2, 4, 80, 640, 3840, 15360, 23040] */
+        const cumInst = [];
+        mults.reduce((acc, m, i) => { const v = acc * m; cumInst[i] = v; return v; }, 1);
+        const finalInst = cumInst[cumInst.length - 1];
+        const maxRam = finalInst * P.otherRam;
+        const maxCpu = finalInst * P.otherCpu;
+
+        const nums = {};
+        ["inst", "kora-ram", "other-ram", "kora-cpu", "other-cpu", "delta-ram", "delta-cpu", "cost"]
+            .forEach((k) => { nums[k] = scaleRoot.querySelector('[data-track="' + k + '"]'); });
+        const fills = {};
+        ["kora-ram", "other-ram", "kora-cpu", "other-cpu"]
+            .forEach((k) => { fills[k] = scaleRoot.querySelector('[data-fill="' + k + '"]'); });
+
+        const locale = () => (window.koraLanguage === "ru" ? "ru-RU" : "en-US");
+        const fmtInt = (n) => Math.round(n).toLocaleString(locale());
+        const fmtGb = (n) => (n < 10 ? (Math.round(n * 10) / 10).toString() : Math.round(n).toLocaleString(locale()));
+        const fmtMoney = (v) => {
+            if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+            if (v >= 1e3) return Math.round(v / 1e3) + "k";
+            return Math.round(v).toString();
+        };
+
+        let lastInst = 1;
+        const setScale = (inst) => {
+            lastInst = inst;
+            const koraRam = inst * P.koraRam, otherRam = inst * P.otherRam;
+            const koraCpu = inst * P.koraCpu, otherCpu = inst * P.otherCpu;
+            const deltaRam = otherRam - koraRam, deltaCpu = otherCpu - koraCpu;
+            const cost = deltaRam * ramPerYear + deltaCpu * cpuPerYear;
+            nums.inst.textContent = fmtInt(inst);
+            nums["kora-ram"].textContent = fmtGb(koraRam);
+            nums["other-ram"].textContent = fmtGb(otherRam);
+            nums["kora-cpu"].textContent = fmtGb(koraCpu);
+            nums["other-cpu"].textContent = fmtGb(otherCpu);
+            nums["delta-ram"].textContent = fmtGb(deltaRam);
+            nums["delta-cpu"].textContent = fmtGb(deltaCpu);
+            nums.cost.textContent = fmtMoney(cost);
+            fills["kora-ram"].style.width = (koraRam / maxRam * 100) + "%";
+            fills["other-ram"].style.width = (otherRam / maxRam * 100) + "%";
+            fills["kora-cpu"].style.width = (koraCpu / maxCpu * 100) + "%";
+            fills["other-cpu"].style.width = (otherCpu / maxCpu * 100) + "%";
+        };
+        /* ---- cubes (services multiplying) ---- */
+        const grid = cubeRoot.querySelector("#cube-grid");
+        const tierEl = cubeRoot.querySelector(".cube-tier");
+        const countEl = cubeRoot.querySelector('[data-cube="count"]');
+        const CAP = 480; /* max cubes drawn; the count shows the real total */
+        const tiers = [
+            { count: 1,    en: "one service",                        ru: "один сервис" },
+            { count: 20,   en: "a team — 20 services",               ru: "команда — 20 сервисов" },
+            { count: 160,  en: "a department — 160 services",        ru: "департамент — 160 сервисов" },
+            { count: 960,  en: "a business line — 960 services",     ru: "бизнес-линия — 960 сервисов" },
+            { count: 3840, en: "the whole company — 3,840 services", ru: "вся компания — 3 840 сервисов" }
+        ];
+        const finalCount = tiers[tiers.length - 1].count;
+        const captionFor = (count) => {
+            let t = tiers[0];
+            for (let k = 0; k < tiers.length; k++) {
+                if (count >= tiers[k].count - 0.5) t = tiers[k];
+            }
+            return t;
+        };
+        let lastCount = 1;
+        const setCube = (count) => {
+            lastCount = count;
+            tierEl.textContent = captionFor(count)[locale() === "ru-RU" ? "ru" : "en"];
+            countEl.textContent = fmtInt(count);
+        };
+        const renderCubes = (target) => {
+            const want = Math.max(1, Math.min(target, CAP));
+            const have = grid.children.length;
+            if (want <= have) {
+                for (let k = have - 1; k >= want; k--) grid.removeChild(grid.lastChild);
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            for (let k = have; k < want; k++) {
+                const c = document.createElement("span");
+                c.className = "cube";
+                frag.appendChild(c);
+            }
+            grid.appendChild(frag);
+        };
+
+        /* ---- one shared clock, one Replay, step-by-step cadence ---- */
+        const replay = scaleRoot.querySelector(".scale-replay");
+        /* one entry per stage chip: reserved instance-equivalents + the number
+           of distinct services that exist at that point (redundancy/peak add
+           instances of the SAME services, so services only grow with the org tiers) */
+        const steps = [
+            { inst: 1,     services: 1 },
+            { inst: 2,     services: 1 },
+            { inst: 4,     services: 1 },
+            { inst: 80,    services: 20 },
+            { inst: 640,   services: 160 },
+            { inst: 3840,  services: 960 },
+            { inst: 15360, services: 3840 },
+            { inst: 23040, services: 3840 }
+        ];
+        const TRANSITION = 500;  /* ms to move between two steps */
+        const HOLD = 1000;       /* ms to rest on each step so it is readable */
+        const cubesFor = (services) => Math.round(services / finalCount * CAP);
+
+        const reset = () => {
+            stages.forEach((s) => s.classList.remove("is-on"));
+            stages[0].classList.add("is-on");
+            grid.innerHTML = "";
+            setScale(1);
+            setCube(1);
+            renderCubes(1);
+        };
+
+        let token = 0;
+        const play = () => {
+            const my = ++token;
+            reset();
+            replay.hidden = true;
+
+            /* advance one step at a time: a short tween to the next tier, then a
+               ~1s hold so the viewer can read it, then on to the next */
+            let i = 1; /* step 0 is already shown by reset() */
+            const applyStep = () => {
+                if (my !== token) {
+                    return;
+                }
+                stages[i].classList.add("is-on");
+                const from = steps[i - 1];
+                const to = steps[i];
+                let start = null;
+                const tick = (now) => {
+                    if (my !== token) {
+                        return;
+                    }
+                    if (start === null) start = now;
+                    const p = Math.min(1, (now - start) / TRANSITION);
+                    const inst = from.inst + (to.inst - from.inst) * p;
+                    const services = from.services + (to.services - from.services) * p;
+                    setScale(inst);
+                    setCube(services);
+                    renderCubes(cubesFor(services));
+                    if (p < 1) {
+                        requestAnimationFrame(tick);
+                    } else {
+                        setScale(to.inst);
+                        setCube(to.services);
+                        renderCubes(cubesFor(to.services));
+                        i += 1;
+                        if (i < steps.length) {
+                            window.setTimeout(applyStep, HOLD);
+                        } else {
+                            replay.hidden = false;
+                        }
+                    }
+                };
+                requestAnimationFrame(tick);
+            };
+
+            /* hold on step 0 ("1 service") first, then step through the rest */
+            window.setTimeout(applyStep, HOLD);
+        };
+
+        replay.addEventListener("click", play);
+
+        /* keep the animated numbers/captions correct across a language switch
+           (the i18n walker would otherwise reset these seeded text nodes) */
+        const reapply = () => { if (started) { setScale(lastInst); setCube(lastCount); } };
+        document.querySelectorAll("[data-lang]").forEach((btn) => {
+            btn.addEventListener("click", () => { window.setTimeout(reapply, 0); });
+        });
+        window.addEventListener("kora:languagechange", reapply);
+
+        /* the panel lives in a collapsed <details>, so trigger on first open */
+        let started = false;
+        const run = () => { if (started) return; started = true; play(); };
+        const details = scaleRoot.closest("details");
+        if (details) {
+            details.addEventListener("toggle", () => { if (details.open) run(); });
+            if (details.open) run();
         } else {
             run();
         }
