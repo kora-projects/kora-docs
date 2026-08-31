@@ -1,8 +1,11 @@
-﻿---
+---
 search:
   exclude: true
 title: HTTP Server Guide
 summary: Learn how to build your first Kora HTTP API step by step, from one controller method to a full CRUD service
+description: "Step-by-step Kora HTTP API: the io.koraframework:http-server-undertow module, UndertowPublicHttpServerModule, @HttpController and @HttpRoute routes, @Json request and response bodies, @Path and @Query binding, HttpResponseEntity and HttpServerResponse, HttpServerResponseException errors, a controller-service-repository split and the httpServer.port / httpServer.system.port configuration."
+agent:
+  use_when: "Use this file for questions about building a Kora REST API step by step: @HttpController, @HttpRoute, @Path, @Query, @Json DTOs, HttpResponseEntity, HttpServerResponse, HttpServerResponseException, UndertowPublicHttpServerModule, io.koraframework:http-server-undertow and json-common dependencies, httpServer.port and httpServer.system.port, readiness and liveness probes, and splitting a controller from a service and a repository."
 tags: http-server, rest-api, json, routing, beginner
 ---
 
@@ -18,7 +21,7 @@ controllers, application services, repositories, JSON mappers, configuration, an
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-http-server-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-server-app).
 
 ## What You'll Build { #youll-build }
 
@@ -29,14 +32,16 @@ By the end of the guide, you will have:
 - an in-memory `UserRepository`
 - a `UserService` that holds application logic
 - public API on port `8080`
-- private management API on port `8085`
+- system API on port `8085`
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+
 - A text editor or IDE
 - Completed [JSON Processing with Kora](json.md)
+
+Kora 2.0 artifacts are compiled for Java 25, so the JDK that compiles the application must be 25 or newer.
 
 ## Prerequisites { #prerequisites }
 
@@ -66,6 +71,9 @@ Kora annotations describe how HTTP data enters and leaves controller methods:
 - `@Path` maps route placeholders into method parameters
 - `@Query` maps query-string values into method parameters
 
+Request handling is **synchronous**. Undertow dispatches every request onto a virtual thread before the generated handler calls your method, so a controller method may block freely: it returns its
+result directly and never returns `CompletionStage`, `Mono`/`Flux`, or a `suspend` function.
+
 ### Explicit HTTP Behavior { #explicit-http-behavior }
 
 Simple methods can return DTOs directly, but real APIs often need more control. `HttpResponseEntity<T>` lets a route return a body with a specific status code or headers. `HttpServerResponse` is
@@ -89,20 +97,32 @@ The practical flow is:
 
 ## Dependencies { #dependencies }
 
+The HTTP server lives in the `http-server-undertow` module, and JSON support lives in `json-common`. Both are Kora modules, so their versions come from the `io.koraframework:kora-bom` platform
+instead of being written on every line.
+
 ===! ":fontawesome-brands-java: `Java`"
 
     Update `build.gradle`:
 
     ```groovy
     dependencies {
-        // ... existing dependencies ...
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        annotationProcessor "io.koraframework:annotation-processors" //(2)!
+
+        implementation "io.koraframework:config-hocon" //(3)!
+        implementation "io.koraframework:http-server-undertow" //(4)!
+        implementation "io.koraframework:json-common" //(5)!
+        implementation "io.koraframework:logging-logback" //(6)!
     }
     ```
+
+    1.  Kora BOM: aligns the versions of every Kora module and of the libraries Kora depends on.
+    2.  Kora annotation processor: generates the application graph, the controller modules, and the JSON readers/writers during compilation.
+    3.  HOCON configuration reader for `application.conf`.
+    4.  Undertow HTTP server transport.
+    5.  Compile-time JSON infrastructure.
+    6.  Logback logging implementation wired into the Kora graph.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -110,37 +130,49 @@ The practical flow is:
 
     ```kotlin
     dependencies {
-        // ... existing dependencies ...
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
 
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+
+        implementation("io.koraframework:config-hocon") //(3)!
+        implementation("io.koraframework:http-server-undertow") //(4)!
+        implementation("io.koraframework:json-common") //(5)!
+        implementation("io.koraframework:logging-logback") //(6)!
     }
     ```
 
+    1.  Kora BOM: aligns the versions of every Kora module and of the libraries Kora depends on.
+    2.  Kora KSP processor: generates the application graph, the controller modules, and the JSON readers/writers during compilation.
+    3.  HOCON configuration reader for `application.conf`.
+    4.  Undertow HTTP server transport.
+    5.  Compile-time JSON infrastructure.
+    6.  Logback logging implementation wired into the Kora graph.
+
 ## Modules { #modules }
+
+`UndertowPublicHttpServerModule` is the module to connect for an application that serves business endpoints. It extends `UndertowSystemHttpServerModule`, so one `extends` clause gives you two
+servers in the same process: the public one on `httpServer.port` and the system one on `httpServer.system.port` that answers readiness, liveness, and metrics requests.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/guide/httpserver/Application.java`:
+    Update `src/main/java/io/koraframework/guide/httpserver/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver;
+    package io.koraframework.guide.httpserver;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            UndertowHttpServerModule {  // <----- Connected module
+            UndertowPublicHttpServerModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -150,24 +182,24 @@ The practical flow is:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/Application.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/httpserver/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver
+    package io.koraframework.guide.httpserver
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        UndertowHttpServerModule  // <----- Connected module
+        UndertowPublicHttpServerModule  // <----- Connected module
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -180,24 +212,24 @@ Before we add any route, we need the shapes of the data we want to receive and r
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/dto/UserRequest.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/dto/UserRequest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.dto;
+    package io.koraframework.guide.httpserver.dto;
 
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserRequest(String name, String email) {}
     ```
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/dto/UserResponse.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/dto/UserResponse.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.dto;
+    package io.koraframework.guide.httpserver.dto;
 
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
 
     @Json
     public record UserResponse(String id, String name, String email, LocalDateTime createdAt) {}
@@ -205,12 +237,12 @@ Before we add any route, we need the shapes of the data we want to receive and r
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/dto/UserRequest.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/dto/UserRequest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.dto
+    package io.koraframework.guide.httpserver.dto
 
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.json.common.annotation.Json
 
     @Json
     data class UserRequest(
@@ -219,13 +251,13 @@ Before we add any route, we need the shapes of the data we want to receive and r
     )
     ```
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/dto/UserResponse.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/dto/UserResponse.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.dto
+    package io.koraframework.guide.httpserver.dto
 
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Json
     data class UserResponse(
@@ -248,20 +280,20 @@ Now we create the first controller and the first route. At this point we will **
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/controller/UserController.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/controller/UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
     import java.time.LocalDateTime;
     import java.util.UUID;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -282,20 +314,20 @@ Now we create the first controller and the first route. At this point we will **
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/controller/UserController.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/controller/UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
     import java.util.UUID
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -324,7 +356,7 @@ Let's break down what is happening here:
   This class contains HTTP routes. Kora scans it and generates the HTTP handler wiring.
 
 - `@HttpRoute(method = HttpMethod.POST, path = "/users")`
-  This method should handle `POST /users`.
+  This method should handle `POST /users`. `HttpMethod` holds the standard HTTP method names as string constants.
 
 - `@Json` on the method
   Kora should use the data mapper with the special `@Json` tag to serialize the return value to JSON.
@@ -353,19 +385,19 @@ For now, we will add the route and deliberately return `404` to show that the co
     Update `UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
     import java.time.LocalDateTime;
     import java.util.UUID;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -385,7 +417,7 @@ For now, we will add the route and deliberately return `404` to show that the co
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
         public UserResponse getUser(@Path String userId) {
-            throw HttpServerResponseException.of(404, "User not found");
+            throw HttpServerResponseException.of(404, "User not found: " + userId);
         }
     }
     ```
@@ -395,19 +427,19 @@ For now, we will add the route and deliberately return `404` to show that the co
     Update `UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
     import java.time.LocalDateTime
     import java.util.UUID
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -428,7 +460,7 @@ For now, we will add the route and deliberately return `404` to show that the co
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
         fun getUser(@Path userId: String): UserResponse {
-            throw HttpServerResponseException.of(404, "User not found")
+            throw HttpServerResponseException.of(404, "User not found: $userId")
         }
     }
     ```
@@ -439,7 +471,7 @@ Two new ideas appear here:
   Kora takes the `{userId}` part from the route path and passes it into the method.
 
 - `HttpServerResponseException`
-  This is a simple way to say "this request should end with this HTTP error".
+  This is a simple way to say "this request should end with this HTTP error". The exception is itself an `HttpServerResponse`, so the server writes its status and body without any extra mapping.
 
 This step is intentionally incomplete. We now have enough controller behavior to see why a separate storage abstraction is needed.
 
@@ -455,13 +487,13 @@ At first we only need two operations:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/repository/UserRepository.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/repository/UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.util.Optional;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     public interface UserRepository {
 
@@ -471,18 +503,18 @@ At first we only need two operations:
     }
     ```
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/repository/InMemoryUserRepository.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/repository/InMemoryUserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.time.LocalDateTime;
     import java.util.Map;
     import java.util.Optional;
     import java.util.concurrent.ConcurrentHashMap;
     import java.util.concurrent.atomic.AtomicLong;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     @Component
     public final class InMemoryUserRepository implements UserRepository {
@@ -506,12 +538,12 @@ At first we only need two operations:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/repository/UserRepository.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/repository/UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.dto.UserResponse
 
     interface UserRepository {
         fun save(name: String, email: String): String
@@ -519,16 +551,16 @@ At first we only need two operations:
     }
     ```
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/repository/InMemoryUserRepository.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/repository/InMemoryUserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserResponse
     import java.time.LocalDateTime
     import java.util.concurrent.ConcurrentHashMap
     import java.util.concurrent.atomic.AtomicLong
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
 
     @Component
     class InMemoryUserRepository : UserRepository {
@@ -548,6 +580,8 @@ At first we only need two operations:
 
 The repository does not know anything about HTTP. It only knows how to store and load user data. That separation is important because storage concerns and HTTP concerns change for different reasons.
 
+Because every request runs on its own virtual thread, the in-memory storage is shared state: `ConcurrentHashMap` and `AtomicLong` are used deliberately instead of their non-thread-safe counterparts.
+
 ## Controller to Repository { #controller-repository }
 
 Now that we have storage, we can go back to the controller and make `createUser` and `getUser` actually work together.
@@ -557,19 +591,18 @@ Now that we have storage, we can go back to the controller and make `createUser`
     Update `UserController.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
-    import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.repository.UserRepository;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -593,7 +626,7 @@ Now that we have storage, we can go back to the controller and make `createUser`
         @Json
         public UserResponse getUser(@Path String userId) {
             return userRepository.findById(userId)
-                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found"));
+                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found: " + userId));
         }
     }
     ```
@@ -603,18 +636,18 @@ Now that we have storage, we can go back to the controller and make `createUser`
     Update `UserController.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.repository.UserRepository
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -634,12 +667,15 @@ Now that we have storage, we can go back to the controller and make `createUser`
         @Json
         fun getUser(@Path userId: String): UserResponse {
             return userRepository.findById(userId)
-                ?: throw HttpServerResponseException.of(404, "User not found")
+                ?: throw HttpServerResponseException.of(404, "User not found: $userId")
         }
     }
     ```
 
 This is the first moment where the API becomes stateful. You can now call `createUser`, get an ID back, and then use that ID in `getUser`.
+
+`UserRepository` is an interface, and `InMemoryUserRepository` is the `@Component` that implements it. The controller asks for the interface in its constructor, and Kora resolves that edge of the
+graph during compilation — if the implementation were missing, the build would fail with `No component found for dependency` instead of failing at runtime.
 
 ## CRUD Repository { #crud-repository }
 
@@ -656,11 +692,11 @@ This keeps the repository focused on storage operations only. The controller wil
     Expand `UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     public interface UserRepository {
 
@@ -679,7 +715,7 @@ This keeps the repository focused on storage operations only. The controller wil
     Expand `InMemoryUserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.repository;
+    package io.koraframework.guide.httpserver.repository;
 
     import java.time.LocalDateTime;
     import java.util.ArrayList;
@@ -688,8 +724,8 @@ This keeps the repository focused on storage operations only. The controller wil
     import java.util.Optional;
     import java.util.concurrent.ConcurrentHashMap;
     import java.util.concurrent.atomic.AtomicLong;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
 
     @Component
     public final class InMemoryUserRepository implements UserRepository {
@@ -732,9 +768,9 @@ This keeps the repository focused on storage operations only. The controller wil
     Expand `UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.dto.UserResponse
 
     interface UserRepository {
         fun findAll(): List<UserResponse>
@@ -748,13 +784,13 @@ This keeps the repository focused on storage operations only. The controller wil
     Expand `InMemoryUserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.repository
+    package io.koraframework.guide.httpserver.repository
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserResponse
     import java.time.LocalDateTime
     import java.util.concurrent.ConcurrentHashMap
     import java.util.concurrent.atomic.AtomicLong
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
 
     @Component
     class InMemoryUserRepository : UserRepository {
@@ -773,9 +809,7 @@ This keeps the repository focused on storage operations only. The controller wil
         }
 
         override fun update(id: String, name: String, email: String): Boolean {
-            val current = users[id] ?: return false
-            users[id] = UserResponse(id, name, email, current.createdAt)
-            return true
+            return users.computeIfPresent(id) { key, current -> UserResponse(key, name, email, current.createdAt) } != null
         }
 
         override fun deleteById(id: String): Boolean = users.remove(id) != null
@@ -800,20 +834,20 @@ After that, the controller can stay focused on HTTP routing, request binding, re
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/httpserver/service/UserService.java`:
+    Create `src/main/java/io/koraframework/guide/httpserver/service/UserService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.service;
+    package io.koraframework.guide.httpserver.service;
 
     import java.time.LocalDateTime;
     import java.util.Comparator;
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.repository.UserRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class UserService {
@@ -844,7 +878,7 @@ After that, the controller can stay focused on HTTP routing, request binding, re
         public UserResponse updateUser(String id, UserRequest request) {
             boolean updated = userRepository.update(id, request.name(), request.email());
             if (!updated) {
-                throw HttpServerResponseException.of(404, "User not found");
+                throw HttpServerResponseException.of(404, "User not found: " + id);
             }
             return new UserResponse(id, request.name(), request.email(), LocalDateTime.now());
         }
@@ -852,7 +886,7 @@ After that, the controller can stay focused on HTTP routing, request binding, re
         public void deleteUser(String id) {
             boolean deleted = userRepository.deleteById(id);
             if (!deleted) {
-                throw HttpServerResponseException.of(404, "User not found");
+                throw HttpServerResponseException.of(404, "User not found: " + id);
             }
         }
 
@@ -869,17 +903,17 @@ After that, the controller can stay focused on HTTP routing, request binding, re
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/httpserver/service/UserService.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/httpserver/service/UserService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.service
+    package io.koraframework.guide.httpserver.service
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.repository.UserRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.repository.UserRepository
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
 
     @Component
     class UserService(
@@ -893,38 +927,36 @@ After that, the controller can stay focused on HTTP routing, request binding, re
 
         fun getUser(id: String): UserResponse? = userRepository.findById(id)
 
-        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> {
-            return userRepository.findAll()
+        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> =
+            userRepository.findAll()
                 .sortedWith(getComparator(sort))
                 .drop(page * size)
                 .take(size)
-        }
 
         fun updateUser(id: String, request: UserRequest): UserResponse {
-            val updated = userRepository.update(id, request.name, request.email)
-            if (!updated) {
-                throw HttpServerResponseException.of(404, "User not found")
+            if (!userRepository.update(id, request.name, request.email)) {
+                throw HttpServerResponseException.of(404, "User not found: $id")
             }
             return UserResponse(id, request.name, request.email, LocalDateTime.now())
         }
 
         fun deleteUser(id: String) {
-            val deleted = userRepository.deleteById(id)
-            if (!deleted) {
-                throw HttpServerResponseException.of(404, "User not found")
+            if (!userRepository.deleteById(id)) {
+                throw HttpServerResponseException.of(404, "User not found: $id")
             }
         }
 
-        private fun getComparator(sort: String): Comparator<UserResponse> {
-            return when (sort.lowercase()) {
-                "name" -> compareBy(UserResponse::name)
-                "email" -> compareBy(UserResponse::email)
-                "createdat" -> compareBy(UserResponse::createdAt)
-                else -> compareBy(UserResponse::name)
-            }
+        private fun getComparator(sort: String): Comparator<UserResponse> = when (sort.lowercase()) {
+            "name" -> compareBy { it.name }
+            "email" -> compareBy { it.email }
+            "createdat" -> compareBy { it.createdAt }
+            else -> compareBy { it.name }
         }
     }
     ```
+
+`UserService` throws `HttpServerResponseException` for "not found" so the guide stays short. In a larger application the service would usually throw a domain exception and one global interceptor would
+translate it into an HTTP status — that is exactly what the [HTTP Server Advanced](http-server-advanced.md) guide builds next.
 
 ## Controller and Service { #controller-service }
 
@@ -934,35 +966,38 @@ the HTTP response shape for each route.
 This step also adds the remaining HTTP-specific pieces:
 
 - `@Query` maps query-string values such as `?page=0&size=10&sort=name` into controller parameters
-- `@Nullable` marks optional query parameters
+- a nullable parameter type marks an optional query parameter
 - `HttpResponseEntity<T>` returns a JSON body together with an explicit status code or headers
 - `HttpServerResponse` returns responses without a JSON body, such as `204 No Content`
+
+In Java, optional parameters are marked with JSpecify `@Nullable` from `org.jspecify.annotations`; in Kotlin the `?` on the parameter type is enough and no annotation is needed. A `@Query` parameter
+that is neither nullable nor optional is required, and a request without it is answered with `400` before the controller method runs.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Rewrite `UserController.java` to delegate to the service:
 
     ```java
-    package ru.tinkoff.kora.guide.httpserver.controller;
+    package io.koraframework.guide.httpserver.controller;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.time.Instant;
     import java.util.List;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.httpserver.service.UserService;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.HttpResponseEntity;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.common.annotation.Path;
-    import ru.tinkoff.kora.http.common.annotation.Query;
-    import ru.tinkoff.kora.http.common.body.HttpBody;
-    import ru.tinkoff.kora.http.common.header.HttpHeaders;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.httpserver.dto.UserRequest;
+    import io.koraframework.guide.httpserver.dto.UserResponse;
+    import io.koraframework.guide.httpserver.service.UserService;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.HttpResponseEntity;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.common.annotation.Path;
+    import io.koraframework.http.common.annotation.Query;
+    import io.koraframework.http.common.body.HttpBody;
+    import io.koraframework.http.common.header.HttpHeaders;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.http.server.common.response.HttpServerResponse;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -978,7 +1013,7 @@ This step also adds the remaining HTTP-specific pieces:
         @Json
         public UserResponse getUser(@Path String userId) {
             return userService.getUser(userId)
-                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found"));
+                    .orElseThrow(() -> HttpServerResponseException.of(404, "User not found: " + userId));
         }
 
         @HttpRoute(method = HttpMethod.GET, path = "/users")
@@ -1020,25 +1055,24 @@ This step also adds the remaining HTTP-specific pieces:
     Rewrite `UserController.kt` to delegate to the service:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.httpserver.controller
+    package io.koraframework.guide.httpserver.controller
 
-    import jakarta.annotation.Nullable
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.httpserver.dto.UserRequest
+    import io.koraframework.guide.httpserver.dto.UserResponse
+    import io.koraframework.guide.httpserver.service.UserService
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.HttpResponseEntity
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.common.annotation.Path
+    import io.koraframework.http.common.annotation.Query
+    import io.koraframework.http.common.body.HttpBody
+    import io.koraframework.http.common.header.HttpHeaders
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.http.server.common.response.HttpServerResponse
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.json.common.annotation.Json
     import java.time.Instant
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.httpserver.service.UserService
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.HttpResponseEntity
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.common.annotation.Path
-    import ru.tinkoff.kora.http.common.annotation.Query
-    import ru.tinkoff.kora.http.common.body.HttpBody
-    import ru.tinkoff.kora.http.common.header.HttpHeaders
-    import ru.tinkoff.kora.http.server.common.HttpServerResponse
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -1048,37 +1082,31 @@ This step also adds the remaining HTTP-specific pieces:
 
         @HttpRoute(method = HttpMethod.GET, path = "/users/{userId}")
         @Json
-        fun getUser(@Path userId: String): UserResponse {
-            return userService.getUser(userId)
-                ?: throw HttpServerResponseException.of(404, "User not found")
-        }
+        fun getUser(@Path userId: String): UserResponse =
+            userService.getUser(userId) ?: throw HttpServerResponseException.of(404, "User not found: $userId")
 
         @HttpRoute(method = HttpMethod.GET, path = "/users")
         @Json
         fun getUsers(
-            @Nullable @Query("page") page: Int?,
-            @Nullable @Query("size") size: Int?,
-            @Nullable @Query("sort") sort: String?
-        ): List<UserResponse> {
-            val pageNum = page ?: 0
-            val pageSize = size ?: 10
-            val sortBy = sort ?: "name"
-            return userService.getUsers(pageNum, pageSize, sortBy)
-        }
+            @Query("page") page: Int?,
+            @Query("size") size: Int?,
+            @Query("sort") sort: String?
+        ): List<UserResponse> =
+            userService.getUsers(page ?: 0, size ?: 10, sort ?: "name")
 
         @HttpRoute(method = HttpMethod.POST, path = "/users")
         @Json
-        fun createUser(@Json request: UserRequest): HttpResponseEntity<UserResponse> {
-            val user = userService.createUser(request)
-            return HttpResponseEntity.of(201, HttpHeaders.of(), user)
-        }
+        fun createUser(@Json request: UserRequest): HttpResponseEntity<UserResponse> =
+            HttpResponseEntity.of(201, HttpHeaders.of(), userService.createUser(request))
 
         @HttpRoute(method = HttpMethod.PUT, path = "/users/{userId}")
         @Json
-        fun updateUser(@Path userId: String, @Json request: UserRequest): HttpResponseEntity<UserResponse> {
-            val updated = userService.updateUser(userId, request)
-            return HttpResponseEntity.of(200, HttpHeaders.of("X-Updated-At", Instant.now().toString()), updated)
-        }
+        fun updateUser(@Path userId: String, @Json request: UserRequest): HttpResponseEntity<UserResponse> =
+            HttpResponseEntity.of(
+                200,
+                HttpHeaders.of("X-Updated-At", Instant.now().toString()),
+                userService.updateUser(userId, request)
+            )
 
         @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
         fun deleteUser(@Path userId: String): HttpServerResponse {
@@ -1094,64 +1122,72 @@ This is the final structure used by the runnable companion app. The behavior did
 - repository = storage abstraction
 - service = application logic
 
+Note how the return type of each route decides which mapper Kora looks up at compile time:
+
+- `UserResponse` and `List<UserResponse>` with `@Json` need a `JsonWriter` for the type, which `@Json` on the DTO generates
+- `HttpResponseEntity<UserResponse>` reuses the same JSON writer and adds the status code and headers on top
+- `HttpServerResponse` is returned as-is and needs no mapper at all
+
 ## Configuration { #config }
 
 Now that the application structure is in place, we can wire the HTTP server configuration itself.
 
 Create or update `src/main/resources/application.conf`:
 
-For the full configuration reference, see [HTTP Server](../documentation/http-server.md) and [Logging SLF4J](../documentation/logging-slf4j.md).
+For the full configuration reference, see [HTTP Server](../documentation/http-server.md#configuration) and [Logging SLF4J](../documentation/logging-slf4j.md).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
+      port = 8080 //(1)!
+      system.port = 8085 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
     logging {
       levels {
         "ROOT": "WARN" //(4)!
-        "ru.tinkoff.kora": "INFO" //(5)!
+        "io.koraframework": "INFO" //(5)!
       }
     }
     ```
 
-    1. Default public HTTP port used by application endpoints.
-    2. Default private HTTP port used by probes, metrics, and management endpoints.
-    3. Enables the feature for this configuration section.
-    4. Log level for `ROOT`.
-    5. Log level for `ru.tinkoff.kora`.
+    1.  Public HTTP port used by application endpoints (default: `8080`).
+    2.  System HTTP port used by probes, metrics, and management endpoints (default: `8085`).
+    3.  Enables request logging for the public HTTP server (default: `false`).
+    4.  Log level for the root logger.
+    5.  Log level for Kora framework loggers.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
+      port: 8080 #(1)!
+      system:
+        port: 8085 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     logging:
       levels:
         ROOT: "WARN" #(4)!
-        "ru.tinkoff.kora": "INFO" #(5)!
+        "io.koraframework": "INFO" #(5)!
     ```
 
-    1. Default public HTTP port used by application endpoints.
-    2. Default private HTTP port used by probes, metrics, and management endpoints.
-    3. Enables the feature for this configuration section.
-    4. Log level for `ROOT`.
-    5. Log level for `ru.tinkoff.kora`.
+    1.  Public HTTP port used by application endpoints (default: `8080`).
+    2.  System HTTP port used by probes, metrics, and management endpoints (default: `8085`).
+    3.  Enables request logging for the public HTTP server (default: `false`).
+    4.  Log level for the root logger.
+    5.  Log level for Kora framework loggers.
 
 This gives you two ports:
 
 - `8080` for the main application API
-- `8085` for management endpoints such as readiness and liveness
+- `8085` for system endpoints such as readiness and liveness
 
-That split is useful in real systems because health checks and operational endpoints are usually kept separate from public business traffic.
+That split is useful in real systems because health checks and operational endpoints are usually kept separate from public business traffic. Both keys already have those defaults, so the application
+also starts without an `application.conf` at all; the file matters as soon as you need to move a port, raise a log level, or read a value from an environment variable.
 
 ## Check Applications { #check-app }
 
@@ -1160,6 +1196,9 @@ That split is useful in real systems because health checks and operational endpo
 ./gradlew test
 ./gradlew run
 ```
+
+`classes` is the meaningful first check in Kora: it runs the annotation processor or KSP, generates the controller module and the application graph, and fails at compile time if a route or a
+dependency cannot be wired.
 
 Public API checks:
 
@@ -1178,11 +1217,13 @@ curl -X PUT http://localhost:8080/users/1 \
 curl -X DELETE http://localhost:8080/users/1
 ```
 
-Private API checks:
+System API checks:
 
 ```bash
 curl http://localhost:8085/system/readiness
+# Expected output: OK
 curl http://localhost:8085/system/liveness
+# Expected output: OK
 ```
 
 ## Best Practices { #best-practices }
@@ -1191,6 +1232,8 @@ curl http://localhost:8085/system/liveness
 - Use repositories for storage concerns and services for application logic.
 - Use `HttpResponseEntity` when you need explicit status codes or headers.
 - Throw `HttpServerResponseException` when the controller or service needs to expose a clean HTTP error.
+- Keep controller methods synchronous and let Undertow's virtual threads carry the blocking work.
+- Guard any state shared between requests, because concurrent requests run on different threads.
 
 ## Summary { #summary }
 
@@ -1210,13 +1253,23 @@ You built a Kora HTTP API gradually:
 - response control with `HttpResponseEntity`
 - HTTP error signaling with `HttpServerResponseException`
 - the different responsibilities of controller, repository, and service
+- one process, two HTTP servers: the public one and the system one
 
 ## Troubleshooting { #troubleshooting }
 
 **Server does not start:**
 
 - Check ports `8080` and `8085` availability.
-- Verify `Application` includes `UndertowHttpServerModule` and `HoconConfigModule`.
+- Verify `Application` includes `UndertowPublicHttpServerModule` and `HoconConfigModule`.
+
+**Compilation fails with `No component found for dependency`:**
+
+- The type listed in the message is not in the graph. Add `@Component` to its implementation, or provide it from a module method.
+- A frequent case is forgetting `@Component` on `InMemoryUserRepository` or `UserService`.
+
+**Compilation fails with `JsonWriter<T> was not found`:**
+
+- The DTO returned by the route is not annotated with `@Json`, so no writer was generated for it.
 
 **`getUser` always returns 404:**
 
@@ -1225,8 +1278,13 @@ You built a Kora HTTP API gradually:
 
 **Optional query parameters are not handled correctly:**
 
-- In Java use nullable wrappers with `@Nullable @Query`, such as `Integer` and `String`.
-- Avoid `Optional<T>` in controller query parameters.
+- In Java use nullable wrappers with `@Nullable @Query`, such as `Integer` and `String`, and import `@Nullable` from `org.jspecify.annotations`.
+- In Kotlin declare the parameter type as nullable, for example `page: Int?`.
+- A missing required query parameter is answered with `400` before the method is called.
+
+**Kotlin build fails with `Suspend methods are not supported by the HTTP server controller generator`:**
+
+- Remove `suspend` from the controller method. Kora HTTP handlers are synchronous and already run on a virtual thread.
 
 **Build hangs or fails unexpectedly:**
 
@@ -1244,6 +1302,6 @@ You built a Kora HTTP API gradually:
 
 If you encounter issues:
 
-- compare with [Kora Java HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-server-app) and [Kora Kotlin HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-http-server-app)
+- compare with [Kora Java HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-http-server-app) and [Kora Kotlin HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-http-server-app)
 - check the [HTTP Server documentation](../documentation/http-server.md)
 - check the [JSON documentation](../documentation/json.md)

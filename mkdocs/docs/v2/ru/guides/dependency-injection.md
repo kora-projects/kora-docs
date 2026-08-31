@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Создание приложений Kora с внедрением зависимостей
 summary: A comprehensive step-by-step tutorial for building complete applications with Kora's dependency injection framework
+description: "Step-by-step multi-module Kora 2.0 application built around the dependency graph: a @KoraApp root, io.koraframework.common.annotation annotations (@Component, @Module, @KoraSubmodule, @DefaultComponent, @Tag, @Root, @FactoryModule), All<T> and ValueOf<T> claims, JSpecify @Nullable optional dependencies, Lifecycle and LifecycleWrapper, generic factories, and the Gradle setup with io.koraframework:kora-bom, annotation-processors and symbol-processors."
+agent:
+  use_when: "Use this file for questions about assembling a real multi-module Kora application graph: @KoraApp with extends, @Module auto-discovery, @KoraSubmodule across Gradle modules, @DefaultComponent overrides, @Tag and Tag.Any, All<T> collection injection, @Nullable optional dependencies, generic factory methods, @FactoryModule, ValueOf<T> and Wrapped<T>/LifecycleWrapper lifecycle control, and the Gradle multi-module build with io.koraframework:kora-bom."
 tags: dependency-injection, tutorial, components, modules, java, kotlin
 ---
 
@@ -14,95 +17,100 @@ tags: dependency-injection, tutorial, components, modules, java, kotlin
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection-app).
+    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection).
 
 === ":simple-kotlin: `Kotlin`"
 
-    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection-app).
+    Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection).
 
-## Что вы создадите { #youll-build }
+## Что вы построите { #youll-build }
 
-Вы создадите полноценное приложение системы уведомлений, которое показывает все основные возможности внедрения зависимостей Kora:
+Вы соберете полноценное приложение системы уведомлений, которое демонстрирует все основные возможности внедрения зависимостей Kora:
 
-- **многомодульную структуру проекта** с правильным разделением ответственностей
-- **архитектуру на основе компонентов** с модулями внешней библиотеки
-- **зависимости с тегами** для нескольких реализаций одного интерфейса
-- **внедрение коллекций**, чтобы внедрять все реализации сразу
-- **подмодули** для организации связанных компонентов
-- **обобщенные фабрики** для типобезопасного создания компонентов
-- **допускающие `null` зависимости** для аккуратной обработки отсутствующих компонентов
-- **шаблон `ValueOf<T>`**, чтобы предотвращать каскадные обновления компонентов
+- **Многомодульная структура проекта** с разделением ответственности
+- **Компонентная архитектура** с подключением внешних библиотечных модулей
+- **Тегированные зависимости** для нескольких реализаций одного интерфейса
+- **Внедрение коллекций**, чтобы получить сразу все реализации
+- **Подмодули** для организации связанных компонентов в отдельных модулях Gradle
+- **Обобщенные фабрики** для типобезопасного создания компонентов
+- **Фабричные модули** для экземпляров модулей, которые сами являются компонентами графа
+- **Опциональные зависимости** для корректной работы при отсутствии компонента
+- Приём **ValueOf<T>**, который предотвращает каскадное пересоздание компонентов
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- текстовый редактор или среда разработки
-- базовое понимание Java или Kotlin
-- знакомство с понятиями внедрения зависимостей (см. [Внедрение зависимостей с Kora](dependency-injection-introduction.md))
+- JDK 25 или новее
+- Gradle 9+
+- Текстовый редактор или IDE
+- Базовое знание Java или Kotlin
+- Знакомство с концепциями внедрения зависимостей (см. [Внедрение зависимостей в Kora](dependency-injection-introduction.md))
 
-## Требования { #prerequisites }
+## Предварительные требования { #prerequisites }
 
 !!! note "Рекомендуется: сначала прочитайте введение в DI"
 
-    Это руководство предполагает, что вы прочитали **[Внедрение зависимостей с Kora](dependency-injection-introduction.md)** и понимаете базовые понятия внедрения зависимостей, которые использует Kora.
+    Руководство предполагает, что вы уже прочитали **[Внедрение зависимостей в Kora](dependency-injection-introduction.md)** и понимаете базовые концепции внедрения зависимостей, которые использует Kora.
 
-    Если вы еще не читали введение, начните с него, потому что это руководство быстро переходит к полноценному многомодульному приложению и сосредоточено на применении шаблонов внедрения зависимостей, а не на их объяснении с нуля.
+    Если введение еще не прочитано, начните с него: это руководство быстро переходит к полноценному многомодульному приложению и сосредоточено на применении шаблонов DI, а не на их определении с нуля.
 
-    Также необходимы навыки базового знакомства с Java или Kotlin.
+    Также понадобится базовое знание Java или Kotlin.
 
-В этом руководстве вы создадите полноценное приложение Kora с нуля, постепенно вводя понятия внедрения зависимостей. Каждый шаг добавляет новую функциональность и одновременно показывает конкретный
-шаблон внедрения зависимостей. К концу у вас будет полностью рабочее приложение, демонстрирующее все основные возможности DI в Kora.
+Здесь мы собираем приложение Kora с нуля, вводя концепции внедрения зависимостей постепенно. Каждый шаг добавляет новую функциональность и демонстрирует конкретный шаблон DI. В конце у вас будет
+полностью работающее приложение, показывающее все основные возможности DI в Kora.
 
 ## Обзор { #overview }
 
-Это руководство переводит вас от понятий DI к практической сборке приложения. Примерная предметная область - система уведомлений, но главная тема здесь в том, как настоящий граф Kora остается
-понятным, когда в нем есть несколько модулей, реализаций, необязательных зависимостей и вопросов жизненного цикла.
+Руководство идет от концепций DI к практической сборке приложения. Предметная область здесь — система уведомлений, но важнее другое: как настоящий граф Kora остается понятным, когда в нем несколько
+модулей, реализаций, опциональных зависимостей и объектов с жизненным циклом.
 
-Руководство сохраняет одну предметную модель, постепенно добавляя вокруг нее новые возможности графа. Это похоже на реальную разработку: возможности DI редко изучаются изолированно; вы используете их
-потому, что приложению нужны границы модулей, переопределения, несколько реализаций или управление жизненным циклом ресурсов.
+Доменная модель на протяжении руководства остается одной и той же, а возможности графа добавляются вокруг нее. Так же происходит и в реальной работе: возможности DI редко изучают в отрыве от задачи —
+их применяют потому, что приложению нужны границы модулей, переопределения, несколько реализаций или управление ресурсами.
 
 ### Граф приложения { #application-graph }
 
-[Граф приложения Kora](../documentation/container.md) - это больше чем список классов. Это типизированная структура, которая описывает, какие компоненты существуют, какие зависимости нужны каждому
-компоненту и как эти компоненты создаются. `@KoraApp` является корнем графа, `@Module` группирует фабрики и подключаемые части, а классы `@Component` становятся управляемыми узлами графа.
+[Граф приложения Kora](../documentation/container.md) — это не просто список классов. Это типизированная структура, которая описывает, какие компоненты существуют, какие зависимости нужны каждому из
+них и как эти компоненты создаются. `@KoraApp` — корень графа, `@Module` группирует фабрики и подключения, а классы `@Component` становятся управляемыми узлами графа.
 
-Хорошее проектирование графа сохраняет ответственности видимыми:
+Все эти аннотации лежат в одном пакете `io.koraframework.common.annotation` и обрабатываются только во время компиляции. Ничего из описанного здесь не резолвится рефлексией при старте: обработчик
+аннотаций (Java) или символьный процессор (Kotlin) читает аннотации и генерирует класс `ApplicationGraph` рядом с вашим типом `Application`.
+
+Хороший дизайн графа делает ответственность видимой:
 
 - модули приложения описывают собственные компоненты приложения
 - библиотечные модули предоставляют переиспользуемые значения по умолчанию
 - интерфейсы задают точки замены
-- фабрики создают значения, которым нужно особое построение
+- фабрики создают значения, которым нужна нестандартная сборка
 
-### Настройка компонент { #component-setup }
+### Настройка компонентов { #component-setup }
 
-Настоящим приложениям часто нужна не одна реализация интерфейса. Теги позволяют Kora различать зависимости, которые имеют один и тот же Java-тип, но выполняют разные роли. Переопределения позволяют
-приложению заменить библиотечное значение по умолчанию поведением, специфичным для проекта. Необязательные зависимости позволяют компоненту подстраиваться, когда другого компонента нет в графе.
+Реальным приложениям часто нужно больше одной реализации интерфейса. Теги позволяют Kora различать зависимости с одинаковым Java-типом, но разной ролью. Переопределения дают приложению возможность
+заменить библиотечное значение по умолчанию собственным поведением. Опциональные зависимости позволяют компоненту работать и тогда, когда другого компонента в графе нет.
 
-Эти возможности полезны, потому что они решают задачи связывания компонентов, не пряча их. Граф зависимостей по-прежнему показывает, какая реализация используется и почему.
+Эти возможности сильны именно тем, что решают задачи связывания, не пряча их. По графу зависимостей по-прежнему видно, какая реализация используется и почему.
 
 ### Жизненный цикл { #lifecycle }
 
-Некоторые компоненты владеют ресурсами: клиентами, планировщиками, соединениями или фоновыми исполнителями. Kora может управлять компонентами с жизненным циклом так, чтобы запуск и остановка
-происходили в порядке графа. Руководство также вводит `ValueOf<T>` как способ зависеть от ссылки на компонент, не заставляя заранее запускать все последующее поведение обновления.
+Некоторые компоненты владеют ресурсами: клиентами, планировщиками, соединениями, фоновыми обработчиками. Kora умеет управлять такими компонентами, чтобы запуск и остановка происходили в порядке графа.
+Контракт `Lifecycle` для этого лежит в `io.koraframework.application.graph` и объявляет ровно два метода — `init()` и `release()`. Также в руководстве вводится `ValueOf<T>` — способ зависеть от ссылки
+на компонент, не заставляя все нижестоящие компоненты пересоздаваться.
 
-К концу руководства приложение уведомлений должно ощущаться как рабочий пример проектирования графа: границы модулей, внешние значения по умолчанию, переопределения, теги, необязательные зависимости,
-обобщенные фабрики и управление жизненным циклом служат одному приложению, а не выглядят разрозненными возможностями.
+К концу руководства приложение уведомлений должно выглядеть как рабочий пример проектирования графа: границы модулей, внешние значения по умолчанию, переопределения, теги, опциональные зависимости,
+обобщенные фабрики и управление жизненным циклом служат одному приложению, а не выглядят набором изолированных возможностей.
 
-Практический ход такой:
+Практический порядок такой:
 
 1. создать многомодульный проект Kora
-2. подключить внешние значения модулей по умолчанию
-3. переопределить выбранные компоненты
+2. подключить значения по умолчанию из внешних модулей
+3. переопределить отдельные компоненты
 4. использовать теги для нескольких реализаций одного типа
-5. описать необязательные зависимости
-6. организовать связанные компоненты с помощью подмодулей
-7. добавить обобщенные фабрики и поведение с учетом жизненного цикла
+5. описать опциональные зависимости
+6. вынести связанные компоненты в подмодуль
+7. добавить обобщенные фабрики и поведение с жизненным циклом
 
 ## Зависимости { #dependencies }
 
-В этом руководстве используется отдельный `settings.gradle` на верхнем уровне, а общая конфигурация Gradle хранится в `guide-dependency-injection/build.gradle`. В настоящем репозитории над каталогом
-этого руководства есть еще один уровень, потому что в одной рабочей области находится несколько приложений руководств.
+В руководстве используется отдельный `settings.gradle` на верхнем уровне, а общая конфигурация Gradle лежит в `guide-dependency-injection/build.gradle`. В эталонном репозитории над каталогом этого
+руководства есть еще один уровень, потому что в одном рабочем пространстве живет сразу несколько приложений-руководств.
 
 Создайте каталоги проекта:
 
@@ -111,8 +119,7 @@ mkdir -p guide-dependency-injection
 mkdir -p guide-dependency-injection/guide-dependency-injection-common guide-dependency-injection/guide-dependency-injection-lib guide-dependency-injection/guide-dependency-injection-app
 ```
 
-Установите JDK перед подготовкой Gradle Wrapper. Для первого запуска достаточно Eclipse Temurin JDK 21: он запускает Gradle, а Gradle-инструменты сможет автоматически скачать JDK, которая нужна
-конкретной сборке.
+Модули Kora публикуются под Java 25, и эталонные приложения фиксируют toolchain на Java 25, поэтому установите Eclipse Temurin JDK 25 и запускайте Gradle именно на нем.
 
 ===! ":simple-linux: `Linux`"
 
@@ -124,7 +131,7 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-common guide-depe
     wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
     echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo $VERSION_CODENAME) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
     sudo apt update
-    sudo apt install -y temurin-21-jdk
+    sudo apt install -y temurin-25-jdk
     ```
 
 === ":simple-apple: `macOS`"
@@ -132,22 +139,22 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-common guide-depe
     Если установлен Homebrew, поставьте Temurin JDK через cask:
 
     ```bash
-    brew install --cask temurin@21
-    export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+    brew install --cask temurin@25
+    export JAVA_HOME=$(/usr/libexec/java_home -v 25)
     ```
 
 === ":material-microsoft-windows: `Windows`"
 
-    Если установлен `winget`, поставьте Temurin JDK из терминала PowerShell:
+    Если установлен `winget`, поставьте Temurin JDK из PowerShell:
 
     ```powershell
-    winget install EclipseAdoptium.Temurin.21.JDK
+    winget install EclipseAdoptium.Temurin.25.JDK
     ```
 
-    Если `winget` недоступен, скачайте установщик Windows со [страницы загрузок Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21), выберите **JDK 21** для архитектуры вашего
-    процессора, запустите установщик и включите обновление `JAVA_HOME` и `PATH`, если установщик предложит такой пункт.
+    Если `winget` недоступен, скачайте установщик для Windows со [страницы загрузок Eclipse Temurin](https://adoptium.net/temurin/releases/?version=25), выберите **JDK 25** для своей архитектуры,
+    запустите установщик и включите опцию, которая обновляет `JAVA_HOME` и `PATH`, если она предлагается.
 
-    После установки откройте новый терминал, чтобы обновились переменные окружения.
+    После установки откройте новый терминал, чтобы переменные окружения обновились.
 
 Проверьте, что JDK доступен:
 
@@ -155,9 +162,9 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-common guide-depe
 java -version
 ```
 
-В выводе должна быть версия Java 21.
+В выводе должна быть Java 25.
 
-Подготовьте Gradle Wrapper в том же каталоге. Это руководство создает многомодульный проект вручную, поэтому здесь нет шага `gradle init`, который автоматически создал бы wrapper-файлы.
+Подготовьте Gradle Wrapper в том же каталоге. Многомодульный проект в этом руководстве создается вручную, поэтому шага `gradle init`, который сгенерировал бы файлы wrapper за вас, здесь нет.
 
 Шаг 1. Создайте `gradle-wrapper.properties`.
 
@@ -226,7 +233,7 @@ java -version
     Invoke-WebRequest -Uri https://raw.githubusercontent.com/gradle/gradle/v9.5.1/gradle/wrapper/gradle-wrapper.jar -OutFile gradle/wrapper/gradle-wrapper.jar
     ```
 
-Шаг 3. Скачайте скрипт запуска wrapper.
+Шаг 3. Скачайте запускающий скрипт wrapper.
 
 ===! ":simple-linux: `Linux`"
 
@@ -250,25 +257,26 @@ java -version
 
 ### Настройка проекта { #project-setup }
 
-Теперь настроим многомодульную конфигурацию Gradle. Этот гайд не ограничивается одним приложением: он показывает, как Kora собирает граф из нескольких модулей, поэтому структура проекта сама является
-частью обучения.
+Теперь настроим многомодульную конфигурацию Gradle. Это руководство не про одномодульное приложение: оно показывает, как Kora собирает граф приложения из нескольких модулей, поэтому раскладка проекта
+здесь — часть материала.
 
-В этой настройке Gradle должен сделать несколько вещей:
+Gradle должен сделать здесь несколько вещей:
 
-- зарегистрировать три подмодуля руководства
-- настроить JDK, которым будут компилироваться все подмодули
-- подключить BOM Kora один раз для всех подмодулей
-- распространить версии из BOM на нужные Gradle-конфигурации
-- включить общие правила компиляции и запуска тестов
+- зарегистрировать модули руководства
+- задать JDK, которым компилируется каждый модуль
+- сделать версии из BOM Kora доступными нужным конфигурациям Gradle
+- включить генерацию кода Kora в каждом модуле, где объявляются элементы графа
+- применить общие правила компиляции и тестов
 
 #### Структура модулей { #module-structure }
 
-Создайте следующую структуру каталогов. Расширения файлов отличаются между Gradle Groovy DSL и Gradle Kotlin DSL, но границы модулей остаются одинаковыми:
+Создайте следующую структуру каталогов. Расширения файлов отличаются у Gradle Groovy DSL и Gradle Kotlin DSL, но границы модулей остаются теми же:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```
     |-- settings.gradle
+    |-- gradle.properties
     `-- guide-dependency-injection/
         |-- build.gradle
         |-- guide-dependency-injection-common/
@@ -280,6 +288,7 @@ java -version
 
     ```
     |-- settings.gradle.kts
+    |-- gradle.properties
     `-- guide-dependency-injection/
         |-- build.gradle.kts
         |-- guide-dependency-injection-common/
@@ -287,12 +296,13 @@ java -version
         `-- guide-dependency-injection-app/
     ```
 
-`guide-dependency-injection-common` хранит общие договоры, `guide-dependency-injection-lib` имитирует переиспользуемую библиотеку, а `guide-dependency-injection-app` содержит запускаемое приложение с
-`@KoraApp`. Такое разделение нужно, чтобы дальше показать переопределения, теги, необязательные зависимости и подключение дополнительных модулей.
+`guide-dependency-injection-common` содержит общие контракты, `guide-dependency-injection-lib` имитирует переиспользуемую библиотеку, а `guide-dependency-injection-app` — запускаемое приложение с
+`@KoraApp`. Четвертый модуль, `guide-dependency-injection-submodule`, добавляется позже, когда руководство доходит до `@KoraSubmodule`. Именно такое разделение позволяет дальше показать
+переопределения, теги, опциональные зависимости и обнаружение компонентов между модулями.
 
-#### Корневой settings { #root-settings }
+#### Корневые настройки { #root-settings }
 
-Отредактируйте файл настроек Gradle верхнего уровня. Он задает имя всей сборки и сообщает Gradle, какие подмодули в нее входят:
+Отредактируйте файл настроек Gradle верхнего уровня. Он задает имя сборки Gradle и перечисляет входящие в нее модули:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -311,6 +321,13 @@ java -version
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    pluginManagement {
+        plugins {
+            id("org.jetbrains.kotlin.jvm") version "2.4.10" //(1)!
+            id("com.google.devtools.ksp") version "2.3.11" //(2)!
+        }
+    }
+
     plugins {
         id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     }
@@ -322,18 +339,24 @@ java -version
     include("guide-dependency-injection:guide-dependency-injection-app")
     ```
 
-Плагин `foojay-resolver-convention` нужен для Java toolchains: он помогает Gradle найти или скачать JDK нужной версии. Строки include регистрируют вложенные модули через Gradle-пути, например
-`:guide-dependency-injection:guide-dependency-injection-app`, чтобы дальше можно было запускать задачи конкретного модуля.
+    1.  Версия плагина Kotlin JVM объявляется один раз на всю сборку, чтобы файлы сборки модулей подключали плагин без повторного указания версии.
+    2.  Версия плагина KSP. Она привязана к версии Kotlin, поэтому обе поднимаются вместе.
+
+Плагин `foojay-resolver-convention` нужен для Java toolchain: он помогает Gradle найти или скачать требуемый JDK. Строки `include` регистрируют вложенные модули по путям Gradle, например
+`:guide-dependency-injection:guide-dependency-injection-app`, чтобы можно было запускать задачи для конкретного модуля.
 
 #### Свойства Gradle { #gradle-properties }
 
-Добавьте `gradle.properties`, чтобы Gradle мог находить установленные JDK и загружать нужный JDK Temurin, если JDK 24 отсутствует локально:
+Добавьте `gradle.properties`, чтобы Gradle умел находить установленные JDK, скачивать нужный Temurin toolchain, если JDK 25 нет локально, и чтобы версии Kora и JUnit задавались один раз для всех модулей:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```properties
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
+
+    koraVersion=2.0.0.RC1
+    junitVersion=6.1.3
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -342,15 +365,19 @@ java -version
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
     kotlin.jvm.target.validation.mode=warning
+
+    koraVersion=2.0.0.RC1
+    junitVersion=6.1.3
     ```
 
-Первые два свойства делают учебную сборку менее зависимой от локального окружения. Kotlin-флаг нужен для Kotlin 1.9.25: если компилятор не может выставить target ровно как JDK 24, он сообщает об этом
-как warning и не останавливает учебную сборку.
+Первые два свойства делают сборку руководства менее зависимой от конкретной машины. `koraVersion` и `junitVersion` — обычные свойства проекта Gradle: каждый файл сборки читает их как `$koraVersion` и
+`$junitVersion`, поэтому версия поднимается ровно в одном месте. Флаг валидации для Kotlin повторяет эталонные приложения: если компилятор Kotlin не может точно нацелиться на версию JVM из toolchain,
+он сообщает об этом предупреждением, а не падает.
 
-#### Общий build-файл { #shared-build-file }
+#### Общий файл сборки { #shared-build-file }
 
-Создайте общий build-файл в `guide-dependency-injection/`. Он применяется к трем вложенным модулям: `common`, `lib` и `app`, поэтому BOM, toolchain, classpath и тестовые настройки не придется
-дублировать в каждом модуле.
+Создайте общий файл сборки в каталоге `guide-dependency-injection/`. Он применяется к вложенным модулям `common`, `lib`, `app`, а позже и `submodule`, поэтому toolchain, репозитории и настройки тестов
+не нужно дублировать в каждом модуле.
 
 Начните с импортов и пустого блока `subprojects`:
 
@@ -361,6 +388,9 @@ java -version
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
     }
     ```
 
@@ -372,14 +402,22 @@ java -version
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
     }
     ```
 
+Из `mavenCentral()` скачиваются сама Kora, Logback, HOCON и их транзитивные зависимости.
+
 #### BOM Kora { #kora-bom }
 
-Внутри `subprojects {}` создайте отдельную конфигурацию `koraBom`. BOM (`Bill of Materials`) хранит согласованные версии модулей Kora, чтобы все подмодули использовали совместимый набор версий.
+Kora состоит из множества модулей. Чтобы не указывать версию у каждой зависимости, подключается BOM (`Bill of Materials`) `io.koraframework:kora-bom`. Он согласует версии всех модулей Kora и тех
+сторонних библиотек, с которыми Kora поставляется. Java и Kotlin подключают этот BOM по-разному, и разницу полезно понять до того, как писать остальную часть файла сборки.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    В Java BOM кладется в отдельную конфигурацию `koraBom`, объявленную один раз в `subprojects {}`. Пока она ничего не резолвит; в следующих разделах реальные конфигурации начнут ее наследовать:
 
     ```groovy
     subprojects {
@@ -391,15 +429,20 @@ java -version
 
 === ":simple-kotlin: `Kotlin`"
 
+    В Kotlin общей конфигурации для BOM нет. Каждый модуль подключает platform прямо в `implementation`, который уже наследует `testImplementation`:
+
     ```kotlin
-    subprojects {
-        val koraBom by configurations.creating
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
     }
     ```
 
-#### JDK toolchain { #jdk-toolchain }
+    Конфигурация `ksp` не наследует `implementation`, поэтому symbol processor Kora — единственная зависимость, у которой всегда остается явная версия.
 
-Настройте JDK после подключения плагина `java` в подмодуле. Gradle может запускаться одной JDK, а компилировать проект другой, поэтому toolchain делает учебную сборку воспроизводимой.
+#### Toolchain JDK { #jdk-toolchain }
+
+Настраивайте JDK после того, как в модуле включен плагин `java`. Gradle может работать на одном JDK, а компилировать проект другим, поэтому toolchain делает сборку руководства воспроизводимой. Модули
+Kora компилируются под Java 25, поэтому toolchain должен быть Java 25 или новее.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -408,7 +451,7 @@ java -version
         plugins.withId("java") {
             java {
                 toolchain {
-                    languageVersion = JavaLanguageVersion.of(24)
+                    languageVersion = JavaLanguageVersion.of(25)
                     vendor = JvmVendorSpec.ADOPTIUM
                 }
             }
@@ -420,10 +463,19 @@ java -version
 
     ```kotlin
     subprojects {
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                jvmToolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
+                    vendor.set(JvmVendorSpec.ADOPTIUM)
+                }
+            }
+        }
+
         plugins.withId("java") {
             extensions.configure<JavaPluginExtension>("java") {
                 toolchain {
-                    languageVersion.set(JavaLanguageVersion.of(24))
+                    languageVersion.set(JavaLanguageVersion.of(25))
                     vendor.set(JvmVendorSpec.ADOPTIUM)
                 }
             }
@@ -431,11 +483,16 @@ java -version
     }
     ```
 
-#### Classpath-конфигурации { #classpath-configurations }
+    Kotlin требует оба блока: `jvmToolchain` управляет компилятором Kotlin, а toolchain для `java` — вызовом `javac` для Java-исходников, которые KSP и Gradle все равно компилируют в том же модуле.
 
-Распространите BOM на Gradle-конфигурации, которые используются кодом приложения, compile-time API, обработчиками аннотаций, публичным API библиотек и тестами.
+#### Конфигурации classpath { #classpath-configurations }
+
+Генерация кода Kora выполняется на своем classpath, отдельном от classpath приложения. В Java это `annotationProcessor`, в Kotlin — конфигурация `ksp`, которую добавляет плагин KSP. Обеим нужны
+согласованные версии Kora.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    Сделайте BOM доступным конфигурациям, которые используются кодом приложения, compile-time API, обработкой аннотаций, публичным API библиотек и тестами:
 
     ```groovy
     subprojects {
@@ -453,49 +510,65 @@ java -version
     }
     ```
 
+    `annotationProcessor` и `testAnnotationProcessor` получают BOM отдельно, потому что обработчики аннотаций Kora резолвятся в своем classpath. Конфигурация `api` важна для `common` и `lib`, где типы
+    становятся частью публичного API, доступного другим модулям.
+
 === ":simple-kotlin: `Kotlin`"
 
+    В Kotlin общий блок `extendsFrom` не нужен. Каждый модуль, объявляющий элементы графа, подключает плагин KSP и указывает процессор с явной версией:
+
     ```kotlin
-    subprojects {
-        configurations {
-            compileOnly.get().extendsFrom(koraBom)
-            implementation.get().extendsFrom(koraBom)
-            api.get().extendsFrom(koraBom)
-            testImplementation.get().extendsFrom(koraBom)
-        }
+    plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
+    }
+
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
+
+        ksp("io.koraframework:symbol-processors:$koraVersion")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
     }
     ```
 
-`annotationProcessor` и `testAnnotationProcessor` получают BOM отдельно, потому что обработчики аннотаций Kora работают в собственном classpath. Конфигурация `api` важна для `common` и `lib`, где
-типы могут становиться частью публичного API, который видят другие модули.
+    Каталог исходников `build/generated/ksp/main/kotlin` важен для IDE и для компиляции, потому что KSP пишет туда сгенерированный Kotlin-код Kora. Модули, которые генерируют код и для тестов,
+    добавляют `sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }`.
 
 #### Версия Kora { #kora-version }
 
-Подключите сам BOM. Переменная `$koraVersion` берется из `gradle.properties` репозитория; после этой строки отдельные модули смогут писать Kora-зависимости без явной версии.
+Теперь подключите сам BOM. Переменная `$koraVersion` берется из `gradle.properties`; после этой строки модули могут объявлять зависимости Kora без явных версий.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     subprojects {
         dependencies {
-            koraBom platform("ru.tinkoff.kora:kora-parent:$koraVersion")
+            koraBom platform("io.koraframework:kora-bom:$koraVersion")
         }
     }
     ```
+
+    Поскольку `implementation`, `annotationProcessor`, `compileOnly`, `testImplementation`, `testAnnotationProcessor` и `api` наследуют `koraBom`, одной строки достаточно для всех модулей.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    subprojects {
-        dependencies {
-            koraBom(platform("ru.tinkoff.kora:kora-parent:$koraVersion"))
-        }
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
+
+        ksp("io.koraframework:symbol-processors:$koraVersion")
     }
     ```
 
+    В Kotlin эти две строки живут в файле сборки каждого модуля, а не в общем файле, потому что конфигурация `ksp` появляется только у модулей с плагином KSP.
+
 #### Итоговый файл { #final-file }
 
-Итоговый общий build-файл собирает эти решения вместе: конфигурацию BOM, JDK toolchain, classpath, зависимость от BOM Kora и общее поведение тестов.
+Итоговый общий файл сборки собирает все решения вместе: репозитории, toolchain JDK, связывание classpath, BOM Kora и общее поведение тестов.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -504,6 +577,10 @@ java -version
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
+
         configurations {
             koraBom
         }
@@ -511,7 +588,7 @@ java -version
         plugins.withId("java") {
             java {
                 toolchain {
-                    languageVersion = JavaLanguageVersion.of(24)
+                    languageVersion = JavaLanguageVersion.of(25)
                     vendor = JvmVendorSpec.ADOPTIUM
                 }
             }
@@ -528,7 +605,7 @@ java -version
         }
 
         dependencies {
-            koraBom platform("ru.tinkoff.kora:kora-parent:$koraVersion")
+            koraBom platform("io.koraframework:kora-bom:$koraVersion")
         }
 
         tasks.withType(JavaCompile).configureEach {
@@ -554,54 +631,66 @@ java -version
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
-        val koraBom by configurations.creating
+        repositories {
+            mavenCentral()
+        }
 
-        plugins.withId("java") {
-            extensions.configure<JavaPluginExtension>("java") {
-                toolchain {
-                    languageVersion.set(JavaLanguageVersion.of(24))
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                jvmToolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
                     vendor.set(JvmVendorSpec.ADOPTIUM)
                 }
             }
         }
 
-        configurations {
-            compileOnly.get().extendsFrom(koraBom)
-            implementation.get().extendsFrom(koraBom)
-            api.get().extendsFrom(koraBom)
-            testImplementation.get().extendsFrom(koraBom)
+        plugins.withId("java") {
+            extensions.configure<JavaPluginExtension>("java") {
+                toolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
+                    vendor.set(JvmVendorSpec.ADOPTIUM)
+                }
+            }
         }
 
-        dependencies {
-            koraBom(platform("ru.tinkoff.kora:kora-parent:$koraVersion"))
+        tasks.withType<Test>().configureEach {
+            useJUnitPlatform()
+            testLogging {
+                showStandardStreams = true
+                events("passed", "skipped", "failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            }
         }
     }
     ```
 
 ### Основа приложения { #application-base }
 
-**Цель**: создать модуль общих договоров и запускаемый модуль приложения, который будут расширять следующие шаги.
+**Цель**: создать модуль общих контрактов и запускаемый модуль приложения, которые будут расширяться на следующих шагах.
 
-**Что вводит этот шаг**: минимальную точку входа `@KoraApp`, модуль общих договоров и начальную многомодульную структуру. Это базовый граф, прежде чем мы начнем накладывать поверх него дополнительные
+**Что вводит этот шаг**: минимальную точку входа `@KoraApp`, модуль общих контрактов и исходную многомодульную раскладку. Это базовый граф до того, как поверх него начнут накладываться остальные
 возможности DI.
 
-**Зачем это нужно**: сначала мы задаем, что относится к модулю приложения, а что относится к переиспользуемым модулям. Это повторяет разделение, описанное
-в [Внедрение зависимостей с Kora: @KoraApp](dependency-injection-introduction.md#koraapp), [@Root](dependency-injection-introduction.md#root)
-и [документации контейнера: Контейнер](../documentation/container.md#container).
+**Зачем это нужно**: сначала мы определяем, что относится к модулю приложения, а что — к переиспользуемым модулям. Это повторяет разделение, описанное
+в [Внедрении зависимостей в Kora: @KoraApp](dependency-injection-introduction.md#koraapp), [@Root](dependency-injection-introduction.md#root)
+и [Документации контейнера: Контейнер](../documentation/container.md#container).
 
-**Что мы имитируем**: настоящий корень приложения, который отвечает за запуск, и модуль общего API, от которого другие модули могут зависеть, не подтягивая поведение, специфичное для приложения.
+**Что мы эмулируем**: настоящий корень приложения, который владеет запуском, и общий API-модуль, от которого могут зависеть другие модули, не притягивая при этом специфичное для приложения поведение.
 
-**Создайте общие договоры** (`guide-dependency-injection/guide-dependency-injection-common/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/common/`
-или `guide-dependency-injection/guide-dependency-injection-common/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/common/`):
+В руководстве используется пакет `io.koraframework.guide.dependencyinjection` — тот же, что и в эталонных приложениях. Стабильное имя пакета упрощает сверку вашего проекта с готовым примером и поиск
+сгенерированных Kora исходников.
+
+**Создайте общие контракты** (`guide-dependency-injection/guide-dependency-injection-common/src/main/java/io/koraframework/guide/dependencyinjection/common/`
+или `guide-dependency-injection/guide-dependency-injection-common/src/main/kotlin/io/koraframework/guide/dependencyinjection/common/`):
 
 #### Сборка общего модуля { #build-shared-module }
 
-Сначала создайте build-файл для `guide-dependency-injection-common`. Этот модуль содержит только интерфейсы и общие типы, поэтому ему нужен библиотечный JVM-плагин и тестовые зависимости, но не нужен
-плагин `application` и не нужна обработка аннотаций Kora.
+Сначала создайте файл сборки для `guide-dependency-injection-common`. В этом модуле лежат только интерфейсы и общие типы, поэтому ему нужен библиотечный JVM-плагин и тестовые зависимости, но не плагин
+приложения и не генерация кода Kora.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    Плагин `java-library` подходит для модулей с публичным API:
+    Плагин `java-library` подходит модулям с публичным API:
 
     ```groovy
     plugins {
@@ -609,7 +698,7 @@ java -version
     }
     ```
 
-    Позже другие модули будут зависеть от `common`, поэтому Gradle должен понимать разницу между внутренними зависимостями реализации и типами, которые являются частью API.
+    От `common` будут зависеть другие модули, поэтому Gradle должен различать внутренние зависимости реализации и типы, входящие в публичный API.
 
     Добавьте тестовые зависимости:
 
@@ -617,12 +706,12 @@ java -version
     dependencies {
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
-    Здесь `junit-bom` выравнивает версии JUnit, `junit-jupiter` добавляет JUnit 5, а `test-junit5` подключает тестовые утилиты Kora. В этом первом шаге тестов еще может не быть, но модуль сразу готов к
-    проверкам договоров и будущих компонентов.
+    `junit-bom` согласует версии JUnit, `junit-jupiter` добавляет JUnit 5, а `test-junit5` — тестовые утилиты Kora. На этом шаге тестов может еще не быть, но модуль уже готов к проверкам контрактов и
+    компонентов. Версия у `test-junit5` не нужна, потому что общий файл сборки уже заставил `testImplementation` наследовать `koraBom`.
 
     Итоговый `build.gradle` общего модуля:
 
@@ -634,52 +723,61 @@ java -version
     dependencies {
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Плагин `kotlin("jvm")` компилирует Kotlin-код в JVM-классы, которые смогут использовать `app` и `lib` модули:
+    Плагин Kotlin JVM компилирует Kotlin-код в классы JVM, которые смогут использовать модули `app` и `lib`, а `java-library` отделяет публичный API от зависимостей реализации:
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("java-library")
     }
     ```
 
-    Добавьте тестовые зависимости:
+    Ни у одного плагина здесь нет версии: обе версии объявлены один раз в `settings.gradle.kts`.
+
+    Добавьте BOM Kora и тестовые зависимости:
 
     ```kotlin
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-    `junit-bom` выравнивает версии JUnit, `junit-jupiter` добавляет JUnit 5, а `test-junit5` подключает тестовые утилиты Kora.
+    `junit-bom` согласует версии JUnit, `junit-jupiter` добавляет JUnit 5, а `test-junit5` — тестовые утилиты Kora. `testImplementation` наследует `implementation`, поэтому именно подключенный выше BOM
+    Kora позволяет объявить `test-junit5` без версии.
 
     Итоговый `build.gradle.kts` общего модуля:
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("java-library")
     }
 
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
 Затем создайте интерфейсы:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.common;
+    package io.koraframework.guide.dependencyinjection.common;
 
     public interface Notifier {
         void notify(String user, String message);
@@ -689,92 +787,94 @@ java -version
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.common
+    package io.koraframework.guide.dependencyinjection.common
 
     fun interface Notifier {
         fun notify(user: String, message: String)
     }
     ```
 
-**Создайте основное приложение** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/`
-или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/`):
+В Kotlin `Notifier` объявлен как `fun interface`, чтобы дальше в руководстве фабрики модулей могли возвращать его лямбдой.
+
+**Создайте основное приложение** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/`
+или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/`):
 
 #### Сборка приложения { #build-application }
 
-Создайте build-файл для `guide-dependency-injection-app`. Этот модуль запускается, содержит `@KoraApp` и должен включить генерацию графа Kora, поэтому его Gradle-настройка подробнее, чем у общего
-модуля договоров.
+Создайте файл сборки для `guide-dependency-injection-app`. Этот модуль запускаемый, содержит `@KoraApp` и должен включать генерацию графа Kora, поэтому его настройка Gradle сложнее, чем у модуля общих
+контрактов.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     Начните с плагинов:
 
     ```groovy
     plugins {
-        id "java"
         id "application"
     }
     ```
 
-    `java` компилирует исходники, а `application` добавляет запуск через `./gradlew run` и настройки main-класса.
+    Плагин `application` сам подключает `java` и добавляет `./gradlew run` вместе с настройкой главного класса, поэтому отдельная строка `id "java"` не нужна.
 
     Добавьте обработчик аннотаций Kora:
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
     }
     ```
 
-    Именно `annotationProcessor` читает `@KoraApp` и генерирует `ApplicationGraph`. Без этой строки Java-код может дойти до ссылки на сгенерированный класс, но сам граф приложения не будет создан.
+    `annotationProcessor` читает `@KoraApp` и генерирует `ApplicationGraph`. Без этой строки компиляция Java может дойти до ссылки на сгенерированный класс, но сам граф приложения создан не будет.
 
     Теперь добавьте зависимости приложения:
 
     ```groovy
     dependencies {
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
-        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
-    `common` дает общий интерфейс `Notifier`, `lib` будет добавлять библиотечные компоненты в следующих шагах, `config-hocon` подключает конфигурацию, а `logging-logback` добавляет логирование.
+    `common` дает общий интерфейс `Notifier`, `config-hocon` — конфигурацию, `logging-logback` — логирование. Проектные зависимости на `lib` и `submodule` добавляются на тех шагах, где эти модули
+    создаются.
 
-    Добавьте настройки для тестов:
+    Добавьте настройку тестов:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
-    `testAnnotationProcessor` нужен, когда тестовый граф тоже генерируется Kora. `test-junit5` дает интеграцию Kora с JUnit 5.
+    `testAnnotationProcessor` нужен только тогда, когда в тестовых исходниках объявлен собственный `@KoraApp` или другие аннотации Kora, требующие обработки. `test-junit5` добавляет расширение Kora для
+    JUnit 5.
 
     Настройте запуск приложения:
 
     ```groovy
     application {
         applicationName = "application"
-        mainClass = "ru.tinkoff.kora.guide.dependencyinjection.Application"
+        mainClass = "io.koraframework.guide.dependencyinjection.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
     ```
 
-    Этот блок принадлежит Gradle-плагину `application`. Он не имеет прямого отношения к DI-контейнеру Kora, но связывает сгенерированный граф Kora с обычным способом запуска JVM-приложения:
+    Этот блок относится к плагину Gradle `application`. Он не является частью DI-контейнера Kora напрямую, но связывает сгенерированный Kora граф с обычным запуском JVM-приложения:
 
-    - `applicationName = "application"` задает короткое имя приложения в Gradle-дистрибутиве. По этому имени Gradle создаст стартовые скрипты внутри архива, например `bin/application`.
-    - `mainClass` указывает на класс, где находится метод `main`. В Java это исходный интерфейс `Application`, а не сгенерированный `ApplicationGraph`: ваш `main` сам вызывает
+    - `applicationName = "application"` задает короткое имя приложения в дистрибутиве Gradle. По нему создаются стартовые скрипты вроде `bin/application`.
+    - `mainClass` указывает на класс с `main`. В Java это исходный интерфейс `Application`, а не сгенерированный `ApplicationGraph`: ваш метод `main` вызывает
       `KoraApplication.run(ApplicationGraph::graph)`.
-    - `applicationDefaultJvmArgs` задает JVM-аргументы, которые будут использоваться при `./gradlew run` и попадут в стартовые скрипты дистрибутива.
+    - `applicationDefaultJvmArgs` задает аргументы JVM для `./gradlew run` и для сгенерированных стартовых скриптов.
 
-    Важно, что `mainClass` ссылается на обычный исходный тип приложения. `ApplicationGraph` появится только после работы `annotationProcessor`, поэтому задача `classes` одновременно проверяет Java-код,
-    запуск обработчика аннотаций и возможность построить граф Kora.
+    Важно, что `mainClass` указывает на обычный исходный код. `ApplicationGraph` появляется только после работы `annotationProcessor`, поэтому задача `classes` проверяет сразу компиляцию Java,
+    обработку аннотаций и генерацию графа Kora.
 
-    Добавьте имя архива дистрибутива:
+    Задайте стабильное имя архива дистрибутива:
 
     ```groovy
     distTar {
@@ -782,38 +882,36 @@ java -version
     }
     ```
 
-    `distTar` — это задача, которую добавляет Gradle-плагин `application`. Она собирает tar-архив с приложением: скомпилированные классы, runtime-зависимости и стартовые скрипты. По умолчанию имя
-    архива зависит от имени проекта и версии, а в многомодульном учебном проекте это может давать длинные и менее удобные имена.
+    `distTar` — задача плагина Gradle `application`. Она собирает tar-архив с классами приложения, runtime-зависимостями и стартовыми скриптами. По умолчанию имя архива формируется из имени и версии
+    проекта, что в многомодульном учебном проекте получается длинным и неудобным.
 
-    `archiveFileName = "application.tar"` делает имя артефакта стабильным. Это удобно для тестов, CI и дальнейших шагов руководства: можно ссылаться на один предсказуемый файл, не вычисляя имя
-    Gradle-проекта и версию.
+    `archiveFileName = "application.tar"` делает имя артефакта стабильным. Это удобно для тестов, CI и дальнейших шагов руководства, потому что они могут ссылаться на один предсказуемый файл, а не
+    собирать имя из имени проекта и версии.
 
     Итоговый `build.gradle` приложения:
 
     ```groovy
     plugins {
-        id "java"
         id "application"
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
 
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
-        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
 
     application {
         applicationName = "application"
-        mainClass = "ru.tinkoff.kora.guide.dependencyinjection.Application"
+        mainClass = "io.koraframework.guide.dependencyinjection.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
 
@@ -828,68 +926,76 @@ java -version
 
     ```kotlin
     plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
         id("application")
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
     ```
 
-    `application` добавляет запуск через `./gradlew run`, `kotlin("jvm")` компилирует Kotlin-код, а `com.google.devtools.ksp` запускает символьный процессор Kora.
+    `org.jetbrains.kotlin.jvm` компилирует Kotlin-код, `com.google.devtools.ksp` запускает symbol processor Kora, а `application` добавляет `./gradlew run`.
 
-    Добавьте KSP-процессор Kora:
+    Добавьте BOM Kora и KSP-процессор:
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
     }
     ```
 
-    KSP читает `@KoraApp` и генерирует `ApplicationGraph`. Без этой зависимости приложение не получит сгенерированный граф.
+    KSP читает `@KoraApp` и генерирует `ApplicationGraph`. Без этой зависимости приложение не получит сгенерированный граф. Конфигурация `ksp` не покрывается BOM, поэтому у нее сохраняется явная версия.
 
     Теперь добавьте зависимости приложения:
 
     ```kotlin
     dependencies {
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
-        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
-    `common` дает общий интерфейс `Notifier`, `lib` будет добавлять библиотечные компоненты, `config-hocon` подключает HOCON-конфигурацию, а `logging-logback` добавляет логирование.
+    `common` дает общий интерфейс `Notifier`, `config-hocon` — конфигурацию HOCON, `logging-logback` — логирование. Проектные зависимости на `lib` и `submodule` добавляются на тех шагах, где эти модули
+    создаются.
 
     Добавьте тестовые зависимости:
 
     ```kotlin
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-    Настройте запуск:
+    Строки `kspTest(...)` здесь нет. Она нужна только когда в тестовых исходниках объявлен собственный `@KoraApp` или другие аннотации Kora, требующие обработки; тестам, которые переиспользуют основной
+    граф `Application` через `@KoraAppTest`, она не нужна.
+
+    Зарегистрируйте каталоги вывода KSP и настройте запуск:
 
     ```kotlin
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
+    }
+
     application {
-        applicationName.set("application")
-        mainClass.set("ru.tinkoff.kora.guide.dependencyinjection.ApplicationKt")
+        applicationName = "application"
+        mainClass.set("io.koraframework.guide.dependencyinjection.ApplicationKt")
         applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
     }
     ```
 
-    Этот блок принадлежит Gradle-плагину `application` и объясняет Gradle, как запускать Kotlin-приложение:
+    Блок `application` объясняет Gradle, как запускать Kotlin-приложение:
 
-    - `applicationName.set("application")` задает имя приложения в дистрибутиве и имя стартового скрипта.
-    - `mainClass.set(...)` указывает на класс, где находится функция `main`. В Kotlin top-level функция `main` из файла `Application.kt` компилируется в JVM-класс `ApplicationKt`, поэтому здесь указан
-      именно `ApplicationKt`.
-    - `applicationDefaultJvmArgs` задает JVM-аргументы для `./gradlew run` и будущих стартовых скриптов.
+    - `applicationName` задает имя приложения в дистрибутиве и имя стартового скрипта.
+    - `mainClass.set(...)` указывает на класс с `main`. В Kotlin функция `main` верхнего уровня из `Application.kt` компилируется в JVM-класс `ApplicationKt`, поэтому главный класс — `ApplicationKt`.
+    - `applicationDefaultJvmArgs` задает аргументы JVM для `./gradlew run` и сгенерированных стартовых скриптов.
 
-    Аргумент `-Dfile.encoding=UTF-8` фиксирует кодировку при запуске. Это помогает избежать различий между Windows, Linux и macOS, особенно когда приложение пишет текст в логи или читает строковые
-    ресурсы.
+    Аргумент `-Dfile.encoding=UTF-8` фиксирует кодировку во время выполнения. Это убирает различия между Windows, Linux и macOS при записи текста в логи и чтении строковых ресурсов.
 
-    Добавьте стабильное имя tar-архива:
+    Задайте стабильное имя tar-архива:
 
     ```kotlin
     tasks.distTar {
@@ -897,34 +1003,40 @@ java -version
     }
     ```
 
-    `distTar` собирает исполняемый дистрибутив приложения: классы, runtime-зависимости и стартовые скрипты. Фиксированное имя `application.tar` удобно для тестов, CI и следующих шагов руководства,
-    где важно ссылаться на один предсказуемый артефакт.
+    `distTar` собирает исполняемый дистрибутив с классами, runtime-зависимостями и стартовыми скриптами. Фиксированное имя `application.tar` удобно для тестов, CI и дальнейших шагов руководства,
+    которым нужен один предсказуемый артефакт.
 
     Итоговый `build.gradle.kts` приложения:
 
     ```kotlin
     plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
         id("application")
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
 
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
-        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
 
     application {
-        applicationName.set("application")
-        mainClass.set("ru.tinkoff.kora.guide.dependencyinjection.ApplicationKt")
+        applicationName = "application"
+        mainClass.set("io.koraframework.guide.dependencyinjection.ApplicationKt")
         applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
     }
 
@@ -935,18 +1047,19 @@ java -version
 
 Затем создайте приложение:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection;
+    package io.koraframework.guide.dependencyinjection;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends HoconConfigModule, LogbackModule {
+
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
         }
@@ -956,12 +1069,12 @@ java -version
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection
+    package io.koraframework.guide.dependencyinjection
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application : HoconConfigModule, LogbackModule
@@ -971,6 +1084,10 @@ java -version
     }
     ```
 
+`KoraApplication.run(...)` принимает `Supplier<ApplicationGraphDraw>`, а сгенерированный класс `ApplicationGraph` предоставляет ровно это через статический метод `graph()` — поэтому ссылка на метод
+`ApplicationGraph::graph` сюда подходит. Сгенерированный класс всегда называется по типу с `@KoraApp` плюс суффикс `Graph`, то есть интерфейс `Application` дает `ApplicationGraph`. До первого запуска
+обработки аннотаций или KSP этого класса не существует.
+
 **Соберите и запустите**:
 
 ```bash
@@ -979,7 +1096,8 @@ java -version
 ./gradlew run
 ```
 
-**Ожидаемый результат**: приложение запускается и завершается без ошибок. Модуль `lib` уже подключен в сборке, а следующие шаги добавят больше компонентов и модулей.
+**Ожидаемый вывод**: приложение стартует и корректно завершается. Kora пишет `Application initialized in ...ms`, а по `Ctrl+C` — `Application shutdown...`. Корневых компонентов в графе пока нет,
+поэтому больше ничего не происходит; компоненты и модули добавляются на следующих шагах.
 
 ---
 
@@ -990,16 +1108,16 @@ java -version
 **Что вводит этот шаг**: фабрики внешних модулей и `@DefaultComponent`. `EmailModule` находится вне модуля приложения и предоставляет значения по умолчанию, которые приложение может принять или
 заменить позже.
 
-**Зачем это нужно**: внешние модули - это способ, которым переиспользуемые библиотеки Kora публикуют компоненты для приложений, но они не обнаруживаются автоматически и должны подключаться явно. Это
-соответствует разделам [Внедрение зависимостей с Kora: @Module](dependency-injection-introduction.md#module), [@DefaultComponent](dependency-injection-introduction.md#defaultcomponent)
-и [документация контейнера: фабрика внешнего модуля](../documentation/container.md#external-module-factory).
+**Зачем это нужно**: внешние модули — это способ, которым переиспользуемые библиотеки Kora публикуют компоненты для приложений, но они не обнаруживаются автоматически и должны подключаться явно. Это
+соответствует разделам [Внедрение зависимостей в Kora: @Module](dependency-injection-introduction.md#module), [@DefaultComponent](dependency-injection-introduction.md#defaultcomponent)
+и [Документация контейнера: фабрика внешнего модуля](../documentation/container.md#external-module-factory).
 
-**Что мы имитируем**: библиотеку, которая поставляет реализацию уведомителя по электронной почте и договор конфигурации по умолчанию, но при этом позволяет приложению позже переопределить детали
+**Что мы эмулируем**: библиотеку, которая поставляет реализацию уведомителя по электронной почте и договор конфигурации по умолчанию, но при этом позволяет приложению позже переопределить детали
 представления.
 
-Сначала создайте файл сборки библиотечного модуля:
+Сначала создайте файл сборки библиотечного модуля. В отличие от `common`, этот модуль объявляет тип с `@ConfigMapper`, поэтому ему нужна собственная генерация кода Kora:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     `guide-dependency-injection/guide-dependency-injection-lib/build.gradle`
 
@@ -1009,13 +1127,15 @@ java -version
     }
 
     dependencies {
+        annotationProcessor "io.koraframework:annotation-processors"
+
         api project(":guide-dependency-injection:guide-dependency-injection-common")
 
-        implementation "ru.tinkoff.kora:config-common"
+        implementation "io.koraframework:config-common"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -1025,96 +1145,161 @@ java -version
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
     }
 
     dependencies {
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
         api(project(":guide-dependency-injection:guide-dependency-injection-common"))
 
-        implementation("ru.tinkoff.kora:config-common")
+        implementation("io.koraframework:config-common")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
     }
     ```
 
-**Создайте EmailModule** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/email/`
-или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/email/`):
+`api project(...)` выбран намеренно: `Notifier` встречается в сигнатурах, которые публикует этот модуль, поэтому потребители `lib` тоже должны его видеть. `config-common` приносит контракты
+конфигурации `Config` и `ConfigValueMapper`, не навязывая библиотеке конкретный формат конфигурации — выбор между HOCON и YAML остается за приложением.
 
-===! ":fontawesome-brands-java: Java"
+Затем зарегистрируйте новый модуль в корневом файле настроек и добавьте его в classpath приложения:
 
-    Создайте EmailModule:
+===! ":fontawesome-brands-java: `Java`"
 
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.email;
+    В `settings.gradle` модуль уже перечислен, а `guide-dependency-injection-app/build.gradle` теперь зависит от него:
 
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
-    import ru.tinkoff.kora.common.DefaultComponent;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.common.Config;
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor;
-
-    import java.util.function.Supplier;
-
-    public interface EmailModule {
-        final class EmailTag {
-            private EmailTag() {}
-        }
-
-        default EmailConfig config(Config config, ConfigValueExtractor<EmailConfig> extractor) {
-            return extractor.extract(config["notifier.email"]);
-        }
-
-        @Tag(EmailTag.class)
-        @DefaultComponent
-        default Supplier<String> emailNotifierHeaderSupplier() {
-            return () -> "[EMAIL DEFAULT] ";
-        }
-
-        @Tag(EmailTag.class)
-        default Notifier emailNotifier(EmailConfig emailConfig,
-                                       @Tag(EmailTag.class) Supplier<String> emailHeaderSupplier) {
-            String header = emailHeaderSupplier.get();
-            return (user, message) -> {
-                System.out.println(String.format("%s%s [USER:%s]: %s", header, emailConfig.topic(), user, message));
-            };
-        }
+    ```groovy
+    dependencies {
+        implementation project(":guide-dependency-injection:guide-dependency-injection-common")
+        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте EmailModule:
+    В `settings.gradle.kts` модуль уже перечислен, а `guide-dependency-injection-app/build.gradle.kts` теперь зависит от него:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.email
+    dependencies {
+        implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
+        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
+    }
+    ```
 
-    import java.util.function.Supplier
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
-    import ru.tinkoff.kora.common.DefaultComponent
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.common.Config
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor
+**Создайте EmailConfig** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/email/`
+или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/email/`):
 
-    interface EmailModule {
-        class EmailTag {
-            // Классы Kotlin по умолчанию final, закрытый конструктор не нужен
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.email;
+
+    import io.koraframework.config.common.annotation.ConfigMapper;
+
+    @ConfigMapper
+    public record EmailConfig(String topic) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.email
+
+    import io.koraframework.config.common.annotation.ConfigMapper
+
+    @ConfigMapper
+    data class EmailConfig(val topic: String)
+    ```
+
+`@ConfigMapper` — это библиотечная аннотация конфигурации: она указывает Kora сгенерировать `ConfigValueMapper<EmailConfig>`, не привязывая тип к фиксированному пути конфигурации. Путь выбирает
+метод модуля ниже, поэтому один и тот же тип конфигурации можно переиспользовать в разных секциях. Для типа конфигурации, который принадлежит приложению и привязан к одному пути, используйте
+`@ConfigSource` — см. [Конфигурация](../documentation/config.md).
+
+**Создайте EmailModule** (тот же пакет):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.email;
+
+    import java.util.function.Supplier;
+    import io.koraframework.common.annotation.DefaultComponent;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.common.Config;
+    import io.koraframework.config.common.mapper.ConfigValueMapper;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
+
+    public interface EmailModule {
+
+        final class EmailTag {
+            private EmailTag() {}
         }
 
-        fun config(config: Config, extractor: ConfigValueExtractor<EmailConfig>): EmailConfig {
-            return extractor.extract(config["notifier.email"])
+        default EmailConfig config(Config config, ConfigValueMapper<EmailConfig> extractor) {
+            return extractor.mapOrThrow(config.get("notifier.email")); //(1)!
+        }
+
+        @Tag(EmailTag.class)
+        @DefaultComponent //(2)!
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL DEFAULT] ";
+        }
+
+        @Tag(EmailTag.class)
+        default Notifier emailNotifier(EmailConfig emailConfig, @Tag(EmailTag.class) Supplier<String> headerSupplier) {
+            return (user, message) -> System.out.println(headerSupplier.get() + emailConfig.topic() + " [USER:" + user + "]: " + message);
+        }
+    }
+    ```
+
+    1.  `mapOrThrow` завершает сборку графа ошибкой конфигурации, если секции нет или ее не удается отобразить. Используйте `map`, если отсутствующая секция должна давать `null`.
+    2.  Помечает фабрику как стандартную: приложение может объявить собственную фабрику для того же типа и тега, и Kora предпочтет фабрику приложения.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.email
+
+    import java.util.function.Supplier
+    import io.koraframework.common.annotation.DefaultComponent
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.common.Config
+    import io.koraframework.config.common.mapper.ConfigValueMapper
+    import io.koraframework.guide.dependencyinjection.common.Notifier
+
+    interface EmailModule {
+
+        class EmailTag private constructor()
+
+        fun config(config: Config, extractor: ConfigValueMapper<EmailConfig>): EmailConfig {
+            return extractor.mapOrThrow(config["notifier.email"]) //(1)!
         }
 
         @Tag(EmailTag::class)
-        @DefaultComponent
+        @DefaultComponent //(2)!
         fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL DEFAULT] " }
         }
 
         @Tag(EmailTag::class)
-        fun emailNotifier(emailConfig: EmailConfig,
-                         @Tag(EmailTag::class) headerSupplier: Supplier<String>): Notifier {
+        fun emailNotifier(
+            emailConfig: EmailConfig,
+            @Tag(EmailTag::class) headerSupplier: Supplier<String>
+        ): Notifier {
             return Notifier { user, message ->
                 println("${headerSupplier.get()}${emailConfig.topic} [USER:$user]: $message")
             }
@@ -1122,36 +1307,26 @@ java -version
     }
     ```
 
-**Создайте EmailConfig** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/email/`
-или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/email/`):
+    1.  `mapOrThrow` завершает сборку графа ошибкой конфигурации, если секции нет или ее не удается отобразить. Используйте `map`, если отсутствующая секция должна давать `null`.
+    2.  Помечает фабрику как стандартную: приложение может объявить собственную фабрику для того же типа и тега, и Kora предпочтет фабрику приложения.
 
-===! ":fontawesome-brands-java: Java"
-
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.email;
-
-    public record EmailConfig(String topic) {}
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.email
-
-    data class EmailConfig(val topic: String)
-    ```
+`EmailTag` — обычный вложенный класс, который служит только маркером во время компиляции. Он никогда не создается, поэтому у него может быть приватный конструктор. Классы-теги должны быть видны из
+каждого места, которое на них ссылается, поэтому package-private или `private` тег верхнего уровня не будет работать между модулями.
 
 **Обновите Application**, чтобы подключить модуль электронной почты:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
-            EmailModule {  // <----- Подключили модуль
-        // EmailModule предоставляет уведомление по электронной почте по умолчанию
+            EmailModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
@@ -1162,8 +1337,10 @@ java -version
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule {  // <----- Подключили модуль
-        // EmailModule предоставляет уведомление по электронной почте по умолчанию
+        EmailModule  // <----- Connected module
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
@@ -1181,14 +1358,14 @@ java -version
     logging {
       levels {
         "ROOT": "WARN" //(2)!
-        "ru.tinkoff.kora": "INFO" //(3)!
+        "io.koraframework": "INFO" //(3)!
       }
     }
     ```
 
-    1. Тема или название канала, которое использует компонент.
-    2. Уровень журналирования для `ROOT`.
-    3. Уровень журналирования для `ru.tinkoff.kora`.
+    1.  Тема или название канала, которое использует компонент.
+    2.  Уровень журналирования для `ROOT`.
+    3.  Уровень журналирования для `io.koraframework` — это же пакет приложения из руководства.
 
 === ":simple-yaml: `YAML`"
 
@@ -1196,107 +1373,130 @@ java -version
     notifier:
       email:
         topic: "USER" #(1)!
-      logging:
-        levels:
-          ROOT: "WARN" #(2)!
-          "ru.tinkoff.kora": "INFO" #(3)!
+
+    logging:
+      levels:
+        ROOT: "WARN" #(2)!
+        "io.koraframework": "INFO" #(3)!
     ```
 
-    1. Тема или название канала, которое использует компонент.
-    2. Уровень журналирования для `ROOT`.
-    3. Уровень журналирования для `ru.tinkoff.kora`.
+    1.  Тема или название канала, которое использует компонент.
+    2.  Уровень журналирования для `ROOT`.
+    3.  Уровень журналирования для `io.koraframework` — это же пакет приложения из руководства.
 
-**Соберите и запустите** - у приложения все еще нет корневого компонента, поэтому оно просто запускается и останавливается.
+Модуль приложения зависит от `config-hocon`, поэтому фактически читается `application.conf`. Если вам удобнее YAML, замените зависимость на `io.koraframework:config-yaml`, а модуль — на
+`YamlConfigModule`.
+
+**Соберите и запустите** — у приложения все еще нет корневого компонента, поэтому оно просто запускается и останавливается.
 
 **Ключевое понятие**: `@DefaultComponent` предоставляет библиотечные значения по умолчанию, которые приложения могут переопределять.
 
 **Правило регистрации модулей**: если тип помечен `@Module`, не подключайте его одновременно через `extends` в `@KoraApp` или другом модуле. Модуль должен регистрироваться ровно одним способом: либо
-наследоваться через `extends`, либо обнаруживаться потому, что он помечен `@Module` и находится под текущим графом `@KoraApp` / `@KoraSubmodule`. Сам `@KoraSubmodule` - это как раз случай, где
-наследование ожидаемо.
+наследоваться через `extends`, либо обнаруживаться потому, что он помечен `@Module` и компилируется вместе с текущим `@KoraApp` / `@KoraSubmodule`. Сам `@KoraSubmodule` — это как раз тот случай, где
+наследование ожидаемо, потому что обработчик ищет `@KoraSubmodule` только среди интерфейсов, которые расширяет тип с `@KoraApp`.
 
-**Что сгенерирует Kora для `EmailModule`**: после `./gradlew clean classes` в `ApplicationGraph` появятся не все строки из примера ниже один в один, потому что номера `componentN` являются внутренними
-именами генератора. Но структура будет такой: Kora создаст узел конфигурации, узел значения по умолчанию и узел самого уведомителя.
+Учтите, что `@Module` можно ставить только на интерфейсы. На классе аннотация приводит к ошибке компиляции `@Module can only be applied to interfaces.`
 
-===! ":fontawesome-brands-java: Java"
+**Что Kora генерирует для `EmailModule`**: после `./gradlew clean classes` в `ApplicationGraph` не обязательно окажутся ровно те же номера `componentN`, что показаны ниже, — это внутренние детали
+генератора. Важна структура: Kora создает узел конфигурации, узел значения по умолчанию и узел уведомителя.
 
-    ??? abstract "Java: фрагмент generated-графа для `EmailModule`"
+===! ":fontawesome-brands-java: `Java`"
+
+    ??? abstract "Java: фрагмент сгенерированного графа для `EmailModule`"
 
         ```java
         private final Node<EmailConfig> component8;
         private final Node<Supplier<String>> component9;
         private final Node<Notifier> component10;
 
-        component8 = graphDraw.addNode0(_type_of_component8,
-            new Class<?>[]{},
+        component8 = graphDraw.addNode(_type_of_component8,
+            null,
+            null,
+            List.of(component6, component7),
+            List.of(component6, component7),
+            List.of(),
             g -> impl.config(
                 g.get(ApplicationGraph.holder0.component6),
                 g.get(ApplicationGraph.holder0.component7)
-            ),
-            List.of(), component6, component7);
+            ));
 
-        component9 = graphDraw.addNode0(_type_of_component9,
-            new Class<?>[]{EmailModule.EmailTag.class},
-            g -> impl.emailNotifierHeaderSupplier(),
-            List.of());
+        component9 = graphDraw.addNode(_type_of_component9,
+            EmailModule.EmailTag.class,
+            null,
+            List.of(),
+            List.of(),
+            List.of(),
+            g -> impl.emailNotifierHeaderSupplier());
 
-        component10 = graphDraw.addNode0(_type_of_component10,
-            new Class<?>[]{EmailModule.EmailTag.class},
+        component10 = graphDraw.addNode(_type_of_component10,
+            EmailModule.EmailTag.class,
+            null,
+            List.of(component8, component9),
+            List.of(component8, component9),
+            List.of(),
             g -> impl.emailNotifier(
                 g.get(ApplicationGraph.holder0.component8),
                 g.get(ApplicationGraph.holder0.component9)
-            ),
-            List.of(), component8, component9);
+            ));
         ```
 
-        Здесь видно, почему `EmailModule` нужно подключить через `extends`: только после этого его фабричные методы попадают в граф приложения.
+        Здесь видно, почему `EmailModule` нужно подключать через `extends`: только тогда его фабричные методы попадают в граф приложения.
 
-        - `component8` создается из `notifier.email` и превращает HOCON-конфигурацию в типизированный `EmailConfig`.
-        - `component9` - tagged-компонент `Supplier<String>` с `EmailTag`. Так Kora отличает email-заголовок от других возможных `Supplier<String>`.
-        - `component10` - tagged `Notifier`, который зависит от `EmailConfig` и tagged `Supplier<String>`.
-        - `@DefaultComponent` у `emailNotifierHeaderSupplier()` означает: библиотека дает значение по умолчанию, а приложение сможет заменить его в следующей главе.
+        - `component8` читает `notifier.email` и превращает HOCON-конфигурацию в типизированный `EmailConfig`.
+        - `component9` — это `Supplier<String>` с тегом `EmailTag`. Так Kora отличает заголовок письма от других возможных компонентов `Supplier<String>`.
+        - `component10` — это `Notifier` с тегом, который зависит от `EmailConfig` и от `Supplier<String>` с тегом.
+        - Второй аргумент `addNode` — это тег, третий — необязательный предикат `@Conditional`, а два аргумента `List.of(...)` — зависимости на создание и на обновление.
+        - `@DefaultComponent` у `emailNotifierHeaderSupplier()` означает, что библиотека дает значение по умолчанию, а приложение сможет заменить его в следующем разделе.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ??? abstract "Kotlin: фрагмент generated-графа для `EmailModule`"
+    ??? abstract "Kotlin: фрагмент сгенерированного графа для `EmailModule`"
 
         ```kotlin
         public val component8: Node<EmailConfig>
         public val component9: Node<Supplier<String>>
         public val component10: Node<Notifier>
 
-        component8 = graphDraw.addNode0(map["component8"],
-          arrayOf(),
+        component8 = graphDraw.addNode(map["component8"],
+          null,
+          null,
+          listOf(component6, component7),
+          listOf(component6, component7),
+          listOf(),
           { impl.config(
             it.get(holder0.component6),
             it.get(holder0.component7)
-          ) },
+          ) }
+        )
+
+        component9 = graphDraw.addNode(map["component9"],
+          EmailModule.EmailTag::class.java,
+          null,
           listOf(),
-          component6, component7
+          listOf(),
+          listOf(),
+          { impl.emailNotifierHeaderSupplier() }
         )
 
-        component9 = graphDraw.addNode0(map["component9"],
-          arrayOf(EmailModule.EmailTag::class.java),
-          { impl.emailNotifierHeaderSupplier() },
-          listOf()
-        )
-
-        component10 = graphDraw.addNode0(map["component10"],
-          arrayOf(EmailModule.EmailTag::class.java),
+        component10 = graphDraw.addNode(map["component10"],
+          EmailModule.EmailTag::class.java,
+          null,
+          listOf(component8, component9),
+          listOf(component8, component9),
+          listOf(),
           { impl.emailNotifier(
             it.get(holder0.component8),
             it.get(holder0.component9)
-          ) },
-          listOf(),
-          component8, component9
+          ) }
         )
         ```
 
         Kotlin/KSP генерирует тот же смысл в Kotlin-коде:
 
         - `EmailConfig` становится отдельным узлом графа.
-        - `EmailTag` записывается в массив тегов у `Supplier<String>` и `Notifier`.
+        - `EmailTag` передается как тег узла и для `Supplier<String>`, и для `Notifier`.
         - `emailNotifier(...)` получает зависимости из графа, а не создает их сам.
-        - В следующей главе приложение переопределит `emailNotifierHeaderSupplier()`, и Kora подставит новый узел вместо библиотечного `@DefaultComponent`.
+        - В следующем разделе приложение переопределит `emailNotifierHeaderSupplier()`, и Kora подставит новый узел вместо библиотечного `@DefaultComponent`.
 
 ---
 
@@ -1304,38 +1504,37 @@ java -version
 
 **Цель**: показать, как приложения могут переопределять библиотечные значения по умолчанию.
 
-**Что вводит этот шаг**: переопределение компонента для фабрики `@DefaultComponent` из внешнего модуля. Приложение заменяет только поставщика заголовка и оставляет остальное библиотечное поведение без
-изменений.
+**Что вводит этот шаг**: переопределение компонента для фабрики `@DefaultComponent` из внешнего модуля. Приложение заменяет только поставщика заголовка и оставляет остальное библиотечное поведение
+без изменений.
 
 **Зачем это нужно**: библиотеки должны предоставлять надежные значения по умолчанию, но приложения должны сохранять окончательный контроль над поведением, видимым для предметной области. Это
-соответствует
-разделам [Внедрение зависимостей с Kora: стандартная фабрика](dependency-injection-introduction.md#defaultcomponent-factory), [@DefaultComponent](dependency-injection-introduction.md#defaultcomponent)
-и [документация контейнера: стандартная фабрика](../documentation/container.md#default-factory).
+соответствует разделам [Внедрение зависимостей в Kora: стандартная фабрика](dependency-injection-introduction.md#defaultcomponent-factory), [@DefaultComponent](dependency-injection-introduction.md#defaultcomponent)
+и [Документация контейнера: стандартная фабрика](../documentation/container.md#default-factory).
 
-**Что мы имитируем**: настройку общего библиотечного уведомителя под конкретное приложение без ответвления или полного переписывания модуля.
+**Что мы эмулируем**: настройку общего библиотечного уведомителя под конкретное приложение без ответвления или полного переписывания модуля.
 
-**Создайте NotifyRunner** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/`
-или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/`):
+**Создайте NotifyRunner** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/`
+или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection;
+    package io.koraframework.guide.dependencyinjection;
 
-    import ru.tinkoff.kora.application.graph.All;
-    import ru.tinkoff.kora.application.graph.Lifecycle;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    import io.koraframework.application.graph.All;
+    import io.koraframework.application.graph.Lifecycle;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
-    @Root
+    @Root //(1)!
     @Component
     public final class NotifyRunner implements Lifecycle {
 
         private final All<Notifier> allNotifiers;
 
-        public NotifyRunner(@Tag(Tag.Any.class) All<Notifier> allNotifiers) {
+        public NotifyRunner(@Tag(Tag.Any.class) All<Notifier> allNotifiers) { //(2)!
             this.allNotifiers = allNotifiers;
         }
 
@@ -1354,27 +1553,32 @@ java -version
     }
     ```
 
+    1.  От `NotifyRunner` никто не зависит, поэтому без `@Root` Kora убрала бы его из графа и он никогда не был бы создан.
+    2.  `@Tag(Tag.Any.class)` расширяет запрос на все `Notifier` независимо от тега. Без него запрос `All<Notifier>` без тега попадает только в уведомители без тегов.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection
+    package io.koraframework.guide.dependencyinjection
 
-    import ru.tinkoff.kora.application.graph.All
-    import ru.tinkoff.kora.application.graph.Lifecycle
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.application.graph.All
+    import io.koraframework.application.graph.Lifecycle
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
-    @Root
+    @Root //(1)!
     @Component
     class NotifyRunner(
-        @Tag(Tag.Any::class) private val allNotifiers: All<Notifier>
+        @Tag(Tag.Any::class) private val allNotifiers: All<Notifier> //(2)!
     ) : Lifecycle {
 
         override fun init() {
             println("DI tutorial step 3 start")
-            allNotifiers.forEach { it.notify("Alice", "Welcome!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Alice", "Welcome!")
+            }
         }
 
         override fun release() {
@@ -1383,16 +1587,30 @@ java -version
     }
     ```
 
-**Обновите Application**, чтобы переопределить заголовок электронной почты:
+    1.  От `NotifyRunner` никто не зависит, поэтому без `@Root` Kora убрала бы его из графа и он никогда не был бы создан.
+    2.  `@Tag(Tag.Any::class)` расширяет запрос на все `Notifier` независимо от тега. Без него запрос `All<Notifier>` без тега попадает только в уведомители без тегов.
 
-===! ":fontawesome-brands-java: Java"
+`Lifecycle` находится в `io.koraframework.application.graph` и объявляет ровно два метода — `init()` и `release()`. При старте Kora вызывает `init()` в порядке графа, а при остановке `release()` — в
+обратном порядке, поэтому компонент всегда инициализируется после всего, от чего он зависит, и освобождается раньше своих зависимостей.
+
+**Обновите Application**, чтобы переопределить заголовок письма:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import java.util.function.Supplier;
+    import io.koraframework.common.annotation.Tag;
+
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
-            EmailModule {  // <----- Подключили модуль
+            EmailModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1405,18 +1623,28 @@ java -version
 
     ```kotlin
     import java.util.function.Supplier
+    import io.koraframework.common.annotation.Tag
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule {  // <----- Подключили модуль
+        EmailModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
         }
     }
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
+
+Переопределение — это обычное переопределение метода Java или Kotlin, поэтому совпадение сигнатуры уже гарантирует компилятор. `@Tag` нужно повторить на переопределяющем методе: тег входит в
+идентичность компонента и не наследуется от переопределенного метода. Обратите внимание также, что переопределение намеренно не несет `@DefaultComponent` — именно поэтому фабрика приложения
+побеждает библиотечное значение по умолчанию.
 
 **Соберите и запустите**:
 
@@ -1432,30 +1660,54 @@ Application shutdown
 
 ### Зависимости с тегами { #tagged-dependencies }
 
-**Цель**: показать, как теги позволяют иметь несколько реализаций одного интерфейса, а `All<T>` позволяет получить все подходящие уведомители сразу.
+**Цель**: показать, как теги позволяют иметь несколько реализаций одного интерфейса, а `All<T>` — получать сразу все подходящие уведомители.
 
-**Что вводит этот шаг**: `@Tag` для различения нескольких реализаций `Notifier` и `All<T>` для рассылки через них. `SmsModule` - внутренний `@Module`, поэтому он автоматически обнаруживается из модуля
+**Что вводит этот шаг**: `@Tag` для различения нескольких реализаций `Notifier` и `All<T>` для рассылки через них. `SmsModule` — внутренний `@Module`, поэтому он обнаруживается автоматически из модуля
 приложения, а не наследуется через `extends`.
 
 **Зачем это нужно**: как только у одного договора появляется несколько реализаций, обычного внедрения только по типу уже недостаточно. Теги делают граф явным, а `All<T>` дает естественный способ
-разослать уведомления по нескольким каналам.
-См. [Внедрение зависимостей с Kora: @Tag](dependency-injection-introduction.md#tag), [Запросы зависимостей и разрешение: All](dependency-injection-introduction.md#all), [Система тегов](dependency-injection-introduction.md#tag-system)
-и [документация контейнера: `Tag.Any`](../documentation/container.md#tag-any).
+разослать уведомления по всем каналам.
+См. [Внедрение зависимостей в Kora: @Tag](dependency-injection-introduction.md#tag), [Запросы зависимостей и разрешение: All](dependency-injection-introduction.md#all), [Система тегов](dependency-injection-introduction.md#tag-system)
+и [Документация контейнера: Tag any](../documentation/container.md#tag-any).
 
-**Что мы имитируем**: службу уведомлений, которая может отправить одно и то же сообщение через каждый доступный канал, а не выбирать только одну реализацию.
+**Что мы эмулируем**: службу уведомлений, которая может отправить одно и то же сообщение через каждый доступный канал, а не выбирать только одну реализацию.
 
-**Создайте SmsModule** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/sms/`
-или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/sms/`):
+**Создайте контракт SMS-провайдера** в библиотечном модуле
+(`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`). Пока существует только контракт, его никто не предоставляет:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
+    package io.koraframework.guide.dependencyinjection.sms;
 
-    import jakarta.annotation.Nullable;
-    import ru.tinkoff.kora.common.Module;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    public interface SmsCellularProvider {
+        String getCode();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.sms
+
+    fun interface SmsCellularProvider {
+        fun getCode(): String
+    }
+    ```
+
+**Создайте SmsModule** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.sms;
+
+    import org.jspecify.annotations.Nullable;
+    import io.koraframework.common.annotation.Module;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
     @Module
     public interface SmsModule {
@@ -1480,14 +1732,15 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
+    package io.koraframework.guide.dependencyinjection.sms
 
-    import ru.tinkoff.kora.common.Module
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.common.annotation.Module
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
     @Module
     interface SmsModule {
+
         class SmsTag private constructor()
 
         @Tag(SmsTag::class)
@@ -1503,16 +1756,25 @@ Application shutdown
     }
     ```
 
-**Примечание о приложении**: `SmsModule` помечен `@Module` и находится в пакете приложения, поэтому Kora обнаруживает его автоматически. Не добавляйте его через `extends` в `Application`.
+В Java для необязательных зависимостей используется [JSpecify](https://jspecify.dev/) `org.jspecify.annotations.Nullable`. Он приходит транзитивно с любым модулем Kora, поэтому отдельная зависимость
+не нужна. В Kotlin аннотации нет вообще: `?` у типа параметра — это и есть все объявление.
 
-===! ":fontawesome-brands-java: Java"
+**Примечание о приложении**: `SmsModule` помечен `@Module` и компилируется вместе с `@KoraApp`, поэтому Kora обнаруживает его автоматически. Не добавляйте его через `extends` в `Application`.
+Интерфейс `Application` остается ровно таким же, каким был на предыдущем шаге:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
-            EmailModule {  // <----- Подключили модуль
+            EmailModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1524,13 +1786,12 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    import java.util.function.Supplier
-
     @KoraApp
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule {  // <----- Подключили модуль
+        EmailModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
@@ -1540,7 +1801,7 @@ Application shutdown
 
 **Обновите NotifyRunner**, чтобы пройтись по всем уведомителям:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -1579,7 +1840,9 @@ Application shutdown
 
         override fun init() {
             println("DI tutorial step 4 start")
-            allNotifiers.forEach { it.notify("Bob", "Hello!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Bob", "Hello!")
+            }
         }
 
         override fun release() {
@@ -1597,7 +1860,9 @@ DI tutorial step 4 start
 Application shutdown
 ```
 
-**Ключевое понятие**: `@Tag` позволяет иметь несколько реализаций одного договора, а `All<T>` позволяет отправлять сообщение через все из них.
+В строке SMS пока нет кода оператора: `SmsCellularProvider` никто в графе не предоставляет, и nullable-параметр разрешился в `null`. Следующий шаг это исправляет.
+
+**Ключевое понятие**: `@Tag` позволяет иметь несколько реализаций одного договора, а `@Tag(Tag.Any.class) All<T>` — рассылать сообщение сразу по всем из них.
 
 ---
 
@@ -1608,29 +1873,22 @@ Application shutdown
 **Что вводит этот шаг**: допускающие `null` зависимости для необязательного поведения. `SmsModule` может работать как с `SmsCellularProvider`, так и без него, а `SmsCellularModule` добавляет
 поставщика только тогда, когда приложение решает его унаследовать.
 
-**Зачем это нужно**: некоторые возможности должны дополнять существующий компонент, а не вынуждать создавать отдельную ветку реализации. Это соответствует
-разделам [Внедрение зависимостей с Kora: `Nullable`](dependency-injection-introduction.md#optional)
-и [документация контейнера: необязательные зависимости](../documentation/container.md#optional-dependencies).
+**Зачем это нужно**: некоторые возможности должны дополнять существующий компонент, а не вынуждать создавать отдельную ветку реализации. Это
+соответствует разделам [Внедрение зависимостей в Kora: Nullable](dependency-injection-introduction.md#optional)
+и [Документация контейнера: необязательные зависимости](../documentation/container.md#optional-dependencies).
 
-**Что мы имитируем**: необязательное обогащение форматирования SMS кодом поставщика, при котором уведомитель продолжает работать даже без настроенного поставщика.
+**Что мы эмулируем**: необязательное обогащение форматирования SMS кодом оператора, при котором уведомитель продолжает работать даже без настроенного поставщика.
 
-**Создайте SmsCellularProvider и SmsCellularModule** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/sms/`
-или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/sms/`):
+**Создайте SmsCellularModule** рядом с `SmsCellularProvider` в библиотечном модуле
+(`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+или `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`):
 
-===! ":fontawesome-brands-java: Java"
-
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
-
-    public interface SmsCellularProvider {
-        String getCode();
-    }
-    ```
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
+    package io.koraframework.guide.dependencyinjection.sms;
 
-    import ru.tinkoff.kora.common.DefaultComponent;
+    import io.koraframework.common.annotation.DefaultComponent;
 
     public interface SmsCellularModule {
 
@@ -1644,19 +1902,12 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
+    package io.koraframework.guide.dependencyinjection.sms
 
-    fun interface SmsCellularProvider {
-        fun getCode(): String
-    }
-    ```
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
-
-    import ru.tinkoff.kora.common.DefaultComponent
+    import io.koraframework.common.annotation.DefaultComponent
 
     interface SmsCellularModule {
+
         @DefaultComponent
         fun smsCellularProvider(): SmsCellularProvider {
             return SmsCellularProvider { "1" }
@@ -1666,15 +1917,20 @@ Application shutdown
 
 **Обновите Application**, чтобы подключить модуль поставщика. `SmsCellularModule` не помечен `@Module`, поэтому он намеренно подключается через `extends`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
-            EmailModule,  // <----- Подключили модуль
-            SmsCellularModule {  // <----- Подключили модуль
+            EmailModule,  // <----- Connected module
+            SmsCellularModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1690,8 +1946,9 @@ Application shutdown
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule,  // <----- Подключили модуль
-        SmsCellularModule {  // <----- Подключили модуль
+        EmailModule,  // <----- Connected module
+        SmsCellularModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
@@ -1708,7 +1965,8 @@ DI tutorial step 5 start
 Application shutdown
 ```
 
-**Ключевое понятие**: `@Nullable` в Java и nullable-типы в Kotlin позволяют компоненту продолжать работу даже тогда, когда необязательная зависимость отсутствует.
+**Ключевое понятие**: `@Nullable` в Java и nullable-типы в Kotlin позволяют компоненту продолжать работать даже тогда, когда необязательная зависимость отсутствует. Отсутствие обязательной
+зависимости — ошибка компиляции, а отсутствие необязательной молча разрешается в `null`, поэтому ветку с `null` стоит делать осмысленной.
 
 ---
 
@@ -1719,12 +1977,12 @@ Application shutdown
 **Что вводит этот шаг**: `@KoraSubmodule` как границу, которая превращает другой Gradle-модуль в видимую для DI единицу компиляции. Внутри этого подмодуля объявления `@Module` и `@Component`
 собираются и передаются основному `@KoraApp` через наследование.
 
-**Зачем это нужно**: обычные Gradle-модули не сканируются Kora, если в них нет `@KoraApp` или `@KoraSubmodule`. Именно этот механизм позволяет вынести функциональность отправителей сообщений в
+**Зачем это нужно**: обычные Gradle-модули не сканируются Kora, если в них нет `@KoraApp` или `@KoraSubmodule`. Именно этот механизм позволяет вынести функциональность отправки сообщений в
 собственный модуль и не потерять обнаружение DI.
-См. [Внедрение зависимостей с Kora: @KoraSubmodule](dependency-injection-introduction.md#korasubmodule), [примечание об области обзора](dependency-injection-introduction.md#overview)
-и [документация контейнера: фабрика подмодуля](../documentation/container.md#submodule-factory).
+См. [Внедрение зависимостей в Kora: @KoraSubmodule](dependency-injection-introduction.md#korasubmodule), [примечание об области обзора](dependency-injection-introduction.md#overview)
+и [Документация контейнера: фабрика подмодуля](../documentation/container.md#submodule-factory).
 
-**Что мы имитируем**: более крупную кодовую базу, где отдельная команда или пакет владеет доставкой сообщений, но основное приложение все равно собирает это в один граф.
+**Что мы эмулируем**: более крупную кодовую базу, где отдельная команда или пакет владеет доставкой сообщений, но основное приложение все равно собирает это в один граф.
 
 Теперь создайте и подключите подмодуль: руководство подошло к части про `@KoraSubmodule`.
 
@@ -1748,7 +2006,7 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 
 **Создайте `guide-dependency-injection/guide-dependency-injection-submodule/build.gradle`**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     plugins {
@@ -1756,60 +2014,76 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors" //(1)!
 
         api project(":guide-dependency-injection:guide-dependency-injection-common")
 
-        implementation "ru.tinkoff.kora:common"
+        implementation "io.koraframework:common" //(2)!
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
+
+    1.  Обязательно: `@KoraSubmodule` обрабатывается в этом модуле, а не в модуле приложения. Обработчик пишет здесь интерфейс `MessengerModuleSubmoduleImpl`, а модуль приложения затем наследует
+        его через `MessengerModule`.
+    2.  `io.koraframework:common` содержит аннотации DI и транзитивно приносит `application-graph` с `All`, `ValueOf` и `Lifecycle`.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}") //(1)!
 
         api(project(":guide-dependency-injection:guide-dependency-injection-common"))
 
-        implementation("ru.tinkoff.kora:common")
+        implementation("io.koraframework:common") //(2)!
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
     ```
 
-**Обновите `guide-dependency-injection-app/build.gradle`**, чтобы добавить зависимость на новый модуль:
+    1.  Обязательно: `@KoraSubmodule` обрабатывается в этом модуле, а не в модуле приложения. KSP пишет здесь интерфейс `MessengerModuleSubmoduleImpl`, а модуль приложения затем наследует его
+        через `MessengerModule`.
+    2.  `io.koraframework:common` содержит аннотации DI и транзитивно приносит `application-graph` с `All`, `ValueOf` и `Lifecycle`.
 
-===! ":fontawesome-brands-java: Java"
+**Обновите файл сборки `guide-dependency-injection-app`**, чтобы добавить зависимость на новый модуль:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
 
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
         implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
         implementation project(":guide-dependency-injection:guide-dependency-injection-submodule")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -1817,29 +2091,31 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
 
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
         implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
         implementation(project(":guide-dependency-injection:guide-dependency-injection-submodule"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-**Создайте MessengerModule** (`guide-dependency-injection/guide-dependency-injection-submodule/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/messenger/`
-или `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/messenger/`):
+**Создайте MessengerModule** (`guide-dependency-injection/guide-dependency-injection-submodule/src/main/java/io/koraframework/guide/dependencyinjection/messenger/`
+или `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kotlin/io/koraframework/guide/dependencyinjection/messenger/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
-    import ru.tinkoff.kora.common.KoraSubmodule;
+    import io.koraframework.common.annotation.KoraSubmodule;
 
     @KoraSubmodule
     public interface MessengerModule {
@@ -1853,22 +2129,26 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    import ru.tinkoff.kora.common.KoraSubmodule
+    import io.koraframework.common.annotation.KoraSubmodule
 
     @KoraSubmodule
     interface MessengerModule {
-        class MessengerTag
+
+        class MessengerTag private constructor()
     }
     ```
 
+Тело интерфейса почти пустое намеренно. `@KoraSubmodule` — это маркер: при компиляции этого Gradle-модуля Kora собирает все объявления `@Module` и `@Component` из той же единицы компиляции и
+записывает их в сгенерированный интерфейс `MessengerModuleSubmoduleImpl`. Приложение подхватывает все это, унаследовав `MessengerModule`.
+
 **Создайте интерфейс Messenger**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
     public interface Messenger {
         void sendMessage(String message);
@@ -1878,25 +2158,25 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    interface Messenger {
+    fun interface Messenger {
         fun sendMessage(message: String)
     }
     ```
 
 **Создайте SlackMessenger**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger.slack;
+    package io.koraframework.guide.dependencyinjection.messenger.slack;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.messenger.Messenger;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.messenger.Messenger;
 
-    @Tag(SlackMessenger.class)
+    @Tag(SlackMessenger.class) //(1)!
     @Component
     public final class SlackMessenger implements Messenger {
 
@@ -1907,35 +2187,40 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
     }
     ```
 
+    1.  Компонент может быть собственным тегом. Это удобно, когда единственная задача тега — обозначить одну конкретную реализацию.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger.slack
+    package io.koraframework.guide.dependencyinjection.messenger.slack
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.messenger.Messenger
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.messenger.Messenger
 
-    @Tag(SlackMessenger::class)
+    @Tag(SlackMessenger::class) //(1)!
     @Component
     class SlackMessenger : Messenger {
+
         override fun sendMessage(message: String) {
             println("Slack: $message")
         }
     }
     ```
 
+    1.  Компонент может быть собственным тегом. Это удобно, когда единственная задача тега — обозначить одну конкретную реализацию.
+
 **Создайте MessengerNotifier**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
-    import ru.tinkoff.kora.application.graph.All;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    import io.koraframework.application.graph.All;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
     @Tag(MessengerModule.MessengerTag.class)
     @Component
@@ -1961,12 +2246,12 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    import ru.tinkoff.kora.application.graph.All
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.application.graph.All
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
     @Tag(MessengerModule.MessengerTag::class)
     @Component
@@ -1976,24 +2261,31 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 
         override fun notify(user: String, message: String) {
             println("Broadcasting to messengers")
-            messengers.forEach { it.sendMessage("$user@$message") }
+            for (messenger in messengers) {
+                messenger.sendMessage("$user@$message")
+            }
             println("Messenger broadcast complete")
         }
     }
     ```
 
-**Обновите Application**, чтобы подключить подмодуль отправителей. `MessengerModule` помечен `@KoraSubmodule`, поэтому здесь наследование ожидаемо:
+**Обновите Application**, чтобы подключить подмодуль отправки сообщений. `MessengerModule` помечен `@KoraSubmodule`, поэтому здесь наследование ожидаемо:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
-            EmailModule,  // <----- Подключили модуль
-            SmsCellularModule,  // <----- Подключили модуль
-            MessengerModule {  // <----- Подключили модуль
+            EmailModule,  // <----- Connected module
+            SmsCellularModule,  // <----- Connected module
+            MessengerModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -2009,15 +2301,22 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule,  // <----- Подключили модуль
-        SmsCellularModule,  // <----- Подключили модуль
-        MessengerModule {  // <----- Подключили модуль
+        EmailModule,  // <----- Connected module
+        SmsCellularModule,  // <----- Connected module
+        MessengerModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
         }
     }
     ```
+
+!!! warning "Kora submodule was not generated yet"
+
+    Если модуль приложения падает с `Kora submodule was not generated yet: expected type: ...MessengerModuleSubmoduleImpl`, значит в самом Gradle-модуле подмодуля не отработал обработчик Kora.
+    Проверьте, что `guide-dependency-injection-submodule` объявляет `annotationProcessor "io.koraframework:annotation-processors"` (Java) или `ksp("io.koraframework:symbol-processors:...")` (Kotlin),
+    затем выполните `./gradlew clean classes`, чтобы сгенерированный интерфейс существовал до компиляции модуля приложения.
 
 **Соберите и запустите**:
 
@@ -2042,19 +2341,19 @@ Application shutdown
 преобразования вместо того, чтобы жестко прописывать отдельное конкретное хранилище для каждого типа.
 
 **Зачем это нужно**: обобщенные фабрики уменьшают дублирование и при этом сохраняют граф типобезопасным. Это соответствует
-разделам [Внедрение зависимостей с Kora: обобщенная фабрика](dependency-injection-introduction.md#generic-factory)
-и [документация контейнера: обобщенная фабрика](../documentation/container.md#generic-factory).
+разделам [Внедрение зависимостей в Kora: обобщенная фабрика](dependency-injection-introduction.md#generic-factory)
+и [Документация контейнера: обобщенная фабрика](../documentation/container.md#generic-factory).
 
-**Что мы имитируем**: инфраструктурный код, который может сохранять разные формы полезной нагрузки с помощью одного переиспользуемого шаблона хранилища, а Kora автоматически выбирает нужную обобщенную
-конкретизацию.
+**Что мы эмулируем**: инфраструктурный код, который может сохранять разные формы полезной нагрузки с помощью одного переиспользуемого шаблона хранилища, а Kora автоматически выбирает нужную
+обобщенную конкретизацию.
 
-**Создайте интерфейс Storage** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/storage/`
-или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/storage/`):
+**Создайте интерфейс Storage** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/storage/`
+или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/storage/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     public interface Storage<T> {
         void save(T data);
@@ -2064,7 +2363,7 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
     interface Storage<T> {
         fun save(data: T)
@@ -2073,10 +2372,10 @@ Application shutdown
 
 **Создайте TempFileStorage**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     import java.io.IOException;
     import java.nio.file.Files;
@@ -2107,37 +2406,35 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
-    import java.io.IOException
     import java.nio.file.Files
+    import java.util.function.Function
 
     class TempFileStorage<T>(
-        private val mapper: (T) -> ByteArray
+        private val mapper: Function<T, ByteArray>
     ) : Storage<T> {
 
         override fun save(data: T) {
-            try {
-                val tempFile = Files.createTempFile("storage-", ".tmp")
-                Files.write(tempFile, mapper(data))
-                println("Saved to: ${tempFile.fileName}")
-            } catch (e: IOException) {
-                throw RuntimeException(e)
-            }
+            val tempFile = Files.createTempFile("storage-", ".tmp")
+            Files.write(tempFile, mapper.apply(data))
+            println("Saved to: ${tempFile.fileName}")
         }
     }
     ```
 
+`TempFileStorage` не помечен аннотациями. Его создает фабрика модуля ниже, а `@Component` здесь добавил бы второго, конфликтующего поставщика того же типа.
+
 **Создайте StorageModule**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     import java.nio.charset.StandardCharsets;
     import java.util.function.Function;
-    import ru.tinkoff.kora.common.Module;
+    import io.koraframework.common.annotation.Module;
 
     @Module
     public interface StorageModule {
@@ -2150,41 +2447,54 @@ Application shutdown
             return s -> s.getBytes(StandardCharsets.UTF_8);
         }
 
-        default <T> Storage<T> typedStorage(Function<T, byte[]> mapper) {
+        default <T> Storage<T> typedStorage(Function<T, byte[]> mapper) { //(1)!
             return new TempFileStorage<>(mapper);
         }
     }
     ```
 
+    1.  Фабричный метод с собственным параметром типа — это *шаблон*. Kora не создает его заранее: она создает по одному узлу на каждый конкретный `Storage<T>`, который реально запросил другой
+        компонент, разрешая `Function<T, byte[]>` для того же `T`.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
-    import ru.tinkoff.kora.common.Module
     import java.nio.charset.StandardCharsets
+    import java.util.function.Function
+    import io.koraframework.common.annotation.Module
 
     @Module
     interface StorageModule {
-        fun intMapper(): (Int) -> ByteArray {
-            return { i -> byteArrayOf(i.toByte()) }
+
+        fun intMapper(): Function<Int, ByteArray> {
+            return Function { i -> byteArrayOf(i.toByte()) }
         }
 
-        fun stringMapper(): (String) -> ByteArray {
-            return { s -> s.toByteArray(StandardCharsets.UTF_8) }
+        fun stringMapper(): Function<String, ByteArray> {
+            return Function { s -> s.toByteArray(StandardCharsets.UTF_8) }
         }
 
-        fun <T> typedStorage(mapper: (T) -> ByteArray): Storage<T> {
+        fun <T> typedStorage(mapper: Function<T, ByteArray>): Storage<T> { //(1)!
             return TempFileStorage(mapper)
         }
     }
     ```
 
-**Примечание о приложении**: здесь не нужно менять `Application`. `StorageModule` находится в пакете приложения, поэтому Kora автоматически обнаруживает его как модуль приложения.
+    1.  Фабричный метод с собственным параметром типа — это *шаблон*. Kora не создает его заранее: она создает по одному узлу на каждый конкретный `Storage<T>`, который реально запросил другой
+        компонент, разрешая `Function<T, ByteArray>` для того же `T`.
+
+Kotlin-вариант намеренно использует `java.util.function.Function`, а не функциональный тип Kotlin вроде `(T) -> ByteArray`. Функциональные типы Kotlin компилируются в `kotlin.jvm.functions.FunctionN`,
+из-за чего в графе любая функция с одним аргументом имеет один и тот же стертый тип, и `(Int) -> ByteArray` и `(String) -> ByteArray` становятся неразличимыми кандидатами. Явный `Function<T, R>`
+оставляет оба аргумента типа видимыми для разрешения зависимостей.
+
+**Примечание о приложении**: здесь не нужно менять `Application`. `StorageModule` компилируется вместе с `@KoraApp` и помечен `@Module`, поэтому Kora автоматически обнаруживает его как модуль
+приложения.
 
 **Обновите NotifyRunner**, чтобы использовать `Storage<String>`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -2207,6 +2517,11 @@ Application shutdown
             }
             stringStorage.save("User data stored");
         }
+
+        @Override
+        public void release() {
+            System.out.println("Application shutdown");
+        }
     }
     ```
 
@@ -2222,11 +2537,19 @@ Application shutdown
 
         override fun init() {
             println("DI tutorial step 7 start")
-            allNotifiers.forEach { it.notify("Charlie", "Greetings!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Charlie", "Greetings!")
+            }
             stringStorage.save("User data stored")
+        }
+
+        override fun release() {
+            println("Application shutdown")
         }
     }
     ```
+
+Запрашивается только `Storage<String>`, поэтому в граф попадают лишь `stringMapper()` и один узел `Storage<String>`. `intMapper()` остается невостребованным и, раз его никто не запрашивает, никогда не создается.
 
 **Соберите и запустите**:
 
@@ -2243,28 +2566,98 @@ Application shutdown
 
 **Ключевое понятие**: обобщенные фабричные методы вроде `<T> Storage<T>` позволяют Kora строить строго типизированные компоненты из переиспользуемых фабрик.
 
+#### Фабричный модуль { #factory-module-object }
+
+Есть второй способ группировать фабрики, и его стоит знать, потому что он решает другую задачу. Интерфейс `@Module` не хранит состояние: Kora создает его анонимную реализацию и вызывает методы по
+умолчанию. **Фабричный модуль** — это обычный объект, который сам является компонентом графа и чьи публичные методы тоже считаются фабриками. Благодаря этому один экземпляр модуля может нести
+состояние для создания компонентов — клиент, префикс, объект конфигурации — и передавать его каждому создаваемому компоненту.
+
+Фрагмент ниже показывает форму такого модуля. Он не входит в приложение из руководства, потому что предоставил бы второй `Storage<String>` и конфликтовал бы с обобщенной фабрикой выше:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class ArchiveFactory { //(1)!
+
+        private final Function<String, byte[]> mapper;
+
+        public ArchiveFactory(Function<String, byte[]> mapper) {
+            this.mapper = mapper;
+        }
+
+        public Archive archive() { //(2)!
+            return data -> mapper.apply(data).length;
+        }
+    }
+
+    @Module
+    public interface ArchiveModule {
+
+        @FactoryModule //(3)!
+        default ArchiveFactory archiveFactory(Function<String, byte[]> mapper) {
+            return new ArchiveFactory(mapper);
+        }
+    }
+    ```
+
+    1.  Обычный класс, а не интерфейс, и без аннотаций.
+    2.  Публичные методы возвращаемого объекта становятся фабриками компонентов — ровно как методы по умолчанию у интерфейса `@Module`.
+    3.  `@FactoryModule` из `io.koraframework.common.annotation`. Она регистрирует сам `ArchiveFactory` как узел графа и дополнительно обрабатывает его методы как поставщиков.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class ArchiveFactory( //(1)!
+        private val mapper: Function<String, ByteArray>
+    ) {
+
+        fun archive(): Archive { //(2)!
+            return Archive { data -> mapper.apply(data).size }
+        }
+    }
+
+    @Module
+    interface ArchiveModule {
+
+        @FactoryModule //(3)!
+        fun archiveFactory(mapper: Function<String, ByteArray>): ArchiveFactory {
+            return ArchiveFactory(mapper)
+        }
+    }
+    ```
+
+    1.  Обычный класс, а не интерфейс, и без аннотаций.
+    2.  Публичные методы возвращаемого объекта становятся фабриками компонентов — ровно как методы интерфейса `@Module`.
+    3.  `@FactoryModule` из `io.koraframework.common.annotation`. Она регистрирует сам `ArchiveFactory` как узел графа и дополнительно обрабатывает его методы как поставщиков.
+
+Два фабричных модуля одного типа могут сосуществовать, если у них разные теги, а внутри такого модуля `@Tag(Tag.Factory.class)` означает «тег объемлющего фабричного модуля». Так один класс можно
+создать дважды, и каждый экземпляр даст собственный набор компонентов со своим тегом. Использование `@Tag.Factory` вне фабричного модуля — ошибка компиляции:
+`@Tag.Factory can only be used inside factory modules.`
+
+Полный контракт описан в разделах [Документация контейнера: фабричный модуль](../documentation/container.md#factory-module)
+и [Внедрение зависимостей в Kora: фабричный модуль](dependency-injection-introduction.md#factory-module).
+
 ---
 
 ### Управление обновлением { #update-management }
 
-**Цель**: показать `ValueOf<T>` для предотвращения нежелательных каскадных обновлений, когда зависимости обновляются.
+**Цель**: показать `ValueOf<T>` для предотвращения нежелательных каскадных обновлений при изменении зависимостей.
 
 **Что вводит этот шаг**: `ValueOf<T>`, `Wrapped<T>` и `LifecycleWrapper` для зависимостей, которые учитывают жизненный цикл и доступны через косвенную ссылку. `ActivityService` остается стабильным,
 а `ActivityRecorder` остается доступным отложенно и при этом управляется жизненным циклом.
 
 **Зачем это нужно**: некоторые инфраструктурные зависимости дороги в создании или могут обновляться, и мы не хотим пересоздавать каждого потребителя только потому, что такая зависимость изменилась.
-Это соответствует разделам [Внедрение зависимостей с Kora: ValueOf](dependency-injection-introduction.md#valueof)
-и [документация контейнера: жизненный цикл компонента](../documentation/container.md#component-lifecycle).
+Это соответствует разделам [Внедрение зависимостей в Kora: ValueOf](dependency-injection-introduction.md#valueof) и [Документация контейнера: жизненный цикл компонента](../documentation/container.md#component-lifecycle).
 
-**Что мы имитируем**: службу, которая записывает активность через управляемый соединитель, способный запускаться, останавливаться или обновляться независимо от бизнес-службы, которая его использует.
+**Что мы эмулируем**: службу, которая записывает активность через управляемый соединитель, способный запускаться, останавливаться или обновляться независимо от бизнес-службы, которая его использует.
 
-**Создайте интерфейс ActivityRecorder** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/activity/`
-или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/activity/`):
+**Создайте интерфейс ActivityRecorder** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/activity/`
+или `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/activity/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
     public interface ActivityRecorder {
 
@@ -2281,25 +2674,29 @@ Application shutdown
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
     interface ActivityRecorder {
+
         fun connect()
+
         fun disconnect()
+
         fun isConnected(): Boolean
+
         fun recordUser(user: String)
     }
     ```
 
 **Создайте ActivityService**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
-    import ru.tinkoff.kora.application.graph.ValueOf;
-    import ru.tinkoff.kora.common.Component;
+    import io.koraframework.application.graph.ValueOf;
+    import io.koraframework.common.annotation.Component;
 
     @Component
     public final class ActivityService {
@@ -2313,20 +2710,22 @@ Application shutdown
 
         public void recordActivityByUserName(String user) {
             System.out.println("Recording activity for: " + user);
-            ActivityRecorder recorder = activityRecorder.get();
+            ActivityRecorder recorder = activityRecorder.get(); //(1)!
             recorder.recordUser(user);
             System.out.println("Activity recorded successfully");
         }
     }
     ```
 
+    1.  `ValueOf.get()` всегда возвращает текущий экземпляр из графа. Вызывайте его в момент использования и не кэшируйте результат в поле, иначе после обновления останется устаревшая ссылка.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
-    import ru.tinkoff.kora.application.graph.ValueOf
-    import ru.tinkoff.kora.common.Component
+    import io.koraframework.application.graph.ValueOf
+    import io.koraframework.common.annotation.Component
 
     @Component
     class ActivityService(
@@ -2339,28 +2738,30 @@ Application shutdown
 
         fun recordActivityByUserName(user: String) {
             println("Recording activity for: $user")
-            val recorder = activityRecorder.get()
+            val recorder = activityRecorder.get() //(1)!
             recorder.recordUser(user)
             println("Activity recorded successfully")
         }
     }
     ```
 
+    1.  `ValueOf.get()` всегда возвращает текущий экземпляр из графа. Вызывайте его в момент использования и не кэшируйте результат в свойстве, иначе после обновления останется устаревшая ссылка.
+
 **Создайте ActivityModule**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
-    import ru.tinkoff.kora.application.graph.LifecycleWrapper;
-    import ru.tinkoff.kora.application.graph.Wrapped;
-    import ru.tinkoff.kora.common.Module;
+    import io.koraframework.application.graph.LifecycleWrapper;
+    import io.koraframework.application.graph.Wrapped;
+    import io.koraframework.common.annotation.Module;
 
     @Module
     public interface ActivityModule {
 
-        default Wrapped<ActivityRecorder> activityRecorder() {
+        default Wrapped<ActivityRecorder> activityRecorder() { //(1)!
             var recorder = new ActivityRecorder() {
                 private boolean connected;
 
@@ -2395,23 +2796,27 @@ Application shutdown
                 }
             };
 
-            return new LifecycleWrapper<>(recorder, r -> {}, ActivityRecorder::disconnect);
+            return new LifecycleWrapper<>(recorder, r -> {}, ActivityRecorder::disconnect); //(2)!
         }
     }
     ```
 
+    1.  Возврат `Wrapped<T>` регистрирует узел как `Wrapped<ActivityRecorder>`, но потребители запрашивают обычный `ActivityRecorder` — Kora разворачивает его автоматически.
+    2.  `LifecycleWrapper` принимает значение и действия инициализации и освобождения. Оба — `ThrowingConsumer<T>`, поэтому они могут объявлять проверяемые исключения.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
-    import ru.tinkoff.kora.application.graph.LifecycleWrapper
-    import ru.tinkoff.kora.application.graph.Wrapped
-    import ru.tinkoff.kora.common.Module
+    import io.koraframework.application.graph.LifecycleWrapper
+    import io.koraframework.application.graph.Wrapped
+    import io.koraframework.common.annotation.Module
 
     @Module
     interface ActivityModule {
-        fun activityRecorder(): Wrapped<ActivityRecorder> {
+
+        fun activityRecorder(): Wrapped<ActivityRecorder> { //(1)!
             val recorder = object : ActivityRecorder {
                 private var connected = false
 
@@ -2430,26 +2835,29 @@ Application shutdown
                     }
                 }
 
-                override fun isConnected(): Boolean {
-                    return connected
-                }
+                override fun isConnected(): Boolean = connected
 
                 override fun recordUser(user: String) {
-                    if (!connected) connect()
+                    if (!connected) {
+                        connect()
+                    }
                     println("Recording user activity: $user")
                 }
             }
 
-            return LifecycleWrapper(recorder, {}, ActivityRecorder::disconnect)
+            return LifecycleWrapper(recorder, {}, ActivityRecorder::disconnect) //(2)!
         }
     }
     ```
 
-**Примечание о приложении**: здесь тоже не требуется менять `Application`. `ActivityModule` также обнаруживается как модуль приложения из пакета приложения.
+    1.  Возврат `Wrapped<T>` регистрирует узел как `Wrapped<ActivityRecorder>`, но потребители запрашивают обычный `ActivityRecorder` — Kora разворачивает его автоматически.
+    2.  `LifecycleWrapper` принимает значение и действия инициализации и освобождения. Оба — `ThrowingConsumer<T>`, поэтому они могут бросать исключения.
+
+**Примечание о приложении**: менять `Application` здесь тоже не нужно. `ActivityModule` также обнаруживается как модуль приложения из единицы компиляции приложения.
 
 **Обновите NotifyRunner**, чтобы показать финальный сценарий:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -2499,7 +2907,9 @@ Application shutdown
 
         override fun init() {
             println("DI tutorial complete scenario start")
-            allNotifiers.forEach { it.notify("Diana", "Welcome to Kora DI!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Diana", "Welcome to Kora DI!")
+            }
             stringStorage.save("Scenario payload for Diana")
             activityService.recordActivityByUserName("Diana")
             println("DI tutorial complete scenario done")
@@ -2517,7 +2927,6 @@ Application shutdown
 ActivityService created (ActivityRecorder not yet accessed)
 DI tutorial complete scenario start
 +1 [SMS] Diana@Welcome to Kora DI!
-+1 [SMS] Diana@Welcome to Kora DI!
 [EMAIL OVERRIDDEN] USER [USER:Diana]: Welcome to Kora DI!
 Broadcasting to messengers
 Slack: Diana@Welcome to Kora DI!
@@ -2533,6 +2942,8 @@ Application shutdown
 Disconnecting from activity recorder
 ```
 
+Обратите внимание на две последние строки: `NotifyRunner.release()` выполняется раньше, чем отключается регистратор, потому что `release()` обходит граф в обратном порядке зависимостей.
+
 **Ключевое понятие**: `ValueOf<T>` предотвращает каскадные обновления компонентов. Экземпляр `ActivityService` остается стабильным, но все равно может отложенно получить текущий `ActivityRecorder`,
 когда это нужно.
 
@@ -2542,14 +2953,14 @@ Disconnecting from activity recorder
 
 Вы создали полноценное приложение Kora, которое демонстрирует все основные понятия внедрения зависимостей:
 
-1. **Структура проекта** - многомодульная организация
-2. **Внешние модули** - библиотечные компоненты с `@DefaultComponent`
-3. **Переопределение компонента** - настройка библиотечных значений по умолчанию
-4. **Зависимости с тегами** - несколько реализаций с `@Tag` и `All<T>`
-5. **Допускающие `null` зависимости** - `@Nullable` / nullable-типы для аккуратной деградации
-6. **Подмодули** - `@KoraSubmodule` для организации компонентов
-7. **Обобщенные фабрики** - параметризованное `<T>` создание компонентов
-8. **Предотвращение каскадных обновлений** - `ValueOf<T>` для управления поведением обновления компонентов
+1. **Структура проекта** — многомодульная организация
+2. **Внешние модули** — библиотечные компоненты с `@DefaultComponent`
+3. **Переопределение компонента** — настройка библиотечных значений по умолчанию
+4. **Зависимости с тегами** — несколько реализаций с `@Tag` и `All<T>`
+5. **Допускающие `null` зависимости** — JSpecify `@Nullable` / nullable-типы для аккуратной деградации
+6. **Подмодули** — `@KoraSubmodule` для организации компонентов между Gradle-модулями
+7. **Обобщенные фабрики** — параметризованное `<T>` создание компонентов и `@FactoryModule` для модулей с состоянием
+8. **Предотвращение каскадных обновлений** — `ValueOf<T>` для управления поведением обновления компонентов
 
 Каждый шаг опирается на предыдущий и показывает, как DI Kora во время компиляции помогает создавать чистые, модульные и производительные приложения.
 
@@ -2558,16 +2969,18 @@ Disconnecting from activity recorder
 - Держите компоненты небольшими и сфокусированными на одной ответственности.
 - Предпочитайте внедрение через конструктор и явные границы модулей.
 - Используйте теги только тогда, когда несколько реализаций действительно должны сосуществовать.
-- Держите необязательные зависимости явными с помощью nullable-типов или `@Nullable`.
-- Используйте `ValueOf<T>`, когда нужно управляемое поведение обновления компонентов.
+- Держите необязательные зависимости явными с помощью nullable-типов или JSpecify `@Nullable`.
+- Используйте `ValueOf<T>`, когда нужно управляемое поведение обновления компонентов, и вызывайте `get()` в момент использования, а не кэшируйте значение.
+- Подключайте обработчик Kora в каждом Gradle-модуле, где объявлены `@KoraApp`, `@KoraSubmodule`, `@ConfigMapper` или `@ConfigSource` — обработчик видит только тот модуль, в котором запущен.
+- Прячьте переиспользуемые значения по умолчанию за `@DefaultComponent`, чтобы приложения могли переопределять их без форка библиотеки.
 
 ## Итоги { #summary }
 
 Поздравляем! Вы завершили подробное руководство по внедрению зависимостей Kora. Вы изучили не только *как* использовать внедрение зависимостей, но и *почему* это настолько мощный шаблон для
 создания сопровождаемого программного обеспечения.
 
-В руководстве разобраны основные элементы графа Kora: `@KoraApp`, `@Component`, `@Module`, внешние модули, `@DefaultComponent`, теги, `All<T>`, nullable-зависимости, подмодули, обобщенные фабрики и
-`ValueOf<T>`. Вместе они показывают, как собирать приложение из небольших явных частей и при этом сохранять типобезопасное разрешение зависимостей во время компиляции.
+В руководстве разобраны основные элементы графа Kora: `@KoraApp`, `@Component`, `@Module`, внешние модули, `@DefaultComponent`, теги, `All<T>`, nullable-зависимости, подмодули, обобщенные фабрики,
+`@FactoryModule` и `ValueOf<T>`. Вместе они показывают, как собирать приложение из небольших явных частей и при этом сохранять типобезопасное разрешение зависимостей во время компиляции.
 
 Такие же шаблоны используются в промышленных сервисах, чтобы строить:
 
@@ -2596,6 +3009,9 @@ Disconnecting from activity recorder
 
 ## Устранение неполадок { #troubleshooting }
 
+Kora сообщает о проблемах связывания во время компиляции, и каждое сообщение называет запрос, место, где он требуется, дерево зависимостей, которое к нему привело, и блок `Fix:`. Читайте этот блок
+первым: он генерируется по фактическому состоянию графа, а не по статическому шаблону. См. также [Документация контейнера: ошибки сборки графа](../documentation/container.md#graph-build-errors).
+
 Распространенные проблемы и решения:
 
 Циклические зависимости:
@@ -2604,24 +3020,24 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка во время компиляции: "Circular dependency detected"
-- обработчик аннотаций завершается ошибкой разрешения зависимостей
+- ошибка компиляции, начинающаяся с `Circular dependency found:`, за которой идет `Dependency cycle:` со списком всех объявлений в цикле и завершающим `[CYCLE]`
+- предлагаемое исправление упоминает `ValueOf<T>` или `PromiseOf<T>`
 
 Решения:
 
 1. Переработайте код через разделение интерфейсов:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Вместо циклической зависимости
+    // Instead of circular dependency
     @Component
     class ServiceA { ServiceA(ServiceB b) {} }
 
     @Component
     class ServiceB { ServiceB(ServiceA a) {} }
 
-    // Используйте интерфейсы
+    // Use interfaces
     interface ServiceAInterface { void methodA(); }
     interface ServiceBInterface { void methodB(); }
 
@@ -2635,14 +3051,14 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Вместо циклической зависимости
+    // Instead of circular dependency
     @Component
     class ServiceA(val b: ServiceB)
 
     @Component
     class ServiceB(val a: ServiceA)
 
-    // Используйте интерфейсы
+    // Use interfaces
     interface ServiceAInterface { fun methodA() }
     interface ServiceBInterface { fun methodB() }
 
@@ -2659,13 +3075,13 @@ Disconnecting from activity recorder
 
 2. Используйте ValueOf для косвенных зависимостей:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
     public interface ServiceModule {
         default ServiceA serviceA(ValueOf<ServiceB> serviceB) {
-            // ServiceA не зависит напрямую от жизненного цикла ServiceB
+            // ServiceA doesn't directly depend on ServiceB lifecycle
             return new ServiceA(serviceB);
         }
 
@@ -2681,7 +3097,7 @@ Disconnecting from activity recorder
     @Module
     interface ServiceModule {
         fun serviceA(serviceB: ValueOf<ServiceB>): ServiceA {
-            // ServiceA не зависит напрямую от жизненного цикла ServiceB
+            // ServiceA doesn't directly depend on ServiceB lifecycle
             return ServiceA(serviceB)
         }
 
@@ -2697,36 +3113,37 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка во время компиляции: "No component found for type X"
-- понятное сообщение об ошибке с цепочкой зависимостей
+- ошибка компиляции, начинающаяся с `No component found for dependency:`, за которой идет запрошенный тип и либо `(no tags)`, либо `with @Tag(...)`
+- секция `Note:` со списком компонентов того же типа, но с другим тегом, когда тег просто забыли
+- секция `Fix:` с предложением добавить `@Component`, метод модуля или подключить модуль в `@KoraApp`
 
 Решения:
 
 1. Добавьте отсутствующий компонент:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Добавьте отсутствующий компонент
+    // Add the missing component
     @Component
     public final class MissingDependency {
-        // Реализация
+        // Implementation
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Добавьте отсутствующий компонент
+    // Add the missing component
     @Component
     class MissingDependency {
-        // Реализация
+        // Implementation
     }
     ```
 
 2. Создайте фабричный метод:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -2754,50 +3171,49 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка во время выполнения: "Configuration value not found"
-- `NullPointerException` при обращении к свойствам конфигурации
+- падение при старте с `ConfigValueException: Config expected value, but got null at path: '...' for origin '...'`
+- ошибка сборки графа для `Config` или `ConfigValueMapper<T>`, когда не подключен ни один модуль конфигурации
 
 Решения:
 
 1. Добавьте модуль конфигурации:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Подключите модуль конфигурации
+    // Include configuration module
     @KoraApp
     public interface Application extends HoconConfigModule {
-        // Теперь конфигурация доступна
+        // Now Config and ConfigValueMapper<T> are available
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Подключите модуль конфигурации
+    // Include configuration module
     @KoraApp
     interface Application : HoconConfigModule {
-        // Теперь конфигурация доступна
+        // Now Config and ConfigValueMapper<T> are available
     }
     ```
 
-2. Проверьте имена свойств:
+2. Отобразите секцию конфигурации в типизированный класс:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Убедитесь, что имена свойств совпадают
-    @Component
-    public final class DatabaseConfig {
-        private final Config config;
+    // Application-owned configuration bound to one path
+    @ConfigSource("db")
+    public interface DatabaseConfig {
 
-        public DatabaseConfig(Config config) {
-            this.config = config;
-        }
+        String url();
 
-        public String getUrl() {
-            // Проверьте, что свойство существует в конфигурации
-            return config.getString("db.url");
+        @Nullable
+        String username();
+
+        default int poolSize() {
+            return 10;
         }
     }
     ```
@@ -2805,18 +3221,23 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Убедитесь, что имена свойств совпадают
-    @Component
-    class DatabaseConfig(
-        private val config: Config
-    ) {
+    // Application-owned configuration bound to one path
+    @ConfigSource("db")
+    interface DatabaseConfig {
 
-        fun getUrl(): String {
-            // Проверьте, что свойство существует в конфигурации
-            return config.getString("db.url")
+        fun url(): String
+
+        fun username(): String?
+
+        fun poolSize(): Int {
+            return 10
         }
     }
     ```
+
+`@ConfigSource` генерирует маппер и регистрирует полученный `DatabaseConfig` как компонент графа, поэтому любой компонент может просто объявить его параметром конструктора. Методы без значения по
+умолчанию и без `@Nullable` обязательны: отсутствующий ключ приводит к падению при старте с показанным выше `ConfigValueException`. Используйте `@ConfigMapper`, когда библиотечный тип должен
+оставаться независимым от пути, как `EmailConfig` в этом руководстве.
 
 Проблемы с разрешением тегов:
 
@@ -2824,21 +3245,21 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка компиляции: "Multiple components found for type X"
-- или: "No component found for tagged type X"
+- ошибка компиляции, начинающаяся с `Multiple components match dependency:`, за которой идет список объявлений-кандидатов
+- либо `No component found for dependency:` с секцией `Note:`, где перечислен тот же тип под другим тегом
 
 Решения:
 
 1. Используйте правильную аннотацию тега:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Правильное использование тега
+    // Correct tag usage
     @Component
     public final class MyService {
         public MyService(@Tag(MyTag.class) Dependency dep) {
-            // Правильно
+            // Correct
         }
     }
     ```
@@ -2846,36 +3267,68 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Правильное использование тега
+    // Correct tag usage
     @Component
     class MyService(
         @Tag(MyTag::class) val dep: Dependency
     ) {
-        // Правильно
+        // Correct
     }
     ```
 
 2. Проверьте определение класса тега:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Класс тега должен быть public
-    public final class MyTag {} // Правильно
+    // Tag class must be visible everywhere it is referenced
+    public final class MyTag {} // Correct
 
-    // Закрытый тег не сработает
-    private final class MyTag {} // Неправильно
+    // Package-private tag cannot be referenced from another package
+    final class MyTag {} // Wrong
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Класс тега должен быть public
-    class MyTag // Правильно (public по умолчанию)
+    // Tag class must be visible everywhere it is referenced
+    class MyTag // Correct (public by default)
 
-    // Закрытый тег не сработает
-    private class MyTag // Неправильно
+    // Private tag cannot be referenced from another file
+    private class MyTag // Wrong
     ```
+
+3. Либо сделайте одного кандидата запасным вариантом:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface DefaultsModule {
+
+        @DefaultComponent //(1)!
+        default Dependency dependency() {
+            return new Dependency();
+        }
+    }
+    ```
+
+    1.  Сгенерированное сообщение об ошибке предлагает именно это: пометьте запасного кандидата `@DefaultComponent`, и любой кандидат без этой аннотации победит.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface DefaultsModule {
+
+        @DefaultComponent //(1)!
+        fun dependency(): Dependency {
+            return Dependency()
+        }
+    }
+    ```
+
+    1.  Сгенерированное сообщение об ошибке предлагает именно это: пометьте запасного кандидата `@DefaultComponent`, и любой кандидат без этой аннотации победит.
 
 Проблемы с подключением модулей:
 
@@ -2883,42 +3336,42 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка компиляции: "No component found for type from module"
+- `No component found for dependency:` для типа, который точно объявлен в каком-то модуле
+- модуль лежит в другом Gradle-модуле и при этом не является `@KoraSubmodule` и не наследуется через `extends`
 
 Решения:
 
 1. Подключите модуль в приложении:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Подключите модуль
+    // Include the module
     @KoraApp
-    public interface Application extends MyModule {  // <----- Подключили модуль
-        // Компоненты из MyModule теперь доступны
+    public interface Application extends MyModule {  // <----- Connected module
+        // Components from MyModule now available
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Подключите модуль
+    // Include the module
     @KoraApp
-    interface Application : MyModule {  // <----- Подключили модуль
-        // Компоненты из MyModule теперь доступны
+    interface Application : MyModule {  // <----- Connected module
+        // Components from MyModule now available
     }
     ```
 
-2. Проверьте видимость модуля:
+2. Проверьте вид модуля и его видимость:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Методы модуля должны быть public
+    // @Module works on interfaces only, and its factory methods must be public
     @Module
     public interface MyModule {
-        @Component
-        default MyComponent myComponent() { // public по умолчанию
+        default MyComponent myComponent() { // public by default
             return new MyComponent();
         }
     }
@@ -2927,15 +3380,17 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Методы модуля должны быть public
+    // @Module works on interfaces only, and its factory methods must be public
     @Module
     interface MyModule {
-        @Component
-        fun myComponent(): MyComponent { // public по умолчанию
+        fun myComponent(): MyComponent { // public by default
             return MyComponent()
         }
     }
     ```
+
+`@Module` действует только в той единице компиляции, в которой он компилируется. Интерфейс `@Module` из другого Gradle-модуля невидим, пока вы не унаследуете его через `extends` или не поместите в тот
+Gradle-модуль маркерный интерфейс `@KoraSubmodule` и не унаследуете уже его.
 
 Проблемы с внедрением коллекций:
 
@@ -2943,64 +3398,78 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- пустая коллекция, хотя ожидались несколько реализаций
-- в `All<T>` отсутствуют ожидаемые компоненты
+- в `All<T>` меньше компонентов, чем ожидалось
+- реализации с тегами отсутствуют в коллекции
 
 Решения:
 
-1. Убедитесь, что все реализации являются компонентами:
+1. Убедитесь, что все реализации есть в графе:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Все реализации должны быть @Component
+    // All implementations must be @Component or produced by a module factory
     @Component
     public final class Impl1 implements MyInterface {}
 
     @Component
     public final class Impl2 implements MyInterface {}
 
-    // Теперь All<MyInterface> будет содержать обе
+    // Now All<MyInterface> will contain both
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Все реализации должны быть @Component
+    // All implementations must be @Component or produced by a module factory
     @Component
     class Impl1 : MyInterface
 
     @Component
     class Impl2 : MyInterface
 
-    // Теперь All<MyInterface> будет содержать обе
+    // Now All<MyInterface> will contain both
     ```
 
-2. Проверьте конфликты тегов:
+2. Запрашивайте именно те теги, которые вам нужны:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Если используете теги, убедитесь, что случайно не фильтруете лишнее
     @Component
     public final class MyService {
-        public MyService(All<MyInterface> all) { // Получает все реализации
+
+        public MyService(All<MyInterface> untagged, //(1)!
+                         @Tag(Tag.Any.class) All<MyInterface> everything, //(2)!
+                         @Tag(MyTag.class) All<MyInterface> onlyMyTag) { //(3)!
             // ...
         }
     }
     ```
 
+    1.  Запрос без тега попадает только в компоненты без тегов. Реализации с тегами молча отсутствуют.
+    2.  `Tag.Any` совпадает с любым компонентом этого типа независимо от тега.
+    3.  Конкретный тег совпадает только с компонентами, несущими ровно этот тег.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Если используете теги, убедитесь, что случайно не фильтруете лишнее
     @Component
     class MyService(
-        val all: All<MyInterface> // Получает все реализации
+        val untagged: All<MyInterface>, //(1)!
+        @Tag(Tag.Any::class) val everything: All<MyInterface>, //(2)!
+        @Tag(MyTag::class) val onlyMyTag: All<MyInterface> //(3)!
     ) {
         // ...
     }
     ```
+
+    1.  Запрос без тега попадает только в компоненты без тегов. Реализации с тегами молча отсутствуют.
+    2.  `Tag.Any` совпадает с любым компонентом этого типа независимо от тега.
+    3.  Конкретный тег совпадает только с компонентами, несущими ровно этот тег.
+
+Это самая частая неожиданность с `All<T>`: пустая или неполная коллекция почти всегда означает, что запрос и поставщики расходятся в тегах, а не что компонентов нет в
+графе. См. [Документация контейнера: Tag any](../documentation/container.md#tag-any).
 
 Проблемы с необязательными зависимостями:
 
@@ -3008,16 +3477,18 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- `Optional` пуст, хотя ожидалось значение
-- `NullPointerException` при использовании необязательной зависимости
+- зависимость равна `null`, хотя ожидалось значение
+- `NullPointerException` при первом использовании
 
 Решения:
 
-1. Правильно обрабатывайте `Optional`:
+1. Правильно обрабатывайте nullable-значения:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import org.jspecify.annotations.Nullable;
+
     @Component
     public final class MyService {
         private final @Nullable Dependency optionalDep;
@@ -3027,11 +3498,11 @@ Disconnecting from activity recorder
         }
 
         public void doSomething() {
-            // Безопасное использование nullable-значения
+            // Safe nullable usage
             if (optionalDep != null) { optionalDep.doWork(); }
 
-            // Опасно — может вызвать NPE
-            // optionalDep.doWork(); // Не делайте так без проверки на null
+            // Dangerous - can cause NPE
+            // optionalDep.doWork(); // Don't do this without a null check
         }
     }
     ```
@@ -3045,97 +3516,132 @@ Disconnecting from activity recorder
     ) {
 
         fun doSomething() {
-            // Безопасное использование nullable-значения
+            // Safe nullable usage
             optionalDep?.doWork()
 
-            // Опасно — может вызвать NPE
-            // optionalDep.work() // Не делайте так без проверки на null
+            // Dangerous - can cause NPE
+            // optionalDep!!.doWork() // Don't do this without a null check
         }
     }
     ```
 
 2. Убедитесь, что nullable-компонент существует:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Если хотите, чтобы nullable-зависимость была доступна, подключите модуль ее поставщика
+    // If you want the nullable dependency to be available, include its provider module
     @KoraApp
-    public interface Application extends NullableModule {  // <----- Подключили модуль
-        // Подключите модуль, который предоставляет необязательную зависимость
+    public interface Application extends NullableModule {  // <----- Connected module
+        // Include the module that provides the optional dependency
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Если хотите, чтобы nullable-зависимость была доступна, подключите модуль ее поставщика
+    // If you want the nullable dependency to be available, include its provider module
     @KoraApp
-    interface Application : NullableModule {  // <----- Подключили модуль
-        // Подключите модуль, который предоставляет необязательную зависимость
+    interface Application : NullableModule {  // <----- Connected module
+        // Include the module that provides the optional dependency
     }
     ```
+
+В Java JSpecify `@Nullable` — это аннотация *на использование типа*, поэтому ее позиция важна для вложенных и обобщенных типов: пишите `List<@Nullable String>`, `String @Nullable []` и
+`Outer.@Nullable Inner`. В Kotlin аннотации нет вообще — объявлением служит `?` у типа.
 
 Проблемы с жизненным циклом:
 
-Проблема: компоненты с методами жизненного цикла не запускаются или не останавливаются правильно.
+Проблема: компоненты с методами жизненного цикла не запускаются или не останавливаются.
 
 Признаки:
 
-- методы `init()` или `destroy()` не вызываются
-- ресурсы не освобождаются должным образом
+- `init()` или `release()` никогда не вызываются
+- ресурсы не освобождаются при остановке
 
 Решения:
 
-1. Реализуйте интерфейс `Lifecycle`:
+1. Реализуйте интерфейс Lifecycle:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    import ru.tinkoff.kora.common.Lifecycle;
+    import io.koraframework.application.graph.Lifecycle; //(1)!
 
     @Component
     public final class MyService implements Lifecycle {
+
         @Override
         public void init() throws Exception {
-            // Инициализируйте ресурсы здесь
+            // Initialize resources here
         }
 
         @Override
-        public void destroy() throws Exception {
-            // Освободите ресурсы здесь
+        public void release() throws Exception { //(2)!
+            // Clean up resources here
         }
     }
     ```
 
+    1.  `Lifecycle` находится в `io.koraframework.application.graph`, а не в пакете аннотаций.
+    2.  Метод остановки называется `release()`. Метода `destroy()` в контракте нет.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    import ru.tinkoff.kora.common.Lifecycle
+    import io.koraframework.application.graph.Lifecycle //(1)!
 
     @Component
     class MyService : Lifecycle {
+
         override fun init() {
-            // Инициализируйте ресурсы здесь
+            // Initialize resources here
         }
 
-        override fun destroy() {
-            // Освободите ресурсы здесь
+        override fun release() { //(2)!
+            // Clean up resources here
         }
     }
     ```
 
-2. Проверьте регистрацию компонента:
+    1.  `Lifecycle` находится в `io.koraframework.application.graph`, а не в пакете аннотаций.
+    2.  Метод остановки называется `release()`. Метода `destroy()` в контракте нет.
 
-===! ":fontawesome-brands-java: Java"
+2. Проверьте, что компонент действительно есть в графе:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Убедитесь, что компонент правильно зарегистрирован в модуле
+    // A component nothing depends on is pruned unless it is a root
+    @Root
+    @Component
+    public final class MyService implements Lifecycle {
+        // init()/release() now really run
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // A component nothing depends on is pruned unless it is a root
+    @Root
+    @Component
+    class MyService : Lifecycle {
+        // init()/release() now really run
+    }
+    ```
+
+3. Оберните сторонний объект, который нельзя изменить:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
     @Module
-    public interface MyModule {
-        @Component
-        default MyService myService() {
-            return new MyService();
+    public interface ClientModule {
+
+        default Wrapped<ExternalClient> externalClient() {
+            var client = new ExternalClient();
+            return new LifecycleWrapper<>(client, ExternalClient::start, ExternalClient::stop);
         }
     }
     ```
@@ -3143,12 +3649,12 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Убедитесь, что компонент правильно зарегистрирован в модуле
     @Module
-    interface MyModule {
-        @Component
-        fun myService(): MyService {
-            return MyService()
+    interface ClientModule {
+
+        fun externalClient(): Wrapped<ExternalClient> {
+            val client = ExternalClient()
+            return LifecycleWrapper(client, ExternalClient::start, ExternalClient::stop)
         }
     }
     ```
@@ -3159,24 +3665,24 @@ Disconnecting from activity recorder
 
 Признаки:
 
-- ошибка компиляции: "Generic type cannot be resolved"
-- внедрен неверный обобщенный тип
+- `No component found for dependency:` для конкретной параметризации вроде `Storage<String>`
+- `Component provider returns a raw type:`, когда фабрика возвращает сырой обобщенный тип
 
 Решения:
 
-1. Используйте правильные ограничения обобщенных типов:
+1. Используйте конкретные аргументы типа:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Укажите обобщенный тип явно
+    // Specify generic type explicitly
     @Component
     public final class StringStorage implements Storage<String> {}
 
     @Component
     public final class MyService {
-        public MyService(Storage<String> storage) { // Укажите тип
-            // Правильно
+        public MyService(Storage<String> storage) { // Specify type
+            // Correct
         }
     }
     ```
@@ -3184,28 +3690,29 @@ Disconnecting from activity recorder
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Укажите обобщенный тип явно
+    // Specify generic type explicitly
     @Component
     class StringStorage : Storage<String>
 
     @Component
     class MyService(
-        val storage: Storage<String> // Укажите тип
+        val storage: Storage<String> // Specify type
     ) {
-        // Правильно
+        // Correct
     }
     ```
 
-2. Проверьте обобщенные фабричные методы:
+2. Сделайте каждый параметр шаблона разрешимым:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
     public interface StorageModule {
-        @Component
-        default <T> Storage<T> storage(Class<T> type) {
-            return new InMemoryStorage<>(); // Обобщенная фабрика
+
+        // Every type parameter of the method must appear in a parameter or in the return type
+        default <T> Storage<T> storage(Function<T, byte[]> mapper) {
+            return new TempFileStorage<>(mapper);
         }
     }
     ```
@@ -3215,99 +3722,96 @@ Disconnecting from activity recorder
     ```kotlin
     @Module
     interface StorageModule {
-        @Component
-        fun <T> storage(type: Class<T>): Storage<T> {
-            return InMemoryStorage() // Обобщенная фабрика
+
+        // Every type parameter of the method must appear in a parameter or in the return type
+        fun <T> storage(mapper: Function<T, ByteArray>): Storage<T> {
+            return TempFileStorage(mapper)
         }
     }
     ```
 
+Сырые типы отвергаются сразу с сообщением `Raw component types are forbidden because they make dependency resolution ambiguous.`, поэтому всегда указывайте аргументы типа.
+
 Проблемы сборки и компиляции:
 
-Проблема: обработчик аннотаций Kora завершается ошибкой или создает некорректный код.
+Проблема: обработчик Kora не запускается или сгенерированный класс графа отсутствует.
 
 Признаки:
 
-- ошибки компиляции в сгенерированном коде
-- ошибки "Annotation processor not found"
-- проблемы в сгенерированных классах
+- `cannot find symbol: class ApplicationGraph`
+- `Kora submodule was not generated yet: expected type: ...SubmoduleImpl`
+- все компилируется, но ни один компонент не создается
 
 Решения:
 
-1. Проверьте зависимости:
+1. Проверьте подключение обработчика:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    ```java
-    // Убедитесь, что зависимости Kora подключены
+    ```groovy
     dependencies {
-        implementation "ru.tinkoff.kora:kora-app-annotation-processor"
-        implementation "ru.tinkoff.kora:config-hocon"
-        // Другие модули Kora...
+        annotationProcessor "io.koraframework:annotation-processors" //(1)!
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
+
+    1.  Обработчик указывается в `annotationProcessor`, никогда в `implementation`. Он должен быть объявлен в каждом Gradle-модуле, где есть `@KoraApp`, `@KoraSubmodule`, `@ConfigMapper` или
+        `@ConfigSource`.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Убедитесь, что зависимости Kora подключены
+    plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp") //(1)!
+    }
+
     dependencies {
-        implementation("ru.tinkoff.kora:kora-app-annotation-processor")
-        implementation("ru.tinkoff.kora:config-hocon")
-        // Другие модули Kora...
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
-2. Сделайте чистую сборку:
+    1.  Без плагина KSP конфигурации `ksp` не существует и ничего не генерируется.
+    2.  Обработчик указывается в `ksp` с явной версией, потому что `ksp` не покрывается BOM.
 
-===! ":fontawesome-brands-java: Java"
+2. Соберите начисто:
 
-    ```bash
-    # Очистите и соберите заново
-    ./gradlew clean classes
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```bash
-    # Очистите и соберите заново
-    ./gradlew clean classes
-    ```
+```bash
+./gradlew clean classes
+```
 
 3. Проверьте версию Java:
 
-===! ":fontawesome-brands-java: Java"
+```bash
+java -version
+```
 
-    ```java
-    // Убедитесь, что используете поддерживаемую версию Java (11, 17, 21)
-    java --version
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    // Убедитесь, что используете поддерживаемую версию Java (11, 17, 21)
-    java --version
-    ```
+Модули Kora собраны под Java 25, поэтому и toolchain Gradle, и JDK, на котором запускается сам Gradle, должны быть версии 25 или новее.
 
 Проблемы с тестированием:
 
-Проблема: компоненты сложно тестировать или тесты неожиданно падают.
+Проблема: компоненты сложно тестировать или тестовый граф не стартует.
 
 Признаки:
 
-- сложно внедрять подмены
-- тестовые зависимости не разрешаются
-- падают интеграционные тесты
+- сложно внедрять тестовые подмены
+- поля `@TestComponent` остаются `null`
 
 Решения:
 
-1. Используйте внедрение через конструктор для удобства тестирования:
+1. Используйте внедрение через конструктор для обычных модульных тестов:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Тестируемый компонент
+    // Testable component: no framework needed to construct it
     @Component
     public final class UserService {
         private final UserRepository repository;
@@ -3317,113 +3821,143 @@ Disconnecting from activity recorder
         }
     }
 
-    // Тест
     @Test
-    public void testUserService() {
-        UserRepository mockRepo = mock(UserRepository.class);
-        UserService service = new UserService(mockRepo);
-        // Тест...
+    void testUserService() {
+        UserRepository stubRepo = id -> null;
+        UserService service = new UserService(stubRepo);
+        // Test...
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Тестируемый компонент
+    // Testable component: no framework needed to construct it
     @Component
     class UserService(
         private val repository: UserRepository
     )
 
-    // Тест
     @Test
     fun testUserService() {
-        val mockRepo = mock(UserRepository::class.java)
-        val service = UserService(mockRepo)
-        // Тест...
+        val stubRepo = UserRepository { null }
+        val service = UserService(stubRepo)
+        // Test...
     }
     ```
 
-2. Используйте Testcontainers для интеграционных тестов:
+2. Поднимайте настоящий граф через `@KoraAppTest`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Testcontainers
-    public class UserServiceIntegrationTest {
-        @Container
-        private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.6-alpine");
+    package io.koraframework.guide.dependencyinjection;
+
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+    import org.junit.jupiter.api.Test;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
+
+    @KoraAppTest(Application.class) //(1)!
+    class DependencyInjectionGuideSmokeTest {
+
+        @TestComponent //(2)!
+        private NotifyRunner notifyRunner;
 
         @Test
-        public void testRealDatabase() {
-            // Тест с настоящей базой данных
+        void graph_ShouldStart() {
+            assertNotNull(notifyRunner);
         }
     }
     ```
+
+    1.  Собирает настоящий граф `Application` для теста, поэтому любая ошибка связывания валит тест, а не старт в промышленной среде.
+    2.  Внедряет компонент из этого графа в экземпляр теста.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Testcontainers
-    class UserServiceIntegrationTest {
-        @Container
-        private val postgres = PostgreSQLContainer("postgres:17.6-alpine")
+    package io.koraframework.guide.dependencyinjection
+
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Test
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
+
+    @KoraAppTest(Application::class) //(1)!
+    class DependencyInjectionGuideSmokeTest {
+
+        @TestComponent //(2)!
+        private lateinit var notifyRunner: NotifyRunner
 
         @Test
-        fun testRealDatabase() {
-            // Тест с настоящей базой данных
+        fun graphShouldStart() {
+            assertNotNull(notifyRunner)
         }
     }
     ```
+
+    1.  Собирает настоящий граф `Application` для теста, поэтому любая ошибка связывания валит тест, а не старт в промышленной среде.
+    2.  Внедряет компонент из этого графа в экземпляр теста.
+
+Обоим вариантам нужен `io.koraframework:test-junit5` в `testImplementation`. О подмене компонентов графа моками, переопределении конфигурации и интеграционных тестах на Testcontainers читайте в
+разделе [Тестирование с JUnit 5](testing-junit.md#test-component).
 
 Распространенные ошибки новичков:
 
 1. Забыли аннотацию @Component:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Нет @Component
+    // Missing @Component
     public final class MyService {
-        // Этот класс не будет обнаружен DI
+        // This won't be discovered by DI
     }
 
-    // Правильно
+    // Correct
     @Component
     public final class MyService {
-        // Теперь обнаруживается
+        // Now discoverable
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Нет @Component
+    // Missing @Component
     class MyService {
-        // Этот класс не будет обнаружен DI
+        // This won't be discovered by DI
     }
 
-    // Правильно
+    // Correct
     @Component
     class MyService {
-        // Теперь обнаруживается
+        // Now discoverable
     }
     ```
 
-2. Закрытый конструктор:
+2. Неоднозначные конструкторы:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     public final class MyService {
-        private MyService() {} // Неправильно: закрытый конструктор блокирует DI
+        private MyService() {} // Wrong: no public constructor at all
     }
 
-    // Public или package-private конструктор
     @Component
     public final class MyService {
-        public MyService() {} // Правильно
+        public MyService() {}
+        public MyService(Dependency dep) {} // Wrong: two public constructors
+    }
+
+    // Correct: exactly one public constructor
+    @Component
+    public final class MyService {
+        public MyService(Dependency dep) {}
     }
     ```
 
@@ -3431,26 +3965,33 @@ Disconnecting from activity recorder
 
     ```kotlin
     @Component
-    class MyService private constructor() // Неправильно: закрытый конструктор блокирует DI
+    class MyService private constructor() // Wrong: no public constructor at all
 
-    // Public-конструктор (по умолчанию)
     @Component
-    class MyService // Правильно
+    class MyService(dep: Dependency) {
+        constructor() : this(Dependency()) // Wrong: two public constructors
+    }
+
+    // Correct: exactly one public constructor
+    @Component
+    class MyService(dep: Dependency)
     ```
+
+Оба случая Kora сообщает как `@Component class must have exactly one public constructor.` и предлагает оставить один публичный конструктор или перенести сложное создание в метод модуля.
 
 3. Не подключили модули:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application {
-        // Компоненты из модулей не подключены
+        // Components from modules not included
     }
 
     @KoraApp
-    public interface Application extends MyModule {  // <----- Подключили модуль
-        // Компоненты модуля теперь доступны
+    public interface Application extends MyModule {  // <----- Connected module
+        // Module components now available
     }
     ```
 
@@ -3459,27 +4000,27 @@ Disconnecting from activity recorder
     ```kotlin
     @KoraApp
     interface Application {
-        // Компоненты из модулей не подключены
+        // Components from modules not included
     }
 
     @KoraApp
-    interface Application : MyModule {  // <----- Подключили модуль
-        // Компоненты модуля теперь доступны
+    interface Application : MyModule {  // <----- Connected module
+        // Module components now available
     }
     ```
 
 4. Циклические зависимости:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     class A { A(B b) {} }
 
     @Component
-    class B { B(A a) {} } // Неправильно: циклическая зависимость
+    class B { B(A a) {} } // Wrong: circular dependency
 
-    // Разорвите цикл с помощью интерфейсов или переработки структуры
+    // Break the cycle with interfaces or restructuring
     interface AInterface {}
     interface BInterface {}
 
@@ -3487,7 +4028,7 @@ Disconnecting from activity recorder
     class AImpl implements AInterface { AImpl(BInterface b) {} }
 
     @Component
-    class BImpl implements ServiceBInterface { BImpl(ServiceAInterface a) {} }
+    class BImpl implements BInterface { BImpl(AInterface a) {} }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -3497,9 +4038,9 @@ Disconnecting from activity recorder
     class A(val b: B)
 
     @Component
-    class B(val a: A) // Неправильно: циклическая зависимость
+    class B(val a: A) // Wrong: circular dependency
 
-    // Разорвите цикл с помощью интерфейсов или переработки структуры
+    // Break the cycle with interfaces or restructuring
     interface AInterface
     interface BInterface
 
@@ -3512,7 +4053,7 @@ Disconnecting from activity recorder
 
 5. Игнорирование nullable-результатов:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -3524,13 +4065,13 @@ Disconnecting from activity recorder
         }
 
         public void doSomething() {
-            dep.work(); // Неправильно: может выбросить NullPointerException
+            dep.work(); // Wrong: can throw NullPointerException
         }
     }
 
-    // Безопасное использование
+    // Safe usage
     public void doSomething() {
-        if (dep != null) dep.work(); // Безопасно
+        if (dep != null) dep.work(); // Safe
     }
     ```
 
@@ -3543,38 +4084,73 @@ Disconnecting from activity recorder
     ) {
 
         fun doSomething() {
-            dep!!.work() // Неправильно: может выбросить NullPointerException
+            dep!!.work() // Wrong: can throw NullPointerException
         }
     }
 
-    // Безопасное использование
+    // Safe usage
     fun doSomething() {
-        dep?.work() // Безопасно
+        dep?.work() // Safe
     }
     ```
+
+6. Дважды зарегистрировали один модуль:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module //(1)!
+    public interface MyModule {
+        default MyComponent myComponent() { return new MyComponent(); }
+    }
+
+    @KoraApp
+    public interface Application extends MyModule { //(2)!
+    }
+    ```
+
+    1.  Уже обнаруживается автоматически, потому что компилируется вместе с `@KoraApp`.
+    2.  Наследование регистрирует те же фабрики второй раз и приводит к `Multiple components match dependency:`. Выберите один способ регистрации.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module //(1)!
+    interface MyModule {
+        fun myComponent(): MyComponent = MyComponent()
+    }
+
+    @KoraApp
+    interface Application : MyModule { //(2)!
+    }
+    ```
+
+    1.  Уже обнаруживается автоматически, потому что компилируется вместе с `@KoraApp`.
+    2.  Наследование регистрирует те же фабрики второй раз и приводит к `Multiple components match dependency:`. Выберите один способ регистрации.
 
 Как получить помощь:
 
 Если вы все еще не можете разобраться:
 
 1. Проверьте примеры: посмотрите `kora-examples`, чтобы увидеть рабочие шаблоны
-2. Прочитайте документацию: обратитесь к `kora-docs` за подробными объяснениями
+2. Прочитайте документацию: обратитесь к [Документации контейнера](../documentation/container.md) за полным контрактом контейнера
 3. Упростите: уберите сложность и проверьте минимальные компоненты
 4. Сообщество: задайте вопросы в каналах сообщества Kora
 
-Помните: большинство проблем DI возникают из-за отсутствующих компонентов, неправильного подключения модулей или циклических зависимостей. Начинайте с простого и постепенно наращивайте сложность!
+Помните: большинство проблем DI возникают из-за отсутствующих компонентов, неправильного подключения модулей, несовпадающих тегов или циклических зависимостей. Начинайте с простого и постепенно наращивайте сложность!
 
 ## Что дальше? { #whats-next }
 
 - [Создайте первое приложение Kora](getting-started.md), если вы прошли руководство только по DI до создания запускаемого HTTP-приложения.
-- [Конфигурация с HOCON](config-hocon.md) или [конфигурация с YAML](config-yaml.md) после начального руководства, чтобы узнать, как типизированная конфигурация попадает в граф.
+- [Конфигурация с HOCON](config-hocon.md) или [Конфигурация с YAML](config-yaml.md) после начального руководства, чтобы узнать, как типизированная конфигурация попадает в граф.
 - [Работа с JSON](json.md) после начального руководства, чтобы подготовить DTO запросов и ответов перед полноценным руководством по HTTP-серверу.
+- [Тестирование с JUnit 5](testing-junit.md), чтобы покрыть собранный граф компонентными тестами.
 
 ## Помощь { #help }
 
 Если возникли проблемы:
 
-- проверьте [документацию контейнера](../documentation/container.md)
-- сравните с [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection-app) и [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection-app)
-- запустите `./gradlew clean classes` и изучите ошибки сгенерированного графа перед изменением структуры кода
-- убедитесь, что компоненты помечены `@Component` или предоставляются модулем
+- проверьте [Документацию контейнера](../documentation/container.md)
+- сравните с [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection) и [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection)
+- запустите `./gradlew clean classes` и прочитайте блок `Fix:` первой ошибки Kora, прежде чем менять структуру кода
+- убедитесь, что компоненты помечены `@Component` или предоставляются модулем и что обработчик Kora включен в этом Gradle-модуле

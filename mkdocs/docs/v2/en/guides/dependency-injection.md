@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Building Kora DI Applications
 summary: A comprehensive step-by-step tutorial for building complete applications with Kora's dependency injection framework
+description: "Step-by-step multi-module Kora 2.0 application built around the dependency graph: a @KoraApp root, io.koraframework.common.annotation annotations (@Component, @Module, @KoraSubmodule, @DefaultComponent, @Tag, @Root, @FactoryModule), All<T> and ValueOf<T> claims, JSpecify @Nullable optional dependencies, Lifecycle and LifecycleWrapper, generic factories, and the Gradle setup with io.koraframework:kora-bom, annotation-processors and symbol-processors."
+agent:
+  use_when: "Use this file for questions about assembling a real multi-module Kora application graph: @KoraApp with extends, @Module auto-discovery, @KoraSubmodule across Gradle modules, @DefaultComponent overrides, @Tag and Tag.Any, All<T> collection injection, @Nullable optional dependencies, generic factory methods, @FactoryModule, ValueOf<T> and Wrapped<T>/LifecycleWrapper lifecycle control, and the Gradle multi-module build with io.koraframework:kora-bom."
 tags: dependency-injection, tutorial, components, modules, java, kotlin
 ---
 
@@ -14,11 +17,11 @@ understandable as it grows.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection).
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-dependency-injection-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection).
 
 ## What You'll Build { #youll-build }
 
@@ -28,15 +31,16 @@ You'll build a complete notification system application that demonstrates all ma
 - **Component-based architecture** with external library modules
 - **Tagged dependencies** for multiple implementations of the same interface
 - **Collection injection** to inject all implementations at once
-- **Submodules** for organizing related components
+- **Submodules** for organizing related components across Gradle modules
 - **Generic factories** for type-safe component creation
+- **Factory modules** for module instances that are themselves graph components
 - **Nullable dependencies** for graceful handling of missing components
 - **ValueOf<T>** pattern to prevent cascading component refreshes
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+
 - A text editor or IDE
 - Basic understanding of Java or Kotlin
 - Familiarity with dependency injection concepts (see [Dependency Injection with Kora](dependency-injection-introduction.md))
@@ -49,7 +53,7 @@ You'll build a complete notification system application that demonstrates all ma
 
     If you haven't read the introduction yet, do that first, because this guide moves quickly into a complete multi-module application and focuses on applying DI patterns rather than defining them from scratch.
 
-    Also you need basic Java or Kotlin familiarit.
+    You also need basic Java or Kotlin familiarity.
 
 This tutorial builds a complete Kora application from scratch, introducing dependency injection concepts progressively. Each step adds new functionality while demonstrating a specific DI pattern. By
 the end, you'll have a fully functional application showcasing all major Kora DI features.
@@ -67,6 +71,9 @@ boundaries, overrides, multiple implementations, or resource lifecycle control.
 A [Kora application graph](../documentation/container.md) is more than a list of classes. It is a typed structure that describes which components exist, which dependencies each component needs, and
 how those components are created. `@KoraApp` is the graph root, `@Module` groups factories and imports, and `@Component` classes become managed graph nodes.
 
+All of these annotations live in one package, `io.koraframework.common.annotation`, and all of them are read at compile time only. Nothing in this guide is resolved by reflection at startup: the
+annotation processor (Java) or the symbol processor (Kotlin) reads the annotations and writes an `ApplicationGraph` class next to your `Application` type.
+
 Good graph design keeps responsibilities visible:
 
 - application modules describe the application's own components
@@ -83,8 +90,9 @@ These features are powerful because they solve wiring problems without hiding th
 
 ### Lifecycle { #lifecycle }
 
-Some components own resources: clients, schedulers, connections, or background workers. Kora can manage lifecycle-aware components so startup and shutdown happen in graph order. The guide also
-introduces `ValueOf<T>` as a way to depend on a component reference without eagerly forcing all downstream refresh behavior.
+Some components own resources: clients, schedulers, connections, or background workers. Kora can manage lifecycle-aware components so startup and shutdown happen in graph order. The `Lifecycle`
+contract for that lives in `io.koraframework.application.graph` and declares exactly two methods, `init()` and `release()`. The guide also introduces `ValueOf<T>` as a way to depend on a component
+reference without eagerly forcing all downstream refresh behavior.
 
 By the end of this guide, the notification app should feel like a working example of graph design: module boundaries, external defaults, overrides, tags, optional dependencies, generic factories, and
 lifecycle control all serve one application instead of appearing as isolated features.
@@ -101,7 +109,7 @@ The practical flow is:
 
 ## Dependencies { #dependencies }
 
-This guide uses a dedicated `settings.gradle` at the top level and keeps the shared Gradle configuration inside `guide-dependency-injection/build.gradle`. In the real repository there is one
+This guide uses a dedicated `settings.gradle` at the top level and keeps the shared Gradle configuration inside `guide-dependency-injection/build.gradle`. In the reference repository there is one
 additional level above this tutorial directory because multiple guide applications live in the same workspace.
 
 Create the project directories:
@@ -111,7 +119,7 @@ mkdir -p guide-dependency-injection
 mkdir -p guide-dependency-injection/guide-dependency-injection-common guide-dependency-injection/guide-dependency-injection-lib guide-dependency-injection/guide-dependency-injection-app
 ```
 
-Install a JDK before preparing Gradle Wrapper. For the first run, Eclipse Temurin JDK 21 is enough: it starts Gradle, and Gradle toolchain can download the JDK required by the actual build.
+Kora modules are published for Java 25, and the reference applications pin a Java 25 toolchain, so install Eclipse Temurin JDK 25 and run Gradle on it.
 
 ===! ":simple-linux: `Linux`"
 
@@ -123,7 +131,7 @@ Install a JDK before preparing Gradle Wrapper. For the first run, Eclipse Temuri
     wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
     echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo $VERSION_CODENAME) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
     sudo apt update
-    sudo apt install -y temurin-21-jdk
+    sudo apt install -y temurin-25-jdk
     ```
 
 === ":simple-apple: `macOS`"
@@ -131,8 +139,8 @@ Install a JDK before preparing Gradle Wrapper. For the first run, Eclipse Temuri
     If Homebrew is installed, install Temurin JDK through cask:
 
     ```bash
-    brew install --cask temurin@21
-    export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+    brew install --cask temurin@25
+    export JAVA_HOME=$(/usr/libexec/java_home -v 25)
     ```
 
 === ":material-microsoft-windows: `Windows`"
@@ -140,10 +148,10 @@ Install a JDK before preparing Gradle Wrapper. For the first run, Eclipse Temuri
     If `winget` is installed, install Temurin JDK from PowerShell:
 
     ```powershell
-    winget install EclipseAdoptium.Temurin.21.JDK
+    winget install EclipseAdoptium.Temurin.25.JDK
     ```
 
-    If `winget` is not available, download the Windows installer from the [Eclipse Temurin downloads page](https://adoptium.net/temurin/releases/?version=21), choose **JDK 21** for your CPU
+    If `winget` is not available, download the Windows installer from the [Eclipse Temurin downloads page](https://adoptium.net/temurin/releases/?version=25), choose **JDK 25** for your CPU
     architecture, run the installer, and enable the option that updates `JAVA_HOME` and `PATH` when it is offered.
 
     Open a new terminal after installation so environment variables are refreshed.
@@ -154,7 +162,7 @@ Check that the JDK is available:
 java -version
 ```
 
-The output should show Java 21.
+The output should show Java 25.
 
 Prepare Gradle Wrapper in the same directory. This guide creates the multi-module project manually, so there is no `gradle init` step that would generate wrapper files for you.
 
@@ -254,10 +262,10 @@ part of the lesson.
 
 Gradle has to do several things here:
 
-- register three tutorial submodules
+- register the tutorial submodules
 - configure the JDK used to compile every submodule
-- import the Kora BOM once for all submodules
-- make BOM versions available to the required Gradle configurations
+- make the Kora BOM versions available to the required Gradle configurations
+- enable Kora code generation in every module that declares graph elements
 - apply common compile and test rules
 
 #### Module Structure { #module-structure }
@@ -268,6 +276,7 @@ Create the following directory structure. The file extensions differ between Gra
 
     ```
     |-- settings.gradle
+    |-- gradle.properties
     `-- guide-dependency-injection/
         |-- build.gradle
         |-- guide-dependency-injection-common/
@@ -279,6 +288,7 @@ Create the following directory structure. The file extensions differ between Gra
 
     ```
     |-- settings.gradle.kts
+    |-- gradle.properties
     `-- guide-dependency-injection/
         |-- build.gradle.kts
         |-- guide-dependency-injection-common/
@@ -287,7 +297,8 @@ Create the following directory structure. The file extensions differ between Gra
     ```
 
 `guide-dependency-injection-common` holds shared contracts, `guide-dependency-injection-lib` emulates a reusable library, and `guide-dependency-injection-app` contains the runnable application with
-`@KoraApp`. This separation is what lets later steps demonstrate overrides, tags, optional dependencies, and adding more modules.
+`@KoraApp`. A fourth module, `guide-dependency-injection-submodule`, is added later when the guide reaches `@KoraSubmodule`. This separation is what lets later steps demonstrate overrides, tags,
+optional dependencies, and cross-module graph discovery.
 
 #### Root Settings { #root-settings }
 
@@ -310,6 +321,13 @@ Edit the top-level Gradle settings file. It names the Gradle build and tells Gra
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    pluginManagement {
+        plugins {
+            id("org.jetbrains.kotlin.jvm") version "2.4.10" //(1)!
+            id("com.google.devtools.ksp") version "2.3.11" //(2)!
+        }
+    }
+
     plugins {
         id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     }
@@ -321,18 +339,24 @@ Edit the top-level Gradle settings file. It names the Gradle build and tells Gra
     include("guide-dependency-injection:guide-dependency-injection-app")
     ```
 
+    1.  Kotlin JVM plugin version, declared once for the whole build so module build files can apply the plugin without repeating the version.
+    2.  KSP plugin version. It is tied to the Kotlin version, so the two are always raised together.
+
 The `foojay-resolver-convention` plugin supports Java toolchains: it helps Gradle find or download the requested JDK. The include lines register nested modules through Gradle paths, such as
 `:guide-dependency-injection:guide-dependency-injection-app`, so Gradle can run tasks for a specific module.
 
 #### Gradle Properties { #gradle-properties }
 
-Add `gradle.properties` so Gradle can detect installed JDKs and download the required Temurin toolchain when JDK 24 is not available locally:
+Add `gradle.properties` so Gradle can detect installed JDKs, download the required Temurin toolchain when JDK 25 is not available locally, and share the Kora and JUnit versions across all modules:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```properties
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
+
+    koraVersion=2.0.0.RC1
+    junitVersion=6.1.3
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -341,15 +365,19 @@ Add `gradle.properties` so Gradle can detect installed JDKs and download the req
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
     kotlin.jvm.target.validation.mode=warning
+
+    koraVersion=2.0.0.RC1
+    junitVersion=6.1.3
     ```
 
-The first two properties make the tutorial build less dependent on the local machine. The Kotlin-specific validation flag is needed for Kotlin 1.9.25: if the compiler cannot target JDK 24 exactly, it
-reports the fallback as a warning instead of failing this tutorial build.
+The first two properties make the tutorial build less dependent on the local machine. `koraVersion` and `junitVersion` are ordinary Gradle project properties: every module build file reads them as
+`$koraVersion` and `$junitVersion`, so a version bump happens in exactly one place. The Kotlin-specific validation flag mirrors the reference applications: when the Kotlin compiler cannot target the
+toolchain JVM version exactly, it reports the fallback as a warning instead of failing the build.
 
 #### Shared Build File { #shared-build-file }
 
-Create a shared build file under `guide-dependency-injection/`. It applies to the three nested modules: `common`, `lib`, and `app`, so the BOM, toolchain, classpath, and test setup do not have to be
-duplicated in every module.
+Create a shared build file under `guide-dependency-injection/`. It applies to the nested modules `common`, `lib`, `app`, and later `submodule`, so the toolchain, repositories, and test setup do not
+have to be duplicated in every module.
 
 Start with imports and an empty `subprojects` block:
 
@@ -360,6 +388,9 @@ Start with imports and an empty `subprojects` block:
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
     }
     ```
 
@@ -371,14 +402,22 @@ Start with imports and an empty `subprojects` block:
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
     }
     ```
 
+`mavenCentral()` is where Kora, Logback, HOCON, and their transitive dependencies are downloaded from.
+
 #### Kora BOM { #kora-bom }
 
-Inside `subprojects {}`, create a dedicated `koraBom` configuration. The BOM (`Bill of Materials`) holds aligned versions for Kora modules, so every submodule can use a compatible version set.
+Kora is split into many modules. Instead of writing a version on every dependency, import a BOM (`Bill of Materials`) named `io.koraframework:kora-bom`. It aligns the versions of all Kora modules and
+of the third-party libraries Kora ships with. Java and Kotlin wire that BOM in differently, and the difference is worth understanding before writing the rest of the build file.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    In Java the BOM goes into a dedicated `koraBom` configuration declared once in `subprojects {}`. Nothing resolves it yet; the next sections make the real configurations extend it:
 
     ```groovy
     subprojects {
@@ -390,15 +429,20 @@ Inside `subprojects {}`, create a dedicated `koraBom` configuration. The BOM (`B
 
 === ":simple-kotlin: `Kotlin`"
 
+    In Kotlin there is no shared BOM configuration. Each module imports the platform straight into `implementation`, which `testImplementation` already extends:
+
     ```kotlin
-    subprojects {
-        val koraBom by configurations.creating
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
     }
     ```
 
+    The `ksp` configuration does not extend `implementation`, so the Kora symbol processor is the one dependency that always carries an explicit version.
+
 #### JDK Toolchain { #jdk-toolchain }
 
-Configure the JDK after the `java` plugin is enabled in a submodule. Gradle may run on one JDK while compiling the project with another, so the toolchain makes the tutorial reproducible.
+Configure the JDK after the `java` plugin is enabled in a submodule. Gradle may run on one JDK while compiling the project with another, so the toolchain makes the tutorial reproducible. Kora modules
+are compiled for Java 25, so the toolchain must be Java 25 or newer.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -407,7 +451,7 @@ Configure the JDK after the `java` plugin is enabled in a submodule. Gradle may 
         plugins.withId("java") {
             java {
                 toolchain {
-                    languageVersion = JavaLanguageVersion.of(24)
+                    languageVersion = JavaLanguageVersion.of(25)
                     vendor = JvmVendorSpec.ADOPTIUM
                 }
             }
@@ -419,10 +463,19 @@ Configure the JDK after the `java` plugin is enabled in a submodule. Gradle may 
 
     ```kotlin
     subprojects {
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                jvmToolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
+                    vendor.set(JvmVendorSpec.ADOPTIUM)
+                }
+            }
+        }
+
         plugins.withId("java") {
             extensions.configure<JavaPluginExtension>("java") {
                 toolchain {
-                    languageVersion.set(JavaLanguageVersion.of(24))
+                    languageVersion.set(JavaLanguageVersion.of(25))
                     vendor.set(JvmVendorSpec.ADOPTIUM)
                 }
             }
@@ -430,11 +483,16 @@ Configure the JDK after the `java` plugin is enabled in a submodule. Gradle may 
     }
     ```
 
+    Kotlin needs both blocks: `jvmToolchain` drives the Kotlin compiler, and the `java` toolchain drives `javac` for the Java sources KSP and Gradle still compile in the same module.
+
 #### Classpath Configurations { #classpath-configurations }
 
-Make the BOM available to the Gradle configurations used by application code, compile-time APIs, annotation processing, public library APIs, and tests.
+Kora code generation runs on its own classpath, separate from the application classpath. In Java that is `annotationProcessor`; in Kotlin it is the `ksp` configuration added by the KSP plugin. Both
+need the aligned Kora versions.
 
 ===! ":fontawesome-brands-java: `Java`"
+
+    Make the BOM available to the configurations used by application code, compile-time APIs, annotation processing, public library APIs, and tests:
 
     ```groovy
     subprojects {
@@ -452,49 +510,65 @@ Make the BOM available to the Gradle configurations used by application code, co
     }
     ```
 
+    `annotationProcessor` and `testAnnotationProcessor` receive the BOM separately because Kora annotation processors are resolved on their own classpath. The `api` configuration matters for `common`
+    and `lib`, where types become part of the public API consumed by other modules.
+
 === ":simple-kotlin: `Kotlin`"
 
+    Kotlin does not need a shared `extendsFrom` block. Every module that declares graph elements applies the KSP plugin and declares the processor with an explicit version:
+
     ```kotlin
-    subprojects {
-        configurations {
-            compileOnly.get().extendsFrom(koraBom)
-            implementation.get().extendsFrom(koraBom)
-            api.get().extendsFrom(koraBom)
-            testImplementation.get().extendsFrom(koraBom)
-        }
+    plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
+    }
+
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
+
+        ksp("io.koraframework:symbol-processors:$koraVersion")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
     }
     ```
 
-`annotationProcessor` and `testAnnotationProcessor` receive the BOM separately because Kora annotation processors use their own classpath. The `api` configuration matters for `common` and `lib`, where
-types can become part of the public API consumed by other modules.
+    The `build/generated/ksp/main/kotlin` source directory matters for IDEs and for compilation, because KSP writes Kora-generated Kotlin code there. Modules that also generate code for test sources
+    add `sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }`.
 
 #### Kora Version { #kora-version }
 
-Import the BOM itself. The `$koraVersion` variable comes from the repository `gradle.properties`; after this line, individual modules can declare Kora dependencies without explicit versions.
+Now import the BOM itself. The `$koraVersion` variable comes from `gradle.properties`; after this line, individual modules can declare Kora dependencies without explicit versions.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     subprojects {
         dependencies {
-            koraBom platform("ru.tinkoff.kora:kora-parent:$koraVersion")
+            koraBom platform("io.koraframework:kora-bom:$koraVersion")
         }
     }
     ```
+
+    Because `implementation`, `annotationProcessor`, `compileOnly`, `testImplementation`, `testAnnotationProcessor`, and `api` all extend `koraBom`, a single line covers every module.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    subprojects {
-        dependencies {
-            koraBom(platform("ru.tinkoff.kora:kora-parent:$koraVersion"))
-        }
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
+
+        ksp("io.koraframework:symbol-processors:$koraVersion")
     }
     ```
 
+    In Kotlin these two lines live in each module build file rather than in the shared file, because `ksp` is only added by modules that apply the KSP plugin.
+
 #### Final File { #final-file }
 
-The final shared build file contains the same decisions together: the BOM configuration, the JDK toolchain, classpath wiring, dependency on the Kora BOM, and common test behavior.
+The final shared build file contains the same decisions together: repositories, the JDK toolchain, classpath wiring, the Kora BOM, and common test behavior.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -503,6 +577,10 @@ The final shared build file contains the same decisions together: the BOM config
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
+        repositories {
+            mavenCentral()
+        }
+
         configurations {
             koraBom
         }
@@ -510,7 +588,7 @@ The final shared build file contains the same decisions together: the BOM config
         plugins.withId("java") {
             java {
                 toolchain {
-                    languageVersion = JavaLanguageVersion.of(24)
+                    languageVersion = JavaLanguageVersion.of(25)
                     vendor = JvmVendorSpec.ADOPTIUM
                 }
             }
@@ -527,7 +605,7 @@ The final shared build file contains the same decisions together: the BOM config
         }
 
         dependencies {
-            koraBom platform("ru.tinkoff.kora:kora-parent:$koraVersion")
+            koraBom platform("io.koraframework:kora-bom:$koraVersion")
         }
 
         tasks.withType(JavaCompile).configureEach {
@@ -553,26 +631,35 @@ The final shared build file contains the same decisions together: the BOM config
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     subprojects {
-        val koraBom by configurations.creating
+        repositories {
+            mavenCentral()
+        }
 
-        plugins.withId("java") {
-            extensions.configure<JavaPluginExtension>("java") {
-                toolchain {
-                    languageVersion.set(JavaLanguageVersion.of(24))
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                jvmToolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
                     vendor.set(JvmVendorSpec.ADOPTIUM)
                 }
             }
         }
 
-        configurations {
-            compileOnly.get().extendsFrom(koraBom)
-            implementation.get().extendsFrom(koraBom)
-            api.get().extendsFrom(koraBom)
-            testImplementation.get().extendsFrom(koraBom)
+        plugins.withId("java") {
+            extensions.configure<JavaPluginExtension>("java") {
+                toolchain {
+                    languageVersion.set(JavaLanguageVersion.of(25))
+                    vendor.set(JvmVendorSpec.ADOPTIUM)
+                }
+            }
         }
 
-        dependencies {
-            koraBom(platform("ru.tinkoff.kora:kora-parent:$koraVersion"))
+        tasks.withType<Test>().configureEach {
+            useJUnitPlatform()
+            testLogging {
+                showStandardStreams = true
+                events("passed", "skipped", "failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            }
         }
     }
     ```
@@ -590,15 +677,18 @@ and [Container documentation: Container](../documentation/container.md#container
 
 **What we are emulating**: a real application root that owns startup and a shared API module that other modules can depend on without pulling in application-specific behavior.
 
-**Create shared contracts** (`guide-dependency-injection/guide-dependency-injection-common/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/common/`
-or `guide-dependency-injection/guide-dependency-injection-common/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/common/`):
+This guide uses the package `io.koraframework.guide.dependencyinjection`, the same package as the reference applications. Keeping the package stable makes it easier to compare your project with the
+finished example and to find Kora-generated sources later.
+
+**Create shared contracts** (`guide-dependency-injection/guide-dependency-injection-common/src/main/java/io/koraframework/guide/dependencyinjection/common/`
+or `guide-dependency-injection/guide-dependency-injection-common/src/main/kotlin/io/koraframework/guide/dependencyinjection/common/`):
 
 #### Build the Shared Module { #build-shared-module }
 
 First, create the build file for `guide-dependency-injection-common`. This module contains only interfaces and shared types, so it needs a library-oriented JVM plugin and test dependencies, but not the
-application plugin or Kora annotation processing.
+application plugin or Kora code generation.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     The `java-library` plugin is the right fit for modules with a public API:
 
@@ -616,12 +706,12 @@ application plugin or Kora annotation processing.
     dependencies {
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
     `junit-bom` aligns JUnit versions, `junit-jupiter` adds JUnit 5, and `test-junit5` adds Kora testing utilities. This first step may not have tests yet, but the module is ready for contract and
-    component checks.
+    component checks. `test-junit5` needs no version because the shared build file already made `testImplementation` extend `koraBom`.
 
     The final common module `build.gradle` is:
 
@@ -633,52 +723,61 @@ application plugin or Kora annotation processing.
     dependencies {
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    The `kotlin("jvm")` plugin compiles Kotlin code into JVM classes that the `app` and `lib` modules can use:
+    The Kotlin JVM plugin compiles Kotlin code into JVM classes that the `app` and `lib` modules can use, and `java-library` separates the public API from implementation dependencies:
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("java-library")
     }
     ```
 
-    Add test dependencies:
+    Neither plugin carries a version here: both versions were declared once in `settings.gradle.kts`.
+
+    Add the Kora BOM and test dependencies:
 
     ```kotlin
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-    `junit-bom` aligns JUnit versions, `junit-jupiter` adds JUnit 5, and `test-junit5` adds Kora testing utilities.
+    `junit-bom` aligns JUnit versions, `junit-jupiter` adds JUnit 5, and `test-junit5` adds Kora testing utilities. `testImplementation` extends `implementation`, so the Kora BOM imported above is what
+    lets `test-junit5` be declared without a version.
 
     The final common module `build.gradle.kts` is:
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("java-library")
     }
 
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
 Then create the interfaces:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.common;
+    package io.koraframework.guide.dependencyinjection.common;
 
     public interface Notifier {
         void notify(String user, String message);
@@ -688,39 +787,40 @@ Then create the interfaces:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.common
+    package io.koraframework.guide.dependencyinjection.common
 
     fun interface Notifier {
         fun notify(user: String, message: String)
     }
     ```
 
-**Create the main application** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/`
-or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/`):
+`Notifier` is declared as a `fun interface` in Kotlin so that module factories can return it as a lambda later in the guide.
+
+**Create the main application** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/`
+or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/`):
 
 #### Build the Application { #build-application }
 
 Create the build file for `guide-dependency-injection-app`. This module is runnable, contains `@KoraApp`, and must enable Kora graph generation, so its Gradle setup is more involved than the shared
 contract module.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     Start with plugins:
 
     ```groovy
     plugins {
-        id "java"
         id "application"
     }
     ```
 
-    `java` compiles sources, and `application` adds `./gradlew run` plus main-class configuration.
+    The `application` plugin applies `java` for you and adds `./gradlew run` plus main-class configuration, so no separate `id "java"` line is needed.
 
     Add the Kora annotation processor:
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
     }
     ```
 
@@ -732,34 +832,34 @@ contract module.
     ```groovy
     dependencies {
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
-        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
-    `common` provides the shared `Notifier` interface, `lib` will add library components in later steps, `config-hocon` provides configuration, and `logging-logback` adds logging.
+    `common` provides the shared `Notifier` interface, `config-hocon` provides configuration, and `logging-logback` adds logging. The `lib` and `submodule` project dependencies are added in the steps
+    that create those modules.
 
     Add test setup:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
-    `testAnnotationProcessor` is needed when a test graph is generated by Kora. `test-junit5` adds Kora integration for JUnit 5.
+    `testAnnotationProcessor` is only needed when test sources declare their own `@KoraApp` or Kora annotations that must be processed. `test-junit5` adds the Kora JUnit 5 extension.
 
     Configure application startup:
 
     ```groovy
     application {
         applicationName = "application"
-        mainClass = "ru.tinkoff.kora.guide.dependencyinjection.Application"
+        mainClass = "io.koraframework.guide.dependencyinjection.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
     ```
@@ -792,28 +892,26 @@ contract module.
 
     ```groovy
     plugins {
-        id "java"
         id "application"
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
 
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
-        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
 
     application {
         applicationName = "application"
-        mainClass = "ru.tinkoff.kora.guide.dependencyinjection.Application"
+        mainClass = "io.koraframework.guide.dependencyinjection.Application"
         applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
     }
 
@@ -828,60 +926,71 @@ contract module.
 
     ```kotlin
     plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
         id("application")
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
     ```
 
-    `application` adds `./gradlew run`, `kotlin("jvm")` compiles Kotlin code, and `com.google.devtools.ksp` runs the Kora symbol processor.
+    `org.jetbrains.kotlin.jvm` compiles Kotlin code, `com.google.devtools.ksp` runs the Kora symbol processor, and `application` adds `./gradlew run`.
 
-    Add the Kora KSP processor:
+    Add the Kora BOM and the KSP processor:
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
     }
     ```
 
-    KSP reads `@KoraApp` and generates `ApplicationGraph`. Without this dependency, the application will not get the generated graph.
+    KSP reads `@KoraApp` and generates `ApplicationGraph`. Without this dependency, the application will not get the generated graph. The `ksp` configuration is not covered by the BOM, so it keeps an
+    explicit version.
 
     Now add application dependencies:
 
     ```kotlin
     dependencies {
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
-        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
-    `common` provides the shared `Notifier` interface, `lib` will add library components, `config-hocon` provides HOCON configuration, and `logging-logback` adds logging.
+    `common` provides the shared `Notifier` interface, `config-hocon` provides HOCON configuration, and `logging-logback` adds logging. The `lib` and `submodule` project dependencies are added in the
+    steps that create those modules.
 
     Add test dependencies:
 
     ```kotlin
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-    Configure startup:
+    There is no `kspTest(...)` line here. It is only needed when test sources declare their own `@KoraApp` or other Kora annotations that must be processed; tests that reuse the main `Application`
+    graph through `@KoraAppTest` do not.
+
+    Register the KSP output directories and configure startup:
 
     ```kotlin
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
+    }
+
     application {
-        applicationName.set("application")
-        mainClass.set("ru.tinkoff.kora.guide.dependencyinjection.ApplicationKt")
+        applicationName = "application"
+        mainClass.set("io.koraframework.guide.dependencyinjection.ApplicationKt")
         applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
     }
     ```
 
-    This block belongs to the Gradle `application` plugin and tells Gradle how to launch the Kotlin application:
+    The `application` block tells Gradle how to launch the Kotlin application:
 
-    - `applicationName.set("application")` sets the distribution application name and startup script name.
+    - `applicationName` sets the distribution application name and startup script name.
     - `mainClass.set(...)` points to the class that contains `main`. In Kotlin, a top-level `main` function from `Application.kt` is compiled into the JVM class `ApplicationKt`, so the main class is
       `ApplicationKt`.
     - `applicationDefaultJvmArgs` sets JVM arguments for `./gradlew run` and generated startup scripts.
@@ -903,27 +1012,33 @@ contract module.
 
     ```kotlin
     plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
         id("application")
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
 
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
-        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
 
     application {
-        applicationName.set("application")
-        mainClass.set("ru.tinkoff.kora.guide.dependencyinjection.ApplicationKt")
+        applicationName = "application"
+        mainClass.set("io.koraframework.guide.dependencyinjection.ApplicationKt")
         applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
     }
 
@@ -934,18 +1049,19 @@ contract module.
 
 Then create the application:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection;
+    package io.koraframework.guide.dependencyinjection;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends HoconConfigModule, LogbackModule {
+
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
         }
@@ -955,12 +1071,12 @@ Then create the application:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection
+    package io.koraframework.guide.dependencyinjection
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application : HoconConfigModule, LogbackModule
@@ -970,6 +1086,10 @@ Then create the application:
     }
     ```
 
+`KoraApplication.run(...)` accepts a `Supplier<ApplicationGraphDraw>`, and the generated `ApplicationGraph` class provides exactly that through its static `graph()` method, which is why the method
+reference `ApplicationGraph::graph` fits. The generated class is always named after the `@KoraApp` type plus the `Graph` suffix, so an `Application` interface produces `ApplicationGraph`. It does not
+exist until annotation processing or KSP has run once.
+
 **Build and run**:
 
 ```bash
@@ -978,7 +1098,8 @@ Then create the application:
 ./gradlew run
 ```
 
-**Expected Output**: The application starts and shuts down cleanly. The `lib` module is already connected in the build, and the next steps will add more components and modules.
+**Expected Output**: The application starts and shuts down cleanly. Kora logs `Application initialized in ...ms` and, on `Ctrl+C`, `Application shutdown...`. The graph has no root component yet, so
+nothing else happens; the next steps add components and modules.
 
 ---
 
@@ -995,9 +1116,9 @@ and [Container documentation: External module factory](../documentation/containe
 
 **What we are emulating**: a library that ships a default email notifier implementation and configuration contract, while still allowing the application to override presentation details later.
 
-First, create the library module build file:
+First, create the library module build file. Unlike `common`, this module declares a `@ConfigMapper` type, so it needs Kora code generation of its own:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     `guide-dependency-injection/guide-dependency-injection-lib/build.gradle`
 
@@ -1007,13 +1128,15 @@ First, create the library module build file:
     }
 
     dependencies {
+        annotationProcessor "io.koraframework:annotation-processors"
+
         api project(":guide-dependency-injection:guide-dependency-injection-common")
 
-        implementation "ru.tinkoff.kora:config-common"
+        implementation "io.koraframework:config-common"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -1023,94 +1146,161 @@ First, create the library module build file:
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
     }
 
     dependencies {
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
         api(project(":guide-dependency-injection:guide-dependency-injection-common"))
 
-        implementation("ru.tinkoff.kora:config-common")
+        implementation("io.koraframework:config-common")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
     }
     ```
 
-**Create EmailModule** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/email/`
-or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/email/`):
+`api project(...)` is deliberate: `Notifier` appears in the signatures this module exposes, so consumers of `lib` must see it too. `config-common` brings the configuration contracts `Config` and
+`ConfigValueMapper` without forcing a specific configuration format on the library — the application decides between HOCON and YAML.
 
-===! ":fontawesome-brands-java: Java"
+Then register the new module in the root settings file and add it to the application classpath:
 
-    Create the EmailModule:
+===! ":fontawesome-brands-java: `Java`"
 
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.email;
+    `settings.gradle` already contains the module, and `guide-dependency-injection-app/build.gradle` now depends on it:
 
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
-    import ru.tinkoff.kora.common.DefaultComponent;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.common.Config;
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor;
-
-    import java.util.function.Supplier;
-
-    public interface EmailModule {
-        final class EmailTag {
-            private EmailTag() {}
-        }
-
-        default EmailConfig config(Config config, ConfigValueExtractor<EmailConfig> extractor) {
-            return extractor.extract(config["notifier.email"]);
-        }
-
-        @Tag(EmailTag.class)
-        @DefaultComponent
-        default Supplier<String> emailNotifierHeaderSupplier() {
-            return () -> "[EMAIL DEFAULT] ";
-        }
-
-        @Tag(EmailTag.class)
-        default Notifier emailNotifier(EmailConfig emailConfig,
-                                       @Tag(EmailTag.class) Supplier<String> emailHeaderSupplier) {
-            String header = emailHeaderSupplier.get();
-            return (user, message) -> {
-                System.out.println(String.format("%s%s [USER:%s]: %s", header, emailConfig.topic(), user, message));
-            };
-        }
+    ```groovy
+    dependencies {
+        implementation project(":guide-dependency-injection:guide-dependency-injection-common")
+        implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create the EmailModule:
+    `settings.gradle.kts` already contains the module, and `guide-dependency-injection-app/build.gradle.kts` now depends on it:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.email
+    dependencies {
+        implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
+        implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
+    }
+    ```
+
+**Create EmailConfig** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/email/`
+or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/email/`):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.email;
+
+    import io.koraframework.config.common.annotation.ConfigMapper;
+
+    @ConfigMapper
+    public record EmailConfig(String topic) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.email
+
+    import io.koraframework.config.common.annotation.ConfigMapper
+
+    @ConfigMapper
+    data class EmailConfig(val topic: String)
+    ```
+
+`@ConfigMapper` is the library-side configuration annotation: it tells Kora to generate a `ConfigValueMapper<EmailConfig>` without binding the type to a fixed configuration path. The module method
+below is what chooses the path, so the same config type can be reused under different sections. For an application-owned configuration type bound to one path, use `@ConfigSource` instead — see
+[Configuration](../documentation/config.md).
+
+**Create EmailModule** (same package):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.email;
+
+    import java.util.function.Supplier;
+    import io.koraframework.common.annotation.DefaultComponent;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.common.Config;
+    import io.koraframework.config.common.mapper.ConfigValueMapper;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
+
+    public interface EmailModule {
+
+        final class EmailTag {
+            private EmailTag() {}
+        }
+
+        default EmailConfig config(Config config, ConfigValueMapper<EmailConfig> extractor) {
+            return extractor.mapOrThrow(config.get("notifier.email")); //(1)!
+        }
+
+        @Tag(EmailTag.class)
+        @DefaultComponent //(2)!
+        default Supplier<String> emailNotifierHeaderSupplier() {
+            return () -> "[EMAIL DEFAULT] ";
+        }
+
+        @Tag(EmailTag.class)
+        default Notifier emailNotifier(EmailConfig emailConfig, @Tag(EmailTag.class) Supplier<String> headerSupplier) {
+            return (user, message) -> System.out.println(headerSupplier.get() + emailConfig.topic() + " [USER:" + user + "]: " + message);
+        }
+    }
+    ```
+
+    1.  `mapOrThrow` fails the graph build with a configuration error when the section is missing or cannot be mapped. Use `map` instead if a missing section should produce `null`.
+    2.  Marks the factory as a default: the application may declare its own factory for the same type and tag, and Kora will prefer the application one.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.email
 
     import java.util.function.Supplier
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
-    import ru.tinkoff.kora.common.DefaultComponent
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.common.Config
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor
+    import io.koraframework.common.annotation.DefaultComponent
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.common.Config
+    import io.koraframework.config.common.mapper.ConfigValueMapper
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
     interface EmailModule {
+
         class EmailTag private constructor()
 
-        fun config(config: Config, extractor: ConfigValueExtractor<EmailConfig>): EmailConfig {
-            return extractor.extract(config["notifier.email"])
+        fun config(config: Config, extractor: ConfigValueMapper<EmailConfig>): EmailConfig {
+            return extractor.mapOrThrow(config["notifier.email"]) //(1)!
         }
 
         @Tag(EmailTag::class)
-        @DefaultComponent
+        @DefaultComponent //(2)!
         fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL DEFAULT] " }
         }
 
         @Tag(EmailTag::class)
-        fun emailNotifier(emailConfig: EmailConfig,
-                         @Tag(EmailTag::class) headerSupplier: Supplier<String>): Notifier {
+        fun emailNotifier(
+            emailConfig: EmailConfig,
+            @Tag(EmailTag::class) headerSupplier: Supplier<String>
+        ): Notifier {
             return Notifier { user, message ->
                 println("${headerSupplier.get()}${emailConfig.topic} [USER:$user]: $message")
             }
@@ -1118,28 +1308,15 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
     }
     ```
 
-**Create EmailConfig** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/email/`
-or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/email/`):
+    1.  `mapOrThrow` fails the graph build with a configuration error when the section is missing or cannot be mapped. Use `map` instead if a missing section should produce `null`.
+    2.  Marks the factory as a default: the application may declare its own factory for the same type and tag, and Kora will prefer the application one.
 
-===! ":fontawesome-brands-java: Java"
-
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.email;
-
-    public record EmailConfig(String topic) {}
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.email
-
-    data class EmailConfig(val topic: String)
-    ```
+`EmailTag` is an ordinary nested class used only as a compile-time marker. It never gets instantiated, which is why it can have a private constructor. Tag classes must be visible from every place that
+references them, so a package-private or `private` top-level tag will not work across modules.
 
 **Update Application** to include the email module:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -1147,7 +1324,10 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
             HoconConfigModule,
             LogbackModule,
             EmailModule {  // <----- Connected module
-        // EmailModule provides default email notification
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
@@ -1158,8 +1338,10 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        EmailModule {  // <----- Connected module
-        // EmailModule provides default email notification
+        EmailModule  // <----- Connected module
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
@@ -1177,14 +1359,14 @@ For the full configuration reference, see [Configuration](../documentation/confi
     logging {
       levels {
         "ROOT": "WARN" //(2)!
-        "ru.tinkoff.kora": "INFO" //(3)!
+        "io.koraframework": "INFO" //(3)!
       }
     }
     ```
 
-    1. Topic or channel name used by the component.
-    2. Log level for `ROOT`.
-    3. Log level for `ru.tinkoff.kora`.
+    1.  Topic or channel name used by the component.
+    2.  Log level for `ROOT`.
+    3.  Log level for `io.koraframework`, which is also the package of this tutorial application.
 
 === ":simple-yaml: `YAML`"
 
@@ -1192,28 +1374,34 @@ For the full configuration reference, see [Configuration](../documentation/confi
     notifier:
       email:
         topic: "USER" #(1)!
-      logging:
-        levels:
-          ROOT: "WARN" #(2)!
-          "ru.tinkoff.kora": "INFO" #(3)!
+
+    logging:
+      levels:
+        ROOT: "WARN" #(2)!
+        "io.koraframework": "INFO" #(3)!
     ```
 
-    1. Topic or channel name used by the component.
-    2. Log level for `ROOT`.
-    3. Log level for `ru.tinkoff.kora`.
+    1.  Topic or channel name used by the component.
+    2.  Log level for `ROOT`.
+    3.  Log level for `io.koraframework`, which is also the package of this tutorial application.
+
+The application module depends on `config-hocon`, so `application.conf` is what actually gets read. Switch the dependency to `io.koraframework:config-yaml` and the module to `YamlConfigModule` if you
+prefer the YAML file instead.
 
 **Build and run** - Application still has no root component, so it just starts and stops.
 
 **Key Concept**: `@DefaultComponent` provides library defaults that applications can override.
 
 **Module registration rule**: if a type is annotated with `@Module`, do not also wire it through `extends` on `@KoraApp` or another module. A module should be registered in exactly one way: either
-inherited with `extends`, or discovered because it is annotated with `@Module` and lives under the current `@KoraApp` / `@KoraSubmodule` graph. `@KoraSubmodule` itself is the case where inheritance is
-expected.
+inherited with `extends`, or discovered because it is annotated with `@Module` and is compiled together with the current `@KoraApp` / `@KoraSubmodule`. `@KoraSubmodule` itself is the case where
+inheritance is expected, because the processor looks for `@KoraSubmodule` only among the interfaces the `@KoraApp` type extends.
+
+Note that `@Module` may only be applied to interfaces. Applying it to a class fails compilation with `@Module can only be applied to interfaces.`
 
 **What Kora generates for `EmailModule`**: after `./gradlew clean classes`, `ApplicationGraph` will not necessarily contain the exact same `componentN` numbers shown below, because those names are
 internal generator details. The structure is the important part: Kora creates a configuration node, a default value node, and the notifier node.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ??? abstract "Java: generated graph fragment for `EmailModule`"
 
@@ -1222,26 +1410,35 @@ internal generator details. The structure is the important part: Kora creates a 
         private final Node<Supplier<String>> component9;
         private final Node<Notifier> component10;
 
-        component8 = graphDraw.addNode0(_type_of_component8,
-            new Class<?>[]{},
+        component8 = graphDraw.addNode(_type_of_component8,
+            null,
+            null,
+            List.of(component6, component7),
+            List.of(component6, component7),
+            List.of(),
             g -> impl.config(
                 g.get(ApplicationGraph.holder0.component6),
                 g.get(ApplicationGraph.holder0.component7)
-            ),
-            List.of(), component6, component7);
+            ));
 
-        component9 = graphDraw.addNode0(_type_of_component9,
-            new Class<?>[]{EmailModule.EmailTag.class},
-            g -> impl.emailNotifierHeaderSupplier(),
-            List.of());
+        component9 = graphDraw.addNode(_type_of_component9,
+            EmailModule.EmailTag.class,
+            null,
+            List.of(),
+            List.of(),
+            List.of(),
+            g -> impl.emailNotifierHeaderSupplier());
 
-        component10 = graphDraw.addNode0(_type_of_component10,
-            new Class<?>[]{EmailModule.EmailTag.class},
+        component10 = graphDraw.addNode(_type_of_component10,
+            EmailModule.EmailTag.class,
+            null,
+            List.of(component8, component9),
+            List.of(component8, component9),
+            List.of(),
             g -> impl.emailNotifier(
                 g.get(ApplicationGraph.holder0.component8),
                 g.get(ApplicationGraph.holder0.component9)
-            ),
-            List.of(), component8, component9);
+            ));
         ```
 
         This shows why `EmailModule` must be connected through `extends`: only then do its factory methods become part of the application graph.
@@ -1249,6 +1446,7 @@ internal generator details. The structure is the important part: Kora creates a 
         - `component8` reads `notifier.email` and turns HOCON configuration into typed `EmailConfig`.
         - `component9` is a tagged `Supplier<String>` with `EmailTag`. This lets Kora distinguish the email header from other possible `Supplier<String>` components.
         - `component10` is a tagged `Notifier` that depends on `EmailConfig` and the tagged `Supplier<String>`.
+        - The second argument of `addNode` is the tag, the third is an optional `@Conditional` predicate, and the two `List.of(...)` arguments are the create-time and refresh-time dependencies.
         - `@DefaultComponent` on `emailNotifierHeaderSupplier()` means the library provides a default value, and the application can replace it in the next section.
 
 === ":simple-kotlin: `Kotlin`"
@@ -1260,37 +1458,44 @@ internal generator details. The structure is the important part: Kora creates a 
         public val component9: Node<Supplier<String>>
         public val component10: Node<Notifier>
 
-        component8 = graphDraw.addNode0(map["component8"],
-          arrayOf(),
+        component8 = graphDraw.addNode(map["component8"],
+          null,
+          null,
+          listOf(component6, component7),
+          listOf(component6, component7),
+          listOf(),
           { impl.config(
             it.get(holder0.component6),
             it.get(holder0.component7)
-          ) },
+          ) }
+        )
+
+        component9 = graphDraw.addNode(map["component9"],
+          EmailModule.EmailTag::class.java,
+          null,
           listOf(),
-          component6, component7
+          listOf(),
+          listOf(),
+          { impl.emailNotifierHeaderSupplier() }
         )
 
-        component9 = graphDraw.addNode0(map["component9"],
-          arrayOf(EmailModule.EmailTag::class.java),
-          { impl.emailNotifierHeaderSupplier() },
-          listOf()
-        )
-
-        component10 = graphDraw.addNode0(map["component10"],
-          arrayOf(EmailModule.EmailTag::class.java),
+        component10 = graphDraw.addNode(map["component10"],
+          EmailModule.EmailTag::class.java,
+          null,
+          listOf(component8, component9),
+          listOf(component8, component9),
+          listOf(),
           { impl.emailNotifier(
             it.get(holder0.component8),
             it.get(holder0.component9)
-          ) },
-          listOf(),
-          component8, component9
+          ) }
         )
         ```
 
         Kotlin/KSP generates the same meaning in Kotlin code:
 
         - `EmailConfig` becomes a separate graph node.
-        - `EmailTag` is written into the tag array for both `Supplier<String>` and `Notifier`.
+        - `EmailTag` is passed as the node tag for both `Supplier<String>` and `Notifier`.
         - `emailNotifier(...)` receives dependencies from the graph instead of creating them itself.
         - In the next section, the application overrides `emailNotifierHeaderSupplier()`, and Kora substitutes the new node for the library `@DefaultComponent`.
 
@@ -1309,28 +1514,28 @@ and [Container documentation: Standard factory](../documentation/container.md#de
 
 **What we are emulating**: application-specific customization of a shared library notifier without forking or rewriting the entire module.
 
-**Create NotifyRunner** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/`
-or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/`):
+**Create NotifyRunner** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/`
+or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection;
+    package io.koraframework.guide.dependencyinjection;
 
-    import ru.tinkoff.kora.application.graph.All;
-    import ru.tinkoff.kora.application.graph.Lifecycle;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    import io.koraframework.application.graph.All;
+    import io.koraframework.application.graph.Lifecycle;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
-    @Root
+    @Root //(1)!
     @Component
     public final class NotifyRunner implements Lifecycle {
 
         private final All<Notifier> allNotifiers;
 
-        public NotifyRunner(@Tag(Tag.Any.class) All<Notifier> allNotifiers) {
+        public NotifyRunner(@Tag(Tag.Any.class) All<Notifier> allNotifiers) { //(2)!
             this.allNotifiers = allNotifiers;
         }
 
@@ -1349,27 +1554,32 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
     }
     ```
 
+    1.  Nothing depends on `NotifyRunner`, so without `@Root` Kora would prune it from the graph and it would never be created.
+    2.  `@Tag(Tag.Any.class)` widens the claim to every `Notifier` regardless of tag. Without it, an untagged `All<Notifier>` claim matches untagged notifiers only.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection
+    package io.koraframework.guide.dependencyinjection
 
-    import ru.tinkoff.kora.application.graph.All
-    import ru.tinkoff.kora.application.graph.Lifecycle
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.application.graph.All
+    import io.koraframework.application.graph.Lifecycle
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
-    @Root
+    @Root //(1)!
     @Component
     class NotifyRunner(
-        @Tag(Tag.Any::class) private val allNotifiers: All<Notifier>
+        @Tag(Tag.Any::class) private val allNotifiers: All<Notifier> //(2)!
     ) : Lifecycle {
 
         override fun init() {
             println("DI tutorial step 3 start")
-            allNotifiers.forEach { it.notify("Alice", "Welcome!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Alice", "Welcome!")
+            }
         }
 
         override fun release() {
@@ -1378,16 +1588,30 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
     }
     ```
 
+    1.  Nothing depends on `NotifyRunner`, so without `@Root` Kora would prune it from the graph and it would never be created.
+    2.  `@Tag(Tag.Any::class)` widens the claim to every `Notifier` regardless of tag. Without it, an untagged `All<Notifier>` claim matches untagged notifiers only.
+
+`Lifecycle` comes from `io.koraframework.application.graph` and declares exactly two methods, `init()` and `release()`. Kora calls `init()` in graph order during startup and `release()` in reverse
+order during shutdown, so a component is always initialized after everything it depends on and released before them.
+
 **Update Application** to override the email header:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import java.util.function.Supplier;
+    import io.koraframework.common.annotation.Tag;
+
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             LogbackModule,
             EmailModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1400,18 +1624,27 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
     ```kotlin
     import java.util.function.Supplier
+    import io.koraframework.common.annotation.Tag
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         LogbackModule,
         EmailModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
         }
     }
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
+
+The override is an ordinary Java or Kotlin method override, so the compiler already guarantees the signature matches. `@Tag` must be repeated on the override: the tag is part of the component identity,
+not something inherited from the overridden method. Note also that the override intentionally drops `@DefaultComponent`, which is what makes the application factory win over the library default.
 
 **Build and run**:
 
@@ -1439,18 +1672,42 @@ and [Container documentation: Tag any](../documentation/container.md#tag-any).
 
 **What we are emulating**: a notification service that can send the same message through every available channel instead of choosing only one implementation.
 
-**Create SmsModule** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/sms/`
-or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/sms/`):
+**Create the SMS provider contract** in the library module
+(`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`). Only the contract exists for now; nothing provides it yet:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
+    package io.koraframework.guide.dependencyinjection.sms;
 
-    import jakarta.annotation.Nullable;
-    import ru.tinkoff.kora.common.Module;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    public interface SmsCellularProvider {
+        String getCode();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection.sms
+
+    fun interface SmsCellularProvider {
+        fun getCode(): String
+    }
+    ```
+
+**Create SmsModule** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`):
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection.sms;
+
+    import org.jspecify.annotations.Nullable;
+    import io.koraframework.common.annotation.Module;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
     @Module
     public interface SmsModule {
@@ -1475,14 +1732,15 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
+    package io.koraframework.guide.dependencyinjection.sms
 
-    import ru.tinkoff.kora.common.Module
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.common.annotation.Module
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
     @Module
     interface SmsModule {
+
         class SmsTag private constructor()
 
         @Tag(SmsTag::class)
@@ -1498,9 +1756,13 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
     }
     ```
 
-**Application note**: `SmsModule` is annotated with `@Module` and lives in the application package, so Kora discovers it automatically. Do not add it with `extends` on `Application`.
+Java uses [JSpecify](https://jspecify.dev/) `org.jspecify.annotations.Nullable` for optional dependencies. It comes transitively with any Kora module, so no extra dependency is needed. Kotlin has no
+annotation at all: the `?` on the parameter type is the whole declaration.
 
-===! ":fontawesome-brands-java: Java"
+**Application note**: `SmsModule` is annotated with `@Module` and is compiled together with `@KoraApp`, so Kora discovers it automatically. Do not add it with `extends` on `Application`. The
+`Application` interface stays exactly as it was in the previous step:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -1508,6 +1770,11 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
             HoconConfigModule,
             LogbackModule,
             EmailModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1519,13 +1786,12 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    import java.util.function.Supplier
-
     @KoraApp
     interface Application :
         HoconConfigModule,
         LogbackModule,
         EmailModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
@@ -1535,7 +1801,7 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
 **Update NotifyRunner** to iterate over all notifiers:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -1574,7 +1840,9 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
         override fun init() {
             println("DI tutorial step 4 start")
-            allNotifiers.forEach { it.notify("Bob", "Hello!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Bob", "Hello!")
+            }
         }
 
         override fun release() {
@@ -1592,7 +1860,9 @@ DI tutorial step 4 start
 Application shutdown
 ```
 
-**Key Concept**: `@Tag` allows multiple implementations of the same contract, and `All<T>` lets you broadcast to all of them.
+The SMS line has no provider code yet, because nothing in the graph provides `SmsCellularProvider` and the nullable parameter resolved to `null`. The next step fixes that.
+
+**Key Concept**: `@Tag` allows multiple implementations of the same contract, and `@Tag(Tag.Any.class) All<T>` lets you broadcast to all of them.
 
 ---
 
@@ -1609,23 +1879,16 @@ and [Container documentation: Optional dependencies](../documentation/container.
 
 **What we are emulating**: optional enrichment of SMS formatting with a provider code, where the notifier still functions even if that provider is not configured.
 
-**Create SmsCellularProvider and SmsCellularModule** (`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/sms/`
-or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/sms/`):
+**Create SmsCellularModule** next to `SmsCellularProvider` in the library module
+(`guide-dependency-injection/guide-dependency-injection-lib/src/main/java/io/koraframework/guide/dependencyinjection/sms/`
+or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/io/koraframework/guide/dependencyinjection/sms/`):
 
-===! ":fontawesome-brands-java: Java"
-
-    ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
-
-    public interface SmsCellularProvider {
-        String getCode();
-    }
-    ```
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.sms;
+    package io.koraframework.guide.dependencyinjection.sms;
 
-    import ru.tinkoff.kora.common.DefaultComponent;
+    import io.koraframework.common.annotation.DefaultComponent;
 
     public interface SmsCellularModule {
 
@@ -1639,19 +1902,12 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
+    package io.koraframework.guide.dependencyinjection.sms
 
-    fun interface SmsCellularProvider {
-        fun getCode(): String
-    }
-    ```
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.sms
-
-    import ru.tinkoff.kora.common.DefaultComponent
+    import io.koraframework.common.annotation.DefaultComponent
 
     interface SmsCellularModule {
+
         @DefaultComponent
         fun smsCellularProvider(): SmsCellularProvider {
             return SmsCellularProvider { "1" }
@@ -1661,7 +1917,7 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
 
 **Update Application** to include the provider module. `SmsCellularModule` is not annotated with `@Module`, so this one is intentionally connected through `extends`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -1670,6 +1926,11 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
             LogbackModule,
             EmailModule,  // <----- Connected module
             SmsCellularModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -1687,6 +1948,7 @@ or `guide-dependency-injection/guide-dependency-injection-lib/src/main/kotlin/ru
         LogbackModule,
         EmailModule,  // <----- Connected module
         SmsCellularModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
@@ -1703,7 +1965,8 @@ DI tutorial step 5 start
 Application shutdown
 ```
 
-**Key Concept**: `@Nullable` in Java and nullable types in Kotlin let a component keep working even when an optional dependency is absent.
+**Key Concept**: `@Nullable` in Java and nullable types in Kotlin let a component keep working even when an optional dependency is absent. A missing required dependency is a compile-time error; a
+missing optional one silently resolves to `null`, so keep the null branch meaningful.
 
 ---
 
@@ -1743,7 +2006,7 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 
 **Create `guide-dependency-injection/guide-dependency-injection-submodule/build.gradle`**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     plugins {
@@ -1751,60 +2014,76 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
     }
 
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors" //(1)!
 
         api project(":guide-dependency-injection:guide-dependency-injection-common")
 
-        implementation "ru.tinkoff.kora:common"
+        implementation "io.koraframework:common" //(2)!
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
+
+    1.  Required: `@KoraSubmodule` is processed in this module, not in the application module. The processor writes a `MessengerModuleSubmoduleImpl` interface here, and the application module later
+        inherits it through `MessengerModule`.
+    2.  `io.koraframework:common` carries the DI annotations and, transitively, `application-graph` with `All`, `ValueOf`, and `Lifecycle`.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     plugins {
-        kotlin("jvm") version "1.9.25"
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
+        id("java-library")
     }
 
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}") //(1)!
 
         api(project(":guide-dependency-injection:guide-dependency-injection-common"))
 
-        implementation("ru.tinkoff.kora:common")
+        implementation("io.koraframework:common") //(2)!
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
+    }
+
+    kotlin {
+        sourceSets.main { kotlin.srcDir("build/generated/ksp/main/kotlin") }
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") }
     }
     ```
 
-**Update `guide-dependency-injection-app/build.gradle` to add the new module dependency**:
+    1.  Required: `@KoraSubmodule` is processed in this module, not in the application module. KSP writes a `MessengerModuleSubmoduleImpl` interface here, and the application module later inherits it
+        through `MessengerModule`.
+    2.  `io.koraframework:common` carries the DI annotations and, transitively, `application-graph` with `All`, `ValueOf`, and `Lifecycle`.
 
-===! ":fontawesome-brands-java: Java"
+**Update `guide-dependency-injection-app` build file to add the new module dependency**:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```groovy
     dependencies {
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        annotationProcessor "io.koraframework:annotation-processors"
 
         implementation project(":guide-dependency-injection:guide-dependency-injection-common")
         implementation project(":guide-dependency-injection:guide-dependency-injection-lib")
         implementation project(":guide-dependency-injection:guide-dependency-injection-submodule")
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
 
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -1812,29 +2091,31 @@ mkdir -p guide-dependency-injection/guide-dependency-injection-submodule
 
     ```kotlin
     dependencies {
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
+
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
 
         implementation(project(":guide-dependency-injection:guide-dependency-injection-common"))
         implementation(project(":guide-dependency-injection:guide-dependency-injection-lib"))
         implementation(project(":guide-dependency-injection:guide-dependency-injection-submodule"))
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
 
-        testImplementation(platform("org.junit:junit-bom:$junitVersion"))
+        testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
-**Create MessengerModule** (`guide-dependency-injection/guide-dependency-injection-submodule/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/messenger/`
-or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/messenger/`):
+**Create MessengerModule** (`guide-dependency-injection/guide-dependency-injection-submodule/src/main/java/io/koraframework/guide/dependencyinjection/messenger/`
+or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kotlin/io/koraframework/guide/dependencyinjection/messenger/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
-    import ru.tinkoff.kora.common.KoraSubmodule;
+    import io.koraframework.common.annotation.KoraSubmodule;
 
     @KoraSubmodule
     public interface MessengerModule {
@@ -1848,22 +2129,26 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    import ru.tinkoff.kora.common.KoraSubmodule
+    import io.koraframework.common.annotation.KoraSubmodule
 
     @KoraSubmodule
     interface MessengerModule {
-        class MessengerTag
+
+        class MessengerTag private constructor()
     }
     ```
 
+The interface body is almost empty on purpose. `@KoraSubmodule` is a marker: during compilation of this Gradle module, Kora collects every `@Module` and `@Component` declared in the same compilation
+unit and writes them into a generated interface named `MessengerModuleSubmoduleImpl`. The application picks all of that up by extending `MessengerModule`.
+
 **Create Messenger interface**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
     public interface Messenger {
         void sendMessage(String message);
@@ -1873,25 +2158,25 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    interface Messenger {
+    fun interface Messenger {
         fun sendMessage(message: String)
     }
     ```
 
 **Create SlackMessenger**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger.slack;
+    package io.koraframework.guide.dependencyinjection.messenger.slack;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.messenger.Messenger;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.messenger.Messenger;
 
-    @Tag(SlackMessenger.class)
+    @Tag(SlackMessenger.class) //(1)!
     @Component
     public final class SlackMessenger implements Messenger {
 
@@ -1902,35 +2187,40 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
     }
     ```
 
+    1.  A component can be its own tag. That is convenient when the only purpose of the tag is to identify one specific implementation.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger.slack
+    package io.koraframework.guide.dependencyinjection.messenger.slack
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.messenger.Messenger
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.messenger.Messenger
 
-    @Tag(SlackMessenger::class)
+    @Tag(SlackMessenger::class) //(1)!
     @Component
     class SlackMessenger : Messenger {
+
         override fun sendMessage(message: String) {
             println("Slack: $message")
         }
     }
     ```
 
+    1.  A component can be its own tag. That is convenient when the only purpose of the tag is to identify one specific implementation.
+
 **Create MessengerNotifier**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger;
+    package io.koraframework.guide.dependencyinjection.messenger;
 
-    import ru.tinkoff.kora.application.graph.All;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier;
+    import io.koraframework.application.graph.All;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.guide.dependencyinjection.common.Notifier;
 
     @Tag(MessengerModule.MessengerTag.class)
     @Component
@@ -1956,12 +2246,12 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.messenger
+    package io.koraframework.guide.dependencyinjection.messenger
 
-    import ru.tinkoff.kora.application.graph.All
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.guide.dependencyinjection.common.Notifier
+    import io.koraframework.application.graph.All
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.guide.dependencyinjection.common.Notifier
 
     @Tag(MessengerModule.MessengerTag::class)
     @Component
@@ -1971,7 +2261,9 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
 
         override fun notify(user: String, message: String) {
             println("Broadcasting to messengers")
-            messengers.forEach { it.sendMessage("$user@$message") }
+            for (messenger in messengers) {
+                messenger.sendMessage("$user@$message")
+            }
             println("Messenger broadcast complete")
         }
     }
@@ -1979,7 +2271,7 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
 
 **Update Application** to include the messenger submodule. `MessengerModule` is annotated with `@KoraSubmodule`, so this is the case where inheritance is expected:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -1989,6 +2281,11 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
             EmailModule,  // <----- Connected module
             SmsCellularModule,  // <----- Connected module
             MessengerModule {  // <----- Connected module
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
+
         @Tag(EmailModule.EmailTag.class)
         @Override
         default Supplier<String> emailNotifierHeaderSupplier() {
@@ -2007,12 +2304,19 @@ or `guide-dependency-injection/guide-dependency-injection-submodule/src/main/kot
         EmailModule,  // <----- Connected module
         SmsCellularModule,  // <----- Connected module
         MessengerModule {  // <----- Connected module
+
         @Tag(EmailModule.EmailTag::class)
         override fun emailNotifierHeaderSupplier(): Supplier<String> {
             return Supplier { "[EMAIL OVERRIDDEN] " }
         }
     }
     ```
+
+!!! warning "Kora submodule was not generated yet"
+
+    If the application module fails with `Kora submodule was not generated yet: expected type: ...MessengerModuleSubmoduleImpl`, the submodule's own Gradle module did not run the Kora processor.
+    Check that `guide-dependency-injection-submodule` declares `annotationProcessor "io.koraframework:annotation-processors"` (Java) or `ksp("io.koraframework:symbol-processors:...")` (Kotlin), then
+    run `./gradlew clean classes` so the generated interface exists before the application module is compiled.
 
 **Build and run**:
 
@@ -2042,13 +2346,13 @@ and [Container documentation: Generic factory](../documentation/container.md#gen
 
 **What we are emulating**: infrastructure code that can persist different payload shapes using the same reusable storage pattern, with Kora selecting the right generic instantiation automatically.
 
-**Create Storage interface** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/storage/`
-or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/storage/`):
+**Create Storage interface** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/storage/`
+or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/storage/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     public interface Storage<T> {
         void save(T data);
@@ -2058,7 +2362,7 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
     interface Storage<T> {
         fun save(data: T)
@@ -2067,10 +2371,10 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
 **Create TempFileStorage**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     import java.io.IOException;
     import java.nio.file.Files;
@@ -2101,37 +2405,35 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
-    import java.io.IOException
     import java.nio.file.Files
+    import java.util.function.Function
 
     class TempFileStorage<T>(
-        private val mapper: (T) -> ByteArray
+        private val mapper: Function<T, ByteArray>
     ) : Storage<T> {
 
         override fun save(data: T) {
-            try {
-                val tempFile = Files.createTempFile("storage-", ".tmp")
-                Files.write(tempFile, mapper(data))
-                println("Saved to: ${tempFile.fileName}")
-            } catch (e: IOException) {
-                throw RuntimeException(e)
-            }
+            val tempFile = Files.createTempFile("storage-", ".tmp")
+            Files.write(tempFile, mapper.apply(data))
+            println("Saved to: ${tempFile.fileName}")
         }
     }
     ```
 
+`TempFileStorage` is not annotated. It is created by the module factory below, and a `@Component` annotation here would add a second, conflicting provider for the same type.
+
 **Create StorageModule**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.storage;
+    package io.koraframework.guide.dependencyinjection.storage;
 
     import java.nio.charset.StandardCharsets;
     import java.util.function.Function;
-    import ru.tinkoff.kora.common.Module;
+    import io.koraframework.common.annotation.Module;
 
     @Module
     public interface StorageModule {
@@ -2144,41 +2446,54 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
             return s -> s.getBytes(StandardCharsets.UTF_8);
         }
 
-        default <T> Storage<T> typedStorage(Function<T, byte[]> mapper) {
+        default <T> Storage<T> typedStorage(Function<T, byte[]> mapper) { //(1)!
             return new TempFileStorage<>(mapper);
         }
     }
     ```
 
+    1.  A factory method with its own type parameter is a *template*. Kora does not instantiate it eagerly: it creates one node per concrete `Storage<T>` actually requested by some other component,
+        resolving `Function<T, byte[]>` for that same `T`.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.storage
+    package io.koraframework.guide.dependencyinjection.storage
 
-    import ru.tinkoff.kora.common.Module
     import java.nio.charset.StandardCharsets
+    import java.util.function.Function
+    import io.koraframework.common.annotation.Module
 
     @Module
     interface StorageModule {
-        fun intMapper(): (Int) -> ByteArray {
-            return { i -> byteArrayOf(i.toByte()) }
+
+        fun intMapper(): Function<Int, ByteArray> {
+            return Function { i -> byteArrayOf(i.toByte()) }
         }
 
-        fun stringMapper(): (String) -> ByteArray {
-            return { s -> s.toByteArray(StandardCharsets.UTF_8) }
+        fun stringMapper(): Function<String, ByteArray> {
+            return Function { s -> s.toByteArray(StandardCharsets.UTF_8) }
         }
 
-        fun <T> typedStorage(mapper: (T) -> ByteArray): Storage<T> {
+        fun <T> typedStorage(mapper: Function<T, ByteArray>): Storage<T> { //(1)!
             return TempFileStorage(mapper)
         }
     }
     ```
 
-**Application note**: No `Application` changes are required here. `StorageModule` is part of the application package, so Kora discovers it as an application module automatically.
+    1.  A factory method with its own type parameter is a *template*. Kora does not instantiate it eagerly: it creates one node per concrete `Storage<T>` actually requested by some other component,
+        resolving `Function<T, ByteArray>` for that same `T`.
+
+The Kotlin version deliberately uses `java.util.function.Function` rather than a Kotlin function type such as `(T) -> ByteArray`. Kotlin function types compile to `kotlin.jvm.functions.FunctionN`,
+which makes every one-argument function the same erased type in the graph, so a `(Int) -> ByteArray` and a `(String) -> ByteArray` become indistinguishable candidates. An explicit `Function<T, R>`
+keeps both type arguments visible to the resolver.
+
+**Application note**: No `Application` changes are required here. `StorageModule` is compiled together with `@KoraApp` and is annotated with `@Module`, so Kora discovers it as an application module
+automatically.
 
 **Update NotifyRunner** to use `Storage<String>`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -2201,6 +2516,11 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
             }
             stringStorage.save("User data stored");
         }
+
+        @Override
+        public void release() {
+            System.out.println("Application shutdown");
+        }
     }
     ```
 
@@ -2216,11 +2536,19 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
         override fun init() {
             println("DI tutorial step 7 start")
-            allNotifiers.forEach { it.notify("Charlie", "Greetings!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Charlie", "Greetings!")
+            }
             stringStorage.save("User data stored")
+        }
+
+        override fun release() {
+            println("Application shutdown")
         }
     }
     ```
+
+Only `Storage<String>` is requested, so only `stringMapper()` and one `Storage<String>` node end up in the graph. `intMapper()` stays unused and, because nothing claims it, it is never instantiated.
 
 **Build and run**:
 
@@ -2237,6 +2565,77 @@ Application shutdown
 
 **Key Concept**: Generic factory methods such as `<T> Storage<T>` allow Kora to build strongly typed components from reusable factories.
 
+#### Factory Module { #factory-module-object }
+
+There is a second way to group factories, and it is worth knowing because it solves a different problem. A `@Module` interface is stateless: Kora instantiates an anonymous implementation of it and
+calls its default methods. A **factory module** is an ordinary object that is itself a graph component and whose public methods are also treated as factories. That lets one module instance carry
+construction state — a client, a prefix, a configuration object — and hand it to every component it creates.
+
+The snippet below illustrates the shape. It is not part of the tutorial application, because it would provide a second `Storage<String>` and collide with the generic factory above:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class ArchiveFactory { //(1)!
+
+        private final Function<String, byte[]> mapper;
+
+        public ArchiveFactory(Function<String, byte[]> mapper) {
+            this.mapper = mapper;
+        }
+
+        public Archive archive() { //(2)!
+            return data -> mapper.apply(data).length;
+        }
+    }
+
+    @Module
+    public interface ArchiveModule {
+
+        @FactoryModule //(3)!
+        default ArchiveFactory archiveFactory(Function<String, byte[]> mapper) {
+            return new ArchiveFactory(mapper);
+        }
+    }
+    ```
+
+    1.  A plain class, not an interface, and not annotated.
+    2.  Public methods of the returned object become component factories, exactly like default methods of a `@Module` interface.
+    3.  `@FactoryModule` from `io.koraframework.common.annotation`. It registers `ArchiveFactory` itself as a graph node and also processes its methods as providers.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class ArchiveFactory( //(1)!
+        private val mapper: Function<String, ByteArray>
+    ) {
+
+        fun archive(): Archive { //(2)!
+            return Archive { data -> mapper.apply(data).size }
+        }
+    }
+
+    @Module
+    interface ArchiveModule {
+
+        @FactoryModule //(3)!
+        fun archiveFactory(mapper: Function<String, ByteArray>): ArchiveFactory {
+            return ArchiveFactory(mapper)
+        }
+    }
+    ```
+
+    1.  A plain class, not an interface, and not annotated.
+    2.  Public methods of the returned object become component factories, exactly like methods of a `@Module` interface.
+    3.  `@FactoryModule` from `io.koraframework.common.annotation`. It registers `ArchiveFactory` itself as a graph node and also processes its methods as providers.
+
+Two factory modules of the same type can coexist if they carry different tags, and inside such a module `@Tag(Tag.Factory.class)` means "the tag of the enclosing factory module". That is how one class
+can be instantiated twice, each instance producing its own tagged set of components. Using `@Tag.Factory` outside a factory module is a compile error:
+`@Tag.Factory can only be used inside factory modules.`
+
+See [Container documentation: Factory module](../documentation/container.md#factory-module) and [Dependency Injection with Kora: Factory Module](dependency-injection-introduction.md#factory-module) for
+the full contract.
+
 ---
 
 ### Update Management { #update-management }
@@ -2251,13 +2650,13 @@ follows [Dependency Injection with Kora: ValueOf](dependency-injection-introduct
 
 **What we are emulating**: a service that records activity through a managed connector which can be started, stopped, or refreshed independently from the business service using it.
 
-**Create ActivityRecorder interface** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/ru/tinkoff/kora/guide/dependencyinjection/activity/`
-or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru/tinkoff/kora/guide/dependencyinjection/activity/`):
+**Create ActivityRecorder interface** (`guide-dependency-injection/guide-dependency-injection-app/src/main/java/io/koraframework/guide/dependencyinjection/activity/`
+or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/io/koraframework/guide/dependencyinjection/activity/`):
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
     public interface ActivityRecorder {
 
@@ -2274,25 +2673,29 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
     interface ActivityRecorder {
+
         fun connect()
+
         fun disconnect()
+
         fun isConnected(): Boolean
+
         fun recordUser(user: String)
     }
     ```
 
 **Create ActivityService**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
-    import ru.tinkoff.kora.application.graph.ValueOf;
-    import ru.tinkoff.kora.common.Component;
+    import io.koraframework.application.graph.ValueOf;
+    import io.koraframework.common.annotation.Component;
 
     @Component
     public final class ActivityService {
@@ -2306,20 +2709,22 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
         public void recordActivityByUserName(String user) {
             System.out.println("Recording activity for: " + user);
-            ActivityRecorder recorder = activityRecorder.get();
+            ActivityRecorder recorder = activityRecorder.get(); //(1)!
             recorder.recordUser(user);
             System.out.println("Activity recorded successfully");
         }
     }
     ```
 
+    1.  `ValueOf.get()` always returns the current instance from the graph. Call it at use time, never cache the result in a field, otherwise a refresh would leave a stale reference behind.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
-    import ru.tinkoff.kora.application.graph.ValueOf
-    import ru.tinkoff.kora.common.Component
+    import io.koraframework.application.graph.ValueOf
+    import io.koraframework.common.annotation.Component
 
     @Component
     class ActivityService(
@@ -2332,28 +2737,30 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
         fun recordActivityByUserName(user: String) {
             println("Recording activity for: $user")
-            val recorder = activityRecorder.get()
+            val recorder = activityRecorder.get() //(1)!
             recorder.recordUser(user)
             println("Activity recorded successfully")
         }
     }
     ```
 
+    1.  `ValueOf.get()` always returns the current instance from the graph. Call it at use time, never cache the result in a property, otherwise a refresh would leave a stale reference behind.
+
 **Create ActivityModule**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    package ru.tinkoff.kora.guide.dependencyinjection.activity;
+    package io.koraframework.guide.dependencyinjection.activity;
 
-    import ru.tinkoff.kora.application.graph.LifecycleWrapper;
-    import ru.tinkoff.kora.application.graph.Wrapped;
-    import ru.tinkoff.kora.common.Module;
+    import io.koraframework.application.graph.LifecycleWrapper;
+    import io.koraframework.application.graph.Wrapped;
+    import io.koraframework.common.annotation.Module;
 
     @Module
     public interface ActivityModule {
 
-        default Wrapped<ActivityRecorder> activityRecorder() {
+        default Wrapped<ActivityRecorder> activityRecorder() { //(1)!
             var recorder = new ActivityRecorder() {
                 private boolean connected;
 
@@ -2388,23 +2795,27 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
                 }
             };
 
-            return new LifecycleWrapper<>(recorder, r -> {}, ActivityRecorder::disconnect);
+            return new LifecycleWrapper<>(recorder, r -> {}, ActivityRecorder::disconnect); //(2)!
         }
     }
     ```
 
+    1.  Returning `Wrapped<T>` registers the node under `Wrapped<ActivityRecorder>` but lets consumers claim plain `ActivityRecorder`; Kora unwraps it automatically.
+    2.  `LifecycleWrapper` takes the value plus an init and a release action. Both are `ThrowingConsumer<T>`, so they may declare checked exceptions.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    package ru.tinkoff.kora.guide.dependencyinjection.activity
+    package io.koraframework.guide.dependencyinjection.activity
 
-    import ru.tinkoff.kora.application.graph.LifecycleWrapper
-    import ru.tinkoff.kora.application.graph.Wrapped
-    import ru.tinkoff.kora.common.Module
+    import io.koraframework.application.graph.LifecycleWrapper
+    import io.koraframework.application.graph.Wrapped
+    import io.koraframework.common.annotation.Module
 
     @Module
     interface ActivityModule {
-        fun activityRecorder(): Wrapped<ActivityRecorder> {
+
+        fun activityRecorder(): Wrapped<ActivityRecorder> { //(1)!
             val recorder = object : ActivityRecorder {
                 private var connected = false
 
@@ -2423,26 +2834,29 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
                     }
                 }
 
-                override fun isConnected(): Boolean {
-                    return connected
-                }
+                override fun isConnected(): Boolean = connected
 
                 override fun recordUser(user: String) {
-                    if (!connected) connect()
+                    if (!connected) {
+                        connect()
+                    }
                     println("Recording user activity: $user")
                 }
             }
 
-            return LifecycleWrapper(recorder, {}, ActivityRecorder::disconnect)
+            return LifecycleWrapper(recorder, {}, ActivityRecorder::disconnect) //(2)!
         }
     }
     ```
 
-**Application note**: No `Application` changes are required here either. `ActivityModule` is also discovered as an application module from the application package.
+    1.  Returning `Wrapped<T>` registers the node under `Wrapped<ActivityRecorder>` but lets consumers claim plain `ActivityRecorder`; Kora unwraps it automatically.
+    2.  `LifecycleWrapper` takes the value plus an init and a release action. Both are `ThrowingConsumer<T>`, so they may throw.
+
+**Application note**: No `Application` changes are required here either. `ActivityModule` is also discovered as an application module from the application compilation unit.
 
 **Update NotifyRunner** to demonstrate the final scenario:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Root
@@ -2492,7 +2906,9 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 
         override fun init() {
             println("DI tutorial complete scenario start")
-            allNotifiers.forEach { it.notify("Diana", "Welcome to Kora DI!") }
+            for (notifier in allNotifiers) {
+                notifier.notify("Diana", "Welcome to Kora DI!")
+            }
             stringStorage.save("Scenario payload for Diana")
             activityService.recordActivityByUserName("Diana")
             println("DI tutorial complete scenario done")
@@ -2510,7 +2926,6 @@ or `guide-dependency-injection/guide-dependency-injection-app/src/main/kotlin/ru
 ActivityService created (ActivityRecorder not yet accessed)
 DI tutorial complete scenario start
 +1 [SMS] Diana@Welcome to Kora DI!
-+1 [SMS] Diana@Welcome to Kora DI!
 [EMAIL OVERRIDDEN] USER [USER:Diana]: Welcome to Kora DI!
 Broadcasting to messengers
 Slack: Diana@Welcome to Kora DI!
@@ -2526,6 +2941,8 @@ Application shutdown
 Disconnecting from activity recorder
 ```
 
+Note the last two lines: `NotifyRunner.release()` runs before the recorder is disconnected, because `release()` walks the graph in reverse dependency order.
+
 **Key Concept**: `ValueOf<T>` prevents cascading component refreshes. The `ActivityService` instance is stable, but it can still access the current `ActivityRecorder` lazily when needed.
 
 ---
@@ -2538,9 +2955,9 @@ You've built a complete Kora application demonstrating all major dependency inje
 2. **External Modules** - Library components with `@DefaultComponent`
 3. **Component Override** - Customizing library defaults
 4. **Tagged Dependencies** - Multiple implementations with `@Tag` and `All<T>`
-5. **Nullable Dependencies** - `@Nullable` / nullable types for graceful degradation
-6. **Submodules** - `@KoraSubmodule` for component organization
-7. **Generic Factories** - `<T>` parameterized component creation
+5. **Nullable Dependencies** - JSpecify `@Nullable` / nullable types for graceful degradation
+6. **Submodules** - `@KoraSubmodule` for component organization across Gradle modules
+7. **Generic Factories** - `<T>` parameterized component creation, and `@FactoryModule` for stateful module instances
 8. **Preventing Cascading Refreshes** - `ValueOf<T>` to control component refresh behavior
 
 Each step builds upon the previous, showing how Kora's compile-time DI enables clean, modular, and performant applications.
@@ -2550,8 +2967,10 @@ Each step builds upon the previous, showing how Kora's compile-time DI enables c
 - Keep components small and focused on one responsibility.
 - Prefer constructor injection and explicit module boundaries.
 - Use tags only when multiple implementations really need to coexist.
-- Keep optional dependencies explicit with nullable types or `@Nullable`.
-- Use `ValueOf<T>` when you need controlled component refresh behavior.
+- Keep optional dependencies explicit with nullable types or JSpecify `@Nullable`.
+- Use `ValueOf<T>` when you need controlled component refresh behavior, and call `get()` at use time instead of caching the value.
+- Enable the Kora processor in every Gradle module that declares `@KoraApp`, `@KoraSubmodule`, `@ConfigMapper`, or `@ConfigSource` — the processor only sees the module it runs in.
+- Put reusable defaults behind `@DefaultComponent` so applications can override them without forking the library.
 
 ## Summary { #summary }
 
@@ -2559,7 +2978,7 @@ Congratulations! You've completed the comprehensive Kora Dependency Injection Gu
 maintainable software.
 
 The guide covered the main building blocks of a Kora graph: `@KoraApp`, `@Component`, `@Module`, external modules, `@DefaultComponent`, tags, `All<T>`, nullable dependencies, submodules, generic
-factories, and `ValueOf<T>`. Together they show how to compose an application from small explicit parts while keeping dependency resolution type-safe and visible at compile time.
+factories, `@FactoryModule`, and `ValueOf<T>`. Together they show how to compose an application from small explicit parts while keeping dependency resolution type-safe and visible at compile time.
 
 The same patterns are used in production services to build:
 
@@ -2588,6 +3007,9 @@ Next learning milestones:
 
 ## Troubleshooting { #troubleshooting }
 
+Kora reports wiring problems while compiling, and every message names the claim, the place that requires it, the dependency tree that led there, and a `Fix:` block. Read that block first: it is
+generated from the actual graph state, not from a static template. See also [Container documentation: Graph build errors](../documentation/container.md#graph-build-errors).
+
 Common Issues and Solutions:
 
 Circular Dependencies:
@@ -2596,14 +3018,14 @@ Problem: Two or more components depend on each other directly or indirectly.
 
 Symptoms:
 
-- Compile-time error: "Circular dependency detected"
-- Annotation processor fails with dependency resolution error
+- Compile-time error starting with `Circular dependency found:`, followed by a `Dependency cycle:` listing every declaration in the cycle and ending with `[CYCLE]`
+- The suggested fix mentions `ValueOf<T>` or `PromiseOf<T>`
 
 Solutions:
 
 1. Refactor to Interface Segregation:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Instead of circular dependency
@@ -2651,7 +3073,7 @@ Solutions:
 
 2. Use ValueOf for Indirect Dependencies:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -2689,14 +3111,15 @@ Problem: Component requires a dependency that cannot be found.
 
 Symptoms:
 
-- Compile-time error: "No component found for type X"
-- Clear error message showing dependency chain
+- Compile-time error starting with `No component found for dependency:` followed by the claimed type and either `(no tags)` or `with @Tag(...)`
+- A `Note:` section listing components of the same type but with a different tag, when the tag was simply forgotten
+- A `Fix:` section suggesting `@Component`, a module method, or including a module in `@KoraApp`
 
 Solutions:
 
 1. Add Missing Component:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Add the missing component
@@ -2718,7 +3141,7 @@ Solutions:
 
 2. Create Factory Method:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -2746,20 +3169,20 @@ Problem: Components can't access configuration values.
 
 Symptoms:
 
-- Runtime error: "Configuration value not found"
-- NullPointerException when accessing config properties
+- Startup failure with `ConfigValueException: Config expected value, but got null at path: '...' for origin '...'`
+- A graph build error for `Config` or `ConfigValueMapper<T>` when no configuration module is connected
 
 Solutions:
 
 1. Add Configuration Module:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Include configuration module
     @KoraApp
     public interface Application extends HoconConfigModule {
-        // Now configuration is available
+        // Now Config and ConfigValueMapper<T> are available
     }
     ```
 
@@ -2769,27 +3192,26 @@ Solutions:
     // Include configuration module
     @KoraApp
     interface Application : HoconConfigModule {
-        // Now configuration is available
+        // Now Config and ConfigValueMapper<T> are available
     }
     ```
 
-2. Check Property Names:
+2. Map the Configuration Section into a Typed Class:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Ensure property names match
-    @Component
-    public final class DatabaseConfig {
-        private final Config config;
+    // Application-owned configuration bound to one path
+    @ConfigSource("db")
+    public interface DatabaseConfig {
 
-        public DatabaseConfig(Config config) {
-            this.config = config;
-        }
+        String url();
 
-        public String getUrl() {
-            // Check that property exists in config
-            return config.getString("db.url");
+        @Nullable
+        String username();
+
+        default int poolSize() {
+            return 10;
         }
     }
     ```
@@ -2797,18 +3219,23 @@ Solutions:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Ensure property names match
-    @Component
-    class DatabaseConfig(
-        private val config: Config
-    ) {
+    // Application-owned configuration bound to one path
+    @ConfigSource("db")
+    interface DatabaseConfig {
 
-        fun getUrl(): String {
-            // Check that property exists in config
-            return config.getString("db.url")
+        fun url(): String
+
+        fun username(): String?
+
+        fun poolSize(): Int {
+            return 10
         }
     }
     ```
+
+`@ConfigSource` generates the mapper and registers the resulting `DatabaseConfig` as a graph component, so any component may just declare it as a constructor parameter. Methods without a default value
+and without `@Nullable` are required: a missing key fails at startup with the `ConfigValueException` above. Use `@ConfigMapper` instead when a library type must stay path-agnostic, as `EmailConfig`
+does in this guide.
 
 Tag Resolution Issues:
 
@@ -2816,14 +3243,14 @@ Problem: Tagged dependencies cannot be resolved.
 
 Symptoms:
 
-- Compile error: "Multiple components found for type X"
-- Or: "No component found for tagged type X"
+- Compile error starting with `Multiple components match dependency:` followed by the list of candidate declarations
+- Or `No component found for dependency:` with a `Note:` listing the same type under a different tag
 
 Solutions:
 
 1. Use Correct Tag Annotation:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Correct tag usage
@@ -2849,25 +3276,57 @@ Solutions:
 
 2. Check Tag Class Definition:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Tag class must be public
+    // Tag class must be visible everywhere it is referenced
     public final class MyTag {} // Correct
 
-    // Private tag won't work
-    private final class MyTag {} // Wrong
+    // Package-private tag cannot be referenced from another package
+    final class MyTag {} // Wrong
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Tag class must be public
+    // Tag class must be visible everywhere it is referenced
     class MyTag // Correct (public by default)
 
-    // Private tag won't work
+    // Private tag cannot be referenced from another file
     private class MyTag // Wrong
     ```
+
+3. Or Make One Candidate the Fallback:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface DefaultsModule {
+
+        @DefaultComponent //(1)!
+        default Dependency dependency() {
+            return new Dependency();
+        }
+    }
+    ```
+
+    1.  The generated error message suggests exactly this: mark the fallback candidate with `@DefaultComponent` and any non-default candidate wins.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface DefaultsModule {
+
+        @DefaultComponent //(1)!
+        fun dependency(): Dependency {
+            return Dependency()
+        }
+    }
+    ```
+
+    1.  The generated error message suggests exactly this: mark the fallback candidate with `@DefaultComponent` and any non-default candidate wins.
 
 Module Import Issues:
 
@@ -2875,13 +3334,14 @@ Problem: Components from modules are not available.
 
 Symptoms:
 
-- Compile error: "No component found for type from module"
+- `No component found for dependency:` for a type you know is declared in some module
+- The module lives in another Gradle module and is neither `@KoraSubmodule` nor inherited through `extends`
 
 Solutions:
 
 1. Include Module in Application:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Include the module
@@ -2901,15 +3361,14 @@ Solutions:
     }
     ```
 
-2. Check Module Visibility:
+2. Check Module Kind and Visibility:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Module methods must be public
+    // @Module works on interfaces only, and its factory methods must be public
     @Module
     public interface MyModule {
-        @Component
         default MyComponent myComponent() { // public by default
             return new MyComponent();
         }
@@ -2919,15 +3378,17 @@ Solutions:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Module methods must be public
+    // @Module works on interfaces only, and its factory methods must be public
     @Module
     interface MyModule {
-        @Component
         fun myComponent(): MyComponent { // public by default
             return MyComponent()
         }
     }
     ```
+
+`@Module` only affects the compilation unit it is compiled in. A `@Module` interface that lives in a different Gradle module is invisible until you either inherit it with `extends` or place a
+`@KoraSubmodule` marker interface in that Gradle module and inherit that instead.
 
 Collection Injection Issues:
 
@@ -2935,17 +3396,17 @@ Problem: `All<T>` doesn't inject expected components.
 
 Symptoms:
 
-- Empty collection when expecting multiple implementations
-- Missing expected components in `All<T>`
+- Fewer components than expected in `All<T>`
+- Tagged implementations missing from the collection
 
 Solutions:
 
-1. Ensure All Implementations are Components:
+1. Ensure All Implementations Are in the Graph:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // All implementations must be @Component
+    // All implementations must be @Component or produced by a module factory
     @Component
     public final class Impl1 implements MyInterface {}
 
@@ -2958,7 +3419,7 @@ Solutions:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // All implementations must be @Component
+    // All implementations must be @Component or produced by a module factory
     @Component
     class Impl1 : MyInterface
 
@@ -2968,31 +3429,45 @@ Solutions:
     // Now All<MyInterface> will contain both
     ```
 
-2. Check for Tag Conflicts:
+2. Match the Tags You Actually Want:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // If using tags, make sure you're not accidentally filtering
     @Component
     public final class MyService {
-        public MyService(All<MyInterface> all) { // Gets all implementations
+
+        public MyService(All<MyInterface> untagged, //(1)!
+                         @Tag(Tag.Any.class) All<MyInterface> everything, //(2)!
+                         @Tag(MyTag.class) All<MyInterface> onlyMyTag) { //(3)!
             // ...
         }
     }
     ```
 
+    1.  An untagged claim matches untagged components only. Tagged implementations are silently absent.
+    2.  `Tag.Any` matches every component of that type regardless of tag.
+    3.  A concrete tag matches only components carrying exactly that tag.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // If using tags, make sure you're not accidentally filtering
     @Component
     class MyService(
-        val all: All<MyInterface> // Gets all implementations
+        val untagged: All<MyInterface>, //(1)!
+        @Tag(Tag.Any::class) val everything: All<MyInterface>, //(2)!
+        @Tag(MyTag::class) val onlyMyTag: All<MyInterface> //(3)!
     ) {
         // ...
     }
     ```
+
+    1.  An untagged claim matches untagged components only. Tagged implementations are silently absent.
+    2.  `Tag.Any` matches every component of that type regardless of tag.
+    3.  A concrete tag matches only components carrying exactly that tag.
+
+This is the single most common surprise with `All<T>`: an empty or short collection almost always means the claim and the providers disagree about tags, not that the components are missing from the
+graph. See [Container documentation: Tag any](../documentation/container.md#tag-any).
 
 Optional Dependency Issues:
 
@@ -3000,16 +3475,18 @@ Problem: Optional dependencies behave unexpectedly.
 
 Symptoms:
 
-- Optional is empty when expecting a value
-- NullPointerException when using optional
+- The dependency is `null` when a value was expected
+- `NullPointerException` on first use
 
 Solutions:
 
-1. Handle Optional Correctly:
+1. Handle Nullable Correctly:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import org.jspecify.annotations.Nullable;
+
     @Component
     public final class MyService {
         private final @Nullable Dependency optionalDep;
@@ -3041,14 +3518,14 @@ Solutions:
             optionalDep?.doWork()
 
             // Dangerous - can cause NPE
-            // optionalDep.work() // Don't do this without a null check
+            // optionalDep!!.doWork() // Don't do this without a null check
         }
     }
     ```
 
 2. Ensure Nullable Component Exists:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // If you want the nullable dependency to be available, include its provider module
@@ -3068,66 +3545,101 @@ Solutions:
     }
     ```
 
+JSpecify `@Nullable` is a *type-use* annotation in Java, so its position matters for nested and generic types: write `List<@Nullable String>`, `String @Nullable []`, and `Outer.@Nullable Inner`. Kotlin
+carries no annotation at all — the `?` on the type is the declaration.
+
 Lifecycle Issues:
 
-Problem: Components with lifecycle methods don't start/stop properly.
+Problem: Components with lifecycle methods don't start or stop.
 
 Symptoms:
 
-- `init()` or `destroy()` methods not called
-- Resources not cleaned up properly
+- `init()` or `release()` never called
+- Resources not cleaned up on shutdown
 
 Solutions:
 
-1. Implement Lifecycle Interface:
+1. Implement the Lifecycle Interface:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    import ru.tinkoff.kora.common.Lifecycle;
+    import io.koraframework.application.graph.Lifecycle; //(1)!
 
     @Component
     public final class MyService implements Lifecycle {
+
         @Override
         public void init() throws Exception {
             // Initialize resources here
         }
 
         @Override
-        public void destroy() throws Exception {
+        public void release() throws Exception { //(2)!
             // Clean up resources here
         }
     }
     ```
 
+    1.  `Lifecycle` lives in `io.koraframework.application.graph`, not in the annotation package.
+    2.  The shutdown callback is `release()`. There is no `destroy()` method in the contract.
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    import ru.tinkoff.kora.common.Lifecycle
+    import io.koraframework.application.graph.Lifecycle //(1)!
 
     @Component
     class MyService : Lifecycle {
+
         override fun init() {
             // Initialize resources here
         }
 
-        override fun destroy() {
+        override fun release() { //(2)!
             // Clean up resources here
         }
     }
     ```
 
-2. Check Component Registration:
+    1.  `Lifecycle` lives in `io.koraframework.application.graph`, not in the annotation package.
+    2.  The shutdown callback is `release()`. There is no `destroy()` method in the contract.
 
-===! ":fontawesome-brands-java: Java"
+2. Check That the Component Is Actually in the Graph:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Ensure component is properly registered in a module
+    // A component nothing depends on is pruned unless it is a root
+    @Root
+    @Component
+    public final class MyService implements Lifecycle {
+        // init()/release() now really run
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // A component nothing depends on is pruned unless it is a root
+    @Root
+    @Component
+    class MyService : Lifecycle {
+        // init()/release() now really run
+    }
+    ```
+
+3. Wrap a Third-Party Object You Cannot Modify:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
     @Module
-    public interface MyModule {
-        @Component
-        default MyService myService() {
-            return new MyService();
+    public interface ClientModule {
+
+        default Wrapped<ExternalClient> externalClient() {
+            var client = new ExternalClient();
+            return new LifecycleWrapper<>(client, ExternalClient::start, ExternalClient::stop);
         }
     }
     ```
@@ -3135,12 +3647,12 @@ Solutions:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Ensure component is properly registered in a module
     @Module
-    interface MyModule {
-        @Component
-        fun myService(): MyService {
-            return MyService()
+    interface ClientModule {
+
+        fun externalClient(): Wrapped<ExternalClient> {
+            val client = ExternalClient()
+            return LifecycleWrapper(client, ExternalClient::start, ExternalClient::stop)
         }
     }
     ```
@@ -3151,14 +3663,14 @@ Problem: Generic components (`<T>`) don't resolve correctly.
 
 Symptoms:
 
-- Compile error: "Generic type cannot be resolved"
-- Wrong generic type injected
+- `No component found for dependency:` for a concrete parameterization such as `Storage<String>`
+- `Component provider returns a raw type:` when a factory returns a raw generic type
 
 Solutions:
 
-1. Use Proper Generic Constraints:
+1. Use Concrete Type Arguments:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Specify generic type explicitly
@@ -3188,16 +3700,17 @@ Solutions:
     }
     ```
 
-2. Check Generic Factory Methods:
+2. Make Every Template Parameter Resolvable:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
     public interface StorageModule {
-        @Component
-        default <T> Storage<T> storage(Class<T> type) {
-            return new InMemoryStorage<>(); // Generic factory
+
+        // Every type parameter of the method must appear in a parameter or in the return type
+        default <T> Storage<T> storage(Function<T, byte[]> mapper) {
+            return new TempFileStorage<>(mapper);
         }
     }
     ```
@@ -3207,99 +3720,96 @@ Solutions:
     ```kotlin
     @Module
     interface StorageModule {
-        @Component
-        fun <T> storage(type: Class<T>): Storage<T> {
-            return InMemoryStorage() // Generic factory
+
+        // Every type parameter of the method must appear in a parameter or in the return type
+        fun <T> storage(mapper: Function<T, ByteArray>): Storage<T> {
+            return TempFileStorage(mapper)
         }
     }
     ```
 
+Raw types are rejected outright with `Raw component types are forbidden because they make dependency resolution ambiguous.`, so always write the type arguments.
+
 Build and Compilation Issues:
 
-Problem: Kora annotation processor fails or generates incorrect code.
+Problem: The Kora processor does not run, or the generated graph class is missing.
 
 Symptoms:
 
-- Compilation errors in generated code
-- "Annotation processor not found" errors
-- Generated classes have issues
+- `cannot find symbol: class ApplicationGraph`
+- `Kora submodule was not generated yet: expected type: ...SubmoduleImpl`
+- Everything compiles, but no component is ever created
 
 Solutions:
 
-1. Check Dependencies:
+1. Check Processor Wiring:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    ```java
-    // Ensure Kora dependencies are included
+    ```groovy
     dependencies {
-        implementation "ru.tinkoff.kora:kora-app-annotation-processor"
-        implementation "ru.tinkoff.kora:config-hocon"
-        // Other Kora modules...
+        annotationProcessor "io.koraframework:annotation-processors" //(1)!
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
+
+    1.  The processor goes into `annotationProcessor`, never into `implementation`. It must be declared in every Gradle module that contains `@KoraApp`, `@KoraSubmodule`, `@ConfigMapper`, or
+        `@ConfigSource`.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Ensure Kora dependencies are included
+    plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp") //(1)!
+    }
+
     dependencies {
-        implementation("ru.tinkoff.kora:kora-app-annotation-processor")
-        implementation("ru.tinkoff.kora:config-hocon")
-        // Other Kora modules...
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
+
+    1.  Without the KSP plugin the `ksp` configuration does not exist and nothing is generated.
+    2.  The processor goes into `ksp` with an explicit version, because `ksp` is not covered by the BOM.
 
 2. Clean Build:
 
-===! ":fontawesome-brands-java: Java"
-
-    ```bash
-    # Clean and rebuild
-    ./gradlew clean classes
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```bash
-    # Clean and rebuild
-    ./gradlew clean classes
-    ```
+```bash
+./gradlew clean classes
+```
 
 3. Check Java Version:
 
-===! ":fontawesome-brands-java: Java"
+```bash
+java -version
+```
 
-    ```java
-    // Ensure using supported Java version (11, 17, 21)
-    java --version
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    // Ensure using supported Java version (11, 17, 21)
-    java --version
-    ```
+Kora modules are compiled for Java 25, so both the Gradle toolchain and the JDK running Gradle must be 25 or newer.
 
 Testing Issues:
 
-Problem: Components are hard to test or tests fail unexpectedly.
+Problem: Components are hard to test, or the test graph does not start.
 
 Symptoms:
 
-- Difficult to inject mocks
-- Test dependencies not resolved
-- Integration test failures
+- Difficulty injecting test doubles
+- `@TestComponent` fields left `null`
 
 Solutions:
 
-1. Use Constructor Injection for Testability:
+1. Use Constructor Injection for Plain Unit Tests:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Testable component
+    // Testable component: no framework needed to construct it
     @Component
     public final class UserService {
         private final UserRepository repository;
@@ -3309,11 +3819,10 @@ Solutions:
         }
     }
 
-    // Test
     @Test
-    public void testUserService() {
-        UserRepository mockRepo = mock(UserRepository.class);
-        UserService service = new UserService(mockRepo);
+    void testUserService() {
+        UserRepository stubRepo = id -> null;
+        UserService service = new UserService(stubRepo);
         // Test...
     }
     ```
@@ -3321,58 +3830,83 @@ Solutions:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Testable component
+    // Testable component: no framework needed to construct it
     @Component
     class UserService(
         private val repository: UserRepository
     )
 
-    // Test
     @Test
     fun testUserService() {
-        val mockRepo = mock(UserRepository::class.java)
-        val service = UserService(mockRepo)
+        val stubRepo = UserRepository { null }
+        val service = UserService(stubRepo)
         // Test...
     }
     ```
 
-2. Use Testcontainers for Integration Tests:
+2. Start the Real Graph With `@KoraAppTest`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Testcontainers
-    public class UserServiceIntegrationTest {
-        @Container
-        private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.6-alpine");
+    package io.koraframework.guide.dependencyinjection;
+
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+    import org.junit.jupiter.api.Test;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
+
+    @KoraAppTest(Application.class) //(1)!
+    class DependencyInjectionGuideSmokeTest {
+
+        @TestComponent //(2)!
+        private NotifyRunner notifyRunner;
 
         @Test
-        public void testRealDatabase() {
-            // Test with real database
+        void graph_ShouldStart() {
+            assertNotNull(notifyRunner);
         }
     }
     ```
+
+    1.  Builds the real `Application` graph for the test, so any wiring mistake fails the test instead of production startup.
+    2.  Injects a component from that graph into the test instance.
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Testcontainers
-    class UserServiceIntegrationTest {
-        @Container
-        private val postgres = PostgreSQLContainer("postgres:17.6-alpine")
+    package io.koraframework.guide.dependencyinjection
+
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Test
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
+
+    @KoraAppTest(Application::class) //(1)!
+    class DependencyInjectionGuideSmokeTest {
+
+        @TestComponent //(2)!
+        private lateinit var notifyRunner: NotifyRunner
 
         @Test
-        fun testRealDatabase() {
-            // Test with real database
+        fun graphShouldStart() {
+            assertNotNull(notifyRunner)
         }
     }
     ```
+
+    1.  Builds the real `Application` graph for the test, so any wiring mistake fails the test instead of production startup.
+    2.  Injects a component from that graph into the test instance.
+
+Both need `io.koraframework:test-junit5` on `testImplementation`. For replacing graph components with mocks, overriding configuration, and Testcontainers-backed integration tests, see
+[Testing with JUnit 5](testing-junit.md#test-component).
 
 Common Beginner Mistakes:
 
 1. Forgetting @Component Annotation:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Missing @Component
@@ -3402,20 +3936,26 @@ Common Beginner Mistakes:
     }
     ```
 
-2. Private Constructor:
+2. Ambiguous Constructors:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     public final class MyService {
-        private MyService() {} // Wrong: private constructor blocks DI
+        private MyService() {} // Wrong: no public constructor at all
     }
 
-    // Public or package-private constructor
     @Component
     public final class MyService {
-        public MyService() {} // Correct
+        public MyService() {}
+        public MyService(Dependency dep) {} // Wrong: two public constructors
+    }
+
+    // Correct: exactly one public constructor
+    @Component
+    public final class MyService {
+        public MyService(Dependency dep) {}
     }
     ```
 
@@ -3423,16 +3963,23 @@ Common Beginner Mistakes:
 
     ```kotlin
     @Component
-    class MyService private constructor() // Wrong: private constructor blocks DI
+    class MyService private constructor() // Wrong: no public constructor at all
 
-    // Public constructor (default)
     @Component
-    class MyService // Correct
+    class MyService(dep: Dependency) {
+        constructor() : this(Dependency()) // Wrong: two public constructors
+    }
+
+    // Correct: exactly one public constructor
+    @Component
+    class MyService(dep: Dependency)
     ```
+
+Kora reports both cases with `@Component class must have exactly one public constructor.` and suggests keeping one public constructor or moving complex construction into a module method.
 
 3. Not Including Modules:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -3462,7 +4009,7 @@ Common Beginner Mistakes:
 
 4. Circular Dependencies:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -3479,7 +4026,7 @@ Common Beginner Mistakes:
     class AImpl implements AInterface { AImpl(BInterface b) {} }
 
     @Component
-    class BImpl implements ServiceBInterface { BImpl(ServiceAInterface a) {} }
+    class BImpl implements BInterface { BImpl(AInterface a) {} }
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -3504,7 +4051,7 @@ Common Beginner Mistakes:
 
 5. Ignoring Nullable Results:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -3545,28 +4092,63 @@ Common Beginner Mistakes:
     }
     ```
 
+6. Registering the Same Module Twice:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module //(1)!
+    public interface MyModule {
+        default MyComponent myComponent() { return new MyComponent(); }
+    }
+
+    @KoraApp
+    public interface Application extends MyModule { //(2)!
+    }
+    ```
+
+    1.  Already discovered automatically, because it is compiled together with `@KoraApp`.
+    2.  Inheriting it as well registers the same factories twice and leads to `Multiple components match dependency:`. Pick one registration path.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module //(1)!
+    interface MyModule {
+        fun myComponent(): MyComponent = MyComponent()
+    }
+
+    @KoraApp
+    interface Application : MyModule { //(2)!
+    }
+    ```
+
+    1.  Already discovered automatically, because it is compiled together with `@KoraApp`.
+    2.  Inheriting it as well registers the same factories twice and leads to `Multiple components match dependency:`. Pick one registration path.
+
 Getting Help:
 
 If you're still stuck:
 
 1. Check the Examples: Look at `kora-examples` for working patterns
-2. Read Documentation: Consult `kora-docs` for detailed explanations
+2. Read Documentation: Consult the [Container documentation](../documentation/container.md) for the full container contract
 3. Simplify: Remove complexity and test with minimal components
 4. Community: Ask questions in Kora community channels
 
-Remember: Most DI issues come from missing components, incorrect module imports, or circular dependencies. Start simple and build up gradually!
+Remember: Most DI issues come from missing components, incorrect module imports, mismatched tags, or circular dependencies. Start simple and build up gradually!
 
 ## What's Next? { #whats-next }
 
 - [Create Your First Kora Application](getting-started.md) if you completed the DI-only tutorial before building a runnable HTTP app.
 - [Configuration with HOCON](config-hocon.md) or [Configuration with YAML](config-yaml.md) after getting started, to learn how typed configuration enters the graph.
 - [JSON Processing](json.md) after getting started, to prepare request and response DTOs before the full HTTP Server guide.
+- [Testing with JUnit 5](testing-junit.md) to cover the graph you just built with component tests.
 
 ## Help { #help }
 
 If you encounter issues:
 
 - check the [Container documentation](../documentation/container.md)
-- compare with [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection-app) and [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-dependency-injection-app)
-- run `./gradlew clean classes` and inspect generated graph errors before changing code structure
-- verify that components are annotated with `@Component` or provided by a module
+- compare with [Kora Java Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-dependency-injection) and [Kora Kotlin Dependency Injection App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-dependency-injection)
+- run `./gradlew clean classes` and read the `Fix:` block of the first Kora error before changing code structure
+- verify that components are annotated with `@Component` or provided by a module, and that the Kora processor is enabled in that Gradle module

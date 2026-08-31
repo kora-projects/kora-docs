@@ -2,15 +2,18 @@
 search:
   exclude: true
 title: Внедрение зависимостей в Kora
-summary: Learn the fundamentals of dependency injection using Kora's compile-time DI framework
-tags: dependency-injection, di, kora-app, component, module, compile-time
+summary: Learn the fundamentals of Kora's compile-time dependency injection container - components, modules, roots, tags, and the generated application graph
+description: "Conceptual introduction to Kora 2.0 compile-time dependency injection: how @KoraApp generates the application graph started through KoraApplication and ApplicationGraphDraw, the io.koraframework.common.annotation set (@Component, @Module, @KoraSubmodule, @Root, @DefaultComponent, @Tag, @Conditional, @FactoryModule), component discovery order and the dependency resolution algorithm, the claim kinds required, @Nullable, ValueOf, PromiseOf, All and TypeRef from io.koraframework.application.graph, tag matching with Tag.Any, Lifecycle init and release, and the graph build errors the compiler reports."
+agent:
+  use_when: "Use this file for questions about how Kora 2.0 compile-time dependency injection actually works: what @KoraApp generates and why nothing is built without @Root, @Component versus a @Module factory method versus @KoraSubmodule, @DefaultComponent priority, @Conditional, @FactoryModule, generic factories, @Tag and Tag.Any matching rules, claiming a dependency as required, @Nullable, ValueOf<T>, PromiseOf<T>, All<T> or TypeRef<T>, Lifecycle release order, and diagnosing 'No component found for dependency', 'Multiple components match dependency' and 'Circular dependency found' build failures."
+tags: dependency-injection, di, kora-app, component, module, root, tag, compile-time
 ---
 
 # Внедрение зависимостей в Kora { #dependency-injection-kora }
 
-Это руководство знакомит с внедрением зависимостей и инверсией управления через контейнер Kora, который работает во время компиляции. В нем рассматривается, как объекты приложения объявляют
-зависимости через конструкторы, как `@Component` и `@Module` делают эти объекты доступными для графа, и как Kora проверяет связывание во время компиляции вместо того, чтобы обнаруживать отсутствующие
-зависимости во время выполнения. Вы также увидите, почему внедрение зависимостей во время компиляции меняет поведение запуска, типобезопасность и тестируемость.
+Это руководство знакомит с внедрением зависимостей и инверсией управления через контейнер Kora, который работает во время компиляции. В нем разбирается, как объекты приложения объявляют зависимости
+через конструкторы, как `@Component` и `@Module` делают эти объекты доступными графу, как `@Root` определяет, что вообще будет создано, и как Kora проверяет связывание во время компиляции, а не
+обнаруживает отсутствующие зависимости во время выполнения. Вы также увидите, почему внедрение зависимостей во время компиляции меняет поведение запуска, типобезопасность и тестируемость.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -24,16 +27,18 @@ tags: dependency-injection, di, kora-app, component, module, compile-time
 
 Вы изучите основные понятия внедрения зависимостей и поймете:
 
-- Основные понятия внедрения зависимостей: что такое внедрение зависимостей и почему оно важно
-- Архитектура Kora: как работает внедрение зависимостей во время компиляции и какие у него преимущества
-- Жизненный цикл компонентов: как компоненты создаются, управляются и уничтожаются
-- Система модулей: как организовывать и структурировать компоненты приложения
-- Лучшие практики: шаблоны для написания поддерживаемого и тестируемого кода
+- **Основы DI**: что такое внедрение зависимостей и почему оно важно
+- **Архитектура Kora**: как работает внедрение зависимостей во время компиляции и в чем его преимущества
+- **Корни графа**: почему именно `@Root` определяет, какие компоненты будут созданы
+- **Жизненный цикл компонентов**: как компоненты создаются, инициализируются и освобождаются
+- **Система модулей**: как организовывать и структурировать компоненты приложения
+- **Теги и коллекции**: как различать несколько реализаций и собирать точки расширения
+- **Лучшие практики**: приемы написания поддерживаемого и тестируемого кода
 
 ## Что потребуется { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее, поскольку сама Kora 2.0 собирается под Java 25
+- Gradle 9 или новее
 - текстовый редактор или среда разработки
 - базовое понимание Java или Kotlin
 
@@ -47,19 +52,19 @@ tags: dependency-injection, di, kora-app, component, module, compile-time
 
 ## Обзор { #overview }
 
-Внедрение зависимостей — это способ собирать приложение из явно объявленных зависимостей, вместо того чтобы позволять объектам самостоятельно создавать все, что им нужно. Зависимость — это просто “то,
-что нужно классу для работы”: репозиторий, клиент, объект конфигурации, кеш, часы или другой сервис.
+Внедрение зависимостей — это способ собирать приложение из явно объявленных зависимостей, вместо того чтобы позволять объектам самостоятельно создавать все, что им нужно. Зависимость — это просто «то,
+что нужно классу для работы»: репозиторий, клиент, объект конфигурации, кеш, часы или другой сервис.
 
-В маленькой программе естественно писать `new` повсюду. Контроллер может создать сервис, сервис может создать репозиторий, а репозиторий может создать все, что ему нужно. Но как только программа
-растет, это становится трудно поддерживать:
+В маленькой программе естественно писать `new` повсюду. Контроллер может создать сервис, сервис может создать репозиторий, а репозиторий — все, что ему нужно. Но как только программа растет, это
+становится трудно поддерживать:
 
 - классы знают слишком много о том, как создаются другие классы
-- тесты становятся сложными, потому что зависимости создаются внутри класса
+- тесты усложняются, потому что зависимости создаются внутри класса
 - замена одной реализации требует правок во многих местах
 - логика запуска расползается по кодовой базе
 - детали конфигурации и инфраструктуры протекают в бизнес-код
 
-Внедрение зависимостей исправляет это, меняя правило: класс не должен строить собственных соисполнителей. Он должен объявить, что ему нужно, обычно через конструктор, и позволить графу приложения
+Внедрение зависимостей исправляет это, меняя правило: класс не должен создавать своих соисполнителей. Он должен объявить, что ему нужно, обычно через конструктор, и позволить графу приложения
 предоставить эти объекты.
 
 ### Маленький пример { #small-example }
@@ -72,7 +77,7 @@ public final class UserService {
 }
 ```
 
-Это выглядит просто, но теперь `UserService` привязан к одной реализации репозитория. Тест не может легко заменить ее. Будущий репозиторий для базы данных нельзя подключить без изменения сервиса.
+Это выглядит просто, но теперь `UserService` привязан к одной реализации репозитория. Тест не может легко ее заменить. Будущий репозиторий поверх базы данных не подключить без правки сервиса.
 
 При внедрении через конструктор сервис только объявляет зависимость:
 
@@ -86,11 +91,11 @@ public final class UserService {
 }
 ```
 
-Теперь `UserService` не важно, будет ли репозиторий хранить данные в памяти, работать через JDBC, подменяться в тесте или оборачиваться кешированием. Это решение переносится в граф приложения.
+Теперь `UserService` не важно, хранит ли репозиторий данные в памяти, работает ли через JDBC, подменяется ли в тесте или обернут кешированием. Это решение переезжает в граф приложения.
 
 ### Графы объектов { #object-graphs }
 
-Приложение — это не просто куча классов. Это граф объектов, соединенных зависимостями. Например:
+Приложение — это не просто набор классов. Это граф объектов, соединенных зависимостями. Например:
 
 ```text
 UserController
@@ -99,66 +104,99 @@ UserController
       -> UserValidator
 ```
 
-Это называется графом зависимостей или графом объектов. Каждая стрелка означает: “этому объекту нужен тот объект”. Главная задача Kora — корректно построить этот граф, запустить компоненты с жизненным
+Это называется графом зависимостей или графом объектов. Каждая стрелка означает «этому объекту нужен тот объект». Главная задача Kora — корректно построить этот граф, запустить компоненты с жизненным
 циклом в правильном порядке и завершить сборку ошибкой, если граф невозможно собрать.
 
 Мышление графами — одно из самых важных понятий Kora. Когда вы добавляете контроллер, репозиторий, HTTP-клиент, кеш или объект конфигурации, вы добавляете в граф узел или ребро.
 
 ### Инверсия управления { #inversion-control }
 
-Более глубокая идея внедрения зависимостей — инверсия управления. Вместо того чтобы сервис сам решал, как построить репозиторий, клиент, кеш или конфигурацию, он только объявляет, что они ему нужны.
-Создание объектов выходит из сервиса и переходит в граф приложения.
+Более глубокая идея за внедрением зависимостей — инверсия управления. Вместо того чтобы сервис решал, как построить репозиторий, клиент, кеш или конфигурацию, он лишь объявляет, что они ему нужны.
+Создание объектов уходит из сервиса в граф приложения.
 
 Это меняет форму кода приложения:
 
 - конструкторы описывают обязательных соисполнителей
 - интерфейсы делают точки замены явными
-- тесты могут предоставить имитации или альтернативные реализации
-- связывание при запуске становится отдельной задачей, отделенной от бизнес-логики
+- тесты могут предоставить заглушки или альтернативные реализации
+- связывание при запуске становится задачей, отделенной от бизнес-логики
 
 ### Внедрение зависимостей в Kora { #dependency-injection-kora-2 }
 
-[Контейнер Kora, работающий во время компиляции](../documentation/container.md), реализует внедрение зависимостей во время компиляции. Интерфейс `@KoraApp` помечает корень графа, `@Component` помечает
-классы, которыми управляет граф, а `@Module` добавляет фабрики или возможности фреймворка. Во время компиляции Kora анализирует граф и генерирует код, который создает и соединяет компоненты.
+[Контейнер Kora, работающий во время компиляции](../documentation/container.md), реализует внедрение зависимостей на этапе сборки. Интерфейс `@KoraApp` помечает корень графа, `@Component` помечает
+классы, которыми управляет граф, `@Root` помечает точки входа, которые обязаны существовать, а `@Module` добавляет фабрики или возможности фреймворка. Во время компиляции Kora анализирует граф и
+генерирует обычный код на Java или Kotlin, который создает и соединяет компоненты. Во время выполнения ничего не ищется через рефлексию.
 
-Это дает Kora другую модель отказов по сравнению с фреймворками внедрения зависимостей во время выполнения. Отсутствующие зависимости, неоднозначные связывания и некоторые проблемы жизненного цикла
-могут быть обнаружены во время сборки, а не во время запуска приложения.
+Это дает Kora другую модель отказов по сравнению с фреймворками, которые собирают контейнер во время выполнения. Отсутствующие зависимости, неоднозначные связывания, циклы и недостижимые корни
+обнаруживаются во время сборки, а не при запуске приложения.
 
 Для новичков самые важные аннотации:
 
-- `@KoraApp`: корень графа приложения
+- `@KoraApp`: корневой интерфейс графа приложения
 - `@Component`: класс, который Kora может создать автоматически
-- `@Module`: набор фабрик компонентов или импортированных модулей фреймворка
+- `@Module`: набор фабрик компонентов или подключаемых модулей фреймворка
+- `@Root`: компонент, который создается, даже если от него никто не зависит
 
-Можно думать об `@KoraApp` как о карте приложения, о `@Component` — как об узле графа, а о параметрах конструктора — как о стрелках между узлами.
+Можно думать об `@KoraApp` как о карте приложения, о `@Component` — как об узле графа, о `@Root` — как о точках входа на карту, а о параметрах конструктора — как о стрелках между узлами.
+
+Все эти аннотации лежат в одном пакете, `io.koraframework.common.annotation`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.DefaultComponent;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.KoraSubmodule;
+    import io.koraframework.common.annotation.Module;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.DefaultComponent
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.KoraSubmodule
+    import io.koraframework.common.annotation.Module
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
+    ```
+
+Типы времени выполнения, которые описывают отношения в графе — `All`, `ValueOf`, `PromiseOf`, `TypeRef`, `Lifecycle` и точка входа `KoraApplication` — находятся в `io.koraframework.application.graph`.
 
 ### Внедрение во время компиляции { #compile-time-injection }
 
-Внедрение зависимостей во время компиляции означает, что Kora проверяет и генерирует связывание во время сборки. Это важно, потому что многие ошибки внедрения зависимостей являются структурными
-ошибками:
+Внедрение зависимостей во время компиляции означает, что Kora проверяет и генерирует связывание во время сборки. Это важно, потому что многие ошибки внедрения зависимостей — структурные:
 
 - у обязательной зависимости нет поставщика
-- два поставщика подходят для одной зависимости, и Kora не может выбрать
-- модуль не был импортирован в приложение
-- компонент зависит от другого компонента, который невозможно построить
+- два поставщика подходят под одну зависимость, и Kora не может выбрать
+- модуль не подключен к приложению
+- компонент зависит от компонента, который невозможно построить
+- в приложении не объявлено ни одного корня, поэтому строить нечего
 
-Во фреймворке внедрения зависимостей во время выполнения часть таких ошибок может появиться только при запуске приложения. В Kora сборка может упасть раньше, до упаковки или развертывания приложения.
-Это ускоряет обратную связь и делает запуск в рабочем окружении более предсказуемым.
+Во фреймворке, который собирает контейнер во время выполнения, часть таких ошибок проявляется только при запуске. В Kora сборка падает раньше, до упаковки и развертывания приложения. Это ускоряет
+обратную связь и делает запуск в рабочем окружении предсказуемым.
+
+Сгенерированный граф — обычный байт-код. Нет сканирования classpath, нет поиска конструкторов через рефлексию и нет генерации прокси при старте, поэтому запуск остается быстрым, а приложение — дружелюбным
+к ahead-of-time компиляции.
 
 ### Область обнаружения { #discovery-scope }
 
-Kora не сканирует вслепую каждый класс в пути классов. Компоненты обнаруживаются в Gradle-модулях, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты из внешних библиотек также не
-становятся автоматически доступными только потому, что существуют в JAR. Обычно библиотека предоставляет интерфейс модуля, а ваше приложение импортирует этот модуль, наследуясь от него в `@KoraApp`.
+Kora не сканирует вслепую каждый класс в classpath. Компоненты обнаруживаются в Gradle-модулях, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты из внешних библиотек тоже не
+становятся доступными автоматически только потому, что лежат в JAR. Обычно библиотека предоставляет интерфейс модуля, а приложение подключает его, унаследовав от `@KoraApp`.
 
-Эта явность важна: она сохраняет граф предсказуемым, делает границы модулей видимыми и предотвращает случайную регистрацию компонентов.
+Эта явность важна: она сохраняет граф предсказуемым, делает границы модулей видимыми и исключает случайную регистрацию компонентов.
 
-Практический путь обучения:
+Практический порядок изучения:
 
 1. понять, почему ручное создание объектов становится болезненным
-2. узнать, что такое зависимость
+2. разобраться, что такое зависимость
 3. ввести внедрение через конструктор
 4. связать внедрение зависимостей с графами объектов и инверсией управления
-5. сравнить внедрение зависимостей во время выполнения с графом Kora, который строится во время компиляции
+5. сравнить контейнер времени выполнения с графом Kora, который строится во время компиляции
 6. узнать, как Kora обнаруживает компоненты и модули
 7. увидеть, почему сгенерированный код графа улучшает обратную связь по связыванию
 
@@ -166,25 +204,25 @@ Kora не сканирует вслепую каждый класс в пути 
 
 ## Основы DI { #di-basics }
 
-Это руководство дает подробное введение во внедрение зависимостей и принципы инверсии управления с использованием фреймворка Kora. Независимо от того, впервые ли вы знакомитесь с этими понятиями или
-хотите углубить понимание, этот раздел последовательно выстроит ваши знания от фундаментальных принципов до практической реализации.
+Этот раздел дает подробное введение во внедрение зависимостей (DI) и принципы инверсии управления (IoC) на примере фреймворка Kora. Независимо от того, знакомитесь ли вы с этими понятиями впервые или
+хотите углубить понимание, раздел последовательно выстраивает знания от фундаментальных принципов до практической реализации.
 
 ### Что такое внедрение зависимостей? { #dependency-injection }
 
-**Внедрение зависимостей** — это фундаментальный шаблон проектирования, который решает вопрос того, как программные компоненты получают свои зависимости и управляют ими. В своей основе внедрение
-зависимостей отделяет создание зависимостей от их использования, что позволяет строить более гибкую и поддерживаемую архитектуру кода.
+**Внедрение зависимостей** — это базовый шаблон проектирования, который отвечает на вопрос, как компоненты получают свои зависимости и управляют ими. По сути DI разделяет создание зависимостей и их
+использование, что делает архитектуру кода гибче и удобнее в сопровождении.
 
-**Основная идея**: вместо того чтобы компонент создавал собственные зависимости, эти зависимости предоставляются (внедряются) из внешнего источника. Этим внешним источником обычно является фреймворк
-внедрения зависимостей или контейнер.
+**Основная идея**: вместо того чтобы компонент создавал свои зависимости, они предоставляются (внедряются) извне. Этим внешним источником обычно выступает фреймворк или контейнер внедрения
+зависимостей.
 
 **Базовый пример**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Традиционный подход — компонент создает собственные зависимости
+    // Traditional approach - component creates its own dependencies
     public class OrderProcessor {
-        private Database database = new Database();        // Компонент создает зависимость
+        private Database database = new Database();        // Component creates dependency
         private EmailService emailService = new EmailService();
 
         public void processOrder(Order order) {
@@ -193,12 +231,12 @@ Kora не сканирует вслепую каждый класс в пути 
         }
     }
 
-    // Подход с внедрением зависимостей — зависимости предоставляются извне
+    // Dependency injection approach - dependencies are provided
     public class OrderProcessor {
         private final Database database;
         private final EmailService emailService;
 
-        // Зависимости внедряются через конструктор
+        // Dependencies are injected through constructor
         public OrderProcessor(Database database, EmailService emailService) {
             this.database = database;
             this.emailService = emailService;
@@ -211,12 +249,12 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Традиционный подход — компонент создает собственные зависимости
+    // Traditional approach - component creates its own dependencies
     class OrderProcessor {
-        private val database = Database()        // Компонент создает зависимость
+        private val database = Database()        // Component creates dependency
         private val emailService = EmailService()
 
         fun processOrder(order: Order) {
@@ -225,12 +263,12 @@ Kora не сканирует вслепую каждый класс в пути 
         }
     }
 
-    // Подход с внедрением зависимостей — зависимости предоставляются извне
+    // Dependency injection approach - dependencies are provided
     class OrderProcessor(
         private val database: Database,
         private val emailService: EmailService
     ) {
-        // Зависимости внедряются через основной конструктор
+        // Dependencies are injected through primary constructor
 
         fun processOrder(order: Order) {
             database.save(order)
@@ -239,25 +277,26 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-Ключевая терминология:
+**Ключевые термины**:
 
-- Зависимость: любой объект или сервис, который нужен компоненту для работы
-- Внедрение: процесс предоставления зависимостей компоненту
-- Контейнер: механизм, отвечающий за создание и внедрение зависимостей
+- **Зависимость**: любой объект или сервис, который нужен компоненту для работы
+- **Внедрение**: процесс предоставления зависимостей компоненту
+- **Контейнер**: механизм, отвечающий за создание и внедрение зависимостей
+- **Заявка на зависимость (dependency claim)**: в Kora это конкретный запрос параметра конструктора — тип, необязательный тег и необязательная обертка вроде `All<T>` или `ValueOf<T>`
 
 ### Проблемы традиционных подходов { #traditional-approach-problems }
 
-Чтобы понять необходимость внедрения зависимостей, рассмотрим сложности, которые возникают без него, и то, как внедрение зависимостей дает решения.
+Чтобы понять, зачем нужно внедрение зависимостей, разберем сложности, которые возникают без него, и то, как DI их решает.
 
-**Проблема: жесткая связанность**
+**Проблема: сильная связанность**
 
-Жесткая связанность возникает, когда компоненты напрямую зависят от конкретных реализаций, делая систему негибкой и трудной для сопровождения. Рассмотрим распространенный шаблон:
+Сильная связанность возникает, когда компоненты напрямую зависят от конкретных реализаций, из-за чего система становится жесткой и трудной в сопровождении. Типичный пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public class UserService {
-        private DatabaseConnection connection = new DatabaseConnection();  // Прямое создание экземпляра
+        private DatabaseConnection connection = new DatabaseConnection();  // Direct instantiation
 
         public User findUserById(long id) {
             return connection.query("SELECT * FROM users WHERE id = ?", id);
@@ -265,11 +304,11 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     class UserService {
-        private val connection = DatabaseConnection()  // Прямое создание экземпляра
+        private val connection = DatabaseConnection()  // Direct instantiation
 
         fun findUserById(id: Long): User {
             return connection.query("SELECT * FROM users WHERE id = ?", id)
@@ -277,25 +316,25 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-Проблемы жесткой связанности:
+Чем плоха сильная связанность:
 
-1. Сложности тестирования: `UserService` нельзя тестировать изолированно, потому что он напрямую создает `DatabaseConnection`
-2. Привязка к реализации: переход на другую базу данных требует изменения кода `UserService`
-3. Скрытые зависимости: конструктор ничего не говорит о том, что на самом деле нужно сервису
-4. Проблемы управления ресурсами: каждый экземпляр создает собственное соединение с базой данных
-5. Проблемы конфигурации: нет способа настроить соединение с базой данных извне
+1. Сложность тестирования: `UserService` нельзя протестировать изолированно, потому что он сам создает `DatabaseConnection`
+2. Привязка к реализации: переход на другую базу данных требует правки кода `UserService`
+3. Скрытые зависимости: конструктор ничего не сообщает о том, что на самом деле нужно сервису
+4. Управление ресурсами: каждый экземпляр создает собственное соединение с базой данных
+5. Проблемы конфигурации: настроить соединение снаружи невозможно
 
 ### Преимущества внедрения зависимостей { #dependency-injection-benefits }
 
 **Решение через внедрение зависимостей**:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public class UserService {
         private final DatabaseConnection connection;
 
-        // Зависимости объявлены явно
+        // Dependencies are explicitly declared
         public UserService(DatabaseConnection connection) {
             this.connection = connection;
         }
@@ -306,13 +345,13 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     class UserService(
         private val connection: DatabaseConnection
     ) {
-        // Зависимости явно объявлены в основном конструкторе
+        // Dependencies are explicitly declared in primary constructor
 
         fun findUserById(id: Long): User {
             return connection.query("SELECT * FROM users WHERE id = ?", id)
@@ -322,159 +361,152 @@ Kora не сканирует вслепую каждый класс в пути 
 
 **Ключевые преимущества внедрения зависимостей**:
 
-1. **Тестируемость**: компоненты можно тестировать с имитациями зависимостей
+1. **Тестируемость**: компоненты можно тестировать с заглушками
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
        ```java
        @Test
        public void testUserService() {
            DatabaseConnection mockConnection = mock(DatabaseConnection.class);
            UserService service = new UserService(mockConnection);
-           // Тестируем логику сервиса без зависимостей от базы данных
+           // Test the service logic without database dependencies
        }
        ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
        ```kotlin
        @Test
        fun testUserService() {
            val mockConnection = mock(DatabaseConnection::class.java)
            val service = UserService(mockConnection)
-           // Тестируем логику сервиса без зависимостей от базы данных
+           // Test the service logic without database dependencies
        }
        ```
 
-2. **Гибкость**: разные реализации можно внедрять в зависимости от окружения
+2. **Гибкость**: разные реализации можно подставлять в зависимости от окружения
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
        ```java
-       // Рабочее окружение
+       // Production environment
        DatabaseConnection prodConnection = new PostgreSQLConnection();
        UserService prodService = new UserService(prodConnection);
 
-       // Тестовое окружение
+       // Test environment
        DatabaseConnection testConnection = new InMemoryDatabaseConnection();
        UserService testService = new UserService(testConnection);
        ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
        ```kotlin
-       // Рабочее окружение
+       // Production environment
        val prodConnection = PostgreSQLConnection()
        val prodService = UserService(prodConnection)
 
-       // Тестовое окружение
+       // Test environment
        val testConnection = InMemoryDatabaseConnection()
        val testService = UserService(testConnection)
        ```
 
-3. **Явные зависимости**: параметры конструктора ясно документируют требования
-4. **Управление ресурсами**: жизненным циклом соединения можно управлять извне
-5. **Конфигурация**: настройки базы данных можно задавать на уровне приложения
+3. **Явные зависимости**: параметры конструктора прямо документируют требования
+4. **Управление ресурсами**: жизненным циклом соединений можно управлять снаружи
+5. **Конфигурация**: настройки базы данных задаются на уровне приложения
 
 ### Понимание инверсии управления { #understanding-inversion-control }
 
-**Инверсия управления** — это архитектурный принцип, лежащий в основе внедрения зависимостей. Инверсия управления представляет фундаментальный сдвиг в том, как в программных системах управляется поток
-управления.
+**Инверсия управления** — это архитектурный принцип, лежащий в основе внедрения зависимостей. IoC меняет то, как в системе устроен поток управления.
 
 **Традиционный поток управления**:
 
 ```
-Код приложения -> создает объекты -> управляет зависимостями -> выполняет бизнес-логику
+Application Code -> Creates Objects -> Manages Dependencies -> Executes Business Logic
 ```
 
 **Инвертированный поток управления**:
 
 ```
-Фреймворк/контейнер -> создает объекты -> внедряет зависимости -> код приложения выполняет бизнес-логику
+Framework/Container -> Creates Objects -> Injects Dependencies -> Application Code Executes Business Logic
 ```
 
 **Принцип инверсии**:
 
-В традиционном программировании код вашего приложения отвечает за:
+В традиционном программировании код приложения отвечает за:
 
 - создание всех необходимых объектов
-- управление жизненными циклами объектов
-- координацию между компонентами
+- управление жизненным циклом объектов
+- координацию компонентов
 - обработку конфигурации
 
-При инверсии управления эти обязанности инвертируются:
+При IoC эти обязанности переходят к фреймворку:
 
 - фреймворк создает объекты
-- фреймворк управляет жизненными циклами
+- фреймворк управляет жизненным циклом
 - фреймворк координирует компоненты
-- фреймворк обрабатывает конфигурацию
+- фреймворк работает с конфигурацией
 
-**Шаблоны реализации инверсии управления**:
+Способы реализации IoC:
 
-1. **Фабрика**: централизованное создание объектов
-2. **Поиск сервисов**: компоненты запрашивают зависимости из центрального реестра
-3. **Внедрение зависимостей**: зависимости передаются внутрь компонентов
+1. Фабрика: централизованное создание объектов
+2. Service Locator: компоненты сами запрашивают зависимости в центральном реестре
+3. Внедрение зависимостей: зависимости передаются компоненту извне
 
-**Почему инверсия управления важна**:
+Почему IoC важна:
 
-Инверсия управления дает несколько важных архитектурных преимуществ:
+IoC дает несколько важных архитектурных преимуществ:
 
-- **Разделение ответственности**: бизнес-логика отделяется от инфраструктурных задач
-- **Модульность**: компоненты можно разрабатывать и тестировать независимо
-- **Сопровождаемость**: изменения инфраструктуры не затрагивают бизнес-логику
-- **Тестируемость**: компоненты легко изолировать для тестирования
-- **Инверсия управления**: ресторан предоставляет готовую еду, вы просто едите
+- Разделение ответственностей: бизнес-логика отделена от инфраструктуры
+- Модульность: компоненты можно разрабатывать и тестировать независимо
+- Сопровождаемость: изменения в инфраструктуре не задевают бизнес-логику
+- Тестируемость: компоненты легко изолировать для тестов
 
-**В коде**:
+В коде:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Традиционный подход — вы управляете всем созданием объектов
+    // Traditional approach - you control all object creation
     public class Application {
         public static void main(String[] args) {
-            Database db = new Database();           // Вы создаете
-            EmailService email = new EmailService(); // Вы создаете
-            OrderService service = new OrderService(db, email); // Вы создаете
+            Database db = new Database();           // You create
+            EmailService email = new EmailService(); // You create
+            OrderService service = new OrderService(db, email); // You create
 
-            service.processOrder(order); // Вы управляете
+            service.processOrder(order); // You control
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Традиционный подход — вы управляете всем созданием объектов
-    class Application {
-        companion object {
-            @JvmStatic
-            fun main() {
-                val db = Database()           // Вы создаете
-                val email = EmailService() // Вы создаете
-                val service = OrderService(db, email) // Вы создаете
+    // Traditional approach - you control all object creation
+    fun main() {
+        val db = Database()           // You create
+        val email = EmailService()    // You create
+        val service = OrderService(db, email) // You create
 
-                service.processOrder(order) // Вы управляете
-            }
-        }
+        service.processOrder(order) // You control
     }
     ```
 
 ### Когда старые подходы ломаются { #old-approaches-break }
 
-Хотя традиционный подход с ручным созданием зависимостей и управлением ими прекрасно работает для маленьких приложений из нескольких классов, он становится все более проблемным по мере роста
-приложения до десятков или сотен компонентов.
+Традиционный подход с ручным созданием и связыванием зависимостей отлично работает в маленьких приложениях из нескольких классов, но становится все более проблемным, когда приложение вырастает до
+десятков или сотен компонентов.
 
 **Почему масштаб важен:**
 
-Традиционный подход требует вручную создавать каждый объект приложения и связывать их между собой. Для маленького приложения из 3-5 классов это просто. Но когда приложение содержит 20, 50 или 100+
-классов, такой ручной подход превращается в кошмар сопровождения.
+Традиционный подход требует вручную создать и связать каждый объект приложения. Для приложения из 3–5 классов это тривиально. Но когда классов 20, 50 или больше сотни, ручное связывание превращается в
+кошмар сопровождения.
 
 **Пример: приложение из 20+ классов (традиционный подход)**
 
-Представьте, что вы строите приложение со следующими компонентами:
+Представьте приложение со следующими компонентами:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public class EcommerceApplication {
@@ -484,9 +516,9 @@ Kora не сканирует вслепую каждый класс в пути 
             DatabaseConnection dbConnection = new DatabaseConnection(dbConfig);
             RedisConfig redisConfig = new RedisConfig("localhost", 6379);
             RedisConnection redisConnection = new RedisConnection(redisConfig);
-            EmailConfig emailConfig = new EmailConfig("smtp.gmail.com", 587, "user@gmail.com");
+            EmailConfig emailConfig = new EmailConfig("smtp.example.com", 587, "user@example.com");
             EmailService emailService = new EmailService(emailConfig);
-            PaymentGatewayConfig paymentConfig = new PaymentGatewayConfig("stripe_key_123");
+            PaymentGatewayConfig paymentConfig = new PaymentGatewayConfig("payment_key_123");
             PaymentGateway paymentGateway = new PaymentGateway(paymentConfig);
 
             // Data Access Layer (6 classes)
@@ -519,70 +551,65 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    class EcommerceApplication {
-        companion object {
-            @JvmStatic
-            fun main() {
-                // Infrastructure Layer (8 classes)
-                val dbConfig = DatabaseConfig("localhost", "ecommerce", "user", "pass")
-                val dbConnection = DatabaseConnection(dbConfig)
-                val redisConfig = RedisConfig("localhost", 6379)
-                val redisConnection = RedisConnection(redisConfig)
-                val emailConfig = EmailConfig("smtp.gmail.com", 587, "user@gmail.com")
-                val emailService = EmailService(emailConfig)
-                val paymentConfig = PaymentGatewayConfig("stripe_key_123")
-                val paymentGateway = PaymentGateway(paymentConfig)
+    fun main() {
+        // Infrastructure Layer (8 classes)
+        val dbConfig = DatabaseConfig("localhost", "ecommerce", "user", "pass")
+        val dbConnection = DatabaseConnection(dbConfig)
+        val redisConfig = RedisConfig("localhost", 6379)
+        val redisConnection = RedisConnection(redisConfig)
+        val emailConfig = EmailConfig("smtp.example.com", 587, "user@example.com")
+        val emailService = EmailService(emailConfig)
+        val paymentConfig = PaymentGatewayConfig("payment_key_123")
+        val paymentGateway = PaymentGateway(paymentConfig)
 
-                // Data Access Layer (6 classes)
-                val userRepository = UserRepository(dbConnection)
-                val productRepository = ProductRepository(dbConnection)
-                val orderRepository = OrderRepository(dbConnection)
-                val cartRepository = CartRepository(redisConnection)
-                val auditRepository = AuditRepository(dbConnection)
-                val inventoryRepository = InventoryRepository(dbConnection)
+        // Data Access Layer (6 classes)
+        val userRepository = UserRepository(dbConnection)
+        val productRepository = ProductRepository(dbConnection)
+        val orderRepository = OrderRepository(dbConnection)
+        val cartRepository = CartRepository(redisConnection)
+        val auditRepository = AuditRepository(dbConnection)
+        val inventoryRepository = InventoryRepository(dbConnection)
 
-                // Business Logic Layer (8 classes)
-                val userService = UserService(userRepository, emailService)
-                val productService = UserService(productRepository, inventoryRepository)
-                val cartService = CartService(cartRepository, productService)
-                val orderService = OrderService(orderRepository, paymentGateway, emailService)
-                val paymentService = PaymentService(paymentGateway, orderRepository)
-                val inventoryService = InventoryService(inventoryRepository, productRepository)
-                val auditService = AuditService(auditRepository)
-                val notificationService = NotificationService(emailService)
+        // Business Logic Layer (8 classes)
+        val userService = UserService(userRepository, emailService)
+        val productService = ProductService(productRepository, inventoryRepository)
+        val cartService = CartService(cartRepository, productService)
+        val orderService = OrderService(orderRepository, paymentGateway, emailService)
+        val paymentService = PaymentService(paymentGateway, orderRepository)
+        val inventoryService = InventoryService(inventoryRepository, productRepository)
+        val auditService = AuditService(auditRepository)
+        val notificationService = NotificationService(emailService)
 
-                // Presentation Layer (4 classes)
-                val userController = UserController(userService, auditService)
-                val productController = ProductController(productService, auditService)
-                val orderController = OrderController(orderService, cartService, auditService)
-                val cartController = CartController(cartService, auditService)
+        // Presentation Layer (4 classes)
+        val userController = UserController(userService, auditService)
+        val productController = ProductController(productService, auditService)
+        val orderController = OrderController(orderService, cartService, auditService)
+        val cartController = CartController(cartService, auditService)
 
-                // Application Bootstrap (2 classes)
-                // ... and more
-            }
-        }
+        // Application Bootstrap (2 classes)
+        // ... and more
     }
     ```
 
-**При 100+ классах это становится невозможным:**
+**Со 100+ классами это становится невозможным:**
 
-- ваш метод `main` стал бы длиной в 1000+ строк
-- для понимания графа зависимостей потребовалась бы отдельная схема
-- вам пришлось бы вручную следить, чтобы компоненты создавались в правильном порядке
-- добавление новой функции требовало бы изменения десятков файлов
-- изменение одного компонента требовало бы понимания всей цепочки его зависимостей
-- тестирование любого компонента требовало бы создания сотен объектов и стало бы кошмаром
-- одно изменение конфигурации каскадом проходило бы через все приложение
-- добавление новой функции требовало бы обновления метода `main`, потенциально ломая существующий порядок инициализации
+- метод `main` разрастается до тысячи с лишним строк
+- чтобы понять граф зависимостей, нужна отдельная схема
+- порядок создания компонентов приходится соблюдать вручную
+- добавление одной возможности требует правок в десятках файлов
+- изменение одного компонента требует понимания всей его цепочки зависимостей
+- тестирование любого компонента требует создания сотен объектов
+- одно изменение конфигурации расходится по всему приложению
+- новая возможность требует правки `main` и легко ломает существующий порядок инициализации
 
 **Решение через внедрение зависимостей:**
 
-При внедрении зависимостей вы объявляете зависимости на уровне компонента, а фреймворк берет на себя всю сложность:
+При DI зависимости объявляются на уровне компонента, а всю сложность берет на себя фреймворк:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -602,8 +629,8 @@ Kora не сканирует вслепую каждый класс в пути 
         private final EmailService emailService;
 
         public OrderService(OrderRepository orderRepository,
-                           PaymentGateway paymentGateway,
-                           EmailService emailService) {
+                            PaymentGateway paymentGateway,
+                            EmailService emailService) {
             this.orderRepository = orderRepository;
             this.paymentGateway = paymentGateway;
             this.emailService = emailService;
@@ -611,7 +638,7 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
@@ -634,21 +661,25 @@ Kora не сканирует вслепую каждый класс в пути 
 **Фреймворк автоматически:**
 
 - создает все объекты в правильном порядке
-- управляет жизненными циклами ресурсов
-- обрабатывает внедрение конфигурации
-- предоставляет разрешение зависимостей
-- упрощает тестирование с имитациями
+- управляет жизненным циклом ресурсов
+- внедряет конфигурацию
+- разрешает зависимости
+- упрощает тестирование с заглушками
 
-Именно поэтому внедрение зависимостей становится необходимым, когда приложения вырастают за пределы нескольких классов.
+Именно поэтому внедрение зависимостей становится необходимым, как только приложение выходит за пределы пары классов.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // IoC/DI (framework controls object creation)
     @KoraApp
     public interface Application {
-        // Framework creates and injects everything
-        OrderService orderService();
+
+        // Framework creates and injects everything reachable from a root
+        @Root
+        default OrderService orderService(OrderRepository repository) {
+            return new OrderService(repository);
+        }
 
         static void main(String[] args) {
             // Framework handles all object creation and injection
@@ -657,14 +688,16 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     // IoC/DI (framework controls object creation)
     @KoraApp
     interface Application {
-        // Framework creates and injects everything
-        fun orderService(): OrderService
+
+        // Framework creates and injects everything reachable from a root
+        @Root
+        fun orderService(repository: OrderRepository): OrderService = OrderService(repository)
     }
 
     fun main() {
@@ -673,237 +706,314 @@ Kora не сканирует вслепую каждый класс в пути 
     }
     ```
 
-Сравнение преимуществ:
+Сравнение подходов:
 
-| Аспект                | Традиционный подход                        | Внедрение зависимостей                          |
-|-----------------------|--------------------------------------------|-------------------------------------------------|
-| Тестирование      | Сложно (использует реальные сервисы)       | Просто (внедряются имитации)                    |
-| Гибкость          | Низкая (зависимости зашиты в код)          | Высокая (можно внедрить любую реализацию)       |
-| Переиспользование | Низкое (привязка к конкретным реализациям) | Высокое (работает с любым совместимым сервисом) |
-| Сопровождаемость  | Низкая (изменения затрагивают много мест)  | Высокая (меняется внедрение, а не код)          |
-| Ясность           | Низкая (зависимости скрыты)                | Высокая (конструктор показывает потребности)    |
+| Аспект           | Традиционный подход                        | Внедрение зависимостей                       |
+|------------------|--------------------------------------------|----------------------------------------------|
+| Тестирование     | Сложно (используются реальные сервисы)     | Просто (подставляются заглушки)              |
+| Гибкость         | Низкая (зависимости зашиты в код)          | Высокая (внедряется любая реализация)        |
+| Переиспользуемость | Низкая (привязка к конкретным реализациям) | Высокая (работает с любым совместимым сервисом) |
+| Сопровождаемость | Низкая (правки затрагивают много мест)     | Высокая (меняется связывание, а не код)      |
+| Понятность       | Низкая (зависимости скрыты)                | Высокая (конструктор показывает потребности) |
 
-Теперь, когда вы понимаете основы, посмотрим, как Kora реализует эти понятия через внедрение зависимостей во время компиляции!
+Теперь, когда основы понятны, посмотрим, как Kora реализует эти идеи через внедрение зависимостей во время компиляции.
 
 ---
 
 ## Архитектура Kora { #kora-architecture }
 
-Kora использует внедрение зависимостей во время компиляции, что означает:
+Kora использует внедрение зависимостей во время компиляции, а значит:
 
-1. Анализ во время сборки: зависимости анализируются во время компиляции с помощью обработчиков аннотаций
-2. Обнаружение компонентов: находятся классы, помеченные `@Component`, и фабричные методы
-3. Разрешение зависимостей: обработчик аннотаций разрешает все зависимости и строит граф зависимостей
-4. Генерация кода: класс `ApplicationGraphDraw` генерируется как исходный код Java/Kotlin
-5. Производительность во время выполнения: нет затрат на рефлексию или анализ во время выполнения — все разрешено во время компиляции
+1. Анализ на этапе сборки: зависимости анализируются во время компиляции обработчиком аннотаций (Java) или символьным процессором KSP (Kotlin)
+2. Обнаружение компонентов: собираются классы с `@Component`, интерфейсы `@Module` и фабричные методы, доступные из `@KoraApp`
+3. Выбор корней: разрешение начинается с объявлений `@Root` и дальше идет по ребрам зависимостей
+4. Разрешение зависимостей: обработчик разрешает каждую заявку, находит циклы и строит ациклический граф
+5. Генерация кода: класс `<ИмяПриложения>Graph` генерируется как обычный исходник на Java/Kotlin и создает `ApplicationGraphDraw`
+6. Производительность: ни рефлексии, ни сканирования classpath — все разрешено во время компиляции
 
-> Важное ограничение области: обработчики аннотаций Kora сканируют только Gradle-модули, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях без этих
-> интерфейсов не будут обнаружены или обработаны системой внедрения зависимостей.
+> Важное ограничение области: обработчики Kora сканируют только те Gradle-модули, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях без этих
+> интерфейсов не будут обнаружены и обработаны системой внедрения зависимостей.
 
 ### Как работает в Kora { #it-works-kora }
 
-1. Обработка аннотаций: интерфейсы `@KoraApp` обрабатываются во время компиляции через `KoraAppProcessor`
-2. Обнаружение компонентов: сканируются классы `@Component`, интерфейсы `@Module` и фабричные методы внутри Gradle-модулей, содержащих интерфейсы `@KoraApp` или `@KoraSubmodule`
-3. Разрешение зависимостей: используется `GraphBuilder`, чтобы разрешить зависимости и обнаружить циклы
-4. Генерация графа: генерируется класс `ApplicationGraph` с фабриками компонентов и логикой инициализации
-5. Выполнение во время запуска: `KoraApplication.run()` инициализирует компоненты в правильном порядке
+1. Обработка аннотаций: интерфейсы `@KoraApp` обрабатываются во время компиляции классом `KoraAppProcessor`
+2. Обнаружение компонентов: собираются классы `@Component`, интерфейсы `@Module`, методы, унаследованные `@KoraApp`, и сгенерированные подмодули текущего Gradle-модуля
+3. Разрешение зависимостей: `GraphBuilder` разрешает каждую заявку, начиная с набора корней, и обнаруживает циклы
+4. Генерация графа: генерируется класс `<ИмяПриложения>Graph`, который содержит по одному `Node` на компонент и логику их инициализации
+5. Выполнение: `KoraApplication.run(...)` инициализирует компоненты в порядке зависимостей и ставит shutdown-хук
 
-> Критичное ограничение области: обработчики аннотаций Kora обрабатывают только Gradle-модули, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях без
-> этих интерфейсов будут полностью проигнорированы системой внедрения зависимостей.
+> Критичное ограничение области: обработчики Kora работают только внутри Gradle-модулей с интерфейсами `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях без этих
+> интерфейсов полностью игнорируются системой внедрения зависимостей.
 
-Архитектурные преимущества явного управления:
-Такой осознанный архитектурный выбор дает вам полный контроль над графом зависимостей приложения. В отличие от фреймворков, которые автоматически создают все из пути классов, Kora гарантирует, что вы
-явно объявляете нужные компоненты. Это предотвращает:
+Архитектурные преимущества явного контроля:
+Это осознанное решение дает вам полный контроль над графом зависимостей приложения. В отличие от фреймворков, которые создают все найденное в classpath, Kora требует явно объявить нужные компоненты.
+Это исключает:
 
-- пустую трату ресурсов из-за создания ненужных компонентов
-- риски безопасности из-за активации компонентов транзитивных зависимостей
+- расход ресурсов на ненужные компоненты
+- риски безопасности от компонентов, приезжающих транзитивно
 - сложность отладки из-за неизвестных работающих компонентов
-- накладные расходы производительности из-за сканирования пути классов
-- непредсказуемое поведение при изменении зависимостей
+- накладные расходы на сканирование classpath
+- непредсказуемое поведение при смене зависимостей
 
 В Kora интерфейс `@KoraApp` служит явным манифестом всего, что работает в вашем приложении.
 
 ### Сгенерированный код { #generated-code }
 
-Когда вы помечаете интерфейс аннотацией `@KoraApp`, Kora генерирует:
+Когда интерфейс помечен `@KoraApp`, обработчик генерирует рядом с ним два типа:
 
-===! ":fontawesome-brands-java: Java"
+- `$<ИмяПриложения>Impl` — класс, реализующий интерфейс приложения; через него вызываются ваши фабричные методы
+- `<ИмяПриложения>Graph` — `Supplier<ApplicationGraphDraw>`, который строит описание графа и предоставляет статический метод `graph()` в качестве точки входа
+
+Упрощенный набросок того, что генерируется для интерфейса `Application`:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Generated at compile time
-    public final class ApplicationGraph implements Application {
-        public static ApplicationGraphDraw graph() {
-            // Component initialization logic
-            // Dependency resolution
-            // Lifecycle management
+    // Generated at compile time, in the same package as Application
+    public class ApplicationGraph implements Supplier<ApplicationGraphDraw> {
+
+        private static final ApplicationGraphDraw graphDraw;
+        private static final ComponentHolder0 holder0;
+
+        static {
+            var impl = new $ApplicationImpl();                            //(1)!
+            graphDraw = new ApplicationGraphDraw(Application.class);
+            holder0 = new ComponentHolder0(graphDraw, impl);              //(2)!
+        }
+
+        public static ApplicationGraphDraw graph() {                      //(3)!
+            return graphDraw;
+        }
+
+        @Override
+        public ApplicationGraphDraw get() {
+            return graphDraw;
+        }
+
+        public static final class ComponentHolder0 {
+            private final Node<MessageFormatter> component0;              //(4)!
+            private final Node<EmailNotifier> component1;
+            // one Node per component in the graph
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+    1. Реализация вашего интерфейса `@KoraApp`; именно она вызывает ваши `default`-фабрики.
+    2. Компоненты регистрируются в пронумерованных классах-держателях, по 500 компонентов в каждом, чтобы очень большие графы продолжали компилироваться.
+    3. Статический метод, на который ссылаются как `ApplicationGraph::graph` при запуске приложения.
+    4. Каждый компонент становится `Node<T>`, который знает свою фабрику, зависимости создания и зависимости обновления.
+
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Generated at compile time
-    class ApplicationGraph : Application {
+    // Generated at compile time, in the same package as Application
+    class ApplicationGraph : Supplier<ApplicationGraphDraw> {
+
+        override fun get(): ApplicationGraphDraw = graphDraw
+
         companion object {
-            fun graph(): ApplicationGraphDraw {
-                // Component initialization logic
-                // Dependency resolution
-                // Lifecycle management
+            val graphDraw: ApplicationGraphDraw
+
+            init {
+                val impl = `$ApplicationImpl`()                            //(1)!
+                graphDraw = ApplicationGraphDraw(Application::class.java)
+                holder0 = ComponentHolder0(graphDraw, impl)                //(2)!
             }
+
+            fun graph(): ApplicationGraphDraw = graphDraw                  //(3)!
+        }
+
+        class ComponentHolder0(graphDraw: ApplicationGraphDraw, impl: `$ApplicationImpl`) {
+            val component0: Node<MessageFormatter>                         //(4)!
+            val component1: Node<EmailNotifier>
+            // one Node per component in the graph
         }
     }
     ```
+
+    1. Реализация вашего интерфейса `@KoraApp`; именно она вызывает ваши фабричные функции интерфейса.
+    2. Компоненты регистрируются в пронумерованных классах-держателях, по 500 компонентов в каждом, чтобы очень большие графы продолжали компилироваться.
+    3. Функция, на которую ссылаются как `ApplicationGraph::graph` при запуске приложения.
+    4. Каждый компонент становится `Node<T>`, который знает свою фабрику, зависимости создания и зависимости обновления.
+
+Этот класс никогда не пишут вручную, но знать о нем полезно: это обычный исходный код, который лежит в `build/generated`, открывается в IDE, проходится отладчиком и объясняет любое непонятное решение
+о связывании.
 
 ### Compile Time и Runtime { #compile-time-runtime }
 
-**Время компиляции (обработка аннотаций):**
+**Compile time (обработка аннотаций):**
 
-- анализирует исходный код на наличие компонентов и зависимостей только внутри модулей `@KoraApp`/`@KoraSubmodule`
-- проверяет граф зависимостей (нет циклов, все зависимости доступны)
+- анализирует исходный код на компоненты и зависимости только в модулях с `@KoraApp`/`@KoraSubmodule`
+- проверяет граф зависимостей (нет циклов, все зависимости доступны, есть хотя бы один корень)
 - генерирует оптимизированный код инициализации
-- обеспечивает проверку ошибок во время компиляции
+- дает проверки на этапе компиляции
 
-**Время выполнения (выполнение приложения):**
+**Runtime (выполнение приложения):**
 
 - выполняет сгенерированный код инициализации
-- управляет жизненным циклом компонентов
-- обрабатывает корректное завершение работы
-- поддерживает обновления компонентов через `ValueOf<T>`
+- инициализирует каждый узел на отдельном виртуальном потоке с учетом порядка зависимостей, поэтому независимые ветви стартуют параллельно
+- управляет жизненным циклом компонентов через `Lifecycle`
+- обеспечивает корректное завершение через shutdown-хук, который ставит `KoraApplication.run(...)`
+- поддерживает обновление компонентов через `ValueOf<T>`, когда источник вроде наблюдателя за конфигурацией сообщает об изменении
 
-> **Критично про область обработки**: обработка во время компиляции происходит только в Gradle-модулях, содержащих интерфейсы `@KoraApp` или `@KoraSubmodule`. Код в обычных модулях не анализируется и
-> не обрабатывается во время компиляции.
+> **Важно про область**: обработка на этапе компиляции происходит только в Gradle-модулях с интерфейсами `@KoraApp` или `@KoraSubmodule`. Код в обычных модулях не анализируется и не обрабатывается.
+
+Код приложения остается синхронным. Kora 2.0 исполняет блокирующий код на виртуальных потоках и не требует моделировать все через реактивные потоки или корутины, поэтому метод компонента — это обычный
+метод, а конструктор — обычный конструктор.
 
 ### Обработчики аннотаций { #annotation-processors }
 
-Обработка аннотаций в Kora состоит из:
+Обработка на этапе компиляции состоит из:
 
 1. `KoraAppProcessor`: основной обработчик `@KoraApp`, `@Module`, `@Component`
-2. `GraphBuilder`: строит граф разрешения зависимостей и обнаруживает циклы
-3. `ComponentDependencyHelper`: разбирает заявки зависимостей из параметров методов и конструкторов
-4. Расширения: подключаемая система для динамической генерации компонентов
-5. `ProcessingContext`: предоставляет доступ к окружению компиляции и служебным возможностям
+2. `KoraSubmoduleProcessor`: генерирует интерфейс `<Имя>SubmoduleImpl` для каждого `@KoraSubmodule`
+3. `GraphBuilder`: разрешает заявки на зависимости, начиная с набора корней, находит циклы и упорядочивает компоненты
+4. `ComponentDependencyHelper`: разбирает заявки из параметров конструкторов и фабричных методов
+5. Расширения: подключаемый механизм, который генерирует компоненты по запросу (`JsonReader`/`JsonWriter`, репозитории, HTTP-клиенты, извлекатели конфигурации, валидаторы, мапперы)
 
-> Ограничение области: обработчики аннотаций Kora активируются и обрабатывают код только внутри Gradle-модулей, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Код в обычных
-> Gradle-модулях полностью невидим для этих обработчиков.
+Обработчики подключаются в сборке так:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    dependencies {
+        annotationProcessor "io.koraframework:annotation-processors"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    dependencies {
+        ksp("io.koraframework:symbol-processors")
+    }
+    ```
+
+> Ограничение области: обработчики Kora включаются и работают только внутри Gradle-модулей с интерфейсами `@KoraApp` или `@KoraSubmodule`. Код в обычных Gradle-модулях для них полностью невидим.
 
 ### Порядок обнаружения компонентов { #component-discovery-order }
 
-Компоненты обнаруживаются в следующем порядке приоритета (большие числа переопределяют меньшие):
+Прежде чем что-либо разрешать, обработчик собирает все объявления, видимые для текущего `@KoraApp`:
 
-1. Автоматическое создание: классы, соответствующие требованиям (`final`, один конструктор, не `abstract`)
-2. Механизм расширений: динамическая генерация компонентов (JSON-преобразователи, репозитории и т.д.)
-3. Обобщенная фабрика: методы с обобщенными параметрами
-4. Стандартная фабрика: методы с `@DefaultComponent`
-5. Базовая фабрика: обычные фабричные методы
-6. Фабрика модуля: методы в интерфейсах `@Module`
-7. Фабрика внешнего модуля: унаследована из внешних зависимостей
-8. Фабрика подмодуля: сгенерирована из `@KoraSubmodule`
-9. Автоматическая фабрика: классы с аннотацией `@Component`
+1. Классы с аннотацией `@Component` в текущем Gradle-модуле
+2. Фабричные методы самого интерфейса `@KoraApp` и всех интерфейсов, которые он наследует, независимо от того, помечены ли они `@Module`
+3. Фабричные методы интерфейсов с `@Module`, найденных в текущем Gradle-модуле, включая унаследованные методы
+4. Фабричные методы интерфейсов `<Имя>SubmoduleImpl`, сгенерированных из `@KoraSubmodule` и унаследованных от `@KoraApp`
+5. Фабричные методы вложенных модулей, подключенных через `@FactoryModule`
+6. Компоненты, сгенерированные расширениями по ходу разрешения графа
 
-> Примечание об области: обнаружение компонентов происходит только внутри Gradle-модулей, содержащих интерфейсы `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях не будут
-> обнаружены независимо от их аннотаций.
+Объявления с обобщенными параметрами хранятся отдельно как *шаблоны компонентов* и материализуются только тогда, когда запрошен конкретный тип.
+
+> Замечание про область: обнаружение компонентов происходит только внутри Gradle-модулей с интерфейсами `@KoraApp` или `@KoraSubmodule`. Компоненты в обычных Gradle-модулях не будут обнаружены,
+> какие бы аннотации на них ни стояли.
 
 ### Алгоритм разрешения зависимостей { #dependency-resolution-algorithm }
 
-1. Разбор заявки: каждый параметр зависимости разбирается в `DependencyClaim`
-2. Сопоставление компонентов: находятся компоненты, соответствующие типу и тегам
-3. Обнаружение циклов: проверяется, что циклических зависимостей нет
-4. Построение графа: строится ациклический граф зависимостей
-5. Генерация кода: код инициализации генерируется в топологическом порядке
+1. Набор корней: собираются все объявления с `@Root`; если набор пуст, сборка падает с `@KoraApp has no root components`
+2. Разбор заявок: каждый параметр конструктора или фабричного метода превращается в `DependencyClaim` — тип, необязательный тег и вид заявки: обязательная, обнуляемая, `ValueOf`, `PromiseOf` или `All`
+3. Поиск кандидатов: отбираются объявления, тип которых совместим с типом заявки, а тег совпадает с тегом заявки
+4. Разрешение конфликтов: если подходит несколько, побеждают кандидаты без `@DefaultComponent`; если остается больше одного, сборка падает
+5. Поиск циклов: цикл ломает сборку, если только ребро цикла не объявлено через интерфейс (или нефинальный класс) — в этом случае Kora генерирует делегирующий прокси
+6. Генерация кода: узлы регистрируются в топологическом порядке, чтобы каждая зависимость была зарегистрирована раньше потребителя
+
+В граф попадают только компоненты, достижимые из набора корней. Фабричный метод, от которого никто не зависит, никогда не вызывается — поэтому точкам входа вроде серверов и консьюмеров нужен `@Root`.
 
 ---
 
 ## Основные аннотации { #core-annotations }
 
-Kora предоставляет несколько ключевых аннотаций для внедрения зависимостей:
+Kora предоставляет несколько ключевых аннотаций внедрения зависимостей, и все они лежат в `io.koraframework.common.annotation`:
 
 ### `@KoraApp` { #koraapp }
 
-Помечает главный интерфейс приложения и служит ядром контейнера зависимостей Kora. Эта аннотация помечает интерфейс, внутри которого определяются фабричные методы для создания компонентов и
-зависимости модулей. В приложении может быть только один такой интерфейс.
+Помечает главный интерфейс приложения и является ядром контейнера зависимостей Kora. Внутри этого интерфейса объявляются фабричные методы компонентов и подключаются модули. Каждый такой интерфейс порождает
+собственный граф зависимостей, и в приложении обычно объявляют ровно один.
 
 Что делает `@KoraApp`:
 
-- Точка входа в контейнер: определяет корень контейнера зависимостей вашего приложения
-- Реестр компонентов: регистрирует все фабричные методы и методы доступа к компонентам
+- Точка входа контейнера: задает корень контейнера зависимостей приложения
+- Реестр компонентов: регистрирует все фабричные методы и доступы к компонентам
 - Интеграция модулей: подключает внешние модули через наследование интерфейсов
-- Запуск приложения: предоставляет начальную точку для `KoraApplication.run()`
+- Запуск приложения: дает стартовую точку для `KoraApplication.run(...)`
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application {
         // Factory methods and component accessors
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);
+        }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
     interface Application {
         // Factory methods and component accessors
     }
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)
+    }
     ```
 
 **Требования:**
 
-- должен быть интерфейсом (не классом)
-- только один на приложение
-- может наследовать несколько интерфейсов модулей
-- должен находиться в Gradle-модуле (не в обычном модуле без `@KoraSubmodule`)
+- Должен быть интерфейсом, а не классом — `@KoraApp` на классе падает с ошибкой `@KoraApp can only be applied to interfaces`
+- Один на граф приложения; обработчик генерирует отдельный класс графа для каждого найденного интерфейса `@KoraApp`
+- Может наследовать несколько интерфейсов-модулей
+- Должен доставать хотя бы до одного объявления `@Root`, иначе сборка падает с `@KoraApp has no root components`
 
-**Процесс построения контейнера:**
+**Как строится контейнер:**
 Во время компиляции Kora использует интерфейс `@KoraApp`, чтобы:
 
-1. обнаружить все фабричные методы и зависимости компонентов
-2. проверить граф зависимостей на циклы и отсутствующие компоненты
-3. сгенерировать оптимизированный код инициализации
-4. создать класс `ApplicationGraph` для выполнения во время запуска
+1. Обнаружить все фабричные методы и зависимости компонентов
+2. Проверить граф зависимостей на циклы и отсутствующие компоненты
+3. Сгенерировать оптимизированный код инициализации
+4. Создать класс `<ИмяПриложения>Graph`, используемый во время выполнения
 
-**Почему интерфейсы? Множественное наследование и управление переопределением фабрик**
+**Почему интерфейсы? Множественное наследование и контроль над переопределением фабрик**
 
-Kora требует, чтобы `@KoraApp` и все модули были интерфейсами, а не классами, по фундаментальным архитектурным причинам, которые дают мощные возможности внедрения зависимостей.
+Kora требует, чтобы `@KoraApp` и все модули были интерфейсами, а не классами, и на то есть архитектурные причины, которые как раз и дают гибкость внедрения зависимостей.
 
-**Почему интерфейсы? Множественное наследование и управление переопределением фабрик**
+**Множественное наследование**: интерфейсы поддерживают множественное наследование, поэтому приложение собирается из нескольких модулей:
 
-Kora требует, чтобы `@KoraApp` и все модули были интерфейсами, а не классами, по фундаментальным архитектурным причинам, которые дают мощные возможности внедрения зависимостей.
-
-**Множественное наследование**: интерфейсы Java поддерживают множественное наследование, позволяя приложению составлять функциональность из нескольких модулей:
-
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface EcommerceApplication extends
-        HttpModule,           // HTTP server capabilities
-        DatabaseModule,       // Database connectivity
-        CacheModule,          // Caching services
-        MonitoringModule {    // Observability features
+        UndertowPublicHttpServerModule,   // HTTP server capabilities
+        JdbcDatabaseModule,               // Database connectivity
+        CaffeineCacheModule,              // Caching services
+        HoconConfigModule {               // Configuration
 
         // Your application-specific factories
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
     interface EcommerceApplication :
-        HttpModule,           // HTTP server capabilities
-        DatabaseModule,       // Database connectivity
-        CacheModule,          // Caching services
-        MonitoringModule {    // Observability features
+        UndertowPublicHttpServerModule,   // HTTP server capabilities
+        JdbcDatabaseModule,               // Database connectivity
+        CaffeineCacheModule,              // Caching services
+        HoconConfigModule {               // Configuration
 
         // Your application-specific factories
     }
     ```
 
-**Переопределение фабричного метода**: методы интерфейса по умолчанию можно легко переопределять, что дает полный контроль над внедрением зависимостей на уровне языка:
+**Переопределение фабричного метода**: методы интерфейса с реализацией по умолчанию можно переопределить, и это дает контроль над внедрением зависимостей средствами самого языка:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Library provides default implementation
@@ -917,7 +1027,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
 
     // Your application can override with custom implementation
     @KoraApp
-    public interface Application extends CacheModule {  // <----- Подключили модуль
+    public interface Application extends CacheModule {  // <----- Connected module
         @Override
         default Cache cache() {
             return new RedisCache(); // Override with Redis
@@ -925,7 +1035,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     // Library provides default implementation
@@ -937,14 +1047,14 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
 
     // Your application can override with custom implementation
     @KoraApp
-    interface Application : CacheModule {  // <----- Подключили модуль
+    interface Application : CacheModule {  // <----- Connected module
         override fun cache(): Cache = RedisCache() // Override with Redis
     }
     ```
 
-**Компонент как фабричный метод**: компоненты не ограничены классами — их также можно определять как фабричные методы в интерфейсах, получая декларативный контроль над инверсией управления:
+**Компонент как фабричный метод**: компоненты — это не только классы, их можно объявлять фабричными методами в интерфейсах, декларативно управляя IoC:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -964,7 +1074,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
@@ -983,87 +1093,87 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-Почему эта архитектура важна:
+Почему такой дизайн важен:
 
-1. Понятное управление на уровне языка: поведение инверсии управления задается знакомыми конструкциями Java (интерфейсами, методами по умолчанию), а не сложными XML-файлами или аннотациями
-2. Типобезопасная конфигурация: фабричные методы проверяются во время компиляции, предотвращая ошибки конфигурации во время выполнения
-3. Простое тестирование: фабричные методы можно переопределять в тестах, чтобы внедрять имитации без сложных тестовых фреймворков
-4. Модульная композиция: множественное наследование позволяет аккуратно разделять ответственность между разными модулями
-5. Гибкость переопределения: реализации меняются простым переопределением методов, без конфигурации, специфичной для фреймворка
+1. Понятный контроль средствами языка: поведение IoC задается привычными конструкциями (интерфейсы, методы по умолчанию), а не XML или конфигурацией через рефлексию
+2. Типобезопасная конфигурация: фабричные методы проверяются на этапе компиляции, что исключает ошибки конфигурации во время выполнения
+3. Простое тестирование: фабричные методы переопределяются в тестах и подставляют заглушки без сложных тестовых фреймворков
+4. Модульная композиция: множественное наследование позволяет чисто разделять ответственности между модулями
+5. Гибкость замены: реализация меняется переопределением метода, без специальной конфигурации фреймворка
 
-Такой подход на основе интерфейсов делает внедрение зависимостей естественным расширением языка Java: вы получаете мощные возможности инверсии управления, сохраняя простоту и типобезопасность.
+Такой подход на интерфейсах делает внедрение зависимостей естественным продолжением языка, давая полноценный IoC без потери простоты и типобезопасности.
 
 #### Почему явное управление важно { #explicit-control-matters }
 
-Философия Kora отдает приоритет явному управлению вместо неявной магии. В отличие от традиционных фреймворков внедрения зависимостей, которые автоматически сканируют путь классов и создают все,
-что находят, Kora требует явно объявлять, какие зависимости нужны приложению.
+Философия Kora ставит явное управление выше неявной магии. В отличие от традиционных DI-фреймворков, которые сканируют classpath и создают все найденное, Kora требует явно объявить, какие зависимости
+нужны приложению.
 
-Проблема автоматического обнаружения:
+Проблемы автоматического обнаружения:
 
-- Непредсказуемое поведение: вы никогда точно не знаете, что будет создано просто из-за добавления JAR в путь классов
-- Скрытые зависимости: компоненты могут создаваться без вашего ведома и потреблять ресурсы
-- Кошмары отладки: когда что-то идет не так, приходится выяснять, какие нежелательные компоненты запущены
-- Риски безопасности: вредоносные или уязвимые компоненты могут быть созданы автоматически
-- Проблемы производительности: сканируется каждый JAR в пути классов, даже если он не нужен
+- Непредсказуемость: неизвестно, что будет создано после добавления очередного JAR в classpath
+- Скрытые зависимости: компоненты создаются без вашего ведома и потребляют ресурсы
+- Сложная отладка: при проблеме приходится выяснять, какие лишние компоненты работают
+- Риски безопасности: уязвимые компоненты могут быть созданы автоматически
+- Производительность: сканируется каждый JAR в classpath, даже если он не нужен
 
 **Явный подход Kora:**
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
     public interface Application extends
-        ru.tinkoff.kora.http.HttpModule,    // ✅ Explicitly included
-        ru.tinkoff.kora.database.DatabaseModule, // ✅ Explicitly included
-        // ru.tinkoff.kora.cache.CacheModule,     // ❌ Commented out = not included
-        com.example.MyCustomModule {         // ✅ Your custom module
+        io.koraframework.http.server.undertow.UndertowPublicHttpServerModule,  // Explicitly included
+        io.koraframework.database.jdbc.JdbcDatabaseModule,                     // Explicitly included
+        // io.koraframework.cache.caffeine.CaffeineCacheModule,                // Commented out = not included
+        com.example.MyCustomModule {                                           // Your custom module
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
     interface Application :
-        ru.tinkoff.kora.http.HttpModule,    // ✅ Explicitly included
-        ru.tinkoff.kora.database.DatabaseModule, // ✅ Explicitly included
-        // ru.tinkoff.kora.cache.CacheModule,     // ❌ Commented out = not included
-        com.example.MyCustomModule        // ✅ Your custom module
+        io.koraframework.http.server.undertow.UndertowPublicHttpServerModule,  // Explicitly included
+        io.koraframework.database.jdbc.JdbcDatabaseModule,                     // Explicitly included
+        // io.koraframework.cache.caffeine.CaffeineCacheModule,                // Commented out = not included
+        com.example.MyCustomModule                                             // Your custom module
     ```
 
 Преимущества явного управления:
 
 - Предсказуемые зависимости: вы точно знаете, что работает в приложении
-- Эффективность ресурсов: создается только то, что действительно нужно
-- Понятный граф зависимостей: связи компонентов легко понимать и отлаживать
-- Безопасность по проекту: нет неожиданных созданий из транзитивных зависимостей
-- Производительность: нет накладных расходов на сканирование пути классов — все разрешается во время компиляции
-- Сопровождаемость: изменения зависимостей явны и отслеживаются в коде
+- Экономия ресурсов: создается только то, что действительно нужно
+- Понятный граф зависимостей: связи компонентов легко читать и отлаживать
+- Безопасность по умолчанию: никаких неожиданных экземпляров из транзитивных зависимостей
+- Производительность: никакого сканирования classpath — все разрешено во время компиляции
+- Сопровождаемость: изменения зависимостей явные и видны в коде
 
-Влияние в реальном мире:
-В автоматических фреймворках разработчики часто тратят часы на отладку того, почему приложение медленное или потребляет неожиданные ресурсы. В Kora, если компонент не включен явно в
-интерфейс `@KoraApp`, он просто не существует в приложении — никаких сюрпризов и скрытых затрат.
+Практический эффект:
+С автоматическими фреймворками разработчики часами выясняют, почему приложение медленное или ест лишние ресурсы. В Kora, если компонент недостижим из корня графа `@KoraApp`, его в приложении просто
+нет — без сюрпризов и скрытых расходов.
 
 ### `@Component` { #component }
 
-Помечает класс как компонент (зависимость) в контейнере зависимостей. Все компоненты в Kora являются `Singleton`: на протяжении жизненного цикла приложения создается только один экземпляр класса.
-Компоненты внедряются только если они являются корневыми компонентами (помечены `@Root`) или нужны как зависимости другим компонентам.
+Помечает класс как компонент (зависимость) контейнера. Все компоненты в Kora — синглтоны: на все время жизни приложения создается ровно один экземпляр класса. Компонент создается только если он корневой
+(помечен `@Root`) или требуется как зависимость чему-то, что достижимо из корня.
 
 Что такое компоненты:
 
-- `Singleton`-экземпляры: один экземпляр на жизненный цикл приложения
+- Синглтоны: один экземпляр на жизненный цикл приложения
 - Поставщики зависимостей: могут внедряться в другие компоненты
-- Условная инициализация: создаются только если нужны другим компонентам или помечены `@Root`
-- Потокобезопасность: один и тот же экземпляр используется во всех точках внедрения
+- Условная инициализация: создаются, только если нужны другим компонентам или помечены `@Root`
+- Общие: один и тот же экземпляр передается во все точки внедрения
 
-**Важное ограничение области**: классы `@Component` могут быть обнаружены и использованы только внутри Gradle-модулей, которые содержат одно из двух:
+**Важное ограничение области**: классы `@Component` обнаруживаются и используются только внутри Gradle-модулей, которые содержат:
 
 - интерфейс `@KoraApp` (главный модуль приложения)
-- интерфейс `@KoraSubmodule` (модуль обнаружения компонентов)
+- либо интерфейс `@KoraSubmodule` (модуль обнаружения компонентов)
 
-Компоненты в обычных Gradle-модулях без этих аннотаций не будут обработаны обработчиком аннотаций Kora.
+Компоненты в обычных Gradle-модулях без этих аннотаций обработчиком Kora не увидятся.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -1072,7 +1182,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
@@ -1081,100 +1191,108 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-Требования для автоматической фабрики:
+**Требования:**
 
-- класс не должен быть абстрактным
-- должен иметь ровно один публичный конструктор
-- должен быть `final` (если в нем нет аспектов AOP)
-- параметры конструктора становятся зависимостями
-- должен находиться в Gradle-модуле с `@KoraApp` или `@KoraSubmodule`
+===! ":fontawesome-brands-java: `Java`"
+
+    - Класс не должен быть абстрактным — `@Component` на абстрактном классе или интерфейсе игнорируется, вместо него используются конкретные реализации
+    - У класса должен быть ровно один публичный конструктор, иначе сборка падает с `@Component class must have exactly one public constructor`
+    - Параметры конструктора становятся заявками на зависимости
+    - Объявлять класс `final` — обычная практика; класс с AOP-аспектами `final` быть **не должен**, потому что Kora генерирует для него класс-наследник
+    - Класс должен лежать в Gradle-модуле с `@KoraApp` или `@KoraSubmodule`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    - Класс не должен быть абстрактным — `@Component` на абстрактном классе или интерфейсе игнорируется, вместо него используются конкретные реализации
+    - У класса должен быть первичный конструктор, иначе сборка падает с `@Component class must have a primary constructor`
+    - Параметры первичного конструктора становятся заявками на зависимости
+    - Классы в Kotlin финальны по умолчанию, и это обычная практика; класс с AOP-аспектами нужно объявить `open`, потому что Kora генерирует для него класс-наследник
+    - Класс должен лежать в Gradle-модуле с `@KoraApp` или `@KoraSubmodule`
 
 Жизненный цикл компонента:
 
-- Обнаружение: находится обработчиком аннотаций во время компиляции
-- Проверка: зависимости проверяются во время компиляции
-- Создание: экземпляр создается при запуске приложения, если нужен (или помечен `@Root`)
-- Внедрение: один и тот же экземпляр предоставляется всем зависимым компонентам
-- Уничтожение: управляется контейнером при завершении работы
+- Обнаружение: обработчик находит класс во время компиляции
+- Проверка: зависимости проверяются на этапе компиляции
+- Создание: экземпляр создается при старте приложения, если компонент достижим из корня
+- Внедрение: один и тот же экземпляр передается всем зависимым компонентам
+- Освобождение: контейнер вызывает `Lifecycle#release` при остановке, в обратном порядке зависимостей
 
 ### `@Module` { #module }
 
-Группирует связанные фабрики компонентов и помечает интерфейсы как модули, которые внедряются в контейнер зависимостей во время компиляции. Модуль — это интерфейс, содержащий фабричные методы для
-создания компонентов. Все фабричные методы внутри модуля становятся доступными контейнеру зависимостей.
+Группирует связанные фабрики компонентов и помечает интерфейсы как модули, подключаемые к контейнеру во время компиляции. Модуль — это интерфейс с фабричными методами создания компонентов. Все
+фабричные методы модуля становятся доступны контейнеру.
 
-Что делают модули:
+Что дают модули:
 
-- Набор фабрик: группируют связанные фабрики компонентов в одном месте
-- Организация кода: разделяют ответственность между разными модулями
-- Переиспользование: модули можно разделять между приложениями
-- Поддержка переопределения: фабричные методы можно переопределять в наследующих интерфейсах
+- Сбор фабрик: связанные фабрики компонентов лежат в одном месте
+- Организация кода: разные задачи разнесены по разным модулям
+- Переиспользование: модули можно шарить между приложениями
+- Поддержка переопределения: фабричные методы переопределяются в наследующих интерфейсах
 
-**Область**: интерфейсы `@Module` обрабатываются внутри Gradle-модулей, которые содержат интерфейсы `@KoraApp` или `@KoraSubmodule`. Внешние модули из библиотек наследуются через расширение
-интерфейса.
+Область: интерфейсы `@Module` обрабатываются внутри Gradle-модулей, содержащих `@KoraApp` или `@KoraSubmodule`. Внешние модули из библиотек подключаются наследованием интерфейса.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
     public interface DatabaseModule {
-        @Component
         default UserRepository userRepository(DataSource dataSource) {
             return new JdbcUserRepository(dataSource);
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
     interface DatabaseModule {
-        @Component
         fun userRepository(dataSource: DataSource): UserRepository =
             JdbcUserRepository(dataSource)
     }
     ```
 
-Типы модулей:
+Виды модулей:
 
-- Внутренние модули: определяются в вашем проекте внутри модулей `@KoraApp`
-- Внешние модули: предоставляются библиотеками (наследуются через расширение интерфейса)
-- Подмодули: генерируются из интерфейсов `@KoraSubmodule`
+- Внутренние модули: интерфейсы `@Module` в том же Gradle-модуле, что и `@KoraApp`; подхватываются автоматически, наследовать их не нужно
+- Подмешанные модули: любой интерфейс, унаследованный от `@KoraApp`, даже без `@Module`; его фабричные методы попадают в граф
+- Внешние модули: приходят из библиотек и подключаются наследованием от `@KoraApp`
+- Подмодули: интерфейсы `<Имя>SubmoduleImpl`, сгенерированные из `@KoraSubmodule` в другом Gradle-модуле
 
 Требования к модулю:
 
-- должен быть интерфейсом (не классом)
-- фабричные методы должны быть методами по умолчанию
-- должен находиться в той же директории исходников, что и `@KoraApp` или `@KoraSubmodule`
+- Должен быть интерфейсом, а не классом — `@Module` на классе падает с ошибкой `@Module can only be applied to interfaces`
+- Фабричные методы должны иметь тело (`default` в Java, обычное тело функции в Kotlin)
+- Фабричные методы должны возвращать ссылочный тип; примитивы отвергаются
+- Чтобы обнаружиться автоматически, модуль должен лежать в том же Gradle-модуле, что `@KoraApp` или `@KoraSubmodule`
 
 Правила фабричных методов:
 
-- должен возвращать компонент (ненулевое значение)
-- может принимать другие компоненты как параметры
-- параметры становятся зависимостями
-- параметры могут быть необязательными компонентами (помечаются `@Nullable`)
-- методы вызываются во время выполнения в порядке зависимостей
+- Метод должен возвращать компонент, при этом «сырой» обобщенный тип отвергается
+- Метод может принимать другие компоненты параметрами
+- Параметры становятся заявками на зависимости
+- Параметры могут быть необязательными компонентами (`@Nullable` в Java, `T?` в Kotlin)
+- Методы вызываются при старте в порядке зависимостей
 
-> Компоненты внешних библиотек: компоненты и модули из внешних библиотек не обнаруживаются автоматически обработчиком аннотаций Kora. Даже если библиотека содержит классы `@Component` или
-> интерфейсы `@Module`, они будут невидимы для приложения, пока вы явно не унаследуете их интерфейсы модулей в интерфейсе `@KoraApp`. Это осознанное архитектурное решение для явного управления
-> зависимостями.
+> **Компоненты внешних библиотек**: компоненты и модули из внешних библиотек **не обнаруживаются автоматически** обработчиком Kora. Даже если библиотека содержит классы `@Component` или интерфейсы
+> `@Module`, они будут невидимы приложению, пока вы явно не унаследуете их интерфейсы модулей в `@KoraApp`. Это осознанное решение в пользу явного управления зависимостями.
 
 ### `@KoraSubmodule` { #korasubmodule }
 
-Помечает интерфейс, для которого нужно построить модуль для текущего модуля компиляции. Он будет содержать все компоненты, помеченные аннотациями `@Module` и `@Component`, найденные в исходном коде.
-Эта аннотация особенно полезна для многомодульных Gradle-приложений, где разные модули содержат разные части функциональности, а главное приложение `@KoraApp` собирается в отдельном модуле.
+Помечает интерфейс, для которого нужно собрать модуль текущего Gradle-модуля. Сгенерированный интерфейс содержит все компоненты, помеченные `@Module` и `@Component`, найденные в исходниках этого
+Gradle-модуля. Аннотация особенно полезна в многомодульных Gradle-приложениях, где разные модули содержат разную функциональность, а главное приложение `@KoraApp` собирается в отдельном модуле.
 
 Что делает `@KoraSubmodule`:
 
-- Обнаружение компонентов: сканирует текущий Gradle-модуль на аннотации `@Module` и `@Component`
-- Генерация модуля: создает интерфейс-наследник со всеми обнаруженными модулями и компонентами
-- Поддержка многомодульности: позволяет разделять компоненты между Gradle-модулями
-- Определение границы: задает, где обработчик аннотаций Kora сканирует компоненты
-- Оптимизация сборки: позволяет использовать кеширование сборки Gradle и инкрементальную компиляцию, изолируя функциональность в отдельных модулях
+- Обнаружение компонентов: сканирует текущий Gradle-модуль на `@Module` и `@Component`
+- Генерация модуля: создает интерфейс `<Имя>SubmoduleImpl` со всеми найденными модулями и компонентами
+- Многомодульность: позволяет использовать компоненты в других Gradle-модулях
+- Границы: задает область, в которой обработчик Kora ищет компоненты
+- Оптимизация сборки: включает кеширование и инкрементальную компиляцию Gradle за счет разделения функциональности по модулям
 
-**Область**: интерфейсы `@KoraSubmodule` определяют границы, в которых обработчик аннотаций Kora будет сканировать компоненты. Компоненты за пределами этих границ не обрабатываются.
+Область: интерфейсы `@KoraSubmodule` задают границы, внутри которых обработчик Kora ищет компоненты. Компоненты за этими границами не обрабатываются.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraSubmodule
@@ -1183,7 +1301,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraSubmodule
@@ -1194,41 +1312,51 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
 
 Как это работает:
 
-1. Обнаружение: находит все интерфейсы `@Module` и классы `@Component` в текущем Gradle-модуле
-2. Наследование: сгенерированный интерфейс наследуется от всех обнаруженных интерфейсов `@Module`
-3. Генерация фабрик: создает методы по умолчанию для всех обнаруженных классов `@Component`
-4. Интеграция: может наследоваться `@KoraApp`, чтобы включать компоненты из других модулей
+1. Обнаружение: находятся все интерфейсы `@Module` и классы `@Component` в текущем Gradle-модуле
+2. Наследование: сгенерированный интерфейс `ApplicationModulesSubmoduleImpl` наследует все найденные интерфейсы `@Module`
+3. Генерация фабрик: для всех найденных классов `@Component` создаются методы по умолчанию
+4. Интеграция: ваш `@KoraApp` наследует интерфейс `@KoraSubmodule`, а Kora подставляет за ним сгенерированный `…SubmoduleImpl`
 
 Сценарии использования:
 
-- Многомодульные проекты: разделение компонентов между Gradle-модулями
-- Разработка библиотек: публикация компонентов из библиотечного модуля
-- Модульная архитектура: разделение ответственности между разными модулями сборки
-- Организация компонентов: группировка связанных компонентов по функциональности
-- Большие единые приложения: организация сложных монолитных приложений в изолированные Gradle-модули для лучшей производительности сборки и сопровождения
-- Оптимизация сборки: использование контекста кеширования сборки Gradle через разделение функциональности на независимые модули, которые можно собирать и кешировать отдельно
+- Многомодульные проекты: переиспользование компонентов между Gradle-модулями
+- Разработка библиотек: публикация компонентов из модуля-библиотеки
+- Модульная архитектура: разделение ответственностей по модулям сборки
+- Организация компонентов: группировка компонентов по функциональности
+- Большие монолиты: разбиение сложного приложения на изолированные Gradle-модули ради скорости сборки и сопровождаемости
+- Оптимизация сборки: кеш Gradle работает лучше, когда функциональность разнесена по независимым модулям
+
+> Если сгенерированный интерфейс еще не появился в classpath, сборка сообщит `Kora submodule was not generated yet`. Обычно это значит, что модуль с `@KoraSubmodule` не скомпилирован или к нему не
+> подключен обработчик Kora.
 
 ### `@Root` { #root }
 
-Помечает компоненты, которые всегда должны инициализироваться при запуске приложения, даже если они не являются зависимостями других компонентов. Корневые компоненты гарантированно создаются и
-запускаются при старте приложения независимо от того, внедряет ли их кто-либо.
+Помечает компоненты, которые обязаны быть созданы при запуске приложения, даже если от них ничего не зависит. Корневые компоненты — это точки входа графа: Kora начинает разрешение зависимостей с набора
+корней и строит только то, что из него достижимо.
 
 Что делает `@Root`:
 
-- Гарантированная инициализация: компонент всегда создается при запуске
-- Жадная загрузка: принудительно создает экземпляр сразу (не лениво)
-- Управление жизненным циклом: компонент участвует в запуске и остановке приложения
-- Точки входа: отлично подходит для серверов, потребителей, планировщиков и фоновых сервисов
+- Гарантированная инициализация: компонент всегда создается при старте
+- Точка входа в граф: все, что нужно корню, затягивается в граф
+- Жизненный цикл: компонент участвует в старте и остановке приложения
+- Точки входа: идеально для серверов, консьюмеров, планировщиков и фоновых сервисов
 
-Частые сценарии:
+Типичные сценарии:
 
 - HTTP-серверы: веб-серверы, которые должны сразу начать слушать порт
-- Потребители сообщений: Kafka-потребители, обработчики очередей
-- Фоновые сервисы: прогреватели кеша, проверки состояния, планировщики
+- Консьюмеры сообщений: Kafka-консьюмеры, обработчики очередей
+- Фоновые сервисы: прогрев кеша, health-check, планировщики
+- Инициализация: все, что производит только побочные эффекты, например подготовку внешнего состояния
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Root
+    @Component
+    public final class NotificationService {
+        // Always created, even if nothing injects it
+    }
+
     @KoraApp
     public interface Application {
         @Root
@@ -1238,9 +1366,15 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Root
+    @Component
+    class NotificationService {
+        // Always created, even if nothing injects it
+    }
+
     @KoraApp
     interface Application {
         @Root
@@ -1249,37 +1383,45 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-`@Root` и обычные компоненты:
+`@Root` против обычных компонентов:
 
-- Обычные компоненты: создаются только если нужны как зависимости другим компонентам
-- Компоненты `@Root`: всегда создаются при запуске (гарантированная инициализация)
+- Обычные компоненты: создаются, только если достижимы из корня по ребрам зависимостей
+- Компоненты `@Root`: создаются при старте всегда
 
 Когда использовать `@Root`:
 
-- компонент предоставляет сервис, который всегда должен работать
-- компонент должен сразу начать обработку (серверы, потребители)
-- компонент выполняет критичную инициализацию (настройка базы данных, прогрев кеша)
+- компонент предоставляет сервис, который должен работать постоянно
+- компонент должен сразу начать обработку (серверы, консьюмеры)
+- компонент выполняет критичную инициализацию (подготовка схемы, прогрев кеша, создание бакета)
 - компонент собирает метрики или данные мониторинга
+
+!!! warning "Нужен хотя бы один корень"
+
+    `@KoraApp`, из которого не достижим ни один `@Root`, не компилируется и падает с `@KoraApp has no root components`. Модули фреймворка обычно приносят свои корни — например, модуль HTTP-сервера
+    помечает корнем компонент сервера, — но приложение, состоящее только из обычных компонентов, обязано пометить корнем хотя бы один из них.
+
+    Это же правило объясняет коварный класс ошибок: компонент `Lifecycle`, который только подготавливает внешнее состояние и который никто не внедряет, выбрасывается из графа, а вместе с ним исчезает
+    и все, что он тянул за собой. Такому компоненту нужен `@Root`.
 
 ### `@DefaultComponent` { #defaultcomponent }
 
-Помечает фабричные методы, которые предоставляют реализации по умолчанию и предназначены для переопределения пользователями. Если в контейнере зависимостей найден любой компонент без этой аннотации,
-он будет иметь приоритет при внедрении над фабриками `@DefaultComponent`.
+Помечает фабрики или компоненты, которые дают реализацию по умолчанию и рассчитаны на замену пользователем. Если в графе есть другой компонент того же типа и с тем же тегом, но без этой аннотации, при
+внедрении победит он.
 
 Что делает `@DefaultComponent`:
 
-- Предоставление по умолчанию: дает резервные реализации компонентов
-- Поддержка переопределения: позволяет пользователям заменять значения по умолчанию без изменения кода библиотеки
-- Удобство для библиотек: позволяет библиотекам предоставлять разумные значения по умолчанию
-- Система приоритетов: имеет более низкий приоритет, чем фабрики без аннотации
+- Реализация по умолчанию: дает запасной вариант компонента
+- Поддержка замены: позволяет заменить умолчание, не трогая код библиотеки
+- Удобство для библиотек: библиотеки предоставляют разумные умолчания
+- Приоритет: ниже, чем у фабрик без этой аннотации
 
 Сценарии использования:
 
-- Значения библиотек по умолчанию: библиотеки дают реализации по умолчанию, которые пользователи могут переопределить
+- Умолчания библиотек: библиотека дает реализацию, которую пользователь может заменить
 - Варианты конфигурации: разные реализации в зависимости от окружения
-- Точки расширения: позволяют пользователям настраивать поведение без изменения кода библиотеки
+- Точки расширения: пользователь меняет поведение, не меняя код библиотеки
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -1291,7 +1433,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
@@ -1301,63 +1443,97 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-Поведение переопределения:
+**Как работает замена:**
 
-===! ":fontawesome-brands-java: Java"
+Заменить умолчание можно двумя способами: переопределить сам метод либо просто объявить другую фабрику того же типа без `@DefaultComponent`:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
-    public interface Application extends CacheModule {  // <----- Подключили модуль
-        // This overrides the @DefaultComponent because it has no annotation
+    public interface Application extends CacheModule {  // <----- Connected module
+
+        // Option 1: override the method - the override carries no @DefaultComponent, so it wins
         @Override
         default Cache defaultCache() {
-            return new RedisCache(); // User provides custom implementation
+            return new RedisCache();
+        }
+    }
+
+    @KoraApp
+    public interface OtherApplication extends CacheModule {
+
+        // Option 2: a different method providing the same type without @DefaultComponent also wins
+        default Cache applicationCache() {
+            return new RedisCache();
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
-    interface Application : CacheModule {  // <----- Подключили модуль
-        // This overrides the @DefaultComponent because it has no annotation
-        override fun defaultCache(): Cache = RedisCache() // User provides custom implementation
+    interface Application : CacheModule {  // <----- Connected module
+
+        // Option 1: override the function - the override carries no @DefaultComponent, so it wins
+        override fun defaultCache(): Cache = RedisCache()
+    }
+
+    @KoraApp
+    interface OtherApplication : CacheModule {
+
+        // Option 2: a different function providing the same type without @DefaultComponent also wins
+        fun applicationCache(): Cache = RedisCache()
     }
     ```
 
-Порядок приоритета:
+**Правило разрешения:**
 
-1. фабрики без аннотаций (наивысший приоритет — переопределяют значения по умолчанию)
-2. фабрики `@DefaultComponent` (самый низкий приоритет — могут быть переопределены)
-3. другие типы фабрик между ними
+1. Кандидаты отбираются по типу и тегу
+2. Если подходит несколько, предпочтение отдается кандидатам **без** `@DefaultComponent`
+3. Если остается ровно один такой кандидат, используется он
+4. Если остается несколько, сборка падает с `Multiple components match dependency`
 
-Лучшие практики:
+**Лучшие практики:**
 
-- используйте для предоставляемых библиотекой значений по умолчанию, которые пользователи могут захотеть настроить
-- не используйте для компонентов, специфичных для приложения
-- явно документируйте, какие значения по умолчанию доступны для переопределения
+- Используйте для умолчаний библиотек, которые пользователь может захотеть заменить
+- Не используйте для компонентов, специфичных для приложения
+- Явно документируйте, какие умолчания доступны для замены
 
 ### `@Tag` { #tag }
 
-Позволяет различать несколько реализаций одного и того же типа и выполнять выборочное внедрение на основе тегов. Теги используют ссылки на классы вместо строк, что улучшает поддержку рефакторинга и
-типобезопасность. Компонент регистрируется с определенным тегом и внедряется в точки, которые запрашивают точно такой же тег.
+Позволяет различать несколько реализаций одного типа и выборочно внедрять нужную. Тег — это ссылка на класс, а не строка, что дает безопасное переименование и типобезопасность. Компонент
+регистрируется с конкретным тегом и внедряется туда, где запрошен ровно такой же тег.
 
-Что делают теги:
+Что дают теги:
 
-- Выбор реализации: выбирают конкретные реализации интерфейсов
-- Несколько экземпляров: поддерживают несколько реализаций одного типа
-- Типобезопасность: используют ссылки на классы вместо строк
-- Безопасность при рефакторинге: среда разработки может отслеживать использование тегов по всей кодовой базе
+- Выбор реализации: можно выбрать конкретную реализацию интерфейса
+- Несколько экземпляров: в одном графе сосуществует несколько объектов одного типа
+- Типобезопасность: используются ссылки на классы, а не строки
+- Безопасный рефакторинг: IDE отслеживает использование тегов по всей кодовой базе
+
+Аннотация несет ровно один класс:
+
+```java
+public @interface Tag {
+    Class<?> value();
+}
+```
 
 Базовое использование:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Tag classes (usually empty marker classes)
-    public final class RedisTag {}
-    public final class InMemoryTag {}
+    public final class RedisTag {
+        private RedisTag() {}
+    }
+
+    public final class InMemoryTag {
+        private InMemoryTag() {}
+    }
 
     // Tagged implementations
     @Tag(RedisTag.class)
@@ -1381,12 +1557,13 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     // Tag classes (usually empty marker classes)
-    class RedisTag
-    class InMemoryTag
+    class RedisTag private constructor()
+
+    class InMemoryTag private constructor()
 
     // Tagged implementations
     @Tag(RedisTag::class)
@@ -1408,27 +1585,28 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-Применение тегов:
+Куда ставится тег:
 
-- На классах: `@Tag(MyTag.class) @Component class MyClass`
-- На фабричных методах: `@Tag(MyTag.class) default MyClass myClass()`
-- На параметрах: `public MyClass(@Tag(MyTag.class) Dependency dep)`
+- На классы: `@Tag(MyTag.class) @Component final class MyClass`
+- На фабричные методы: `@Tag(MyTag.class) default MyClass myClass()`
+- На параметры: `MyService(@Tag(MyTag.class) Dependency dep)`
+- На аннотации: своя аннотация, помеченная `@Tag(MyTag.class)`, работает как этот тег
 
 Специальные теги:
 
-- `@Tag.Any`: сопоставляет все компоненты независимо от их тегов
-- для удобства можно создавать собственные аннотации тегов
+- `@Tag(Tag.Any.class)`: подходит любому компоненту нужного типа, с тегом и без
+- `@Tag(Tag.Factory.class)`: внутри вложенного модуля, подключенного через `@FactoryModule`, означает «взять тег метода-фабрики модуля»
 
 Правила сопоставления тегов:
 
-1. Точное совпадение: теги должны точно совпадать по ссылке на класс
-2. Наследование: классы тегов могут быть частью иерархий наследования
-3. Несколько тегов: компоненты могут иметь несколько тегов
-4. Фильтрация по тегам: зависимости могут указывать требуемые теги
+1. Заявка без тега подходит только компонентам без тега
+2. Заявка с тегом подходит только компонентам ровно с этим классом-тегом
+3. `Tag.Any` подходит всему нужного типа
+4. Сравнивается сам класс-тег; иерархия наследования тегов не учитывается
 
-Теги аннотации:
+Свои аннотации-теги:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(RedisTag.class)
@@ -1452,7 +1630,7 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Tag(RedisTag::class)
@@ -1474,61 +1652,143 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
     class UserService(@RedisCache private val cache: Cache)
     ```
 
----
+### `@Conditional` { #conditional }
 
-## Приоритет обнаружения компонентов { #component-discovery-priority }
+Ставит присутствие компонента в работающем графе в зависимость от условия, которое вычисляется при инициализации графа. Само условие — это обычный компонент графа типа `GraphCondition`,
+зарегистрированный под тегом, поэтому оно может зависеть от конфигурации или любого другого компонента.
 
-Когда Kora нужно создать компонент, она следует определенному порядку приоритетов, чтобы решить, какой фабричный метод или механизм использовать. Фабрики с более высоким приоритетом переопределяют
-фабрики с более низким приоритетом. Понимание этого порядка критично для отладки проблем разрешения зависимостей и для уверенности, что используются правильные реализации.
-
-Порядок приоритета (от высшего к низшему):
-
-1. Автоматическое создание: классы, соответствующие требованиям к компонентам (`final`, один конструктор, не `abstract`)
-2. Механизм расширений: динамическая генерация компонентов (JSON-преобразователи, репозитории и т.д.)
-3. Обобщенная фабрика: методы с обобщенными параметрами типа
-4. Стандартная фабрика: методы с `@DefaultComponent`
-5. Базовая фабрика: обычные фабричные методы
-6. Фабрика модуля: методы в интерфейсах `@Module`
-7. Фабрика внешнего модуля: унаследована из внешних зависимостей
-8. Фабрика подмодуля: сгенерирована из `@KoraSubmodule`
-9. Автоматическая фабрика: классы с аннотацией `@Component`
-
-Что это означает:
-
-- если у вас есть и класс `@Component`, и фабричный метод для того же типа, фабричный метод имеет приоритет
-- фабрики `@DefaultComponent` могут быть переопределены обычными фабричными методами
-- расширения могут предоставлять компоненты динамически (например, JSON-читатели/писатели)
-- автоматическое создание работает как запасной вариант для простых классов
-
-Практический пример:
-
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Priority 9: Auto Factory (@Component) - lowest priority
-    @Component
-    public final class DefaultUserService implements UserService { }
+    import io.koraframework.application.graph.GraphCondition;
+    import io.koraframework.common.annotation.Conditional;
 
-    // Priority 5: Basic Factory - higher priority, overrides @Component
+    public final class ExportEnabled {
+        private ExportEnabled() {}
+    }
+
     @KoraApp
     public interface Application {
-        default UserService userService() {
-            return new CustomUserService(); // This will be used instead
+
+        @Tag(ExportEnabled.class)
+        default GraphCondition exportEnabled(ExportConfig config) {       //(1)!
+            return () -> config.enabled()
+                ? GraphCondition.ConditionResult.matched("export.enabled = true")
+                : GraphCondition.ConditionResult.failed("export.enabled = false");
+        }
+
+        @Root
+        @Conditional(tag = ExportEnabled.class)                           //(2)!
+        default ExportJob exportJob(ExportClient client) {
+            return new ExportJob(client);
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+    1. Компонент `GraphCondition`, зарегистрированный под тегом `ExportEnabled`. Такой компонент для тега должен быть ровно один.
+    2. Компонент создается, только если условие вернуло `Matched`; иначе узел остается неинициализированным, и обращение к нему бросает исключение.
+
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Priority 9: Auto Factory (@Component) - lowest priority
-    @Component
-    class DefaultUserService : UserService
+    import io.koraframework.application.graph.GraphCondition
+    import io.koraframework.common.annotation.Conditional
 
-    // Priority 5: Basic Factory - higher priority, overrides @Component
+    class ExportEnabled private constructor()
+
     @KoraApp
     interface Application {
-        fun userService(): UserService = CustomUserService() // This will be used instead
+
+        @Tag(ExportEnabled::class)
+        fun exportEnabled(config: ExportConfig): GraphCondition = GraphCondition {   //(1)!
+            if (config.enabled()) GraphCondition.ConditionResult.matched("export.enabled = true")
+            else GraphCondition.ConditionResult.failed("export.enabled = false")
+        }
+
+        @Root
+        @Conditional(tag = ExportEnabled::class)                                     //(2)!
+        fun exportJob(client: ExportClient): ExportJob = ExportJob(client)
+    }
+    ```
+
+    1. Компонент `GraphCondition`, зарегистрированный под тегом `ExportEnabled`. Такой компонент для тега должен быть ровно один.
+    2. Компонент создается, только если условие вернуло `Matched`; иначе узел остается неинициализированным, и обращение к нему бросает исключение.
+
+Что важно помнить:
+
+- Один тег может нести ровно один `GraphCondition`, иначе сборка падает с `Multiple GraphCondition components match condition tag`
+- Отсутствие поставщика условия ломает сборку с `Component condition cannot be resolved`
+- Условия каскадируются: все, что существует только благодаря условному компоненту, отключается вместе с ним
+- Если два кандидата одного типа оба условные, Kora оставляет в графе оба и позволяет условиям выбрать во время запуска
+
+---
+
+## Приоритет обнаружения компонентов { #component-discovery-priority }
+
+Чтобы удовлетворить одну заявку на зависимость, Kora проходит фиксированную последовательность стратегий. Понимание этого порядка необходимо для отладки проблем разрешения и для уверенности, что
+используются нужные реализации.
+
+Порядок разрешения одной заявки (тип + тег):
+
+1. **Конкретные объявления**, уже известные обработчику — классы `@Component`, фабричные методы интерфейса `@KoraApp` и всего, что он наследует, интерфейсы `@Module` текущего Gradle-модуля,
+   сгенерированные подмодули, вложенные модули `@FactoryModule` и компоненты, ранее созданные расширениями
+2. **Шаблоны компонентов** — обобщенные фабричные методы, чьи параметры типа выводятся под запрошенный тип
+3. **Обнуляемый запасной вариант** — если заявка обнуляемая, зависимость разрешается в `null`
+4. **Запасной вариант `Optional<T>`** — если заявка объявлена как `Optional<T>` и `T` никто не предоставляет, подставляется пустой `Optional`
+5. **Расширения** — расширение генерирует компонент по запросу (`JsonReader` и `JsonWriter`, реализации `@Repository`, реализации `@HttpClient`, извлекатели конфигурации, валидаторы, мапперы)
+6. **Ошибка** — иначе сборка падает с `No component found for dependency`
+
+Внутри пункта 1, когда под один тип и тег подходит несколько объявлений:
+
+- Кандидаты **без** `@DefaultComponent` предпочитаются кандидатам с этой аннотацией
+- Если остается ровно один кандидат, используется он
+- Если все оставшиеся кандидаты помечены `@Conditional`, в графе остаются все, а выбор делает условие при запуске
+- Иначе сборка падает с `Multiple components match dependency`
+
+**Что это означает на практике:**
+
+- Конкретный фабричный метод всегда побеждает обобщенный шаблон того же типа
+- `@DefaultComponent` из библиотеки заменяется простым объявлением своей фабрики того же типа и тега
+- Расширения — крайняя мера, поэтому написанный вручную компонент того же типа молча вытесняет сгенерированный
+- Ничего не создается «на всякий случай» — строится только то, что нужно корню
+
+**Практический пример:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    // Library default - lowest priority
+    @Module
+    public interface UserModule {
+        @DefaultComponent
+        default UserService userService() {
+            return new DefaultUserService();
+        }
+    }
+
+    // Application factory - wins, because it carries no @DefaultComponent
+    @KoraApp
+    public interface Application extends UserModule {
+        default UserService customUserService() {
+            return new CustomUserService();
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    // Library default - lowest priority
+    @Module
+    interface UserModule {
+        @DefaultComponent
+        fun userService(): UserService = DefaultUserService()
+    }
+
+    // Application factory - wins, because it carries no @DefaultComponent
+    @KoraApp
+    interface Application : UserModule {
+        fun customUserService(): UserService = CustomUserService()
     }
     ```
 
@@ -1536,14 +1796,14 @@ Kora требует, чтобы `@KoraApp` и все модули были ин�
 
 ## Объявление компонентов { #declaring-components }
 
-Компоненты в Kora можно объявлять несколькими способами, и у каждого способа есть свои приоритеты и сценарии применения. **Все способы объявления компонентов требуют, чтобы код находился внутри
-Gradle-модулей, содержащих интерфейсы `@KoraApp` или `@KoraSubmodule`** — обработчик аннотаций Kora сканирует только эти явно назначенные модули.
+Компоненты в Kora объявляются несколькими способами, каждый со своим сценарием. **Все способы требуют, чтобы код находился в Gradle-модулях с интерфейсами `@KoraApp` или `@KoraSubmodule`** — обработчик
+Kora сканирует только эти модули.
 
 ### Автоматическая фабрика (`@Component`) { #automatic-factory-component }
 
-Классы, помеченные `@Component`, автоматически регистрируются, если соответствуют требованиям:
+Классы с аннотацией `@Component` регистрируются автоматически, если удовлетворяют требованиям:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -1556,7 +1816,7 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
@@ -1567,16 +1827,16 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
 
 **Требования:**
 
-- не `abstract`
-- ровно один публичный конструктор
-- класс с модификатором `final` (если не применены AOP-аспекты)
-- параметры конструктора становятся зависимостями
+- Не абстрактный
+- Ровно один публичный конструктор (Java) или первичный конструктор (Kotlin)
+- Нефинальный только тогда, когда применяются AOP-аспекты, потому что Kora наследует компонент, чтобы их встроить
+- Параметры конструктора становятся заявками на зависимости
 
 ### Базовые фабричные методы { #method-factory-basics }
 
-Методы по умолчанию в интерфейсах `@KoraApp` или `@Module`, которые возвращают компоненты:
+Методы с телом в интерфейсах `@KoraApp` или `@Module`, возвращающие компоненты:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @KoraApp
@@ -1591,7 +1851,7 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @KoraApp
@@ -1604,11 +1864,14 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
+Фабричный метод удобен всякий раз, когда создание требует решения, которое хочется держать в одном месте: выбор реализации, работа со сторонним билдером или настройка, которой не место в конструкторе
+самого компонента.
+
 ### Фабрика модуля { #module-factory }
 
 Фабричные методы внутри интерфейсов `@Module`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -1623,7 +1886,7 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
@@ -1636,49 +1899,63 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
+Интерфейс `@Module`, объявленный в том же Gradle-модуле, что и `@KoraApp`, попадает в граф автоматически — наследовать его не нужно. Наследование от `@KoraApp` все же полезно, когда требуется
+переопределить один из его методов.
+
 ### Фабрика внешнего модуля { #external-module-factory }
 
-Модули из внешних зависимостей, унаследованные через расширение интерфейса:
+Модули из внешних зависимостей подключаются наследованием интерфейса:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+
     @KoraApp
     public interface Application extends
-        ru.tinkoff.kora.http.HttpModule,
-        ru.tinkoff.kora.json.JsonModule {
+        HoconConfigModule,
+        UndertowPublicHttpServerModule,
+        JsonModule {
         // Inherits all factory methods from external modules
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+
     @KoraApp
     interface Application :
-        ru.tinkoff.kora.http.HttpModule,
-        ru.tinkoff.kora.json.JsonModule {
+        HoconConfigModule,
+        UndertowPublicHttpServerModule,
+        JsonModule {
         // Inherits all factory methods from external modules
     }
     ```
 
-> **Требуется явный импорт**: компоненты внешних библиотек не доступны автоматически. Нужно явно наследовать интерфейсы модулей библиотеки в интерфейсе `@KoraApp`. Простого добавления библиотеки в
-> путь классов недостаточно — расширение интерфейса модуля делает компоненты доступными для внедрения зависимостей.
+> **Требуется явное подключение**: компоненты внешних библиотек недоступны автоматически. Интерфейсы модулей библиотеки нужно явно унаследовать в `@KoraApp`. Просто добавить библиотеку в classpath
+> недостаточно — компоненты становятся доступны именно через наследование интерфейса модуля.
 
-**Такой явный подход предотвращает частые проблемы автоматических фреймворков:**
+**Такой явный подход снимает типичные проблемы автоматических фреймворков:**
 
-- нет неожиданного создания ненужных компонентов
-- ясно видно, какие зависимости действительно используются
-- безопасность выше благодаря намеренному включению
-- отладка и сопровождение проще
+- никаких неожиданных экземпляров ненужных компонентов
+- видно, какие зависимости реально используются
+- лучше безопасность за счет осознанного подключения
+- проще отладка и сопровождение
 
 ### Фабрика подмодуля { #submodule-factory }
 
-Сгенерированные модули из интерфейсов `@KoraSubmodule`:
+Модули, сгенерированные из интерфейсов `@KoraSubmodule`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    // Gradle module :persistence
     @Module
     public interface PersistenceModule {
         default UserRepository userRepository() {
@@ -1687,19 +1964,21 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
 
     @KoraSubmodule
-    public interface ApplicationSubmodule {
-        // Generates factory methods for all @Module and @Component in the project
+    public interface PersistenceSubmodule {
+        // Generates factory methods for all @Module and @Component in this Gradle module
     }
 
+    // Gradle module :application
     @KoraApp
-    public interface Application extends ApplicationSubmodule {  // <----- Подключили модуль
-        // All components from submodules are available
+    public interface Application extends PersistenceSubmodule {  // <----- Connected submodule
+        // All components from the submodule are available
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    // Gradle module :persistence
     @Module
     interface PersistenceModule {
         fun userRepository(): UserRepository =
@@ -1707,24 +1986,26 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
 
     @KoraSubmodule
-    interface ApplicationSubmodule {
-        // Generates factory methods for all @Module and @Component in the project
+    interface PersistenceSubmodule {
+        // Generates factory methods for all @Module and @Component in this Gradle module
     }
 
+    // Gradle module :application
     @KoraApp
-    interface Application : ApplicationSubmodule {  // <----- Подключили модуль
-        // All components from submodules are available
+    interface Application : PersistenceSubmodule {  // <----- Connected submodule
+        // All components from the submodule are available
     }
     ```
 
 ### Обобщенная фабрика { #generic-factory }
 
-Методы с обобщенными параметрами типа, которые могут создавать компоненты любого подходящего типа. Обобщенные фабрики особенно полезны для создания типобезопасных компонентов, работающих с разными
-обобщенными типами.
+Методы с обобщенными параметрами типа, которые создают компоненты любого подходящего типа. Такие объявления хранятся как шаблоны компонентов и материализуются только тогда, когда запрошен конкретный
+тип. Обобщенные фабрики особенно полезны для типобезопасных компонентов, работающих с разными обобщенными типами.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Module
     public interface ValidatorModule {
         // Generic factory for List validators
         default <T> Validator<List<T>> listValidator(Validator<T> validator, TypeRef<T> valueRef) {
@@ -1743,9 +2024,10 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @Module
     interface ValidatorModule {
         // Generic factory for List validators
         fun <T> listValidator(validator: Validator<T>, valueRef: TypeRef<T>): Validator<List<T>> =
@@ -1763,34 +2045,67 @@ Gradle-модулей, содержащих интерфейсы `@KoraApp` ил
 
 **Как это работает:**
 
-- параметр типа `<T>` позволяет создавать валидаторы для любого типа элементов
-- `TypeRef<T>` предоставляет сведения о типе во время выполнения для операций с обобщениями
-- можно создавать `Validator<List<String>>`, `Validator<Set<User>>` и т.д.
-- обеспечивает типобезопасную валидацию обобщенных коллекций
+- Параметр типа `<T>` позволяет создавать валидаторы для любого типа элемента
+- `TypeRef<T>` несет конкретный обобщенный тип, под который была материализована фабрика
+- Kora может создать `Validator<List<String>>`, `Validator<Set<User>>` и так далее
+- Конкретная фабрика всегда побеждает шаблон для того же типа
+- «Сырые» типы отвергаются: заявка вида `Validator` без аргументов типа ломает сборку
 
 ### Механизм расширений { #extension-mechanism }
 
-Компоненты, динамически генерируемые расширениями (JSON-преобразователи, репозитории и т.д.):
+Расширения генерируют компоненты по запросу прямо во время разрешения графа. Они срабатывают только тогда, когда заявку не может удовлетворить ничто другое, поэтому написанный вручную компонент того
+же типа всегда имеет приоритет.
 
-```java
-// Extensions automatically generate components for:
--JSON readers/writers for classes
--
-Database repositories
-from interfaces
--
-HTTP clients
-from interfaces
--
-And many
-more...
-```
+Расширения поставляются вместе с соответствующими обработчиками Kora и покрывают, в частности:
+
+- реализации `JsonReader<T>` и `JsonWriter<T>` для классов с `@Json`
+- реализации интерфейсов `@Repository` для JDBC и Cassandra
+- реализации интерфейсов `@HttpClient`
+- клиентские заглушки gRPC
+- извлекатели конфигурации для интерфейсов `@ConfigSource` и `@ConfigMapper`
+- реализации `Validator<T>` для типов с `@Valid`
+- реализации мапперов MapStruct и Konvert
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends JsonModule {
+
+        @Root
+        default UserPrinter userPrinter(JsonWriter<User> writer) {  //(1)!
+            return new UserPrinter(writer);
+        }
+    }
+
+    @Json
+    public record User(String name, int age) {}
+    ```
+
+    1. `JsonWriter<User>` нигде не объявлен; расширение JSON генерирует его во время разрешения графа.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : JsonModule {
+
+        @Root
+        fun userPrinter(writer: JsonWriter<User>): UserPrinter =        //(1)!
+            UserPrinter(writer)
+    }
+
+    @Json
+    data class User(val name: String, val age: Int)
+    ```
+
+    1. `JsonWriter<User>` нигде не объявлен; расширение JSON генерирует его во время разрешения графа.
 
 ### Фабрика `@DefaultComponent` { #defaultcomponent-factory }
 
-Реализации по умолчанию, которые можно переопределить:
+Реализации по умолчанию, которые можно заменить:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -1801,9 +2116,9 @@ more...
         }
     }
 
-    // Can be overridden in application:
+    // Can be overridden in the application:
     @KoraApp
-    public interface Application extends CacheModule {  // <----- Подключили модуль
+    public interface Application extends CacheModule {  // <----- Connected module
 
         default Cache primaryCache() {
             return new RedisCache(); // Overrides the default
@@ -1811,7 +2126,7 @@ more...
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
@@ -1820,86 +2135,215 @@ more...
         fun cache(): Cache = InMemoryCache()
     }
 
-    // Can be overridden in application:
+    // Can be overridden in the application:
     @KoraApp
-    interface Application : CacheModule {  // <----- Подключили модуль
+    interface Application : CacheModule {  // <----- Connected module
 
         fun primaryCache(): Cache = RedisCache() // Overrides the default
     }
     ```
 
-### Автоматическое создание { #automatic-creation }
+`@DefaultComponent` работает не только на фабричных методах, но и на классах, поэтому класс `@Component` тоже можно объявить заменяемым умолчанием.
 
-Классы, которые соответствуют требованиям к компонентам, но не помечены явно:
+### Модуль-фабрика { #factory-module }
 
-===! ":fontawesome-brands-java: Java"
+`@FactoryModule` помечает метод модуля, **возвращаемое значение которого само является модулем**. Возвращенный объект становится компонентом графа, а его публичные методы обрабатываются как фабрики
+компонентов. Именно так один и тот же набор фабрик регистрируется несколько раз с разной конфигурацией.
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    public final class SomeService {
-        public SomeService(Dependency dep) {
-            // Will be auto-created if needed and meets requirements
+    public final class MessengerModule {                                //(1)!
+
+        private final String header;
+
+        public MessengerModule(String header) {
+            this.header = header;
+        }
+
+        @Tag(Tag.Factory.class)                                         //(2)!
+        public Messenger messenger(@Tag(Tag.Factory.class) Transport transport) {
+            return new Messenger(this.header, transport);
+        }
+    }
+
+    @KoraApp
+    public interface Application {
+
+        @Tag(SlackTag.class)
+        @FactoryModule
+        default MessengerModule slackModule() {                         //(3)!
+            return new MessengerModule("SLACK");
+        }
+
+        @Tag(SignalTag.class)
+        @FactoryModule
+        default MessengerModule signalModule() {
+            return new MessengerModule("SIGNAL");
+        }
+
+        @Tag(SlackTag.class)
+        default Transport slackTransport() {
+            return new HttpTransport("https://slack.example.com");
+        }
+
+        @Tag(SignalTag.class)
+        default Transport signalTransport() {
+            return new HttpTransport("https://signal.example.com");
+        }
+
+        @Root
+        default Dispatcher dispatcher(@Tag(SlackTag.class) Messenger slack,
+                                      @Tag(SignalTag.class) Messenger signal) {
+            return new Dispatcher(slack, signal);
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+    1. Обычный класс, публичные методы которого работают как фабрики компонентов.
+    2. `@Tag(Tag.Factory.class)` означает «тег внешнего метода `@FactoryModule`», поэтому каждый экземпляр отдает свои компоненты с тегом и потребляет свои зависимости с тегом.
+    3. Возвращенный `MessengerModule` регистрируется в графе под тегом `SlackTag`.
+
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    class SomeService(private val dep: Dependency) {
-        // Will be auto-created if needed and meets requirements
+    class MessengerModule(private val header: String) {                 //(1)!
+
+        @Tag(Tag.Factory::class)                                        //(2)!
+        fun messenger(@Tag(Tag.Factory::class) transport: Transport): Messenger =
+            Messenger(header, transport)
+    }
+
+    @KoraApp
+    interface Application {
+
+        @Tag(SlackTag::class)
+        @FactoryModule
+        fun slackModule(): MessengerModule = MessengerModule("SLACK")   //(3)!
+
+        @Tag(SignalTag::class)
+        @FactoryModule
+        fun signalModule(): MessengerModule = MessengerModule("SIGNAL")
+
+        @Tag(SlackTag::class)
+        fun slackTransport(): Transport = HttpTransport("https://slack.example.com")
+
+        @Tag(SignalTag::class)
+        fun signalTransport(): Transport = HttpTransport("https://signal.example.com")
+
+        @Root
+        fun dispatcher(
+            @Tag(SlackTag::class) slack: Messenger,
+            @Tag(SignalTag::class) signal: Messenger
+        ): Dispatcher = Dispatcher(slack, signal)
     }
     ```
 
-**Порядок приоритета** (от высшего к низшему):
+    1. Обычный класс, публичные функции которого работают как фабрики компонентов.
+    2. `@Tag(Tag.Factory::class)` означает «тег внешней функции `@FactoryModule`», поэтому каждый экземпляр отдает свои компоненты с тегом и потребляет свои зависимости с тегом.
+    3. Возвращенный `MessengerModule` регистрируется в графе под тегом `SlackTag`.
 
-1. автоматическое создание
-2. механизм расширений
-3. обобщенная фабрика
-4. стандартная фабрика (`@DefaultComponent`)
-5. базовая фабрика
-6. фабрика модуля
-7. фабрика внешнего модуля
-8. фабрика подмодуля
-9. автоматическая фабрика (`@Component`)
+`@Tag(Tag.Factory.class)` допустим только внутри типа, доступного через `@FactoryModule`; в других местах сборка падает с `@Tag.Factory can only be used inside factory modules`.
+
+### Автоматическое создание отсутствует { #automatic-creation }
+
+Kora никогда не создает класс просто потому, что его в принципе можно создать. Тип должен предоставляться одним из перечисленных выше механизмов — классом `@Component`, фабричным методом, шаблоном или
+расширением. Если его не предоставляет ничто, сборка падает:
+
+```
+No component found for dependency:
+  com.example.SomeService (no tags)
+```
+
+Это сделано намеренно. Граф никогда не обрастает объектами, которых вы не просили, и каждый узел работающего приложения прослеживается до написанного вами объявления или подключенного модуля.
+
+Когда зависимость действительно может отсутствовать, скажите об этом явно, а не рассчитывайте на неявное создание:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class ReportService {
+
+        public ReportService(@Nullable AuditSink auditSink,          //(1)!
+                             Optional<MetricsSink> metricsSink) {    //(2)!
+        }
+    }
+    ```
+
+    1. Разрешается в `null`, когда `AuditSink` никто не предоставляет.
+    2. Разрешается в пустой `Optional`, когда `MetricsSink` никто не предоставляет.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class ReportService(
+        private val auditSink: AuditSink?,                           //(1)!
+        private val metricsSink: Optional<MetricsSink>               //(2)!
+    )
+    ```
+
+    1. Разрешается в `null`, когда `AuditSink` никто не предоставляет.
+    2. Разрешается в пустой `Optional`, когда `MetricsSink` никто не предоставляет.
+
+---
 
 ## Заявки зависимостей и разрешение { #dependency-claims-resolution }
 
-Kora использует развитую систему разрешения зависимостей, основанную на “заявках”. Каждый параметр зависимости разбирается в `DependencyClaim`, который задает, как должна быть разрешена зависимость.
-В этот момент параметры конструктора перестают быть просто Java- или Kotlin-типами и становятся требованиями к графу. Kora смотрит на запрошенный тип, тип-обертку, аннотации nullable и теги, а затем
-решает, какой компонент может удовлетворить такой запрос.
+Kora превращает каждый параметр конструктора и фабричного метода в *заявку на зависимость*: запрошенный тип, необязательный тег и вид заявки, выведенный из типа-обертки и обнуляемости. Именно здесь
+параметры перестают быть просто типами Java или Kotlin и становятся требованиями к графу.
 
-Понимание заявок помогает читать ошибки компиляции. Когда Kora сообщает, что зависимость отсутствует, неоднозначна, допускает `null` или участвует в цикле, она описывает именно заявку, которую пыталась
-разрешить, и кандидатов, найденных в графе.
+Понимание заявок помогает читать ошибки компиляции. Когда Kora сообщает, что зависимость отсутствует, неоднозначна или циклична, она описывает заявку, которую пыталась разрешить, и найденных
+кандидатов в графе.
+
+Kora различает следующие виды заявок:
+
+| Форма параметра                         | Значение                                                        |
+|-----------------------------------------|------------------------------------------------------------------|
+| `T`                                     | ровно один обязательный компонент                                 |
+| `@Nullable T` (Java) / `T?` (Kotlin)    | один необязательный компонент, `null` при отсутствии              |
+| `Optional<T>`                           | один необязательный компонент, пустой `Optional` при отсутствии   |
+| `ValueOf<T>`                            | доступ к текущему значению компонента                             |
+| `PromiseOf<T>`                          | доступ, разрешаемый после инициализации графа, ломает циклы       |
+| `All<T>`                                | все подходящие компоненты                                         |
+| `All<ValueOf<T>>` / `All<PromiseOf<T>>` | все подходящие компоненты, каждый в обертке                       |
+| `TypeRef<T>`                            | конкретный обобщенный тип, под который материализован шаблон      |
+| `Graph` / `RefreshableGraph`            | сам граф, для инфраструктурных компонентов                        |
+| `Node<T>`                               | узел графа компонента, для инфраструктурных компонентов           |
 
 ### Базовые типы зависимостей { #basic-dependency-types }
 
-Большинство зависимостей Kora выражаются прямо в конструкторах или параметрах фабричных методов. Форма параметра показывает Kora, нужна ли одна обязательная зависимость, необязательная зависимость,
-отложенный доступ или коллекция реализаций. Благодаря этому отношения между компонентами описываются в обычном коде, без дополнительных вызовов контейнера.
+Большинство зависимостей в Kora выражаются прямо в параметрах конструктора или фабричного метода. Форма параметра говорит Kora, обязателен ли компонент, необязателен, доступен отложенно или является
+коллекцией реализаций. Эти формы позволяют описать отношения между компонентами, не тащя API контейнера в бизнес-код.
 
-Выбирайте самую простую форму, которая соответствует правилу предметной области. Если сервис не может работать без репозитория, запрашивайте репозиторий напрямую. Если интеграция необязательна,
-помечайте ее nullable. Если нужны все реализации точки расширения, используйте `All<T>`. Если важно избежать каскадного обновления или отложить доступ к компоненту, используйте `ValueOf<T>`.
+Используйте самую простую форму, которая соответствует правилу предметной области. Если сервис не работает без репозитория, запрашивайте репозиторий напрямую. Если интеграция необязательна, пометьте
+зависимость обнуляемой. Если нужны все реализации точки расширения, запрашивайте `All<T>`. Если нужно избежать каскадных пересозданий или отложить доступ к компоненту, запрашивайте `ValueOf<T>`.
 
 #### Обязательные { #required }
 
-Одна обязательная зависимость, которая должна существовать:
-Это форма зависимости по умолчанию и самый частый вариант. Обязательный параметр означает, что граф приложения недействителен, если в нем нет ровно одного подходящего компонента. Так обычно запрашивают
-основные зависимости: репозитории, сервисы, валидаторы, интерфейсы конфигурации и клиенты, без которых обычная сборка приложения невозможена.
+Одна обязательная зависимость, которая должна существовать.
+Это форма по умолчанию и самая частая. Обязательный параметр означает, что граф приложения некорректен, если подходящий компонент не найден ровно один. Это правильный выбор для основных соисполнителей:
+репозиториев, сервисов, валидаторов, интерфейсов конфигурации и клиентов, участвующих в обычном потоке приложения.
 
-Обязательные зависимости делают ошибки явными. Если вы забыли импортировать модуль или объявить компонент, сборка падает на этапе генерации графа, а приложение не стартует с частично настроенным
-runtime.
+Обязательные зависимости делают отказы явными. Если вы забыли подключить модуль или объявить компонент, сборка упадет во время генерации графа, а не оставит приложение стартовать с недонастроенным
+окружением.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     public final class UserService {
+
+        private final UserRepository repository;
+
         public UserService(UserRepository repository) { // ONE_REQUIRED
             this.repository = repository;
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
@@ -1908,65 +2352,112 @@ runtime.
 
 #### Необязательные { #optional }
 
-Одна необязательная зависимость, которая может быть `null`:
-Nullable-зависимости полезны для необязательных возможностей, интеграций и библиотечных расширений, которые приложение может предоставить, но не обязано. Kora все равно разрешает такую зависимость по
-типу и тегам, но отсутствие кандидата считается допустимым, и сгенерированный граф передает `null`.
+Одна зависимость, которой может не быть.
+Необязательные зависимости полезны для опциональных возможностей, опциональных интеграций и умолчаний библиотек, когда приложение может, но не обязано предоставить дополнительный компонент. Kora
+по-прежнему ищет зависимость по типу и тегу, но допускает ее отсутствие, и сгенерированный граф передает `null`.
 
-Используйте это намеренно. Nullable-зависимость должна означать “компонент умеет работать без этого участника”, а не “не уверен, правильно ли собран граф”. Код, получающий nullable-зависимость, должен
-явно описывать поведение в деградированном режиме.
+В Java необязательность выражается аннотацией JSpecify `org.jspecify.annotations.Nullable`. В Kotlin она выражается самим обнуляемым типом — аннотация не нужна.
 
-===! ":fontawesome-brands-java: Java"
+Пользуйтесь этим осознанно. Обнуляемая зависимость должна означать «компонент умеет работать без этого соисполнителя», а не «я не уверен, что граф корректен». Бизнес-код, получающий обнуляемую
+зависимость, должен явно ветвиться, чтобы деградация поведения оставалась видимой.
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import org.jspecify.annotations.Nullable;
+
     @Component
     public final class UserService {
+
+        @Nullable
+        private final AuditService auditService;
+
         public UserService(@Nullable AuditService auditService) { // ONE_NULLABLE
             this.auditService = auditService;
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class UserService(@Nullable private val auditService: AuditService?) // ONE_NULLABLE
+    class UserService(private val auditService: AuditService?) // ONE_NULLABLE
     ```
 
-#### `ValueOf` { #valueof }
+`Optional<T>` выражает ту же идею контейнером вместо `null` и удобен, когда значение сразу передается в API, которое и так работает с `Optional`:
 
-Синхронный доступ к текущему значению компонента:
-`ValueOf<T>` — это обертка над ссылкой на компонент. Она позволяет компоненту получить текущее значение тогда, когда оно действительно нужно, а не держать прямую зависимость. Это полезно, когда
-зависимость может обновляться, когда инициализацию стоит отложить или когда прямое ребро графа заставило бы обновлять больше компонентов, чем нужно.
-
-В обычном коде обработки запросов `ValueOf<T>` чаще всего не требуется. Для простой совместной работы сервисов лучше использовать прямую зависимость. `ValueOf<T>` нужен там, где важно поведение
-жизненного цикла: обновление конфигурации, дорогие компоненты или компоненты, которые не должны обновлять своих потребителей одновременно с собой.
-
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class OrderService {
-        public OrderService(ValueOf<UserService> userService) {
-            // Can call userService.get() to get current value
-            // Can call userService.refresh() to get updated value
+    public final class UserService {
+
+        public UserService(Optional<AuditService> auditService) {
+            // empty when nothing provides AuditService
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class OrderService(private val userService: ValueOf<UserService>) {
-        // Can call userService.get() to get current value
-        // Can call userService.refresh() to get updated value
+    class UserService(private val auditService: Optional<AuditService>) {
+        // empty when nothing provides AuditService
     }
     ```
 
-Также может быть синхронный доступ с `@Nullable`:
+#### `ValueOf` { #valueof }
 
-===! ":fontawesome-brands-java: Java"
+Доступ к текущему значению компонента.
+`ValueOf<T>` — это ссылка на компонент, а не сам компонент. Она позволяет читать актуальное значение в момент обращения, а не захватывать экземпляр один раз. Это важно, когда зависимость может быть
+обновлена, например после изменения конфигурации: компоненты, зависящие от `T` напрямую, пересоздаются, а компоненты, держащие `ValueOf<T>`, — нет.
+
+В обычном коде обработки запросов `ValueOf<T>` чаще всего не нужен. Для простого взаимодействия сервисов предпочитайте прямую зависимость. Берите `ValueOf<T>`, когда важно поведение жизненного цикла:
+обновление конфигурации, дорогие компоненты или компоненты, которые не должны заставлять потребителей пересоздаваться вместе с собой.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.application.graph.ValueOf;
+
+    @Component
+    public final class OrderService {
+
+        private final ValueOf<UserService> userService;
+
+        public OrderService(ValueOf<UserService> userService) {
+            this.userService = userService;
+        }
+
+        public void process(Order order) {
+            this.userService.get().enrich(order);  //(1)!
+        }
+    }
+    ```
+
+    1. `get()` всегда возвращает актуальный экземпляр, даже после обновления компонента.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.application.graph.ValueOf
+
+    @Component
+    class OrderService(private val userService: ValueOf<UserService>) {
+
+        fun process(order: Order) {
+            userService.get().enrich(order)  //(1)!
+        }
+    }
+    ```
+
+    1. `get()` всегда возвращает актуальный экземпляр, даже после обновления компонента.
+
+Может быть и `@Nullable`, если обернутый компонент необязателен:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -1977,49 +2468,113 @@ Nullable-зависимости полезны для необязательны
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class OrderService(@Nullable private val auditService: ValueOf<AuditService>?) {
+    class OrderService(private val auditService: ValueOf<AuditService>?) {
         // auditService may be null
     }
     ```
 
-#### `All` { #all }
+#### `PromiseOf` { #promiseof }
 
-Все реализации типа как отдельные зависимости:
-`All<T>` моделирует точки расширения. Вместо выбора одной реализации Kora внедряет все подходящие реализации в детерминированную коллекцию. Это удобно для обработчиков, валидаторов, слушателей,
-перехватчиков, экспортеров и любых мест, где приложение должно собрать несколько независимых вкладов.
+Отложенный доступ к компоненту, которого может еще не быть в момент создания потребителя.
+`PromiseOf<T>` возвращает `Optional<T>` и разрешается после инициализации графа. Используйте его в редком случае, когда компонент обязан ссылаться на что-то создаваемое позже, — как правило, чтобы
+разорвать цикл зависимостей, который не получается перестроить.
 
-Важно, что каждый элемент `All<T>` все равно остается компонентом графа. Kora проверяет каждую реализацию, применяет теги, если они указаны, и собирает коллекцию во время компиляции. Поэтому такая
-plugin-like композиция остается типобезопасной и видимой в сгенерированном графе.
-
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import io.koraframework.application.graph.PromiseOf;
+
     @Component
-    public final class NotificationService {
-        public NotificationService(All<Notifier> notifiers) {
-            // Receives all Notifier implementations
-            // Each notifier is a separate dependency
+    public final class MetricsReporter {
+
+        private final PromiseOf<HttpServer> server;
+
+        public MetricsReporter(PromiseOf<HttpServer> server) {
+            this.server = server;
+        }
+
+        public void report() {
+            this.server.get().ifPresent(s -> log(s.port()));  //(1)!
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+    1. `get()` возвращает пустой `Optional`, пока компонент, на который он ссылается, не инициализирован.
+
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    import io.koraframework.application.graph.PromiseOf
+
     @Component
-    class NotificationService(private val notifiers: All<Notifier>) {
-        // Receives all Notifier implementations
-        // Each notifier is a separate dependency
+    class MetricsReporter(private val server: PromiseOf<HttpServer>) {
+
+        fun report() {
+            server.get().ifPresent { log(it.port()) }  //(1)!
+        }
     }
     ```
 
-Также реализация может быть обернута в `ValueOf`:
+    1. `get()` возвращает пустой `Optional`, пока компонент, на который он ссылается, не инициализирован.
 
-===! ":fontawesome-brands-java: Java"
+#### `All` { #all }
+
+Все подходящие реализации типа.
+`All<T>` описывает точки расширения. Вместо выбора одной реализации Kora внедряет все подходящие. Это удобно для обработчиков, валидаторов, слушателей, интерцепторов, экспортеров и любых мест, где
+приложение должно скомпоновать несколько независимых вкладов.
+
+`All<T>` — это `Iterable<T>`, поэтому по нему итерируются напрямую, а не работают как со списком.
+
+Важный момент дизайна: каждый элемент `All<T>` остается компонентом графа. Kora проверяет каждую реализацию, учитывает теги, если они запрошены, и связывает коллекцию во время компиляции. Так
+композиция в стиле плагинов остается типобезопасной и видимой в сгенерированном графе.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.application.graph.All;
+
+    @Component
+    public final class NotificationService {
+
+        private final All<Notifier> notifiers;
+
+        public NotificationService(All<Notifier> notifiers) {
+            this.notifiers = notifiers;
+        }
+
+        public void broadcast(String message) {
+            for (var notifier : this.notifiers) {  //(1)!
+                notifier.notifyUser(message);
+            }
+        }
+    }
+    ```
+
+    1. `All<T>` наследует `Iterable<T>`, поэтому цикл for-each — естественный способ его обойти.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.application.graph.All
+
+    @Component
+    class NotificationService(private val notifiers: All<Notifier>) {
+
+        fun broadcast(message: String) {
+            notifiers.forEach { it.notifyUser(message) }  //(1)!
+        }
+    }
+    ```
+
+    1. `All<T>` наследует `Iterable<T>`, поэтому стандартные функции итерации работают с ним напрямую.
+
+Элементы также можно обернуть:
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -2030,7 +2585,7 @@ plugin-like композиция остается типобезопасной �
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
@@ -2039,18 +2594,26 @@ plugin-like композиция остается типобезопасной �
     }
     ```
 
+!!! warning "`All<T>` без тега собирает только компоненты без тега"
+
+    Сопоставление тегов работает для `All<T>` ровно так же, как для одиночной зависимости. Если у ваших реализаций есть теги, запрашивайте `@Tag(Tag.Any.class) All<T>`, чтобы собрать их все, либо
+    указывайте конкретный тег, чтобы собрать одну группу. Смотрите [`@Tag.Any`](#tag-any) и [All с тегом](#tagged-all).
+
 #### `TypeRef` { #typeref }
 
-Ссылка на тип для рефлексии или операций с обобщениями:
-`TypeRef<T>` переносит информацию об обобщенном типе через стирание типов. Он нужен, когда компоненту важен не только сырой класс, но и полная форма типа, запрошенная графом. JSON-преобразователи,
-извлекатели конфигурации, сериализаторы и другая сгенерированная инфраструктура часто используют такие type token'ы.
+Конкретный обобщенный тип, под который материализован шаблон.
+`TypeRef<T>` переносит информацию об обобщенном типе через стирание типов. Он нужен, когда обобщенной фабрике важен не только «сырой» класс, но и полный обобщенный тип, запрошенный графом. JSON-мапперы,
+извлекатели конфигурации, сериализаторы и другая генерируемая инфраструктура часто нуждаются в таком токене типа.
 
-Большинству прикладных сервисов не нужно внедрять `TypeRef<T>` напрямую. Относитесь к нему как к инфраструктурному инструменту для кода, который создает или адаптирует компоненты на основе обобщенных
-типов. Если вы используете `TypeRef<T>`, параметр типа должен точно описывать модель, за которую отвечает компонент.
+Большинству прикладных сервисов внедрять `TypeRef<T>` напрямую не нужно. Считайте его инструментом инфраструктуры для кода, который создает или адаптирует компоненты на основе обобщенных типов. Когда он
+все же нужен, параметр типа должен описывать ровно ту модель, за которую отвечает компонент.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import io.koraframework.application.graph.TypeRef;
+
+    @Module
     public interface ValidatorModule {
         default <T> Validator<List<T>> listValidator(Validator<T> validator, TypeRef<T> valueRef) {
             return new IterableValidator<>(validator);
@@ -2058,9 +2621,12 @@ plugin-like композиция остается типобезопасной �
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    import io.koraframework.application.graph.TypeRef
+
+    @Module
     interface ValidatorModule {
         fun <T> listValidator(validator: Validator<T>, valueRef: TypeRef<T>): Validator<List<T>> =
             IterableValidator(validator)
@@ -2069,57 +2635,75 @@ plugin-like композиция остается типобезопасной �
 
 ### Контракт типов-оберток { #wrapper-type-contract }
 
-Типы-обертки в Kora описывают поведение зависимости, не меняя сам запрашиваемый компонент. `ValueOf<T>` означает “дайте мне управляемый доступ к этому компоненту”, а `All<T>` означает “дайте мне все
-подходящие компоненты”. Сам `T` остается бизнес-типом; обертка меняет способ разрешения и предоставления зависимости.
+Типы-обертки — это способ Kora выразить поведение зависимости, не меняя запрашиваемый компонент. `ValueOf<T>` говорит «дай ссылку на этот компонент», `PromiseOf<T>` — «дай ссылку, которая разрешится
+позже», а `All<T>` — «дай все подходящие компоненты». Обернутый `T` остается бизнес-типом; обертка меняет лишь то, как Kora его разрешает и предоставляет.
 
-Такой подход сохраняет читаемость API. Конструктор с `UserRepository` требует один репозиторий. Конструктор с `ValueOf<UserRepository>` требует контролируемый доступ к репозиторию. Конструктор с
-`All<Notifier>` требует коллекцию реализаций уведомителей. Эти сигнатуры прямо документируют связь компонентов в графе.
+Такое разделение сохраняет API читаемым. Конструктор, принимающий `UserRepository`, требует один репозиторий. Конструктор с `ValueOf<UserRepository>` требует управляемого доступа к репозиторию.
+Конструктор с `All<Notifier>` требует набор реализаций нотификаторов. Эти сигнатуры документируют связь в графе прямо в коде.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     public interface ValueOf<T> {
         T get();
-        void refresh();
+
+        <Q> ValueOf<Q> map(Function<T, Q> mapper);
     }
 
-    public interface All<T> extends List<T> {
-        // Token type extending List
+    public interface PromiseOf<T> {
+        Optional<T> get();
+
+        <Q> PromiseOf<Q> map(Function<T, Q> mapper);
+    }
+
+    public sealed interface All<T> extends Iterable<T> {
+        // Token type extending Iterable
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     interface ValueOf<T> {
         fun get(): T
-        fun refresh()
+
+        fun <Q> map(mapper: Function<T, Q>): ValueOf<Q>
     }
 
-    interface All<T> : List<T> {
-        // Token type extending List
+    interface PromiseOf<T> {
+        fun get(): Optional<T>
+
+        fun <Q> map(mapper: Function<T, Q>): PromiseOf<Q>
+    }
+
+    sealed interface All<T> : Iterable<T> {
+        // Token type extending Iterable
     }
     ```
 
+Есть и `Wrapped<T>`: компонент, объявленный как `Wrapped<T>`, удовлетворяет заявкам на `T`. Это позволяет модулю навесить обработку жизненного цикла на сторонний объект, не протаскивая обертку в
+сигнатуры потребителей. Готовая реализация ровно для этого — `LifecycleWrapper<T>`.
+
 ### Правила разрешения зависимостей { #dependency-resolution-rules }
 
-Kora разрешает зависимости в предсказуемом порядке. Сначала определяется форма запрошенного типа, затем применяются теги и обертки, после чего выбирается подходящая фабрика или компонент с самым высоким
-приоритетом. Если результат отсутствует, неоднозначен или создает цикл, генерация графа завершается ошибкой компиляции.
+Kora разрешает зависимости предсказуемо. Сначала определяется форма запрошенного типа, затем применяются теги и обертки, затем выбирается подходящее объявление. Если результат отсутствует, неоднозначен
+или цикличен, генерация графа падает с ошибкой компиляции.
 
-Именно поэтому явные объявления компонентов важны. Простого добавления зависимости в build-файл недостаточно, чтобы каждый компонент библиотеки появился в графе. Приложение должно импортировать нужный
-модуль, объявить нужный компонент или запросить правильный тег. Сгенерированный граф остается финальным источником правды о том, что реально запускается.
+Именно поэтому важны явные объявления компонентов. Добавить зависимость в файл сборки недостаточно, чтобы все компоненты этой библиотеки появились в графе. Приложение должно подключить нужный модуль,
+объявить нужный компонент или запросить нужный тег. Сгенерированный граф — окончательный источник правды о том, что реально работает.
 
-1. **Сопоставление по типу**: зависимости сопоставляются по типу и тегам
-2. **Фильтрация по тегам**: аннотации `@Tag` сужают поиск
-3. **Порядок приоритета**: фабрики с более высоким приоритетом переопределяют более низкие
-4. **Обнаружение циклов**: циклические зависимости обнаруживаются во время компиляции
-5. **Необязательность**: `@Nullable` помечает необязательные зависимости
+1. **Сопоставление по типу**: кандидатом становится компонент, тип которого совместим с типом заявки
+2. **Фильтрация по тегу**: заявка без тега подходит только компонентам без тега, заявка с тегом — только ровно этому тегу, а `Tag.Any` — всему
+3. **Предпочтение неумолчальных**: кандидаты без `@DefaultComponent` побеждают кандидатов с ней
+4. **Поиск циклов**: циклические зависимости обнаруживаются во время компиляции
+5. **Обнуляемость**: `@Nullable` и `Optional<T>` помечают необязательные зависимости и разрешаются в отсутствие вместо ошибки
+6. **«Сырые» типы запрещены**: заявка на «сырой» обобщенный тип ломает сборку, потому что делает разрешение неоднозначным
 
 ### Косвенные зависимости { #indirect-dependencies }
 
-Используйте `ValueOf<T>`, чтобы избежать каскадного обновления компонентов при обновлении зависимостей:
+Используйте `ValueOf<T>`, чтобы избежать каскадного пересоздания компонентов при обновлении зависимостей:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -2140,7 +2724,7 @@ Kora разрешает зависимости в предсказуемом п�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
@@ -2157,24 +2741,30 @@ Kora разрешает зависимости в предсказуемом п�
     }
     ```
 
-**Почему требуется `ValueOf<T>`:** когда компонент обновляется, все компоненты, которые напрямую от него зависят, тоже обновляются. `ValueOf<T>` создает косвенную зависимость, которая предотвращает
-такое каскадное обновление и позволяет компонентам получать обновленные значения без собственного обновления.
+**Почему `ValueOf<T>` важен:** каждый узел сгенерированного графа хранит и *зависимости создания*, и *зависимости обновления*. Прямая зависимость попадает в оба списка, поэтому обновление зависимости
+пересоздает потребителя. Зависимость через `ValueOf<T>` попадает только в список создания, поэтому потребитель продолжает работать тем же экземпляром и просто читает новое значение через `get()`.
+Обновления инициирует фреймворк — например, наблюдатель за файлом конфигурации, — а не код приложения.
 
 ---
 
 ## Система тегов { #tag-system }
 
-Теги позволяют нескольким реализациям одного интерфейса сосуществовать и различаться во время внедрения зависимостей. Теги используют ссылки на классы вместо строк, что улучшает поддержку
-рефакторинга.
+Теги позволяют нескольким реализациям одного интерфейса сосуществовать и различаться при внедрении зависимостей. Теги используют ссылки на классы, а не строки, поэтому переименования безопасны, а
+использования находятся средствами IDE.
 
 ### Использование тегов { #tags }
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     // Tag classes (usually empty marker classes)
-    public final class RedisTag {}
-    public final class InMemoryTag {}
+    public final class RedisTag {
+        private RedisTag() {}
+    }
+
+    public final class InMemoryTag {
+        private InMemoryTag() {}
+    }
 
     // Tagged implementations
     @Tag(RedisTag.class)
@@ -2205,12 +2795,13 @@ Kora разрешает зависимости в предсказуемом п�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     // Tag classes (usually empty marker classes)
-    class RedisTag
-    class InMemoryTag
+    class RedisTag private constructor()
+
+    class InMemoryTag private constructor()
 
     // Tagged implementations
     @Tag(RedisTag::class)
@@ -2239,31 +2830,35 @@ Kora разрешает зависимости в предсказуемом п�
 
 ### Теги на классах { #class-tags }
 
-Теги можно применять напрямую к классам компонентов:
+Теги можно ставить прямо на классы компонентов:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(RedisTag.class)
+    @Component
     public final class RedisCache implements Cache {
         // Implementation
     }
 
     @Tag(InMemoryTag.class)
+    @Component
     public final class InMemoryCache implements Cache {
         // Implementation
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Tag(RedisTag::class)
+    @Component
     class RedisCache : Cache {
         // Implementation
     }
 
     @Tag(InMemoryTag::class)
+    @Component
     class InMemoryCache : Cache {
         // Implementation
     }
@@ -2271,9 +2866,9 @@ Kora разрешает зависимости в предсказуемом п�
 
 ### Теги на методах { #method-tags }
 
-Теги можно применять к фабричным методам:
+Теги можно ставить на фабричные методы:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
@@ -2290,7 +2885,7 @@ Kora разрешает зависимости в предсказуемом п�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Module
@@ -2305,9 +2900,9 @@ Kora разрешает зависимости в предсказуемом п�
 
 ### Теги аннотации { #annotation-tags }
 
-Создавайте переиспользуемые аннотации тегов:
+Переиспользуемые аннотации-теги создаются пометкой собственной аннотации через `@Tag`:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Tag(RedisTag.class)
@@ -2320,7 +2915,7 @@ Kora разрешает зависимости в предсказуемом п�
     @Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER})
     public @interface InMemoryCache {}
 
-    // Использование
+    // Usage
     @RedisCache
     @Component
     public final class RedisCacheImpl implements Cache {}
@@ -2328,12 +2923,12 @@ Kora разрешает зависимости в предсказуемом п�
     @Component
     public final class UserService {
         public UserService(@RedisCache Cache cache) {
-            // Внедряет RedisCacheImpl
+            // Injects RedisCacheImpl
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Tag(RedisTag::class)
@@ -2346,132 +2941,550 @@ Kora разрешает зависимости в предсказуемом п�
     @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.VALUE_PARAMETER)
     annotation class InMemoryCache
 
-    // Использование
+    // Usage
     @RedisCache
     @Component
     class RedisCacheImpl : Cache
 
     @Component
     class UserService(@RedisCache private val cache: Cache) {
-        // Внедряет RedisCacheImpl
+        // Injects RedisCacheImpl
     }
     ```
 
 ### Специальные теги { #special-tags }
 
-Специальные формы тегов нужны, когда обычные правила сопоставления слишком узкие. Они позволяют намеренно расширить запрос, не теряя типобезопасность. Чаще всего это встречается с `All<T>`, когда нужно
-получить все реализации точки расширения или все реализации внутри конкретной группы тегов.
+Специальные формы тегов нужны, когда обычные правила сопоставления слишком узкие. Они позволяют осознанно расширить запрос, не теряя типобезопасности. Чаще всего это встречается с `All<T>`, когда нужны
+либо все реализации точки расширения, либо все реализации из конкретной группы тегов.
 
-Используйте специальные теги аккуратно. Они сильны именно потому, что меняют смысл запроса зависимости. Обычный тег означает “только эта группа”; `Tag.Any` означает “игнорировать группировку”;
-коллекционный запрос с конкретным тегом означает “собрать всю эту группу”.
+Пользуйтесь специальными тегами умеренно. Они мощные, потому что меняют смысл запроса зависимости. Обычный тег говорит «только эта группа»; `Tag.Any` говорит «игнорировать группировку»; `All<T>` с тегом
+говорит «собрать всю группу».
 
 #### @Tag.Any { #tag-any }
 
-Подходит ко всем компонентам независимо от их тегов:
-`@Tag.Any` — самый широкий запрос. Он полезен, когда потребитель намеренно универсален: например, реестр, диагностический компонент или диспетчер, которому нужно видеть и помеченные, и непомеченные
-реализации. Без `Tag.Any` tagged-зависимость обычно ищет только конкретный набор тегов.
+Подходит всем компонентам независимо от их тегов.
+`@Tag(Tag.Any.class)` — самый широкий запрос. Он полезен, когда потребитель намеренно универсален: реестр, диагностический компонент или диспетчер, который должен видеть и помеченные, и непомеченные
+реализации. Без `Tag.Any` заявка без тега подходит только компонентам без тега.
 
-Так как `Tag.Any` расширяет ребро графа, он должен быть явно виден в сигнатуре конструктора и использоваться только там, где такое широкое поведение является частью дизайна. Если сервису нужны только
-Redis-кеши или только email-уведомители, лучше запросить конкретный тег.
+Поскольку такой запрос расширяет ребро графа, `Tag.Any` должен быть виден в сигнатуре конструктора и использоваться только там, где широкое поведение — часть замысла. Если сервису нужны только
+Redis-кеши или только email-нотификаторы, запрашивайте конкретный тег.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
     public final class NotificationService {
         public NotificationService(@Tag(Tag.Any.class) All<Notifier> notifiers) {
-            // Получает ВСЕ уведомители, и с тегами, и без тегов
+            // Receives ALL notifiers, both tagged and untagged
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
     class NotificationService(@Tag(Tag.Any::class) private val notifiers: All<Notifier>) {
-        // Получает ВСЕ уведомители, и с тегами, и без тегов
+        // Receives ALL notifiers, both tagged and untagged
     }
     ```
 
 #### All с тегом { #tagged-all }
 
-Получение всех компонентов с конкретным тегом:
-Этот паттерн собирает все реализации, имеющие общий тег. Он полезен, когда у подсистемы несколько реализаций, но все они относятся к одной именованной группе: Redis-кеши, перехватчики публичного API,
-внутренние health checks или группа конкретного поставщика.
+Получить все компоненты с конкретным тегом.
+Этот прием собирает все реализации, разделяющие один тег. Он полезен, когда у подсистемы несколько реализаций, но все они принадлежат одной именованной группе: кеши поверх Redis, интерцепторы
+публичного API, внутренние health-check или конкретная группа арендаторов и провайдеров.
 
-Тег удерживает коллекцию сфокусированной. Компоненты того же Java- или Kotlin-типа могут существовать в других частях графа и не попадать в эту зависимость. Поэтому `All<T>` удобно использовать в
-крупных приложениях, где один интерфейс может переиспользоваться в нескольких независимых контекстах.
+Тег удерживает коллекцию в фокусе. Компоненты того же типа могут существовать в графе и в других местах, не попадая в коллекцию. Это делает `All<T>` практичным в больших приложениях, где один интерфейс
+переиспользуется для нескольких независимых задач.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class NotificationService {
-        public NotificationService(@Tag(RedisTag.class) All<Cache> caches) {
-            // Получает все реализации Cache, помеченные RedisTag
+    public final class CacheRegistry {
+        public CacheRegistry(@Tag(RedisTag.class) All<Cache> caches) {
+            // Receives all Cache implementations tagged with RedisTag
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class NotificationService(@Tag(RedisTag::class) private val caches: All<Cache>) {
-        // Получает все реализации Cache, помеченные RedisTag
+    class CacheRegistry(@Tag(RedisTag::class) private val caches: All<Cache>) {
+        // Receives all Cache implementations tagged with RedisTag
     }
     ```
 
 ### Правила сопоставления тегов { #tag-matching-rules }
 
-Сопоставление тегов намеренно точное. Kora рассматривает теги как часть идентичности зависимости наряду с типом. Это предотвращает случайное внедрение неправильной реализации, когда несколько
-компонентов имеют один интерфейс, но относятся к разным контекстам.
+Сопоставление тегов намеренно точное. Kora считает тег частью идентичности зависимости наравне с типом. Это исключает случайное внедрение не той реализации, когда несколько компонентов разделяют
+интерфейс, но принадлежат разным контекстам.
 
-Если зависимость не разрешается, проверяйте и тип, и тег. Компонент с правильным типом, но неправильным тегом не подходит. Точно так же untagged-зависимость не выберет tagged-компонент автоматически,
-если запрос явно не описывает такое поведение.
+Если зависимость не разрешается, проверяйте и тип, и тег. Компонент с нужным типом, но не тем тегом — не кандидат. Компилятор здесь помогает: в сообщении об ошибке перечисляются кандидаты того же типа
+с другим тегом.
 
-1. **Точное совпадение**: теги должны точно совпадать по ссылке на класс
-2. **Наследование**: классы тегов могут быть частью иерархий наследования
-3. **Несколько тегов**: компоненты могут иметь несколько тегов
-4. **Фильтрация по тегам**: зависимости могут указывать требуемые теги
+1. **Без тега к без тега**: заявка без тега подходит только компонентам без тега
+2. **Точное совпадение**: заявка с тегом подходит только компонентам ровно с этим классом-тегом
+3. **`Tag.Any` побеждает**: заявка с тегом `Tag.Any` подходит любому компоненту этого типа
+4. **Один тег на объявление**: `@Tag` несет один класс, поэтому компонент принадлежит максимум одной группе тегов
+5. **Наследование тегов не работает**: сравнивается сам класс-тег, поэтому тег-наследник не совпадает с родительским
+
+---
+
+## Законченный пример { #complete-example }
+
+Все описанное выше собирается в небольшом работающем приложении: две реализации нотификатора, различаемые тегами, форматтер, объявленный заменяемым умолчанием, необязательный аудит-приемник, которого в
+графе нет, и корневой сервис, собирающий все нотификаторы.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    package io.koraframework.guide.dependencyinjection;
+
+    @FunctionalInterface
+    public interface MessageFormatter {
+        String format(String message);
+    }
+
+    public interface Notifier {
+        String channel();
+
+        String notifyUser(String message);
+    }
+
+    public interface AuditSink {
+        void record(String channel, String message);
+    }
+
+    public final class EmailTag {
+        private EmailTag() {}
+    }
+
+    public final class SmsTag {
+        private SmsTag() {}
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    package io.koraframework.guide.dependencyinjection
+
+    fun interface MessageFormatter {
+        fun format(message: String): String
+    }
+
+    interface Notifier {
+        fun channel(): String
+
+        fun notifyUser(message: String): String
+    }
+
+    interface AuditSink {
+        fun record(channel: String, message: String)
+    }
+
+    class EmailTag private constructor()
+
+    class SmsTag private constructor()
+    ```
+
+Оба нотификатора — классы `@Component`, помеченные тегами, чтобы их можно было различить:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+
+    @Tag(EmailTag.class)
+    @Component
+    public final class EmailNotifier implements Notifier {
+
+        private final MessageFormatter formatter;
+
+        public EmailNotifier(MessageFormatter formatter) {
+            this.formatter = formatter;
+        }
+
+        @Override
+        public String channel() {
+            return "email";
+        }
+
+        @Override
+        public String notifyUser(String message) {
+            return "EMAIL: " + formatter.format(message);
+        }
+    }
+
+    @Tag(SmsTag.class)
+    @Component
+    public final class SmsNotifier implements Notifier {
+
+        private final MessageFormatter formatter;
+
+        public SmsNotifier(MessageFormatter formatter) {
+            this.formatter = formatter;
+        }
+
+        @Override
+        public String channel() {
+            return "sms";
+        }
+
+        @Override
+        public String notifyUser(String message) {
+            return "SMS: " + formatter.format(message);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+
+    @Tag(EmailTag::class)
+    @Component
+    class EmailNotifier(
+        private val formatter: MessageFormatter
+    ) : Notifier {
+
+        override fun channel(): String = "email"
+
+        override fun notifyUser(message: String): String = "EMAIL: ${formatter.format(message)}"
+    }
+
+    @Tag(SmsTag::class)
+    @Component
+    class SmsNotifier(
+        private val formatter: MessageFormatter
+    ) : Notifier {
+
+        override fun channel(): String = "sms"
+
+        override fun notifyUser(message: String): String = "SMS: ${formatter.format(message)}"
+    }
+    ```
+
+Сервис является корнем графа. Он запрашивает все нотификаторы через `@Tag(Tag.Any.class)`, один конкретный нотификатор по тегу и необязательный аудит-приемник:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.application.graph.All;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
+    import org.jspecify.annotations.Nullable;
+
+    import java.util.ArrayList;
+    import java.util.List;
+
+    @Root
+    @Component
+    public final class NotificationService {
+
+        private final All<Notifier> notifiers;
+        private final Notifier emailNotifier;
+        @Nullable
+        private final AuditSink auditSink;
+
+        public NotificationService(
+                @Tag(Tag.Any.class) All<Notifier> notifiers,     //(1)!
+                @Tag(EmailTag.class) Notifier emailNotifier,     //(2)!
+                @Nullable AuditSink auditSink) {                 //(3)!
+            this.notifiers = notifiers;
+            this.emailNotifier = emailNotifier;
+            this.auditSink = auditSink;
+        }
+
+        public List<String> broadcast(String message) {
+            var result = new ArrayList<String>();
+            for (var notifier : this.notifiers) {
+                var output = notifier.notifyUser(message);
+                result.add(output);
+                if (this.auditSink != null) {
+                    this.auditSink.record(notifier.channel(), output);
+                }
+            }
+            return result;
+        }
+
+        public String notifyEmailOnly(String message) {
+            var output = this.emailNotifier.notifyUser(message);
+            if (this.auditSink != null) {
+                this.auditSink.record(this.emailNotifier.channel(), output);
+            }
+            return output;
+        }
+
+        public boolean isAuditEnabled() {
+            return this.auditSink != null;
+        }
+    }
+    ```
+
+    1. Оба нотификатора помечены тегами, поэтому для сбора их в один `All<Notifier>` нужен `Tag.Any`.
+    2. Заявка с тегом выбирает ровно одну реализацию.
+    3. `AuditSink` никто не предоставляет, поэтому граф передает `null`, а не ломает сборку.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.application.graph.All
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
+
+    @Root
+    @Component
+    class NotificationService(
+        @Tag(Tag.Any::class) private val notifiers: All<Notifier>,   //(1)!
+        @Tag(EmailTag::class) private val emailNotifier: Notifier,   //(2)!
+        private val auditSink: AuditSink?                            //(3)!
+    ) {
+
+        fun broadcast(message: String): List<String> {
+            return notifiers.map { notifier ->
+                val output = notifier.notifyUser(message)
+                auditSink?.record(notifier.channel(), output)
+                output
+            }
+        }
+
+        fun notifyEmailOnly(message: String): String {
+            val output = emailNotifier.notifyUser(message)
+            auditSink?.record(emailNotifier.channel(), output)
+            return output
+        }
+
+        fun isAuditEnabled(): Boolean = auditSink != null
+    }
+    ```
+
+    1. Оба нотификатора помечены тегами, поэтому для сбора их в один `All<Notifier>` нужен `Tag.Any`.
+    2. Заявка с тегом выбирает ровно одну реализацию.
+    3. `AuditSink` никто не предоставляет, поэтому граф передает `null`, а не ломает сборку.
+
+Наконец, интерфейс приложения подключает модули фреймворка, объявляет вложенный модуль с заменяемым форматтером по умолчанию и заменяет его:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.DefaultComponent;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Module;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
+
+    @KoraApp
+    public interface Application extends HoconConfigModule, LogbackModule, NotificationModule {
+
+        static void main(String[] args) {
+            KoraApplication.run(ApplicationGraph::graph);    //(1)!
+        }
+
+        default MessageFormatter messageFormatter() {       //(2)!
+            return message -> "[app] " + message;
+        }
+    }
+
+    @Module
+    interface NotificationModule {
+
+        @DefaultComponent
+        default MessageFormatter defaultMessageFormatter() {
+            return message -> "[default] " + message;
+        }
+    }
+    ```
+
+    1. `ApplicationGraph` генерируется из интерфейса `Application`; `graph()` возвращает описание графа.
+    2. У этой фабрики нет `@DefaultComponent`, поэтому она побеждает `defaultMessageFormatter()`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.DefaultComponent
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Module
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
+
+    @KoraApp
+    interface Application : HoconConfigModule, LogbackModule, NotificationModule {
+
+        fun messageFormatter(): MessageFormatter {          //(2)!
+            return MessageFormatter { message -> "[app] $message" }
+        }
+    }
+
+    @Module
+    interface NotificationModule {
+
+        @DefaultComponent
+        fun defaultMessageFormatter(): MessageFormatter {
+            return MessageFormatter { message -> "[default] $message" }
+        }
+    }
+
+    fun main() {
+        KoraApplication.run(ApplicationGraph::graph)         //(1)!
+    }
+    ```
+
+    1. `ApplicationGraph` генерируется из интерфейса `Application`; `graph()` возвращает описание графа.
+    2. У этой фабрики нет `@DefaultComponent`, поэтому она побеждает `defaultMessageFormatter()`.
+
+Сборка подключает BOM Kora, обработчик и два использованных выше модуля фреймворка:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    dependencies {
+        implementation platform("io.koraframework:kora-bom:$koraVersion")
+        annotationProcessor "io.koraframework:annotation-processors"
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
+
+        testImplementation "io.koraframework:test-junit5"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    dependencies {
+        implementation(platform("io.koraframework:kora-bom:$koraVersion"))
+        ksp("io.koraframework:symbol-processors")
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
+
+        testImplementation("io.koraframework:test-junit5")
+    }
+    ```
+
+### Тестирование графа { #testing-graph }
+
+Поскольку граф — это скомпилированный артефакт, тест может поднять настоящий граф приложения и достать из него компонент. `@KoraAppTest` указывает на интерфейс `@KoraApp`, а `@TestComponent` внедряет
+компонент из инициализированного графа:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
+    import org.junit.jupiter.api.Test;
+
+    import static org.junit.jupiter.api.Assertions.*;
+
+    @KoraAppTest(Application.class)
+    class NotificationServiceTest {
+
+        @TestComponent
+        private NotificationService notificationService;
+
+        @Test
+        void broadcastShouldUseAllNotifiers() {
+            var result = notificationService.broadcast("Hello");
+
+            assertEquals(2, result.size());
+            assertTrue(result.contains("EMAIL: [app] Hello"));
+            assertTrue(result.contains("SMS: [app] Hello"));
+        }
+
+        @Test
+        void notifyEmailOnlyShouldResolveTaggedNotifier() {
+            assertEquals("EMAIL: [app] Ping", notificationService.notifyEmailOnly("Ping"));
+        }
+
+        @Test
+        void optionalAuditDependencyShouldBeAbsent() {
+            assertFalse(notificationService.isAuditEnabled());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
+    import org.junit.jupiter.api.Assertions.*
+    import org.junit.jupiter.api.Test
+
+    @KoraAppTest(Application::class)
+    class NotificationServiceTest {
+
+        @TestComponent
+        lateinit var notificationService: NotificationService
+
+        @Test
+        fun broadcastUsesAllTaggedAndUntaggedNotifiers() {
+            val result = notificationService.broadcast("hello")
+
+            assertEquals(2, result.size)
+            assertTrue(result.contains("EMAIL: [app] hello"))
+            assertTrue(result.contains("SMS: [app] hello"))
+        }
+
+        @Test
+        fun emailOnlyUsesTaggedComponent() {
+            assertEquals("EMAIL: [app] hello", notificationService.notifyEmailOnly("hello"))
+        }
+
+        @Test
+        fun optionalAuditSinkIsAbsent() {
+            assertFalse(notificationService.isAuditEnabled())
+        }
+    }
+    ```
+
+Ожидание `[app]`, а не `[default]`, — это сквозная проверка правила замены из раздела [`@DefaultComponent`](#defaultcomponent).
 
 ### Что дальше { #whats-next }
 
-Теперь, когда вы понимаете основные понятия системы внедрения зависимостей Kora, вы готовы собрать все вместе. Продолжайте с [Созданием приложений Kora с внедрением зависимостей](dependency-injection.md): это пошаговое руководство, где создается полноценная система уведомлений и эти понятия показываются в практическом
-контексте.
+Теперь, когда основные понятия внедрения зависимостей в Kora понятны, самое время собрать их вместе. Продолжайте с руководства **[Создание приложений Kora с внедрением зависимостей](dependency-injection.md)** —
+пошагового разбора, в котором строится полноценная система уведомлений и эти понятия применяются на практике.
 
-В руководстве рассматривается:
+Руководство охватывает:
 
-- настройка проекта и многомодульная структура
-- модули внешних библиотек со значениями по умолчанию
-- переопределение и настройка компонентов
+- настройку проекта и многомодульную структуру
+- модули внешних библиотек с умолчаниями
+- замену и настройку компонентов
 - зависимости с тегами и внедрение коллекций
-- необязательные зависимости и устойчивое поведение при их отсутствии
-- подмодули и организация компонентов
+- необязательные зависимости и мягкую деградацию
+- подмодули и организацию компонентов
 - обобщенные фабрики и типобезопасное создание
-- отложенная загрузка через `ValueOf<T>` для повышения производительности
+- косвенные зависимости через `ValueOf<T>`
+
+---
 
 ## Лучшие практики { #best-practices }
 
-- Предпочитайте внедрение через конструктор и позволяйте Kora строить граф зависимостей во время компиляции.
-- Держите компоненты сфокусированными на одной ответственности, чтобы ошибки графа оставались понятными.
-- Используйте модули для переиспользуемых фабрик и компонентов по умолчанию, а не как место, где прячется прикладная логика.
-- Используйте теги только тогда, когда у одного договора есть несколько осмысленных реализаций.
-- Избегайте поиска служб, циклических зависимостей и крупных компонентов, которые смешивают несвязанные ответственности.
+### Держите компоненты маленькими и сфокусированными { #components-focused }
 
-Делайте компоненты небольшими:
+Почему это важно: маленькие компоненты проще тестировать, понимать и переиспользовать. У каждого компонента должна быть одна ответственность.
 
-Почему это важно: небольшие компоненты легче тестировать, понимать и переиспользовать. У каждого компонента должна быть одна ответственность.
-
-Совет новичку: если компонент делает слишком много, разделите его. Спросите себя: "Какая у этого компонента одна задача?"
+Совет новичку: если компонент делает слишком много, разбейте его. Спросите себя: «в чем единственная задача этого компонента?»
 
 Хороший пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // ✅ Компоненты с одной ответственностью
+    // Single responsibility components
     @Component
     public final class OrderValidator {
         public ValidationResult validate(Order order) { /* validation logic */ }
@@ -2488,17 +3501,17 @@ Redis-кеши или только email-уведомители, лучше за
         }
 
         public void process(Order order) {
-            // Только координирует оплату и сохранение
+            // Just coordinates payment and storage
             payment.processPayment(order);
             repository.save(order);
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // ✅ Компоненты с одной ответственностью
+    // Single responsibility components
     @Component
     class OrderValidator {
         fun validate(order: Order): ValidationResult { /* validation logic */ }
@@ -2510,22 +3523,23 @@ Redis-кеши или только email-уведомители, лучше за
         private val repository: OrderRepository
     ) {
         fun process(order: Order) {
-            // Только координирует оплату и сохранение
+            // Just coordinates payment and storage
             payment.processPayment(order)
             repository.save(order)
         }
     }
     ```
 
-Внедрение через конструктор:
+### Предпочитайте внедрение через конструктор { #prefer-constructor-injection }
 
-Почему это важно: внедрение через конструктор делает зависимости явными и не допускает частично созданных объектов. Это самый безопасный и самый удобный для тестирования способ внедрения.
+Почему это важно: внедрение через конструктор делает зависимости явными и не допускает частично сконструированных объектов. Для компонентов Kora это единственный поддерживаемый способ внедрения и самый
+удобный для тестирования.
 
-Совет новичку: всегда размещайте зависимости в конструкторе. Никогда не создавайте зависимости внутри методов: это антишаблон "поиск службы".
+Совет новичку: всегда объявляйте зависимости в конструкторе. Никогда не ищите зависимости внутри методов — это антипаттерн Service Locator.
 
 Хороший пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
@@ -2533,7 +3547,7 @@ Redis-кеши или только email-уведомители, лучше за
         private final UserRepository repository;
         private final PasswordEncoder encoder;
 
-        // ✅ Все зависимости объявлены в конструкторе
+        // All dependencies declared in constructor
         public UserService(UserRepository repository, PasswordEncoder encoder) {
             this.repository = repository;
             this.encoder = encoder;
@@ -2547,7 +3561,7 @@ Redis-кеши или только email-уведомители, лучше за
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
@@ -2555,7 +3569,7 @@ Redis-кеши или только email-уведомители, лучше за
         private val repository: UserRepository,
         private val encoder: PasswordEncoder
     ) {
-        // ✅ Все зависимости объявлены в конструкторе
+        // All dependencies declared in the primary constructor
 
         fun createUser(email: String, password: String): User {
             val hashedPassword = encoder.encode(password)
@@ -2565,21 +3579,24 @@ Redis-кеши или только email-уведомители, лучше за
     }
     ```
 
-Обрабатывайте optional-зависимости:
+### Аккуратно обрабатывайте необязательные зависимости { #handle-optional-dependencies }
 
-Почему это важно: не все возможности всегда доступны. Необязательные зависимости позволяют приложению работать с разными настройками.
+Почему это важно: не все возможности доступны всегда. Необязательные зависимости позволяют приложению работать в разных конфигурациях.
 
-Совет новичку: используйте `@Nullable`, когда зависимости может не быть. Всегда проверяйте значение на `null` перед использованием.
+Совет новичку: в Java используйте `@Nullable` из JSpecify, в Kotlin — обнуляемый тип. Всегда явно обрабатывайте отсутствие.
 
 Хороший пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    import org.jspecify.annotations.Nullable;
+
     @Component
     public final class NotificationService {
         private final EmailService emailService;
-        private final SmsService smsService; // Может быть не настроен
+        @Nullable
+        private final SmsService smsService; // Might not be configured
 
         public NotificationService(EmailService emailService, @Nullable SmsService smsService) {
             this.emailService = emailService;
@@ -2587,9 +3604,9 @@ Redis-кеши или только email-уведомители, лучше за
         }
 
         public void sendNotification(String message) {
-            emailService.sendEmail(message); // Всегда доступен
+            emailService.sendEmail(message); // Always available
 
-            // ✅ Аккуратная обработка необязательной зависимости
+            // Graceful handling of optional dependency
             if (smsService != null) {
                 smsService.sendSms(message);
             }
@@ -2597,88 +3614,95 @@ Redis-кеши или только email-уведомители, лучше за
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
     class NotificationService(
         private val emailService: EmailService,
-        @Nullable private val smsService: SmsService? // Может быть не настроен
+        private val smsService: SmsService? // Might not be configured
     ) {
         fun sendNotification(message: String) {
-            emailService.sendEmail(message) // Всегда доступен
+            emailService.sendEmail(message) // Always available
 
-            // ✅ Аккуратная обработка необязательной зависимости
+            // Graceful handling of optional dependency
             smsService?.sendSms(message)
         }
     }
     ```
 
-Теги:
+### Используйте теги для нескольких реализаций { #use-tags-implementations }
 
-Почему это важно: иногда нужны несколько реализаций одного интерфейса, например разные каналы уведомлений. Теги помогают различать их.
+Почему это важно: иногда нужно несколько реализаций одного интерфейса (например, разные каналы уведомлений). Теги позволяют их различать.
 
-Совет новичку: создавайте пустые маркерные классы для тегов. Используйте понятные имена вроде `EmailNotification.class`, а не слишком общие.
+Совет новичку: заводите отдельные классы-маркеры с говорящими именами вроде `EmailTag` и делайте им приватный конструктор, чтобы никто случайно не создал экземпляр.
 
 Хороший пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Классы тегов
-    public final class EmailTag {}
-    public final class SmsTag {}
+    // Tag classes
+    public final class EmailTag {
+        private EmailTag() {}
+    }
 
-    // Реализации с тегами
+    public final class SmsTag {
+        private SmsTag() {}
+    }
+
+    // Tagged implementations
     @Tag(EmailTag.class)
     @Component
     public final class EmailNotifier implements Notifier {
-        public void notify(String message) { /* email logic */ }
+        @Override
+        public void notifyUser(String message) { /* email logic */ }
     }
 
     @Tag(SmsTag.class)
     @Component
     public final class SmsNotifier implements Notifier {
-        public void notify(String message) { /* SMS logic */ }
+        @Override
+        public void notifyUser(String message) { /* SMS logic */ }
     }
 
-    // Использование
+    // Usage
     @Component
     public final class AlertService {
         private final Notifier emailNotifier;
         private final Notifier smsNotifier;
 
         public AlertService(
-            @Tag(EmailTag.class) Notifier emailNotifier,
-            @Tag(SmsTag.class) Notifier smsNotifier
-        ) {
+                @Tag(EmailTag.class) Notifier emailNotifier,
+                @Tag(SmsTag.class) Notifier smsNotifier) {
             this.emailNotifier = emailNotifier;
             this.smsNotifier = smsNotifier;
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Классы тегов
-    class EmailTag
-    class SmsTag
+    // Tag classes
+    class EmailTag private constructor()
 
-    // Реализации с тегами
+    class SmsTag private constructor()
+
+    // Tagged implementations
     @Tag(EmailTag::class)
     @Component
     class EmailNotifier : Notifier {
-        override fun notify(message: String) { /* email logic */ }
+        override fun notifyUser(message: String) { /* email logic */ }
     }
 
     @Tag(SmsTag::class)
     @Component
     class SmsNotifier : Notifier {
-        override fun notify(message: String) { /* SMS logic */ }
+        override fun notifyUser(message: String) { /* SMS logic */ }
     }
 
-    // Использование
+    // Usage
     @Component
     class AlertService(
         @Tag(EmailTag::class) private val emailNotifier: Notifier,
@@ -2686,22 +3710,22 @@ Redis-кеши или только email-уведомители, лучше за
     )
     ```
 
-Компоненты и модули:
+### Организуйте компоненты модулями { #organize-with-modules }
 
-Почему это важно: модули группируют связанные компоненты, поэтому приложение проще понимать и сопровождать.
+Почему это важно: модули группируют связанные компоненты, что делает приложение понятнее и удобнее в сопровождении.
 
-Совет новичку: создавайте модули для разных слоев (база данных, службы, HTTP) или предметных областей (сообщения, уведомления, управление пользователями).
+Совет новичку: создавайте модули по слоям (база данных, сервисы, HTTP) или по предметным областям (сообщения, уведомления, управление пользователями).
 
 Хороший пример:
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Отдельные модули отправителей для разных каналов
+    // Individual messenger modules for different channels
     @Module
     public interface SlackModule {
 
-        @Tag(SlackMessenger.class)
+        @Tag(SlackTag.class)
         @DefaultComponent
         default Supplier<String> slackMessengerHeaderSupplier() {
             return () -> "ASCII_PROTOCOL_MESSENGER_SLACK";
@@ -2711,7 +3735,7 @@ Redis-кеши или только email-уведомители, лучше за
     @Module
     public interface SignalModule {
 
-        @Tag(SignalMessenger.class)
+        @Tag(SignalTag.class)
         @DefaultComponent
         default Supplier<String> signalMessengerHeaderSupplier() {
             return () -> "ASCII_PROTOCOL_MESSENGER_SIGNAL";
@@ -2723,7 +3747,7 @@ Redis-кеши или только email-уведомители, лучше за
 
         private final Supplier<String> headerSupplier;
 
-        public SlackMessenger(@Tag(SlackMessenger.class) Supplier<String> headerSupplier) {
+        public SlackMessenger(@Tag(SlackTag.class) Supplier<String> headerSupplier) {
             this.headerSupplier = headerSupplier;
         }
 
@@ -2739,7 +3763,7 @@ Redis-кеши или только email-уведомители, лучше за
 
         private final Supplier<String> headerSupplier;
 
-        public SignalMessenger(@Tag(SignalMessenger.class) Supplier<String> headerSupplier) {
+        public SignalMessenger(@Tag(SignalTag.class) Supplier<String> headerSupplier) {
             this.headerSupplier = headerSupplier;
         }
 
@@ -2750,22 +3774,27 @@ Redis-кеши или только email-уведомители, лучше за
         }
     }
 
-    // Приложение объединяет модули отправителей
+    // Application combines messenger modules
     @KoraApp
     public interface Application extends
-        SlackModule,        // Отправка через Slack
-        SignalModule {      // Отправка через Signal
+        SlackModule,        // Slack messaging
+        SignalModule {      // Signal messaging
+
+        @Root
+        default Dispatcher dispatcher(@Tag(Tag.Any.class) All<Messenger> messengers) {
+            return new Dispatcher(messengers);
+        }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Отдельные модули отправителей для разных каналов
+    // Individual messenger modules for different channels
     @Module
     interface SlackModule {
 
-        @Tag(SlackMessenger::class)
+        @Tag(SlackTag::class)
         @DefaultComponent
         fun slackMessengerHeaderSupplier(): Supplier<String> = Supplier { "ASCII_PROTOCOL_MESSENGER_SLACK" }
     }
@@ -2773,14 +3802,14 @@ Redis-кеши или только email-уведомители, лучше за
     @Module
     interface SignalModule {
 
-        @Tag(SignalMessenger::class)
+        @Tag(SignalTag::class)
         @DefaultComponent
         fun signalMessengerHeaderSupplier(): Supplier<String> = Supplier { "ASCII_PROTOCOL_MESSENGER_SIGNAL" }
     }
 
     @Component
     class SlackMessenger(
-        @Tag(SlackMessenger::class) private val headerSupplier: Supplier<String>
+        @Tag(SlackTag::class) private val headerSupplier: Supplier<String>
     ) : Messenger {
 
         override fun sendMessage(message: String) {
@@ -2791,7 +3820,7 @@ Redis-кеши или только email-уведомители, лучше за
 
     @Component
     class SignalMessenger(
-        @Tag(SignalMessenger::class) private val headerSupplier: Supplier<String>
+        @Tag(SignalTag::class) private val headerSupplier: Supplier<String>
     ) : Messenger {
 
         override fun sendMessage(message: String) {
@@ -2800,192 +3829,231 @@ Redis-кеши или только email-уведомители, лучше за
         }
     }
 
-    // Приложение объединяет модули отправителей
+    // Application combines messenger modules
     @KoraApp
     interface Application :
-        SlackModule,        // Отправка через Slack
-        SignalModule        // Отправка через Signal
+        SlackModule,        // Slack messaging
+        SignalModule {      // Signal messaging
+
+        @Root
+        fun dispatcher(@Tag(Tag.Any::class) messengers: All<Messenger>): Dispatcher =
+            Dispatcher(messengers)
+    }
     ```
 
-=== ":simple-kotlin: Kotlin"
+### Избегайте типичных антипаттернов { #anti-patterns }
 
-    ```kotlin
-    // Отдельные модули отправителей для разных каналов
-    @Module
-    interface SlackModule {
+**Service Locator:**
 
-        @Tag(SlackMessenger::class)
-        @DefaultComponent
-        fun slackMessengerHeaderSupplier(): Supplier<String> = Supplier { "ASCII_PROTOCOL_MESSENGER_SLACK" }
-    }
-
-    @Module
-    interface SignalModule {
-
-        @Tag(SignalMessenger::class)
-        @DefaultComponent
-        fun signalMessengerHeaderSupplier(): Supplier<String> = Supplier { "ASCII_PROTOCOL_MESSENGER_SIGNAL" }
-    }
-
-    @Component
-    class SlackMessenger(@Tag(SlackMessenger::class) private val headerSupplier: Supplier<String>) : Messenger {
-
-        override fun sendMessage(message: String) {
-            val header = headerSupplier.get()
-            println("$header ---> $message")
-        }
-    }
-
-    @Component
-    class SignalMessenger(@Tag(SignalMessenger::class) private val headerSupplier: Supplier<String>) : Messenger {
-
-        override fun sendMessage(message: String) {
-            val header = headerSupplier.get()
-            println("$header ---> $message")
-        }
-    }
-
-    // Приложение объединяет модули отправителей
-    @KoraApp
-    interface Application :
-        SlackModule,        // Отправка через Slack
-        SignalModule        // Отправка через Signal
-    ```
-
-Антишаблоны:
-
-❌ Шаблон поиска службы:
-
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Так делать не нужно
+    // Don't do this
     @Component
     public final class BadService {
         public void doSomething() {
-            // Создание зависимостей внутри методов
-            Database db = ServiceLocator.getDatabase(); // ❌ Антишаблон
+            // Looking dependencies up inside methods
+            Database db = ServiceLocator.getDatabase(); // Anti-pattern
             db.save(data);
         }
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Так делать не нужно
+    // Don't do this
     @Component
     class BadService {
         fun doSomething() {
-            // Создание зависимостей внутри методов
-            val db = ServiceLocator.getDatabase() // ❌ Антишаблон
+            // Looking dependencies up inside methods
+            val db = ServiceLocator.getDatabase() // Anti-pattern
             db.save(data)
         }
     }
     ```
 
-❌ Циклические зависимости:
+**Циклические зависимости:**
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Не создавайте циклические зависимости
+    // Don't create circular dependencies
     @Component
-    class ServiceA {
-        ServiceA(ServiceB b) {} // ServiceA зависит от ServiceB
+    public final class ServiceA {
+        public ServiceA(ServiceB b) {} // ServiceA depends on ServiceB
     }
 
     @Component
-    class ServiceB {
-        ServiceB(ServiceA a) {} // ServiceB зависит от ServiceA — ЦИКЛ!
+    public final class ServiceB {
+        public ServiceB(ServiceA a) {} // ServiceB depends on ServiceA - CIRCULAR!
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Не создавайте циклические зависимости
+    // Don't create circular dependencies
     @Component
-    class ServiceA(private val b: ServiceB) // ServiceA зависит от ServiceB
+    class ServiceA(private val b: ServiceB) // ServiceA depends on ServiceB
 
     @Component
-    class ServiceB(private val a: ServiceA) // ServiceB зависит от ServiceA — ЦИКЛ!
+    class ServiceB(private val a: ServiceA) // ServiceB depends on ServiceA - CIRCULAR!
     ```
 
-❌ Крупные компоненты:
+Kora сообщает об этом во время компиляции. Когда цикл неизбежен, выразите одно из ребер через интерфейс и позвольте Kora сгенерировать делегирующий прокси либо запросите зависимость как `PromiseOf<T>`.
+Перестройка ответственностей почти всегда лучше.
 
-===! ":fontawesome-brands-java: Java"
+**Слишком большие компоненты:**
+
+===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    // Не создавайте "божественные объекты"
+    // Don't create "God objects"
     @Component
     public final class HugeService {
-        // ❌ Делает все: проверку, работу с базой данных, почту, журналирование, кеширование...
+        // Does everything: validation, database, email, logging, caching...
         private final Validator validator;
         private final Repository repo;
         private final EmailService email;
         private final Logger logger;
         private final Cache cache;
 
-        // Сотни методов...
+        // Hundreds of methods...
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    // Не создавайте "божественные объекты"
+    // Don't create "God objects"
     @Component
     class HugeService(
-        // ❌ Делает все: проверку, работу с базой данных, почту, журналирование, кеширование...
+        // Does everything: validation, database, email, logging, caching...
         private val validator: Validator,
         private val repo: Repository,
         private val email: EmailService,
         private val logger: Logger,
         private val cache: Cache
     ) {
-        // Сотни методов...
+        // Hundreds of methods...
     }
     ```
 
+**Правила, которые стоит держать в голове:**
+
+- предпочитайте внедрение через конструктор и позвольте Kora строить граф зависимостей во время компиляции
+- держите компоненты сфокусированными на одной ответственности, чтобы ошибки графа оставались понятными
+- используйте модули для переиспользуемых фабрик и умолчаний, а не как место, где прячется логика приложения
+- используйте теги только тогда, когда у одного контракта есть несколько осмысленных реализаций
+- помечайте `@Root` точки входа и только их
+- избегайте Service Locator, циклических зависимостей и больших компонентов, смешивающих несвязанные обязанности
+
 ## Итоги { #summary }
 
-Вы изучили основные идеи внедрения зависимостей в Kora:
+Вы разобрали основные идеи внедрения зависимостей в Kora:
 
-- компоненты объявляют, что им нужно, через конструкторы или методы компонентов
-- Kora проверяет и создает граф зависимостей во время компиляции
-- модули группируют переиспользуемые фабрики и компоненты по умолчанию
-- теги различают несколько реализаций одного типа
-- внедрение зависимостей сохраняет структуру приложения явной и удобной для тестирования
+- компоненты объявляют свои потребности через конструкторы или фабричные методы
+- Kora проверяет и генерирует граф зависимостей во время компиляции, без рефлексии во время выполнения
+- разрешение начинается с `@Root`, поэтому строится только то, что нужно точке входа
+- модули группируют переиспользуемые фабрики, а `@DefaultComponent` делает их заменяемыми
+- теги различают несколько реализаций одного типа, а `All<T>` собирает точки расширения
+- `ValueOf<T>` и `PromiseOf<T>` выражают косвенный доступ, не меняя бизнес-тип
+- внедрение зависимостей сохраняет структуру приложения явной и тестируемой
 
 ## Устранение неполадок { #troubleshooting }
 
-**Компонент не найден:**
+**`No component found for dependency`**
 
-- Проверьте, что класс помечен `@Component` или возвращается из метода `@Module`.
-- Убедитесь, что модуль подключен к интерфейсу `@KoraApp`.
+```
+No component found for dependency:
+  com.example.UserRepository (no tags)
 
-**Одной зависимости соответствует несколько компонентов:**
+Required at:
+  com.example.Application#userService(com.example.UserRepository)
+  parameter: com.example.UserRepository repository
 
-- Добавьте тег к зависимости и к компоненту, который должен ее предоставить.
-- Держите классы тегов или маркерные аннотации рядом с договором, который они уточняют.
+Dependency resolution path:
+  @--- factory  com.example.Application#orderService(...)
+  ^--- factory  com.example.Application#userService(...)
+  ^--- com.example.UserRepository   [MISSING]
 
-**Сгенерированный граф не компилируется:**
+Fix:
+  - Add @Component to an implementation of com.example.UserRepository.
+  - Add a module method that returns com.example.UserRepository.
+  - Include a module that provides com.example.UserRepository in @KoraApp.
+```
 
-- Прочитайте сгенерированную ошибку о первой отсутствующей или неоднозначной зависимости.
-- Компилируйте снова после исправления одной проблемы графа; последующие ошибки часто зависят от первой.
+- Проверьте, что класс помечен `@Component` или возвращается методом модуля
+- Убедитесь, что модуль, предоставляющий его, подключен к интерфейсу `@KoraApp`
+- Читайте `Dependency resolution path` снизу вверх: строка с `[MISSING]` — это заявка, которая не разрешилась, а строки выше показывают, кто ее запросил
+- Если в ошибке упоминаются компоненты «with the same type but different tag», значит тег на заявке или на компоненте указан неверно
+
+**`Multiple components match dependency`**
+
+```
+Multiple components match dependency:
+  com.example.Cache (no tags)
+
+  Candidates:
+  - component  com.example.RedisCache
+  - component  com.example.InMemoryCache
+
+Fix:
+  - Add different @Tag(...) annotations to candidates and request the needed tag.
+  - Mark fallback candidate with @DefaultComponent.
+  - Remove one duplicate provider.
+```
+
+- Добавьте тег на заявку и на компонент, который должен ее удовлетворить
+- Либо пометьте запасного кандидата `@DefaultComponent`, чтобы победил другой
+- Либо уберите дублирующего поставщика
+
+**`@KoraApp has no root components`**
+
+- Пометьте `@Root` хотя бы один компонент или метод модуля
+- Если корень должен был прийти из модуля фреймворка, проверьте, что интерфейс `@KoraApp` действительно его наследует
+
+**`Circular dependency found`**
+
+```
+Circular dependency found:
+  com.example.ServiceA (no tags)
+
+  Dependency cycle:
+    @--- component  com.example.ServiceA
+    ^--- component  com.example.ServiceB [CYCLE]
+
+Fix:
+  - Break the cycle with ValueOf<T> or PromiseOf<T> where lazy access is valid.
+  - Move shared state into a separate component.
+  - Do not create dependency cycles in io.koraframework.application.graph.Lifecycle.
+```
+
+- Вынесите общее состояние в третий компонент, от которого зависят обе стороны
+- Выразите одно из ребер через интерфейс, чтобы Kora сгенерировала для него делегирующий прокси
+- В крайнем случае запросите зависимость как `PromiseOf<T>` или `ValueOf<T>`
+
+**`@Component class must have exactly one public constructor`**
+
+- Оставьте один публичный конструктор, а остальные сделайте непубличными
+- Либо уберите `@Component` и предоставьте класс методом модуля
+
+**Сгенерированный граф не компилируется**
+
+- Исправьте первую сообщенную ошибку и соберите заново; последующие ошибки часто являются ее следствием
+- Когда решение о связывании непонятно, откройте сгенерированный `<ИмяПриложения>Graph` в `build/generated` — это обычный исходный код
 
 ## Что дальше? { #whats-next-2 }
 
-- [Создайте полноценное приложение с внедрением зависимостей](dependency-injection.md), чтобы без лишних деталей HTTP-слоя потренироваться с модулями, компонентами, фабриками, тегами, жизненным циклом и
-  устройством графа.
-- [Создайте первое приложение Kora](getting-started.md), если вы сначала прочитали это введение и теперь хотите запустить минимальное приложение.
-- [Конфигурация с HOCON](config-hocon.md) или [конфигурация с YAML](config-yaml.md) после начального руководства: настройка конфигурации опирается на уже запускаемое приложение Kora.
+- [Соберите полноценное приложение с внедрением зависимостей](dependency-injection.md), чтобы попрактиковаться с модулями, компонентами, фабриками, тегами, жизненным циклом и построением графа без HTTP-шума.
+- [Создайте первое приложение на Kora](getting-started.md), если вы начали со введения и теперь хотите запустить минимальное приложение.
+- [Конфигурация через HOCON](config-hocon.md) или [Конфигурация через YAML](config-yaml.md) — после первого запуска, потому что конфигурация опирается на уже работающее приложение Kora.
 
 ## Помощь { #help }
 
-Если возникли проблемы:
+Если возникли сложности:
 
-- проверьте [документацию контейнера](../documentation/container.md)
-- сравните с базовыми примерами [Kora](home.md)
-- вернитесь к руководству [Создание первого приложения Kora](getting-started.md), чтобы свериться с запускаемым графом
+- посмотрите [документацию по контейнеру](../documentation/container.md)
+- сравните с базовыми примерами в [Kora Examples](home.md)
+- перечитайте [Создание первого приложения на Kora](getting-started.md), где граф запускается целиком

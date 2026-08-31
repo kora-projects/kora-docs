@@ -1,14 +1,15 @@
 ---
-description: "Explains Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, ServerInterceptor interceptors and their execution order, lifecycle and readiness, telemetry, and reflection. Use when working with GrpcServerModule, GrpcServerConfig, GrpcServerBuilderConfigurer, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection."
+description: "Explains the Kora gRPC server: protobuf Gradle plugin setup, GrpcServerConfig options, unary and streaming StreamObserver handlers, io.grpc.Status error handling, the virtual-thread execution model, ServerInterceptor interceptors and their order, TLS through ServerCredentials, builder tuning through Configurer, lifecycle and readiness, telemetry and reflection. Use when working with GrpcServerModule, GrpcServerConfig, Configurer, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, lifecycle and readiness, telemetry, and reflection; key triggers include GrpcServerModule, GrpcServerConfig, GrpcServerBuilderConfigurer, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection. Note: gRPC server interceptors are global io.grpc.ServerInterceptor beans only; there is no @GrpcService or @InterceptWith annotation in this module."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC server: protobuf Gradle plugin setup, server configuration, unary and streaming handlers, io.grpc.Status error handling, the per-connection virtual-thread execution model, ServerInterceptor interceptors and their execution order, scoping and metadata authorization, TLS, lifecycle and readiness, telemetry and reflection; key triggers include GrpcServerModule, GrpcServerConfig, Configurer, ForwardingServerBuilder, ServerCredentials, ServerInterceptor, StreamObserver, reflectionEnabled, Server Reflection. Note: the server runs on the gRPC OkHttp transport, handlers are synchronous StreamObserver-based generated stubs, and interceptors are global io.grpc.ServerInterceptor components only — there is no @GrpcService or @InterceptWith annotation in this module."
 ---
 
 The module starts a `gRPC server` based on [`grpc-java`](https://grpc.io/docs/languages/java/basics/) and connects handlers from the application graph to it.
 A handler is a `BindableService`, usually a class that extends a generated `...ImplBase` and implements unary or streaming `RPC` methods.
 
-Kora creates a `NettyServerBuilder`, adds server services, user-defined and standard `ServerInterceptor`, manages the server lifecycle, and participates in application readiness checks.
-If configuration parameters are not enough, the resulting `NettyServerBuilder` can be additionally configured in code through `GrpcServerBuilderConfigurer`.
+Kora builds the server on the `gRPC OkHttp` transport, adds the services and `ServerInterceptor` implementations found in the graph together with its own telemetry interceptor,
+manages the server lifecycle, and participates in application readiness checks.
+If configuration parameters are not enough, the resulting builder can be additionally configured in code through a `Configurer` component.
 
 For a step-by-step walkthrough before the reference details, see [gRPC Server](../guides/grpc-server.md) and [Advanced gRPC Server](../guides/grpc-server-advanced.md).
 
@@ -18,8 +19,8 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
 
     [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:grpc-server"
-    implementation "io.grpc:grpc-protobuf:1.74.0"
+    implementation "io.koraframework:grpc-server"
+    implementation "io.grpc:grpc-protobuf:1.83.1"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -33,8 +34,8 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:grpc-server")
-    implementation("io.grpc:grpc-protobuf:1.74.0")
+    implementation("io.koraframework:grpc-server")
+    implementation("io.grpc:grpc-protobuf:1.83.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -43,6 +44,9 @@ For a step-by-step walkthrough before the reference details, see [gRPC Server](.
     @KoraApp
     interface Application : GrpcServerModule
     ```
+
+The `gRPC` runtime that ships with `io.koraframework:grpc-server` is `1.83.1`.
+Every other `io.grpc` artifact you add — `grpc-protobuf`, `grpc-services`, and anything in test scope — must use that same version, see [Testing](#testing).
 
 ### Plugin { #plugin }
 
@@ -53,13 +57,13 @@ The code for the `gRPC server` is generated with the [protobuf gradle plugin](ht
     Plugin in `build.gradle`:
     ```groovy
     plugins {
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -67,9 +71,11 @@ The code for the `gRPC server` is generated with the [protobuf gradle plugin](ht
     }
 
     sourceSets {
-        main.java {
-            srcDirs "build/generated/source/proto/main/grpc"
-            srcDirs "build/generated/source/proto/main/java"
+        main {
+            java {
+                srcDirs "build/generated/source/proto/main/grpc"
+                srcDirs "build/generated/source/proto/main/java"
+            }
         }
     }
     ```
@@ -81,31 +87,31 @@ The code for the `gRPC server` is generated with the [protobuf gradle plugin](ht
     import com.google.protobuf.gradle.id
 
     plugins {
-        id("com.google.protobuf") version ("0.9.4")
+        id("com.google.protobuf") version ("0.10.0")
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
-            ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
+            all().forEach { task -> task.plugins { id("grpc") } }
         }
     }
 
-    kotlin {
-        sourceSets.main {
-            kotlin.srcDir("build/generated/source/proto/main/grpc")
-            kotlin.srcDir("build/generated/source/proto/main/java")
-        }
+    sourceSets.main {
+        java.srcDir(layout.buildDirectory.dir("generated/source/proto/main/grpc"))
+        java.srcDir(layout.buildDirectory.dir("generated/source/proto/main/java"))
     }
     ```
+
+The plugin generates `Java` classes, so in a `Kotlin` project the generated sources are still registered in the `java` source set.
 
 ## Configuration { #configuration }
 
 Only `port` typically needs to be set; all other parameters have defaults.
-A minimal configuration that binds a port from an environment variable and enables logging looks like this:
+A minimal configuration that binds a port and enables logging looks like this:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -140,7 +146,7 @@ Basic configuration parameters:
 
     1. `gRPC server` port (default: `8090`).
     2. Maximum incoming message size (default: `4MiB`).
-    3. Enables [`gRPC Server Reflection`](#reflection) service (default: `false`).
+    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
 
 === ":simple-yaml: `YAML`"
 
@@ -153,7 +159,7 @@ Basic configuration parameters:
 
     1. `gRPC server` port (default: `8090`).
     2. Maximum incoming message size (default: `4MiB`).
-    3. Enables [`gRPC Server Reflection`](#reflection) service (default: `false`).
+    3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
 
 ??? note "Full Configuration"
 
@@ -167,16 +173,16 @@ Basic configuration parameters:
             maxMessageSize = "4MiB" //(2)!
             reflectionEnabled = false //(3)!
             shutdownWait = "30s" //(4)!
-            maxConnectionAge = "0s" //(5)!
-            maxConnectionAgeGrace = "0s" //(6)!
-            keepAliveTime = "0s" //(7)!
-            keepAliveTimeout = "0s" //(8)!
+            maxConnectionAge = "5m" //(5)!
+            maxConnectionAgeGrace = "30s" //(6)!
+            keepAliveTime = "30s" //(7)!
+            keepAliveTimeout = "10s" //(8)!
             telemetry {
                 logging {
                     enabled = false //(9)!
                 }
                 metrics {
-                    enabled = true //(10)!
+                    enabled = false //(10)!
                     slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
                     tags = { // (12)!
                         "key1" = "value1"
@@ -197,16 +203,16 @@ Basic configuration parameters:
         1. `gRPC server` port (default: `8090`).
         2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
         3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
-        4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
-        5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
-        6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
-        7. Sets the interval between `PING` frames (default: not specified, optional).
-        8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+        4. Time to wait for in-flight calls to complete before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+        5. Maximum connection age after which the connection is gracefully terminated (optional, no default). A random jitter of +/-10% is added to the value.
+        6. Additional time for graceful connection termination after the maximum connection age is reached (optional, no default). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+        7. Interval between `PING` frames (optional, no default).
+        8. Timeout for acknowledging a `PING` frame (optional, no default). If no acknowledgement is received within this time, the connection is closed.
         9. Enables module logging (default: `false`).
-        10. Enables module metrics (default: `true`).
-        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        10. Enables module metrics (default: `false`). Metrics are only reported if a [metrics](metrics.md) module also provides a `MeterRegistry`.
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) metric (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
         12. Metric tags (default: `{}`).
-        13. Enables module tracing (default: `true`).
+        13. Enables module tracing (default: `true`). Spans are only exported if a [tracing](tracing.md) module also provides a `Tracer`.
         14. Tracing attributes (default: `{}`).
 
     === ":simple-yaml: `YAML`"
@@ -217,15 +223,15 @@ Basic configuration parameters:
           maxMessageSize: "4MiB" #(2)!
           reflectionEnabled: false #(3)!
           shutdownWait: "30s" #(4)!
-          maxConnectionAge: "0s" #(5)!
-          maxConnectionAgeGrace: "0s" #(6)!
-          keepAliveTime: "0s" #(7)!
-          keepAliveTimeout: "0s" #(8)!
+          maxConnectionAge: "5m" #(5)!
+          maxConnectionAgeGrace: "30s" #(6)!
+          keepAliveTime: "30s" #(7)!
+          keepAliveTimeout: "10s" #(8)!
           telemetry:
             logging:
               enabled: false #(9)!
             metrics:
-              enabled: true #(10)!
+              enabled: false #(10)!
               slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
               tags: #(12)!
                 key1: value1
@@ -240,51 +246,117 @@ Basic configuration parameters:
         1. `gRPC server` port (default: `8090`).
         2. Maximum size of an incoming message (default: `4MiB`). It can be specified as a number of bytes or as `4MiB`, `4MB`, `1000Kb`, and similar values.
         3. Enables the [`gRPC Server Reflection`](#reflection) service (default: `false`).
-        4. Time to wait for processing before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
-        5. Sets a custom maximum connection age after which the connection is gracefully terminated (default: not specified, optional). A random jitter of +/-10% is added to the value.
-        6. Sets additional time for graceful connection termination after the maximum connection age is reached (default: not specified, optional). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
-        7. Sets the interval between `PING` frames (default: not specified, optional).
-        8. Timeout for acknowledging a `PING` frame (default: not specified, optional). If no acknowledgement is received within this time, the connection is closed.
+        4. Time to wait for in-flight calls to complete before shutting down the server during [graceful shutdown](container.md#graceful-shutdown) (default: `30s`).
+        5. Maximum connection age after which the connection is gracefully terminated (optional, no default). A random jitter of +/-10% is added to the value.
+        6. Additional time for graceful connection termination after the maximum connection age is reached (optional, no default). `RPC` calls that do not finish in time are cancelled so the connection can terminate.
+        7. Interval between `PING` frames (optional, no default).
+        8. Timeout for acknowledging a `PING` frame (optional, no default). If no acknowledgement is received within this time, the connection is closed.
         9. Enables module logging (default: `false`).
-        10. Enables module metrics (default: `true`).
-        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) metric (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
+        10. Enables module metrics (default: `false`). Metrics are only reported if a [metrics](metrics.md) module also provides a `MeterRegistry`.
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for the [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) metric (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`).
         12. Metric tags (default: `{}`).
-        13. Enables module tracing (default: `true`).
+        13. Enables module tracing (default: `true`). Spans are only exported if a [tracing](tracing.md) module also provides a `Tracer`.
         14. Tracing attributes (default: `{}`).
 
-You can also configure [Netty transport](netty.md).
+Everything the configuration does not cover is available through [configuration in code](#builder-configurer).
 
-### Configuration In Code { #builder-configurer }
+### Configuration in code { #builder-configurer }
 
-If configuration parameters are not enough, register a `GrpcServerBuilderConfigurer` component and additionally configure `NettyServerBuilder` in code.
-This component is called after configuration has been applied and after services, user-defined `ServerInterceptor`, and standard `ServerInterceptor` have been added.
+If configuration parameters are not enough, register a `Configurer<ForwardingServerBuilder<?>>` component and additionally configure the server builder in code.
+The component is called last: after the configuration has been applied and after the services, the user-defined `ServerInterceptor` implementations and the standard interceptor have been added.
+The builder it returns is the one the server is built from.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyGrpcServerBuilderConfigurer implements GrpcServerBuilderConfigurer {
+    public final class MyGrpcServerConfigurer implements Configurer<ForwardingServerBuilder<?>> {
 
         @Override
-        public NettyServerBuilder configure(NettyServerBuilder builder) {
-            return builder.permitKeepAliveWithoutCalls(true);
+        public ForwardingServerBuilder<?> configure(ForwardingServerBuilder<?> builder) {
+            builder.maxInboundMetadataSize(16 * 1024); //(1)!
+            builder.handshakeTimeout(10, TimeUnit.SECONDS);
+
+            if (builder instanceof OkHttpServerBuilder okHttpBuilder) { //(2)!
+                okHttpBuilder.permitKeepAliveWithoutCalls(true);
+                okHttpBuilder.maxConcurrentCallsPerConnection(200);
+            }
+
+            return builder; //(3)!
         }
     }
     ```
+
+    1. Options declared by `io.grpc.ServerBuilder` are available on the forwarding builder directly
+    2. Transport-specific options require the concrete builder: Kora runs the server on the `gRPC OkHttp` transport, so it is an `io.grpc.okhttp.OkHttpServerBuilder`
+    3. `gRPC` builders are mutable and return themselves, so the same instance is handed back
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class MyGrpcServerBuilderConfigurer : GrpcServerBuilderConfigurer {
+    class MyGrpcServerConfigurer : Configurer<ForwardingServerBuilder<*>> {
 
-        override fun configure(builder: NettyServerBuilder): NettyServerBuilder {
-            return builder.permitKeepAliveWithoutCalls(true)
+        override fun configure(builder: ForwardingServerBuilder<*>): ForwardingServerBuilder<*> {
+            builder.maxInboundMetadataSize(16 * 1024) //(1)!
+            builder.handshakeTimeout(10, TimeUnit.SECONDS)
+
+            if (builder is OkHttpServerBuilder) { //(2)!
+                builder.permitKeepAliveWithoutCalls(true)
+                builder.maxConcurrentCallsPerConnection(200)
+            }
+
+            return builder //(3)!
         }
     }
     ```
 
+    1. Options declared by `io.grpc.ServerBuilder` are available on the forwarding builder directly
+    2. Transport-specific options require the concrete builder: Kora runs the server on the `gRPC OkHttp` transport, so it is an `io.grpc.okhttp.OkHttpServerBuilder`
+    3. `gRPC` builders are mutable and return themselves, so the same instance is handed back
+
 Module metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
+
+### Transport security { #tls }
+
+By default the server accepts plaintext connections: when the graph contains no `io.grpc.ServerCredentials`, Kora uses `InsecureServerCredentials`.
+To terminate `TLS` in the server itself, provide `ServerCredentials` as a component — for example with `io.grpc.TlsServerCredentials`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends GrpcServerModule {
+
+        default ServerCredentials grpcServerCredentials() throws IOException { //(1)!
+            return TlsServerCredentials.create(
+                new File("/etc/certs/server.crt"), //(2)!
+                new File("/etc/certs/server.key"));
+        }
+    }
+    ```
+
+    1. A factory method of the application graph: the credentials are picked up when the `gRPC server` builder is created
+    2. A `PEM`-encoded certificate chain and an unencrypted `PKCS#8` private key
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : GrpcServerModule {
+
+        fun grpcServerCredentials(): ServerCredentials { //(1)!
+            return TlsServerCredentials.create(
+                File("/etc/certs/server.crt"), //(2)!
+                File("/etc/certs/server.key"))
+        }
+    }
+    ```
+
+    1. A factory method of the application graph: the credentials are picked up when the `gRPC server` builder is created
+    2. A `PEM`-encoded certificate chain and an unencrypted `PKCS#8` private key
+
+For mutual `TLS` and custom trust stores build the credentials with `TlsServerCredentials.newBuilder()` instead.
 
 ## Handlers { #handlers }
 
@@ -297,7 +369,7 @@ Consider a `proto` contract with a single unary method:
 ```protobuf title="src/main/proto/message.proto"
 syntax = "proto3";
 
-package ru.tinkoff.kora.generated.grpc;
+package io.koraframework.generated.grpc;
 
 service UserService {
   rpc createUser(RequestEvent) returns (ResponseEvent) {} //(1)!
@@ -519,7 +591,7 @@ code and an optional description rather than with HTTP response codes.
 To fail a call, complete the response observer with `responseObserver.onError(status.asRuntimeException())`,
 or throw a `StatusRuntimeException` from the handler.
 The auto-registered [`TelemetryInterceptor`](#default) observes the terminal `Status` when the call is closed
-(on `close`, `onHalfClose`, `onCancel`, and `onComplete`) and records logging, metrics, and tracing accordingly.
+and records logging, metrics, and tracing accordingly.
 
 **Causes**: choose the `Status` code that matches the failure — for example `Status.NOT_FOUND` for a missing entity,
 `Status.INVALID_ARGUMENT` for invalid input, `Status.UNAUTHENTICATED` or `Status.PERMISSION_DENIED` for authorization failures,
@@ -601,8 +673,8 @@ The shape of a handler method is fixed by the `proto` contract and the generated
     - Client streaming: `StreamObserver<Req> myMethod(StreamObserver<Resp> responseObserver)`
     - Bidirectional streaming: `StreamObserver<Req> myMethod(StreamObserver<Resp> responseObserver)`
 
-    The generated method returns `void` (or the request `StreamObserver`), so results are delivered asynchronously through the `StreamObserver` callbacks;
-    responses may be completed from another thread.
+    The generated method returns `void` (or the request `StreamObserver`), so results are delivered through the `StreamObserver` callbacks
+    rather than through the return value.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -613,10 +685,20 @@ The shape of a handler method is fixed by the `proto` contract and the generated
     - Client streaming: `myMethod(responseObserver: StreamObserver<Resp>): StreamObserver<Req>`
     - Bidirectional streaming: `myMethod(responseObserver: StreamObserver<Resp>): StreamObserver<Req>`
 
-    When you generate coroutine stubs with the [`grpc-kotlin`](https://github.com/grpc/grpc-kotlin) plugin (`io.grpc:protoc-gen-grpc-kotlin`)
-    and extend the generated `...CoroutineImplBase`, handler methods can be `suspend` functions (and streaming methods can use `Flow`).
-    Kora auto-registers [`CoroutineContextInjectInterceptor`](#default), which injects the Kora `Context` into the handler's `CoroutineContext`;
-    it activates only when `kotlinx-coroutines` is on the classpath.
+    The generated method returns `Unit` (or the request `StreamObserver`), so results are delivered through the `StreamObserver` callbacks
+    rather than through the return value.
+
+Handlers are blocking: a handler method may call a database, an [HTTP client](http-client.md) or a [gRPC client](grpc-client.md) directly.
+There are no asynchronous, reactive or `suspend` handler signatures — the server runs handlers on virtual threads, see [Execution model](#execution-model).
+
+### Execution model { #execution-model }
+
+Every client connection gets a dedicated single-threaded executor backed by a virtual thread named `grpc-<remote address>`.
+The executor is created when the transport becomes ready and shut down when the transport terminates.
+
+- All interceptor and handler callbacks of the calls arriving on one connection run on that one virtual thread, one at a time and in arrival order.
+- Blocking inside a handler is safe — the carrier thread is released — but it delays the other calls of the **same** connection. A client that needs concurrent calls should open several connections.
+- Kora binds its [`MDC`](logging-slf4j.md) and the `OpenTelemetry` context to that thread for the duration of each callback, so logging context is available inside the handler.
 
 ## Interceptors { #interceptors }
 
@@ -629,28 +711,28 @@ To limit an interceptor to a single service or method, inspect the call at runti
 
 ### Default { #default }
 
-When the server starts, Kora adds standard interceptors:
+When the server starts, Kora adds one standard interceptor:
 
-- `TelemetryInterceptor` — enables server telemetry (logging, metrics, tracing) depending on connected modules and `grpcServer.telemetry` settings, and maps the terminal `Status`/exception when the call closes
-- `ContextServerInterceptor` — propagates the Kora `Context` into call processing so it is available inside the handler
-- `CoroutineContextInjectInterceptor` — adds `CoroutineContext` support for `Kotlin` coroutine handlers (active only when `kotlinx-coroutines` is on the classpath)
+- `TelemetryInterceptor` — opens a `GrpcServerObservation` for every call, binds the current observation and the `OpenTelemetry` context around the call, and records logging, metrics and tracing when the call is closed, depending on the connected modules and the `grpcServer.telemetry` settings
 
-User-defined `ServerInterceptor` beans from the application graph are added to `NettyServerBuilder` before the standard interceptors.
-For full `NettyServerBuilder` configuration, use [GrpcServerBuilderConfigurer](#builder-configurer).
+User-defined `ServerInterceptor` components from the application graph are added to the builder before the standard interceptor.
+For full builder configuration, use [configuration in code](#builder-configurer).
+
+Interceptor components are read through the refreshable graph, so an interceptor that is rebuilt on a configuration refresh is picked up without restarting the server.
 
 ### Execution order { #execution-order }
 
 gRPC invokes interceptors in the **reverse** order of registration, so the last interceptor added runs first (outermost).
-Because Kora registers user interceptors first and the standard interceptors last, an incoming call is processed in this order:
+Because Kora registers user interceptors first and the standard interceptor last, an incoming call is processed in this order:
 
 ```
-CoroutineContextInjectInterceptor -> ContextServerInterceptor -> TelemetryInterceptor -> user interceptors -> handler
+TelemetryInterceptor -> user interceptors -> handler
 ```
 
 Consequences of this order:
 
-- The Kora `Context` and Kotlin `CoroutineContext` are established around your interceptors and the handler, so they are available inside the handler's listener callbacks.
-- `TelemetryInterceptor` wraps your interceptors and the handler, so it observes the final `Status` (including errors thrown or reported through the response observer).
+- `TelemetryInterceptor` wraps your interceptors and the handler, so it observes the final `Status` — including errors thrown by your interceptors or reported through the response observer.
+- The current observation and the `OpenTelemetry` context are established around your interceptors and the handler, so they are available inside the handler's listener callbacks.
 - When several user interceptors exist, they run in the reverse of their graph registration order; do not rely on a specific order between them for correctness.
 
 ### Custom { #custom }
@@ -661,36 +743,46 @@ To add a custom interceptor, create a `ServerInterceptor` implementation with th
 
     ```java
     @Component
-    public class GrpcExceptionHandlerServerInterceptor implements ServerInterceptor {
+    public final class LoggingServerInterceptor implements ServerInterceptor {
+
+        private static final Logger logger = LoggerFactory.getLogger(LoggingServerInterceptor.class);
 
         @Override
-        public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, 
-                                                                     Metadata metadata,
-                                                                     ServerCallHandler<ReqT, RespT> serverCallHandler) {
-            // do something
-            
-            return serverCallHandler.startCall(serverCall, metadata);
+        public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
+                                                                     Metadata headers,
+                                                                     ServerCallHandler<ReqT, RespT> next) {
+            logger.info("Incoming gRPC call: {}", call.getMethodDescriptor().getFullMethodName()); //(1)!
+
+            return next.startCall(call, headers); //(2)!
         }
     }
     ```
+
+    1. `getFullMethodName()` returns `service/method` for the intercepted call
+    2. Passes the call on; if you return without calling `startCall`, you must close the call yourself
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class GrpcExceptionHandlerServerInterceptor : ServerInterceptor {
+    class LoggingServerInterceptor : ServerInterceptor {
 
-        override fun <ReqT, RespT> interceptCall(
-            serverCall: ServerCall<ReqT, RespT>,
-            metadata: Metadata,
-            serverCallHandler: ServerCallHandler<ReqT, RespT>
+        private val logger = LoggerFactory.getLogger(LoggingServerInterceptor::class.java)
+
+        override fun <ReqT : Any, RespT : Any> interceptCall(
+            call: ServerCall<ReqT, RespT>,
+            headers: Metadata,
+            next: ServerCallHandler<ReqT, RespT>
         ): ServerCall.Listener<ReqT> {
-            // do something
-            
-            return serverCallHandler.startCall(serverCall, metadata)
+            logger.info("Incoming gRPC call: {}", call.methodDescriptor.fullMethodName) //(1)!
+
+            return next.startCall(call, headers) //(2)!
         }
     }
     ```
+
+    1. `fullMethodName` returns `service/method` for the intercepted call
+    2. Passes the call on; if you return without calling `startCall`, you must close the call yourself
 
 ### Scoping and authorization { #authorization }
 
@@ -704,11 +796,25 @@ The example below applies API-key authorization to a single service only:
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @ConfigSource("auth.apiKey")
+    public interface ApiKeyConfig {
+
+        String value();
+    }
+    ```
+
+    ```java
     @Component
     public final class ApiKeyServerInterceptor implements ServerInterceptor {
 
         private static final Metadata.Key<String> AUTHORIZATION =
             Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER); //(1)!
+
+        private final ApiKeyConfig config;
+
+        public ApiKeyServerInterceptor(ApiKeyConfig config) {
+            this.config = config;
+        }
 
         @Override
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
@@ -719,7 +825,7 @@ The example below applies API-key authorization to a single service only:
             }
 
             var apiKey = headers.get(AUTHORIZATION); //(3)!
-            if (apiKey == null || !apiKey.equals("secret")) {
+            if (!config.value().equals(apiKey)) {
                 call.close(Status.UNAUTHENTICATED.withDescription("Invalid API key"), new Metadata()); //(4)!
                 return new ServerCall.Listener<>() {}; //(5)!
             }
@@ -738,10 +844,18 @@ The example below applies API-key authorization to a single service only:
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Component
-    class ApiKeyServerInterceptor : ServerInterceptor {
+    @ConfigSource("auth.apiKey")
+    interface ApiKeyConfig {
 
-        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        fun value(): String
+    }
+    ```
+
+    ```kotlin
+    @Component
+    class ApiKeyServerInterceptor(private val config: ApiKeyConfig) : ServerInterceptor {
+
+        override fun <ReqT : Any, RespT : Any> interceptCall(
             call: ServerCall<ReqT, RespT>,
             headers: Metadata,
             next: ServerCallHandler<ReqT, RespT>
@@ -751,7 +865,7 @@ The example below applies API-key authorization to a single service only:
             }
 
             val apiKey = headers.get(AUTHORIZATION) //(3)!
-            if (apiKey != "secret") {
+            if (config.value() != apiKey) {
                 call.close(Status.UNAUTHENTICATED.withDescription("Invalid API key"), Metadata()) //(4)!
                 return object : ServerCall.Listener<ReqT>() {} //(5)!
             }
@@ -774,13 +888,14 @@ The example below applies API-key authorization to a single service only:
 
 ## Lifecycle and readiness { #lifecycle }
 
-The server is managed by the `GrpcNettyServer` component, which is created as a [`@Root`](container.md#root-component) component
+The server is managed by the `GrpcServer` component, which is created as a [`@Root`](container.md#root-component) component
 and follows the [application lifecycle](container.md#component-lifecycle):
 
-- On startup it builds and starts the `Netty` server on the configured `port`. If the port is already in use, startup fails with a clear error.
+- On startup it builds and starts the server on the configured `port`. If the port is already in use, startup fails with
+  `gRPC server failed to start on port '8090': port is already in use; stop the other process or configure a different port`.
 - On shutdown it performs a [graceful shutdown](container.md#graceful-shutdown): it stops accepting new calls and waits up to `shutdownWait` for in-flight calls to finish, then forcibly terminates any remaining calls.
 
-`GrpcNettyServer` also implements a [readiness probe](probes.md): the server reports **not ready** while it is starting up or shutting down,
+`GrpcServer` also implements a [readiness probe](probes.md): the server reports **not ready** while it is starting up or shutting down,
 and **ready** only while it is running. In a `Kubernetes` deployment this lets the readiness probe reflect the real server state and drain traffic during graceful shutdown.
 
 ## Reflection { #reflection }
@@ -800,20 +915,20 @@ You must additionally add the [`gRPC Server Reflection`](https://mvnrepository.c
 
     [Dependency](general.md#dependencies) in `build.gradle`:
     ```groovy
-    implementation "io.grpc:grpc-services:1.74.0"
+    implementation "io.grpc:grpc-services:1.83.1"
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    implementation("io.grpc:grpc-services:1.74.0")
+    implementation("io.grpc:grpc-services:1.83.1")
     ```
 
 ### Configuration { #configuration-2 }
 
 You must also enable the `gRPC Server Reflection` service in the configuration.
-Kora adds it to the server only if the application has the `io.grpc.protobuf.services.ProtoReflectionService` class, so configuration alone is not enough without the dependency.
+Kora adds it to the server only if the application has the `io.grpc.protobuf.services.ProtoReflectionServiceV1` class, so configuration alone is not enough without the dependency.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -841,9 +956,9 @@ For a server listening on port `8090`:
 
 ```bash
 grpcurl -plaintext localhost:8090 list #(1)!
-grpcurl -plaintext localhost:8090 describe ru.tinkoff.kora.generated.grpc.UserService #(2)!
+grpcurl -plaintext localhost:8090 describe io.koraframework.generated.grpc.UserService #(2)!
 grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
-    localhost:8090 ru.tinkoff.kora.generated.grpc.UserService/createUser #(3)!
+    localhost:8090 io.koraframework.generated.grpc.UserService/createUser #(3)!
 ```
 
 1. Lists the services exposed by the server
@@ -852,18 +967,152 @@ grpcurl -plaintext -d '{"name": "Bob", "code": "123"}' \
 
 ## Telemetry { #telemetry }
 
-gRPC Server uses a telemetry contract for logging, metrics, and tracing of calls.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.grpc.server.common.telemetry`.
-
 Server observability is driven by the `TelemetryInterceptor` through the `GrpcServerTelemetry` facade and is configured under [`grpcServer.telemetry`](#configuration).
+Extension points are located in `io.koraframework.grpc.server.telemetry`.
 
-For each gRPC call, a `GrpcServerTelemetry.GrpcServerTelemetryContext` is created, which is closed upon call completion.
-The call is described through telemetry handler parameters, including service, method, response status, and duration.
+For each gRPC call a `GrpcServerObservation` is created; it collects headers, sent and received messages, the terminal `Status`
+and the error, and is ended when the call is closed.
+The default `GrpcServerTelemetryFactory` is registered as a `@DefaultComponent`, so it can be replaced entirely; alternatively the individual parts can be
+overridden by registering a `DefaultGrpcServerLoggerFactory`, `DefaultGrpcServerMetricsFactory` or `DefaultGrpcServerBodyConverter` subclass as a component.
+When logging, metrics and tracing are all disabled the factory returns a no-op telemetry, and calls carry no observability overhead at all.
 
-The default factory `DefaultGrpcServerTelemetryFactory` combines three factories:
-- `GrpcServerLoggerFactory` builds `GrpcServerLogger` for logging call start/end;
-- `GrpcServerMetricsFactory` builds `GrpcServerMetrics` for writing call metrics;
-- `GrpcServerTracerFactory` builds `GrpcServerTracer` for distributed tracing.
+The server reports itself under the name `kora-grpc` in logs, metrics and spans.
 
-Metrics and tracing are described in the [Metrics Reference](metrics.md#grpc-server) section.
+### Logging { #telemetry-logging }
+
+Call logging is enabled with `grpcServer.telemetry.logging.enabled` and is written by two loggers:
+
+- `io.koraframework.grpc.server.GrpcServer.request` — `GrpcCall received`, with the `grpcRequest` structured field
+- `io.koraframework.grpc.server.GrpcServer.response` — `GrpcCall responded`, with the `grpcResponse` structured field
+
+The structured fields carry `serverName`, `serverPort`, `serviceName` and `operation` (`service/method`);
+the response also carries `processingTime` in milliseconds, the `Status` code in `status` and, for a failed call, `exceptionType`.
+A call that ends with an error is logged at `WARN` with the exception attached, a successful one at `INFO`.
+
+The logger level adds detail on top of that: `DEBUG` on the request logger adds the request `Metadata` in `headers`,
+and `TRACE` adds the message body, rendered by `DefaultGrpcServerBodyConverter`.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    logging.levels {
+        "io.koraframework.grpc.server.GrpcServer.request" = "DEBUG"
+        "io.koraframework.grpc.server.GrpcServer.response" = "TRACE"
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    logging:
+      levels:
+        "io.koraframework.grpc.server.GrpcServer.request": "DEBUG"
+        "io.koraframework.grpc.server.GrpcServer.response": "TRACE"
+    ```
+
+### Metrics { #telemetry-metrics }
+
+Metrics require `grpcServer.telemetry.metrics.enabled` **and** a `MeterRegistry` supplied by a [metrics](metrics.md) module.
+The module reports a single `rpc.server.duration` timer, with the buckets from `grpcServer.telemetry.metrics.slo` and the tags
+`server.name`, `server.port`, `rpc.system` (always `grpc`), `rpc.service`, `rpc.method` and `rpc.grpc.status_code`,
+plus everything declared in `grpcServer.telemetry.metrics.tags`.
+
+Metrics are described in the [Metrics Reference](metrics.md#grpc-server) section.
+
+### Tracing { #telemetry-tracing }
+
+Tracing requires `grpcServer.telemetry.tracing.enabled` **and** a `Tracer` supplied by a [tracing](tracing.md) module.
+A `SERVER` span named `<service>/<method>` is created for every call; its parent is extracted from the request `Metadata` using the
+`W3C Trace Context` propagator, so a trace started by the caller continues on the server.
+
+The span carries the `server.port`, `server.name`, `rpc.system`, `rpc.service`, `rpc.method` and `network.peer.address` attributes,
+plus everything declared in `grpcServer.telemetry.tracing.attributes`; on close `rpc.grpc.status_code` is added.
+Each sent and received message adds an `rpc.message` event with the `rpc.message.type` attribute.
+A non-OK `Status` or an exception marks the span status as `ERROR`.
+
+## Testing { #testing }
+
+The `gRPC server` binds a real port, so a [`@KoraAppTest`](junit5.md) starts it and the test talks to it through an ordinary `ManagedChannel`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class UserServiceTests {
+
+        @Test
+        void createUser() {
+            var channel = ManagedChannelBuilder.forAddress("localhost", 8090) //(1)!
+                .usePlaintext()
+                .build();
+
+            try {
+                var stub = UserServiceGrpc.newBlockingStub(channel); //(2)!
+                var response = stub.createUser(Message.RequestEvent.newBuilder()
+                    .setName("Bob")
+                    .setCode("123")
+                    .build());
+
+                assertFalse(response.getId().isEmpty());
+            } finally {
+                channel.shutdownNow();
+            }
+        }
+    }
+    ```
+
+    1. The port the server was started on, that is `grpcServer.port` from the test configuration
+    2. A blocking stub generated from the `proto` contract
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class UserServiceTests {
+
+        @Test
+        fun createUser() {
+            val channel = ManagedChannelBuilder.forAddress("localhost", 8090) //(1)!
+                .usePlaintext()
+                .build()
+
+            try {
+                val stub = UserServiceGrpc.newBlockingStub(channel) //(2)!
+                val response = stub.createUser(
+                    Message.RequestEvent.newBuilder()
+                        .setName("Bob")
+                        .setCode("123")
+                        .build()
+                )
+
+                assertFalse(response.id.isEmpty)
+            } finally {
+                channel.shutdownNow()
+            }
+        }
+    }
+    ```
+
+    1. The port the server was started on, that is `grpcServer.port` from the test configuration
+    2. A blocking stub generated from the `proto` contract
+
+**Version alignment**: the client side of a test needs a `gRPC` transport on the test classpath, and its version must match the `gRPC` runtime
+that comes with `io.koraframework:grpc-server` — `1.83.1`.
+A pinned older version compiles fine and fails only at runtime with
+`AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Dependency](general.md#dependencies) in `build.gradle`:
+    ```groovy
+    testImplementation "io.koraframework:test-junit5"
+    testImplementation "io.grpc:grpc-netty:1.83.1"
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Dependency](general.md#dependencies) in `build.gradle.kts`:
+    ```groovy
+    testImplementation("io.koraframework:test-junit5")
+    testImplementation("io.grpc:grpc-netty:1.83.1")
+    ```

@@ -1,8 +1,11 @@
-﻿---
+---
 search:
   exclude: true
 title: Black Box Testing with Kora
 summary: Learn comprehensive black box testing strategies for Kora applications using Testcontainers and HTTP APIs
+description: "Black box testing for a packaged Kora 2.0 application: building the distribution tar and a Dockerfile image, a Testcontainers 2.0 GenericContainer wrapper exposing httpServer.port 8080 and httpServer.system.port 8085, waiting on GET /system/readiness for status 200, passing configuration through container environment variables, and asserting HTTP status codes and JSON bodies from the outside."
+agent:
+  use_when: "Use this file for questions about end-to-end testing a packaged Kora 2.0 service through HTTP: Dockerfile and distTar packaging, an AppContainer built with ImageFromDockerfile, Wait.forHttp(\"/system/readiness\").forPort(8085).forStatusCode(200), Network.SHARED between the application and a PostgreSQL container, withEnv configuration, and org.testcontainers:testcontainers-junit-jupiter coordinates."
 tags: testing, black-box-tests, testcontainers, http-testing, end-to-end-testing
 ---
 
@@ -17,7 +20,7 @@ without reaching into services, repositories, or generated graph internals. You 
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Testing Black Box App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-testing-black-box-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Testing Black Box App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-testing-black-box-app).
 
 ## What You'll Build { #youll-build }
 
@@ -31,8 +34,8 @@ You'll create comprehensive black box tests that cover:
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+ (the reference applications use Gradle Wrapper `9.5.1`)
 - Docker (for Testcontainers)
 - A text editor or IDE
 - Completed [Database Integration](database-jdbc.md) guide
@@ -112,27 +115,31 @@ The practical flow is:
 
 ## Dependencies { #dependencies }
 
-Add testing dependencies for black-box tests in your black-box module.
+Add testing dependencies for black-box tests in your black-box module. Nothing from Kora is strictly required to send HTTP requests — the JDK HTTP client is enough — but the module still depends on the
+application project so that Gradle knows when the image has to be rebuilt.
+
+Note the Testcontainers coordinates: since Testcontainers `2.0` the JUnit 5 extension is published as `org.testcontainers:testcontainers-junit-jupiter` and the PostgreSQL module as
+`org.testcontainers:testcontainers-postgresql`. The version on those lines is the Testcontainers version, not the JUnit one.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Add to `build.gradle`:
 
-    ```groovy
+    ```groovy title="build.gradle"
     dependencies {
-        testImplementation platform("org.junit:junit-bom:5.14.3")
+        testImplementation platform("org.junit:junit-bom:6.1.3")
 
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation project(":guide-database-jdbc-app")
-        testImplementation "ru.tinkoff.kora:test-junit5"
-        testImplementation "org.json:json:20231013"
-        testImplementation "org.testcontainers:junit-jupiter:1.21.4"
-        testImplementation "org.testcontainers:testcontainers:1.21.4"
-        testImplementation "org.testcontainers:postgresql:1.21.4"
+        testImplementation project(":guide-database-jdbc-app") //(1)!
+        testImplementation "io.koraframework:test-junit5"
+        testImplementation "org.json:json:20231013" //(2)!
+        testImplementation "org.testcontainers:testcontainers:2.0.5"
+        testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5" //(3)!
+        testImplementation "org.testcontainers:testcontainers-postgresql:2.0.5"
     }
 
     test {
-        dependsOn ":guide-database-jdbc-app:distTar"
+        dependsOn ":guide-database-jdbc-app:distTar" //(4)!
         inputs.file("../guide-database-jdbc-app/Dockerfile")
         inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
 
@@ -145,27 +152,32 @@ Add testing dependencies for black-box tests in your black-box module.
     }
     ```
 
+    1.  The application module. The test never imports its classes, but the dependency ties the two builds together.
+    2.  A small JSON library for building request bodies and reading responses. The test deliberately does not reuse the application DTOs, so a schema change shows up as a failing assertion.
+    3.  Testcontainers `2.0` module names. The old `org.testcontainers:junit-jupiter` and `org.testcontainers:postgresql` coordinates stopped at `1.21.x`.
+    4.  The image is built from the distribution archive, so the archive has to exist before tests run.
+
 === ":simple-kotlin: `Kotlin`"
 
     Add to `build.gradle.kts`:
 
-    ```kotlin
+    ```kotlin title="build.gradle.kts"
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:5.14.3"))
+        testImplementation(platform("org.junit:junit-bom:6.1.3"))
 
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation(project(":guide-database-jdbc-app"))
-        testImplementation("ru.tinkoff.kora:test-junit5")
-        testImplementation("org.json:json:20231013")
-        testImplementation("org.testcontainers:junit-jupiter:1.21.4")
-        testImplementation("org.testcontainers:testcontainers:1.21.4")
-        testImplementation("org.testcontainers:postgresql:1.21.4")
+        testImplementation(project(":guide-database-jdbc-app")) //(1)!
+        testImplementation("io.koraframework:test-junit5")
+        testImplementation("org.json:json:20231013") //(2)!
+        testImplementation("org.testcontainers:testcontainers:2.0.5")
+        testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5") //(3)!
+        testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
     }
 
     tasks.test {
-        dependsOn(":guide-database-jdbc-app:distTar")
+        dependsOn(":guide-database-jdbc-app:distTar") //(4)!
         inputs.file("../guide-database-jdbc-app/Dockerfile")
-        inputs.file(project(":guide-database-jdbc-app").tasks.named("distTar").flatMap { it.archiveFile })
+        inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
 
         useJUnitPlatform()
         testLogging {
@@ -176,14 +188,27 @@ Add testing dependencies for black-box tests in your black-box module.
     }
     ```
 
+    1.  The application module. The test never imports its classes, but the dependency ties the two builds together.
+    2.  A small JSON library for building request bodies and reading responses. The test deliberately does not reuse the application DTOs, so a schema change shows up as a failing assertion.
+    3.  Testcontainers `2.0` module names. The old `org.testcontainers:junit-jupiter` and `org.testcontainers:postgresql` coordinates stopped at `1.21.x`.
+    4.  The image is built from the distribution archive, so the archive has to exist before tests run.
+
 ## Dockerfile Setup { #dockerfile-setup }
 
 Before creating `AppContainer`, add Docker packaging for the JDBC application from [Database Integration](database-jdbc.md).
 
+The application module already uses the Gradle `application` plugin, so `distTar` produces a runnable distribution. Fix its name so the Dockerfile can copy a predictable path:
+
+```groovy title="guide-database-jdbc-app/build.gradle"
+distTar {
+    archiveFileName = "application.tar"
+}
+```
+
 Create `guides/guide-database-jdbc-app/Dockerfile`:
 
 ```dockerfile
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 ARG TARGET_DIR=/opt/app
 
@@ -201,15 +226,30 @@ EXPOSE 8085/tcp
 CMD ["/opt/app/application/bin/application"]
 ```
 
+The base image is a Java 25 runtime because Kora 2.0 modules are compiled for Java 25. Two ports are exposed: `8080` is the public HTTP server (`httpServer.port`) and `8085` is the system server
+(`httpServer.system.port`) that answers probes and metrics.
+
 In black-box module `build.gradle`, make tests depend on distribution archive:
 
-```groovy
-test {
-    dependsOn ":guide-database-jdbc-app:distTar"
-    inputs.file("../guide-database-jdbc-app/Dockerfile")
-    inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
-}
-```
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy title="build.gradle"
+    test {
+        dependsOn ":guide-database-jdbc-app:distTar"
+        inputs.file("../guide-database-jdbc-app/Dockerfile")
+        inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="build.gradle.kts"
+    tasks.test {
+        dependsOn(":guide-database-jdbc-app:distTar")
+        inputs.file("../guide-database-jdbc-app/Dockerfile")
+        inputs.file("../guide-database-jdbc-app/build/distributions/application.tar")
+    }
+    ```
 
 ## Application Container { #application-container }
 
@@ -219,16 +259,23 @@ It encapsulates startup details so your test class stays focused on scenarios, n
 What happens inside `AppContainer`:
 
 - builds image from JDBC guide Dockerfile
-- exposes public (`8080`) and private (`8085`) ports
-- waits for `/system/readiness` on private port before tests run
+- exposes public (`8080`) and system (`8085`) ports
+- waits for `/system/readiness` on the system port before tests run
 - exposes helper methods to build HTTP base URI
+
+The readiness wait is the important part. Kora exposes `/system/readiness`, `/system/liveness`, and `/metrics` on the system HTTP server, which is provided by `SystemHttpServerModule` and inherited by
+`UndertowPublicHttpServerModule` — you do not add a separate module for it. The readiness endpoint answers `200` once every `ReadinessProbe` in the graph reports ready, and `503` while any of them is
+still starting, so a `200` there means the graph is built, migrations have run, and the public server can serve traffic.
+
+Wait on that endpoint, not on a startup log line. Log wording is not part of Kora's contract and can change between releases, whereas the readiness status code is exactly the signal the same probe gives
+to an orchestrator in production.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/test/java/ru/tinkoff/kora/guide/testingblackbox/AppContainer.java`:
+    Create `src/test/java/io/koraframework/guide/testingblackbox/AppContainer.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.testingblackbox;
+    package io.koraframework.guide.testingblackbox;
 
     import java.net.URI;
     import java.nio.file.Path;
@@ -246,7 +293,7 @@ What happens inside `AppContainer`:
                     .withDockerfile(Path.of("../guide-database-jdbc-app/Dockerfile")));
 
             withExposedPorts(8080, 8085);
-            withStartupTimeout(Duration.ofMinutes(1));
+            withStartupTimeout(Duration.ofSeconds(30));
             waitingFor(Wait.forHttp("/system/readiness").forPort(8085).forStatusCode(200));
             withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer.class)));
         }
@@ -263,19 +310,19 @@ What happens inside `AppContainer`:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/test/kotlin/ru/tinkoff/kora/guide/testingblackbox/AppContainer.kt`:
+    Create `src/test/kotlin/io/koraframework/guide/testingblackbox/AppContainer.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingblackbox
+    package io.koraframework.guide.testingblackbox
 
-    import java.net.URI
-    import java.nio.file.Path
-    import java.time.Duration
     import org.slf4j.LoggerFactory
     import org.testcontainers.containers.GenericContainer
     import org.testcontainers.containers.output.Slf4jLogConsumer
     import org.testcontainers.containers.wait.strategy.Wait
     import org.testcontainers.images.builder.ImageFromDockerfile
+    import java.net.URI
+    import java.nio.file.Path
+    import java.time.Duration
 
     class AppContainer : GenericContainer<AppContainer>(
         ImageFromDockerfile("guide-database-jdbc-black-box")
@@ -284,7 +331,7 @@ What happens inside `AppContainer`:
 
         init {
             withExposedPorts(8080, 8085)
-            withStartupTimeout(Duration.ofMinutes(1))
+            withStartupTimeout(Duration.ofSeconds(30))
             waitingFor(Wait.forHttp("/system/readiness").forPort(8085).forStatusCode(200))
             withLogConsumer(Slf4jLogConsumer(LoggerFactory.getLogger(AppContainer::class.java)))
         }
@@ -295,6 +342,9 @@ What happens inside `AppContainer`:
     }
     ```
 
+Both `8080` and `8085` are exposed, and both are mapped to random host ports by Docker. That is why the test never hardcodes a port: `getMappedPort(8080)` returns the host port for the public API, and
+`getMappedPort(8085)` returns the one for the system API. `getSystemURI()` is what you use when a test wants to read `/metrics` or re-check `/system/liveness` after a scenario.
+
 ## Testcontainers { #testcontainers }
 
 In a black-box test, the application has already been built as a separate Docker artifact. The test does not modify its Kora graph and does not add test components into the application: the container
@@ -303,6 +353,21 @@ runs the same code that was packaged during the build.
 What the test can change is the container runtime environment: environment variables, network, ports, startup order, and external infrastructure. In this guide, the test starts PostgreSQL next to the
 application and passes connection settings to the application through `withEnv(...)`. From the application's point of view, this is ordinary production-style configuration from the environment; the
 values are simply provided by Testcontainers for the duration of the test.
+
+That works because the application configuration reads those variables through HOCON substitutions:
+
+```hocon
+jdbc {
+  jdbcUrl = ${?POSTGRES_JDBC_URL}
+  username = ${?POSTGRES_USER}
+  password = ${?POSTGRES_PASS}
+  maxPoolSize = 10
+  poolName = "guide-jdbc"
+}
+```
+
+Note the section name: in Kora 2.0 the JDBC pool is configured under `jdbc`. The `?` in `${?POSTGRES_JDBC_URL}` makes the substitution optional, which keeps the file valid when the variable is absent —
+for example during local runs backed by `docker-compose`.
 
 Now define infrastructure lifecycle in your test class.
 `@Testcontainers` enables automatic container lifecycle handling, and `@Container` marks managed containers.
@@ -316,10 +381,10 @@ In this step:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Start `src/test/java/ru/tinkoff/kora/guide/testingblackbox/BlackBoxTests.java` with:
+    Start `src/test/java/io/koraframework/guide/testingblackbox/BlackBoxTests.java` with:
 
     ```java
-    package ru.tinkoff.kora.guide.testingblackbox;
+    package io.koraframework.guide.testingblackbox;
 
     import java.time.Duration;
     import org.junit.jupiter.api.Test;
@@ -352,12 +417,11 @@ In this step:
 
 === ":simple-kotlin: `Kotlin`"
 
-    Start `src/test/kotlin/ru/tinkoff/kora/guide/testingblackbox/BlackBoxTests.kt` with:
+    Start `src/test/kotlin/io/koraframework/guide/testingblackbox/BlackBoxTests.kt` with:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingblackbox
+    package io.koraframework.guide.testingblackbox
 
-    import java.time.Duration
     import org.junit.jupiter.api.Test
     import org.slf4j.LoggerFactory
     import org.testcontainers.containers.Network
@@ -365,6 +429,7 @@ In this step:
     import org.testcontainers.containers.output.Slf4jLogConsumer
     import org.testcontainers.junit.jupiter.Container
     import org.testcontainers.junit.jupiter.Testcontainers
+    import java.time.Duration
 
     @Testcontainers
     class BlackBoxTests {
@@ -390,6 +455,9 @@ In this step:
         }
     }
     ```
+
+The JDBC URL uses the host name `postgres`, not `localhost`. Both containers join `Network.SHARED`, and `withNetworkAliases("postgres")` publishes that name inside the Docker network, so the application
+reaches the database on its internal port `5432`. The mapped host ports only matter for the test process itself.
 
 ## Write tests { #tests }
 
@@ -552,14 +620,14 @@ These tests verify API behavior end-to-end through the running application conta
     Add imports:
 
     ```kotlin
-    import java.net.http.HttpClient
-    import java.net.http.HttpRequest
-    import java.net.http.HttpResponse
-    import java.util.UUID
     import org.json.JSONArray
     import org.json.JSONObject
     import org.junit.jupiter.api.Assertions.assertEquals
     import org.junit.jupiter.api.Assertions.assertTrue
+    import java.net.http.HttpClient
+    import java.net.http.HttpRequest
+    import java.net.http.HttpResponse
+    import java.util.UUID
     ```
 
     Add test methods and helpers:
@@ -692,6 +760,9 @@ These tests verify API behavior end-to-end through the running application conta
     private fun uniqueEmail(prefix: String): String = "$prefix-${UUID.randomUUID()}@example.com"
     ```
 
+Both versions use the JDK HTTP client and send blocking requests. That matches Kora 2.0, where the server side is synchronous as well: one request, one response, an explicit status code to assert on.
+Every test generates a unique email because the `users` table has a unique constraint on that column and the containers are shared by the whole class.
+
 !!! tip "Black Box Testing Benefits"
 
     Why prioritize black box testing?
@@ -757,9 +828,9 @@ Performance Considerations:
 Debugging Black Box Tests:
 
 - Container Logs: Access container logs for debugging application issues
-- Network Inspection: Use tools like Wireshark to inspect HTTP traffic
+- Readiness and Liveness: Query `/system/readiness` and `/system/liveness` on the system port to separate startup problems from request-handling problems
 - Database Inspection: Query test databases directly for data validation
-- Application Metrics: Monitor application metrics during test execution
+- Application Metrics: Read `/metrics` from the system port during test execution
 
 ## Summary { #summary }
 
@@ -789,7 +860,7 @@ AppContainer Pattern:
 
 - Containerized Applications: Run complete applications in Docker containers
 - Realistic Environments: Test with actual infrastructure and dependencies
-- Network Isolation: Each test gets dedicated ports and network configuration
+- Readiness Gating: Start scenarios only after `/system/readiness` answers `200` on the system port
 - Automatic Lifecycle: Containers start/stop automatically with test execution
 
 HTTP API Testing:
@@ -811,9 +882,16 @@ Test Isolation and Performance:
 AppContainer Not Starting:
 
 - Ensure Docker is running and accessible
-- Check that application JAR is built and available
-- Verify Docker image configuration and base images
+- Check that the distribution archive is built and available: the image copies `build/distributions/application.tar`
+- Verify Docker image configuration and base images; the base image must provide a Java 25 runtime
 - Check container logs for startup errors
+
+Readiness Wait Times Out:
+
+- Check the container logs: a failed graph build, a failed migration, or a wrong JDBC URL keeps `/system/readiness` at `503`
+- Confirm the wait strategy uses the system port `8085`, not the public port `8080`
+- Increase `withStartupTimeout(...)` if the first run also has to build the image
+- Do not switch the wait strategy to a log message: Kora's startup log wording is not a contract
 
 HTTP Connection Issues:
 
@@ -824,9 +902,9 @@ HTTP Connection Issues:
 
 Port Conflicts:
 
-- Ensure each test uses unique ports for application containers
+- Rely on Testcontainers port mapping: `getMappedPort(8080)` and `getMappedPort(8085)` return the host ports
+- Do not publish fixed host ports in a test; the container ports are always `8080` and `8085`
 - Check that ports are not already in use by other processes
-- Use dynamic port allocation to avoid conflicts
 - Verify port cleanup after test completion
 
 !!! tip "Flyway Migrations in Tests"
@@ -837,9 +915,9 @@ Port Conflicts:
 
 Database Setup Problems:
 
-- Ensure database container starts before application container
-- Check database connection configuration in application
-- Verify database schema initialization scripts run correctly
+- Ensure database container starts before application container with `dependsOn(...)`
+- Check that the application receives the container values: the configuration section is `jdbc`, and the variables are read as `${?POSTGRES_JDBC_URL}` and friends
+- Use the network alias, not `localhost`, in the JDBC URL passed to the application container
 - Check database container logs for startup or connection errors
 
 Test Timeouts:
@@ -867,7 +945,7 @@ Container Cleanup Issues:
 
 If you encounter issues:
 
-- compare black-box tests with [Kora Java Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-database-jdbc-app) and [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-database-jdbc-app)
+- compare black-box tests with [Kora Java Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-database-jdbc-app) and [Kora Kotlin Database JDBC App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-database-jdbc-app)
 - check the [JUnit5 documentation](../documentation/junit5.md)
 - check the [Database Migration documentation](../documentation/database-migration.md)
 - read the [Testcontainers documentation](https://www.testcontainers.org/)

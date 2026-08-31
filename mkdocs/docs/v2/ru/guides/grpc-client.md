@@ -2,15 +2,18 @@
 search:
   exclude: true
 title: gRPC-клиент с Kora
-summary: Build a Kora gRPC client that consumes a unary CRUD service through generated stubs
+summary: Build a Kora 2.0 gRPC client that consumes a unary CRUD service through injected generated stubs
+description: "Step-by-step Kora gRPC client: the io.koraframework:grpc-client module and GrpcClientModule, the protobuf Gradle plugin, generated UserServiceGrpc stubs injected without a @Tag, the grpcClient.<Service> configuration path derived from the protobuf service name, the url scheme choosing plaintext or TLS, timeout applied as a call deadline, wrapping a BlockingStub in an application service, and in-process client tests."
+agent:
+  use_when: "Use this file for questions about calling a gRPC service from Kora step by step: GrpcClientModule, injecting UserServiceGrpc.UserServiceBlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.UserService configuration section, url, timeout and telemetry keys, StatusRuntimeException and Status.Code handling, the io.koraframework:grpc-client and io.grpc:grpc-protobuf dependencies, the protobuf Gradle plugin, and client tests with InProcessServerBuilder."
 tags: grpc-client, protobuf, rpc, microservices
 ---
 
 # gRPC-клиент с Kora { #grpc-client-kora }
 
-Это руководство знакомит с унарными gRPC-клиентами в Kora. В нем показано, как один и тот же контракт `.proto` порождает клиентские заглушки и типы сообщений, как Kora внедряет настроенные
-gRPC-клиенты в граф приложения и как небольшой сервис-обертка превращает вызовы заглушки в операции уровня приложения. Вы также увидите, почему gRPC-статусы и сгенерированные построители запросов
-делают клиентский код непохожим на декларативные HTTP-клиенты.
+Это руководство знакомит с унарными gRPC-клиентами в Kora. В нем показано, как один и тот же контракт `.proto` порождает клиентские заглушки и типы сообщений, как Kora создает канал на каждую службу и
+внедряет готовые заглушки в граф приложения и как небольшая служба-обертка превращает вызовы заглушки в операции уровня приложения. Вы также увидите, почему gRPC-статусы, сроки выполнения и
+сгенерированные построители запросов формируют клиентский код иначе, чем декларативные HTTP-клиенты.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -20,96 +23,104 @@ gRPC-клиенты в граф приложения и как небольшо�
 
     Если в процессе захочется сверить результат, используйте готовое рабочее приложение: [Kora Kotlin gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-grpc-client-app).
 
-## Что вы соберете { #youll-build }
+## Что вы создадите { #youll-build }
 
-Вы соберете отдельное приложение унарного gRPC-клиента, в котором будут:
+Вы создадите отдельное приложение унарного gRPC-клиента с:
 
-- тот же контракт `user_service.proto`, который использует сервер
-- сгенерированные protobuf-типы запросов и ответов
-- внедренная Kora заглушка gRPC-клиента для `UserService`
-- небольшой прикладной сервис, который оборачивает `CreateUser`, `GetUser`, `GetUsers`, `UpdateUser` и `DeleteUser`
-- HTTP-маршруты для запуска проверок клиента локально
-- проверки времени выполнения против запущенного gRPC-сервера
+- тем же контрактом `user_service.proto`, что использует сервер
+- сгенерированными protobuf-типами запросов и ответов
+- внедренной клиентской gRPC-заглушкой Kora для `UserService`
+- небольшой службой приложения, которая оборачивает `CreateUser`, `GetUser`, `GetUsers`, `UpdateUser` и `DeleteUser`
+- HTTP-маршрутами-триггерами, которые позволяют легко проверить клиент локально
+- проверками во время выполнения против работающего gRPC-сервера
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+ (эталонные приложения используют Gradle Wrapper `9.5.1`)
 - текстовый редактор или среда разработки
-- запущенный gRPC-сервер из предыдущего руководства для проверок времени выполнения
+- работающий gRPC-сервер из предыдущего руководства для проверок во время выполнения
+
+Артефакты Kora собраны под Java 25, поэтому JDK, которым компилируется ваш код, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
 !!! note "Обязательно: пройдите руководство по gRPC-серверу"
 
-    Это руководство предполагает, что вы уже прошли **[gRPC Server with Kora](grpc-server.md)** и **[HTTP-клиент с Kora](http-client.md)**, а также понимаете генерацию protobuf-кода, унарные RPC-методы и разделение на репозиторий/сервис из предыдущих серверных руководств.
+    Это руководство предполагает, что вы уже прошли **[gRPC-сервер с Kora](grpc-server.md)** и **[HTTP-клиент с Kora](http-client.md)** и понимаете генерацию protobuf-кода, унарные RPC-методы и разделение на репозиторий и службу из предыдущих серверных руководств.
 
-    Если вы еще не прошли руководство по gRPC-серверу, сделайте это сначала, потому что здесь переиспользуется тот же protobuf-контракт и показано, как клиент вызывает этот сервер.
+    Если вы еще не прошли руководство по gRPC-серверу, сначала сделайте это, потому что здесь переиспользуется тот же protobuf-контракт и показывается, как клиент вызывает этот сервер.
 
 ## Обзор { #overview }
 
-В руководстве по серверу сгенерированный контракт использовался для реализации сервиса.
+В руководстве по серверу сгенерированный контракт использовался, чтобы реализовать службу.
 
-В руководстве по клиенту тот же сгенерированный контракт используется для вызова этого сервиса.
+В руководстве по клиенту тот же сгенерированный контракт используется, чтобы эту службу вызвать.
 
-Это одно из главных преимуществ gRPC:
+Это одна из сильнейших сторон gRPC:
 
 - один общий контракт
-- сгенерированный код на обеих сторонах
-- меньше риска рассогласования транспорта
+- сгенерированный код с обеих сторон
+- меньше риска расхождения транспорта
 
 Клиентская архитектура состоит из трех слоев:
 
 - protobuf-контракт описывает удаленный API
 - сгенерированная gRPC-заглушка выполняет транспортный вызов
-- ваш компонент Kora оборачивает заглушку в методы, удобные для приложения
+- ваш компонент Kora оборачивает заглушку в удобные для приложения методы
 
-Такая обертка важна. Сгенерированные заглушки ориентированы на транспорт: они работают с protobuf-типами запросов и ответов, крайними сроками выполнения, каналами и gRPC-статусами. Прикладной код
-обычно хочет видеть более понятные методы вроде `createUser(...)` или `getUsers(...)`, а также обработку ошибок на уровне предметной области. В этом руководстве эта граница остается явной, чтобы
-сгенерированный клиент не растекался по всей кодовой базе.
+Эта обертка важна. Сгенерированные заглушки ориентированы на транспорт: они говорят на языке protobuf-типов запросов и ответов, сроков выполнения, каналов и gRPC-статусов. Коду приложения обычно
+нужны более понятные методы вроде `createUser(...)` или `getUsers(...)` плюс обработка ошибок на уровне предметной области. Это руководство держит такую границу явной, чтобы сгенерированный клиент не
+растекался по всей кодовой базе.
+
+Перед началом стоит знать две детали времени выполнения — они объясняют, что именно Kora строит за вас:
+
+- Kora создает один `ManagedChannel` на каждую protobuf-службу через `ManagedChannelLifecycle`, а транспортом служит **gRPC OkHttp**. Отдельный транспортный артефакт добавлять не нужно:
+  `io.koraframework:grpc-client` уже приносит `grpc-okhttp` и `grpc-stub`.
+- Любая сгенерированная заглушка внедряется **без** `@Tag`. Kora сама подставляет канал с нужным тегом, поэтому параметра конструктора типа `UserServiceGrpc.UserServiceBlockingStub` достаточно.
 
 ### Чем gRPC-клиент отличается от HTTP { #grpc-client-differs-http }
 
-Рукописный HTTP-клиент обычно начинается с URL и HTTP-обмена. Клиентский код решает, какой путь вызвать, какой метод использовать, какие заголовки отправить, как сериализовать JSON и как
+Написанный вручную HTTP-клиент обычно начинается с URL и HTTP-обмена. Код клиента решает, какой путь вызвать, какой метод использовать, какие заголовки отправить, как сериализовать JSON и как
 интерпретировать ответ.
 
-- URL-пути
-- формы JSON-тел
-- разбор ответов
-- сопоставление ошибок
+- пути URL
+- формы JSON-нагрузки
+- разбор ответа
+- отображение ошибок
 
-gRPC-клиент вместо этого начинается со скомпилированного сервисного контракта. Файл `.proto` определяет доступные RPC-методы и типы сообщений, а сгенерированная заглушка раскрывает эти методы как код.
-Клиенту не нужно помнить, что `GetUser` соответствует какой-то форме URL, потому что в прикладном коде не собирается путь ресурса. Сгенерированная заглушка уже знает имя RPC-метода, имя сервиса,
-кодировщик сообщений и ожидаемый тип ответа.
+gRPC-клиент вместо этого начинается со скомпилированного контракта службы. Файл `.proto` определяет доступные RPC-методы и типы сообщений, а сгенерированная заглушка предоставляет эти методы как код.
+Клиенту не нужно помнить, что `GetUser` соответствует какой-то форме URL, потому что собирать путь к ресурсу в коде приложения не требуется. Сгенерированная заглушка уже знает имя RPC-метода, имя
+службы, кодировщик сообщений и ожидаемый тип ответа.
 
 Вместо ручной сборки запросов вы обычно:
 
 - строите protobuf-объект запроса
-- вызываете сгенерированный метод заглушки
+- вызываете метод сгенерированной заглушки
 - получаете типизированный protobuf-ответ
 
-Самое сильное отличие не только в двоичной кодировке вместо JSON. Более важное отличие в том, что gRPC переносит соглашение между клиентом и сервером в сгенерированный код:
+Главное отличие не только в бинарной кодировке против JSON. Более сильное отличие в том, что gRPC переносит договоренность клиента и сервера в сгенерированный код:
 
-- имена методов являются частью определения protobuf-сервиса
+- имена методов являются частью определения protobuf-службы
 - поля запросов и ответов являются частью protobuf-сообщений
-- отсутствующие или переименованные поля выявляются раньше благодаря компиляции и правилам развития схемы
-- клиентский код вызывает сгенерированный API вместо рукописного пути
-- серверный код реализует сгенерированные сервисные методы вместо сопоставления аннотаций маршрутов
+- отсутствующие или переименованные поля обнаруживаются раньше — при компиляции и по правилам эволюции схемы
+- код клиента вызывает сгенерированный API, а не написанный вручную путь
+- код сервера реализует сгенерированные методы службы, а не сопоставляет аннотации маршрутов
 
-HTTP-клиенты часто описывают отказ через коды ответа вроде `404`, `409` или `500`. gRPC-клиенты обычно описывают отказ через gRPC-статусы вроде `NOT_FOUND`, `INVALID_ARGUMENT`, `UNAVAILABLE`
-или `DEADLINE_EXCEEDED`. Это меняет обработку ошибок: прикладной код обычно ловит исключения статуса gRPC или сопоставляет их на границе обертки, а затем предоставляет остальному сервису поведение,
-удобное для предметной области.
+HTTP-клиенты часто моделируют сбои через коды ответа вроде `404`, `409` или `500`. gRPC-клиенты обычно моделируют сбои через gRPC-статусы вроде `NOT_FOUND`, `INVALID_ARGUMENT`, `UNAVAILABLE` или
+`DEADLINE_EXCEEDED`. Это меняет обработку ошибок: код приложения обычно ловит `StatusRuntimeException` и ветвится по коду статуса либо отображает его на границе обертки, а остальной части службы
+предоставляет поведение в терминах предметной области.
 
-Поведение соединений тоже ощущается иначе. HTTP/JSON-клиенты часто рассматривают каждый запрос как независимый вызов ресурса. gRPC-клиенты строятся вокруг каналов и заглушек. Канал представляет
-целевой адрес соединения и настройки транспорта, а заглушка является сгенерированным клиентским фасадом для выполнения вызовов. Поэтому руководству оборачивает сгенерированную заглушку
-в `UserGrpcClient`: остальной части приложения не нужно знать о каналах, protobuf-построителях или деталях gRPC-статусов.
+Поведение соединения тоже ощущается иначе. Клиенты HTTP/JSON часто считают каждый запрос независимым обращением к ресурсу. gRPC-клиенты строятся вокруг каналов и заглушек. Канал представляет цель
+соединения и настройки транспорта, а заглушка — сгенерированный фасад клиента для выполнения вызовов. Именно поэтому руководство оборачивает сгенерированную заглушку в `UserClientService`: остальной
+части приложения не нужно знать про каналы, protobuf-построители и детали gRPC-статусов.
 
-Это не устраняет необходимость в прикладном коде на стороне клиента. Это меняет его ответственность. Вместо ручной работы с низкоуровневыми транспортными деталями ваш клиентский сервис становится
-адаптером между сгенерированными транспортными типами и моделью приложения.
+Это не отменяет необходимость клиентского кода приложения. Это меняет его зону ответственности. Вместо ручной работы с низкоуровневыми деталями транспорта ваша клиентская служба становится адаптером
+между сгенерированными транспортными типами и моделью приложения.
 
-## API в Protobuf { #protobuf-api }
+## Protobuf API { #protobuf-api }
 
-Первая ключевая мысль: клиент **не** придумывает новый контракт.
+Первая ключевая мысль в том, что клиент **не** изобретает новый контракт.
 
 Он использует тот же `user_service.proto`, что и сервер:
 
@@ -117,13 +128,13 @@ HTTP-клиенты часто описывают отказ через коды
 
     ```protobuf title="src/main/proto/user_service.proto"
     syntax = "proto3";
-    
-    package ru.tinkoff.kora.guide.grpcserver;
+
+    package io.koraframework.guide.grpcserver;
     option java_multiple_files = true;
-    
+
     import "google/protobuf/empty.proto";
     import "google/protobuf/timestamp.proto";
-    
+
     service UserService {
       rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
       rpc GetUser(GetUserRequest) returns (UserResponse) {}
@@ -131,36 +142,36 @@ HTTP-клиенты часто описывают отказ через коды
       rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
       rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {}
     }
-    
+
     message CreateUserRequest {
       string name = 1;
       string email = 2;
     }
-    
+
     message GetUserRequest {
       string user_id = 1;
     }
-    
+
     message GetUsersRequest {
       int32 page = 1;
       int32 size = 2;
       string sort = 3;
     }
-    
+
     message GetUsersResponse {
       repeated UserResponse users = 1;
     }
-    
+
     message UpdateUserRequest {
       string user_id = 1;
       string name = 2;
       string email = 3;
     }
-    
+
     message DeleteUserRequest {
       string user_id = 1;
     }
-    
+
     message UserResponse {
       string id = 1;
       string name = 2;
@@ -169,14 +180,22 @@ HTTP-клиенты часто описывают отказ через коды
     }
     ```
 
-В этом и состоит смысл общего контракта:
+В этом общем контракте и весь смысл:
 
-- сервер и клиент компилируются против одной транспортной модели
-- вам не нужно вручную поддерживать дублирующие схемы запросов и ответов
+- сервер и клиент компилируются против одной и той же транспортной модели
+- вам не нужно вручную поддерживать дублирующиеся схемы запросов и ответов
+- `proto`-пакет остается `io.koraframework.guide.grpcserver`, поэтому сгенерированные классы сохраняют пакет сервера, хотя это клиентское приложение
 
 ## Зависимости { #dependencies }
 
-Теперь добавьте клиентский модуль Kora и поддержку protobuf.
+Теперь добавим клиентский модуль Kora и поддержку protobuf.
+
+Версии модулей Kora берутся из BOM Kora `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
+
+```properties title="gradle.properties"
+koraVersion=2.0.0.RC1
+junitVersion=6.1.3
+```
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -185,24 +204,36 @@ HTTP-клиенты часто описывают отказ через коды
     ```groovy title="build.gradle"
     plugins {
         id "application"
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
+    }
+
+    configurations {
+        koraBom
+        compileOnly.extendsFrom(koraBom)
+        annotationProcessor.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        testCompileOnly.extendsFrom(koraBom)
+        testAnnotationProcessor.extendsFrom(koraBom)
+        testImplementation.extendsFrom(koraBom)
     }
 
     dependencies {
-        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        koraBom platform("io.koraframework:kora-bom:$koraVersion")
 
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:grpc-client"
-        implementation "ru.tinkoff.kora:http-server-undertow"
-        implementation "ru.tinkoff.kora:json-module"
-        implementation "ru.tinkoff.kora:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.74.0"
+        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
+        annotationProcessor "io.koraframework:annotation-processors"
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:grpc-client"
+        implementation "io.koraframework:http-server-undertow"
+        implementation "io.koraframework:json-common"
+        implementation "io.koraframework:logging-logback"
+        implementation "io.grpc:grpc-protobuf:1.83.1"
 
         testRuntimeOnly platform("org.junit:junit-bom:$junitVersion")
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-inprocess:1.74.0"
+        testImplementation "io.grpc:grpc-inprocess:1.83.1"
         testImplementation "org.junit.jupiter:junit-jupiter"
     }
     ```
@@ -218,35 +249,47 @@ HTTP-клиенты часто описывают отказ через коды
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("com.google.protobuf") version "0.9.4"
+        id("com.google.protobuf") version "0.10.0"
     }
 
     dependencies {
-        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:grpc-client")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.74.0")
+        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:grpc-client")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.grpc:grpc-protobuf:1.83.1")
 
         testRuntimeOnly(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-inprocess:1.74.0")
+        testImplementation("io.grpc:grpc-inprocess:1.83.1")
         testImplementation("org.junit.jupiter:junit-jupiter")
     }
     ```
 
-Главное отличие от серверного модуля:
+Зачем нужны эти зависимости:
 
-- `ru.tinkoff.kora:grpc-client` вместо `ru.tinkoff.kora:grpc-server`
+- `io.koraframework:grpc-client` заменяет `io.koraframework:grpc-server` — он строит канал, подключает перехватчики и регистрирует сгенерированные заглушки в графе
+- `io.grpc:grpc-protobuf` дает поддержку сериализации protobuf-сообщений во время выполнения
+- `javax.annotation:javax.annotation-api` нужен только на этапе компиляции, потому что сгенерированные заглушки ссылаются на `@javax.annotation.Generated`
+- `io.koraframework:http-server-undertow` и `io.koraframework:json-common` нужны только для того, чтобы руководство могло выставить небольшой HTTP-эндпоинт, запускающий gRPC-вызовы
+- `io.grpc:grpc-inprocess` дает тестам gRPC-сервер и канал в памяти — без портов и без Docker
+
+!!! warning "Держите все артефакты `io.grpc` на одной версии"
+
+    Среда выполнения gRPC, поставляемая с `io.koraframework:grpc-client`, — это `1.83.1`. Любой другой объявленный вами артефакт `io.grpc` — `grpc-protobuf` и все, что в тестовой области, например
+    `grpc-inprocess`, — должен использовать ровно эту версию. Зафиксированная более старая версия прекрасно компилируется и падает только во время выполнения с
+    `AbstractMethodError: ... does not define or inherit an implementation of the resolved method`.
 
 ## Генерация кода { #code-generation }
 
-Как и на стороне сервера, Gradle должен сгенерировать protobuf-сообщения и gRPC-типы.
+Так же как и на стороне сервера, Gradle должен сгенерировать protobuf-сообщения и gRPC-типы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -254,9 +297,9 @@ HTTP-клиенты часто описывают отказ через коды
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -279,9 +322,9 @@ HTTP-клиенты часто описывают отказ через коды
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all().forEach { task ->
@@ -299,37 +342,71 @@ HTTP-клиенты часто описывают отказ через коды
     }
     ```
 
-Это генерирует:
+Так генерируются:
 
-- protobuf-сообщения, например `CreateUserRequest`
-- типы клиентских заглушек, например `UserServiceGrpc.UserServiceBlockingStub`
+- protobuf-сообщения вроде `CreateUserRequest`
+- типы клиентских заглушек вроде `UserServiceGrpc.UserServiceBlockingStub`
+
+Плагин выпускает **Java**-классы даже в Kotlin-проекте, поэтому в обоих вариантах сгенерированные каталоги регистрируются в исходном наборе `java`.
+
+### Корутинные заглушки Kotlin { #kotlin-coroutine-stubs }
+
+Java-заглушки выше работают в Kotlin ровно так же, как в Java, и это руководство использует их в обоих языках, чтобы варианты оставались сопоставимыми.
+
+Если вам ближе идиоматичные корутины, добавьте поверх описанной настройки [генератор gRPC Kotlin](https://github.com/grpc/grpc-kotlin). Kora поддерживает сгенерированные корутинные заглушки как
+полноценно внедряемые компоненты:
+
+```kotlin title="build.gradle.kts"
+dependencies {
+    implementation("io.grpc:grpc-kotlin-stub:1.5.0")
+}
+
+protobuf {
+    plugins {
+        id("grpckt") { artifact = "io.grpc:protoc-gen-grpc-kotlin:1.5.0:jdk8@jar" }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins { id("grpc"); id("grpckt") }
+        }
+    }
+}
+
+kotlin {
+    sourceSets.main { kotlin.srcDir("build/generated/source/proto/main/grpckt") }
+}
+```
+
+Сгенерированный `UserServiceGrpcKt.UserServiceCoroutineStub` помечен аннотацией `@StubFor`, а символьный процессор Kora выпускает рядом `@Module`, который связывает заглушку с тем же каналом с тегом,
+что и Java-заглушки. Внедрение не требует дополнительной проводки, а унарные вызовы становятся `suspend`-функциями, потоковые — `Flow<T>`. Полный список смотрите в
+[gRPC-клиент: типы заглушек](../documentation/grpc-client.md#stub-types).
 
 ## Модули { #modules }
 
-Подробнее о клиентском gRPC-сервисе, конфигурации и заглушках смотрите в разделе [gRPC Client: Service](../documentation/grpc-client.md#service).
+Подробнее о клиентских gRPC-службах, конфигурации и заглушках — в разделе [gRPC-клиент: служба](../documentation/grpc-client.md#service).
 
-Теперь включите среду выполнения gRPC-клиента Kora в граф приложения.
+Теперь включим среду выполнения gRPC-клиента Kora в граф приложения.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/Application.java"
-    package ru.tinkoff.kora.guide.grpcclient;
+    ```java title="src/main/java/io/koraframework/guide/grpcclient/Application.java"
+    package io.koraframework.guide.grpcclient;
 
-    import ru.tinkoff.grpc.client.GrpcClientModule;
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.grpc.client.GrpcClientModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        GrpcClientModule,  // <----- Подключили модуль
-        UndertowHttpServerModule {
+        GrpcClientModule,  // <----- Connected module
+        UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -339,46 +416,55 @@ HTTP-клиенты часто описывают отказ через коды
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/Application.kt"
-    package ru.tinkoff.kora.guide.grpcclient
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcclient/Application.kt"
+    package io.koraframework.guide.grpcclient
 
-    import ru.tinkoff.grpc.client.GrpcClientModule
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.grpc.client.GrpcClientModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        GrpcClientModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        GrpcClientModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-Обратите внимание, что это приложение также включает небольшой модуль HTTP-сервера. Он нужен не потому, что это руководство по HTTP. Он нужен, чтобы сопутствующее приложение могло открыть простую
-HTTP-точку входа, которая запускает все операции gRPC
-клиента в одном месте.
+`GrpcClientModule` сам по себе клиента не создает. Он предоставляет части, нужные каждому клиенту, — фабрику каналов, фабрику телеметрии и преобразователь значений конфигурации, — а расширение
+обработчика аннотаций (или KSP) генерирует канал и заглушки для каждой службы, которую вы действительно внедряете.
+
+Обратите внимание, что это приложение включает еще и небольшой модуль HTTP-сервера. Не потому, что это руководство про HTTP. Он нужен, чтобы сопровождающее приложение могло выставить простой
+HTTP-эндпоинт, который в одном месте выполняет все операции gRPC-клиента.
 
 ## Конфигурация { #config }
 
-Добавьте конфигурацию gRPC-клиента:
+Это приложение — самостоятельная служба Kora, поэтому ему нужны собственные порты.
 
-Полный справочник по конфигурации смотрите в [HTTP-сервер](../documentation/http-server.md), [gRPC Client](../documentation/grpc-client.md) и [журналирование SLF4J](../documentation/logging-slf4j.md).
+Мы будем использовать:
+
+- `8090` — приложение gRPC-сервера из `grpc-server.md`
+- `8081` — публичный HTTP-сервер клиентского приложения
+- `8086` — системный HTTP-сервер клиентского приложения (пробы, метрики)
+- `grpcClient.UserService.url` — цель сгенерированного клиента
+
+Полный справочник по конфигурации смотрите в [HTTP-сервере](../documentation/http-server.md), [gRPC-клиенте](../documentation/grpc-client.md) и [Logging SLF4J](../documentation/logging-slf4j.md).
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript title="src/main/resources/application.conf"
     httpServer {
-      publicApiHttpPort = 8081 //(1)!
-      privateApiHttpPort = 8086 //(2)!
+      port = 8081 //(1)!
+      system.port = 8086 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
@@ -393,91 +479,117 @@ HTTP-точку входа, которая запускает все опера�
     logging {
       levels {
         "ROOT": "INFO" //(7)!
-        "ru.tinkoff.kora": "INFO" //(8)!
-        "ru.tinkoff.kora.guide.grpcclient": "INFO" //(9)!
+        "io.koraframework": "INFO" //(8)!
+        "io.koraframework.guide.grpcclient": "INFO" //(9)!
       }
     }
     ```
 
-    1. Открытый HTTP-порт по умолчанию, который используют прикладные конечные точки.
-    2. Закрытый HTTP-порт по умолчанию, который используют пробы, метрики и управляющие конечные точки.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Базовый URL, который использует настроенный клиент.
-    5. Базовый URL, который использует настроенный клиент. Необязательное переопределение из `GRPC_SERVER_URL`.
-    6. Включает возможность для этого раздела конфигурации.
+    1. Порт публичного HTTP-сервера, используемый локальным эндпоинтом руководства (по умолчанию: `8080`).
+    2. Порт системного HTTP-сервера, используемый пробами и метриками (по умолчанию: `8085`).
+    3. Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4. Целевой URL gRPC-сервера (обязательный, значения по умолчанию нет).
+    5. Необязательное переопределение целевого URL из переменной окружения `GRPC_SERVER_URL`.
+    6. Включает логирование gRPC-вызовов для этого клиента (по умолчанию: `false`).
     7. Уровень логирования для `ROOT`.
-    8. Уровень логирования для `ru.tinkoff.kora`.
-    9. Уровень логирования для `ru.tinkoff.kora.guide.grpcclient`.
+    8. Уровень логирования для `io.koraframework`.
+    9. Уровень логирования для `io.koraframework.guide.grpcclient`.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml title="src/main/resources/application.yaml"
     httpServer:
-      publicApiHttpPort: 8081 #(1)!
-      privateApiHttpPort: 8086 #(2)!
+      port: 8081 #(1)!
+      system:
+        port: 8086 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     grpcClient:
       UserService:
-        url: ${?GRPC_SERVER_URL:"http://localhost:8090"} #(4)!
+        url: ${GRPC_SERVER_URL:http://localhost:8090} #(4)!
         telemetry:
           logging:
             enabled: true #(5)!
     logging:
       levels:
         ROOT: "INFO" #(6)!
-        "ru.tinkoff.kora": "INFO" #(7)!
-        "ru.tinkoff.kora.guide.grpcclient": "INFO" #(8)!
+        "io.koraframework": "INFO" #(7)!
+        "io.koraframework.guide.grpcclient": "INFO" #(8)!
     ```
 
-    1. Открытый HTTP-порт по умолчанию, который используют прикладные конечные точки.
-    2. Закрытый HTTP-порт по умолчанию, который используют пробы, метрики и управляющие конечные точки.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Базовый URL, который использует настроенный клиент. Использует показанное значение по умолчанию и позволяет `GRPC_SERVER_URL` переопределить его.
-    5. Включает возможность для этого раздела конфигурации.
+    1. Порт публичного HTTP-сервера, используемый локальным эндпоинтом руководства (по умолчанию: `8080`).
+    2. Порт системного HTTP-сервера, используемый пробами и метриками (по умолчанию: `8085`).
+    3. Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4. Целевой URL gRPC-сервера (обязательный, значения по умолчанию нет). Использует показанное значение и позволяет `GRPC_SERVER_URL` его переопределить.
+    5. Включает логирование gRPC-вызовов для этого клиента (по умолчанию: `false`).
     6. Уровень логирования для `ROOT`.
-    7. Уровень логирования для `ru.tinkoff.kora`.
-    8. Уровень логирования для `ru.tinkoff.kora.guide.grpcclient`.
+    7. Уровень логирования для `io.koraframework`.
+    8. Уровень логирования для `io.koraframework.guide.grpcclient`.
 
-Здесь важны две детали:
+Здесь важны три детали.
 
-- клиент настроен в разделе `grpcClient.UserService`
-- URL использует `http://...`, поэтому gRPC-клиент Kora работает в открытом режиме без TLS для локальной учебной настройки
+**Путь конфигурации выводится из имени protobuf-службы.** Kora берет сгенерированную константу `UserServiceGrpc.SERVICE_NAME` — полное имя `io.koraframework.guide.grpcserver.UserService` — и оставляет
+только часть после последней точки. Поэтому секция называется `grpcClient.UserService`, а не `grpcClient.io.koraframework.guide.grpcserver.UserService`. Переименуйте службу в `.proto`-файле, и этот
+путь изменится вместе с ней.
 
-## Оберните stub в сервис { #wrap-stub-service }
+**Схема URL выбирает транспорт.** `http://` создает канал без шифрования (порт по умолчанию `80`, если порт не указан), `https://` создает TLS-канал (порт по умолчанию `443`). Любая другая схема
+останавливает сборку графа при запуске с ошибкой `Unsupported gRPC client URL scheme`. В этом руководстве мы обращаемся к локальному серверу, поэтому нужен именно plaintext `http://localhost:8090`.
 
-Сгенерированные заглушки полезны, но приложению обычно все равно нужен небольшой клиентский сервисный слой.
+**`url` обязателен, все остальное — нет.** Отсутствующий `url` роняет граф при запуске. Таймауты (`timeout`), keepalive-пинги и балансировка нагрузки выключены, пока вы их не зададите, — полный
+список смотрите в [gRPC-клиент: конфигурация](../documentation/grpc-client.md#configuration).
 
-Такой слой может:
+## Типы заглушек { #stub-types }
+
+Плагин protobuf генерирует для одной службы несколько классов заглушек, и Kora может внедрить каждый из них напрямую. `@Tag` на самой заглушке не нужен — Kora сама подставляет канал с нужным тегом:
+
+| Тип заглушки                     | Модель вызова                                                                            | Когда использовать                                     |
+|----------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| `UserServiceBlockingStub`        | Синхронная; возвращает ответ напрямую (или `Iterator` для серверной потоковой передачи)     | Блокирующий код, простейший стиль вызова               |
+| `UserServiceFutureStub`          | Асинхронная; возвращает `ListenableFuture<T>` (только унарные)                              | Неблокирующий код на `ListenableFuture`                |
+| `UserServiceStub` (async)        | Асинхронная; отдает результаты через колбэки `StreamObserver<T>`                             | Любая потоковая передача, асинхронные вызовы с колбэками |
+| `UserServiceCoroutineStub`       | `suspend`-функции и `Flow<T>`                                                               | Идиоматичные корутины Kotlin                           |
+
+Это руководство использует блокирующую заглушку, потому что все RPC в контракте унарные, а вызывающий код читается лучше без колбэков. [Продвинутое руководство по клиенту](grpc-client-advanced.md)
+добавляет асинхронную заглушку, где она обязательна для клиентской и двунаправленной потоковой передачи.
+
+Перед написанием обертки стоит разобраться со сроками выполнения. Если задан `grpcClient.UserService.timeout`, всегда включенный `GrpcClientConfigInterceptor` применяет его как `deadline` вызова — но
+только если у вызова еще нет собственного. Заданный для конкретного вызова `stub.withDeadlineAfter(2, TimeUnit.SECONDS)` попадает в `CallOptions` до запуска перехватчиков, поэтому всегда имеет
+приоритет. Истекший срок проявляется как `StatusRuntimeException` с `Status.Code.DEADLINE_EXCEEDED`.
+
+## Обертка заглушки в службу { #wrap-stub-service }
+
+Сгенерированные заглушки полезны, но приложению обычно все равно нужен небольшой клиентский слой службы.
+
+Этот слой может:
 
 - скрывать построение protobuf-запросов
-- преобразовывать protobuf-объекты транспорта в DTO приложения
-- централизовать использование клиентского транспорта
+- отображать транспортные protobuf-объекты в DTO приложения
+- централизовать использование транспорта на стороне клиента
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/service/UserClientService.java"
-    package ru.tinkoff.kora.guide.grpcclient.service;
+    ```java title="src/main/java/io/koraframework/guide/grpcclient/service/UserClientService.java"
+    package io.koraframework.guide.grpcclient.service;
 
     import java.time.LocalDateTime;
     import java.time.ZoneOffset;
     import java.util.List;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest;
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserResponse;
-    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest;
-    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.grpcclient.dto.UserRequest;
+    import io.koraframework.guide.grpcclient.dto.UserResponse;
+    import io.koraframework.guide.grpcserver.CreateUserRequest;
+    import io.koraframework.guide.grpcserver.DeleteUserRequest;
+    import io.koraframework.guide.grpcserver.GetUserRequest;
+    import io.koraframework.guide.grpcserver.GetUsersRequest;
+    import io.koraframework.guide.grpcserver.UpdateUserRequest;
+    import io.koraframework.guide.grpcserver.UserServiceGrpc;
 
     @Component
     public final class UserClientService {
 
-        private final UserServiceGrpc.UserServiceBlockingStub userService;
+        private final UserServiceGrpc.UserServiceBlockingStub userService; //(1)!
 
         public UserClientService(UserServiceGrpc.UserServiceBlockingStub userService) {
             this.userService = userService;
@@ -521,7 +633,7 @@ HTTP-точку входа, которая запускает все опера�
                 .build());
         }
 
-        private UserResponse toDto(ru.tinkoff.kora.guide.grpcserver.UserResponse response) {
+        private UserResponse toDto(io.koraframework.guide.grpcserver.UserResponse response) { //(2)!
             return new UserResponse(
                 response.getId(),
                 response.getName(),
@@ -534,26 +646,24 @@ HTTP-точку входа, которая запускает все опера�
     }
     ```
 
+    1. Сгенерированная заглушка внедряется напрямую, без `@Tag` и без ручного создания канала.
+    2. Полное имя различает сгенерированный protobuf-класс `UserResponse` и одноименный DTO приложения.
+
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/service/UserClientService.kt"
-    package ru.tinkoff.kora.guide.grpcclient.service
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcclient/service/UserClientService.kt"
+    package io.koraframework.guide.grpcclient.service
 
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.grpcclient.dto.UserRequest
+    import io.koraframework.guide.grpcclient.dto.UserResponse
+    import io.koraframework.guide.grpcserver.*
     import java.time.LocalDateTime
     import java.time.ZoneOffset
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserResponse
-    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest
-    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest
-    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest
-    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest
-    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc
 
     @Component
     class UserClientService(
-        private val userService: UserServiceGrpc.UserServiceBlockingStub
+        private val userService: UserServiceGrpc.UserServiceBlockingStub //(1)!
     ) {
 
         fun createUser(request: UserRequest): UserResponse {
@@ -597,7 +707,7 @@ HTTP-точку входа, которая запускает все опера�
             userService.deleteUser(DeleteUserRequest.newBuilder().setUserId(userId).build())
         }
 
-        private fun toDto(response: ru.tinkoff.kora.guide.grpcserver.UserResponse): UserResponse {
+        private fun toDto(response: io.koraframework.guide.grpcserver.UserResponse): UserResponse { //(2)!
             return UserResponse(
                 response.id,
                 response.name,
@@ -608,24 +718,76 @@ HTTP-точку входа, которая запускает все опера�
     }
     ```
 
-Главная мысль здесь такая же, как во многих других руководствах: сгенерированный транспортный код полезен, но остальная часть приложения все равно должна потреблять небольшую и читаемую абстракцию.
+    1. Сгенерированная заглушка внедряется напрямую, без `@Tag` и без ручного создания канала.
+    2. Полное имя различает сгенерированный protobuf-класс `UserResponse` и одноименный DTO приложения.
 
-## Контроллер проверки { #check-controller }
-
-Сопутствующее приложение содержит маленький HTTP-контроллер, который вызывает gRPC-клиент и возвращает сводку.
+DTO приложения — это обычные записи и data-классы. Они помечены `@Json`, потому что контроллер проверки ниже возвращает их по HTTP; сгенерированным protobuf-сообщениям JSON-аннотации не нужны никогда:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcclient/controller/ClientTestController.java"
-    package ru.tinkoff.kora.guide.grpcclient.controller;
+    ```java title="src/main/java/io/koraframework/guide/grpcclient/dto/UserRequest.java"
+    package io.koraframework.guide.grpcclient.dto;
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest;
-    import ru.tinkoff.kora.guide.grpcclient.service.UserClientService;
-    import ru.tinkoff.kora.http.common.HttpMethod;
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute;
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController;
-    import ru.tinkoff.kora.json.common.annotation.Json;
+    import io.koraframework.json.common.annotation.Json;
+
+    @Json
+    public record UserRequest(String name, String email) {}
+    ```
+
+    ```java title="src/main/java/io/koraframework/guide/grpcclient/dto/UserResponse.java"
+    package io.koraframework.guide.grpcclient.dto;
+
+    import java.time.LocalDateTime;
+    import io.koraframework.json.common.annotation.Json;
+
+    @Json
+    public record UserResponse(String id, String name, String email, LocalDateTime createdAt) {}
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcclient/dto/UserRequest.kt"
+    package io.koraframework.guide.grpcclient.dto
+
+    import io.koraframework.json.common.annotation.Json
+
+    @Json
+    data class UserRequest(val name: String, val email: String)
+    ```
+
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcclient/dto/UserResponse.kt"
+    package io.koraframework.guide.grpcclient.dto
+
+    import io.koraframework.json.common.annotation.Json
+    import java.time.LocalDateTime
+
+    @Json
+    data class UserResponse(
+        val id: String,
+        val name: String,
+        val email: String,
+        val createdAt: LocalDateTime
+    )
+    ```
+
+Ключевая мысль здесь та же, что и во многих других руководствах: сгенерированный транспортный код полезен, но остальная часть приложения должна работать с небольшой и читаемой абстракцией.
+
+## Контроллер проверки { #check-controller }
+
+Сопровождающее приложение включает крошечный HTTP-контроллер, который вызывает gRPC-клиент и возвращает сводку.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java title="src/main/java/io/koraframework/guide/grpcclient/controller/ClientTestController.java"
+    package io.koraframework.guide.grpcclient.controller;
+
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.grpcclient.dto.UserRequest;
+    import io.koraframework.guide.grpcclient.service.UserClientService;
+    import io.koraframework.http.common.HttpMethod;
+    import io.koraframework.http.common.annotation.HttpRoute;
+    import io.koraframework.http.server.common.annotation.HttpController;
+    import io.koraframework.json.common.annotation.Json;
 
     @Component
     @HttpController
@@ -679,16 +841,16 @@ HTTP-точку входа, которая запускает все опера�
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcclient/controller/ClientTestController.kt"
-    package ru.tinkoff.kora.guide.grpcclient.controller
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcclient/controller/ClientTestController.kt"
+    package io.koraframework.guide.grpcclient.controller
 
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.grpcclient.dto.UserRequest
-    import ru.tinkoff.kora.guide.grpcclient.service.UserClientService
-    import ru.tinkoff.kora.http.common.HttpMethod
-    import ru.tinkoff.kora.http.common.annotation.HttpRoute
-    import ru.tinkoff.kora.http.server.common.annotation.HttpController
-    import ru.tinkoff.kora.json.common.annotation.Json
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.grpcclient.dto.UserRequest
+    import io.koraframework.guide.grpcclient.service.UserClientService
+    import io.koraframework.http.common.HttpMethod
+    import io.koraframework.http.common.annotation.HttpRoute
+    import io.koraframework.http.server.common.annotation.HttpController
+    import io.koraframework.json.common.annotation.Json
 
     @Component
     @HttpController
@@ -734,44 +896,46 @@ HTTP-точку входа, которая запускает все опера�
     }
     ```
 
-Этот контроллер не является настоящей целью руководства. Это просто удобная проверочная обвязка, с которой легко проверить клиента от начала до конца.
+Этот контроллер — не «настоящая» цель руководства. Это просто удобная обвязка, которая позволяет легко проверить клиент от начала до конца. Ловить `Exception` и возвращать его текст полем нормально
+для демонстрационной обвязки; в продуктивном коде следует ветвиться по `StatusRuntimeException.getStatus().getCode()`.
 
 ## Запуск приложения { #run-app }
 
-Сначала запустите серверное приложение из предыдущего руководства:
+Соберите сгенерированные исходники и скомпилируйте приложение:
+
+```bash
+./gradlew clean classes
+```
+
+Сначала запустите серверное приложение из предыдущего руководства, затем запустите клиентское:
 
 ```bash
 ./gradlew run
 ```
 
-Затем запустите клиентское приложение:
-
-```bash
-./gradlew run
-```
-
-Теперь вызовите локальную вспомогательную HTTP-точку входа:
+Теперь вызовите локальный вспомогательный HTTP-эндпоинт:
 
 ```bash
 curl -X POST http://localhost:8081/client/test-all-user-endpoints
 ```
 
-Этот HTTP-вызов является только триггером. Внутри приложения настоящая работа выполняется через сгенерированную заглушку gRPC-клиента.
+Этот HTTP-вызов — только триггер. Внутри приложения настоящая работа выполняется через сгенерированную клиентскую gRPC-заглушку.
+
+Канал не роняет приложение, когда сервер недоступен: `ManagedChannelLifecycle` пишет предупреждение, если первая проба соединения не удалась, а вызов переподключается позже. Вызов, сделанный при
+недоступном сервере, падает со `Status.Code.UNAVAILABLE`.
 
 ## Тестирование { #testing }
 
-Тестам клиентского модуля не нужен Docker или полноценный внешний серверный процесс.
+Тестам клиентского модуля не нужны ни Docker, ни полноценный внешний серверный процесс.
 
 Вместо этого они используют:
 
-- `InProcessServerBuilder`
-- `InProcessChannelBuilder`
+- `InProcessServerBuilder`, чтобы поднять фиктивный `UserServiceImplBase` в той же JVM
+- `InProcessChannelBuilder`, чтобы построить к нему канал
+- `UserServiceGrpc.newBlockingStub(channel)`, чтобы создать заглушку, которую `UserClientService` принимает в конструкторе
 
-Такой подход особенно хорошо подходит для тестов gRPC-клиента, потому что он позволяет:
-
-- имитировать точные ответы сервера
-- сохранять тесты быстрыми
-- сосредоточиться на поведении клиента, а не на внешней инфраструктуре
+Это возможно именно потому, что обертка принимает заглушку параметром конструктора: тест создает заглушку вручную и вообще не запускает граф Kora. Тесты остаются быстрыми, детерминированными и
+сфокусированными на поведении клиента, включая пути с ошибками — например, проверку `Status.Code.NOT_FOUND` для отсутствующего пользователя.
 
 Запустите тесты:
 
@@ -781,52 +945,65 @@ curl -X POST http://localhost:8081/client/test-all-user-endpoints
 
 ## Лучшие практики { #best-practices }
 
-- Переиспользуйте один и тот же `.proto`-контракт между клиентом и сервером.
-- Оборачивайте сгенерированные заглушки в небольшой прикладной сервис, вместо того чтобы протаскивать их повсюду.
+- Переиспользуйте ровно один и тот же `.proto`-контракт между клиентом и сервером.
+- Оборачивайте сгенерированные заглушки в небольшую службу приложения, а не растаскивайте их повсюду.
 - Держите построение protobuf-сообщений рядом с границей gRPC-клиента.
+- Ветвитесь по `StatusRuntimeException.getStatus().getCode()`, а не по типам исключений.
 - Используйте `InProcessServer` для сфокусированных клиентских тестов, когда нужна быстрая и детерминированная обратная связь.
-- Относитесь к транспортным моделям gRPC как к транспортным моделям, даже если они похожи на DTO вашего приложения.
-- Аннотируйте рукописные DTO через `@Json` только тогда, когда они пересекают границу HTTP/JSON; сгенерированным protobuf-сообщениям JSON-аннотации не нужны.
+- Считайте транспортные модели gRPC именно транспортными моделями, даже если они похожи на DTO приложения.
+- Держите все артефакты `io.grpc` на той версии, которая поставляется с `io.koraframework:grpc-client`.
+- Помечайте написанные вручную DTO аннотацией `@Json` только тогда, когда они пересекают HTTP/JSON-границу; сгенерированным protobuf-сообщениям JSON-аннотации не нужны.
 
 ## Итоги { #summary }
 
-В этом руководстве вы собрали унарный gRPC-клиент, который отражает сервер из предыдущего руководства.
+В этом руководстве вы создали унарный gRPC-клиент, который повторяет сервер из предыдущего руководства.
 
-Ключевые идеи:
+Ключевые идеи были такими:
 
 - переиспользовать общий protobuf-контракт
-- внедрять сгенерированные gRPC-заглушки через Kora
-- оборачивать их в `UserClientService`
-- тестировать клиент через внутрипроцессную gRPC-инфраструктуру
+- внедрять сгенерированные gRPC-заглушки через Kora, без ручной проводки канала
+- обернуть их в `UserClientService`
+- тестировать клиент на in-process инфраструктуре gRPC
 
 ## Ключевые понятия { #key-concepts }
 
 - как gRPC-клиент Kora подключается к графу приложения
+- как путь конфигурации `grpcClient.<Служба>` выводится из имени protobuf-службы
+- как схема `url` выбирает транспорт без шифрования или TLS
 - как сгенерированные блокирующие заглушки используются для унарных RPC-вызовов
-- почему небольшой клиентский сервисный слой все равно полезен
+- почему небольшой клиентский слой службы все равно полезен
 - как один protobuf-контракт может обслуживать обе стороны системы
 - почему `InProcessServer` хорошо подходит для тестов gRPC-клиента
 
 ## Устранение неполадок { #troubleshooting }
 
-**Клиент не может подключиться:**
+**Клиент не может подключиться (`UNAVAILABLE`):**
 
-Проверьте, что серверное приложение запущено и что клиентский `application.conf` указывает на правильный хост и gRPC-порт.
+Проверьте, что серверное приложение запущено и что `application.conf` клиента указывает на правильный хост и gRPC-порт. Несовпадение plaintext/TLS выглядит точно так же: `http://` — без шифрования,
+`https://` — TLS.
+
+**Приложение не стартует с ошибкой `Unsupported gRPC client URL scheme`:**
+
+В `url` используется схема, отличная от `http` или `https`, без явно указанного порта. Используйте `http://host:port` или `https://host:port`.
+
+**Конфигурация игнорируется:**
+
+Проверьте путь конфигурации. Это *простое* имя protobuf-службы — `grpcClient.UserService`, — а не полное и не имя Java-класса.
 
 **Сгенерированная заглушка отсутствует:**
 
-Запустите `./gradlew clean classes` после изменения `user_service.proto` и проверьте настройку набора исходников protobuf.
+Запустите `./gradlew clean classes` после изменения `user_service.proto` и проверьте настройку исходного набора protobuf.
 
 **Запрос проходит в тестах, но не во время выполнения:**
 
-Сравните внутрипроцессную настройку теста с настоящей конфигурацией клиента, особенно хост, порт и имена пакетов сервиса.
+Сравните in-process тестовую обвязку с реальной конфигурацией клиента — особенно хост, порт и имена пакетов службы.
 
 ## Что дальше? { #whats-next }
 
-- [Продвинутый HTTP-сервер](http-server-advanced.md), если вы еще не прошли его.
-- [Продвинутый gRPC Server](grpc-server-advanced.md) после продвинутый HTTP-сервер, чтобы добавить потоковые конечные точки, которые сможет вызывать более богатый клиент.
-- [Продвинутый gRPC Client](grpc-client-advanced.md) после продвинутый gRPC Server, чтобы поработать с потоками, авторизацией через метаданные и клиентскими перехватчиками.
-- [Шаблоны устойчивости](resilient.md), чтобы защитить RPC-вызовы повторными попытками, ограничением времени, автоматическим выключателем и резервным поведением.
+- [Продвинутый HTTP-сервер](http-server-advanced.md), если вы еще его не проходили.
+- [Продвинутый gRPC-сервер](grpc-server-advanced.md) после продвинутого HTTP-сервера, чтобы добавить потоковые эндпоинты, которые сможет использовать более богатый клиент.
+- [Продвинутый gRPC-клиент](grpc-client-advanced.md) после продвинутого gRPC-сервера, чтобы работать с потоками, авторизацией по метаданным и клиентскими перехватчиками.
+- [Устойчивые шаблоны](resilient.md), чтобы защитить RPC-вызовы повторами, таймаутами, предохранителем и запасным вариантом.
 - [Наблюдаемость](observability.md), чтобы трассировать gRPC-вызовы и измерять поведение клиента.
 
 ## Помощь { #help }
@@ -834,6 +1011,6 @@ curl -X POST http://localhost:8081/client/test-all-user-endpoints
 Если что-то не работает:
 
 - сравните с [Kora Java gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-grpc-client-app) и [Kora Kotlin gRPC Client App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-grpc-client-app)
-- проверьте [документацию gRPC Client](../documentation/grpc-client.md)
-- убедитесь, что сервер из [gRPC Server](grpc-server.md) запущен на порту `8090`
+- проверьте [документацию gRPC-клиента](../documentation/grpc-client.md)
+- убедитесь, что сервер из [gRPC-сервера](grpc-server.md) работает на порту `8090`
 - убедитесь, что клиент и сервер используют один и тот же `.proto`-контракт

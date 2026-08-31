@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
+description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, OkHttp, AsyncHttpClient, Java native client, declarative client annotations, request and response mapping, interceptors, and authorization; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpClientModule, OkHttp."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule."
 ---
 
 The `HTTP client` module describes outgoing HTTP calls: transport implementation, request mapping, response mapping,
@@ -11,6 +11,10 @@ or used imperatively through the common `HttpClient` interface when a request mu
 The declarative approach is suitable for most integrations with external services: the method contract becomes the remote call contract,
 and Kora creates the implementation at compile time without using `Reflection` at runtime. The imperative approach is useful for low-level
 or dynamic scenarios where path, headers, query parameters, or body are easier to assemble manually.
+
+All HTTP client calls in Kora are **synchronous and blocking**: `HttpClient.execute()` returns `HttpClientResponse` directly,
+and a declarative method returns its result directly. Concurrency is expected to come from virtual threads
+rather than from reactive or coroutine return types.
 
 ???+ tip "Recommendation"
 
@@ -24,8 +28,9 @@ For a step-by-step walkthrough before the reference details, see [HTTP Client](.
 
 ## OkHttp { #okhttp }
 
-HTTP client implementation based on [OkHttp](https://github.com/square/okhttp) library.
-Please note that the implementation is written in Kotlin and uses appropriate dependencies.
+HTTP client implementation based on the [OkHttp](https://github.com/square/okhttp) library.
+The Kora module itself is written in Java, but the OkHttp library is a Kotlin library and brings its own dependencies.
+This transport is the one to pick when `HTTP/2` or `HTTP/3`, `GZip` compression, or other OkHttp-specific options are required.
 
 ### Dependency { #dependency }
 
@@ -33,7 +38,7 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-ok"
+    implementation "io.koraframework:http-client-ok"
     ```
 
     Module:
@@ -46,7 +51,7 @@ Please note that the implementation is written in Kotlin and uses appropriate de
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-ok")
+    implementation("io.koraframework:http-client-ok")
     ```
 
     Module:
@@ -54,6 +59,8 @@ Please note that the implementation is written in Kotlin and uses appropriate de
     @KoraApp
     interface Application : OkHttpClientModule
     ```
+
+The `HttpClient` interface implementation is `OkHttpClient` from the `io.koraframework.http.client.ok` package.
 
 ### Configuration { #configuration }
 
@@ -93,8 +100,8 @@ Basic OkHttp client configuration parameters:
         httpClient {
             ok {
                 followRedirects = true //(1)!
-                httpVersion = "HTTP_1_1" //(2)!
-                retryOnConnectionFailure = true //(3)!
+                retryOnConnectionFailure = true //(2)!
+                httpVersion = "HTTP_1_1" //(3)!
             }
             connectTimeout = "5s" //(4)!
             readTimeout = "2m" //(5)!
@@ -106,54 +113,20 @@ Basic OkHttp client configuration parameters:
                 password = "password" //(10)!
                 nonProxyHosts = [ "host1", "host2" ] //(11)!
             }
-            telemetry {
-                logging {
-                    enabled = false //(12)!
-                    mask = "***" //(13)!
-                    maskQueries = [ ] //(14)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(15)!
-                    pathTemplate = true //(16)!
-                }
-                metrics {
-                    enabled = true //(17)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
-                    tags = { // (19)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(20)!
-                    attributes = { // (21)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
         ```
 
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-        2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
-        3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        2. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        3. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
         4. Maximum time to establish a connection (default: `5s`)
         5. Maximum time to read a response (default: `2m`)
         6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        7. Proxy host (`required`, default not specified)
-        8. Proxy port (`required`, default not specified)
-        9. Proxy user (default not specified, optional)
-        10. Proxy password (default not specified, optional)
-        11. Hosts to exclude from proxying (default not specified, optional)
-        12. Enables module logging (default: `false`)
-        13. Mask used to hide specified headers and request or response parameters (default: `***`)
-        14. List of request parameters to hide (default: `[]`)
-        15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        17. Enables module metrics (default: `true`)
-        18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19. Configures metric tags (default: `{}`)
-        20. Enables module tracing (default: `true`)
-        21. Configures tracing attributes (default: `{}`)
+        7. Proxy host (required if the `proxy` section is present, no default)
+        8. Proxy port (required if the `proxy` section is present, no default)
+        9. Proxy user (optional, no default)
+        10. Proxy password (optional, no default)
+        11. Hosts to exclude from proxying (optional, no default)
 
     === ":simple-yaml: `YAML`"
 
@@ -161,8 +134,8 @@ Basic OkHttp client configuration parameters:
         httpClient:
           ok:
             followRedirects: true #(1)!
-            httpVersion: "HTTP_1_1" #(2)!
-            retryOnConnectionFailure: true #(3)!
+            retryOnConnectionFailure: true #(2)!
+            httpVersion: "HTTP_1_1" #(3)!
           connectTimeout: "5s" #(4)!
           readTimeout: "2m" #(5)!
           useEnvProxy: false #(6)!
@@ -172,63 +145,39 @@ Basic OkHttp client configuration parameters:
             user: "user"  #(9)!
             password: "password" #(10)!
             nonProxyHosts: [ "host1", "host2" ] #(11)!
-          telemetry:
-            logging:
-              enabled: false #(12)!
-              mask: "***" #(13)!
-              maskQueries: [ ] #(14)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(15)!
-              pathTemplate: true #(16)!
-            metrics:
-              enabled: true #(17)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
-              tags: #(19)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(20)!
-              attributes: #(21)!
-                key1: value1
-                key2: value2
         ```
 
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-        2. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
-        3. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        2. Whether to retry a request after a connection failure; this can affect the maximum connection establishment time (default: `true`)
+        3. Maximum `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` / `HTTP_3` (default: `HTTP_1_1`)
         4. Maximum time to establish a connection (default: `5s`)
         5. Maximum time to read a response (default: `2m`)
         6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        7. Proxy host (`required`, default not specified)
-        8. Proxy port (`required`, default not specified)
-        9. Proxy user (default not specified, optional)
-        10. Proxy password (default not specified, optional)
-        11. Hosts to exclude from proxying (default not specified, optional)
-        12. Enables module logging (default: `false`)
-        13. Mask used to hide specified headers and request or response parameters (default: `***`)
-        14. List of request parameters to hide (default: `[]`)
-        15. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        16. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        17. Enables module metrics (default: `true`)
-        18. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        19. Configures metric tags (default: `{}`)
-        20. Enables module tracing (default: `true`)
-        21. Configures tracing attributes (default: `{}`)
+        7. Proxy host (required if the `proxy` section is present, no default)
+        8. Proxy port (required if the `proxy` section is present, no default)
+        9. Proxy user (optional, no default)
+        10. Proxy password (optional, no default)
+        11. Hosts to exclude from proxying (optional, no default)
+
+Telemetry is **not** configured in the transport section: logging, metrics and tracing are configured per declarative client
+under `httpClient.<clientName>.telemetry`, see [Client Configuration](#client-configuration).
 
 Module metrics are described in the [Metrics Reference](metrics.md#http-client) section.
 
 #### Configurer { #configurer }
 
-Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be available as component:
+The transport builder can be customized with a `Configurer<OkHttpClient.Builder>` component.
+Kora applies it as the last step, after its own configuration has been applied:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public class SomeConfigurer implements OkHttpConfigurer {
+    public final class SomeConfigurer implements Configurer<OkHttpClient.Builder> {
 
         @Override
         public OkHttpClient.Builder configure(OkHttpClient.Builder builder) {
-            return builder;
+            return builder.callTimeout(Duration.ofSeconds(30));
         }
     }
     ```
@@ -237,16 +186,20 @@ Example of how to configure OkHttp client builder, `OkHttpConfigurer` must be av
 
     ```kotlin
     @Component
-    class SomeConfigurer : OkHttpConfigurer {
-        fun configure(builder: Builder): Builder {
-            return builder
+    class SomeConfigurer : Configurer<OkHttpClient.Builder> {
+
+        override fun configure(builder: OkHttpClient.Builder): OkHttpClient.Builder {
+            return builder.callTimeout(Duration.ofSeconds(30))
         }
     }
     ```
 
-## AsyncHttpClient { #asynchttpclient }
+`Configurer` lives in `io.koraframework.common` and is the shared customization contract of all Kora transports.
 
-HTTP client implementation based on the [Async HTTP Client](https://github.com/AsyncHttpClient/async-http-client) library.
+## Apache HttpClient { #apache-httpclient }
+
+HTTP client implementation based on [Apache HttpClient 5](https://hc.apache.org/httpcomponents-client-5.5.x/).
+It uses the classic (blocking) API and a pooling connection manager, which fits the synchronous Kora client contract directly.
 
 ### Dependency { #dependency-2 }
 
@@ -254,33 +207,33 @@ HTTP client implementation based on the [Async HTTP Client](https://github.com/A
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-async"
+    implementation "io.koraframework:http-client-apache"
     ```
 
     Module:
     ```java
     @KoraApp
-    public interface Application extends AsyncHttpClientModule { }
+    public interface Application extends ApacheHttpClientModule { }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-async")
+    implementation("io.koraframework:http-client-apache")
     ```
 
     Module:
     ```kotlin
     @KoraApp
-    interface Application : AsyncHttpClientModule
+    interface Application : ApacheHttpClientModule
     ```
 
-The `HttpClient` interface implementation is `AsyncHttpClient` and is available for manual implementation.
+The `HttpClient` interface implementation is `ApacheHttpClient` from the `io.koraframework.http.client.apache` package.
 
 ### Configuration { #configuration-2 }
 
-Basic AsyncHttpClient configuration parameters:
+Basic Apache HttpClient configuration parameters:
 
 ===! ":material-code-json: `Hocon`"
 
@@ -292,7 +245,7 @@ Basic AsyncHttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response (default: `2m`)
+    2.  Maximum time to read a response, mapped to the Apache response timeout (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -303,137 +256,129 @@ Basic AsyncHttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response (default: `2m`)
+    2.  Maximum time to read a response, mapped to the Apache response timeout (default: `2m`)
 
 ??? note "Full Configuration"
 
-    Example of the complete configuration described in the `AsyncHttpClientConfig`
+    Example of the complete configuration described in the `ApacheHttpClientConfig`
     and `HttpClientConfig` classes (default or example values are specified):
 
     ===! ":material-code-json: `Hocon`"
 
         ```javascript
         httpClient {
-            async {
+            apache {
                 followRedirects = true //(1)!
+                maxRedirects = 3 //(2)!
+                maxConnections = 1000 //(3)!
             }
-            connectTimeout = "5s" //(2)!
-            readTimeout = "2m" //(3)!
-            useEnvProxy = false //(4)!
+            connectTimeout = "5s" //(4)!
+            readTimeout = "2m" //(5)!
+            useEnvProxy = false //(6)!
             proxy {
-                host = "localhost"  //(5)!
-                port = 8090  //(6)!
-                user = "user"  //(7)!
-                password = "password"  //(8)!
-                nonProxyHosts = [ "host1", "host2" ]  //(9)!
-            }
-            telemetry {
-                logging {
-                    enabled = false //(10)!
-                    mask = "***" //(11)!
-                    maskQueries = [ ] //(12)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(13)!
-                    pathTemplate = true //(14)!
-                }
-                metrics {
-                    enabled = true //(15)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(16)!
-                    tags = { // (17)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(18)!
-                    attributes = { // (19)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
+                host = "localhost" //(7)!
+                port = 8090 //(8)!
+                user = "user" //(9)!
+                password = "password" //(10)!
+                nonProxyHosts = [ "host1", "host2" ] //(11)!
             }
         }
         ```
 
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-        2. Maximum time to establish a connection (default: `5s`)
-        3. Maximum time to read a response (default: `2m`)
-        4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        5. Proxy host (`required`, default not specified)
-        6. Proxy port (`required`, default not specified)
-        7. Proxy user (default not specified, optional)
-        8. Proxy password (default not specified, optional)
-        9. Hosts to exclude from proxying (default not specified, optional)
-        10. Enables module logging (default: `false`)
-        11. Mask used to hide specified headers and request or response parameters (default: `***`)
-        12. List of request parameters to hide (default: `[]`)
-        13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        15. Enables module metrics (default: `true`)
-        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        17. Configures metric tags (default: `{}`)
-        18. Enables module tracing (default: `true`)
-        19. Configures tracing attributes (default: `{}`)
+        2. Maximum number of redirects to follow for a single request (default: `3`)
+        3. Maximum number of pooled connections, applied both in total and per route (default: number of available processors multiplied by `250`)
+        4. Maximum time to establish a connection (default: `5s`)
+        5. Maximum time to read a response (default: `2m`)
+        6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        7. Proxy host (required if the `proxy` section is present, no default)
+        8. Proxy port (required if the `proxy` section is present, no default)
+        9. Proxy user (optional, no default)
+        10. Proxy password (optional, no default)
+        11. Hosts to exclude from proxying (optional, no default)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
         httpClient:
-          async:
+          apache:
             followRedirects: true #(1)!
-          connectTimeout: "5s" #(2)!
-          readTimeout: "2m" #(3)!
-          useEnvProxy: false #(4)!
+            maxRedirects: 3 #(2)!
+            maxConnections: 1000 #(3)!
+          connectTimeout: "5s" #(4)!
+          readTimeout: "2m" #(5)!
+          useEnvProxy: false #(6)!
           proxy:
-            host: "localhost"  #(5)!
-            port: 8090  #(6)!
-            user: "user"  #(7)!
-            password: "password"  #(8)!
-            nonProxyHosts: [ "host1", "host2" ]  #(9)!
-          telemetry:
-            logging:
-              enabled: false #(10)!
-              mask: "***" #(11)!
-              maskQueries: [ ] #(12)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(13)!
-              pathTemplate: true #(14)!
-            metrics:
-              enabled: true #(15)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(16)!
-              tags: #(17)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(18)!
-              attributes: #(19)!
-                key1: value1
-                key2: value2
+            host: "localhost" #(7)!
+            port: 8090  #(8)!
+            user: "user"  #(9)!
+            password: "password" #(10)!
+            nonProxyHosts: [ "host1", "host2" ] #(11)!
         ```
 
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
-        2. Maximum time to establish a connection (default: `5s`)
-        3. Maximum time to read a response (default: `2m`)
-        4. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        5. Proxy host (`required`, default not specified)
-        6. Proxy port (`required`, default not specified)
-        7. Proxy user (default not specified, optional)
-        8. Proxy password (default not specified, optional)
-        9. Hosts to exclude from proxying (default not specified, optional)
-        10. Enables module logging (default: `false`)
-        11. Mask used to hide specified headers and request or response parameters (default: `***`)
-        12. List of request parameters to hide (default: `[]`)
-        13. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        14. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        15. Enables module metrics (default: `true`)
-        16. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        17. Configures metric tags (default: `{}`)
-        18. Enables module tracing (default: `true`)
-        19. Configures tracing attributes (default: `{}`)
+        2. Maximum number of redirects to follow for a single request (default: `3`)
+        3. Maximum number of pooled connections, applied both in total and per route (default: number of available processors multiplied by `250`)
+        4. Maximum time to establish a connection (default: `5s`)
+        5. Maximum time to read a response (default: `2m`)
+        6. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
+        7. Proxy host (required if the `proxy` section is present, no default)
+        8. Proxy port (required if the `proxy` section is present, no default)
+        9. Proxy user (optional, no default)
+        10. Proxy password (optional, no default)
+        11. Hosts to exclude from proxying (optional, no default)
 
-You can also configure [Netty transport](netty.md).
+#### Configurer { #configurer-2 }
+
+The Apache transport accepts two configurers: `Configurer<RequestConfig.Builder>` for the default request configuration
+and `Configurer<HttpClientBuilder>` for the client itself. Both are optional:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeRequestConfigurer implements Configurer<RequestConfig.Builder> {
+
+        @Override
+        public RequestConfig.Builder configure(RequestConfig.Builder builder) {
+            return builder.setConnectionRequestTimeout(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Component
+    public final class SomeClientConfigurer implements Configurer<HttpClientBuilder> {
+
+        @Override
+        public HttpClientBuilder configure(HttpClientBuilder builder) {
+            return builder.setUserAgent("my-service");
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeRequestConfigurer : Configurer<RequestConfig.Builder> {
+
+        override fun configure(builder: RequestConfig.Builder): RequestConfig.Builder {
+            return builder.setConnectionRequestTimeout(1, TimeUnit.SECONDS)
+        }
+    }
+
+    @Component
+    class SomeClientConfigurer : Configurer<HttpClientBuilder> {
+
+        override fun configure(builder: HttpClientBuilder): HttpClientBuilder {
+            return builder.setUserAgent("my-service")
+        }
+    }
+    ```
 
 ## Native client { #native-client }
 
 Implementation of an HTTP client based on the native client provided in the [JDK](https://openjdk.org/groups/net/httpclient/intro.html).
+Kora runs it on a virtual thread executor, so the transport needs no thread pool configuration of its own.
 
 ### Dependency { #dependency-3 }
 
@@ -441,7 +386,7 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:http-client-jdk"
+    implementation "io.koraframework:http-client-jdk"
     ```
 
     Module:
@@ -454,7 +399,7 @@ Implementation of an HTTP client based on the native client provided in the [JDK
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:http-client-jdk")
+    implementation("io.koraframework:http-client-jdk")
     ```
 
     Module:
@@ -463,7 +408,7 @@ Implementation of an HTTP client based on the native client provided in the [JDK
     interface Application : JdkHttpClientModule
     ```
 
-The `HttpClient` interface implementation is `JdkHttpClient` and is available for manual implementation.
+The `HttpClient` interface implementation is `JdkHttpClient` from the `io.koraframework.http.client.jdk` package.
 
 ### Configuration { #configuration-3 }
 
@@ -502,7 +447,7 @@ Basic JDK HttpClient configuration parameters:
         ```javascript
         httpClient {
             jdk {
-                threads = 2 //(1)!
+                followRedirects = true //(1)!
                 httpVersion = "HTTP_1_1" //(2)!
             }
             connectTimeout = "5s" //(3)!
@@ -515,60 +460,26 @@ Basic JDK HttpClient configuration parameters:
                 password = "password" //(9)!
                 nonProxyHosts = [ "host1", "host2" ] //(10)!
             }
-            telemetry {
-                logging {
-                    enabled = false //(11)!
-                    mask = "***" //(12)!
-                    maskQueries = [ ] //(13)!
-                    maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(14)!
-                    pathTemplate = true //(15)!
-                }
-                metrics {
-                    enabled = true //(16)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(17)!
-                    tags = { // (18)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-                tracing {
-                    enabled = true //(19)!
-                    attributes = { // (20)!
-                        "key1" = "value1"
-                        "key2" = "value2"
-                    }
-                }
-            }
         }
         ```
 
-        1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
         4. Maximum time to read a response (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        6. Proxy host (`required`, default not specified)
-        7. Proxy port (`required`, default not specified)
-        8. Proxy user (default not specified, optional)
-        9. Proxy password (default not specified, optional)
-        10. Hosts to exclude from proxying (default not specified, optional)
-        11. Enables module logging (default: `false`)
-        12. Mask used to hide specified headers and request or response parameters (default: `***`)
-        13. List of request parameters to hide (default: `[]`)
-        14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        16. Enables module metrics (default: `true`)
-        17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        18. Configures metric tags (default: `{}`)
-        19. Enables module tracing (default: `true`)
-        20. Configures tracing attributes (default: `{}`)
+        6. Proxy host (required if the `proxy` section is present, no default)
+        7. Proxy port (required if the `proxy` section is present, no default)
+        8. Proxy user (optional, no default)
+        9. Proxy password (optional, no default)
+        10. Hosts to exclude from proxying (optional, no default)
 
     === ":simple-yaml: `YAML`"
 
         ```yaml
         httpClient:
           jdk:
-            threads: 2 #(1)!
+            followRedirects: true #(1)!
             httpVersion: "HTTP_1_1" #(2)!
           connectTimeout: "5s" #(3)!
           readTimeout: "2m" #(4)!
@@ -579,46 +490,45 @@ Basic JDK HttpClient configuration parameters:
             user: "user" #(8)!
             password: "password" #(9)!
             nonProxyHosts: [ "host1", "host2" ] #(10)!
-          telemetry:
-            logging:
-              enabled: false #(11)!
-              mask: "***" #(12)!
-              maskQueries: [ ] #(13)!
-              maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(14)!
-              pathTemplate: true #(15)!
-            metrics:
-              enabled: true #(16)!
-              slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(17)!
-              tags: #(18)!
-                key1: value1
-                key2: value2
-            tracing:
-              enabled: true #(19)!
-              attributes: #(20)!
-                key1: value1
-                key2: value2
         ```
 
-        1. Number of threads for the `HTTP` client (default: number of available processors multiplied by `2`)
+        1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
         4. Maximum time to read a response (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
-        6. Proxy host (`required`, default not specified)
-        7. Proxy port (`required`, default not specified)
-        8. Proxy user (default not specified, optional)
-        9. Proxy password (default not specified, optional)
-        10. Hosts to exclude from proxying (default not specified, optional)
-        11. Enables module logging (default: `false`)
-        12. Mask used to hide specified headers and request or response parameters (default: `***`)
-        13. List of request parameters to hide (default: `[]`)
-        14. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        15. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        16. Enables module metrics (default: `true`)
-        17. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        18. Configures metric tags (default: `{}`)
-        19. Enables module tracing (default: `true`)
-        20. Configures tracing attributes (default: `{}`)
+        6. Proxy host (required if the `proxy` section is present, no default)
+        7. Proxy port (required if the `proxy` section is present, no default)
+        8. Proxy user (optional, no default)
+        9. Proxy password (optional, no default)
+        10. Hosts to exclude from proxying (optional, no default)
+
+#### Configurer { #configurer-3 }
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class SomeConfigurer implements Configurer<java.net.http.HttpClient.Builder> {
+
+        @Override
+        public java.net.http.HttpClient.Builder configure(java.net.http.HttpClient.Builder builder) {
+            return builder.sslContext(SSLContext.getDefault());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class SomeConfigurer : Configurer<java.net.http.HttpClient.Builder> {
+
+        override fun configure(builder: java.net.http.HttpClient.Builder): java.net.http.HttpClient.Builder {
+            return builder.sslContext(SSLContext.getDefault())
+        }
+    }
+    ```
 
 ## Declarative Client { #client-declarative }
 
@@ -633,8 +543,8 @@ It is suggested to use special annotations to create a declarative client:
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello();
     }
     ```
 
@@ -649,15 +559,21 @@ It is suggested to use special annotations to create a declarative client:
     }
     ```
 
+`HttpMethod` is a holder of `String` constants (`GET`, `HEAD`, `POST`, `PUT`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`, `PATCH`, `QUERY`),
+so `method = "GET"` is equally valid.
+
+A client interface may extend other interfaces: routes declared in a supertype are implemented as well,
+and an overriding method in the client replaces the inherited route.
+
 ### Client Configuration { #client-configuration }
 
 By default, configuration for a particular `@HttpClient` implementation is looked up at `httpClient.{lower case class name}`.
-If the path must be specified explicitly, use the `configPath` annotation parameter:
+If the path must be specified explicitly, pass it as the annotation value:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @HttpClient(configPath = "httpClient.someClient") //(1)!
+    @HttpClient("httpClient.someClient") //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -670,7 +586,7 @@ If the path must be specified explicitly, use the `configPath` annotation parame
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @HttpClient(configPath = "httpClient.someClient") //(1)!
+    @HttpClient("httpClient.someClient") //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -683,13 +599,13 @@ If the path must be specified explicitly, use the `configPath` annotation parame
 `@HttpClient` can also specify tags for injected components:
 
 * `httpClientTag` — tag used to select a particular transport `HttpClient` when the graph contains several implementations with different `@Tag` values
-* `telemetryTag` — tag used to select a particular client telemetry factory
+* `telemetryTag` — tag used to select a particular `HttpClientTelemetryFactory`
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @HttpClient(
-        configPath = "httpClient.someClient",
+        value = "httpClient.someClient",
         httpClientTag = CustomTransport.class,
         telemetryTag = CustomTelemetry.class
     )
@@ -704,9 +620,9 @@ If the path must be specified explicitly, use the `configPath` annotation parame
 
     ```kotlin
     @HttpClient(
-        configPath = "httpClient.someClient",
-        httpClientTag = [CustomTransport::class],
-        telemetryTag = [CustomTelemetry::class]
+        value = "httpClient.someClient",
+        httpClientTag = CustomTransport::class,
+        telemetryTag = CustomTelemetry::class
     )
     interface SomeClient {
 
@@ -776,8 +692,8 @@ Basic declarative client configuration parameters:
     }
     ```
 
-    1.  Base service `URL` where requests will be sent (`required`, no default)
-    2.  Maximum request time (default: not specified, optional)
+    1.  Base service `URL` where requests will be sent (required, no default)
+    2.  Maximum request time (optional, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -788,12 +704,13 @@ Basic declarative client configuration parameters:
         requestTimeout: "10s" #(2)!
     ```
 
-    1.  Base service `URL` where requests will be sent (`required`, no default)
-    2.  Maximum request time (default: not specified, optional)
+    1.  Base service `URL` where requests will be sent (required, no default)
+    2.  Maximum request time (optional, no default)
 
 ??? note "Full Configuration"
 
-    Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig` class:
+    Example configuration in the case of the `httpClient.someClient` path described in the `DeclarativeHttpClientConfig`
+    and `HttpClientTelemetryConfig` classes:
 
     ===! ":material-code-json: `Hocon`"
 
@@ -808,19 +725,22 @@ Basic declarative client configuration parameters:
                         mask = "***" //(4)!
                         maskQueries = [ ] //(5)!
                         maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
-                        pathTemplate = true //(7)!
+                        pathFull = false //(7)!
+                        maxRequestBodyLogSize = "2MiB" //(8)!
+                        maxResponseBodyLogSize = "2MiB" //(9)!
                     }
                     metrics {
-                        enabled = true //(8)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                        tags = { // (10)!
+                        enabled = false //(10)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
+                        tags = { // (12)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(11)!
-                        attributes = { // (12)!
+                        enabled = true //(13)!
+                        pathFull = true //(14)!
+                        attributes = { // (15)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -830,18 +750,21 @@ Basic declarative client configuration parameters:
         }
         ```
 
-        1. Base service `URL` where requests will be sent (`required`, default not specified)
-        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        1. Base service `URL` where requests will be sent (required, no default)
+        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, no default)
         3. Enables module logging (default: `false`)
         4. Mask used to hide specified headers and request or response parameters (default: `***`)
         5. List of request parameters to hide (default: `[]`)
         6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        8. Enables module metrics (default: `true`)
-        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        10. Configures metric tags (default: `{}`)
-        11. Enables module tracing (default: `true`)
-        12. Configures tracing attributes (default: `{}`)
+        7. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
+        8. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        9. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        10. Enables module metrics (default: `false`)
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Configures metric tags (default: `{}`)
+        13. Enables module tracing (default: `true`)
+        14. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
+        15. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -856,32 +779,44 @@ Basic declarative client configuration parameters:
                 mask: "***" #(4)!
                 maskQueries: [ ] #(5)!
                 maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
-                pathTemplate: true #(7)!
+                pathFull: false #(7)!
+                maxRequestBodyLogSize: "2MiB" #(8)!
+                maxResponseBodyLogSize: "2MiB" #(9)!
               metrics:
-                enabled: true #(8)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-                tags: #(10)!
+                enabled: false #(10)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
+                tags: #(12)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(11)!
-                attributes: #(12)!
+                enabled: true #(13)!
+                pathFull: true #(14)!
+                attributes: #(15)!
                   key1: value1
                   key2: value2
         ```
 
-        1. Base service `URL` where requests will be sent (`required`, default not specified)
-        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
+        1. Base service `URL` where requests will be sent (required, no default)
+        2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, no default)
         3. Enables module logging (default: `false`)
         4. Mask used to hide specified headers and request or response parameters (default: `***`)
         5. List of request parameters to hide (default: `[]`)
         6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Whether to use the request path template in logging; when not specified, the template is used except at `TRACE`, where the full path is used (default not specified, optional)
-        8. Enables module metrics (default: `true`)
-        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        10. Configures metric tags (default: `{}`)
-        11. Enables module tracing (default: `true`)
-        12. Configures tracing attributes (default: `{}`)
+        7. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
+        8. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        9. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        10. Enables module metrics (default: `false`)
+        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        12. Configures metric tags (default: `{}`)
+        13. Enables module tracing (default: `true`)
+        14. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
+        15. Configures tracing attributes (default: `{}`)
+
+???+ warning "Metrics and logging are disabled by default"
+
+    In Kora 2.0 `telemetry.metrics.enabled` and `telemetry.logging.enabled` default to `false`, and `telemetry.tracing.enabled` to `true`.
+    Nothing fails and nothing is written to the log when metrics are off — `http.client.request.duration` simply never appears.
+    Enable them explicitly per client.
 
 ### Method Configuration { #method-configuration }
 
@@ -905,7 +840,7 @@ Basic method configuration parameters:
     }
     ```
 
-    1.  Maximum request time (default: not specified, optional)
+    1.  Maximum request time (optional, no default)
 
 === ":simple-yaml: `YAML`"
 
@@ -916,11 +851,12 @@ Basic method configuration parameters:
           requestTimeout: "10s" #(1)!
     ```
 
-    1.  Maximum request time (default: not specified, optional)
+    1.  Maximum request time (optional, no default)
 
 ??? note "Full Configuration"
 
-    Full method configuration example:
+    Full method configuration example described in the `HttpClientOperationConfig` class.
+    Every field is optional: an omitted field inherits the client value.
 
     ===! ":material-code-json: `Hocon`"
 
@@ -935,19 +871,22 @@ Basic method configuration parameters:
                             mask = "***" //(3)!
                             maskQueries = [ ] //(4)!
                             maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
-                            pathTemplate = true //(6)!
+                            pathFull = false //(6)!
+                            maxRequestBodyLogSize = "2MiB" //(7)!
+                            maxResponseBodyLogSize = "2MiB" //(8)!
                         }
                         metrics {
-                            enabled = true //(7)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(8)!
-                            tags = { // (9)!
+                            enabled = false //(9)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                            tags = { // (11)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
                         }
                         tracing {
-                            enabled = true //(10)!
-                            attributes = { // (11)!
+                            enabled = true //(12)!
+                            pathFull = true //(13)!
+                            attributes = { // (14)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
@@ -958,17 +897,20 @@ Basic method configuration parameters:
         }
         ```
 
-        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-        2. Enables module logging (default: `false`)
-        3. Mask used to hide specified headers and request or response parameters (default: `***`)
-        4. List of request parameters to hide (default: `[]`)
-        5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
-        7. Enables module metrics (default: `true`)
-        8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        9. Configures metric tags (default: `{}`)
-        10. Enables module tracing (default: `true`)
-        11. Configures tracing attributes (default: `{}`)
+        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, inherits the client value)
+        2. Enables module logging (optional, inherits the client value)
+        3. Mask used to hide specified headers and request or response parameters (optional, inherits the client value)
+        4. List of request parameters to hide (optional, inherits the client value)
+        5. List of request or response headers to hide (optional, inherits the client value)
+        6. Whether to log the full request path instead of the route template (optional, inherits the client value)
+        7. Maximum request body size that is still written to the log (optional, inherits the client value)
+        8. Maximum response body size that is still written to the log (optional, inherits the client value)
+        9. Enables module metrics (optional, inherits the client value)
+        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
+        11. Configures metric tags (optional, inherits the client value)
+        12. Enables module tracing (optional, inherits the client value)
+        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
+        14. Configures tracing attributes (optional, inherits the client value)
 
     === ":simple-yaml: `YAML`"
 
@@ -983,54 +925,62 @@ Basic method configuration parameters:
                   mask: "***" #(3)!
                   maskQueries: [ ] #(4)!
                   maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-                  pathTemplate: true #(6)!
+                  pathFull: false #(6)!
+                  maxRequestBodyLogSize: "2MiB" #(7)!
+                  maxResponseBodyLogSize: "2MiB" #(8)!
                 metrics:
-                  enabled: true #(7)!
-                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(8)!
-                  tags: #(9)!
+                  enabled: false #(9)!
+                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+                  tags: #(11)!
                     key1: value1
                     key2: value2
                 tracing:
-                  enabled: true #(10)!
-                  attributes: #(11)!
+                  enabled: true #(12)!
+                  pathFull: true #(13)!
+                  attributes: #(14)!
                     key1: value1
                     key2: value2
         ```
 
-        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (default not specified, optional)
-        2. Enables module logging (default: `false`)
-        3. Mask used to hide specified headers and request or response parameters (default: `***`)
-        4. List of request parameters to hide (default: `[]`)
-        5. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        6. Whether to use the request path template in logging; when not specified, the client value is inherited (default not specified, optional)
-        7. Enables module metrics (default: `true`)
-        8. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        9. Configures metric tags (default: `{}`)
-        10. Enables module tracing (default: `true`)
-        11. Configures tracing attributes (default: `{}`)
+        1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, inherits the client value)
+        2. Enables module logging (optional, inherits the client value)
+        3. Mask used to hide specified headers and request or response parameters (optional, inherits the client value)
+        4. List of request parameters to hide (optional, inherits the client value)
+        5. List of request or response headers to hide (optional, inherits the client value)
+        6. Whether to log the full request path instead of the route template (optional, inherits the client value)
+        7. Maximum request body size that is still written to the log (optional, inherits the client value)
+        8. Maximum response body size that is still written to the log (optional, inherits the client value)
+        9. Enables module metrics (optional, inherits the client value)
+        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
+        11. Configures metric tags (optional, inherits the client value)
+        12. Enables module tracing (optional, inherits the client value)
+        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
+        14. Configures tracing attributes (optional, inherits the client value)
 
 ### Request { #request }
 
 This section describes `HTTP` request transformations for a declarative `HTTP` client.
 Use special annotations to specify request parameters.
 
-#### String Parameter Conversion { #string-parameter-converter }
+#### Parameter Conversion { #string-parameter-converter }
 
-`StringParameterConverter<T>` converts a parameter value to a string before Kora puts it into a path, query parameter,
+`HttpClientParameterWriter<T>` converts a parameter value to a string before Kora puts it into a path, query parameter,
 header, or cookie. The interface has one method:
 
 ```java
-public interface StringParameterConverter<T> {
+public interface HttpClientParameterWriter<T> {
     String convert(T value);
 }
 ```
 
-The converter is looked up as a regular graph component by the exact parameter type. If the parameter has type `Map<String, T>`,
-the converter is looked up for value type `T`; if `Map<String, List<T>>` is used, it is applied to every list item.
+`String`, `Integer`, `Long`, `Boolean` and Java primitives are written directly and need no writer at all.
+For every other type Kora looks up an `HttpClientParameterWriter<T>` component by the exact parameter type.
+If the parameter has type `Map<String, T>`, the writer is looked up for value type `T`; if `Map<String, List<T>>` is used,
+it is applied to every list item; for `List<T>` / `Set<T>` / `Collection<T>` it is applied to every element.
 
-Built-in converters are available for `Boolean`, `Short`, `Integer`, `Long`, `Double`, `Float`, `UUID`, `BigDecimal`, `BigInteger`,
+Built-in writers are available for `Boolean`, `Short`, `Integer`, `Long`, `Double`, `Float`, `UUID`, `BigDecimal`, `BigInteger`,
 `Duration`, `OffsetTime`, `OffsetDateTime`, `LocalTime`, `LocalDate`, `LocalDateTime`, `ZonedDateTime`, and `Instant`.
-Date and time types are written in `ISO` format. For custom types, provide a `StringParameterConverter<T>` component:
+Date and time types are written in `ISO` format. For custom types, provide an `HttpClientParameterWriter<T>` component:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1040,7 +990,7 @@ Date and time types are written in `ISO` format. For custom types, provide a `St
     @Module
     public interface UserIdModule {
 
-        default StringParameterConverter<UserId> userIdStringParameterConverter() {
+        default HttpClientParameterWriter<UserId> userIdParameterWriter() {
             return value -> Long.toString(value.value());
         }
     }
@@ -1054,8 +1004,8 @@ Date and time types are written in `ISO` format. For custom types, provide a `St
     @Module
     interface UserIdModule {
 
-        fun userIdStringParameterConverter(): StringParameterConverter<UserId> {
-            return StringParameterConverter { value -> value.value.toString() }
+        fun userIdParameterWriter(): HttpClientParameterWriter<UserId> {
+            return HttpClientParameterWriter { value -> value.value.toString() }
         }
     }
     ```
@@ -1084,10 +1034,20 @@ After that, the type can be used in client parameters:
     }
     ```
 
+For enums, `EnumHttpClientParameterWriter` from `io.koraframework.http.client.common.request.mapper` builds a writer
+from the enum constants and a mapping function; it is also what the [OpenAPI generator](openapi-codegen.md) emits for enum parameters.
+
+??? failure "HttpClientParameterWriter&lt;T&gt; was not found"
+
+    The build fails with `No component found for dependency: HttpClientParameterWriter<T>`.
+    Either the type is custom and no writer component exists, or the writer has a `@Tag` that the parameter does not.
+    Declare an `HttpClientParameterWriter<T>` component for that exact type.
+
 #### Path parameter { #path-parameter }
 
 `@Path` - denotes the value of the request path part, the parameter itself is specified in `{quote}` in the path
 and the name of the parameter is specified in `value` or is equal to the name of the method argument by default.
+Path values are URL-encoded, so a space becomes `%20`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1095,8 +1055,8 @@ and the name of the parameter is specified in `value` or is equal to the name of
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/{pathName}") 
-        void hello(@Path("pathName") String pathValue); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/{pathName}")
+        void hello(@Path("pathName") String pathValue);
     }
     ```
 
@@ -1111,11 +1071,15 @@ and the name of the parameter is specified in `value` or is equal to the name of
     }
     ```
 
+Every `{name}` placeholder in the path must have a matching `@Path` parameter; otherwise the build fails
+with `Path template contains parameters that have no matching @Path method parameter`.
+
 #### Query parameter { #query-parameter }
 
 `@Query` - query parameter value, the name is specified in `value` or defaults to the method argument name.
 Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and `Map<String, List<T>>` are supported.
-For non-string values, an available `StringParameterConverter<T>` is used.
+For non-string values, an available `HttpClientParameterWriter<T>` is used.
+An empty collection is sent as a parameter without a value.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1123,9 +1087,9 @@ For non-string values, an available `StringParameterConverter<T>` is used.
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         void hello(@Query("queryName") String queryValue,
-                   @Query("queryNameList") List<String> queryValues); 
+                   @Query("queryNameList") List<String> queryValues);
     }
     ```
 
@@ -1136,11 +1100,10 @@ For non-string values, an available `StringParameterConverter<T>` is used.
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello(@Query("queryName") queryValue: String, 
+        fun hello(@Query("queryName") queryValue: String,
                   @Query("queryNameList") queryValues: List<String>)
     }
     ```
-
 
 Query parameters can also be sent in key-value format using `Map`, where the key is the parameter name and must be `String`.
 If a `Map` value is a list, every item is sent as a separate value of the same parameter.
@@ -1152,8 +1115,8 @@ If a list item is `null`, the parameter is sent without a value.
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Query Map<String, String> queryValues); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Query Map<String, String> queryValues);
     }
     ```
 
@@ -1179,9 +1142,9 @@ Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and a rea
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Header("headerName") String headerValue, 
-                   @Header("headerNameList") List<String> headerValues); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Header("headerName") String headerValue,
+                   @Header("headerNameList") List<String> headerValues);
     }
     ```
 
@@ -1192,13 +1155,13 @@ Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and a rea
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello(@Header("headerName") headerValue: String, 
+        fun hello(@Header("headerName") headerValue: String,
                   @Header("headerNameList") headerValues: List<String>)
     }
     ```
 
 Headers can be sent in key-value format using `HttpHeaders` or `Map`, where the key is the header name and must be `String`.
-For non-string values, an available `StringParameterConverter<T>` is used:
+For non-string values, an available `HttpClientParameterWriter<T>` is used:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1206,8 +1169,8 @@ For non-string values, an available `StringParameterConverter<T>` is used:
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Header HttpHeaders headers); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Header HttpHeaders headers);
     }
     ```
 
@@ -1225,19 +1188,8 @@ For non-string values, an available `StringParameterConverter<T>` is used:
 #### Request body { #request-body }
 
 Specifying the body of a request requires using a method argument without special annotations.
-Kora provides built-in request mappers for the following types, each of which also sets the default `Content-Type` header:
-
-| Body argument type | Default `Content-Type` |
-|--------------------|------------------------|
-| `String` | `text/plain; charset=utf-8` |
-| `byte[]` / `ByteBuffer` | `application/octet-stream` |
-| `Flow.Publisher<ByteBuffer>` | `application/octet-stream` (streamed, not buffered in memory) |
-| `@Json T` (see [Json](#json)) | `application/json` |
-| `FormUrlEncoded` (see [Text form](#text-form)) | `application/x-www-form-urlencoded` |
-| `FormMultipart` (see [Binary Form](#binary-form)) | `multipart/form-data` |
-
-For any other type, or to set a different `Content-Type`, use a [custom body mapper](#custom-body) with `HttpClientRequestMapper<T>` and return the
-appropriate `HttpBody` (for example `HttpBody.of(bytes, "application/x-protobuf")`). A `Content-Type` explicitly set via `@Header` takes precedence over the default.
+Out of the box `byte[]`, `ByteBuffer`, `String`, `HttpBodyOutput`, `FormUrlEncoded` and `FormMultipart` are supported,
+because `HttpClientRequestMapperModule` provides `HttpClientRequestMapper` implementations for exactly those types.
 
 ##### Json { #json }
 
@@ -1264,7 +1216,7 @@ In order to indicate that the body is Json and needs to embed `JsonWriter<T>`, t
     @HttpClient
     interface SomeClient {
 
-        data class MyBody(val name: String) { }
+        data class MyBody(val name: String)
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
         fun hello(@Json body: MyBody) //(1)!
@@ -1273,7 +1225,7 @@ In order to indicate that the body is Json and needs to embed `JsonWriter<T>`, t
 
     1. Specifies that the body should be written as Json
 
-[Json](json.md) module is required.
+[Json](json.md) module is required, and a `JsonWriter<MyBody>` must exist — usually by annotating the type itself with `@Json`.
 
 ##### Text form { #text-form }
 
@@ -1396,7 +1348,7 @@ An example of a call with this form:
     ```kotlin
     val response = someClient.formMultipart(
         FormMultipart(
-            listOf<FormMultipart.FormPart>(
+            listOf(
                 FormMultipart.data("field1", "some data content"), //(1)!
                 FormMultipart.file(
                     "field2",
@@ -1411,6 +1363,8 @@ An example of a call with this form:
 
     1. A plain text field
     2. A file part with file name and content type
+
+`FormMultipart.file(String name, String fileName, HttpBodyOutput content)` sends a part as a stream instead of a byte array.
 
 ##### Custom body { #custom-body }
 
@@ -1428,13 +1382,13 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
         final class UserRequestMapper implements HttpClientRequestMapper<UserBody> {
 
             @Override
-            public HttpBodyOutput apply(Context ctx, UserBody value) {
+            public HttpBodyOutput apply(UserBody value) {
                 return HttpBody.plaintext(value.id());
             }
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        void hello(@Mapping(UserRequestMapper.class) UserBody body);
+        HttpResponseEntity<String> hello(@Mapping(UserRequestMapper.class) UserBody body);
     }
     ```
 
@@ -1447,17 +1401,20 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
         data class UserBody(val id: String)
 
         class UserRequestMapper : HttpClientRequestMapper<UserBody> {
-            override fun apply(ctx: Context, value: UserBody): HttpBodyOutput {
+
+            override fun apply(value: UserBody): HttpBodyOutput {
                 return HttpBody.plaintext(value.id)
             }
         }
 
         @HttpRoute(method = HttpMethod.POST, path = "/hello/world")
-        fun hello(@Mapping(UserRequestMapper::class) body: UserBody)
+        fun hello(@Mapping(UserRequestMapper::class) body: UserBody): HttpResponseEntity<String>
     }
     ```
 
 **Example: Protobuf Serialization**
+
+Note that `HttpBody.of` takes the content type first and the payload second:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1468,9 +1425,9 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
         final class ProtobufRequestMapper implements HttpClientRequestMapper<MyMessage> {
 
             @Override
-            public HttpBodyOutput apply(Context ctx, MyMessage value) {
+            public HttpBodyOutput apply(MyMessage value) {
                 byte[] protobufBytes = value.toByteArray();
-                return HttpBody.of(protobufBytes, "application/x-protobuf");
+                return HttpBody.of("application/x-protobuf", protobufBytes);
             }
         }
 
@@ -1487,9 +1444,9 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
 
         class ProtobufRequestMapper : HttpClientRequestMapper<MyMessage> {
 
-            override fun apply(ctx: Context, value: MyMessage): HttpBodyOutput {
+            override fun apply(value: MyMessage): HttpBodyOutput {
                 val protobufBytes = value.toByteArray()
-                return HttpBody.of(protobufBytes, "application/x-protobuf")
+                return HttpBody.of("application/x-protobuf", protobufBytes)
             }
         }
 
@@ -1498,11 +1455,19 @@ it is possible to use a special `HttpClientRequestMapper` interface to implement
     }
     ```
 
+???+ note "When a mapper needs `@Component`"
+
+    A mapper referenced by `@Mapping` that is `final` (Java) or not `open` (Kotlin) **and** has a single public no-argument constructor
+    is instantiated by the generated client itself — it must not be a graph component.
+    Any other mapper — one with constructor dependencies such as a `JsonReader<T>`, an open class, or one with several constructors —
+    is taken from the dependency container and therefore must be declared as `@Component`.
+    Decide by the constructor, not by the annotation above the method.
+
 #### Cookie { #cookie }
 
 `@Cookie` - [Cookie](https://developer.mozilla.org/en-US/docs/Glossary/Cookie) value, the parameter name is specified in `value` or defaults to the method argument name.
 Single values, `List<T>`, `Set<T>`, `Collection<T>`, `Map<String, T>`, and a ready `Cookie` object are supported.
-Cookies are added to the `Cookie` header; for collections, every value becomes a separate cookie value with the same name.
+Every cookie is written as its own `Cookie` header value in `name=value` form.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1510,8 +1475,8 @@ Cookies are added to the `Cookie` header; for collections, every value becomes a
     @HttpClient
     public interface SomeClient {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world") 
-        void hello(@Cookie("cookieName") String cookieValue); 
+        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
+        void hello(@Cookie("cookieName") String cookieValue);
     }
     ```
 
@@ -1552,7 +1517,7 @@ Cookies are added to the `Cookie` header; for collections, every value becomes a
     }
     ```
 
-    1.  Any `@Nullable` annotation will do, such as `javax.annotation.Nullable` / `jakarta.annotation.Nullable` / `org.jetbrains.annotations.Nullable` / etc.
+    1.  Kora is built on [JSpecify](https://jspecify.dev/), so `org.jspecify.annotations.Nullable` is the recommended annotation; any annotation whose simple name is `Nullable` is accepted.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1567,13 +1532,28 @@ Cookies are added to the `Cookie` header; for collections, every value becomes a
     }
     ```
 
+A `null` query parameter, header, or cookie is simply omitted from the request.
+
 ### Response { #response }
 
 The section describes the transformation of an HTTP response from a declarative HTTP client.
 
 #### Response body { #response-body }
 
-By default, you can use the standard response body return value types such as `void`, `byte[]`, `ByteBuffer` or `String`.
+Kora ships `HttpClientResponseMapper` implementations for a limited set of types, all declared in `HttpClientResponseMapperModule`:
+
+| Return type | Requires |
+|---|---|
+| `void` | nothing, the body is not read |
+| `String` | nothing |
+| `byte[]` | nothing |
+| `ByteBuffer` | nothing |
+| `HttpBodyInput` | nothing, the body stays a stream |
+| `T` with `@Json` | a `JsonReader<T>` |
+| `HttpResponseEntity<T>` | an `HttpClientResponseMapper<T>` for the payload |
+| `Either<T, E>` | an `HttpClientResponseMapper` for each of `T` and `E` |
+
+Any other type needs a mapper of its own, see [Custom response](#custom-response).
 
 ##### Json { #json-2 }
 
@@ -1586,7 +1566,7 @@ If the body is to be read as Json, the `@Json` annotation must be used over the 
     public interface SomeClient {
 
         record MyResponse(String name) { }
-        
+
         @Json //(1)!
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         MyResponse hello();
@@ -1601,7 +1581,7 @@ If the body is to be read as Json, the `@Json` annotation must be used over the 
     @HttpClient
     interface SomeClient {
 
-        data class MyResponse(val name: String) { }
+        data class MyResponse(val name: String)
 
         @Json //(1)!
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
@@ -1616,7 +1596,7 @@ If the body is to be read as Json, the `@Json` annotation must be used over the 
 ##### Response Entity { #response-entity }
 
 If the intention is to read the body and also get the headers and status code of the response,
-it is intended to use `HttpResponseEntity`, which is a wrapper over the response body.
+it is intended to use `HttpResponseEntity`, which is a wrapper over the response body and exposes `code()`, `headers()` and `body()`.
 
 Below is an example similar to the Json example along with the `HttpResponseEntity` wrapper:
 
@@ -1627,7 +1607,7 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
     public interface SomeClient {
 
         record MyResponse(String name) { }
-        
+
         @Json
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         HttpResponseEntity<MyResponse> hello();
@@ -1640,13 +1620,108 @@ Below is an example similar to the Json example along with the `HttpResponseEnti
     @HttpClient
     interface SomeClient {
 
-        data class MyResponse(val name: String) { }
+        data class MyResponse(val name: String)
 
         @Json
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         fun hello(): HttpResponseEntity<MyResponse>
     }
     ```
+
+Kora builds the entity mapper itself from the payload mapper, so `HttpResponseEntity<Void>` — the usual shape when only the
+status code matters — needs an `HttpClientResponseMapper<Void>` in the graph. There is no built-in one, so declare it as a component
+and do **not** point at it with `@Mapping`: with `@Mapping` the mapper would have to produce the whole `HttpResponseEntity<Void>`,
+while the framework's template factory expects a payload mapper and wraps it into the entity itself.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient("httpClient.userApi")
+    public interface UserApiClient {
+
+        @Component
+        final class VoidResponseMapper implements HttpClientResponseMapper<Void> {
+
+            @Override
+            public Void apply(HttpClientResponse response) throws IOException {
+                try (var body = response.body()) {
+                    body.asInputStream().readAllBytes();
+                }
+                return null;
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
+        HttpResponseEntity<Void> deleteUser(@Path String userId);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient("httpClient.userApi")
+    interface UserApiClient {
+
+        @Component
+        class VoidResponseMapper : HttpClientResponseMapper<Void> {
+
+            override fun apply(response: HttpClientResponse): Void? {
+                response.body().use { body ->
+                    body.asInputStream().readAllBytes()
+                }
+                return null
+            }
+        }
+
+        @HttpRoute(method = HttpMethod.DELETE, path = "/users/{userId}")
+        fun deleteUser(@Path userId: String): HttpResponseEntity<Void>
+    }
+    ```
+
+Without that component the build fails with `No component found for dependency: HttpClientResponseMapper<java.lang.Void>`.
+
+##### Either { #either }
+
+`Either<T, E>` describes a call where a non-successful status code is a normal outcome rather than an exception.
+Kora maps a `2xx` response with the mapper of `T` into `Either.Left` and any other status code with the mapper of `E` into `Either.Right`,
+and never throws `HttpClientResponseException` for such a method.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @HttpClient
+    public interface SomeClient {
+
+        record Success(String id) {}
+
+        record Error(String message) {}
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        Either<@Json Success, @Json Error> get(@Path String id); //(1)!
+    }
+    ```
+
+    1. `@Json` is a type-use annotation here, so the success and error payloads can be tagged independently
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @HttpClient
+    interface SomeClient {
+
+        data class Success(val id: String)
+
+        data class Error(val message: String)
+
+        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
+        fun get(@Path id: String): Either<@Json Success, @Json Error> //(1)!
+    }
+    ```
+
+    1. `@Json` is a type-use annotation here, so the success and error payloads can be tagged independently
+
+`Either` exposes `isLeft()` / `isRight()` and the nullable accessors `left()` / `right()`.
+`HttpResponseEntity<Either<T, E>>` is supported as well when the status code and headers are also required.
 
 #### Custom response { #custom-response }
 
@@ -1687,8 +1762,7 @@ If you need to read the response in a different way, you can use the special `Ht
         data class MyResponse(val name: String)
 
         class ResponseMapper : HttpClientResponseMapper<MyResponse> {
-            
-            @Throws(IOException::class, HttpClientDecoderException::class)
+
             override fun apply(response: HttpClientResponse): MyResponse {
                 response.body().asInputStream().use {
                     val bytes: ByteArray = it.readAllBytes()
@@ -1704,6 +1778,13 @@ If you need to read the response in a different way, you can use the special `Ht
     }
     ```
 
+???+ warning "A `@Mapping` mapper handles every status code"
+
+    When a method declares `@Mapping`, Kora stops checking for a successful status code and hands **every** response to that mapper,
+    including `4xx` and `5xx`. Throw from the mapper yourself if a non-successful code must remain an error.
+    A `@Tag` on the method only picks which `HttpClientResponseMapper` component is injected — the `2xx` check still applies
+    and a non-successful code still throws `HttpClientResponseException`.
+
 **Example: Error Handling in Mapper**
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -1712,8 +1793,9 @@ If you need to read the response in a different way, you can use the special `Ht
     @HttpClient
     public interface ApiClient {
 
-        record ApiResponse(String status, Object data) {}
+        record ApiResponse(String status, String data) {}
 
+        @Component
         final class SafeResponseMapper implements HttpClientResponseMapper<ApiResponse> {
 
             private final JsonReader<ApiResponse> jsonReader;
@@ -1738,8 +1820,6 @@ If you need to read the response in a different way, you can use the special `Ht
                 if (body.length == 0) {
                     return null;
                 }
-
-                return jsonReader.read(body);
             }
         }
 
@@ -1755,13 +1835,13 @@ If you need to read the response in a different way, you can use the special `Ht
     @HttpClient
     interface ApiClient {
 
-        data class ApiResponse(val status: String, val data: Any?)
+        data class ApiResponse(val status: String, val data: String)
 
+        @Component
         class SafeResponseMapper(
             private val jsonReader: JsonReader<ApiResponse>
         ) : HttpClientResponseMapper<ApiResponse> {
 
-            @Throws(IOException::class)
             override fun apply(response: HttpClientResponse): ApiResponse {
                 val code = response.code()
                 val body = response.body().asInputStream().use { it.readAllBytes() }
@@ -1774,8 +1854,6 @@ If you need to read the response in a different way, you can use the special `Ht
                 if (body.isEmpty()) {
                     return null
                 }
-
-                return jsonReader.read(body)
             }
         }
 
@@ -1785,10 +1863,15 @@ If you need to read the response in a different way, you can use the special `Ht
     }
     ```
 
+This mapper takes a `JsonReader` in its constructor, so it is a graph component and carries `@Component`.
+
 #### Response Error { #response-error }
 
-By default, when neither converter tag nor converter is specified, conversion is applied only for `2xx` HTTP response codes.
+By default, when neither a `@Mapping` mapper nor `@ResponseCodeMapper` is specified,
+conversion is applied only for `2xx` HTTP response codes.
 For all other codes, `HttpClientResponseException` is thrown. It contains the [HTTP response code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status), response body, and response headers.
+
+`Either<T, E>` and `HttpResponseEntity<Either<T, E>>` are the exception to this rule: they map every status code and never throw.
 
 #### Client Exceptions { #client-exceptions }
 
@@ -1816,8 +1899,9 @@ Main exception types:
 * `HttpClientDecoderException` — error while converting a response body into a user type.
 * `HttpClientUnknownException` — other transport client error that did not match a more specific category.
 
-`HttpClientResponseException` is created after reading the response body into a byte array. If the body could not be read fully,
-the read error is added as a `suppressed` exception, and `getBytes()` contains the body that could be collected.
+`HttpClientResponseException` is created by `HttpClientResponseException.fromResponse(response)` after reading the response body.
+If the whole body is already buffered it is captured in full; otherwise only the first `4096` bytes are read into `getBytes()`
+so that a failing call never has to buffer an arbitrarily large error page.
 
 #### Conversion by Code { #conversion-by-code }
 
@@ -1828,6 +1912,9 @@ You can also use `ResponseCodeMapper.DEFAULT` to define default behavior for all
 If `mapper` is specified for a code, that particular `HttpClientResponseMapper` is used.
 If `type` is specified, Kora selects a response mapper for that type and then casts the result to the method return type.
 This is useful for closed response hierarchies where different HTTP statuses correspond to different result subtypes.
+If neither is specified, Kora asks the graph for an `HttpClientResponseMapper` of the method return type
+(`HttpClientResponseMapper<Void>` for a `void` method).
+A status code that is not listed and has no `DEFAULT` entry still throws `HttpClientResponseException`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1855,10 +1942,10 @@ This is useful for closed response hierarchies where different HTTP statuses cor
     @HttpClient
     interface SomeClient {
 
-        data class UserResponse(val payload: Payload, val error: Error) {
-            
+        data class UserResponse(val payload: Payload?, val error: Error?) {
+
             data class Error(val code: Int, val message: String)
-            
+
             data class Payload(val message: String)
         }
 
@@ -1914,18 +2001,20 @@ Example with the `type` parameter:
     }
     ```
 
+If the mapped `type` is not assignable to the method return type, Kora treats the mapper result as an exception and throws it
+instead of returning it — that is how an error branch can be modelled as a thrown exception for a specific status code.
+
 ### Signatures { #signatures }
 
-Available signatures for declarative `HTTP` client methods out of the box:
+Declarative `HTTP` client methods are **blocking**:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     The `T` refers to the type of the return value. It can be a body type (`void`, `String`, `byte[]`, a `@Json` type, etc.), or
     [`HttpResponseEntity<T>`](#response-entity) to also read the status code and headers. A `@Nullable T` return allows an empty successful body.
 
-    - `T myMethod()` — **synchronous (blocking)**: the calling thread waits for the response
-    - `CompletionStage<T> myMethod()` — **asynchronous**: returns immediately, completes when the response arrives; see [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` — **asynchronous** via [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (requires the [reactor-core](https://mvnrepository.com/artifact/io.projectreactor/reactor-core) dependency)
+    - `T myMethod()`
+    - `void myMethod()`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -1933,9 +2022,25 @@ Available signatures for declarative `HTTP` client methods out of the box:
     `T` can be a body type or [`HttpResponseEntity<T>`](#response-entity) to also read the status code and headers.
 
     - `myMethod(): T` — **synchronous (blocking)**: the calling thread waits for the response
-    - `suspend myMethod(): T` — **asynchronous** [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (requires the [kotlinx-coroutines-core](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) dependency as `implementation`)
 
 By default a non-`2xx` response throws [`HttpClientResponseException`](#response-error) regardless of signature; use [`@ResponseCodeMapper`](#conversion-by-code) or [`HttpResponseEntity`](#response-entity) to handle other status codes without an exception.
+
+???+ warning "Asynchronous signatures are not supported"
+
+    In Kotlin a `suspend` client method is a compile-time error: *Suspend methods are not supported by the HTTP client generator*.
+    In Java a `CompletionStage<T>` or `Mono<T>` return type only produces the warning *Method has async signature, this might not work correctly* —
+    the generated code still performs a blocking call and the type will not be satisfied.
+
+    Run independent calls in parallel with virtual threads instead, for example with `StructuredTaskScope`:
+
+    ```java
+    try (var scope = StructuredTaskScope.open(StructuredTaskScope.Joiner.<Object>awaitAllSuccessfulOrThrow())) {
+        var profile = scope.fork(() -> profileHttpClient.getProfile(userId));
+        var recommendations = scope.fork(() -> recommendationsHttpClient.getForUser(userId));
+        scope.join();
+        return new Dashboard(profile.get(), recommendations.get());
+    }
+    ```
 
 ## Interceptors { #interceptors }
 
@@ -1944,15 +2049,13 @@ Interceptors can be attached to specific methods or the entire `@HttpClient` cla
 Kora ships ready-made interceptors (such as [Root URL](#root-uri-interceptor) and the [authorization](#authorization) interceptors),
 and you can implement your own — see [method-level](#interceptor-custom) and [class-level](#interceptor-custom) examples below.
 
-The interface receives the current `Context`, the outgoing `HttpClientRequest`, and the `InterceptChain` that continues processing:
-
 ```java
 public interface HttpClientInterceptor {
 
-    CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
+    HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
 
     interface InterceptChain {
-        CompletionStage<HttpClientResponse> process(Context ctx, HttpClientRequest request) throws Exception; //(2)!
+        HttpClientResponse process(HttpClientRequest request) throws Exception; //(2)!
     }
 }
 ```
@@ -2056,31 +2159,25 @@ If the request is relative, `RootUriInterceptor` adds the root address and guara
 After registering the interceptor, connect it to the client:
 
 ===! ":fontawesome-brands-java: `Java`"
+Interceptors are attached with the `@InterceptWith` annotation, either to a specific method or to the whole `@HttpClient` interface.
 
-    ```java
-    @HttpClient
-    @InterceptWith(RootUriInterceptor.class)
-    public interface SomeClient {
+```java
+public interface HttpClientInterceptor {
 
-        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
-        User get(@Path String id);
+    HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
+
+    interface InterceptChain {
+        HttpClientResponse process(HttpClientRequest request) throws Exception; //(2)!
     }
-    ```
+}
+```
 
-=== ":simple-kotlin: `Kotlin`"
+1. Called for every request of the intercepted method
+2. Passes the request further down the chain and returns the response
 
-    ```kotlin
-    @HttpClient
-    @InterceptWith(RootUriInterceptor::class)
-    interface SomeClient {
+The request is immutable, so a modified request is produced with `request.toBuilder()`.
 
-        @HttpRoute(method = HttpMethod.GET, path = "/users/{id}")
-        fun get(@Path id: String): User
-    }
-    ```
-
-For declarative clients, it is usually more convenient to set the base `URL` through `DeclarativeHttpClientConfig.url`.
-`RootUriInterceptor` is useful for imperative `HttpClient` or when a shared root address should be added as separate cross-cutting behavior.
+**Method-level interceptor:**
 
 ### Custom interceptor { #interceptor-custom }
 
@@ -2092,18 +2189,19 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     @HttpClient
     public interface SomeClient {
 
+        @Component
         final class MethodInterceptor implements HttpClientInterceptor {
 
             private final Component1 component1;
 
-            private MethodInterceptor(Component1 component1) {
+            public MethodInterceptor(Component1 component1) {
                 this.component1 = component1;
             }
 
             @Override
-            public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
+            public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
                 component1.doSomething();
-                return chain.process(ctx, request);
+                return chain.process(request);
             }
         }
 
@@ -2119,16 +2217,15 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     @HttpClient
     interface SomeClient {
 
+        @Component
         class MethodInterceptor(val component1: Component1) : HttpClientInterceptor {
 
-            @Throws(Exception::class)
             override fun processRequest(
-                ctx: Context,
                 chain: HttpClientInterceptor.InterceptChain,
                 request: HttpClientRequest
-            ): CompletionStage<HttpClientResponse> {
+            ): HttpClientResponse {
                 component1.doSomething()
-                return chain.process(ctx, request)
+                return chain.process(request)
             }
         }
 
@@ -2138,13 +2235,68 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     }
     ```
 
-**Class-level interceptor:**
+An interceptor is taken from the dependency container, so it follows the same rule as a mapper:
+it needs `@Component` when it has constructor dependencies.
+`@InterceptWith` also accepts a `tag` attribute to pick a tagged interceptor implementation.
+
+**Example: adding a header**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @InterceptWith(LoggingInterceptor.class) // Applied to all client methods
+    public final class RequestIdInterceptor implements HttpClientInterceptor {
+
+        @Override
+        public HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception {
+            var modified = request.toBuilder()
+                    .header("x-request-id", UUID.randomUUID().toString())
+                    .build();
+            return chain.process(modified);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class RequestIdInterceptor : HttpClientInterceptor {
+
+        override fun processRequest(
+            chain: HttpClientInterceptor.InterceptChain,
+            request: HttpClientRequest
+        ): HttpClientResponse {
+            val modified = request.toBuilder()
+                .header("x-request-id", UUID.randomUUID().toString())
+                .build()
+            return chain.process(modified)
+        }
+    }
+    ```
+
+**Interceptor execution order:**
+
+Interceptors declared on the client run before interceptors declared on the method,
+and within one element they run in declaration order. Each interceptor can:
+
+- Modify the request before sending
+- Call the next interceptor in the chain (`chain.process(request)`)
+- Modify or inspect the response after receiving
+- Throw an exception to break the chain
+
+```
+Request  → Client interceptors → Method interceptors → Telemetry → HTTP Server
+Response ← Client interceptors ← Method interceptors ← Telemetry ← HTTP Server
+```
+
+### Client interceptor { #interceptor-global }
+
+If the interceptor must be applied to all methods of a client, `@InterceptWith` is placed on the interface:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
     @HttpClient
+    @InterceptWith(ClientInterceptor.class) //(1)!
     public interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello")
@@ -2155,11 +2307,13 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     }
     ```
 
+    1. Applied to every method of this client
+
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @InterceptWith(LoggingInterceptor::class) // Applied to all client methods
     @HttpClient
+    @InterceptWith(ClientInterceptor::class) //(1)!
     interface SomeClient {
 
         @HttpRoute(method = HttpMethod.GET, path = "/hello")
@@ -2170,82 +2324,10 @@ For declarative clients, it is usually more convenient to set the base `URL` thr
     }
     ```
 
-**Interceptor execution order:**
-
-Interceptors are executed in declaration order (left to right). Each interceptor can:
-- Modify the request before sending
-- Call the next interceptor in the chain (`chain.process()`)
-- Modify the response after receiving
-- Throw an exception to break the chain
-
-```
-Request → Interceptor1 → Interceptor2 → Interceptor3 → HTTP Server
-Response ← Interceptor1 ← Interceptor2 ← Interceptor3 ← HTTP Server
-```
-
-### Global interceptor { #interceptor-global }
-
-To apply an interceptor to all clients, register it as a component without `@InterceptWith`:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public class GlobalInterceptor implements HttpClientInterceptor {
-
-        @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
-            // Applied to all HTTP clients
-            return chain.process(ctx, request);
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class GlobalInterceptor : HttpClientInterceptor {
-
-        @Throws(Exception::class)
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
-            // Applied to all HTTP clients
-            return chain.process(ctx, request)
-        }
-    }
-    ```
-
-If the interceptor must be applied to all client methods, `@InterceptWith` can be placed on the interface:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @HttpClient
-    @InterceptWith(ClientInterceptor.class)
-    public interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        void hello();
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @HttpClient
-    @InterceptWith(ClientInterceptor::class)
-    interface SomeClient {
-
-        @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
-        fun hello()
-    }
-    ```
+    1. Applied to every method of this client
 
 If interceptors are specified on both the client and the method, both interceptor sets are applied for that call.
+There is no application-wide registry of HTTP client interceptors: an interceptor only applies where `@InterceptWith` names it.
 
 ### Authorization { #authorization }
 
@@ -2260,9 +2342,9 @@ You need to configure an interceptor and configuration for [Basic](https://swagg
     ```java
     @Module
     public interface BasicAuthModule {
-    
+
         @ConfigSource("openapiAuth.basicAuth")
-        public interface BasicAuthConfig {
+        interface BasicAuthConfig {
 
             String username();
 
@@ -2280,7 +2362,7 @@ You need to configure an interceptor and configuration for [Basic](https://swagg
     ```kotlin
     @Module
     interface BasicAuthModule {
-        
+
         @ConfigSource("openapiAuth.basicAuth")
         interface BasicAuthConfig {
 
@@ -2295,9 +2377,10 @@ You need to configure an interceptor and configuration for [Basic](https://swagg
     }
     ```
 
+The two-argument constructor wraps the credentials into a `BasicAuthHttpClientTokenProvider`.
 You can also provide your own `HttpClientTokenProvider` implementation in the constructor if rules for getting secrets are different.
 
-Then add interceptor for the entire HTTP client or specific methods.
+Then add the interceptor for the entire HTTP client or specific methods.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2325,14 +2408,15 @@ Then add interceptor for the entire HTTP client or specific methods.
 
 #### ApiKey { #apikey }
 
-You need to configure an interceptor and configuration for [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/) authorization:
+You need to configure an interceptor and configuration for [ApiKey](https://swagger.io/docs/specification/authentication/api-keys/) authorization.
+`ApiKeyLocation` supports `HEADER`, `QUERY` and `COOKIE`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Module
     public interface ApiKeyAuthModule {
-    
+
         @ConfigSource("openapiAuth.apiKeyAuth")
         interface ApiKeyAuthConfig {
 
@@ -2350,7 +2434,7 @@ You need to configure an interceptor and configuration for [ApiKey](https://swag
     ```kotlin
     @Module
     interface ApiKeyAuthModule {
-    
+
         @ConfigSource("openapiAuth.apiKeyAuth")
         interface ApiKeyAuthConfig {
 
@@ -2363,7 +2447,7 @@ You need to configure an interceptor and configuration for [ApiKey](https://swag
     }
     ```
 
-Then add interceptor for the entire HTTP client or specific methods.
+Then add the interceptor for the entire HTTP client or specific methods.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2398,7 +2482,7 @@ You need to configure an interceptor for [Bearer](https://swagger.io/docs/specif
     ```java
     @Module
     public interface BearerAuthModule {
-        
+
         default BearerAuthHttpClientInterceptor bearerAuther(HttpClientTokenProvider tokenProvider) {
             return new BearerAuthHttpClientInterceptor(tokenProvider);
         }
@@ -2409,8 +2493,8 @@ You need to configure an interceptor for [Bearer](https://swagger.io/docs/specif
 
     ```kotlin
     @Module
-    interface BasicAuthModule {
-            
+    interface BearerAuthModule {
+
         fun bearerAuther(tokenProvider: HttpClientTokenProvider): BearerAuthHttpClientInterceptor {
             return BearerAuthHttpClientInterceptor(tokenProvider)
         }
@@ -2418,16 +2502,19 @@ You need to configure an interceptor for [Bearer](https://swagger.io/docs/specif
     ```
 
 You will need to implement the `Bearer` token provisioning yourself using your custom `HttpClientTokenProvider` implementation,
-or use a constructor that accepts a static `Bearer Token`.
+or use the constructor that accepts a static `Bearer Token`.
 
 ```java
 public interface HttpClientTokenProvider {
-    
-    CompletionStage<String> getToken(HttpClientRequest request);
+
+    @Nullable
+    String getToken(HttpClientRequest request); //(1)!
 }
 ```
 
-Then add interceptor for the entire HTTP client or specific methods.
+1. Returning `null` leaves the request unchanged and no `Authorization` header is added
+
+Then add the interceptor for the entire HTTP client or specific methods.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -2461,7 +2548,8 @@ you need to implement `HttpClientTokenProvider` yourself and put it in dependenc
 #### HttpClientTokenProvider { #token-provider }
 
 `HttpClientTokenProvider` — interface for providing authorization tokens dynamically.
-Used when the token needs to be refreshed or obtained from an external source (e.g., OAuth2 token endpoint).
+Used when the token needs to be refreshed or obtained from an external source (e.g., an OAuth2 token endpoint).
+The method is blocking, so the token can simply be fetched inline.
 
 **Implementation example:**
 
@@ -2469,7 +2557,7 @@ Used when the token needs to be refreshed or obtained from an external source (e
 
     ```java
     @Component
-    public class MyTokenProvider implements HttpClientTokenProvider {
+    public final class MyTokenProvider implements HttpClientTokenProvider {
 
         private final OAuthClient oauthClient;
         private volatile String cachedToken;
@@ -2480,18 +2568,15 @@ Used when the token needs to be refreshed or obtained from an external source (e
         }
 
         @Override
-        public CompletionStage<String> getToken(HttpClientRequest request) {
+        public String getToken(HttpClientRequest request) {
             if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
-                return CompletableFuture.completedFuture(cachedToken);
+                return cachedToken;
             }
-            
-            // Get new token
-            return oauthClient.refreshToken()
-                .thenApply(response -> {
-                    this.cachedToken = response.accessToken();
-                    this.tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000;
-                    return this.cachedToken;
-                });
+
+            var response = oauthClient.refreshToken();
+            this.cachedToken = response.accessToken();
+            this.tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000;
+            return this.cachedToken;
         }
     }
     ```
@@ -2504,21 +2589,22 @@ Used when the token needs to be refreshed or obtained from an external source (e
         private val oauthClient: OAuthClient
     ) : HttpClientTokenProvider {
 
+        @Volatile
         private var cachedToken: String? = null
+
+        @Volatile
         private var tokenExpiry: Long = 0
 
-        override fun getToken(request: HttpClientRequest): CompletionStage<String> {
-            if (cachedToken != null && System.currentTimeMillis() < tokenExpiry) {
-                return CompletableFuture.completedFuture(cachedToken)
+        override fun getToken(request: HttpClientRequest): String? {
+            val token = cachedToken
+            if (token != null && System.currentTimeMillis() < tokenExpiry) {
+                return token
             }
-            
-            // Get new token
-            return oauthClient.refreshToken()
-                .thenApply { response ->
-                    cachedToken = response.accessToken()
-                    tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000
-                    cachedToken!!
-                }
+
+            val response = oauthClient.refreshToken()
+            cachedToken = response.accessToken()
+            tokenExpiry = System.currentTimeMillis() + response.expiresIn() * 1000
+            return cachedToken
         }
     }
     ```
@@ -2549,9 +2635,12 @@ Used when the token needs to be refreshed or obtained from an external source (e
     }
     ```
 
+The [OpenAPI generator](openapi-codegen.md) expects the same interface, tagged with the generated `ApiSecurity` marker class.
+
 ## Exception handling { #exception-handling }
 
-Various exceptions may occur during HTTP requests. All exceptions inherit from the base `HttpClientException`.
+Various exceptions may occur during HTTP requests. All exceptions inherit from the base `HttpClientException`,
+which is an unchecked `RuntimeException` living in `io.koraframework.http.client.common.exception`.
 
 **Exception hierarchy:**
 
@@ -2571,7 +2660,8 @@ HttpClientException
 
     ```java
     @Component
-    class SomeService {
+    public final class SomeService {
+
         private final SomeClient client;
 
         public SomeService(SomeClient client) {
@@ -2589,6 +2679,7 @@ HttpClientException
                 // Response error: code, body, headers
                 int code = e.getCode();
                 byte[] body = e.getBytes();
+                var headers = e.getHeaders();
             } catch (HttpClientEncoderException e) {
                 // Serialization error: validate data
             } catch (HttpClientDecoderException e) {
@@ -2618,6 +2709,7 @@ HttpClientException
                 // Response error: code, body, headers
                 val code = e.code
                 val body = e.bytes
+                val headers = e.headers
             } catch (e: HttpClientEncoderException) {
                 // Serialization error: validate data
             } catch (e: HttpClientDecoderException) {
@@ -2631,86 +2723,101 @@ HttpClientException
 
 #### Timeout Exception { #timeout-exception }
 
-Thrown when the request exceeds the configured timeout (`requestTimeout` or `connectTimeout`).
+Thrown when the request exceeds the configured timeout (`requestTimeout`, `connectTimeout` or `readTimeout`).
 
 **Causes:**
+
 - Server doesn't respond within `requestTimeout`
 - Connection establishment timeout exceeded (`connectTimeout`)
+- Response read timeout exceeded (`readTimeout`)
 - Network delays
 
 **Recommendations:**
-- Configure appropriate timeouts in settings
-- Implement retry logic for temporary failures
-- Use circuit breaker to protect against cascading failures
+
+- Configure appropriate timeouts in settings, per client and per method
+- Implement [retry](resilient.md) logic for temporary failures
+- Use a [circuit breaker](resilient.md) to protect against cascading failures
 
 #### Connection Exception { #connection-exception }
 
 Thrown when connection to the server cannot be established.
 
 **Causes:**
+
 - DNS resolution failure
 - Server unavailable (port closed, firewall)
 - Connection refused
 - SSL/TLS handshake failed
 
 **Recommendations:**
+
 - Check service availability (health check)
-- Use fallback to backup service
+- Use fallback to a backup service
 - Configure retry with exponential backoff
 
 #### Response Exception { #response-exception }
 
-Thrown when the server returns an HTTP error status code (4xx or 5xx) and no custom mapper is specified via `@ResponseCodeMapper`.
+Thrown when the server returns an HTTP status code outside `2xx` and the method does not declare its own mapper
+via `@Mapping` or `@ResponseCodeMapper`, and does not return `Either`.
 
 **Available data:**
+
 - `getCode()` — HTTP status code (400, 404, 500, etc.)
-- `getBytes()` — response body as `byte[]` (may contain error details)
+- `getBytes()` — response body, truncated to `4096` bytes when the body was not fully buffered
 - `getHeaders()` — response headers
 
 **Recommendations:**
+
 - Use `@ResponseCodeMapper` for custom status handling
-- Log statusCode and body for debugging
+- Use `Either<T, E>` when a non-successful code is a normal outcome
+- Log the code and body for debugging
 - Distinguish between client (4xx) and server (5xx) errors
 
 #### Request Encoder Exception { #encoder-exception }
 
-Thrown when an error occurs during request body serialization.
+Thrown when an error occurs during request body serialization: the `HttpClientRequestMapper` of the body threw.
 
 **Causes:**
-- JSON/XML serialization error
-- Invalid data in request object
-- Missing serializer for type
+
+- JSON/binary serialization error
+- Invalid data in the request object
+- The mapper itself failed on the value
 
 **Recommendations:**
+
 - Validate data before sending
-- Check for Json annotations on classes
-- Log original exception in `cause`
+- Check that the body type carries `@Json` and has a `JsonWriter`
+- Log the original exception in `cause`
 
 #### Response Decoder Exception { #decoder-exception }
 
-Thrown when an error occurs during response body deserialization.
+Thrown when an error occurs during response body deserialization: the `HttpClientResponseMapper` of the method threw.
 
 **Causes:**
-- Invalid JSON/XML in server response
+
+- Invalid JSON in the server response
 - Schema mismatch (server returned unexpected fields)
-- Missing deserializer for type
+- The stream was closed or truncated
 
 **Recommendations:**
+
 - Check API version compatibility
-- Log response body for debugging
-- Use `@ResponseCodeMapper` for format error handling
+- Log the response body for debugging
+- Use `@ResponseCodeMapper` to handle differently shaped error payloads
 
 #### Unknown Exception { #unknown-exception }
 
-Thrown when an unknown error occurs that doesn't fit other categories.
+Thrown when an error occurs that doesn't fit other categories, including any checked exception escaping the transport.
 
 **Available data:**
-- `cause` — original exception
+
+- `getCause()` — original exception
 
 **Recommendations:**
+
 - Always log `cause` for diagnostics
 - Check HTTP client logs at DEBUG/TRACE level
-- Report bug if exception is reproducible
+- Report a bug if the exception is reproducible
 
 ### Resilience { #resilience }
 
@@ -2759,34 +2866,80 @@ while `@Timeout` bounds the whole method call including retries. See the [Resili
 
 ## Client imperative { #client-imperative }
 
-The base client represents the `HttpClient` interface and is available for deployment:
+The base client represents the `HttpClient` interface and is available for injection from any transport module:
 
 ```java
 public interface HttpClient {
-    
-    CompletionStage<HttpClientResponse> execute(HttpClientRequest request); //(1)!
 
-    HttpClient with(HttpClientInterceptor interceptor); //(2)!
+    HttpClientResponse execute(HttpClientRequest request) throws HttpClientException; //(1)!
+
+    default HttpClient with(HttpClientInterceptor interceptor); //(2)!
 }
 ```
 
-1. Method of request execution
-2. A method that allows you to add various interceptors manually
+1. Executes the request and returns the response; the response must be closed
+2. Returns a new `HttpClient` view with an extra interceptor applied on top
 
-Requests are built manually with `HttpClientRequest.of(...)` (see [HttpClientRequestBuilder](#request-builder) below)
-and executed through `execute`, which returns a `CompletionStage<HttpClientResponse>`.
+The response holds an open body stream, so it must be closed — use it inside a `try`-with-resources block:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    var request = HttpClientRequest.post("http://localhost:8090/pets/{petId}")
+            .pathParam("petId", "1")
+            .queryParam("page", 1)
+            .header("token", "12345")
+            .body(HttpBody.plaintext("refresh"))
+            .build();
+
+    try (var response = httpClient.execute(request)) {
+        var code = response.code();
+        var body = new String(response.body().asInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val request = HttpClientRequest.post("http://localhost:8090/pets/{petId}")
+        .pathParam("petId", "1")
+        .queryParam("page", 1)
+        .header("token", "12345")
+        .body(HttpBody.plaintext("refresh"))
+        .build()
+
+    httpClient.execute(request).use { response ->
+        val code = response.code()
+        val body = String(response.body().asInputStream().readAllBytes(), StandardCharsets.UTF_8)
+    }
+    ```
 
 ### HttpClientRequestBuilder { #request-builder }
 
-`HttpClientRequestBuilder` allows building HTTP requests manually and is obtained via `HttpClientRequest.of(method, uri)`.
+`HttpClientRequestBuilder` allows building HTTP requests manually and is obtained via `HttpClientRequest.of(method, uri)`. A builder is obtained from one of the
+`HttpClientRequest` factory methods — `get`, `head`, `post`, `put`, `delete`, `connect`, `options`, `trace`, `patch`,
+or `of(method, uriTemplate)` — and an existing request can be turned back into a builder with `request.toBuilder()`.
+
+| Method | Description |
+|---|---|
+| `pathParam(String name, String \| int \| long \| UUID value)` | Substitutes a `{name}` placeholder of the URI template |
+| `queryParam(String name)` | Adds a query parameter without a value |
+| `queryParam(String name, String \| int \| long \| boolean \| UUID \| Collection<?> value)` | Adds a query parameter value |
+| `queryParamRemove(String name)` | Removes all values of a query parameter |
+| `header(String name, String \| List<String> value)` | Sets a request header |
+| `headerRemove(String name)` | Removes a request header |
+| `requestTimeout(Duration \| int millis)` | Overrides the request timeout for this request |
+| `body(HttpBodyOutput body)` | Sets the request body |
+| `build()` | Builds the immutable `HttpClientRequest` |
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-            .templateParam("petId", "1")
+            .pathParam("petId", "1")
             .queryParam("page", 1)
             .header("token", "12345")
+            .requestTimeout(Duration.ofSeconds(5))
             .body(HttpBody.plaintext("refresh"))
             .build();
     ```
@@ -2795,213 +2948,257 @@ and executed through `execute`, which returns a `CompletionStage<HttpClientRespo
 
     ```kotlin
     val request = HttpClientRequest.of("POST", "http://localhost:8090/pets/{petId}")
-        .templateParam("petId", "1")
+        .pathParam("petId", "1")
         .queryParam("page", 1)
         .header("token", "12345")
+        .requestTimeout(Duration.ofSeconds(5))
         .body(HttpBody.plaintext("refresh"))
         .build()
     ```
 
+The built `HttpClientRequest` exposes `method()`, `uri()`, `uriTemplate()`, `headers()`, `body()` and `requestTimeout()`.
+`uriTemplate()` is what telemetry uses as the operation name, which is why templated paths keep metrics and spans low-cardinality.
+
 ### UriQueryBuilder { #uri-query-builder }
 
-`UriQueryBuilder` helps build URIs with query parameters.
+`UriQueryBuilder` is the low-level helper that the generated declarative clients use to assemble a query string.
+It appends parameters in order and takes care of the `?` and `&` separators:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    UriQueryBuilder builder = new UriQueryBuilder()
-        .path("/api/users")
-        .queryParam("page", 1)
-        .queryParam("size", 10)
-        .queryParam("sort", "name");
-    
-    String uri = builder.build();
-    // /api/users?page=1&size=10&sort=name
+    var query = new UriQueryBuilder(true, false); //(1)!
+    query.add("page", "1"); //(2)!
+    query.add("sort", "name age"); //(3)!
+    query.add("debug"); //(4)!
+
+    String uri = "/api/users" + query.build();
+    // /api/users?page=1&sort=name+age&debug
     ```
+
+    1. First argument: start the string with `?`; second: start it with `&` because the base path already ends with a query parameter
+    2. Adds a `name=value` pair, both parts are URL-encoded
+    3. Values are URL-encoded, so the space becomes `+`
+    4. Adds a parameter without a value
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val builder = UriQueryBuilder()
-        .path("/api/users")
-        .queryParam("page", 1)
-        .queryParam("size", 10)
-        .queryParam("sort", "name")
-    
-    val uri = builder.build()
-    // /api/users?page=1&size=10&sort=name
+    val query = UriQueryBuilder(true, false) //(1)!
+    query.add("page", "1") //(2)!
+    query.add("sort", "name age") //(3)!
+    query.add("debug") //(4)!
+
+    val uri = "/api/users" + query.build()
+    // /api/users?page=1&sort=name+age&debug
     ```
+
+    1. First argument: start the string with `?`; second: start it with `&` because the base path already ends with a query parameter
+    2. Adds a `name=value` pair, both parts are URL-encoded
+    3. Values are URL-encoded, so the space becomes `+`
+    4. Adds a parameter without a value
+
+`unsafeAdd` variants append already-encoded values as-is. A `null` value is skipped entirely.
 
 ### HttpBodyInput { #http-body-input }
 
-`HttpBodyInput` is an interface that describes an incoming HTTP body (the response body on the client, obtained via `response.body()`)
-as a data stream (`Flow.Publisher<ByteBuffer>`). Used for streaming large data without loading it fully into memory,
-or read eagerly through the helper methods below.
-
-**Methods:**
+`HttpBodyInput` describes the response body. It extends `HttpBody` and is `Closeable`.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `asInputStream()` | `InputStream` | Represents body as InputStream for reading |
-| `asBufferStage()` | `CompletionStage<ByteBuffer>` | Asynchronously reads entire body to ByteBuffer |
-| `asArrayStage()` | `CompletionStage<byte[]>` | Asynchronously reads entire body to byte[] |
+| `asInputStream()` | `InputStream` | Reads the body as a stream |
+| `getFullContentIfAvailable()` | `ByteBuffer` | Returns the whole body if it is already buffered, otherwise `null` |
+| `contentLength()` | `long` | Body length, `-1` when unknown |
+| `contentType()` | `String` | Value of the `Content-Type` header, may be `null` |
+| `close()` | `void` | Releases the underlying connection resources |
+
+The outgoing counterpart is `HttpBodyOutput`, built with `HttpBody.plaintext(...)`, `HttpBody.json(...)`,
+`HttpBody.octetStream(...)`, `HttpBody.of(contentType, content)`, or `HttpBodyOutput.of(contentType, inputStream)`
+for streaming a body that is not fully in memory.
 
 ### HttpClientResponse { #http-client-response }
 
-`HttpClientResponse` is an interface that represents HTTP response from server. It extends `Closeable`, so it must be
-closed once the body has been read (declarative clients and mappers do this automatically).
-
-**Methods:**
+`HttpClientResponse` is an interface that represents the HTTP response from the server. It is `Closeable`.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `code()` | `int` | HTTP status code (200, 404, 500, etc.) |
-| `body()` | `HttpBodyInput` | Response body as a readable stream (see [HttpBodyInput](#http-body-input)) |
 | `headers()` | `HttpHeaders` | Response headers |
-| `close()` | `void` | Releases the response and underlying connection |
-
-There is no dedicated cookies accessor on the client response — read the `Set-Cookie` values from `headers()`.
+| `body()` | `HttpBodyInput` | Response body |
+| `close()` | `void` | Closes the response and releases the connection |
 
 ### HttpHeaders { #http-headers-imperative }
 
-`HttpHeaders` provides access to request and response headers in the imperative client.
+`HttpHeaders` provides access to request and response headers. Header names are lower-cased and lookups are case-insensitive.
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getFirst(String name)` | `String` | First value of the header or `null` |
+| `getAll(String name)` | `List<String>` | All values of the header or `null` |
+| `has(String name)` | `boolean` | Whether the header is present |
+| `names()` | `Set<String>` | All header names |
+| `size()` | `int` | Number of headers |
+| `isEmpty()` | `boolean` | Whether there are no headers |
+| `toMutable()` | `MutableHttpHeaders` | Mutable copy |
 
 **Reading headers:**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/data")
-        .build();
-    
-    httpClient.execute(request).thenAccept(response -> {
+    var request = HttpClientRequest.get("http://localhost:8090/api/data").build();
+
+    try (var response = httpClient.execute(request)) {
         HttpHeaders headers = response.headers();
-        String contentType = headers.getFirst("Content-Type");
-        List<String> allValues = headers.get("X-Custom-Header");
-        boolean hasHeader = headers.contains("Authorization");
-    });
+        String contentType = headers.getFirst("content-type");
+        List<String> allValues = headers.getAll("x-custom-header");
+        boolean hasHeader = headers.has("authorization");
+    }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/data").build()
-    
-    httpClient.execute(request).thenAccept { response ->
+    val request = HttpClientRequest.get("http://localhost:8090/api/data").build()
+
+    httpClient.execute(request).use { response ->
         val headers = response.headers()
-        val contentType = headers.getFirst("Content-Type")
-        val allValues = headers.get("X-Custom-Header")
-        val hasHeader = headers.contains("Authorization")
+        val contentType = headers.getFirst("content-type")
+        val allValues = headers.getAll("x-custom-header")
+        val hasHeader = headers.has("authorization")
     }
     ```
 
-**Adding headers:**
+**Building headers:**
+
+`HttpHeaders.of(...)` returns a `MutableHttpHeaders` which supports `set`, `add` and `remove`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    MutableHttpHeaders headers = new MutableHttpHeaders();
-    headers.add("Authorization", "Bearer token123");
-    headers.add("X-Custom-Header", "value");
-    headers.set("Content-Type", "application/json");
-    
-    HttpClientRequest request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
-        .headers(headers)
-        .body(HttpBody.plaintext("body"))
-        .build();
-    
-    httpClient.execute(request);
+    MutableHttpHeaders headers = HttpHeaders.of();
+    headers.add("authorization", "Bearer token123");
+    headers.add("x-custom-header", "value");
+    headers.set("content-type", "application/json");
+
+    var request = HttpClientRequest.post("http://localhost:8090/api/data")
+            .header("authorization", headers.getFirst("authorization"))
+            .body(HttpBody.json("{}"))
+            .build();
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val headers = MutableHttpHeaders()
-    headers.add("Authorization", "Bearer token123")
-    headers.add("X-Custom-Header", "value")
-    headers.set("Content-Type", "application/json")
-    
-    val request = HttpClientRequest.of("POST", "http://localhost:8090/api/data")
-        .headers(headers)
-        .body(HttpBody.plaintext("body"))
+    val headers = HttpHeaders.of()
+    headers.add("authorization", "Bearer token123")
+    headers.add("x-custom-header", "value")
+    headers.set("content-type", "application/json")
+
+    val request = HttpClientRequest.post("http://localhost:8090/api/data")
+        .header("authorization", headers.getFirst("authorization")!!)
+        .body(HttpBody.json("{}"))
         .build()
-    
-    httpClient.execute(request)
     ```
+
+A ready `HttpHeaders` object can also be passed straight to a declarative method with `@Header`, see [Header](#header).
 
 ### Cookies { #cookies-imperative }
 
-The imperative `HttpClientResponse` does not expose a dedicated cookies accessor — response cookies are read from the
-`Set-Cookie` response headers via `headers()`. On the request side, a cookie can be added as the `Cookie` header.
+Cookies are ordinary headers: an outgoing cookie is a `Cookie` header, an incoming one is a `Set-Cookie` header.
+`Cookie` describes a single cookie and `Cookies` is a utility class that parses and renders them.
 
-**Reading response cookies:**
+**Sending a cookie:**
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
-        .build();
-
-    httpClient.execute(request).thenAccept(response -> {
-        List<String> setCookies = response.headers().get("set-cookie"); //(1)!
-        if (setCookies != null) {
-            for (String setCookie : setCookies) {
-                // e.g. "SESSIONID=abc123; Path=/; HttpOnly"
-            }
-        }
-    });
+    var request = HttpClientRequest.get("http://localhost:8090/api/profile")
+            .header("Cookie", Cookie.of("SESSIONID", "12345").toValue())
+            .build();
     ```
-
-    1. Header names are matched case-insensitively
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile").build()
+    val request = HttpClientRequest.get("http://localhost:8090/api/profile")
+        .header("Cookie", Cookie.of("SESSIONID", "12345").toValue())
+        .build()
+    ```
 
-    httpClient.execute(request).thenAccept { response ->
-        val setCookies = response.headers().get("set-cookie") //(1)!
-        setCookies?.forEach { setCookie ->
-            // e.g. "SESSIONID=abc123; Path=/; HttpOnly"
+**Reading cookies from a response:**
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    try (var response = httpClient.execute(request)) {
+        var setCookies = response.headers().getAll("set-cookie");
+        if (setCookies != null) {
+            for (var header : setCookies) {
+                Cookie cookie = Cookies.parseSetCookieHeader(header);
+                String name = cookie.name();
+                String value = cookie.value();
+                String domain = cookie.domain();
+                String path = cookie.path();
+            }
         }
     }
     ```
 
     1. Header names are matched case-insensitively
 
-**Sending a request cookie:**
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    HttpClientRequest request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
-        .header("cookie", "SESSIONID=abc123")
-        .build();
-    ```
-
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    val request = HttpClientRequest.of("GET", "http://localhost:8090/api/profile")
-        .header("cookie", "SESSIONID=abc123")
-        .build()
+    httpClient.execute(request).use { response ->
+        val setCookies = response.headers().getAll("set-cookie")
+        if (setCookies != null) {
+            for (header in setCookies) {
+                val cookie = Cookies.parseSetCookieHeader(header)
+                val name = cookie.name()
+                val value = cookie.value()
+                val domain = cookie.domain()
+                val path = cookie.path()
+            }
+        }
+    }
     ```
+
+For a declarative client, use the [`@Cookie`](#cookie) parameter annotation instead of building the header by hand.
 
 ## Telemetry { #telemetry }
 
-HTTP Client uses a telemetry contract for logging, metrics, and tracing of requests.
-Telemetry configuration (section `telemetry { logging / metrics / tracing }`) is described in the [Configuration](#configuration) section.
-Extension points are located in `ru.tinkoff.kora.http.client.common.telemetry`.
+HTTP Client telemetry is installed as an interceptor: `DeclarativeHttpClientConfig` asks the `HttpClientTelemetryFactory`
+for an `HttpClientTelemetry` per client method and wraps the transport in a `TelemetryInterceptor`.
+Extension points live in `io.koraframework.http.client.common.telemetry`.
 
-For each HTTP request, an `HttpClientTelemetry.HttpClientTelemetryContext` is created, which is closed upon request completion.
-The request is described through telemetry handler parameters, including method, URL, response status, and duration.
+For each HTTP request `HttpClientTelemetry.observe(request)` creates an `HttpClientObservation`,
+which sees the request via `observeRequest`, the response via `observeResponse`, a failure via `observeError`,
+and is always closed with `end()`.
 
-The default factory `DefaultHttpClientTelemetryFactory` combines three factories:
-- `HttpClientLoggerFactory` builds `HttpClientLogger` for logging request start/end;
-- `HttpClientMetricsFactory` builds `HttpClientMetrics` for writing request metrics;
-- `HttpClientTracerFactory` builds `HttpClientTracer` for distributed tracing.
+The default factory `DefaultHttpClientTelemetryFactory` combines three optional pieces, each replaceable by declaring
+a component of the corresponding type:
 
-Metrics and tracing are described in the [Metrics Reference](metrics.md#http-client) section.
+- `DefaultHttpClientLoggerFactory` builds the request/response loggers;
+- `DefaultHttpClientMetricsFactory` builds the metrics recorder;
+- `DefaultHttpClientBodyConverter` turns a captured body into the string that is written to the log.
+
+When logging, metrics and tracing are all disabled for a client, the factory returns a no-op telemetry and no wrapper is installed at all.
+
+**Logging.** Two loggers are created per client method, named after the client class, the method, and the direction:
+`com.example.SomeClient.hello.request` and `com.example.SomeClient.hello.response`.
+Their level decides how much is written: `INFO` logs the operation only, `DEBUG` adds query parameters and headers,
+`TRACE` adds the body. Masked query parameters and headers are replaced with the configured `mask`,
+and a body larger than `maxRequestBodyLogSize` / `maxResponseBodyLogSize` is skipped with a warning.
+See [Logging](logging-slf4j.md) for the logger configuration itself.
+
+**Metrics.** The default recorder writes the `http.client.request.duration` timer with the SLO buckets from
+`telemetry.metrics.slo`, tagged with the HTTP method, status code, route, server address and error type.
+See [Metrics Reference](metrics.md#http-client).
+
+**Tracing.** A span named `<METHOD> <path template>` is created per request with the OpenTelemetry HTTP semantic
+attributes; `telemetry.tracing.pathFull` decides between the `url.full` and `url.path` attributes.
+See [Tracing](tracing.md).
 
 ### Logging { #telemetry-logging }
 

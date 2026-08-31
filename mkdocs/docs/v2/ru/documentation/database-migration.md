@@ -1,13 +1,13 @@
 ---
-description: "Explains Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration. Use when working with FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+description: "Explains Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, DBMS dialect artifacts, and JDBC integration. Use when working with FlywayJdbcDatabaseModule, LiquibaseJdbcDatabaseModule, FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDataSource."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, and database integration; key triggers include FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDatabaseModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora database migration modules for Flyway and Liquibase, migration configuration, migration modes, startup behavior, DBMS dialect artifacts and JDBC integration; key triggers include FlywayJdbcDatabaseModule, LiquibaseJdbcDatabaseModule, FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDataSource, Unsupported Database."
 ---
 
 Миграции базы данных применяют изменения схемы и справочных данных в контролируемом порядке: они создают таблицы, индексы, ограничения и выполняют другие операции `SQL`, необходимые новой версии приложения.
-В Kora модули миграций привязаны к инициализации `JdbcDatabase` через `GraphInterceptor<JdbcDatabase>`: при запуске приложения `JdbcDatabase` создается как компонент графа, а метод `init()` перехватчика выполняет миграции до того, как компонент будет опубликован для остальной части графа.
-Если миграция завершается ошибкой, метод `init()` выбрасывает исключение, поэтому инициализация компонента `JdbcDatabase` и построение всего графа (запуск приложения) также завершаются неудачей.
-Метод `release()` перехватчика ничего не делает: миграции никогда не откатываются и не выполняются повторно при остановке приложения.
+В Kora модули миграций привязаны к инициализации `JdbcDataSource` через `GraphInterceptor<JdbcDataSource>`: при запуске приложения `JdbcDataSource` создается как компонент графа, а метод `afterInit()` перехватчика выполняет миграции до того, как компонент будет опубликован для остальной части графа.
+Если миграция завершается ошибкой, метод `afterInit()` выбрасывает исключение, поэтому инициализация компонента `JdbcDataSource` и построение всего графа (запуск приложения) также завершаются неудачей.
+Метод `beforeRelease()` перехватчика ничего не делает: миграции никогда не откатываются и не выполняются повторно при остановке приложения.
 
 Такой подход удобен для локальной разработки, тестов и небольших установок, где приложение запускается в одном экземпляре.
 Для окружений с несколькими репликами заранее выберите отдельный способ выполнения миграций, чтобы они не запускались одновременно из каждого экземпляра приложения.
@@ -16,9 +16,9 @@ agent:
 ## Flyway { #flyway }
 
 Модуль для миграции базы данных с помощью инструмента [Flyway](https://documentation.red-gate.com/fd).
-При инициализации `JdbcDatabase` модуль вызывает `Flyway.migrate()` с настройками из секции `flyway`.
+При инициализации `JdbcDataSource` модуль собирает экземпляр `Flyway` из настроек секции `flyway` и выполняет операцию, выбранную [режимом миграции](#flyway-modes).
 Миграции запускает `FlywayJdbcDatabaseInterceptor`, который предоставляется модулем `FlywayJdbcDatabaseModule`.
-`Flyway` подключен к `SLF4J` (`loggers("slf4j")`), поэтому вывод миграций и строка с замером времени `FlyWay migration applied in ...` (журналируемая на уровне `INFO`) попадают в обычные логи приложения.
+`Flyway` подключен к `SLF4J` (`loggers("slf4j")`), поэтому вывод миграций и строка с замером времени `FlyWay migration in mode 'MIGRATE' applied in ...` (журналируемая на уровне `INFO`) попадают в обычные логи приложения.
 
 ### Подключение { #dependency }
 
@@ -26,8 +26,11 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:database-flyway"
+    implementation "io.koraframework:database-flyway"
+    implementation "org.flywaydb:flyway-database-postgresql:13.3.0" //(1)!
     ```
+
+    1. Поддержка конкретной СУБД, смотрите [Поддержка баз данных](#flyway-database-support).
 
     Модуль:
     ```java
@@ -39,8 +42,11 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:database-flyway")
+    implementation("io.koraframework:database-flyway")
+    implementation("org.flywaydb:flyway-database-postgresql:13.3.0") //(1)!
     ```
+
+    1. Поддержка конкретной СУБД, смотрите [Поддержка баз данных](#flyway-database-support).
 
     Модуль:
     ```kotlin
@@ -49,56 +55,88 @@ agent:
     ```
 
 Требует подключения [`JDBC`-модуля](database-jdbc.md), так как миграции выполняются через `DataSource`.
-В приложении обычно подключаются оба модуля: `JdbcDatabaseModule` создает `JdbcDatabase`, а `FlywayJdbcDatabaseModule` добавляет перехватчик миграций.
+В приложении обычно подключаются оба модуля: `JdbcDatabaseModule` создает `JdbcDataSource`, а `FlywayJdbcDatabaseModule` добавляет перехватчик миграций.
+
+### Поддержка баз данных { #flyway-database-support }
+
+Начиная с `Flyway` 10 поддержка конкретной СУБД вынесена в отдельный артефакт, а `io.koraframework:database-flyway` приносит только `org.flywaydb:flyway-core`.
+Приложение обязано добавить артефакт для своей базы данных, иначе оно падает при инициализации `JdbcDataSource`:
+
+```text
+FlywayException: Unsupported Database: PostgreSQL 16.x
+```
+
+Для PostgreSQL это артефакт `org.flywaydb:flyway-database-postgresql`, артефакты для остальных баз данных перечислены в [документации Flyway](https://documentation.red-gate.com/fd).
+Версию артефакта указывайте такой же, как у `flyway-core`, который приходит вместе с `database-flyway`, — в Kora 2.0 это `13.3.0`.
+Артефакт не входит в [`kora-bom`](general.md#dependencies), поэтому версию всегда требуется указывать явно.
 
 ### Конфигурация { #configuration }
 
 Пример полной конфигурации, описанной в классе `FlywayConfig`:
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     flyway {
         enabled = true //(1)!
-        locations = ["db/migration"] //(2)!
-        executeInTransaction = true //(3)!
-        validateOnMigrate = true //(4)!
-        mixed = false //(5)!
-        configurationProperties {} //(6)!
+        mode = "MIGRATE" //(2)!
+        locations = ["db/migration"] //(3)!
+        executeInTransaction = true //(4)!
+        validateOnMigrate = true //(5)!
+        mixed = false //(6)!
+        configurationProperties {} //(7)!
     }
     ```
 
-    1. Включает выполнение миграций при инициализации `JdbcDatabase` (по умолчанию: `true`). Если указать `false`, модуль пропустит вызов `Flyway.migrate()`.
-    2. Пути к директориям со скриптами миграций (по умолчанию: `["db/migration"]`).
-    3. Выполняет миграции внутри транзакции, если это поддерживается базой данных и самими операциями `SQL` (по умолчанию: `true`).
-    4. Проверяет контрольные суммы уже примененных миграций перед выполнением новых (по умолчанию: `true`). Если контрольные суммы не совпадают, запуск завершится ошибкой.
-    5. Разрешает смешивать транзакционные и нетранзакционные операции `SQL` в одной миграции (по умолчанию: `false`).
+    1. Включает выполнение миграций при инициализации `JdbcDataSource` (по умолчанию: `true`). Если указать `false`, модуль напишет в лог `FlyWay is disabled, skipping migrate...` и не будет обращаться к базе данных.
+    2. Операция, которую `Flyway` выполняет при старте: `MIGRATE`, `REPAIR` или `CLEAN_MIGRATE` (по умолчанию: `MIGRATE`). Значение сопоставляется по точному имени в верхнем регистре. Смотрите [Режимы миграций](#flyway-modes).
+    3. Пути к директориям со скриптами миграций (по умолчанию: `["db/migration"]`). Допускается и обычная строка — она разбивается по запятой.
+    4. Выполняет миграции внутри транзакции, если это поддерживается базой данных и самими операциями `SQL` (по умолчанию: `true`).
+    5. Проверяет контрольные суммы уже примененных миграций перед выполнением новых (по умолчанию: `true`). Если контрольные суммы не совпадают, запуск завершится ошибкой.
+    6. Разрешает смешивать транзакционные и нетранзакционные операции `SQL` в одной миграции (по умолчанию: `false`).
        Если настройка включена, вся миграция выполняется **без транзакции**, чтобы избежать ошибок в базах данных, где часть операций нельзя выполнять внутри транзакции.
        Настройка актуальна для баз данных, которые не поддерживают выполнение отдельных операций внутри транзакции: PostgreSQL, Aurora PostgreSQL, SQL Server и SQLite.
-    6. Дополнительные свойства `Flyway` в формате ключ-значение (по умолчанию: `{}`).
-       Через них можно передать настройки, у которых нет отдельной опции конфигурации Kora, например `schemas`, `baselineOnMigrate`, `placeholderReplacement` или `placeholders.*`.
+    7. Дополнительные свойства `Flyway` в формате ключ-значение (по умолчанию: `{}`).
+       Через них передаются настройки, у которых нет отдельной опции конфигурации Kora.
+       Ключами служат стандартные имена свойств `Flyway` **с префиксом `flyway.`**, например `flyway.schemas`, `flyway.baselineOnMigrate`, `flyway.placeholderReplacement` или `flyway.placeholders.*`.
+       Ключ без префикса `Flyway` не распознает.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     flyway:
         enabled: true #(1)!
-        locations: ["db/migration"] #(2)!
-        executeInTransaction: true #(3)!
-        validateOnMigrate: true #(4)!
-        mixed: false #(5)!
-        configurationProperties: {} #(6)!
+        mode: "MIGRATE" #(2)!
+        locations: ["db/migration"] #(3)!
+        executeInTransaction: true #(4)!
+        validateOnMigrate: true #(5)!
+        mixed: false #(6)!
+        configurationProperties: {} #(7)!
     ```
 
-    1. Включает выполнение миграций при инициализации `JdbcDatabase` (по умолчанию: `true`). Если указать `false`, модуль пропустит вызов `Flyway.migrate()`.
-    2. Пути к директориям со скриптами миграций (по умолчанию: `["db/migration"]`).
-    3. Выполняет миграции внутри транзакции, если это поддерживается базой данных и самими операциями `SQL` (по умолчанию: `true`).
-    4. Проверяет контрольные суммы уже примененных миграций перед выполнением новых (по умолчанию: `true`). Если контрольные суммы не совпадают, запуск завершится ошибкой.
-    5. Разрешает смешивать транзакционные и нетранзакционные операции `SQL` в одной миграции (по умолчанию: `false`).
+    1. Включает выполнение миграций при инициализации `JdbcDataSource` (по умолчанию: `true`). Если указать `false`, модуль напишет в лог `FlyWay is disabled, skipping migrate...` и не будет обращаться к базе данных.
+    2. Операция, которую `Flyway` выполняет при старте: `MIGRATE`, `REPAIR` или `CLEAN_MIGRATE` (по умолчанию: `MIGRATE`). Значение сопоставляется по точному имени в верхнем регистре. Смотрите [Режимы миграций](#flyway-modes).
+    3. Пути к директориям со скриптами миграций (по умолчанию: `["db/migration"]`). Допускается и обычная строка — она разбивается по запятой.
+    4. Выполняет миграции внутри транзакции, если это поддерживается базой данных и самими операциями `SQL` (по умолчанию: `true`).
+    5. Проверяет контрольные суммы уже примененных миграций перед выполнением новых (по умолчанию: `true`). Если контрольные суммы не совпадают, запуск завершится ошибкой.
+    6. Разрешает смешивать транзакционные и нетранзакционные операции `SQL` в одной миграции (по умолчанию: `false`).
        Если настройка включена, вся миграция выполняется **без транзакции**, чтобы избежать ошибок в базах данных, где часть операций нельзя выполнять внутри транзакции.
        Настройка актуальна для баз данных, которые не поддерживают выполнение отдельных операций внутри транзакции: PostgreSQL, Aurora PostgreSQL, SQL Server и SQLite.
-    6. Дополнительные свойства `Flyway` в формате ключ-значение (по умолчанию: `{}`).
-       Через них можно передать настройки, у которых нет отдельной опции конфигурации Kora, например `schemas`, `baselineOnMigrate`, `placeholderReplacement` или `placeholders.*`.
+    7. Дополнительные свойства `Flyway` в формате ключ-значение (по умолчанию: `{}`).
+       Через них передаются настройки, у которых нет отдельной опции конфигурации Kora.
+       Ключами служат стандартные имена свойств `Flyway` **с префиксом `flyway.`**, например `flyway.schemas`, `flyway.baselineOnMigrate`, `flyway.placeholderReplacement` или `flyway.placeholders.*`.
+       Ключ без префикса `Flyway` не распознает.
+
+### Режимы миграций { #flyway-modes }
+
+Настройка `mode` определяет, какую операцию `Flyway` выполняет перехватчик при старте:
+
+- `MIGRATE` — вызывает `Flyway.migrate()` и применяет миграции, которых еще нет в таблице истории миграций. Обычный режим работы приложения.
+- `REPAIR` — вызывает `Flyway.repair()`: новые миграции не применяются, вместо этого чинится таблица истории — контрольные суммы пересчитываются по текущим файлам, а записи о неудачных миграциях удаляются.
+  Это разовый восстановительный режим для случая, когда файл миграции был изменен осознанно; после успешного запуска верните `MIGRATE`.
+- `CLEAN_MIGRATE` — вызывает `Flyway.clean()`, а затем `Flyway.migrate()`: настроенные схемы **полностью очищаются**, и миграции применяются с нуля.
+  Подходит только для локальной разработки и одноразовых тестовых баз, но не для окружения с реальными данными.
+  `Flyway` по умолчанию запрещает `clean`, и Kora эту настройку не меняет, поэтому режим дополнительно требует разрешить очистку через `configurationProperties { "flyway.cleanDisabled" = "false" }`.
 
 ### Файлы миграций { #flyway-files }
 
@@ -126,8 +164,9 @@ CREATE TABLE users (
 ## Liquibase { #liquibase }
 
 Модуль для миграции базы данных с помощью инструмента [Liquibase](https://www.liquibase.com/supported-databases).
-При инициализации `JdbcDatabase` модуль получает соединение из `DataSource`, создает экземпляр `Liquibase` и вызывает `update()`.
+При инициализации `JdbcDataSource` модуль получает соединение из `DataSource`, определяет по нему реализацию базы данных, создает экземпляр `Liquibase` и вызывает `update()`.
 Миграции запускает `LiquibaseJdbcDatabaseInterceptor`, который предоставляется модулем `LiquibaseJdbcDatabaseModule`.
+Поддержка конкретных баз данных входит в состав `liquibase-core`, поэтому, в отличие от `Flyway`, дополнительный артефакт диалекта не требуется.
 
 ### Подключение { #dependency-2 }
 
@@ -135,7 +174,7 @@ CREATE TABLE users (
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:database-liquibase"
+    implementation "io.koraframework:database-liquibase"
     ```
 
     Модуль:
@@ -148,7 +187,7 @@ CREATE TABLE users (
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:database-liquibase")
+    implementation("io.koraframework:database-liquibase")
     ```
 
     Модуль:
@@ -158,13 +197,13 @@ CREATE TABLE users (
     ```
 
 Требует подключения [`JDBC`-модуля](database-jdbc.md), так как миграции выполняются через `DataSource`.
-В приложении обычно подключаются оба модуля: `JdbcDatabaseModule` создает `JdbcDatabase`, а `LiquibaseJdbcDatabaseModule` добавляет перехватчик миграций.
+В приложении обычно подключаются оба модуля: `JdbcDatabaseModule` создает `JdbcDataSource`, а `LiquibaseJdbcDatabaseModule` добавляет перехватчик миграций.
 
 ### Конфигурация { #configuration-2 }
 
 Пример полной конфигурации, описанной в классе `LiquibaseConfig`:
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     liquibase {
@@ -173,6 +212,7 @@ CREATE TABLE users (
     ```
 
     1. Путь к основному файлу [`changelog`](https://docs.liquibase.com/concepts/changelogs/home.html) с описанием миграций (по умолчанию: `db/changelog/db.changelog-master.xml`).
+       Файл ищется в classpath.
 
 === ":simple-yaml: `YAML`"
 
@@ -182,9 +222,11 @@ CREATE TABLE users (
     ```
 
     1. Путь к основному файлу [`changelog`](https://docs.liquibase.com/concepts/changelogs/home.html) с описанием миграций (по умолчанию: `db/changelog/db.changelog-master.xml`).
+       Файл ищется в classpath.
 
-В отличие от `Flyway`, у модуля `Liquibase` нет настройки `enabled`: если модуль подключен к графу приложения, миграции запускаются при инициализации `JdbcDatabase`.
-Если миграция `Liquibase` завершается ошибкой, модуль оборачивает ее в `IllegalStateException`, и запуск приложения прерывается.
+В отличие от `Flyway`, у модуля `Liquibase` нет настройки `enabled`: если модуль подключен к графу приложения, миграции запускаются при инициализации `JdbcDataSource`.
+Если миграция `Liquibase` завершается ошибкой, модуль пишет в лог `Error during Liquibase migration` и оборачивает ошибку в `IllegalStateException`, из-за чего запуск приложения прерывается.
+Об успешном выполнении сообщает строка `Liquibase migration applied in ...` на уровне `INFO`.
 
 ### Файлы миграций { #liquibase-files }
 
@@ -224,6 +266,48 @@ CREATE TABLE users (
 );
 ```
 
+## Пул соединений { #pool }
+
+Миграции используют тот же пул соединений `Hikari`, что и приложение, поэтому в секции `jdbc` нужно оставить запас для инструмента миграций:
+
+- `Flyway` во время миграции занимает **два** соединения — одно под саму миграцию, второе под управление схемой и блокировкой.
+- `Liquibase` обычно работает через **одно** соединение.
+
+Значение `jdbc.maxPoolSize` по умолчанию равно `10` и достаточно для обоих инструментов.
+Если пул намеренно уменьшить до `1`, миграция `Flyway` будет ждать второе соединение до истечения `jdbc.connectionTimeout`, а затем завершит запуск приложения ошибкой.
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    jdbc {
+        jdbcUrl = "jdbc:postgresql://localhost:5432/postgres"
+        username = "postgres"
+        password = "postgres"
+        poolName = "kora"
+        maxPoolSize = 10
+    }
+
+    flyway {
+        locations = ["db/migration"]
+    }
+    ```
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    jdbc:
+      jdbcUrl: "jdbc:postgresql://localhost:5432/postgres"
+      username: "postgres"
+      password: "postgres"
+      poolName: "kora"
+      maxPoolSize: 10
+
+    flyway:
+      locations: ["db/migration"]
+    ```
+
+Полное описание настроек пула смотрите в документации [`JDBC`-модуля](database-jdbc.md).
+
 ## Рекомендации { #recommendations }
 
 ???+ warning "Рекомендация"
@@ -237,4 +321,30 @@ CREATE TABLE users (
     для промышленного окружения Kubernetes — [Kubernetes Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/),
     либо выполняйте миграции отдельно из `CI`.
 
+Когда миграции вынесены из приложения, `io.koraframework:database-flyway` не подключается вовсе, а схему готовит отдельный шаг.
+Gradle-плагину `Flyway` артефакт СУБД нужен так же, как и модулю, но уже на classpath блока `buildscript`:
 
+```groovy
+buildscript {
+    dependencies {
+        classpath "org.flywaydb:flyway-database-postgresql:13.0.0"
+    }
+}
+
+plugins {
+    id "org.flywaydb.flyway" version "13.0.0"
+}
+
+flyway {
+    url = "jdbc:postgresql://localhost:5432/postgres"
+    user = "postgres"
+    password = "postgres"
+    locations = ["classpath:db/migration"]
+    baselineOnMigrate = true
+}
+```
+
+Gradle-плагин — это отдельная установка `Flyway`, не та, что работает внутри приложения: здесь версия артефакта следует за версией плагина, а не за `flyway-core`, который приносит `database-flyway`.
+Эти версии независимы, а сборочная зависимость живет на classpath блока `buildscript`, тогда как рантаймовая — в `implementation`.
+
+В тестах модуль миграций остается самым простым вариантом: тестовая база живет только на время одного прогона, экземпляр приложения один, а схема готовится ровно теми же миграциями, что и в промышленном окружении.

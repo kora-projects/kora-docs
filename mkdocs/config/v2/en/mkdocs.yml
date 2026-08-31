@@ -33,6 +33,7 @@ nav:
           - Resilience: guides/resilient.md
           - Validation: guides/validation.md
       - Observability:
+          - Overview: guides/observability.md
           - Metrics: guides/observability-metrics.md
           - Tracing: guides/observability-tracing.md
           - Probes: guides/observability-probes.md
@@ -68,8 +69,6 @@ nav:
       - Database:
         - Common: documentation/database-common.md
         - JDBC: documentation/database-jdbc.md
-        - R2DBC: documentation/database-r2dbc.md
-        - Vertx: documentation/database-vertx.md
         - Cassandra: documentation/database-cassandra.md
         - Migration: documentation/database-migration.md
       - Integration:

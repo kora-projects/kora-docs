@@ -1,9 +1,12 @@
-﻿---
+---
 search:
   exclude: true
 title: Стратегии кэширования с Kora
 summary: Learn how to extend the HTTP Server guide with typed Caffeine caching, cache annotations, and local performance optimization
-tags: caching, performance, caffeine, cacheable, cache-invalidate, optimization
+description: "Step-by-step in-process caching for a Kora 2.0 service with Caffeine: the io.koraframework:cache-caffeine artifact, CaffeineCacheModule, a typed @Cache contract extending CaffeineCache<K, V>, the @Cacheable, @CachePut, @CacheInvalidate and @CacheInvalidateAll aspects, the args attribute that selects cache key parameters, imperative warm-up through the injected cache contract, the cache.caffeine configuration section, and the generated AOP proxy and cache implementation sources."
+agent:
+  use_when: "Use this file for questions about adding an in-process Caffeine cache to a Kora 2.0 service: io.koraframework:cache-caffeine, CaffeineCacheModule, the @Cache annotation with a config path, CaffeineCache<K, V>, @Cacheable, @CachePut with the args attribute, @CacheInvalidate, @CacheInvalidateAll, CacheMode, maximumSize and expireAfterWrite config keys, why cache aspects need a non-final Java class or an open Kotlin class, and how to read the generated cache AOP proxy."
+tags: caching, performance, caffeine, cacheable, cacheput, cache-invalidate, optimization
 ---
 
 # Стратегии кэширования с Kora { #caching-strategies-kora }
@@ -32,8 +35,8 @@ tags: caching, performance, caffeine, cacheable, cache-invalidate, optimization
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+
 - текстовый редактор или среда разработки
 - пройденное руководство [HTTP-сервер](http-server.md)
 
@@ -137,7 +140,7 @@ tags: caching, performance, caffeine, cacheable, cache-invalidate, optimization
 
 Kora поддерживает кэширование двумя взаимодополняющими способами:
 
-- **Декларативное кэширование** с `@Cacheable`, `@CachePut` и `@CacheInvalidate`
+- **Декларативное кэширование** с `@Cacheable`, `@CachePut`, `@CacheInvalidate` и `@CacheInvalidateAll`
 - **Императивное кэширование** через внедрение контракта кэша и прямой вызов `get()`, `put()`, `invalidate()` или `invalidateAll()`
 
 Такое сочетание полезно, потому что разным методам сервиса нужен разный уровень управления.
@@ -169,60 +172,68 @@ Kora поддерживает кэширование двумя взаимодо
 - `put(key, value)`, чтобы вручную прогреть или перезаписать запись
 - `invalidate(key)`, чтобы удалить один ключ
 - `invalidateAll()`, чтобы очистить весь кэш
+- `getAll()`, чтобы прочитать все содержимое кэша Caffeine
 
 Так кэш остается одновременно удобным для декларативного подхода и операционно явным. Вы сохраняете поддержку фреймворка, но не теряете управление.
 
 ## Зависимости { #dependencies }
 
-Добавьте зависимость Caffeine времени выполнения в приложение из руководства по HTTP-серверу.
-
-===! ":fontawesome-brands-java: `Gradle Groovy`"
-
-    Обновите `guides/guide-cache-app/build.gradle`:
-
-    ```groovy
-    dependencies {
-        implementation "ru.tinkoff.kora:cache-caffeine"
-    }
-    ```
-
-=== ":simple-kotlin: `Gradle Kotlin DSL`"
-
-    Обновите `build.gradle.kts`:
-
-    ```kotlin
-    dependencies {
-        implementation("ru.tinkoff.kora:cache-caffeine")
-    }
-    ```
-
-## Модули { #modules }
-
-Приложение из руководства по HTTP-серверу уже использует `HoconConfigModule`, `JsonModule` и `UndertowHttpServerModule`. Здесь мы добавляем `CaffeineCacheModule`, чтобы Kora могла сгенерировать
-реализацию кэша.
+Добавьте зависимость кэша Caffeine в приложение из руководства по HTTP-серверу. Все остальное — модуль конфигурации, HTTP-сервер, JSON, логирование и настройка тестов JUnit — уже на месте.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/Application.java`:
+    Добавьте в блок `dependencies` в `build.gradle`:
+
+    ```groovy
+    dependencies {
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:cache-caffeine")
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Добавьте в блок `dependencies` в `build.gradle.kts`:
+
+    ```kotlin
+    dependencies {
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:cache-caffeine")
+    }
+    ```
+
+Версия артефакта берется из платформы `io.koraframework:kora-bom`, которую приложение уже импортирует, поэтому указывать версию здесь не нужно. `cache-caffeine` приносит и саму библиотеку Caffeine,
+и контракты кэша Kora, чтобы обработчик аннотаций смог сгенерировать реализацию кэша для вашего типизированного контракта.
+
+## Модули { #modules }
+
+Приложение из руководства по HTTP-серверу уже использует `HoconConfigModule`, `JsonModule`, `LogbackModule` и `UndertowPublicHttpServerModule`. Здесь мы добавляем `CaffeineCacheModule`, чтобы Kora
+смогла собрать реализацию кэша и его телеметрию.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Обновите `src/main/java/io/koraframework/guide/cache/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.cache;
+    package io.koraframework.guide.cache;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.cache.caffeine.CaffeineCacheModule;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.cache.caffeine.CaffeineCacheModule;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            UndertowHttpServerModule,
-            CaffeineCacheModule {  // <----- Подключили модуль
+            UndertowPublicHttpServerModule,
+            CaffeineCacheModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -232,35 +243,41 @@ Kora поддерживает кэширование двумя взаимодо
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/cache/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/cache/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.cache
+    package io.koraframework.guide.cache
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.cache.caffeine.CaffeineCacheModule
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.cache.caffeine.CaffeineCacheModule
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        UndertowHttpServerModule,
-        CaffeineCacheModule  // <----- Подключили модуль
+        UndertowPublicHttpServerModule,
+        CaffeineCacheModule  // <----- Connected module
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-## Реализация кеша { #cache-impl }
+`CaffeineCacheModule` добавляет `CaffeineCacheFactory` и фабрику телеметрии кэша как `@DefaultComponent`, то есть ваш собственный компонент того же типа их переопределит. Он также подтягивает
+`CacheCommonModule` — общую часть подсистемы кэша.
+
+## Реализация кэша { #cache-impl }
 
 Кэш Kora начинается с типизированного интерфейса `@Cache`. Kora генерирует его реализацию во время компиляции и делает ее доступной для внедрения зависимостей.
+
+Значение аннотации — это **путь конфигурации** этого кэша. Это не символическое имя: Kora читает `CaffeineCacheConfig` ровно по этому пути в `application.conf`, поэтому `@Cache("cache.caffeine.users")`
+и раздел конфигурации `cache.caffeine.users { ... }` неразрывно связаны.
 
 В этом руководстве ключом является идентификатор пользователя, а кэшированным значением — полный `UserResponse`.
 
@@ -273,14 +290,14 @@ Kora поддерживает кэширование двумя взаимодо
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/service/UserCaffeineCache.java`:
+    Создайте `src/main/java/io/koraframework/guide/cache/service/UserCaffeineCache.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.cache.service;
+    package io.koraframework.guide.cache.service;
 
-    import ru.tinkoff.kora.cache.annotation.Cache;
-    import ru.tinkoff.kora.cache.caffeine.CaffeineCache;
-    import ru.tinkoff.kora.guide.cache.dto.UserResponse;
+    import io.koraframework.cache.annotation.Cache;
+    import io.koraframework.cache.caffeine.CaffeineCache;
+    import io.koraframework.guide.cache.dto.UserResponse;
 
     @Cache("cache.caffeine.users")
     public interface UserCaffeineCache extends CaffeineCache<String, UserResponse> {}
@@ -288,22 +305,61 @@ Kora поддерживает кэширование двумя взаимодо
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/cache/service/UserCaffeineCache.kt`:
+    Создайте `src/main/kotlin/io/koraframework/guide/cache/service/UserCaffeineCache.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.cache.service
+    package io.koraframework.guide.cache.service
 
-    import ru.tinkoff.kora.cache.annotation.Cache
-    import ru.tinkoff.kora.cache.caffeine.CaffeineCache
-    import ru.tinkoff.kora.guide.cache.dto.UserResponse
+    import io.koraframework.cache.annotation.Cache
+    import io.koraframework.cache.caffeine.CaffeineCache
+    import io.koraframework.guide.cache.dto.UserResponse
 
     @Cache("cache.caffeine.users")
     interface UserCaffeineCache : CaffeineCache<String, UserResponse>
     ```
 
+`@Cache` можно ставить только на интерфейс, который расширяет `CaffeineCache<K, V>` или `RedisCache<K, V>`. Если поставить ее на класс, компиляция завершится ошибкой ровно с таким сообщением.
+
+Теперь внедрите кэш в `UserService` рядом с репозиторием. Форма конструктора сервиса сохраняется, он лишь получает еще одну зависимость:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Обновите конструктор в `src/main/java/io/koraframework/guide/cache/service/UserService.java`:
+
+    ```java
+    @Component
+    public class UserService {
+
+        private final UserRepository userRepository;
+        private final UserCaffeineCache userCache;
+
+        public UserService(UserRepository userRepository, UserCaffeineCache userCache) {
+            this.userRepository = userRepository;
+            this.userCache = userCache;
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Обновите конструктор в `src/main/kotlin/io/koraframework/guide/cache/service/UserService.kt`:
+
+    ```kotlin
+    @Component
+    open class UserService(
+        private val userRepository: UserRepository,
+        private val userCache: UserCaffeineCache
+    ) {
+    }
+    ```
+
+Обратите внимание на изменение уровня класса для Kotlin: `UserService` становится `open`. Аннотации кэша — это аспекты времени компиляции, а аспекту нужна цель, от которой можно наследоваться. То же
+правило в Java означает, что класс сервиса не должен быть `final`.
+
 ## `@Cacheable` { #cacheable }
 
-Полные правила `@Cacheable`, `@CachePut`, `@CacheInvalidate` и вычисления ключей описаны в разделах [декларативного кеширования](../documentation/cache.md#declarative) и [ключей кеша](../documentation/cache.md#key).
+Полные правила `@Cacheable`, `@CachePut`, `@CacheInvalidate`, `@CacheInvalidateAll` и вычисления ключей описаны в разделах [Декларативное кэширование](../documentation/cache.md#declarative) и
+[Ключ кэша](../documentation/cache.md#key).
 
 С этого момента считайте, что приложение запущено **ровно в одном экземпляре**. Это предположение позволяет сосредоточиться на поведении локального Caffeine, пока не решая согласованность кэша между
 экземплярами.
@@ -313,8 +369,6 @@ Kora поддерживает кэширование двумя взаимодо
 - `getUsers()` по-прежнему применяет сортировку и постраничную выдачу
 - вспомогательный метод сравнения остается без изменений
 - обновление и удаление по-прежнему переводят `boolean`-результаты репозитория в HTTP-ошибки `404`
-
-Kora применяет аннотации кэша через AOP времени компиляции. Для Java это означает, что класс сервиса не должен быть `final`; для Kotlin он должен быть `open`.
 
 `@Cacheable` — самая естественная отправная точка, потому что она моделирует классический путь чтения через кэш:
 
@@ -326,7 +380,7 @@ Kora применяет аннотации кэша через AOP времен�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите только путь чтения в `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/service/UserService.java`:
+    Обновите только путь чтения в `src/main/java/io/koraframework/guide/cache/service/UserService.java`:
 
     ```java
     @Cacheable(UserCaffeineCache.class)
@@ -337,14 +391,15 @@ Kora применяет аннотации кэша через AOP времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите только путь чтения в `src/main/kotlin/ru/tinkoff/kora/guide/cache/service/UserService.kt`:
+    Обновите только путь чтения в `src/main/kotlin/io/koraframework/guide/cache/service/UserService.kt`:
 
     ```kotlin
     @Cacheable(UserCaffeineCache::class)
-    open fun getUser(id: String): UserResponse? {
-        return userRepository.findById(id).orElse(null)
-    }
+    open fun getUser(id: String): UserResponse? = userRepository.findById(id)
     ```
+
+У метода ровно один параметр и нет явного `args`, поэтому ключом кэша становится `id`. И `Optional<UserResponse>` в Java, и `UserResponse?` в Kotlin поддерживаются: Kora разворачивает контейнер перед
+записью в кэш, поэтому кэш по-прежнему хранит обычные значения `UserResponse`, а пустой результат просто не кэшируется.
 
 В приложении с **одним экземпляром** это просто и безопасно, когда пользовательские данные читаются гораздо чаще, чем изменяются.
 
@@ -359,7 +414,7 @@ Kora применяет аннотации кэша через AOP времен�
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserService__AopProxy.java
     ```
 
     ```java
@@ -377,7 +432,7 @@ Kora применяет аннотации кэша через AOP времен�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
@@ -391,6 +446,9 @@ Kora применяет аннотации кэша через AOP времен�
 
 Ключевой момент — `computeIfAbsent(...)`: Kora сначала обращается к кэшу и вызывает `super.getUser(id)` только тогда, когда ключ отсутствует.
 
+`@Cacheable` требует метод, который возвращает значение синхронно. Метод с типом `void`, `CompletionStage`, `Future` или реактивный `Publisher` отклоняется на этапе компиляции с явным сообщением,
+потому что кэшу чтения нечего для них сохранять.
+
 ## `@CachePut` { #cacheput }
 
 Когда чтения кэшируются, следующая проблема — устаревшие данные после обновлений. `@CachePut` решает ее так: сначала выполняет метод, а затем записывает возвращенное значение в кэш под выбранным
@@ -400,10 +458,10 @@ Kora применяет аннотации кэша через AOP времен�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите только путь обновления в `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/service/UserService.java`:
+    Обновите только путь обновления в `src/main/java/io/koraframework/guide/cache/service/UserService.java`:
 
     ```java
-    @CachePut(value = UserCaffeineCache.class, parameters = { "id" })
+    @CachePut(value = UserCaffeineCache.class, args = { "id" })
     public UserResponse updateUser(String id, UserRequest request) {
         boolean updated = userRepository.update(id, request.name(), request.email());
         if (!updated) {
@@ -415,21 +473,41 @@ Kora применяет аннотации кэша через AOP времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите только путь обновления в `src/main/kotlin/ru/tinkoff/kora/guide/cache/service/UserService.kt`:
+    Обновите только путь обновления в `src/main/kotlin/io/koraframework/guide/cache/service/UserService.kt`:
 
     ```kotlin
-    @CachePut(value = UserCaffeineCache::class, parameters = ["id"])
+    @CachePut(value = UserCaffeineCache::class, args = ["id"])
     open fun updateUser(id: String, request: UserRequest): UserResponse {
-        val updated = userRepository.update(id, request.name, request.email)
-        if (!updated) {
+        if (!userRepository.update(id, request.name, request.email)) {
             throw HttpServerResponseException.of(404, "User not found")
         }
         return UserResponse(id, request.name, request.email, LocalDateTime.now())
     }
     ```
 
-В среде с **N экземплярами** `@CachePut` обновляет только кэш локального экземпляра приложения. Другие экземпляры сохраняют свои прежние значения, пока у них не произойдет промах, истечение срока жизни или инвалидация каким-то другим
-механизмом.
+### Аргументы ключа { #key-args }
+
+`updateUser()` — первый метод в этом руководстве, где ключ кэша *не* равен просто «всем параметрам». Метод принимает `id` и `request`, но запись кэша идентифицирует только `id`. Именно для этого нужен
+атрибут `args`.
+
+Правила, по которым Kora вычисляет ключ, короткие, и их стоит запомнить:
+
+- `args` не указан — в ключе участвуют все параметры метода в порядке объявления. Поэтому `getUser(String id)` вообще не нуждается в `args`.
+- `args = { "id" }` — в ключе участвуют только перечисленные параметры, и имена должны совпадать с реальными именами параметров. Опечатка — это ошибка компиляции, которая перечислит существующие
+  параметры.
+- один параметр ключа — значение параметра используется как ключ напрямую, поэтому его тип должен совпадать с типом ключа кэша.
+- несколько параметров ключа — Kora ищет публичный конструктор типа ключа с подходящими параметрами, например `record` или `data class`. Если такого нет, она запрашивает у графа компонент
+  `CacheKeyMapper` подходящей арности, и вы всегда можете задать свой через `@Mapping(MyKeyMapper.class)`.
+- без собственного маппера поддерживается не более девяти параметров ключа.
+
+`CacheKeyMapper` без зависимостей в конструкторе **не** должен помечаться аннотацией `@Component`: Kora создает такой маппер сама, и лишнее объявление компонента приводит к падению графа с ошибкой
+`Multiple components match`. Маппер, у которого зависимости есть, — обычный компонент, и `@Component` ему нужна как всегда.
+
+Еще одно ограничение действует для всех аннотаций этого семейства: повторяющиеся аннотации кэша на одном методе должны объявлять одинаковый список `args`, а разные виды операций — например,
+`@Cacheable` вместе с `@CachePut` — нельзя смешивать на одном методе. Оба случая являются ошибками компиляции.
+
+В среде с **N экземплярами** `@CachePut` обновляет только кэш локального экземпляра приложения. Другие экземпляры сохраняют свои прежние значения, пока у них не произойдет промах, истечение срока
+жизни или инвалидация каким-то другим механизмом.
 
 Поэтому `@CachePut` отлично подходит для приложений с одним экземпляром и все еще полезен в настройках с несколькими экземплярами, но сам по себе он **не** создает согласованность в масштабе кластера.
 
@@ -438,7 +516,7 @@ Kora применяет аннотации кэша через AOP времен�
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserService__AopProxy.java
     ```
 
     ```java
@@ -458,7 +536,7 @@ Kora применяет аннотации кэша через AOP времен�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
@@ -484,7 +562,7 @@ Kora применяет аннотации кэша через AOP времен�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите только путь удаления из кэша в `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/service/UserService.java`:
+    Обновите только путь удаления из кэша в `src/main/java/io/koraframework/guide/cache/service/UserService.java`:
 
     ```java
     @CacheInvalidate(UserCaffeineCache.class)
@@ -498,27 +576,28 @@ Kora применяет аннотации кэша через AOP времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите только путь удаления из кэша в `src/main/kotlin/ru/tinkoff/kora/guide/cache/service/UserService.kt`:
+    Обновите только путь удаления из кэша в `src/main/kotlin/io/koraframework/guide/cache/service/UserService.kt`:
 
     ```kotlin
     @CacheInvalidate(UserCaffeineCache::class)
     open fun deleteUser(id: String) {
-        val deleted = userRepository.deleteById(id)
-        if (!deleted) {
+        if (!userRepository.deleteById(id)) {
             throw HttpServerResponseException.of(404, "User not found")
         }
     }
     ```
 
-В среде с **N экземплярами** действует та же оговорка: инвалидация влияет только на локальный экземпляр кэша. Другие экземпляры могут продолжать отдавать старое значение, пока оно не будет обновлено, не истечет по
-сроку жизни или не будет явно инвалидировано более широким механизмом.
+В отличие от `@Cacheable` и `@CachePut`, `@CacheInvalidate` работает и на методах с типом `void` — сохранять нечего, нужно лишь удалить ключ.
+
+В среде с **N экземплярами** действует та же оговорка: инвалидация влияет только на локальный экземпляр кэша. Другие экземпляры могут продолжать отдавать старое значение, пока оно не будет обновлено,
+не истечет по сроку жизни или не будет явно инвалидировано более широким механизмом.
 
 После компиляции сгенерированный прокси показывает, что инвалидация происходит после успешного завершения метода удаления:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserService__AopProxy.java
     ```
 
     ```java
@@ -537,7 +616,7 @@ Kora применяет аннотации кэша через AOP времен�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
@@ -555,6 +634,36 @@ Kora применяет аннотации кэша через AOP времен�
 
 Такой сгенерированный порядок предотвращает случайное удаление из кэша до того, как операция удаления действительно завершилась.
 
+## `@CacheInvalidateAll` { #cacheinvalidateall }
+
+Иногда одного ключа недостаточно. Массовый импорт, перезагрузка справочных данных или административный сброс разом делают подозрительной каждую запись кэша. `@CacheInvalidateAll` очищает весь кэш
+после завершения аннотированного метода.
+
+Это отдельная аннотация со своей семантикой, поэтому она не принимает `args` — вычислять нечего, ключа нет.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @CacheInvalidateAll(UserCaffeineCache.class)
+    public void reloadUsers() {
+        userRepository.reloadAll();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @CacheInvalidateAll(UserCaffeineCache::class)
+    open fun reloadUsers() {
+        userRepository.reloadAll()
+    }
+    ```
+
+Применяйте ее осознанно. На горячем пути полная очистка кэша превращает каждое следующее чтение в промах, поэтому всплеск нагрузки сразу после сброса бьет по источнику истины в полную силу.
+Предпочитайте `@CacheInvalidate` по ключу всегда, когда затронутые ключи известны.
+
+Та же операция доступна императивно как `userCache.invalidateAll()` — именно так и поступает сопутствующее приложение между тестами.
+
 ## Прогрев кэша { #cache-warmup }
 
 `createUser()` — место, где декларативные аннотации менее удобны. Репозиторий сначала генерирует идентификатор, и только после этого мы узнаем итоговый ключ кэша.
@@ -570,7 +679,7 @@ Kora применяет аннотации кэша через AOP времен�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите только путь создания в `guides/guide-cache-app/src/main/java/ru/tinkoff/kora/guide/cache/service/UserService.java`:
+    Обновите только путь создания в `src/main/java/io/koraframework/guide/cache/service/UserService.java`:
 
     ```java
     public UserResponse createUser(UserRequest request) {
@@ -583,16 +692,18 @@ Kora применяет аннотации кэша через AOP времен�
 
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите только путь создания в `src/main/kotlin/ru/tinkoff/kora/guide/cache/service/UserService.kt`:
+    Обновите только путь создания в `src/main/kotlin/io/koraframework/guide/cache/service/UserService.kt`:
 
     ```kotlin
     fun createUser(request: UserRequest): UserResponse {
-        val generatedId = userRepository.save(request.name, request.email)
-        val createdUser = UserResponse(generatedId, request.name, request.email, LocalDateTime.now())
-        userCache.put(createdUser.id, createdUser)
-        return createdUser
+        val id = userRepository.save(request.name, request.email)
+        val user = UserResponse(id, request.name, request.email, LocalDateTime.now())
+        userCache.put(user.id, user)
+        return user
     }
     ```
+
+Поскольку этот метод работает с кэшем напрямую, а не через аннотацию, в Kotlin ему не нужно быть `open` — это требуется только методам, к которым применяются аспекты.
 
 В приложении с **одним экземпляром** это дает немедленный прогрев, поэтому следующее чтение сразу может стать попаданием в кэш.
 
@@ -600,9 +711,9 @@ Kora применяет аннотации кэша через AOP времен�
 
 ## Сгенерированный AOP-код { #aop-code }
 
-Сгенерированный AOP-код является реализацией декларативной модели кеширования; подробности см. в разделе [декларативного подхода](../documentation/cache.md#declarative).
+Сгенерированный AOP-код является реализацией декларативной модели кэширования; полная модель описана в разделе [Декларативное кэширование](../documentation/cache.md#declarative).
 
-Аннотации кэша в этом руководстве также реализованы через AOP времени компиляции.
+Аннотации кэша в этом руководстве реализованы через AOP времени компиляции.
 
 Это значит, что Kora не переписывает исходный код вашего `UserService` напрямую. Вместо этого она генерирует прокси на основе подкласса вокруг сервиса и помещает логику кэширования в этот
 сгенерированный класс. Метод вашего сервиса по-прежнему выглядит как обычный бизнес-код, но сгенерированный прокси решает, когда:
@@ -613,7 +724,7 @@ Kora применяет аннотации кэша через AOP времен�
 
 Именно поэтому здесь действует то же правило AOP:
 
-- в Java аннотированный класс сервиса не должен быть `final`
+- в Java аннотированный класс сервиса не должен быть `final`, а аннотированные методы не должны быть ни `final`, ни `private`
 - в Kotlin аннотированный класс сервиса и аннотированные методы должны быть `open`
 
 После запуска:
@@ -627,13 +738,13 @@ Kora применяет аннотации кэша через AOP времен�
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserService__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserService__AopProxy.kt
     ```
 
 Этот файл — лучшее место, чтобы увидеть, что Kora на самом деле сгенерировала для:
@@ -641,36 +752,43 @@ Kora применяет аннотации кэша через AOP времен�
 - `@Cacheable`
 - `@CachePut`
 - `@CacheInvalidate`
+- `@CacheInvalidateAll`
+
+Каждый аспект превращается в один приватный метод с именем `_<method>_AopProxy_<AspectName>`, а публичное переопределение просто делегирует ему. Когда к одному методу применяется несколько аспектов,
+они выстраиваются в цепочку: каждый сгенерированный метод вызывает следующий вместо `super`, и только самый внутренний вызов доходит до вашего исходного кода.
 
 В предыдущих главах о кэше сгенерированные фрагменты были показаны рядом с аннотацией, которая их породила. Этот финальный раздел о сгенерированном коде — карта для отладки: откройте прокси и
 найдите метод сервиса, поведение кэша которого хотите проверить.
 
-Если вам интересно посмотреть на саму сгенерированную реализацию кэша, также можно открыть:
+Если вам интересна сама сгенерированная реализация кэша, также можно открыть:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserCaffeineCacheImpl.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserCaffeineCache_Impl.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserCaffeineCache_Module.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserCaffeineCacheModule.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserCaffeineCache_Impl.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserCaffeineCache_Module.kt
     ```
 
 Вместе эти сгенерированные исходники упрощают понимание руководства:
 
 - прокси показывает, как оборачиваются аннотированные методы сервиса
-- реализация кэша показывает, как типизированный контракт кэша материализуется для внедрения зависимостей
+- `$UserCaffeineCache_Impl` — конкретный кэш, построенный поверх Caffeine
+- `$UserCaffeineCache_Module` — модуль, который читает `CaffeineCacheConfig` по заданному пути и регистрирует кэш в графе
 
 ## Конфигурация { #config }
 
 Сохраните конфигурацию HTTP-сервера из предыдущего руководства и добавьте раздел Caffeine, который соответствует контракту `@Cache("cache.caffeine.users")`.
 
-Обновите `guides/guide-cache-app/src/main/resources/application.conf`:
+Обновите `src/main/resources/application.conf`:
 
-Полное описание настроек смотрите в разделе [Кэш](../documentation/cache.md).
+Полное описание настроек смотрите в разделе [Кэш](../documentation/cache.md#caffeine).
 
 ===! ":material-code-json: `Hocon`"
 
@@ -681,8 +799,8 @@ Kora применяет аннотации кэша через AOP времен�
     }
     ```
 
-    1. Максимальное число записей кэша, после которого начинается вытеснение.
-    2. Время, через которое запись истекает после записи.
+    1. Максимальное число записей кэша, после которого начинается вытеснение *(по умолчанию: `100000`)*.
+    2. Время, через которое запись истекает после записи *(опционально)*.
 
 === ":simple-yaml: `YAML`"
 
@@ -694,8 +812,108 @@ Kora применяет аннотации кэша через AOP времен�
           expireAfterWrite: "10m" #(2)!
     ```
 
-    1. Максимальное число записей кэша, после которого начинается вытеснение.
-    2. Время, через которое запись истекает после записи.
+    1. Максимальное число записей кэша, после которого начинается вытеснение *(по умолчанию: `100000`)*.
+    2. Время, через которое запись истекает после записи *(опционально)*.
+
+Полный набор параметров, которые принимает раздел кэша Caffeine:
+
+| Параметр                    | Описание                                                                   | По умолчанию    |
+|-----------------------------|----------------------------------------------------------------------------|-----------------|
+| `enabled`                   | Выключает кэш, не удаляя его из кода                                        | `true`          |
+| `maximumSize`               | Максимальное число записей, после которого вытесняются наименее актуальные   | `100000`        |
+| `expireAfterWrite`          | Время, через которое запись удаляется, отсчитывается от записи               | *(опционально)* |
+| `expireAfterAccess`         | Время, через которое запись удаляется, отсчитывается от последнего чтения     | *(опционально)* |
+| `initialSize`               | Начальная емкость нижележащей карты                                          | *(опционально)* |
+| `telemetry.logging.enabled` | Логирует операции кэша                                                       | `false`         |
+| `telemetry.metrics.enabled` | Регистрирует метрики Caffeine в реестре метрик                               | `false`         |
+| `telemetry.tracing.enabled` | Создает span на каждую операцию кэша                                         | `true`          |
+
+Поскольку путь конфигурации является частью контракта `@Cache`, добавление второго кэша означает добавление второго раздела. Отсутствующий раздел — это ошибка запуска, а не тихое значение по
+умолчанию: граф не может собрать кэш, конфигурация которого отсутствует.
+
+## Проверка тестом { #verify-test }
+
+Самое убедительное доказательство того, что кэширование работает, — тест, который считает, сколько раз репозиторий действительно опросили. Сопутствующее приложение делает ровно это:
+`InMemoryUserRepository` увеличивает счетчик внутри `findById`, а тест проверяет, что второе чтение до него не доходит.
+
+`@KoraAppTest` поднимает настоящий граф приложения, а `@TestComponent` внедряет компоненты из него — включая сгенерированный кэш, который является таким же компонентом графа, как и любой другой.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    Создайте `src/test/java/io/koraframework/guide/cache/CacheAppTest.java`:
+
+    ```java
+    @KoraAppTest(Application.class)
+    class CacheAppTest {
+
+        @TestComponent
+        private UserService userService;
+        @TestComponent
+        private UserCaffeineCache userCache;
+        @TestComponent
+        private InMemoryUserRepository userRepository;
+
+        @BeforeEach
+        void cleanup() {
+            this.userCache.invalidateAll();
+            this.userRepository.resetStats();
+        }
+
+        @Test
+        void cacheablePopulatesCacheOnFirstReadAndUsesCacheOnSecondRead() {
+            var created = this.userService.createUser(new UserRequest("Bob", "bob@example.com"));
+            this.userCache.invalidate(created.id());
+            this.userRepository.resetStats();
+
+            assertNull(this.userCache.get(created.id()));
+
+            var first = this.userService.getUser(created.id());
+
+            assertTrue(first.isPresent());
+            assertEquals(created.id(), this.userCache.get(created.id()).id());
+            assertEquals(1, this.userRepository.getFindByIdCalls());
+
+            var second = this.userService.getUser(created.id());
+
+            assertTrue(second.isPresent());
+            assertEquals(1, this.userRepository.getFindByIdCalls());
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Создайте `src/test/kotlin/io/koraframework/guide/cache/CacheAppTest.kt`:
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class CacheAppTest {
+
+        @TestComponent
+        lateinit var userService: UserService
+
+        @TestComponent
+        lateinit var userCache: UserCaffeineCache
+
+        @Test
+        fun cacheablePopulatesCacheOnFirstRead() {
+            val created = userService.createUser(UserRequest("Alice", "alice@example.com"))
+            userCache.invalidate(created.id)
+
+            assertNull(userCache.get(created.id))
+
+            val first = userService.getUser(created.id)
+
+            assertNotNull(first)
+            assertEquals(created.id, first!!.id)
+            assertEquals(created.id, userCache.get(created.id)!!.id)
+        }
+    }
+    ```
+
+Важная деталь — последняя проверка Java-теста: счетчик репозитория остается равным `1` после двух чтений. Без кэша он был бы равен `2`.
+
+Полный процесс тестирования — моки, изменение конфигурации и Testcontainers — описан в разделе [Тестирование с JUnit](testing-junit.md).
 
 ## Запуск приложения { #run-app }
 
@@ -751,8 +969,10 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 
 - Сначала кэшируйте стабильные пути чтения, затем явно добавляйте обновление или инвалидацию на стороне записи.
 - Держите ключи кэша простыми и предсказуемыми. Здесь ключ — это только идентификатор пользователя.
-- Прогревайте кэш вручную только тогда, когда аннотации не могут естественно вывести ключ, например после генерации идентификатор в `createUser()`.
+- Указывайте параметры ключа через `args`, как только метод принимает больше аргументов, чем нужно ключу.
+- Прогревайте кэш вручную только тогда, когда аннотации не могут естественно вывести ключ, например после генерации идентификатора в `createUser()`.
 - Предпочитайте локальные кэши Caffeine для ускорения каждого экземпляра, а не для глобально общего состояния.
+- Всегда задавайте границу: `maximumSize`, `expireAfterWrite` или оба сразу. Неограниченный локальный кэш — это медленная утечка памяти.
 - Относитесь к типизированному контракту кэша как к части проектирования, а не просто как к украшению фреймворка.
 
 ## Итоги { #summary }
@@ -767,13 +987,16 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 - декларативную инвалидацию в `deleteUser()`
 - типизированный контракт кэша, который можно и аннотировать, и внедрять напрямую
 - сгенерированный AOP-прокси, который применяет аннотации кэша вокруг методов сервиса
+- компонентный тест, который доказывает, что повторные чтения больше не доходят до репозитория
 
 ## Ключевые понятия { #key-concepts }
 
 - кэш — это быстрый вторичный слой хранения для повторных чтений
 - локальные кэши в памяти улучшают один экземпляр приложения или один процесс за раз
 - `CaffeineCache<K, V>` дает типизированный контракт кэша, который Kora реализует во время компиляции
-- `@Cacheable`, `@CachePut` и `@CacheInvalidate` покрывают самые частые потоки чтения, обновления и удаления из кэша
+- значение `@Cache` — это путь конфигурации, поэтому контракт и его раздел конфигурации всегда идут парой
+- `@Cacheable`, `@CachePut`, `@CacheInvalidate` и `@CacheInvalidateAll` покрывают самые частые потоки чтения, обновления и удаления из кэша
+- `args` выбирает, какие параметры метода образуют ключ кэша; без него участвуют все параметры
 - императивное и декларативное кэширование можно сочетать в одном сервисе, когда разным методам нужен разный контроль над моментом работы с кэшем
 - исходник сгенерированного `$UserService__AopProxy` точно показывает, как Kora оборачивает аннотированные методы
 
@@ -781,7 +1004,29 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 
 **Аннотации кэша не работают:**
 
-Убедитесь, что класс сервиса не `final` в Java и `open` в Kotlin. Аспекты кэша Kora применяются через AOP времени компиляции и требуют цель, от которой можно наследоваться.
+Убедитесь, что класс сервиса не `final` в Java и `open` в Kotlin. Аспекты кэша Kora применяются через AOP времени компиляции и требуют цель, от которой можно наследоваться. Компилятор сообщает об этом
+явно:
+
+```text
+AOP aspect cannot be applied to class 'io.koraframework.guide.cache.service.UserService' because the class is final.
+
+Fix: remove the final modifier, or move the aspect annotation to a non-final member method.
+```
+
+Обработчик Kotlin сообщает о той же ситуации как `because the class is not open`, и у обоих обработчиков есть парные сообщения для `final`/не-`open` или `private` метода.
+
+**`Cache key references unknown method parameter`:**
+
+Имя внутри `args` должно совпадать с реальным именем параметра аннотированного метода. Сообщение об ошибке перечисляет существующие параметры, поэтому сравните их посимвольно — обычная причина в
+переименованном параметре, за которым аннотация не последовала.
+
+**`Cache annotations on ... use different key argument lists`:**
+
+Каждая повторяющаяся аннотация кэша на одном методе должна использовать одинаковый `args`. Если двум слоям действительно нужны разные ключи, им место в разных методах.
+
+**`Cache method ... mixes different cache operation annotation types`:**
+
+Один метод несет ровно один вид операции кэша. Разделите метод, если вам нужны и чтение через кэш, и инвалидация.
 
 **Я хочу увидеть, где на самом деле выполняются аннотации кэша:**
 
@@ -796,13 +1041,13 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-cache-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-cache-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/cache/service/$UserService__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-cache-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/cache/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-cache-app/build/generated/ksp/main/kotlin/io/koraframework/guide/cache/service/$UserService__AopProxy.kt
     ```
 
 Этот сгенерированный файл показывает, где Kora вставляет проверки кэша, записи в кэш и логику инвалидации вокруг исходных методов `UserService`.
@@ -810,6 +1055,11 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 **Кэш никогда не обновляется после создания:**
 
 `createUser()` генерирует идентификатор после вызова репозитория, поэтому нужен ручной `userCache.put(createdUser.id(), createdUser)`, если вы хотите закэшировать новую сущность до первого чтения.
+
+**Раздел кэша отсутствует в конфигурации:**
+
+Значение `@Cache` — это путь конфигурации, а не метка. Если `cache.caffeine.users` отсутствует в `application.conf`, приложение падает при сборке графа, потому что конфигурацию кэша прочитать не
+удается.
 
 **Gradle зависает или неожиданно завершается ошибкой:**
 
@@ -822,7 +1072,8 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 
 **Windows `AccessDeniedException` в кэше Gradle:**
 
-Если Windows удерживает открытые файловые дескрипторы в `.gradle` или `build/`, остановите демоны Gradle, закройте процессы среда разработки, которые все еще следят за каталогом, и повторно выполните команду.
+Если Windows удерживает открытые файловые дескрипторы в `.gradle` или `build/`, остановите демоны Gradle, закройте процессы среды разработки, которые все еще следят за каталогом, и повторно выполните
+команду.
 
 **Ошибки контекста сборки Docker в последующих тестах по принципу черного ящика:**
 
@@ -846,5 +1097,5 @@ curl "http://localhost:8080/users?page=0&size=10&sort=name"
 
 - сравните с [Kora Java Cache App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-cache-app) и [Kora Kotlin Cache App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-cache-app)
 - проверьте [документацию по кэшу](../documentation/cache.md)
-- проверьте [пример Caffeine](https://github.com/kora-projects/kora-examples/tree/master/kora-java-cache-caffeine)
+- проверьте [пример Caffeine](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-cache-caffeine)
 - вернитесь к [Базе данных JDBC](database-jdbc.md), если поведение репозитория непонятно

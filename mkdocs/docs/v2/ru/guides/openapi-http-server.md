@@ -1,16 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Контрактный HTTP-сервер с OpenAPI
 summary: Continue the HTTP Server guide by replacing the handwritten controller with OpenAPI-generated server code and a delegate
+description: "Contract-first Kora HTTP server from an OpenAPI file: the org.openapi.generator Gradle plugin with generatorName kora, configOptions mode java-server / kotlin-server, enableServerValidation, the generated UsersApiController, UsersApiDelegate and sealed UsersApiResponses wrappers, generated TO models, and openapi.management.files with /openapi, /swagger-ui and /scalar."
+agent:
+  use_when: "Use this file for questions about building a contract-first Kora HTTP server from an OpenAPI contract step by step: GenerateTask, generatorName kora, mode java-server and kotlin-server, enableServerValidation, apiPackage / modelPackage / invokerPackage, the generated <Api>Controller, <Api>Delegate, <Api>Responses and <Api>ServerRequestMappers, implementing a delegate with @Component, mapping generated TO models to internal DTOs, OpenApiManagementModule and the openapi.management.files, path, swaggerui and scalar configuration."
 tags: openapi, http-server, swagger, code-generation, contract-first
 ---
 
 # Контрактный HTTP-сервер с OpenAPI { #contract-first-http-server }
 
-Это руководство знакомит с разработкой HTTP-сервера в Kora и OpenAPI в подходе «сначала контракт». В нем разбирается, как спецификация OpenAPI превращается в сгенерированные серверные интерфейсы и
-модели, как реализация делегата соединяет этот сгенерированный транспортный слой с прикладными сервисами и как проверка данных и метаданные ответов управляются контрактом. Вы также увидите, как
-сгенерированный код остается отделенным от рукописной бизнес-логики, чтобы описание API оставалось источником истины.
+Это руководство знакомит с контрактной разработкой HTTP-сервера в Kora на основе OpenAPI. В нем разбирается, как спецификация OpenAPI превращается в сгенерированные серверные интерфейсы и модели, как
+реализация делегата соединяет этот сгенерированный транспортный слой с прикладными сервисами, и как валидация и метаданные ответов задаются контрактом. Вы также увидите, как сгенерированный код
+остается отделенным от написанной вручную бизнес-логики, благодаря чему описание API остается источником истины.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -22,69 +25,71 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
 ## Что вы создадите { #youll-build }
 
-Вы пересоберете знакомый CRUD API из `http-server` в контрактном стиле:
+Вы пересоберете знакомое CRUD API из руководства `http-server` в контрактном стиле:
 
-- API пользователей будет описан в `user-http-server.yaml`
+- API пользователей будет описано в `user-http-server.yaml`
 - Kora сгенерирует серверный слой в `build/generated/user-http-server`
 - вы реализуете сгенерированный `UsersApiDelegate`
-- `UserService`, `UserRepository` и `InMemoryUserRepository` останутся знакомыми
-- приложение откроет `/openapi` и `/swagger-ui`
+- `UserService`, `UserRepository` и `InMemoryUserRepository` останутся прежними
+- приложение будет отдавать `/openapi` и `/swagger-ui`
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- текстовый редактор или среда разработки
-- пройденное руководство [HTTP-сервер](http-server.md)
+- JDK 25 или новее
+- Gradle 9+
+- Текстовый редактор или IDE
+- Пройденное руководство [HTTP-сервер](http-server.md)
+
+Артефакты Kora 2.0 собраны под Java 25, поэтому JDK, которым компилируется приложение, должен быть версии 25 или новее. Генератор OpenAPI добавляет еще одно требование, описанное в разделе
+[Зависимости](#dependencies): сама JVM, на которой работает `Gradle`, тоже должна быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
-!!! note "Обязательно: сначала пройдите HTTP-сервер"
+!!! note "Сначала пройдите руководство по HTTP-серверу"
 
-    Это руководство предполагает, что вы прошли **[HTTP-сервер](http-server.md)** и уже понимаете CRUD-приложение пользователей с `UserRequest`, `UserResponse`, `UserRepository`, `InMemoryUserRepository` и `UserService`.
+    Руководство предполагает, что вы прошли **[HTTP-сервер](http-server.md)** и уже разобрались с CRUD-приложением пользователей: `UserRequest`, `UserResponse`, `UserRepository`, `InMemoryUserRepository` и `UserService`.
 
-    Мы сохраним эти идеи и заменим только рукописный слой HTTP-контроллера.
+    Мы сохраним эти идеи и заменим только написанный вручную слой HTTP-контроллера.
 
-    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что это руководство сосредоточено на контрактной генерации OpenAPI, а не на повторном построении CRUD-сервиса с нуля.
+    Если руководство по HTTP-серверу еще не пройдено, начните с него: здесь мы сосредоточены на контрактной генерации по OpenAPI, а не на повторной сборке CRUD-сервиса с нуля.
 
 ## Обзор { #overview }
 
-В этом руководстве мы постепенно перейдем от ручного сервера к контрактному серверу:
+В этом руководстве мы постепенно перейдем от ручного сервера к контрактному:
 
-1. поймем, что меняется, когда OpenAPI становится источником истины
-2. опишем существующий CRUD API в файле OpenAPI
+1. поймем, что меняется, когда источником истины становится OpenAPI
+2. опишем существующее CRUD API в файле OpenAPI
 3. настроим генерацию Kora по OpenAPI
 4. изучим сгенерированные делегат, контроллер, обертки ответов и модели
-5. сохраним знакомые слои сервиса и репозитория
-6. реализуем сгенерированный делегат вместо рукописного контроллера
-7. откроем OpenAPI и Swagger UI
+5. сохраним привычные слои сервиса и репозитория
+6. реализуем сгенерированный делегат вместо ручного контроллера
+7. опубликуем OpenAPI и Swagger UI
 8. запустим и проверим приложение
 
 ### Контрактная разработка? { #contract-first-development }
 
-В подходе «сначала код» разработчики обычно начинают с контроллера и только потом документируют, что этот контроллер делает. Это работает, но со временем часто создает трение:
+При подходе «сначала код» разработчики обычно начинают с контроллера и документируют его поведение уже потом. Это работает, но со временем часто создает трения:
 
 - документация расходится с кодом
-- потребители и поставщики API обсуждают поведение неформально, а не через один общий контракт
-- формы ответов и правила проверки данных дублируются
+- потребители и поставщики обсуждают поведение неформально, а не через один общий контракт
+- формы ответов и правила валидации дублируются
 - сгенерированным клиентам становится сложнее доверять, потому что контракт не является главным источником истины
 
 Контрактная разработка меняет порядок.
 
-Вместо того чтобы говорить «контроллер определяет API», мы говорим «контракт OpenAPI определяет API». Из этого контракта инструменты могут генерировать:
+Вместо «контроллер определяет API» мы говорим «контракт OpenAPI определяет API». Из этого контракта инструменты могут сгенерировать:
 
-- серверные интерфейсы
+- серверные контроллеры и контракты делегатов
 - модели запросов и ответов
-- подсказки для проверки данных
+- аннотации валидации
 - документацию OpenAPI
-- позже еще и HTTP-клиенты
+- а позже и HTTP-клиентов
 
-Это особенно полезно, когда от одного API зависят несколько команд или несколько приложений. Все они могут смотреть на один и тот же файл контракта вместо того, чтобы восстанавливать поведение
-контроллера по коду.
+Это особенно полезно, когда от одного и того же API зависят несколько команд или несколько приложений. Все они могут смотреть в один файл контракта, а не восстанавливать поведение контроллера по коду.
 
 ### HTTP-основы { #http-basics }
 
-Руководство [HTTP-сервер](http-server.md) по-прежнему является местом, где стоит сначала изучить:
+Руководство [HTTP-сервер](http-server.md) по-прежнему остается местом, где стоит впервые изучить:
 
 - `@HttpController`
 - `@HttpRoute`
@@ -93,96 +98,150 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 - `@Json`
 - `HttpResponseEntity`
 
-Здесь мы развиваем эти знания.
+Здесь мы опираемся на эти знания.
 
-Мы не меняем предметную область и не меняем CRUD-поведение. Мы меняем **способ объявления HTTP-слоя**:
+Мы не меняем предметную область и не меняем поведение CRUD. Мы меняем **способ объявления HTTP-слоя**:
 
-- раньше: рукописные методы контроллера
-- теперь: контракт OpenAPI + сгенерированный серверный код + реализация делегата
+- было: написанные вручную методы контроллера
+- стало: контракт OpenAPI + сгенерированный серверный код + реализация делегата
 
-Поэтому это руководство является естественным следующим шагом, а не отдельным несвязанным примером.
+Обработка запросов остается **синхронной**, ровно как и в написанном вручную сервере. Undertow отправляет каждый запрос на виртуальный поток, сгенерированный контроллер напрямую вызывает метод вашего
+делегата, а делегат возвращает результат. Реактивных и `suspend`-режимов генерации в Kora 2.0 нет — генератор поддерживает ровно четыре режима: `java-client`, `java-server`, `kotlin-client` и
+`kotlin-server`.
+
+Поэтому это руководство — естественный следующий шаг, а не отдельный несвязанный пример.
 
 ## Зависимости { #dependencies }
 
-Сначала добавьте модули и инструменты сборки, необходимые для генерации OpenAPI и публикации документации.
+Контрактной генерации нужны два разных вида сборочной обвязки, и их стоит сразу разделить в голове:
+
+- **Gradle-плагин** `org.openapi.generator`, который дает тип задачи `GenerateTask`
+- **библиотека** `io.koraframework:openapi-generator`, которая учит этот плагин выпускать код Kora
+
+Библиотека подключается в classpath `buildscript`, а не в `dependencies`, потому что ее должен загрузить сам `Gradle` до компиляции вашего проекта.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```groovy title="build.gradle"
-    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+    Обновите `build.gradle`:
+
+    ```groovy
+    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask //(1)!
 
     buildscript {
+        repositories {
+            mavenCentral()
+        }
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:$koraVersion")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
         }
     }
 
     plugins {
         id "application"
-        id "org.openapi.generator" version "7.14.0"
+        id "org.openapi.generator" version "7.24.0" //(3)!
     }
 
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:openapi-management")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(4)!
+
+        annotationProcessor "io.koraframework:annotation-processors" //(5)!
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:http-server-undertow"
+        implementation "io.koraframework:json-common"
+        implementation "io.koraframework:logging-logback"
+        implementation "io.koraframework:openapi-management" //(6)!
+        implementation "io.koraframework:validation-module" //(7)!
     }
     ```
 
+    1.  `GenerateTask` — тип задачи плагина, через который объявляется задача генерации.
+    2.  Реализация генератора Kora, загружаемая JVM `Gradle` через classpath `buildscript`.
+    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.24.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
+    4.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
+    5.  Аннотационный процессор Kora: во время компиляции создает граф приложения, модули контроллеров и читатели/писатели JSON.
+    6.  Публикует файл контракта и страницы Swagger UI / Scalar из работающего приложения.
+    7.  Рантайм валидации, необходимый потому, что сервер генерируется с `enableServerValidation`.
+
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="build.gradle.kts"
-    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+    Обновите `build.gradle.kts`:
+
+    ```kotlin
+    import org.openapitools.generator.gradle.plugin.tasks.GenerateTask //(1)!
 
     buildscript {
+        repositories {
+            mavenCentral()
+        }
         dependencies {
-            classpath("ru.tinkoff.kora:openapi-generator:$koraVersion")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
         }
     }
 
     plugins {
+        id("org.jetbrains.kotlin.jvm")
+        id("com.google.devtools.ksp")
         id("application")
-        id("org.openapi.generator") version "7.14.0"
+        id("org.openapi.generator") version "7.24.0" //(3)!
     }
 
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:http-server-undertow")
-        implementation("ru.tinkoff.kora:json-module")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("ru.tinkoff.kora:openapi-management")
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(4)!
+
+        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(5)!
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:http-server-undertow")
+        implementation("io.koraframework:json-common")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.koraframework:openapi-management") //(6)!
+        implementation("io.koraframework:validation-module") //(7)!
     }
     ```
 
-На этом шаге полезно понимать, зачем нужна каждая зависимость:
+    1.  `GenerateTask` — тип задачи плагина, через который объявляется задача генерации.
+    2.  Реализация генератора Kora, загружаемая JVM `Gradle` через classpath `buildscript`.
+    3.  Gradle-плагин `OpenAPI Generator`. Kora 2.0 собрана под `OpenAPI Generator 7.24.0`, поэтому зафиксируйте ту же версию плагина — другие версии не гарантируют работоспособность, так как API генератора может быть несовместимым на уровне кода.
+    4.  Kora BOM: согласует версии всех модулей Kora и библиотек, от которых зависит Kora.
+    5.  KSP-процессор Kora: во время компиляции создает граф приложения, модули контроллеров и читатели/писатели JSON.
+    6.  Публикует файл контракта и страницы Swagger UI / Scalar из работающего приложения.
+    7.  Рантайм валидации, необходимый потому, что сервер генерируется с `enableServerValidation`.
 
-- `openapi-generator` позволяет Gradle генерировать серверный код Kora из контракта
-- `openapi-management` открывает OpenAPI и Swagger UI
+!!! warning "Демон `Gradle` должен работать на JDK 25 или новее"
 
-Также нам нужен модуль управления в графе приложения:
+    Поскольку `io.koraframework:openapi-generator` попадает в classpath **buildscript**, его загружает JVM `Gradle`, а не скомпилированное приложение.
+    Kora собрана под `JDK 25`, поэтому демон `Gradle` тоже должен работать на `JDK 25` или новее, иначе генерация упадет с `UnsupportedClassVersionError` еще до компиляции кода проекта.
+    Указать только `toolchain` проекта недостаточно — toolchain относится к компиляции, а не к самой JVM `Gradle`.
+
+## Модули { #modules }
+
+`OpenApiManagementModule` публикует контракт из работающего приложения, а `ValidationModule` дает рантайм, на который опираются сгенерированные аннотации валидации.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/openapi/httpserver/Application.java"
-    package ru.tinkoff.kora.guide.openapi.httpserver;
+    Обновите `src/main/java/io/koraframework/guide/openapi/httpserver/Application.java`:
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.openapi.management.OpenApiManagementModule;
+    ```java
+    package io.koraframework.guide.openapi.httpserver;
+
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.openapi.management.OpenApiManagementModule;
+    import io.koraframework.validation.module.ValidationModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
-            UndertowHttpServerModule,
+            UndertowPublicHttpServerModule,
             JsonModule,
             LogbackModule,
-            OpenApiManagementModule {  // <----- Подключили модуль
+            ValidationModule,          // <----- Подключенный модуль
+            OpenApiManagementModule {  // <----- Подключенный модуль
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -192,338 +251,375 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/openapi/httpserver/Application.kt"
-    package ru.tinkoff.kora.guide.openapi.httpserver
+    Обновите `src/main/kotlin/io/koraframework/guide/openapi/httpserver/Application.kt`:
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.openapi.management.OpenApiManagementModule
+    ```kotlin
+    package io.koraframework.guide.openapi.httpserver
+
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.openapi.management.OpenApiManagementModule
+    import io.koraframework.validation.module.ValidationModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
-        UndertowHttpServerModule,
+        UndertowPublicHttpServerModule,
         JsonModule,
         LogbackModule,
-        OpenApiManagementModule  // <----- Подключили модуль
+        ValidationModule,        // <----- Подключенный модуль
+        OpenApiManagementModule  // <----- Подключенный модуль
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-После этого шага мы подготовили приложение к контрактному серверу, но еще ничего не сгенерировали.
+Обратите внимание на то, чего здесь **нет**: подключать модуль для сгенерированного контроллера не нужно. Генератор выпускает контроллер уже размеченным `@Component` и `@HttpController`, поэтому он сам
+попадает в граф приложения, как только его каталог с исходниками будет скомпилирован.
+
+Итак, после этого шага приложение подготовлено к контрактному серверу, но пока ничего не сгенерировано.
 
 ## Контракт как OpenAPI { #openapi-contract }
 
 Теперь мы выносим контракт API из аннотаций Java или Kotlin в общий файл OpenAPI.
 
-Создайте:
+Создайте `src/main/resources/openapi/user-http-server.yaml`:
 
-`src/main/resources/openapi/user-http-server.yaml`
+??? example "Контракт OpenAPI"
 
-??? example "OpenAPI-контракт"
-
-    ```yaml title="src/main/resources/openapi/user-http-server.yaml"
+    ```yaml
     openapi: 3.0.3
     info:
-        title: User Management API
-        description: Contract-first version of the HTTP Server guide API
-        version: 1.0.0
+      title: User Management API
+      description: Contract-first version of the HTTP Server guide API
+      version: 1.0.0
     tags:
-        -   name: users
-            description: User management operations
+      - name: users
+        description: User management operations
     paths:
-        /users:
-            get:
-                tags:
-                    - users
-                operationId: getUsers
-                summary: Get users
-                parameters:
-                    -   name: page
-                        in: query
-                        required: false
-                        schema:
-                            type: integer
-                            minimum: 0
-                            default: 0
-                    -   name: size
-                        in: query
-                        required: false
-                        schema:
-                            type: integer
-                            minimum: 1
-                            maximum: 100
-                            default: 10
-                    -   name: sort
-                        in: query
-                        required: false
-                        schema:
-                            type: string
-                            enum: [ name, email, createdAt ]
-                            default: name
-                responses:
-                    "200":
-                        description: Users returned
-                        content:
-                            application/json:
-                                schema:
-                                    type: array
-                                    items:
-                                        $ref: "#/components/schemas/UserResponseTO"
-                    "500":
-                        description: Internal server error
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-            post:
-                tags:
-                    - users
-                operationId: createUser
-                summary: Create user
-                requestBody:
-                    required: true
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/UserRequestTO"
-                responses:
-                    "201":
-                        description: User created
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/UserResponseTO"
-                    "500":
-                        description: Internal server error
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-        /users/{userId}:
-            get:
-                tags:
-                    - users
-                operationId: getUser
-                summary: Get user by id
-                parameters:
-                    -   name: userId
-                        in: path
-                        required: true
-                        schema:
-                            type: string
-                responses:
-                    "200":
-                        description: User returned
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/UserResponseTO"
-                    "404":
-                        description: User not found
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-                    "500":
-                        description: Internal server error
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-            put:
-                tags:
-                    - users
-                operationId: updateUser
-                summary: Update user
-                parameters:
-                    -   name: userId
-                        in: path
-                        required: true
-                        schema:
-                            type: string
-                requestBody:
-                    required: true
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/UserRequestTO"
-                responses:
-                    "200":
-                        description: User updated
-                        headers:
-                            X-Updated-At:
-                                required: true
-                                schema:
-                                    type: string
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/UserResponseTO"
-                    "404":
-                        description: User not found
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-                    "500":
-                        description: Internal server error
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-            delete:
-                tags:
-                    - users
-                operationId: deleteUser
-                summary: Delete user
-                parameters:
-                    -   name: userId
-                        in: path
-                        required: true
-                        schema:
-                            type: string
-                responses:
-                    "204":
-                        description: User deleted
-                    "404":
-                        description: User not found
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
-                    "500":
-                        description: Internal server error
-                        content:
-                            application/json:
-                                schema:
-                                    $ref: "#/components/schemas/ErrorResponseTO"
+      /users:
+        get:
+          tags:
+            - users
+          operationId: getUsers
+          summary: Get users
+          parameters:
+            - name: page
+              in: query
+              required: false
+              schema:
+                type: integer
+                minimum: 0
+                default: 0
+            - name: size
+              in: query
+              required: false
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 100
+                default: 10
+            - name: sort
+              in: query
+              required: false
+              schema:
+                type: string
+                enum: [name, email, createdAt]
+                default: name
+          responses:
+            '200':
+              description: Users returned
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserResponseTO'
+            '500':
+              description: Internal server error
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+        post:
+          tags:
+            - users
+          operationId: createUser
+          summary: Create user
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserRequestTO'
+          responses:
+            '201':
+              description: User created
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/UserResponseTO'
+            '500':
+              description: Internal server error
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+      /users/{userId}:
+        get:
+          tags:
+            - users
+          operationId: getUser
+          summary: Get user by id
+          parameters:
+            - name: userId
+              in: path
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: User returned
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/UserResponseTO'
+            '404':
+              description: User not found
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+            '500':
+              description: Internal server error
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+        put:
+          tags:
+            - users
+          operationId: updateUser
+          summary: Update user
+          parameters:
+            - name: userId
+              in: path
+              required: true
+              schema:
+                type: string
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserRequestTO'
+          responses:
+            '200':
+              description: User updated
+              headers:
+                X-Updated-At:
+                  required: true
+                  schema:
+                    type: string
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/UserResponseTO'
+            '404':
+              description: User not found
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+            '500':
+              description: Internal server error
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+        delete:
+          tags:
+            - users
+          operationId: deleteUser
+          summary: Delete user
+          parameters:
+            - name: userId
+              in: path
+              required: true
+              schema:
+                type: string
+          responses:
+            '204':
+              description: User deleted
+            '404':
+              description: User not found
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
+            '500':
+              description: Internal server error
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ErrorResponseTO'
     components:
-        schemas:
-            ErrorResponseTO:
-                type: object
-                required:
-                    - message
-                properties:
-                    message:
-                        type: string
-            UserRequestTO:
-                type: object
-                required:
-                    - name
-                    - email
-                properties:
-                    name:
-                        type: string
-                        minLength: 1
-                        maxLength: 100
-                    email:
-                        type: string
-                        format: email
-            UserResponseTO:
-                type: object
-                required:
-                    - id
-                    - name
-                    - email
-                    - createdAt
-                properties:
-                    id:
-                        type: string
-                    name:
-                        type: string
-                    email:
-                        type: string
-                    createdAt:
-                        type: string
-                        format: date-time
+      schemas:
+        ErrorResponseTO:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+        UserRequestTO:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+            email:
+              type: string
+              format: email
+        UserResponseTO:
+          type: object
+          required:
+            - id
+            - name
+            - email
+            - createdAt
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
     ```
 
 Этот файл намеренно выглядит знакомо.
 
-Здесь мы не придумываем новый API. Мы описываем тот же CRUD API пользователей, который уже существует в руководстве `http-server`:
+Мы не изобретаем новое API. Мы описываем то же CRUD API пользователей, которое уже есть в руководстве `http-server`:
 
 - те же маршруты `/users` и `/users/{userId}`
-- те же параметры запроса для получения списка
-- те же формы запросов и ответов
-- то же поведение `404` и `204`, теперь с явным телом `ErrorResponseTO` для случаев ошибки
+- те же query-параметры для списка
+- те же формы запроса и ответа
+- то же поведение `404` и `204`, теперь с явным телом `ErrorResponseTO` для ошибок
 - тот же заголовок обновления `X-Updated-At`
 
-Это важный учебный момент. Контрактная разработка не меняет бизнес-идею. Она переносит транспортный контракт в формальный общий источник истины.
+Две детали этого контракта проявятся прямо в сгенерированном коде, поэтому их стоит заметить уже сейчас:
+
+- у каждой операции есть `operationId`, и это значение становится именем сгенерированного метода и префиксом каждого сгенерированного типа ответа
+- каждая операция помечена тегом `users`, и этот тег становится частью `Users` в именах `UsersApiController`, `UsersApiDelegate` и `UsersApiResponses`
+
+Это важная мысль. Контрактная разработка не про изменение бизнес-идеи. Она про перенос транспортного контракта в формальный общий источник истины.
 
 ## OpenAPI кодогенерация { #openapi-codegen }
 
-Подробные параметры серверной генерации, `mode = server`, `delegateMethodBodyMode` описаны в разделе [OpenAPI Codegen: сервер](../documentation/openapi-codegen.md#server).
+Подробные параметры серверной генерации описаны в разделе [OpenAPI Codegen: сервер](../documentation/openapi-codegen.md#server).
 
-Теперь сообщите Gradle, как генерировать серверный код из этого контракта.
+Теперь расскажем Gradle, как сгенерировать серверный код по этому контракту.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```groovy title="build.gradle"
+    Обновите `build.gradle`:
+
+    ```groovy
     def openApiGenerateUsersHttpServer = tasks.register("openApiGenerateUsersHttpServer", GenerateTask) {
-        generatorName = "kora"
+        generatorName = "kora" //(1)!
         group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/user-http-server.yaml"
-        outputDir = "$buildDir/generated/user-http-server"
-        def corePackage = "ru.tinkoff.kora.guide.openapi.httpserver.user"
-        apiPackage = "${corePackage}.api"
-        modelPackage = "${corePackage}.model"
-        invokerPackage = "${corePackage}.invoker"
+        inputSpec = layout.projectDirectory.file("src/main/resources/openapi/user-http-server.yaml") //(2)!
+        outputDir = layout.buildDirectory.dir("generated/user-http-server") //(3)!
+        def corePackage = "io.koraframework.guide.openapi.httpserver.user"
+        apiPackage = "${corePackage}.api" //(4)!
+        modelPackage = "${corePackage}.model" //(5)!
+        invokerPackage = "${corePackage}.invoker" //(6)!
         configOptions = [
-                mode                  : "java-server",
+                mode                  : "java-server", //(7)!
+                enableServerValidation: "true", //(8)!
         ]
     }
 
     sourceSets.main {
-        java.srcDirs += openApiGenerateUsersHttpServer.get().outputDir
+        java.srcDirs += openApiGenerateUsersHttpServer.get().outputDir //(9)!
     }
 
-    compileJava.dependsOn openApiGenerateUsersHttpServer
+    compileJava.dependsOn openApiGenerateUsersHttpServer //(10)!
     ```
+
+    1.  Выбирает генератор Kora вместо штатных генераторов `OpenAPI Generator`.
+    2.  Путь к файлу OpenAPI, по которому создаются классы.
+    3.  Каталог, в который складываются сгенерированные файлы.
+    4.  Пакет для сгенерированных контроллера, делегата, оберток ответов и мапперов.
+    5.  Пакет для сгенерированных моделей.
+    6.  Вспомогательный пакет генератора.
+    7.  Режим генерации. `java-server` — один из четырех поддерживаемых режимов: `java-client`, `java-server`, `kotlin-client`, `kotlin-server`.
+    8.  Переводит ограничения схемы (`minLength`, `maxLength`, `minimum`, `maximum`, `pattern`) в аннотации валидации Kora на сгенерированных моделях и контроллере.
+    9.  Регистрирует сгенерированные классы как исходный код проекта.
+    10. Ставит компиляцию в зависимость от генерации: сначала генерируем, потом компилируем.
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="build.gradle.kts"
+    Обновите `build.gradle.kts`:
+
+    ```kotlin
     val openApiGenerateUsersHttpServer = tasks.register<GenerateTask>("openApiGenerateUsersHttpServer") {
-        generatorName = "kora"
+        generatorName = "kora" //(1)!
         group = "openapi tools"
-        inputSpec = "$projectDir/src/main/resources/openapi/user-http-server.yaml"
-        outputDir = "$buildDir/generated/user-http-server"
-        val corePackage = "ru.tinkoff.kora.guide.openapi.httpserver.user"
-        apiPackage = "$corePackage.api"
-        modelPackage = "$corePackage.model"
-        invokerPackage = "$corePackage.invoker"
+        inputSpec.set(layout.projectDirectory.file("src/main/resources/openapi/user-http-server.yaml")) //(2)!
+        outputDir.set(layout.buildDirectory.dir("generated/user-http-server")) //(3)!
+        val corePackage = "io.koraframework.guide.openapi.httpserver.user"
+        apiPackage = "${corePackage}.api" //(4)!
+        modelPackage = "${corePackage}.model" //(5)!
+        invokerPackage = "${corePackage}.invoker" //(6)!
         configOptions = mapOf(
-            "mode" to "java-server",
+            "mode" to "kotlin-server", //(7)!
+            "enableServerValidation" to "true", //(8)!
         )
     }
 
-    sourceSets.main {
-        java.srcDir(openApiGenerateUsersHttpServer.get().outputDir)
-    }
+    kotlin.sourceSets.main { kotlin.srcDir(openApiGenerateUsersHttpServer.get().outputDir) } //(9)!
 
-    tasks.compileJava {
+    tasks.matching { it.name.startsWith("ksp") }.configureEach { //(10)!
         dependsOn(openApiGenerateUsersHttpServer)
     }
     ```
 
-На этом шаге важнее всего три детали:
+    1.  Выбирает генератор Kora вместо штатных генераторов `OpenAPI Generator`.
+    2.  Путь к файлу OpenAPI, по которому создаются классы.
+    3.  Каталог, в который складываются сгенерированные файлы.
+    4.  Пакет для сгенерированных контроллера, делегата, оберток ответов и мапперов.
+    5.  Пакет для сгенерированных моделей.
+    6.  Вспомогательный пакет генератора.
+    7.  Режим генерации. `kotlin-server` — один из четырех поддерживаемых режимов: `java-client`, `java-server`, `kotlin-client`, `kotlin-server`.
+    8.  Переводит ограничения схемы (`minLength`, `maxLength`, `minimum`, `maximum`, `pattern`) в аннотации валидации Kora на сгенерированных моделях и контроллере.
+    9.  Регистрирует сгенерированные классы как исходный код проекта.
+    10. `KSP` должен видеть сгенерированные исходники, поэтому каждая задача `ksp*` зависит от генерации: сначала генерируем, потом обрабатываем и компилируем.
 
-- сгенерированный код будет записан в `build/generated/user-http-server`
-- сгенерированные типы будут находиться внутри `ru.tinkoff.kora.guide.openapi.httpserver.user`
-- генерация автоматически выполняется перед компиляцией
+На этом шаге важнее всего четыре детали:
 
-Это шаг сборки, который превращает статический YAML-контракт в настоящий серверный Java-код.
+- сгенерированный код попадет в `build/generated/user-http-server`
+- сгенерированные типы окажутся в `io.koraframework.guide.openapi.httpserver.user`
+- генерация выполняется автоматически перед компиляцией
+- сгенерированный код — это **артефакт сборки**, поэтому он не попадает в систему контроля версий и не правится руками
+
+Именно этот шаг сборки превращает статический YAML-контракт в настоящий серверный код.
 
 ## Что создает генератор { #generated-output }
 
-Запустите:
+Выполните:
 
 ```bash
 ./gradlew clean classes
@@ -533,27 +629,31 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiDelegate.java`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiController.java`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiResponses.java`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/UserRequestTO.java`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/UserResponseTO.java`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/ErrorResponseTO.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiController.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiDelegate.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiResponses.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiServerRequestMappers.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiServerResponseMappers.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/UserRequestTO.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/UserResponseTO.java`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/ErrorResponseTO.java`
 
 === ":simple-kotlin: `Kotlin`"
 
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiDelegate.kt`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiController.kt`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/api/UsersApiResponses.kt`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/UserRequestTO.kt`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/UserResponseTO.kt`
-    - `build/generated/user-http-server/ru/tinkoff/kora/guide/openapi/httpserver/user/model/ErrorResponseTO.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiController.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiDelegate.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiResponses.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiServerRequestMappers.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/api/UsersApiServerResponseMappers.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/UserRequestTO.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/UserResponseTO.kt`
+    - `build/generated/user-http-server/io/koraframework/guide/openapi/httpserver/user/model/ErrorResponseTO.kt`
 
-Сгенерированный сервер вводит несколько важных абстракций, и очень полезно изучать их по одной, а не относиться к генерации как к черному ящику.
+Сгенерированный сервер вводит несколько важных абстракций, и гораздо полезнее разобрать их по одной, чем воспринимать генерацию как черный ящик.
 
 ### 1. `UsersApiDelegate` { #1-usersapidelegate }
 
-Это интерфейс, который вы реализуете в собственном коде приложения.
+Это интерфейс, который вы реализуете в коде своего приложения.
 
 Вот сокращенная версия сгенерированного делегата:
 
@@ -562,14 +662,17 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     ```java
     public interface UsersApiDelegate {
 
+        @HttpRoute(method = "POST", path = "/users")
         UsersApiResponses.CreateUserApiResponse createUser(
             UserRequestTO userRequestTO
         ) throws Exception;
 
+        @HttpRoute(method = "GET", path = "/users/{userId}")
         UsersApiResponses.GetUserApiResponse getUser(
             String userId
         ) throws Exception;
 
+        @HttpRoute(method = "GET", path = "/users")
         UsersApiResponses.GetUsersApiResponse getUsers(
             @Nullable Integer page,
             @Nullable Integer size,
@@ -583,14 +686,17 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     ```kotlin
     interface UsersApiDelegate {
 
+        @HttpRoute(method = "POST", path = "/users")
         fun createUser(
             userRequestTO: UserRequestTO
         ): UsersApiResponses.CreateUserApiResponse
 
+        @HttpRoute(method = "GET", path = "/users/{userId}")
         fun getUser(
             userId: String
         ): UsersApiResponses.GetUserApiResponse
 
+        @HttpRoute(method = "GET", path = "/users")
         fun getUsers(
             page: Int?,
             size: Int?,
@@ -599,42 +705,50 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     }
     ```
 
-Это первый большой концептуальный сдвиг относительно `http-server.md`.
+Это первый крупный концептуальный сдвиг относительно руководства [HTTP-сервер](http-server.md).
 
-В руководстве по рукописному серверу вы сами определяли методы контроллера и украшали их транспортными аннотациями. Здесь транспортный слой уже определен контрактом, поэтому генератор дает интерфейс,
+В руководстве по ручному серверу вы сами определяли методы контроллера и размечали их транспортными аннотациями. Здесь транспортный слой уже определен контрактом, поэтому генератор дает вам интерфейс,
 который нужно реализовать.
 
-Это означает, что ваш код больше не говорит:
+Это значит, что ваш код больше не говорит:
 
 - какой HTTP-путь существует
-- какой метод является `GET` или `POST`
+- какой метод `GET`, а какой `POST`
 - какое тело запроса относится к какому маршруту
 
 Вместо этого ваш код говорит:
 
 - как реализовать поведение, описанное контрактом
-- как сопоставлять сгенерированные транспортные модели и внутренние DTO приложения
+- как отображать сгенерированные транспортные модели на внутренние DTO приложения
 - какой вариант ответа вернуть для каждого исхода
+
+Две детали сигнатуры легко пропустить и потом на них наткнуться:
+
+- методы делегата в `Java` объявлены с `throws Exception`, поэтому реализация может свободно бросать исключения; сузить `throws` в вашем `@Override` разрешено и обычно чище
+- опциональные query-параметры приходят как `null`, а **не** как `default` из контракта — `default` в OpenAPI документирует значение для читателей контракта, но не заставляет сгенерированный сервер
+  его подставлять. Применить `page = 0`, `size = 10` и `sort = "name"` — задача делегата
 
 ### 2. `UsersApiController` { #2-usersapicontroller }
 
 Это сгенерированный HTTP-контроллер, который Kora помещает в граф приложения.
 
-Вы не редактируете его вручную, и обычно вам не нужно понимать каждую строку внутри него. Важна его ответственность:
+Вы не правите его вручную и обычно вам не нужно понимать каждую его строку. Важна его зона ответственности:
 
 - принять HTTP-запрос
-- проверить и сопоставить транспортные данные согласно контракту
+- провалидировать и отобразить транспортные данные согласно контракту
 - вызвать соответствующий метод делегата
 - превратить возвращенную сгенерированную обертку ответа в настоящий HTTP-ответ
 
-Так сгенерированный контроллер становится транспортным адаптером, а ваш делегат становится границей реализации.
+Класс генерируется с `@Component` и `@HttpController`, поэтому он регистрируется в графе без какой-либо обвязки с вашей стороны. Единственная зависимость его конструктора — `UsersApiDelegate`, из-за
+чего сборка падает во время компиляции, а не при старте, если вы забыли реализовать делегат.
 
-Такое разделение является одной из самых здоровых частей контрактной серверной генерации. Оно оставляет механику протокола HTTP в сгенерированном коде, а поведение приложения — в вашем собственном
-коде.
+Так сгенерированный контроллер становится транспортным адаптером, а ваш делегат — границей реализации.
+
+Это разделение — одна из самых полезных частей контрактной серверной генерации. Механика HTTP-протокола остается в сгенерированном коде, а поведение приложения — в вашем.
 
 ### 3. `UsersApiResponses` { #3-usersapiresponses }
 
-Этот файл является одним из самых полезных сгенерированных артефактов, потому что он делает транспортный контракт явным.
+Этот файл — один из самых полезных сгенерированных артефактов, потому что делает транспортный контракт явным.
 
 Вот сокращенная версия сгенерированного семейства ответов `getUser`:
 
@@ -682,111 +796,123 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     }
     ```
 
-Это та же идея, которую мы исследовали в руководстве по OpenAPI-клиенту, но теперь со стороны сервера.
-
-Контракт OpenAPI говорит, что `GET /users/{userId}` может произвести:
+Контракт OpenAPI говорит, что `GET /users/{userId}` может вернуть:
 
 - `200` с телом `UserResponseTO`
 - `404` с телом `ErrorResponseTO`
 - `500` с телом `ErrorResponseTO`
 
-Поэтому генератор создает одно запечатанное семейство ответов, которое моделирует эти три исхода.
+Поэтому генератор создает одно запечатанное семейство ответов, моделирующее эти три исхода.
 
-Это важно, потому что контракт описывает не только запросы и успешные полезные нагрузки. Он также описывает допустимые формы ошибок, а сгенерированный серверный код сохраняет эту информацию как
-настоящие типы Java или Kotlin, в зависимости от приложения руководства, которое вы создаете.
+Три правила именования объясняют любую обертку, которая вам встретится:
+
+- семейство называется `<OperationId>ApiResponse`, поэтому `getUser` дает `GetUserApiResponse`
+- каждый вариант — `<OperationId><Code>ApiResponse`, поэтому `404` дает `GetUser404ApiResponse`
+- тело ответа становится компонентом `content`; объявленные **заголовки** ответа становятся дополнительными компонентами, поэтому `updateUser` дает `UpdateUser200ApiResponse(content, xUpdatedAt)`
+
+У ответа `204` тела нет, поэтому `DeleteUser204ApiResponse` — просто пустая запись. А если операция объявляет всего один ответ, запечатанной обертки не будет вовсе — `<OperationId>ApiResponse` будет
+сразу этой единственной записью.
+
+Это важно, потому что контракт описывает не только запрос и успешные полезные нагрузки. Он описывает и допустимые формы ошибок, а сгенерированный серверный код сохраняет эту информацию как настоящие
+типы `Java` или `Kotlin`.
 
 ### 4. Сгенерированные модели { #4-generated-models }
 
-Генератор также создает транспортные модели слоя контракта, такие как:
+Генератор также создает транспортные модели контрактного слоя:
 
 - `UserRequestTO`
 - `UserResponseTO`
 - `ErrorResponseTO`
 
-Эти сгенерированные модели принадлежат границе OpenAPI, а не вашей внутренней предметной области или сервисному слою.
+Модели `Java` — это `record` со сгенерированными читателями и писателями `@Json`; модели `Kotlin` — это `data class`. Поскольку включен `enableServerValidation`, ограничения контракта переезжают вместе
+с ними: `minLength: 1` / `maxLength: 100` на `UserRequestTO.name` превращаются в аннотацию `@Size`, а сама модель помечается `@Valid`.
 
-Именно поэтому руководству по-прежнему сохраняет внутренние DTO вроде `UserRequest` и `UserResponse` внутри кода приложения. Делегат — это место, где встречаются эти два мира:
+Эти сгенерированные модели относятся к границе OpenAPI, а не к вашей предметной области или сервисному слою.
+
+Поэтому в руководстве по-прежнему сохраняются внутренние DTO вроде `UserRequest` и `UserResponse`. Делегат — то место, где встречаются эти два мира:
 
 - сгенерированные транспортные модели OpenAPI с одной стороны
 - внутренние модели приложения с другой
 
-Если держать эти слои отдельно, будущие переработки становятся намного безопаснее. Вы можете развивать внутренний код, не делая вид, что сгенерированные транспортные типы являются всей вашей
-предметной моделью.
+Явное разделение этих слоев делает будущий рефакторинг значительно безопаснее. Вы можете развивать внутренний код, не делая вид, что сгенерированные транспортные типы — это вся ваша доменная модель.
 
-В сопровождающем приложении рукописные внутренние DTO, которые могут пересекать границу JSON, по-прежнему аннотированы `@Json`. Сгенерированные модели OpenAPI уже приходят из генератора, но ваши
-собственные классы DTO запросов и ответов должны явно объявлять JSON-контракт, чтобы Kora могла сгенерировать их преобразователи во время обычной фазы обработки аннотаций.
+Ваши собственные DTO, написанные руками и пересекающие границу JSON, по-прежнему требуют `@Json`, потому что генератор их не создает и Kora нужно сказать построить для них мапперы во время обычной
+аннотационной обработки.
+
+!!! warning "Используйте именованные аргументы для сгенерированных моделей `Kotlin`"
+
+    В сгенерированных конструкторах `Kotlin` обязательные свойства идут первыми, а каждое опциональное получает значение по умолчанию.
+    Добавление одного свойства в контракт может сдвинуть позиции, и позиционный вызов вида `UserRequestTO("john@example.com", "John")` все еще компилируется, молча меняя местами два значения `String`.
+    Создавайте сгенерированные модели именованными аргументами: `UserRequestTO(name = "John Doe", email = "john@example.com")`.
 
 ### Разбор сгенерированного `getUser()` { #generated-getuser-walkthrough }
 
-Проще всего понять происходящее, если пройти одну операцию от контракта до сгенерированного кода.
+Проще всего понять происходящее, проследив одну операцию от контракта до сгенерированного кода.
 
 Файл OpenAPI объявляет:
 
 - маршрут `GET /users/{userId}`
-- один параметр пути `userId`
+- один path-параметр `userId`
 - три ответа: `200`, `404`, `500`
 
 Из этого генератор создает:
 
 - метод `getUser(String userId)` в `UsersApiDelegate`
 - запечатанное семейство ответов `GetUserApiResponse`
-- сгенерированный метод контроллера, который вызовет ваш делегат и сериализует выбранную обертку
+- метод сгенерированного контроллера, который вызовет ваш делегат и сериализует выбранную обертку
 
-Это означает, что реализация делегата может оставаться сосредоточенной на бизнес-смысле:
+Это значит, что реализация делегата может сосредоточиться на бизнес-смысле:
 
-- если пользователь существует, вернуть `GetUser200ApiResponse`
+- если пользователь есть, вернуть `GetUser200ApiResponse`
 - если пользователя нет, вернуть `GetUser404ApiResponse(new ErrorResponseTO(...))`
-- если произошел настоящий внутренний сбой, транспортный слой все равно знает, что `500` является частью объявленного контракта
+- если случился настоящий внутренний сбой, транспортный слой все равно знает, что `500` объявлен контрактом
 
-Это главный момент, когда идея становится очевидной: генерация OpenAPI не просто экономит набор текста. Она превращает HTTP-контракт в набор явных серверных абстракций, которые направляют вашу
-реализацию.
+Это главный «ага»-момент руководства: генерация по OpenAPI не просто экономит набор текста. Она превращает HTTP-контракт в набор явных серверных абстракций, которые направляют вашу реализацию.
 
 ## Сервис и репозиторий { #service-repository }
 
-Одна из самых приятных частей такой миграции в том, что большую часть приложения **не** нужно проектировать заново.
+Одна из самых приятных сторон этого перехода в том, что большую часть приложения переделывать **не** нужно.
 
-Бизнес-часть остается знакомой:
+Бизнес-сторона остается прежней:
 
 - `UserRepository`
 - `InMemoryUserRepository`
 - `UserService`
 
-Эти классы могут сохранять те же обязанности, которые были у них в руководстве `http-server`:
+Эти классы сохраняют те же обязанности, что и в руководстве `http-server`:
 
-- репозиторий хранит и извлекает пользователей
-- сервис координирует CRUD-поведение
-- меняется только HTTP-точка входа
+- репозиторий хранит и достает пользователей
+- сервис координирует поведение CRUD
+- меняется только точка входа HTTP
 
-Такое разделение полезно в настоящих проектах. Если предметная логика живет в сервисном слое, а не внутри контроллера, становится намного проще заменить один транспортный стиль другим.
+Такое разделение полезно и в реальных проектах. Если доменная логика живет в сервисном слое, а не внутри контроллера, заменить один транспортный стиль другим становится намного проще.
 
-Поэтому в этом руководстве мы **не** переписываем все приложение. Мы заменяем только слой рукописного контроллера на сгенерированный.
+Поэтому в этом руководстве мы **не** переписываем все приложение. Мы заменяем только написанный вручную слой контроллера на сгенерированный.
 
 ## Делегат { #delegate }
 
-Теперь создадим класс, который соединяет сгенерированный HTTP-код с существующим сервисным слоем.
-
-Создайте:
-
-`src/main/java/ru/tinkoff/kora/guide/openapi/httpserver/controller/UserApiDelegateImpl.java`
+Теперь создадим класс, соединяющий сгенерированный HTTP-код с нашим существующим сервисным слоем.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/openapi/httpserver/controller/UserApiDelegateImpl.java"
-    package ru.tinkoff.kora.guide.openapi.httpserver.controller;
+    Создайте `src/main/java/io/koraframework/guide/openapi/httpserver/controller/UserApiDelegateImpl.java`:
+
+    ```java
+    package io.koraframework.guide.openapi.httpserver.controller;
 
     import java.time.Instant;
     import java.time.ZoneOffset;
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.ErrorResponseTO;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.api.UsersApiDelegate;
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.api.UsersApiResponses;
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.UserRequestTO;
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.UserResponseTO;
-    import ru.tinkoff.kora.guide.openapi.httpserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.openapi.httpserver.dto.UserResponse;
-    import ru.tinkoff.kora.guide.openapi.httpserver.service.UserService;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiDelegate;
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiResponses;
+    import io.koraframework.guide.openapi.httpserver.user.model.ErrorResponseTO;
+    import io.koraframework.guide.openapi.httpserver.user.model.UserRequestTO;
+    import io.koraframework.guide.openapi.httpserver.user.model.UserResponseTO;
+    import io.koraframework.guide.openapi.httpserver.dto.UserRequest;
+    import io.koraframework.guide.openapi.httpserver.dto.UserResponse;
+    import io.koraframework.guide.openapi.httpserver.service.UserService;
 
-    @Component
+    @Component //(1)!
     public final class UserApiDelegateImpl implements UsersApiDelegate {
 
         private final UserService userService;
@@ -810,7 +936,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
             }
 
             this.userService.deleteUser(userId);
-            return new UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse();
+            return new UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse(); //(2)!
         }
 
         @Override
@@ -824,7 +950,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
 
         @Override
         public UsersApiResponses.GetUsersApiResponse getUsers(Integer page, Integer size, String sort) {
-            int effectivePage = page == null ? 0 : page;
+            int effectivePage = page == null ? 0 : page; //(3)!
             int effectiveSize = size == null ? 10 : size;
             String effectiveSort = sort == null ? "name" : sort;
             var users = this.userService.getUsers(effectivePage, effectiveSize, effectiveSort).stream()
@@ -844,11 +970,11 @@ tags: openapi, http-server, swagger, code-generation, contract-first
             var updated = this.userService.updateUser(userId, new UserRequest(userRequest.name(), userRequest.email()));
             return new UsersApiResponses.UpdateUserApiResponse.UpdateUser200ApiResponse(
                     this.toGenerated(updated),
-                    Instant.now().toString()
+                    Instant.now().toString() //(4)!
             );
         }
 
-        private UserResponseTO toGenerated(UserResponse user) {
+        private UserResponseTO toGenerated(UserResponse user) { //(5)!
             return new UserResponseTO(
                     user.id(),
                     user.name(),
@@ -858,63 +984,68 @@ tags: openapi, http-server, swagger, code-generation, contract-first
         }
 
         private ErrorResponseTO notFound(String userId) {
-            return new ErrorResponseTO("User with id "" + userId + "" was not found");
+            return new ErrorResponseTO("User with id '" + userId + "' was not found");
         }
     }
     ```
 
+    1.  Делегат — обычный компонент Kora; сгенерированный контроллер получает его через конструктор.
+    2.  У `204 No Content` в контракте нет тела, поэтому у сгенерированной записи нет компонентов.
+    3.  `default` в OpenAPI — это документация, а не поведение сервера: отсутствующие query-параметры приходят как `null`, и значения по умолчанию подставляет делегат.
+    4.  Объявленный заголовок ответа `X-Updated-At` становится вторым компонентом обертки `200`.
+    5.  `format: date-time` отображается на `OffsetDateTime`, поэтому внутренний `LocalDateTime` конвертируется на границе.
+
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/openapi/httpserver/controller/UserApiDelegateImpl.kt"
-    package ru.tinkoff.kora.guide.openapi.httpserver.controller
+    Создайте `src/main/kotlin/io/koraframework/guide/openapi/httpserver/controller/UserApiDelegateImpl.kt`:
 
+    ```kotlin
+    package io.koraframework.guide.openapi.httpserver.controller
+
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.openapi.httpserver.dto.UserRequest
+    import io.koraframework.guide.openapi.httpserver.dto.UserResponse
+    import io.koraframework.guide.openapi.httpserver.service.UserService
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiDelegate
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiResponses
+    import io.koraframework.guide.openapi.httpserver.user.model.ErrorResponseTO
+    import io.koraframework.guide.openapi.httpserver.user.model.UserRequestTO
+    import io.koraframework.guide.openapi.httpserver.user.model.UserResponseTO
     import java.time.Instant
     import java.time.ZoneOffset
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.api.UsersApiDelegate
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.api.UsersApiResponses
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.ErrorResponseTO
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.UserRequestTO
-    import ru.tinkoff.kora.guide.openapi.httpserver.user.model.UserResponseTO
-    import ru.tinkoff.kora.guide.openapi.httpserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.openapi.httpserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.openapi.httpserver.service.UserService
 
-    @Component
+    @Component //(1)!
     class UserApiDelegateImpl(
         private val userService: UserService
     ) : UsersApiDelegate {
 
         override fun createUser(userRequest: UserRequestTO): UsersApiResponses.CreateUserApiResponse {
-            val created = userService.createUser(UserRequest(userRequest.name(), userRequest.email()))
+            val created = userService.createUser(UserRequest(userRequest.name, userRequest.email))
             return UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse(toGenerated(created))
         }
 
         override fun deleteUser(userId: String): UsersApiResponses.DeleteUserApiResponse {
-            if (userService.getUser(userId).isEmpty) {
+            if (userService.getUser(userId) == null) {
                 return UsersApiResponses.DeleteUserApiResponse.DeleteUser404ApiResponse(
                     notFound(userId)
                 )
             }
 
             userService.deleteUser(userId)
-            return UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse()
+            return UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse() //(2)!
         }
 
         override fun getUser(userId: String): UsersApiResponses.GetUserApiResponse {
-            return userService.getUser(userId)
-                .map<UsersApiResponses.GetUserApiResponse> { user ->
-                    UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse(toGenerated(user))
-                }
-                .orElseGet {
-                    UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse(
-                        notFound(userId)
-                    )
-                }
+            val user = userService.getUser(userId)
+            return if (user == null) {
+                UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse(notFound(userId))
+            } else {
+                UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse(toGenerated(user))
+            }
         }
 
         override fun getUsers(page: Int?, size: Int?, sort: String?): UsersApiResponses.GetUsersApiResponse {
-            val effectivePage = page ?: 0
+            val effectivePage = page ?: 0 //(3)!
             val effectiveSize = size ?: 10
             val effectiveSort = sort ?: "name"
             val users = userService.getUsers(effectivePage, effectiveSize, effectiveSort)
@@ -923,173 +1054,193 @@ tags: openapi, http-server, swagger, code-generation, contract-first
         }
 
         override fun updateUser(userId: String, userRequest: UserRequestTO): UsersApiResponses.UpdateUserApiResponse {
-            if (userService.getUser(userId).isEmpty) {
+            if (userService.getUser(userId) == null) {
                 return UsersApiResponses.UpdateUserApiResponse.UpdateUser404ApiResponse(
                     notFound(userId)
                 )
             }
 
-            val updated = userService.updateUser(userId, UserRequest(userRequest.name(), userRequest.email()))
+            val updated = userService.updateUser(userId, UserRequest(userRequest.name, userRequest.email))
             return UsersApiResponses.UpdateUserApiResponse.UpdateUser200ApiResponse(
                 toGenerated(updated),
-                Instant.now().toString()
+                Instant.now().toString() //(4)!
             )
         }
 
-        private fun toGenerated(user: UserResponse): UserResponseTO {
+        private fun toGenerated(user: UserResponse): UserResponseTO { //(5)!
             return UserResponseTO(
-                user.id(),
-                user.name(),
-                user.email(),
-                user.createdAt().atOffset(ZoneOffset.UTC)
+                id = user.id,
+                name = user.name,
+                email = user.email,
+                createdAt = user.createdAt.atOffset(ZoneOffset.UTC)
             )
         }
 
         private fun notFound(userId: String): ErrorResponseTO {
-            return ErrorResponseTO("User with id "$userId" was not found")
+            return ErrorResponseTO("User with id '$userId' was not found")
         }
     }
     ```
 
-Этот шаг вводит главную абстракцию руководства.
+    1.  Делегат — обычный компонент Kora; сгенерированный контроллер получает его через конструктор.
+    2.  У `204 No Content` в контракте нет тела, поэтому у сгенерированного класса нет свойств.
+    3.  `default` в OpenAPI — это документация, а не поведение сервера: отсутствующие query-параметры приходят как `null`, и значения по умолчанию подставляет делегат.
+    4.  Объявленный заголовок ответа `X-Updated-At` становится вторым компонентом обертки `200`.
+    5.  `format: date-time` отображается на `OffsetDateTime`, поэтому внутренний `LocalDateTime` конвертируется на границе — а именованные аргументы не дают перепутать четыре строковых значения.
 
-В ручной версии `http-server` сам контроллер решал:
+Этот шаг вводит ключевую абстракцию руководства.
 
-- как принять HTTP-ввод
-- какой код состояния вернуть
+В ручной версии `http-server` контроллер сам решал:
+
+- как принять HTTP-вход
+- какой статус вернуть
 - как построить ответ
 
-В этой OpenAPI-версии такая ответственность переходит в реализацию делегата.
+В OpenAPI-версии эта ответственность переезжает в реализацию делегата.
 
-Сгенерированный контроллер обрабатывает низкоуровневый HTTP-транспорт. Ваш делегат отвечает за:
+Сгенерированный контроллер занимается низкоуровневым HTTP-транспортом. Ваш делегат занимается:
 
-- вызов сервисного слоя
-- выбор правильной сгенерированной обертки ответа
-- сопоставление сгенерированных моделей OpenAPI и внутренних DTO приложения
+- вызовом сервисного слоя
+- выбором правильной сгенерированной обертки ответа
+- отображением между сгенерированными моделями OpenAPI и внутренними DTO приложения
 
-Поскольку контракт OpenAPI теперь задает для ответов `404` и `500` общее тело `ErrorResponseTO`, делегат также может возвращать типизированные полезные нагрузки ошибок, а не только пустые варианты
-состояния. Это делает сгенерированные обертки полезнее и для серверного, и для клиентского кода, потому что ответы с ошибками тоже становятся частью контракта.
+Поскольку контракт OpenAPI теперь дает ответам `404` и `500` общее тело `ErrorResponseTO`, делегат может возвращать типизированные полезные нагрузки ошибок, а не только пустые варианты статусов. Это
+делает сгенерированные обертки полезнее и для серверного, и для клиентского кода, потому что ответы с ошибками тоже становятся частью контракта.
 
-Этот слой сопоставления не случаен. Это здоровое разделение:
+Этот слой отображения появился не случайно. Это здоровое разделение:
 
 - сгенерированные модели принадлежат контракту API
 - внутренние DTO принадлежат вашему приложению
 
-Если держать эту границу явной, приложение будет проще развивать позже.
+Явная граница делает приложение проще в развитии.
 
 ## Конфигурация { #config }
 
-Теперь мы публикуем контракт и интерактивную документацию из запущенного приложения.
+Теперь опубликуем контракт и интерактивную документацию из работающего приложения.
 
 Обновите `src/main/resources/application.conf`:
 
-Полный справочник по конфигурации смотрите в [HTTP-сервер](../documentation/http-server.md), [OpenAPI Management](../documentation/openapi-management.md)
-и [журналирование SLF4J](../documentation/logging-slf4j.md).
+Полное описание конфигурации смотрите в [HTTP-сервер](../documentation/http-server.md#configuration), [OpenAPI Management](../documentation/openapi-management.md#configuration)
+и [Логирование SLF4J](../documentation/logging-slf4j.md).
 
 ===! ":material-code-json: `Hocon`"
 
-    ```javascript title="src/main/resources/application.conf"
+    ```javascript
     httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
+      port = 8080 //(1)!
+      system.port = 8085 //(2)!
       telemetry.logging.enabled = true //(3)!
     }
 
     openapi {
       management {
         enabled = true //(4)!
-        endpoint = "/openapi" //(5)!
+        files = [ "openapi/user-http-server.yaml" ] //(5)!
+        path = "/openapi" //(6)!
         swaggerui {
-          enabled = true //(6)!
-          endpoint = "/swagger-ui" //(7)!
+          enabled = true //(7)!
+          path = "/swagger-ui" //(8)!
         }
       }
     }
 
-    logging.level {
-      "root" = "WARN" //(8)!
-      "ru.tinkoff.kora" = "INFO" //(9)!
-      "ru.tinkoff.kora.guide.openapi.httpserver" = "INFO" //(10)!
+    logging.levels {
+      "root" = "WARN" //(9)!
+      "io.koraframework" = "INFO" //(10)!
+      "io.koraframework.guide.openapi.httpserver" = "INFO" //(11)!
     }
     ```
 
-    1. Публичный HTTP-порт по умолчанию, используемый конечными точками приложения.
-    2. Приватный HTTP-порт по умолчанию, используемый пробами, метриками и конечными точками управления.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Включает возможность для этого раздела конфигурации.
-    5. Конечная точка экспортера телеметрии.
-    6. Включает возможность для этого раздела конфигурации.
-    7. Конечная точка экспортера телеметрии.
-    8. Значение для `logging.level.root`.
-    9. Значение для `logging.level.ru.tinkoff.kora`.
-    10. Значение для `logging.level.ru.tinkoff.kora.guide.openapi.httpserver`.
+    1.  Публичный HTTP-порт для конечных точек приложения (по умолчанию: `8080`).
+    2.  Системный HTTP-порт для проб, метрик и служебных конечных точек (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Включает публикацию OpenAPI (по умолчанию: `false`).
+    5.  Ресурсы classpath для публикации. Это **список**, даже для одного файла.
+    6.  Путь, по которому отдается контракт (по умолчанию: `/openapi`).
+    7.  Включает страницу Swagger UI (по умолчанию: `false`).
+    8.  Путь страницы Swagger UI (по умолчанию: `/swagger-ui`).
+    9.  Уровень логирования корневого логгера.
+    10. Уровень логирования логгеров фреймворка Kora.
+    11. Уровень логирования пакета приложения.
 
 === ":simple-yaml: `YAML`"
 
-    ```yaml title="src/main/resources/application.yaml"
+    ```yaml
     httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
+      port: 8080 #(1)!
+      system:
+        port: 8085 #(2)!
       telemetry:
         logging:
           enabled: true #(3)!
     openapi:
       management:
         enabled: true #(4)!
-        endpoint: "/openapi" #(5)!
+        files: [ "openapi/user-http-server.yaml" ] #(5)!
+        path: "/openapi" #(6)!
         swaggerui:
-          enabled: true #(6)!
-          endpoint: "/swagger-ui" #(7)!
+          enabled: true #(7)!
+          path: "/swagger-ui" #(8)!
     logging:
-      level:
-        root: "WARN" #(8)!
-        "ru.tinkoff.kora": "INFO" #(9)!
-        "ru.tinkoff.kora.guide.openapi.httpserver": "INFO" #(10)!
+      levels:
+        root: "WARN" #(9)!
+        "io.koraframework": "INFO" #(10)!
+        "io.koraframework.guide.openapi.httpserver": "INFO" #(11)!
     ```
 
-    1. Публичный HTTP-порт по умолчанию, используемый конечными точками приложения.
-    2. Приватный HTTP-порт по умолчанию, используемый пробами, метриками и конечными точками управления.
-    3. Включает возможность для этого раздела конфигурации.
-    4. Включает возможность для этого раздела конфигурации.
-    5. Конечная точка экспортера телеметрии.
-    6. Включает возможность для этого раздела конфигурации.
-    7. Конечная точка экспортера телеметрии.
-    8. Значение для `logging.level.root`.
-    9. Значение для `logging.level.ru.tinkoff.kora`.
-    10. Значение для `logging.level.ru.tinkoff.kora.guide.openapi.httpserver`.
+    1.  Публичный HTTP-порт для конечных точек приложения (по умолчанию: `8080`).
+    2.  Системный HTTP-порт для проб, метрик и служебных конечных точек (по умолчанию: `8085`).
+    3.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+    4.  Включает публикацию OpenAPI (по умолчанию: `false`).
+    5.  Ресурсы classpath для публикации. Это **список**, даже для одного файла.
+    6.  Путь, по которому отдается контракт (по умолчанию: `/openapi`).
+    7.  Включает страницу Swagger UI (по умолчанию: `false`).
+    8.  Путь страницы Swagger UI (по умолчанию: `/swagger-ui`).
+    9.  Уровень логирования корневого логгера.
+    10. Уровень логирования логгеров фреймворка Kora.
+    11. Уровень логирования пакета приложения.
 
 Это дает две очень практичные конечные точки:
 
 - `/openapi` возвращает документ OpenAPI
-- `/swagger-ui` дает интерактивный интерфейс для изучения и проверки API
+- `/swagger-ui` дает интерактивный интерфейс для изучения и тестирования API
 
-Это одно из главных преимуществ контрактной разработки. Документация не является тем, что вы пишете позже. Она является частью той же сборки, которая генерирует серверный слой.
+Обе обслуживаются **публичным** HTTP-сервером на `httpServer.port`, а не на системном порту, потому что модуль управления регистрирует обычные обработчики запросов. Если вам ближе более легкая страница
+просмотра, `openapi.management.scalar.enabled = true` публикует [Scalar](https://scalar.com/) на `/scalar` из того же контракта; обе страницы поставляются внутри модуля как самодостаточные ресурсы,
+поэтому ни одной из них не нужен доступ в интернет или CDN.
+
+Это одно из главных преимуществ контрактной разработки. Документация — не то, что пишут потом. Она часть той же сборки, которая генерирует серверный слой.
 
 ## Проверка приложения { #check-app }
 
-Соберите модуль:
-
 ```bash
-./gradlew :guides-apps:guide-openapi-http-server-app:clean :guides-apps:guide-openapi-http-server-app:classes
-```
-
-Запустите приложение:
-
-```bash
+./gradlew clean classes
+./gradlew test
 ./gradlew run
 ```
 
-Затем проверьте API:
+`classes` здесь — осмысленная первая проверка: она запускает генерацию по OpenAPI, затем аннотационный процессор или KSP, и падает на этапе компиляции, если делегат не соответствует контракту.
 
-```bash
-curl http://localhost:8080/users
-```
+Проверки публичного API:
 
 ```bash
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
-  -d '{"name":"John Doe","email":"john@example.com"}'
+  -d '{"name": "John Doe", "email": "john@example.com"}'
+
+curl http://localhost:8080/users/1
+curl "http://localhost:8080/users?page=0&size=10&sort=name"
+
+curl -i -X PUT http://localhost:8080/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Updated Name", "email": "updated@example.com"}'
+
+curl -X DELETE http://localhost:8080/users/1
 ```
+
+Флаг `-i` на вызове обновления стоит оставить: он показывает заголовок ответа `X-Updated-At`, объявленный контрактом и заполняемый делегатом.
+
+Проверки контракта:
 
 ```bash
 curl http://localhost:8080/openapi
@@ -1101,118 +1252,263 @@ curl http://localhost:8080/openapi
 http://localhost:8080/swagger-ui
 ```
 
-На этом этапе приложение ведет себя как знакомый CRUD-сервис `http-server`, но HTTP-слой теперь управляется контрактом OpenAPI.
+Проверки системного API:
+
+```bash
+curl http://localhost:8085/system/readiness
+# Expected output: OK
+curl http://localhost:8085/system/liveness
+# Expected output: OK
+```
+
+На этом этапе приложение ведет себя как знакомый CRUD-сервис из `http-server`, но HTTP-слоем теперь управляет контракт OpenAPI.
 
 ## Тест делегата { #delegate-test }
 
-Приложение руководства также включает тест, который проверяет CRUD-поведение через сгенерированный делегат.
+Поскольку делегат — обычный компонент, его можно тестировать вообще без HTTP-клиента: `@KoraAppTest` собирает настоящий граф и внедряет сгенерированный интерфейс.
 
-Запустите:
+===! ":fontawesome-brands-java: `Java`"
+
+    Создайте `src/test/java/io/koraframework/guide/openapi/httpserver/OpenApiHttpServerAppTest.java`:
+
+    ```java
+    package io.koraframework.guide.openapi.httpserver;
+
+    import static org.junit.jupiter.api.Assertions.assertEquals;
+    import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+    import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+    import org.junit.jupiter.api.Test;
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiDelegate;
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiResponses;
+    import io.koraframework.guide.openapi.httpserver.user.model.UserRequestTO;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.TestComponent;
+
+    @KoraAppTest(Application.class)
+    class OpenApiHttpServerAppTest {
+
+        @TestComponent
+        private UsersApiDelegate usersApiDelegate; //(1)!
+
+        @Test
+        void crudFlowWorksThroughDelegate() throws Exception {
+            var createResponse = this.usersApiDelegate.createUser(new UserRequestTO("John Doe", "john@example.com"));
+            var create201 = assertInstanceOf(UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse.class, createResponse); //(2)!
+            assertNotNull(create201.content());
+            assertEquals("John Doe", create201.content().name());
+
+            var getUserResponse = this.usersApiDelegate.getUser(create201.content().id());
+            var getUser200 = assertInstanceOf(UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse.class, getUserResponse);
+            assertEquals("john@example.com", getUser200.content().email());
+
+            var getUsersResponse = this.usersApiDelegate.getUsers(0, 10, "name");
+            var getUsers200 = assertInstanceOf(UsersApiResponses.GetUsersApiResponse.GetUsers200ApiResponse.class, getUsersResponse);
+            assertEquals(1, getUsers200.content().size());
+
+            var updateResponse = this.usersApiDelegate.updateUser(create201.content().id(), new UserRequestTO("John Updated", "john.updated@example.com"));
+            var update200 = assertInstanceOf(UsersApiResponses.UpdateUserApiResponse.UpdateUser200ApiResponse.class, updateResponse);
+            assertEquals("John Updated", update200.content().name());
+            assertNotNull(update200.xUpdatedAt()); //(3)!
+
+            var deleteResponse = this.usersApiDelegate.deleteUser(create201.content().id());
+            assertInstanceOf(UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse.class, deleteResponse);
+
+            var getAfterDeleteResponse = this.usersApiDelegate.getUser(create201.content().id());
+            assertInstanceOf(UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse.class, getAfterDeleteResponse);
+        }
+    }
+    ```
+
+    1.  Внедряет сгенерированный интерфейс, поэтому тест разрешает вашу реализацию с `@Component` через настоящий граф.
+    2.  Проверка подтипа ответа — серверный аналог проверки кода статуса.
+    3.  Объявленный заголовок `X-Updated-At` является компонентом обертки, поэтому проверяется как любое другое значение.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Создайте `src/test/kotlin/io/koraframework/guide/openapi/httpserver/OpenApiHttpServerAppTest.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.openapi.httpserver
+
+    import org.junit.jupiter.api.Assertions.assertEquals
+    import org.junit.jupiter.api.Assertions.assertInstanceOf
+    import org.junit.jupiter.api.Assertions.assertNotNull
+    import org.junit.jupiter.api.Test
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiDelegate
+    import io.koraframework.guide.openapi.httpserver.user.api.UsersApiResponses
+    import io.koraframework.guide.openapi.httpserver.user.model.UserRequestTO
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.TestComponent
+
+    @KoraAppTest(Application::class)
+    class OpenApiHttpServerAppTest {
+
+        @TestComponent
+        lateinit var usersApiDelegate: UsersApiDelegate //(1)!
+
+        @Test
+        fun crudFlowWorksThroughDelegate() {
+            val createResponse = usersApiDelegate.createUser(UserRequestTO(name = "John Doe", email = "john@example.com"))
+            val create201 = assertInstanceOf(
+                UsersApiResponses.CreateUserApiResponse.CreateUser201ApiResponse::class.java,
+                createResponse
+            ) //(2)!
+            assertNotNull(create201.content)
+            assertEquals("John Doe", create201.content.name)
+
+            val getUserResponse = usersApiDelegate.getUser(create201.content.id)
+            val getUser200 =
+                assertInstanceOf(UsersApiResponses.GetUserApiResponse.GetUser200ApiResponse::class.java, getUserResponse)
+            assertEquals("john@example.com", getUser200.content.email)
+
+            val getUsersResponse = usersApiDelegate.getUsers(0, 10, "name")
+            val getUsers200 =
+                assertInstanceOf(UsersApiResponses.GetUsersApiResponse.GetUsers200ApiResponse::class.java, getUsersResponse)
+            assertEquals(1, getUsers200.content.size)
+
+            val updateResponse = usersApiDelegate.updateUser(
+                create201.content.id,
+                UserRequestTO(name = "John Updated", email = "john.updated@example.com")
+            )
+            val update200 = assertInstanceOf(
+                UsersApiResponses.UpdateUserApiResponse.UpdateUser200ApiResponse::class.java,
+                updateResponse
+            )
+            assertEquals("John Updated", update200.content.name)
+            assertNotNull(update200.xUpdatedAt) //(3)!
+
+            val deleteResponse = usersApiDelegate.deleteUser(create201.content.id)
+            assertInstanceOf(UsersApiResponses.DeleteUserApiResponse.DeleteUser204ApiResponse::class.java, deleteResponse)
+
+            val getAfterDeleteResponse = usersApiDelegate.getUser(create201.content.id)
+            assertInstanceOf(UsersApiResponses.GetUserApiResponse.GetUser404ApiResponse::class.java, getAfterDeleteResponse)
+        }
+    }
+    ```
+
+    1.  Внедряет сгенерированный интерфейс, поэтому тест разрешает вашу реализацию с `@Component` через настоящий граф.
+    2.  Проверка подтипа ответа — серверный аналог проверки кода статуса.
+    3.  Объявленный заголовок `X-Updated-At` является свойством обертки, поэтому проверяется как любое другое значение.
+
+Выполните:
 
 ```bash
 ./gradlew test
 ```
 
-Этот тест проверяет:
-
-- создание
-- получение по идентификатору
-- список
-- обновление
-- удаление
-- `404` после удаления
-
-Это полезная контрольная точка, потому что она доказывает, что сгенерированный слой API и ваша реализация делегата правильно связаны.
+Тест проверяет создание, получение по идентификатору, список, обновление, удаление и `404` после удаления. Это полезная контрольная точка: она доказывает, что сгенерированный слой API и ваша реализация
+делегата корректно связаны.
 
 ## Лучшие практики { #best-practices }
 
-- Держите контракт OpenAPI близко к реальному поведению приложения. Контракт должен описывать действительность, а не будущие идеи.
-- Держите сгенерированный код только как результат сборки. Не редактируйте файлы внутри `build/generated/user-http-server`.
+- Держите контракт OpenAPI близким к реальному поведению приложения. Контракт должен описывать реальность, а не будущие планы.
+- Считайте сгенерированный код только артефактом сборки. Не правьте и не коммитьте файлы из `build/generated/user-http-server`.
 - Держите бизнес-логику в сервисах, а не в сгенерированных классах.
 - Используйте делегаты как транспортную границу между сгенерированными типами API и внутренними моделями приложения.
-- Регенерируйте серверный код как часть обычных сборок, чтобы контракт и скомпилированное приложение не расходились.
+- Перегенерируйте серверный код в рамках обычных сборок, чтобы контракт и скомпилированное приложение не могли разойтись.
+- Давайте каждой операции стабильный `operationId`: именно он именует метод делегата и все сгенерированные типы ответов, поэтому его переименование — ломающее изменение на уровне исходников.
+- Подставляйте значения `default` из OpenAPI сами в делегате, потому что сгенерированные серверы отдают `null` для отсутствующих опциональных параметров.
 
 ## Итоги { #summary }
 
 Вы взяли CRUD-сервер пользователей из руководства [HTTP-сервер](http-server.md) и пересобрали его HTTP-слой в контрактном стиле:
 
-- API теперь описан в `user-http-server.yaml`
+- API теперь описано в `user-http-server.yaml`
 - Kora генерирует серверный слой в `build/generated/user-http-server`
 - приложение реализует `UsersApiDelegate`
-- знакомые слои сервиса и репозитория остаются на месте
-- приложение открывает `/openapi` и `/swagger-ui`
+- привычные слои сервиса и репозитория остались на месте
+- приложение отдает `/openapi` и `/swagger-ui`
 
-Поведение остается знакомым, но теперь транспортным слоем управляет контракт, а не рукописный контроллер.
+Поведение осталось знакомым, но транспортным слоем теперь управляет контракт, а не написанный вручную контроллер.
 
 ## Ключевые понятия { #key-concepts }
 
 - контрактная разработка начинается с общей спецификации API
-- Kora может генерировать серверный код из OpenAPI
-- сгенерированные контроллеры и делегаты разделяют транспортную связку и прикладную логику
-- делегаты являются хорошим местом для сопоставления сгенерированных моделей контракта и внутренних DTO
-- добавление новых кодов состояния, таких как `500`, в OpenAPI меняет и сгенерированные обертки ответов
-- Swagger UI и OpenAPI становятся естественной частью приложения, когда контракт встроен в проект
+- Kora генерирует серверный код по OpenAPI ровно в двух серверных режимах: `java-server` и `kotlin-server`
+- сгенерированные контроллеры и делегаты разделяют транспортную обвязку и прикладную логику
+- делегаты — удачное место для отображения между моделями контракта и внутренними DTO
+- добавление новых статусов вроде `500` в OpenAPI меняет и сгенерированные обертки ответов
+- `enableServerValidation` превращает ограничения схемы в настоящие аннотации валидации на сгенерированных моделях
+- Swagger UI, Scalar и документ OpenAPI становятся естественной частью приложения, когда контракт встроен в проект
 
 ## Устранение неполадок { #troubleshooting }
 
-**Генерация кода не запускается:**
+**Генерация падает с `UnsupportedClassVersionError`:**
+
+- Демон `Gradle` работает на более старой JDK, чем та, под которую собрана Kora. Генератор находится в classpath buildscript, поэтому сама JVM `Gradle` должна быть `JDK 25` или новее.
+- Выполните `./gradlew --stop`, укажите `org.gradle.java.home` на установку JDK 25 и повторите.
+
+**Генерация падает с «Invalid OpenAPI generator `mode`»:**
+
+- Kora 2.0 поддерживает ровно четыре режима: `java-client`, `java-server`, `kotlin-client`, `kotlin-server`.
+- Реактивных и `suspend`-режимов из прежних версий больше нет; сгенерированный серверный и клиентский код синхронный.
+
+**Кодогенерация не запускается:**
 
 Проверьте, что:
 
-- подключен `org.openapi.generator`
-- импортирован `GenerateTask`
-- настроено `compileJava.dependsOn openApiGenerateUsersHttpServer`
+- плагин `org.openapi.generator` применен, а `GenerateTask` импортирован
+- на задаче установлен `generatorName = "kora"`
+- в `Java` настроен `compileJava.dependsOn openApiGenerateUsersHttpServer`
+- в `Kotlin` каждая задача `ksp*` зависит от задачи генерации
 
 **Приложение не находит сгенерированные классы:**
 
-Проверьте, что сгенерированный каталог исходников добавлен в `sourceSets.main`:
+Проверьте, что каталог сгенерированных исходников добавлен в основной source set:
 
 - `build/generated/user-http-server`
 
 Также убедитесь, что настройки пакетов совпадают с вашими импортами:
 
-- `ru.tinkoff.kora.guide.openapi.httpserver.user.api`
-- `ru.tinkoff.kora.guide.openapi.httpserver.user.model`
+- `io.koraframework.guide.openapi.httpserver.user.api`
+- `io.koraframework.guide.openapi.httpserver.user.model`
 
 **Swagger UI недоступен:**
 
 Убедитесь, что:
 
-- `OpenApiManagementModule` включен в `Application`
-- `openapi.management.enabled = true`
-- `swaggerui.enabled = true`
+- `OpenApiManagementModule` подключен в `Application`
+- заданы `openapi.management.enabled = true` и `openapi.management.swaggerui.enabled = true`
+- в `openapi.management.files` перечислен контракт, и значение является **списком** — ключ называется `files`, а не `file`
+- вы обращаетесь к **публичному** порту `8080`, а не к системному `8085`
 
-**Делегат не обнаруживается Kora:**
+**Kora не находит делегат:**
 
 Убедитесь, что:
 
-- делегат аннотирован `@Component`
+- делегат размечен аннотацией `@Component`
 - он реализует сгенерированный `UsersApiDelegate`
-- он импортирует сгенерированный пакет, который вы настроили в `build.gradle`
+- он импортирует сгенерированный пакет, настроенный в файле сборки
 
 **Ручной контроллер конфликтует со сгенерированным сервером:**
 
-В этом варианте приложения рукописный контроллер пользователей не должен оставаться рядом со сгенерированным серверным контроллером. После перехода на сгенерированный по OpenAPI транспортный слой
-делегат становится главной точкой реализации HTTP-поведения.
+В этом варианте приложения написанный вручную контроллер пользователей не должен оставаться рядом со сгенерированным контроллером. Два обработчика на один метод и путь — это ошибка сборки графа. После
+перехода на сгенерированный транспортный слой основной точкой реализации HTTP-поведения становится делегат.
 
-**Вариант обертки ответа отсутствует:**
+**Отсутствует вариант обертки ответа:**
 
-Сгенерированные варианты ответов существуют только для кодов состояния, явно перечисленных в контракте OpenAPI.
+Сгенерированные варианты ответов существуют только для тех кодов статуса, которые явно перечислены в контракте OpenAPI.
 
-Поэтому, если вы ожидаете сгенерированную абстракцию `500`, такую как `GetUser500ApiResponse`, убедитесь, что `500` присутствует в разделе `responses` этой операции в `user-http-server.yaml`.
+Поэтому если вы ждете сгенерированную абстракцию для `500` вида `GetUser500ApiResponse`, убедитесь, что `500` присутствует в секции `responses` этой операции в `user-http-server.yaml`.
+
+**Пагинация и сортировка ведут себя так, будто значения по умолчанию из контракта проигнорированы:**
+
+Так и есть. `default` на query-параметре в OpenAPI — это документация для читателей контракта; сгенерированный сервер передает `null` для отсутствующего параметра, поэтому значение по умолчанию должен
+подставить делегат.
 
 ## Что дальше? { #whats-next }
 
-- [HTTP-клиент](http-client.md), если вы еще не создавали клиентское приложение.
-- [OpenAPI HTTP-клиент](openapi-http-client.md) после HTTP-клиента, чтобы сгенерировать клиент из контракта того же типа.
-- [Продвинутый HTTP-сервер](http-server-advanced.md) перед [Продвинутый OpenAPI HTTP-сервер](openapi-http-server-advanced.md), потому что продвинутое руководство по OpenAPI объединяет обе ветки.
-- [Валидация](validation.md), чтобы сравнить рукописную проверку данных с проверкой на основе спецификации.
+- [HTTP-клиент](http-client.md), если вы еще не собирали клиентское приложение.
+- [OpenAPI HTTP-клиент](openapi-http-client.md) после HTTP-клиента, чтобы сгенерировать клиент по тому же контракту.
+- [Продвинутый HTTP-сервер](http-server-advanced.md) перед [Продвинутым OpenAPI HTTP-сервером](openapi-http-server-advanced.md), потому что продвинутое OpenAPI-руководство объединяет обе ветки.
+- [Валидация](validation.md), чтобы сравнить ручную валидацию с валидацией по спецификации.
 
 ## Помощь { #help }
 
-Если вы застряли:
+Если что-то не получается:
 
 - сравните с [Kora Java OpenAPI HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-openapi-http-server-app) и [Kora Kotlin OpenAPI HTTP Server App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-openapi-http-server-app)
 - сравните с [HTTP-сервер](http-server.md), чтобы увидеть, что заменил сгенерированный контроллер
-- проверьте [документацию по генерации OpenAPI-кода](../documentation/openapi-codegen.md)
-- проверьте [документацию OpenAPI Management](../documentation/openapi-management.md)
+- посмотрите [документацию OpenAPI Codegen](../documentation/openapi-codegen.md)
+- посмотрите [документацию OpenAPI Management](../documentation/openapi-management.md)

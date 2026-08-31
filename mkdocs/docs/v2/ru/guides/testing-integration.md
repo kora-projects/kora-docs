@@ -1,16 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Интеграционное тестирование с Kora
 summary: Learn comprehensive integration testing for Kora JDBC applications with real PostgreSQL, Flyway migrations, and KoraAppTest
+description: "Integration testing for Kora 2.0 JDBC applications: a test-scope @KoraApp that extends the production application, io.koraframework:test-junit5 with @KoraAppTest and @TestComponent, Testcontainers 2.0 PostgreSQLContainer, KoraAppTestConfigModifier feeding the jdbc and flyway configuration sections through withSystemProperty, Flyway dialect artifacts and the kora.app.submodule.enabled processor option."
+agent:
+  use_when: "Use this file for questions about running Kora 2.0 components against a real database in tests: a test-scope @KoraApp extending the application graph, @KoraAppTest with a Testcontainers PostgreSQLContainer, KoraConfigModification.ofString with the jdbc section and ${PLACEHOLDER} substitutions, org.testcontainers:testcontainers-postgresql and testcontainers-junit-jupiter coordinates, flyway-database-postgresql, kspTest and testAnnotationProcessor, and the 'Expected @KoraApp as SubModule' warning."
 tags: testing, integration-tests, testcontainers, postgres, flyway
 ---
 
 # Интеграционное тестирование с Kora { #integration-testing-kora }
 
-Это руководство знакомит с интеграционным тестированием JDBC-приложений Kora. В нем рассматривается, как запускать граф приложения на настоящей инфраструктуре PostgreSQL, как Testcontainers
-предоставляет настройки подключения к базе данных, и как репозитории, миграции, конфигурация и службы проверяются вместе. Вы также увидите, как интеграционные тесты находят проблемы связывания и
-постоянного хранения, которые модульные тесты намеренно обходят.
+Это руководство знакомит с интеграционным тестированием приложений Kora на JDBC. В нем рассматривается, как запускать граф приложения поверх настоящей инфраструктуры PostgreSQL, как Testcontainers
+передает настройки подключения к базе данных и как репозитории, миграции, конфигурация и службы проверяются вместе. Вы также увидите, какие проблемы связывания и сохранения данных ловят интеграционные
+тесты, которых модульные тесты избегают намеренно.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -24,85 +27,93 @@ tags: testing, integration-tests, testcontainers, postgres, flyway
 
 Вы создадите интеграционные тесты, которые покрывают:
 
-- **проверку настоящей базы данных**: запуск тестов на настоящем экземпляре PostgreSQL
+- **проверку на настоящей базе данных**: запуск тестов поверх настоящего экземпляра PostgreSQL
 - **проверку миграций**: уверенность, что миграции Flyway применяются корректно
-- **интеграцию службы и репозитория**: проверку полного потока постоянного хранения
-- **тестирование переопределений конфигурации**: внедрение конфигурации времени выполнения из контейнеров
+- **интеграцию службы и репозитория**: проверку полных сценариев сохранения данных
+- **переопределение конфигурации**: подстановку настроек контейнера во время выполнения
 - **детерминированную изоляцию тестов**: чистое и повторяемое поведение тестов
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+ (эталонные приложения используют Gradle Wrapper `9.5.1`)
 - Docker (для Testcontainers)
 - текстовый редактор или среда разработки
-- пройденное руководство [Интеграция с базой данных](database-jdbc.md)
+- пройденное руководство [Работа с базой данных](database-jdbc.md)
 
 ## Требования { #prerequisites }
 
 !!! note "Обязательно: пройдите руководство по базе данных JDBC"
 
-    Это руководство предполагает, что вы уже прошли **[Интеграцию с базой данных](database-jdbc.md)** и у вас уже есть реализация JDBC-репозитория, миграции Flyway в `db/migration`, `UserService`, связанный с настоящим JDBC-репозиторием, и рабочее CRUD-поведение в приложении с базой данных.
+    Это руководство предполагает, что вы уже прошли **[Работа с базой данных](database-jdbc.md)** и у вас есть реализация JDBC-репозитория, миграции Flyway в `db/migration`, `UserService`, подключенный к настоящему JDBC-репозиторию, и рабочие CRUD-сценарии в приложении с базой данных.
 
-    Если вы еще не прошли руководство по базе данных JDBC, сначала сделайте это, потому что здесь проверяется настоящий поток службы с базой данных через Testcontainers.
+    Если вы еще не прошли руководство по базе данных JDBC, сначала сделайте это, потому что здесь проверяется настоящий поток работы службы с базой данных через Testcontainers.
 
 ## Обзор { #overview }
 
-Интеграционное тестирование проверяет, как код приложения ведет себя при работе с настоящей инфраструктурой. Оно находится между компонентными тестами и тестами по принципу черного ящика: шире, чем тест службы с
-подменами, но уже, чем запуск всего приложения как внешнего процесса.
+Интеграционное тестирование проверяет, как код приложения ведет себя при работе с настоящей инфраструктурой. Оно находится между компонентными тестами и тестами по принципу черного ящика: шире, чем тест
+службы с подменами, но уже, чем запуск всего приложения как внешнего процесса.
 
-Ключевое отличие от компонентного теста в том, что инфраструктура является частью проверяемого поведения. Метод репозитория нельзя считать полностью доказанным, пока его SQL не выполнится на базе
-данных того же типа, которую использует приложение.
+Ключевое отличие от компонентного теста в том, что инфраструктура становится частью проверяемого поведения. Метод репозитория нельзя считать полностью доказанным, пока его SQL не выполнится на такой же
+базе данных, какую использует приложение.
 
 ### Граница интеграции { #integration-boundary }
 
-В этом руководстве границей интеграции является слой службы и репозитория, подкрепленный настоящей базой данных [PostgreSQL](https://www.postgresql.org/docs/). Тест все еще выполняется внутри
-процесса [JUnit](https://junit.org/junit5/docs/current/user-guide/) и использует тестовый граф Kora, но база данных не подменяется. Это позволяет тесту проверить поведение, которое существует только
-тогда, когда SQL, миграции, конфигурация подключения и сопоставление строк работают вместе.
+В этом руководстве границей интеграции является слой службы и репозитория поверх настоящей базы данных [PostgreSQL](https://www.postgresql.org/docs/). Тест по-прежнему выполняется внутри
+процесса [JUnit](https://junit.org/junit5/docs/current/user-guide/) и использует тестовый граф Kora, но база данных уже не подменяется. Это позволяет проверить поведение, которое существует только
+тогда, когда SQL, миграции, настройки подключения и отображение строк работают вместе.
 
 Интеграционные тесты особенно ценны для:
 
-- выполнения настоящего SQL на PostgreSQL
-- сопоставления записей и колонок
+- настоящего выполнения SQL на PostgreSQL
+- отображения записей и колонок
 - совместимости миграций Flyway с кодом репозитория
-- постраничной выдачи, сортировки, обновления и удаления на настоящих данных
-- логики службы, которая зависит от семантики постоянного хранения
+- поведения пагинации, сортировки, обновления и удаления на настоящих данных
+- логики службы, которая зависит от семантики хранения
+
+JDBC-репозитории в Kora 2.0 синхронные: метод с `@Query` возвращает отображенное значение, `List`, `Optional` или `UpdateCount`, а вызывающий поток блокируется до завершения запроса. Поэтому
+интеграционный тест читается как обычный код — вызвали службу, затем прочитали данные из базы и проверили — без ожиданий, без реактивных подписок и без корутинных билдеров.
 
 ### Тесты и Testcontainers { #tests-plus-testcontainers }
 
-Подробнее о расширенном тестовом графе, замене компонентов и модификации контейнера смотрите в разделах [Test graph](../documentation/junit5.md#test-graph) и [модификации контейнера](../documentation/junit5.md#container-modification).
+Подробнее о расширенных тестовых графах, подмене компонентов и изменении контейнера — в разделах [Тестовый граф](../documentation/junit5.md#test-graph) и [Изменение контейнера](../documentation/junit5.md#container-modification).
 
-Kora предоставляет граф приложения; [Testcontainers](https://java.testcontainers.org/) предоставляет одноразовую инфраструктуру. Тест запускает контейнер PostgreSQL, передает значения подключения в
-граф, а затем выполняет компоненты приложения с настоящим состоянием базы данных.
+Kora дает граф приложения, а [Testcontainers](https://java.testcontainers.org/) — одноразовую инфраструктуру. Тест поднимает контейнер PostgreSQL, передает его параметры подключения в граф, а затем
+работает с компонентами приложения на настоящем состоянии базы данных.
 
-Это сочетание мощное, потому что код репозитория генерируется и связывается так же, как в приложении, а база данных изолирована на каждый запуск тестов. Вы получаете реалистичное поведение постоянного
-хранения без необходимости вручную подготовленной локальной базы данных.
+Такое сочетание сильно тем, что код репозитория генерируется и связывается точно так же, как в приложении, а база данных изолирована на каждый запуск тестов. Вы получаете реалистичное поведение
+хранилища, не требуя вручную подготовленной локальной базы данных.
 
 ### Интеграционники или черная коробка { #integration-black-box-tests }
 
-Интеграционные тесты обычно вызывают компоненты напрямую. Тесты по принципу черного ящика вызывают открытый API работающего приложения. Это значит, что интеграционные тесты лучше подходят для сфокусированной
-обратной связи по постоянному хранению, а тесты по принципу черного ящика лучше доказывают полный путь запроса.
+Интеграционные тесты обычно вызывают компоненты напрямую. Тесты по принципу черного ящика вызывают открытый API запущенного приложения. Поэтому интеграционные тесты лучше подходят для сфокусированной
+обратной связи по хранилищу, а тесты черного ящика — для доказательства полного пути запроса.
 
-Используйте интеграционные тесты, когда вопрос звучит так: "работает ли эта логика приложения с настоящей инфраструктурой?" Используйте тесты по принципу черного ящика, когда вопрос звучит так: "ведет ли себя
-развернутое приложение корректно с точки зрения клиента?"
+Используйте интеграционные тесты, когда вопрос звучит как «работает ли эта логика приложения с настоящей инфраструктурой?». Используйте тесты черного ящика, когда вопрос звучит как «правильно ли ведет
+себя развернутое приложение с точки зрения клиента?».
 
 Практический ход такой:
 
-1. добавить зависимости Kora test и Testcontainers
-2. запустить PostgreSQL через Testcontainers
+1. добавить тестовые зависимости Kora и Testcontainers
+2. поднять PostgreSQL через Testcontainers
 3. передать настройки подключения контейнера в граф Kora
 4. выполнить миграции на тестовой базе данных
 5. вызвать службы и репозитории, управляемые графом
-6. проверить поведение постоянного хранения на настоящем состоянии базы данных
+6. проверить поведение хранилища на настоящем состоянии базы данных
 
 ## Зависимости { #dependencies }
 
-В этом руководстве тесты живут в отдельном Gradle-модуле, а не внутри модуля самого приложения. Поэтому список зависимостей выглядит длиннее, чем в обычном `src/test` рядом с production-кодом:
-тестовый модуль должен явно подключить и приложение, и те Kora-модули, которые нужны для сборки тестового графа, чтения конфигурации, JDBC, Flyway, JSON, HTTP-модулей и логирования.
+В этом руководстве тесты живут в отдельном модуле Gradle, а не внутри модуля приложения. Именно поэтому список зависимостей длиннее, чем для обычного `src/test` рядом с промышленным кодом: тестовый
+модуль должен явно зависеть от приложения и от модулей Kora, нужных для построения тестового графа, чтения конфигурации, работы с JDBC, запуска Flyway, работы с JSON, подключения HTTP-модулей и
+инициализации журналирования.
 
-Эти зависимости не "протекают" транзитивно из сервиса как полноценная тестовая среда. Сервисный модуль отдает свой API и скомпилированный код, но отдельный тестовый модуль сам описывает, из каких
-частей собрать тестовую среду выполнения. Если бы интеграционные тесты лежали прямо в модуле приложения, большая часть этих зависимостей уже была бы доступна из основного `build.gradle`, и отдельно
-повторять их в таком объеме не пришлось бы.
+Эти зависимости не приезжают транзитивно от службы как готовая тестовая среда выполнения. Модуль службы отдает свой API и скомпилированный код, но отдельный тестовый модуль все равно сам объявляет,
+какие части должны присутствовать в тестовой среде выполнения. Если бы эти интеграционные тесты лежали прямо внутри модуля приложения, большая часть зависимостей уже была бы доступна из основного
+`build.gradle`, и повторять их в таком объеме не пришлось бы.
+
+Две координаты требуют внимания. В Testcontainers `2.0` модули переименованы: расширение JUnit 5 теперь называется `org.testcontainers:testcontainers-junit-jupiter`, а модуль PostgreSQL —
+`org.testcontainers:testcontainers-postgresql`, и обе несут версию Testcontainers, а не JUnit. А `org.flywaydb:flyway-core` `13` больше не включает диалекты СУБД, поэтому артефакт диалекта PostgreSQL
+нужно добавить той же версии — иначе миграции падают на старте с ошибкой `Unsupported Database: PostgreSQL`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -110,22 +121,25 @@ Kora предоставляет граф приложения; [Testcontainers](
 
     ```groovy title="build.gradle"
     dependencies {
-        testImplementation platform("org.junit:junit-bom:5.14.3")
+        testAnnotationProcessor "io.koraframework:annotation-processors" //(1)!
 
-        testRuntimeOnly "org.postgresql:postgresql:42.7.7"
+        testImplementation platform("org.junit:junit-bom:6.1.3")
+
+        testRuntimeOnly "org.postgresql:postgresql:42.7.13" //(2)!
 
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation project(":guide-database-jdbc-app")
-        testImplementation "ru.tinkoff.kora:config-hocon"
-        testImplementation "ru.tinkoff.kora:database-flyway"
-        testImplementation "ru.tinkoff.kora:database-jdbc"
-        testImplementation "ru.tinkoff.kora:http-client-common"
-        testImplementation "ru.tinkoff.kora:http-server-undertow"
-        testImplementation "ru.tinkoff.kora:json-module"
-        testImplementation "ru.tinkoff.kora:logging-logback"
-        testImplementation "ru.tinkoff.kora:test-junit5"
-        testImplementation "org.testcontainers:junit-jupiter:1.21.4"
-        testImplementation "org.testcontainers:postgresql:1.21.4"
+        testImplementation project(":guide-database-jdbc-app") //(3)!
+        testImplementation "io.koraframework:config-hocon"
+        testImplementation "io.koraframework:database-flyway"
+        testImplementation "org.flywaydb:flyway-database-postgresql:13.3.0" //(4)!
+        testImplementation "io.koraframework:database-jdbc"
+        testImplementation "io.koraframework:http-client-common"
+        testImplementation "io.koraframework:http-server-undertow"
+        testImplementation "io.koraframework:json-common"
+        testImplementation "io.koraframework:logging-logback"
+        testImplementation "io.koraframework:test-junit5"
+        testImplementation "org.testcontainers:testcontainers-junit-jupiter:2.0.5" //(5)!
+        testImplementation "org.testcontainers:testcontainers-postgresql:2.0.5"
     }
 
     test {
@@ -142,34 +156,47 @@ Kora предоставляет граф приложения; [Testcontainers](
     }
     ```
 
+    1.  Здесь это обязательно, в отличие от руководства по компонентным тестам: тестовые исходники объявляют собственный `@KoraApp` и собственный `@Repository`, поэтому обработчик аннотаций Kora должен отработать по тестовому набору исходников.
+    2.  JDBC-драйвер PostgreSQL, нужен только во время выполнения.
+    3.  Модуль приложения, граф которого расширяет тест.
+    4.  Артефакт диалекта Flyway той же версии, что и `flyway-core` из BOM Kora.
+    5.  Имена модулей Testcontainers `2.0`. Старые координаты `org.testcontainers:junit-jupiter` и `org.testcontainers:postgresql` остановились на `1.21.x`.
+
 === ":simple-kotlin: `Kotlin`"
 
     Добавьте следующие тестовые зависимости в `build.gradle.kts`:
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:5.14.3"))
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
 
-        testRuntimeOnly("org.postgresql:postgresql:42.7.7")
+        testImplementation(platform("org.junit:junit-bom:6.1.3"))
+
+        testRuntimeOnly("org.postgresql:postgresql:42.7.13") //(2)!
 
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation(project(":guide-database-jdbc-app"))
-        testImplementation("ru.tinkoff.kora:config-hocon")
-        testImplementation("ru.tinkoff.kora:database-flyway")
-        testImplementation("ru.tinkoff.kora:database-jdbc")
-        testImplementation("ru.tinkoff.kora:http-client-common")
-        testImplementation("ru.tinkoff.kora:http-server-undertow")
-        testImplementation("ru.tinkoff.kora:json-module")
-        testImplementation("ru.tinkoff.kora:logging-logback")
-        testImplementation("ru.tinkoff.kora:test-junit5")
-        testImplementation("org.testcontainers:junit-jupiter:1.21.4")
-        testImplementation("org.testcontainers:postgresql:1.21.4")
+        testImplementation(project(":guide-database-jdbc-app")) //(3)!
+        testImplementation("io.koraframework:config-hocon")
+        testImplementation("io.koraframework:database-flyway")
+        testImplementation("org.flywaydb:flyway-database-postgresql:13.3.0") //(4)!
+        testImplementation("io.koraframework:database-jdbc")
+        testImplementation("io.koraframework:http-client-common")
+        testImplementation("io.koraframework:http-server-undertow")
+        testImplementation("io.koraframework:json-common")
+        testImplementation("io.koraframework:logging-logback")
+        testImplementation("io.koraframework:test-junit5")
+        testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5") //(5)!
+        testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
+    }
+
+    kotlin {
+        sourceSets.test { kotlin.srcDir("build/generated/ksp/test/kotlin") } //(6)!
     }
 
     tasks.test {
         useJUnitPlatform()
         filter {
-            excludeTestsMatching('*$*')
+            excludeTestsMatching("*${'$'}*")
             excludeTestsMatching("*TestApplication")
         }
         testLogging {
@@ -180,9 +207,17 @@ Kora предоставляет граф приложения; [Testcontainers](
     }
     ```
 
-!!! note "Включите генерацию подмодуля в JDBC-приложении"
+    1.  Здесь это обязательно, в отличие от руководства по компонентным тестам: тестовые исходники объявляют собственный `@KoraApp` и собственный `@Repository`, поэтому KSP должен отработать по тестовому набору исходников. Конфигурация `ksp` покрывает только основной набор.
+    2.  JDBC-драйвер PostgreSQL, нужен только во время выполнения.
+    3.  Модуль приложения, граф которого расширяет тест.
+    4.  Артефакт диалекта Flyway той же версии, что и `flyway-core` из BOM Kora.
+    5.  Имена модулей Testcontainers `2.0`. Старые координаты `org.testcontainers:junit-jupiter` и `org.testcontainers:postgresql` остановились на `1.21.x`.
+    6.  Каталог, куда KSP пишет сгенерированный тестовый граф. Без этой строки компилятор и среда разработки не увидят `TestApplicationGraph`.
 
-    Добавьте генерацию подмодуля в **настоящий граф приложения** (`guide-database-jdbc-app`), а не в компиляцию тестов.
+!!! note "Включите генерацию подмодуля в приложении JDBC"
+
+    Генерация подмодуля добавляется в **настоящий граф приложения** (`guide-database-jdbc-app`), а не в компиляцию тестов. Она делает `@KoraApp` приложения пригодным для переиспользования как модуль —
+    именно это и нужно тестовому `@KoraApp`, который его расширяет.
 
     ===! ":fontawesome-brands-java: `Java`"
 
@@ -190,15 +225,15 @@ Kora предоставляет граф приложения; [Testcontainers](
 
         ```groovy title="guide-database-jdbc-app/build.gradle"
         tasks.named("compileJava", JavaCompile) {
-            options.compilerArgs += ['-Akora.app.submodule.enabled=true']
+            options.compilerArgs += ["-Akora.app.submodule.enabled=true"]
         }
         ```
 
     === ":simple-kotlin: `Kotlin`"
 
-        Добавьте в `guide-kotlin-database-jdbc-app/build.gradle.kts`:
+        Добавьте в `guide-database-jdbc-app/build.gradle.kts`:
 
-        ```kotlin title="guide-kotlin-database-jdbc-app/build.gradle.kts"
+        ```kotlin title="guide-database-jdbc-app/build.gradle.kts"
         ksp {
             arg("kora.app.submodule.enabled", "true")
         }
@@ -206,26 +241,30 @@ Kora предоставляет граф приложения; [Testcontainers](
 
 ## Тестовый граф { #test-graph }
 
-Перед написанием интеграционных тестовых методов создайте отдельный `TestApplication`.
-Он расширяет промышленный `Application`, но добавляет **тестовый репозиторий** с `deleteAll()` для очистки.
-Так промышленный `UserRepository` остается сфокусированным на поведении приложения, а тестовые утилиты переносятся в область тестов.
+Прежде чем писать методы интеграционных тестов, создайте отдельный `TestApplication`.
+Он расширяет промышленный `Application`, но добавляет **репозиторий только для тестов** с методом `deleteAll()` для очистки данных.
+Так промышленный `UserRepository` остается сосредоточенным на поведении приложения, а тестовые вспомогательные средства уезжают в тестовую область.
+
+Сам `TestApplication` помечен аннотацией `@KoraApp`, поэтому обработчик Kora генерирует для тестового набора исходников второй граф. Все, что объявляет промышленное приложение, наследуется; тест
+добавляет только то, что нужно ему. Метод с `@Root` существует, чтобы `TestUserRepository` вообще был создан, хотя от него не зависит ни один другой компонент — без корня Kora выбросила бы его из графа
+как недостижимый. Маркер `@Tag(TestApplication.class)` отличает этот корень от компонентов приложения того же типа `String`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/test/java/ru/tinkoff/kora/guide/testingintegration/TestApplication.java`:
+    Создайте `src/test/java/io/koraframework/guide/testingintegration/TestApplication.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.testingintegration;
+    package io.koraframework.guide.testingintegration;
 
     import java.util.List;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
-    import ru.tinkoff.kora.guide.databasejdbc.Application;
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
+    import io.koraframework.database.jdbc.JdbcRepository;
+    import io.koraframework.guide.databasejdbc.Application;
+    import io.koraframework.guide.databasejdbc.repository.UserDAO;
 
     @KoraApp
     public interface TestApplication extends Application {
@@ -250,19 +289,19 @@ Kora предоставляет граф приложения; [Testcontainers](
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/test/kotlin/ru/tinkoff/kora/guide/testingintegration/TestApplication.kt`:
+    Создайте `src/test/kotlin/io/koraframework/guide/testingintegration/TestApplication.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingintegration
+    package io.koraframework.guide.testingintegration
 
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
-    import ru.tinkoff.kora.guide.databasejdbc.Application
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+    import io.koraframework.database.jdbc.JdbcRepository
+    import io.koraframework.guide.databasejdbc.Application
+    import io.koraframework.guide.databasejdbc.repository.UserDAO
 
     @KoraApp
     interface TestApplication : Application {
@@ -283,35 +322,34 @@ Kora предоставляет граф приложения; [Testcontainers](
     }
     ```
 
-Теперь создайте основу интеграционного теста с:
+Теперь создайте основу интеграционного теста:
 
-- `@Testcontainers` для управления жизненным циклом контейнера
-- `PostgreSQLContainer` как настоящей базой данных для интеграционных проверок
-- явным тайм-аутом запуска и потребителем журналов контейнера для упрощения отладки
-- `@KoraAppTest(TestApplication...)` для запуска тестового графа
-- переопределением конфигурации времени выполнения через JDBC-значения контейнера
+- `@Testcontainers` управляет жизненным циклом контейнеров
+- `PostgreSQLContainer` служит настоящей базой данных для интеграционных проверок
+- явный таймаут запуска и потребитель журналов контейнера упрощают отладку
+- `@KoraAppTest(TestApplication...)` поднимает тестовый граф
+- переопределение конфигурации во время выполнения подставляет JDBC-значения контейнера
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/test/java/ru/tinkoff/kora/guide/testingintegration/UserServiceIntegrationPostgresTest.java`:
+    Создайте `src/test/java/io/koraframework/guide/testingintegration/UserServiceIntegrationPostgresTest.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.testingintegration;
+    package io.koraframework.guide.testingintegration;
 
     import java.time.Duration;
-    import org.jetbrains.annotations.NotNull;
     import org.junit.jupiter.api.BeforeEach;
     import org.slf4j.LoggerFactory;
     import org.testcontainers.containers.PostgreSQLContainer;
     import org.testcontainers.containers.output.Slf4jLogConsumer;
     import org.testcontainers.junit.jupiter.Container;
     import org.testcontainers.junit.jupiter.Testcontainers;
-    import ru.tinkoff.kora.guide.databasejdbc.service.UserService;
-    import ru.tinkoff.kora.guide.testingintegration.TestApplication.TestUserRepository;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest;
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier;
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification;
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent;
+    import io.koraframework.guide.databasejdbc.service.UserService;
+    import io.koraframework.guide.testingintegration.TestApplication.TestUserRepository;
+    import io.koraframework.test.extension.junit5.KoraAppTest;
+    import io.koraframework.test.extension.junit5.KoraAppTestConfigModifier;
+    import io.koraframework.test.extension.junit5.KoraConfigModification;
+    import io.koraframework.test.extension.junit5.TestComponent;
 
     @Testcontainers
     @KoraAppTest(TestApplication.class)
@@ -329,11 +367,10 @@ Kora предоставляет граф приложения; [Testcontainers](
         @TestComponent
         private TestUserRepository testUserRepository;
 
-        @NotNull
         @Override
         public KoraConfigModification config() {
             return KoraConfigModification.ofString("""
-                    db {
+                    jdbc {
                       jdbcUrl = ${POSTGRES_JDBC_URL}
                       username = ${POSTGRES_USER}
                       password = ${POSTGRES_PASS}
@@ -357,24 +394,24 @@ Kora предоставляет граф приложения; [Testcontainers](
 
 === ":simple-kotlin: `Kotlin`"
 
-    Создайте `src/test/kotlin/ru/tinkoff/kora/guide/testingintegration/UserServiceIntegrationPostgresTest.kt`:
+    Создайте `src/test/kotlin/io/koraframework/guide/testingintegration/UserServiceIntegrationPostgresTest.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.testingintegration
+    package io.koraframework.guide.testingintegration
 
-    import java.time.Duration
     import org.junit.jupiter.api.BeforeEach
     import org.slf4j.LoggerFactory
     import org.testcontainers.containers.PostgreSQLContainer
     import org.testcontainers.containers.output.Slf4jLogConsumer
     import org.testcontainers.junit.jupiter.Container
     import org.testcontainers.junit.jupiter.Testcontainers
-    import ru.tinkoff.kora.guide.databasejdbc.service.UserService
-    import ru.tinkoff.kora.guide.testingintegration.TestApplication.TestUserRepository
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTest
-    import ru.tinkoff.kora.test.extension.junit5.KoraAppTestConfigModifier
-    import ru.tinkoff.kora.test.extension.junit5.KoraConfigModification
-    import ru.tinkoff.kora.test.extension.junit5.TestComponent
+    import io.koraframework.guide.databasejdbc.service.UserService
+    import io.koraframework.guide.testingintegration.TestApplication.TestUserRepository
+    import io.koraframework.test.extension.junit5.KoraAppTest
+    import io.koraframework.test.extension.junit5.KoraAppTestConfigModifier
+    import io.koraframework.test.extension.junit5.KoraConfigModification
+    import io.koraframework.test.extension.junit5.TestComponent
+    import java.time.Duration
 
     @Testcontainers
     @KoraAppTest(TestApplication::class)
@@ -397,10 +434,10 @@ Kora предоставляет граф приложения; [Testcontainers](
         override fun config(): KoraConfigModification {
             return KoraConfigModification.ofString(
                 """
-                db {
-                  jdbcUrl = \${POSTGRES_JDBC_URL}
-                  username = \${POSTGRES_USER}
-                  password = \${POSTGRES_PASS}
+                jdbc {
+                  jdbcUrl = ${'$'}{POSTGRES_JDBC_URL}
+                  username = ${'$'}{POSTGRES_USER}
+                  password = ${'$'}{POSTGRES_PASS}
                   poolName = "kora-test"
                 }
                 flyway {
@@ -420,22 +457,27 @@ Kora предоставляет граф приложения; [Testcontainers](
     }
     ```
 
-`config()` в этом тесте подменяет не код приложения, а конфигурацию, с которой `@KoraAppTest` собирает тестовый граф. Сначала `KoraConfigModification.ofString(...)` добавляет небольшой HOCON-фрагмент:
-в нем описаны настройки `db` и `flyway`, которые нужны JDBC-пулу и миграциям. Значения подключения не зашиты строками прямо в конфиг, а вынесены в `${POSTGRES_JDBC_URL}`, `${POSTGRES_USER}` и
-`${POSTGRES_PASS}`.
+Метод `config()` в этом тесте подменяет конфигурацию, а не код приложения. `KoraConfigModification.ofString(...)` добавляет небольшой фрагмент HOCON с настройками `jdbc` и `flyway`, которые нужны пулу
+JDBC и миграциям. Значения подключения не зашиты в строку конфигурации: они записаны как подстановки `${POSTGRES_JDBC_URL}`, `${POSTGRES_USER}` и `${POSTGRES_PASS}`.
 
-Затем `withSystemProperty(...)` подставляет реальные значения из запущенного `PostgreSQLContainer`. Testcontainers каждый раз может выдать другой порт, имя пользователя или пароль, поэтому тест не
-должен полагаться на заранее известный `localhost:5432`. Когда Kora читает конфигурацию, placeholders уже разрешаются через системные свойства, и граф получает обычный `JdbcDatabase`, но подключенный
-к одноразовой базе данных конкретного тестового запуска.
+Имя секции здесь принципиально: в Kora 2.0 пул JDBC настраивается в секции `jdbc`, потому что именно этот путь использует `JdbcDatabaseModule` при создании фабрики. В raw-строке Kotlin символ `$`
+начинает шаблонное выражение, поэтому подстановку HOCON нужно писать как `${'$'}{POSTGRES_JDBC_URL}`, чтобы плейсхолдер дошел до текста конфигурации.
 
-Это полезно сразу в нескольких местах: рабочая конфигурация приложения не меняется ради тестов, тесты не зависят от локальной базы разработчика, а один и тот же код приложения проверяется с настоящим
-PostgreSQL и настоящими миграциями. При этом вы по-прежнему можете точечно менять только нужные настройки, не переписывая весь конфигурационный файл.
+Дальше `withSystemProperty(...)` подставляет настоящие значения из запущенного `PostgreSQLContainer`. Testcontainers может выдать другой порт, пользователя или пароль на каждый запуск, поэтому тест не
+должен рассчитывать на фиксированный `localhost:5432`. Когда Kora читает конфигурацию, эти подстановки разрешаются через системные свойства, и граф получает обычный `JdbcDatabase`, подключенный к
+одноразовой базе данных именно этого запуска.
+
+Пользы здесь сразу несколько: промышленная конфигурация не меняется ради тестов, тесты не зависят от локальной базы данных разработчика, а один и тот же код приложения проверяется на настоящем
+PostgreSQL и настоящих миграциях. При этом переопределяются только те настройки, которые действительно важны, без переписывания всего файла конфигурации.
 
 ## Написание тестов { #tests }
 
 Теперь добавьте настоящие интеграционные тестовые методы в тот же класс `UserServiceIntegrationPostgresTest`.
-Контейнер намеренно настроен с явным тайм-аутом запуска и подключенными журналами, чтобы проблемы запуска было легче диагностировать.
+Контейнер намеренно настроен с явным таймаутом запуска и подключенными журналами, чтобы проблемы старта было легко диагностировать.
 Эти методы проверяют поведение службы и сохраненное состояние на настоящем PostgreSQL.
+
+Каждый метод использует обе точки контроля, которые есть у теста: `userService` выполняет настоящую логику приложения, а `testUserRepository` читает получившиеся строки прямо из базы данных. Именно
+проверка обеих сторон отличает интеграционный тест от компонентного — вторая половина доказывает, что данные действительно дошли до PostgreSQL и пережили отображение.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -447,7 +489,7 @@ PostgreSQL и настоящими миграциями. При этом вы п
 
     import java.util.List;
     import org.junit.jupiter.api.Test;
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest;
+    import io.koraframework.guide.databasejdbc.dto.UserRequest;
     ```
 
     Добавьте тестовые методы:
@@ -505,7 +547,7 @@ PostgreSQL и настоящими миграциями. При этом вы п
     import org.junit.jupiter.api.Assertions.assertEquals
     import org.junit.jupiter.api.Assertions.assertTrue
     import org.junit.jupiter.api.Test
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest
+    import io.koraframework.guide.databasejdbc.dto.UserRequest
     ```
 
     Добавьте тестовые методы:
@@ -515,8 +557,8 @@ PostgreSQL и настоящими миграциями. При этом вы п
     fun createUserShouldPersistUserInDatabase() {
         val result = userService.createUser(UserRequest("John", "john@example.com"))
 
-        assertEquals("John", result.name())
-        assertTrue(result.id().toLong() > 0)
+        assertEquals("John", result.name)
+        assertTrue(result.id.toLong() > 0)
         assertEquals(1, testUserRepository.findAll().size)
     }
 
@@ -532,24 +574,24 @@ PostgreSQL и настоящими миграциями. При этом вы п
         val result = userService.getUsers(1, 2, "name")
 
         assertEquals(2, result.size)
-        assertEquals("Charlie", result[0].name())
-        assertEquals("David", result[1].name())
+        assertEquals("Charlie", result[0].name)
+        assertEquals("David", result[1].name)
     }
 
     @Test
     fun updateUserShouldUpdateUserInDatabase() {
         val created = userService.createUser(UserRequest("John", "john@example.com"))
 
-        val updated = userService.updateUser(created.id(), UserRequest("John Updated", "john.updated@example.com"))
+        val updated = userService.updateUser(created.id, UserRequest("John Updated", "john.updated@example.com"))
 
-        assertEquals("John Updated", updated.name())
+        assertEquals("John Updated", updated.name)
     }
 
     @Test
     fun deleteUserShouldRemoveUserFromDatabase() {
         val created = userService.createUser(UserRequest("John", "john@example.com"))
 
-        userService.deleteUser(created.id())
+        userService.deleteUser(created.id)
 
         assertEquals(0, testUserRepository.findAll().size)
     }
@@ -560,128 +602,136 @@ PostgreSQL и настоящими миграциями. При этом вы п
 Запустите интеграционные тесты через Gradle:
 
 ```bash
-# Запустить все тесты
+# Run all tests
 ./gradlew test
 
-# Запустить с подробными журналами
+# Run with detailed logs
 ./gradlew test --info
 ```
 
-!!! tip "Примечания к выполнению"
+!!! tip "Замечания по запуску"
 
     - Docker должен быть запущен до старта тестов.
     - Первый запуск обычно медленнее из-за загрузки образов.
-    - Оставьте журналирование тестов включенным, чтобы упростить диагностику запуска и миграций.
+    - Оставляйте журналирование тестов включенным: так проще диагностировать старт и миграции.
 
 ## Тестовое покрытие { #coverage }
 
-Используйте стандартные отчеты Gradle для диагностики интеграционных тестов:
+Для диагностики интеграционных тестов используйте стандартные отчеты Gradle:
 
 ```bash
-# Выполнить тесты и сформировать отчеты
+# Execute tests and generate reports
 ./gradlew test
 
-# Сформировать отчет покрытия JaCoCo
+# Generate JaCoCo coverage report
 ./gradlew jacocoTestReport
 ```
 
-Интеграционные сбои обычно проще всего отлаживать через:
+Сбои интеграционных тестов обычно проще всего разбирать по:
 
 - `build/reports/tests/test/index.html`
-- журналы запуска контейнера в выводе Gradle
-- SQL/журналы миграций от компонентов Flyway и JDBC
+- журналам запуска контейнеров в выводе Gradle
+- журналам SQL и миграций от компонентов Flyway и JDBC
 
 !!! tip "Миграции Flyway в тестах"
 
-    Миграции Flyway можно запускать напрямую в жизненном цикле тестов, а не полагаться на запуск Flyway внутри приложения.
-    Такой подход полезен, когда нужен более строгий контроль настройки схемы на набор тестов или на тестовый класс.
-    В этом руководстве для простоты мы оставляем миграцию Flyway в запуске приложения, но оба подхода допустимы.
+    Миграции Flyway можно выполнять прямо в жизненном цикле тестов, а не полагаться на их запуск внутри приложения.
+    Такой подход полезен, когда нужен более строгий контроль над подготовкой схемы для набора тестов или для отдельного класса.
+    В этом руководстве миграции остаются на старте приложения ради простоты, но оба подхода допустимы.
 
 ## Лучшие практики { #best-practices }
 
 **Проектирование интеграционных тестов:**
 
-- Держите тестовые сценарии сфокусированными на бизнес-поведении (создание, чтение, обновление, удаление, постраничная выдача)
+- Держите сценарии тестов ориентированными на бизнес-поведение (создание, чтение, обновление, удаление, пагинация)
 - Проверяйте и ответ службы, и состояние базы данных
-- Используйте детерминированные поля сортировки для проверок постраничной выдачи
-- Избегайте скрытого связывания между тестами
+- Используйте детерминированные поля сортировки для проверок пагинации
+- Избегайте скрытых связей между тестами
 
 **Изоляция данных:**
 
 - Очищайте тестовые данные в `@BeforeEach`
-- Используйте уникальные тестовые записи там, где возможны пересечения
-- Не опирайтесь на идентификаторы из предыдущих тестовых методов
-- Держите каждый тест независимо исполняемым
+- Используйте уникальные тестовые записи там, где возможны конфликты
+- Не полагайтесь на идентификаторы из предыдущих тестовых методов
+- Держите каждый тест независимо запускаемым
 
 **Стабильность инфраструктуры:**
 
-- Используйте явные тайм-ауты запуска для контейнеров
-- Всегда внедряйте JDBC URL/пользователя/пароль из getter-методов контейнера
-- Держите расположения Flyway явными в тестовой конфигурации
-- Предпочитайте значения контейнера по умолчанию жестко заданным учетным данным БД
+- Задавайте явные таймауты запуска контейнеров
+- Всегда берите JDBC URL, пользователя и пароль из геттеров контейнера
+- Указывайте расположение миграций Flyway явно в тестовой конфигурации
+- Предпочитайте значения по умолчанию контейнера жестко заданным учетным данным
 
 ## Итоги { #summary }
 
-Интеграционное тестирование дает высокую уверенность, что ваше JDBC-приложение Kora корректно работает с настоящим PostgreSQL и настоящими миграциями. Оно проверяет слой постоянного хранения,
-связывание DI и поведение службы в реалистичных условиях, оставаясь быстрее и уже, чем полноценное тестирование API черного ящика.
+Интеграционное тестирование дает высокую уверенность в том, что приложение Kora на JDBC работает корректно с настоящим PostgreSQL и настоящими миграциями. Оно проверяет слой хранения, связывание
+зависимостей и поведение служб в реалистичных условиях, оставаясь быстрее и уже, чем полноценное тестирование API по принципу черного ящика.
 
 В этом руководстве вы настроили:
 
-- настройку PostgreSQL на основе Testcontainers
-- переопределения конфигурации Kora для значений контейнера времени выполнения
-- настоящую интеграционную проверку `UserService` с тестовыми вспомогательными методами репозитория
+- поднятие PostgreSQL через Testcontainers
+- переопределения конфигурации Kora значениями контейнера во время выполнения
+- проверку интеграции настоящего `UserService` с вспомогательным репозиторием только для тестов
 - повторяемую очистку и детерминированное выполнение тестов
 
 ## Ключевые понятия { #key-concepts }
 
 **Область интеграционного тестирования:**
 
-- настоящая инфраструктура, настоящий SQL, настоящие миграции
-- фокус на поведении службы + репозитория + БД
-- высокая уверенность для потоков постоянного хранения
+- Настоящая инфраструктура, настоящий SQL, настоящие миграции
+- Фокус на поведении связки служба + репозиторий + база данных
+- Высокая уверенность в сценариях сохранения данных
 
 **Тестовая инфраструктура Kora:**
 
-- `@KoraAppTest` для запуска настоящего графа приложения
-- `@TestComponent` для внедрения проверяемых компонентов
-- `KoraAppTestConfigModifier` для переопределений конфигурации времени выполнения
+- `@KoraAppTest` поднимает настоящий граф приложения
+- `@TestComponent` внедряет тестируемые компоненты
+- `KoraAppTestConfigModifier` переопределяет конфигурацию во время выполнения
+- Тестовый `@KoraApp` с `@Root` для компонентов, от которых не зависит код приложения
 
-**Конфигурация от контейнеров:**
+**Конфигурация от контейнера:**
 
-- получайте сведения подключения из `PostgreSQLContainer`
-- передавайте значения через `withSystemProperty(...)`
-- сохраняйте конфигурацию переносимой между окружениями
+- Берите параметры подключения из `PostgreSQLContainer`
+- Передавайте значения через `withSystemProperty(...)`
+- Держите конфигурацию переносимой между окружениями
 
 ## Устранение неполадок { #troubleshooting }
 
 **Контейнер не запускается:**
 
 - Убедитесь, что демон Docker запущен
-- Проверьте конфликты портов/ресурсов в журналах контейнера
-- Увеличьте тайм-аут запуска, если окружение медленное
+- Проверьте конфликты портов и ресурсов в журналах контейнера
+- Увеличьте таймаут запуска, если окружение медленное
 
 **Ошибки миграций:**
 
-- Проверьте, что миграции находятся в `src/main/resources/db/migration`
-- Убедитесь, что `flyway.locations = "db/migration"` присутствует в тестовой конфигурации
-- Проверьте вывод Flyway в журналах Gradle
+- Проверьте, что миграции лежат в `src/main/resources/db/migration`
+- Убедитесь, что в тестовой конфигурации есть `flyway.locations = "db/migration"`
+- Добавьте `org.flywaydb:flyway-database-postgresql` той же версии, что и `flyway-core`, иначе старт падает с ошибкой `Unsupported Database: PostgreSQL`
+- Посмотрите вывод Flyway в журналах Gradle
 
-**Проблемы подключения к базе данных:**
+**Проблемы с подключением к базе данных:**
 
-- Используйте JDBC URL/учетные данные только из getter-методов контейнера
-- Избегайте жестко заданных localhost-учетных данных в тестовой конфигурации
-- Убедитесь, что драйвер PostgreSQL доступен во время выполнения тестов
-- Добавьте явные тестовые зависимости `database-jdbc` и `database-flyway`, когда TestApplication расширяет граф приложения из другого модуля
+- Берите JDBC URL и учетные данные только из геттеров контейнера
+- Настраивайте пул в секции `jdbc`; фрагмент, записанный в любую другую секцию, просто игнорируется, и граф падает на отсутствующем `jdbcUrl`
+- Не задавайте в тестовой конфигурации жестко прописанные учетные данные для localhost
+- Убедитесь, что JDBC-драйвер PostgreSQL доступен в тестовой среде выполнения
+- Явно добавляйте тестовые зависимости database-jdbc и database-flyway, если TestApplication расширяет граф приложения из другого модуля
+
+**Подстановки не разрешаются:**
+
+- Каждой подстановке `${NAME}` во фрагменте нужен свой `withSystemProperty("NAME", ...)`
+- В Kotlin пишите плейсхолдер как `${'$'}{NAME}`; обычный `${NAME}` — это шаблонное выражение Kotlin, а `\${NAME}` в raw-строке не является escape-последовательностью
 
 **Нестабильные или зависающие тесты:**
 
-- Оставьте `testLogging` с `showStandardStreams(true)`
-- Используйте тестовый запускатель среда разработки для сфокусированной отладки, когда это нужно
-- Проверьте логику очистки и предположения об изоляции тестов
+- Оставляйте `testLogging` с `showStandardStreams(true)`
+- При точечной отладке пользуйтесь тест-раннером среды разработки
+- Проверяйте логику очистки и предположения об изоляции тестов
 
 **Предупреждение `Expected @KoraApp as SubModule`:**
 
-Если ваш тестовый модуль расширяет `Application` из другого модуля и вы видите предупреждения вроде:
+Если тестовый модуль расширяет `Application` из другого модуля и вы видите предупреждения вида:
 
 - `Expected @KoraApp as SubModule, but Submodule implementation not found`
 
@@ -699,17 +749,17 @@ PostgreSQL и настоящими миграциями. При этом вы п
 
 === ":simple-kotlin: `Kotlin`"
 
-    Добавьте в `guide-kotlin-database-jdbc-app/build.gradle.kts`:
+    Добавьте в `guide-database-jdbc-app/build.gradle.kts`:
 
-    ```kotlin title="guide-kotlin-database-jdbc-app/build.gradle.kts"
+    ```kotlin title="guide-database-jdbc-app/build.gradle.kts"
     ksp {
         arg("kora.app.submodule.enabled", "true")
     }
     ```
 
-**JUnit обнаруживает сгенерированный `$TestApplicationImpl`:**
+**JUnit находит сгенерированный `$TestApplicationImpl`:**
 
-Если обнаружение тестов падает до выполнения (например, с `NoClassDefFoundError` из сгенерированных классов), исключите сгенерированные классы через фильтр тестов Gradle:
+Если обнаружение тестов падает еще до выполнения (например, с `NoClassDefFoundError` из сгенерированных классов), исключите сгенерированные классы фильтром тестов Gradle:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -739,21 +789,21 @@ PostgreSQL и настоящими миграциями. При этом вы п
 
 **AccessDeniedException в кеше Gradle:**
 
-В Windows это может происходить, когда кешированные JAR-файлы временно заблокированы другим процессом.
+В Windows такое случается, когда закешированные JAR временно заблокированы другим процессом.
 
 Попробуйте по порядку:
 
 1. Остановить демоны: `./gradlew --stop`
-2. Повторить сборку: `./gradlew test`
-3. Если блокировка остается, запустите с изолированным кешем на время сеанса:
+2. Перезапустить сборку: `./gradlew test`
+3. Если блокировка не уходит, запустить сессию с изолированным кешем:
    `GRADLE_USER_HOME=.gradle-user-home ./gradlew test`
 
 ## Что дальше? { #whats-next }
 
-- [Тестирование как черный ящик](testing-black-box.md), чтобы перейти от интеграционных тестов уровня графа к тестам упакованного приложения.
-- [Наблюдаемость](observability.md), чтобы наблюдать то же приложение с базой данных через метрики, трассировки, журналы и пробы.
-- [Продвинутый JDBC](database-jdbc-advanced.md), если хотите больше сценариев с репозиториями, транзакциями, преобразователями и проекциями для тестирования.
-- [Кеширование](cache.md), когда повторным чтениям из базы данных нужен слой производительности.
+- [Тестирование как черный ящик](testing-black-box.md), чтобы перейти от интеграционных тестов на уровне графа к тестам упакованного приложения.
+- [Наблюдаемость](observability.md), чтобы следить за тем же приложением с базой данных через метрики, трассировки, журналы и пробы.
+- [Расширенный JDBC](database-jdbc-advanced.md), если нужны более сложные сценарии репозиториев, транзакций, мапперов и проекций для тестирования.
+- [Кеширование](cache.md), когда повторные чтения из базы данных требуют слоя производительности.
 
 ## Помощь { #help }
 

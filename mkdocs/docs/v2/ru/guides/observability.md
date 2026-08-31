@@ -1,16 +1,20 @@
-﻿---
+---
 search:
   exclude: true
 title: Наблюдаемость и мониторинг с Kora
-summary: Learn how to extend the HTTP Server guide with metrics, tracing, structured logging, and health probes
+summary: Assemble metrics, tracing, structured logging, and health probes into one Kora application, and find the focused guide for each signal.
+description: "The Kora observability hub: how metrics, tracing, logging and probes fit together in one application, which telemetry is on by default and which is not, the complete module graph with MetricsModule and OpentelemetryHttpExporterModule, the full httpServer.system, tracing and logging configuration, traceId correlation in log lines, the system port that serves /metrics and the probes, and links to the focused metrics, tracing and probes guides."
+agent:
+  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
 tags: observability, metrics, tracing, logging, health-checks, monitoring
 ---
 
 # Наблюдаемость и мониторинг с Kora { #observability-monitoring-kora }
 
-Это руководство знакомит с промышленно-ориентированной наблюдаемостью для приложений Kora. В нем рассматривается, как метрики, распределенная трассировка, структурированное журналирование и пробы
-здоровья подключаются к графу приложения, как модули телеметрии инструментируют распространенные пути выполнения, и как управляющие конечные точки раскрывают эксплуатационное состояние. Вы также
-увидите, как конфигурация наблюдаемости превращает локальное поведение в сигналы, которые могут потреблять системы мониторинга.
+Это центральная страница по наблюдаемости в Kora. Она показывает, как четыре сигнала — метрики, трассировки, логи и пробы — складываются в одно работающее приложение, и указывает на отдельное
+руководство, где каждый из них разбирается по шагам.
+
+Читайте эту страницу, когда нужна общая картина: полный граф модулей, полная конфигурация и правила, общие для всех четырех сигналов. Читайте отдельные руководства, когда реализуете один из них.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -22,94 +26,117 @@ tags: observability, metrics, tracing, logging, health-checks, monitoring
 
 ## Что вы создадите { #youll-build }
 
-Вы расширите приложение HTTP-сервера:
+Одно приложение, несущее все четыре сигнала:
 
-- метриками Micrometer для событий фреймворка и бизнес-событий
-- экспортом трассировок OpenTelemetry по HTTP
-- журналированием запросов, обогащенным контекстом трассировки
-- пробами живости и готовности на закрытом управляющем порту
-- тестами, сфокусированными на наблюдаемости, которые проверяют метрики, пробы и поведение трассировки
+- метрики Micrometer на `/metrics` — и фреймворка, и бизнеса
+- трассировки OpenTelemetry, экспортируемые по `OTLP/HTTP`
+- строки логов, несущие `traceId` и `spanId`
+- пробы жизнеспособности и готовности на системном порту
+- один системный порт, обслуживающий все эксплуатационные конечные точки
+- тесты, проверяющие метрики, пробы и логи с контекстом трассировки
 
-## Что понадобится { #youll-need }
+## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
-- Docker, если хотите локально запустить smoke-тест по принципу черного ящика
-- текстовый редактор или среда разработки
-- пройденное [руководство по HTTP-серверу](http-server.md)
+- JDK 25 или новее
+- Gradle 9+
+- Docker, чтобы запустить Jaeger и черноящичный тест локально
+- Текстовый редактор или IDE
+- Пройденное [Руководство по HTTP-серверу](http-server.md)
+
+Артефакты Kora 2.0 собраны под Java 25, поэтому JDK, которым компилируется приложение, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
-!!! note "Обязательная основа"
+!!! note "Необходимая основа"
 
-    Это руководство предполагает, что вы уже прошли **[руководство по HTTP-серверу](http-server.md)** и у вас уже есть HTTP-контроллеры, DTO, репозиторий, служба и конфигурация из того руководства.
+    Это руководство предполагает, что вы прошли **[Руководство по HTTP-серверу](http-server.md)** и у вас уже есть HTTP-контроллеры, DTO, репозиторий, сервис и конфигурация из него.
 
-    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что это руководство по наблюдаемости сохраняет тот же HTTP-интерфейс и накладывает поверх него телеметрию.
+    Если руководство по HTTP-серверу еще не пройдено, начните с него: это руководство по наблюдаемости сохраняет тот же HTTP-слой и надстраивает телеметрию поверх него.
 
 ## Обзор { #overview }
 
-Наблюдаемость позволяет понимать работающую службу без догадок только по симптомам. Когда API становится медленнее, начинает периодически падать или работает в одном окружении, но не работает в
-другом, вам нужны сигналы изнутри приложения, которые объясняют, что происходит.
+Наблюдаемость — это то, что позволяет понимать работающий сервис, а не гадать по симптомам. Когда API становится медленнее, падает время от времени или работает в одном окружении и не работает в
+другом, нужны сигналы изнутри приложения, объясняющие, что происходит на самом деле.
 
-Важный сдвиг в том, что наблюдаемость - это не отдельный режим отладки. Это часть договора времени выполнения промышленной службы. Служба должна раскрывать достаточно метрик, трассировок, журналов и
-проб, чтобы операторы могли понять, здорова ли она и где происходят сбои.
+Сдвиг, который стоит совершить пораньше: наблюдаемость — это не режим отладки, который включают во время инцидента. Это часть рантайм-контракта продакшен-сервиса — к моменту, когда данные понадобятся,
+они уже должны быть.
 
 ### Три основных сигнала { #three-core-signals }
 
-На практике наблюдаемость Kora строится вокруг трех взаимодополняющих сигналов:
+Наблюдаемость Kora опирается на три сигнала плюс один эксплуатационный:
 
-- метрики [Micrometer](https://docs.micrometer.io/micrometer/reference/) показывают, как система ведет себя в совокупности с течением времени
-- трассировки [OpenTelemetry](https://opentelemetry.io/docs/) показывают жизненный цикл одного запроса по цепочке вызовов
-- пробы сообщают платформе, жив ли процесс и готов ли он принимать трафик
+- **метрики** [Micrometer](https://docs.micrometer.io/micrometer/reference/) говорят, как система ведет себя в совокупности во времени
+- **трассировки** [OpenTelemetry](https://opentelemetry.io/docs/) показывают жизненный цикл одного запроса по всей цепочке вызовов
+- **логи** фиксируют, что сказал код, в привязке к породившей их трассировке
+- **пробы** сообщают платформе, жив ли процесс и готов ли он к трафику
 
-Метрики полезны, когда нужны тенденции, частоты и сигналы насыщения, а не подробности одного события. Kora использует Micrometer, поэтому приложение может публиковать в одном месте и метрики
-фреймворка, и бизнес-метрики. В типичной службе вы увидите несколько категорий метрик:
+Метрики отвечают на вопросы о трендах, частотах и насыщении. Kora использует Micrometer, поэтому метрики фреймворка и бизнес-метрики попадают в один реестр: значения JVM и процесса, задержки и
+распределение статусов HTTP-сервера, поведение базы данных и обмена сообщениями, плюс те счетчики и таймеры, которые вы регистрируете сами.
 
-- инфраструктурные метрики, например память JVM, CPU, потоки и использование на уровне процесса
-- метрики HTTP-сервера, например число запросов, задержка, активные запросы и распределение кодов статуса
-- метрики журналирования и времени выполнения, которые помогают объяснить внутреннюю активность
-- пользовательские бизнес-метрики, например сколько пользователей создано и сколько времени заняла эта операция
+Трассировки отвечают на другой вопрос. Метрика может показать, что запросы медленные; она не покажет, *какой именно* запрос был медленным и куда ушло его время. Трассировка ведет один запрос через
+приложение, привязывая к каждому шагу идентификаторы трассировки и спана, — именно это позволяет восстановить одно конкретное выполнение вместо усредненного.
 
-Эти типы метрик отвечают на разные вопросы. Счетчики помогают отслеживать итоги и частоты, таймеры помогают измерять длительность и распределения задержек, а датчики помогают наблюдать значения,
-которые со временем растут и уменьшаются. Вместе они позволяют замечать регрессии, настраивать оповещения о сбоях и понимать поведение системы до того, как пользователи начнут сообщать об инцидентах.
+Логи — самый старый сигнал, и они становятся куда полезнее с появлением трассировок, потому что каждая строка, выпущенная внутри трассируемой операции, несет идентификатор трассировки. Это ключ
+соединения между «что сказал код» и «что делал запрос».
 
-Трассировка решает другую задачу. Метрики могут показать, что запросы медленные, но не показывают, какой конкретный запрос был медленным и где было потрачено время. Распределенная трассировка следует
-за одним запросом по приложению и прикрепляет trace идентификатор и span идентификатор к выполняемой работе. Это значительно упрощает сопоставление журналов, изучение потока запроса и понимание, где возникают задержки или
-сбои, когда запрос проходит через несколько слоев или служб.
+Пробы предназначены машинам, а не людям. Жизнеспособность отвечает на вопрос «нужно ли перезапустить процесс?», готовность — «должен ли этот экземпляр получать трафик прямо сейчас?», и
+[Kubernetes](https://kubernetes.io/docs/home/) или балансировщик будут действовать по ответу, ни у кого не спрашивая.
 
-Пробы в первую очередь нужны для эксплуатации и оркестрации. Проба живости отвечает на вопрос "нужно ли перезапустить этот процесс?", а проба готовности отвечает "готов ли этот экземпляр обслуживать
-трафик прямо сейчас?" Они критически важны для развертываний в стиле [Docker](https://docs.docker.com/) и [Kubernetes](https://kubernetes.io/docs/home/), потому что позволяют балансировщикам нагрузки
-и оркестраторам не отправлять трафик на экземпляр, который еще прогревается или временно нездоров.
+### Выбор сигнала { #choosing-a-signal }
+
+Четыре сигнала пересекаются достаточно, чтобы стоило понимать, какой на какой вопрос отвечает:
+
+| Вопрос | Сигнал |
+|--------|--------|
+| Замедляется ли сервис за последний час? | метрики |
+| Сколько пользователей создано сегодня? | метрики |
+| Почему был медленным *вот этот конкретный* запрос? | трассировки |
+| На каком шаге запрос упал? | трассировки |
+| Что решил код и с какими значениями? | логи |
+| Должен ли этот экземпляр получать трафик? | пробы |
+| Нужно ли перезапустить этот процесс? | пробы |
+
+Типичная ошибка — взять не тот сигнал: положить идентификатор пользователя с высокой кардинальностью в тег метрики, где он размножит временные ряды, пока система мониторинга не ляжет, хотя его место —
+в атрибуте спана; или проверять базу данных в пробе жизнеспособности, где двухсекундная недоступность перезапустит весь парк, хотя ее место — в готовности или в
+[CircuitBreaker](../documentation/resilient.md#circuitbreaker).
 
 ### Наблюдаемость в Kora { #observability-kora }
 
-Kora подключает наблюдаемость через модули и конфигурацию. Компоненты фреймворка могут автоматически выдавать телеметрию, а прикладной код может добавлять пользовательские бизнес-сигналы там, где
-фреймворк не может знать смысл предметной области.
+Kora связывает наблюдаемость через модули и конфигурацию. Компоненты фреймворка выпускают телеметрию сами, как только их модуль подключен и включен; код приложения добавляет бизнес-сигналы, которые
+фреймворк назвать не может.
 
-Это руководство добавляет задачи наблюдаемости вокруг HTTP-приложения:
+В собранном приложении:
 
-- `MetricsModule` включает метрики фреймворка и дает доступ к `MeterRegistry`
-- `OpentelemetryHttpExporterModule` экспортирует трассировки в совместимый с OpenTelemetry коллектор
-- `CustomReadinessProbe` и `ApplicationHealthProbe` питают `/system/readiness` и `/system/liveness`
-- `MetricsService` записывает бизнес-метрики для создания пользователей
-- тесты наблюдаемости становятся источником истины для управляющих конечных точек и журналирования с учетом трассировки
+- `MetricsModule` кладет в граф `MeterRegistry` и обеспечивает конечную точку `/metrics`
+- `OpentelemetryHttpExporterModule` создает спаны, экспортирует их и предоставляет `KoraTracer`
+- `LogbackModule` отрисовывает записи логов, включая идентификаторы трассировки
+- `UndertowPublicHttpServerModule` обслуживает бизнес-API и, через наследуемый системный сервер, `/metrics` и обе пробы
+- `MetricsService`, вызовы `KoraTracer` и компоненты проб несут специфичные для приложения части
 
 ### Эксплуатационные границы { #operational-boundaries }
 
-Конечные точки наблюдаемости обычно должны находиться на закрытом управляющем порту, а не на открытом бизнес-API. Такое разделение позволяет платформам, балансировщикам нагрузки и инструментам
-мониторинга проверять здоровье службы, не раскрывая внутренние эксплуатационные детали обычным клиентам. Руководство разделяет поведение открытого API и управляющее поведение, чтобы форма времени
-выполнения соответствовала промышленным ожиданиям.
+Все эксплуатационные конечные точки живут на системном порту, а не на публичном. Бизнес-клиентам достается `8080`; Prometheus, kubelet и вашему агенту мониторинга — `8085`. Это разделение позволяет
+открыть здоровье и метрики платформе, не открывая их интернету, и в Kora оно является поведением по умолчанию, а не тем, что нужно собирать самому.
 
-Практический ход такой:
+## Отдельные руководства { #focused-guides }
 
-1. добавить модули метрик, трассировки, журналирования и проб
-2. подключить модули наблюдаемости к графу Kora
-3. добавить пользовательские пробы готовности и живости
-4. записывать бизнес-метрики в коде службы
-5. настроить управляющие конечные точки и экспорт телеметрии
-6. проверить метрики, пробы и журналирование с учетом трассировки в тестах
+У каждого сигнала есть собственное руководство с полным пошаговым разбором:
+
+[Метрики с Kora](observability-metrics.md):
+: Micrometer, `MeterRegistry`, счетчики и таймеры, границы гистограмм, кардинальность тегов и причина, по которой `/metrics` показывает только значения JVM, пока не включены метрики модулей.
+
+[Трассировка с Kora](observability-tracing.md):
+: Экспортер OTLP, идентичность сервиса, бизнес-спаны через `KoraTracer`, атрибуты спанов и ошибки, передача контекста трассировки и чтение трассировки в Jaeger.
+
+[Пробы с Kora](observability-probes.md):
+: Жизнеспособность и готовность, прогрев, агрегация нескольких проб, встроенные пробы фреймворка, контракт ответов и подключение в Kubernetes.
+
+За справочными деталями по любому из них обращайтесь к [Метрикам](../documentation/metrics.md), [Трассировке](../documentation/tracing.md), [Пробам](../documentation/probes.md) и
+[Логированию](../documentation/logging-slf4j.md).
 
 ## Зависимости { #dependencies }
+
+Собранное приложение добавляет к сборке из руководства по HTTP-серверу два артефакта. Версии приходят из платформы `io.koraframework:kora-bom`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -117,12 +144,15 @@ Kora подключает наблюдаемость через модули и 
 
     ```groovy
     dependencies {
-        // ... существующие зависимости из руководства по HTTP-серверу ...
+        // ... existing dependencies from the HTTP server guide ...
 
-        implementation("ru.tinkoff.kora:micrometer-module")
-        implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
+        implementation "io.koraframework:micrometer-module" //(1)!
+        implementation "io.koraframework:opentelemetry-tracing-exporter-http" //(2)!
     }
     ```
+
+    1.  Метрики Micrometer: `PrometheusMeterRegistry` и контракт сбора для системного сервера.
+    2.  Экспортер спанов по `OTLP/HTTP`. Он транзитивно приносит базовую обвязку трассировки.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -130,41 +160,46 @@ Kora подключает наблюдаемость через модули и 
 
     ```kotlin
     dependencies {
-        // ... существующие зависимости из руководства по HTTP-серверу ...
+        // ... existing dependencies from the HTTP server guide ...
 
-        implementation("ru.tinkoff.kora:micrometer-module")
-        implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
+        implementation("io.koraframework:micrometer-module") //(1)!
+        implementation("io.koraframework:opentelemetry-tracing-exporter-http") //(2)!
     }
     ```
 
+    1.  Метрики Micrometer: `PrometheusMeterRegistry` и контракт сбора для системного сервера.
+    2.  Экспортер спанов по `OTLP/HTTP`. Он транзитивно приносит базовую обвязку трассировки.
+
+Логирование и пробы не добавляют ничего: `LogbackModule` пришел из руководства по HTTP-серверу, а интерфейсы проб приходят транзитивно в `io.koraframework:common`.
+
 ## Модули { #modules }
 
-Добавьте модули наблюдаемости в тот же граф приложения, который вы создали в руководстве по HTTP-серверу.
+Полный граф приложения, несущего все четыре сигнала:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/observability/Application.java`:
+    Обновите `src/main/java/io/koraframework/guide/observability/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.observability;
+    package io.koraframework.guide.observability;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.micrometer.module.MetricsModule;
-    import ru.tinkoff.kora.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.micrometer.module.MetricsModule;
+    import io.koraframework.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
-            LogbackModule,
-            MetricsModule,  // <----- Подключили модуль
-            UndertowHttpServerModule,
-            OpentelemetryHttpExporterModule {  // <----- Подключили модуль
+            LogbackModule, //(1)!
+            MetricsModule, //(2)!
+            UndertowPublicHttpServerModule, //(3)!
+            OpentelemetryHttpExporterModule { //(4)!
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -172,330 +207,152 @@ Kora подключает наблюдаемость через модули и 
     }
     ```
 
+    1.  Логирование, включая поля `traceId` и `spanId` в каждой строке внутри трассируемой операции.
+    2.  Метрики: добавляет `MeterRegistry` и `MetricsScraper`, который системный сервер использует для `/metrics`.
+    3.  Публичный HTTP-сервер; наследует системный сервер, отдающий `/metrics` и обе пробы.
+    4.  Трассировка: создает спаны, экспортирует их по `OTLP/HTTP` и предоставляет `KoraTracer`.
+
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/observability/Application.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/observability/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.observability
+    package io.koraframework.guide.observability
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.micrometer.module.MetricsModule
-    import ru.tinkoff.kora.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.micrometer.module.MetricsModule
+    import io.koraframework.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
-        LogbackModule,
-        MetricsModule,  // <----- Подключили модуль
-        UndertowHttpServerModule,
-        OpentelemetryHttpExporterModule  // <----- Подключили модуль
+        LogbackModule, //(1)!
+        MetricsModule, //(2)!
+        UndertowPublicHttpServerModule, //(3)!
+        OpentelemetryHttpExporterModule //(4)!
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
+    1.  Логирование, включая поля `traceId` и `spanId` в каждой строке внутри трассируемой операции.
+    2.  Метрики: добавляет `MeterRegistry` и `MetricsScraper`, который системный сервер использует для `/metrics`.
+    3.  Публичный HTTP-сервер; наследует системный сервер, отдающий `/metrics` и обе пробы.
+    4.  Трассировка: создает спаны, экспортирует их по `OTLP/HTTP` и предоставляет `KoraTracer`.
+
+Отдельный управляющий модуль подключать не нужно. `UndertowPublicHttpServerModule` наследует `UndertowSystemHttpServerModule`, поэтому одно наследование дает два сервера: публичный на `httpServer.port`
+и системный на `httpServer.system.port`, отвечающий на `/metrics`, `/system/liveness` и `/system/readiness`.
+
 ## Конфигурация { #config }
 
-Открытый API по-прежнему работает на `8080`, но все управляющие конечные точки в этом руководстве живут на закрытом порту `8085`.
+Полная конфигурация наблюдаемости для собранного приложения:
 
-Обновите `src/main/resources/application.conf`:
+```hocon title="src/main/resources/application.conf"
+httpServer {
+  port = 8080 //(1)!
+  system {
+    port = 8085 //(2)!
+    metricsPath = "/metrics" //(3)!
+    livenessPath = "/system/liveness" //(4)!
+    readinessPath = "/system/readiness" //(5)!
+  }
+  telemetry.logging.enabled = true //(6)!
+  telemetry.metrics.enabled = true //(7)!
+}
 
-Полный справочник по конфигурации смотрите в разделах [HTTP-сервер](../documentation/http-server.md), [Трассировка](../documentation/tracing.md)
-и [Журналирование SLF4J](../documentation/logging-slf4j.md).
+tracing {
+  exporter {
+    endpoint = "http://localhost:4318/v1/traces" //(8)!
+    exportTimeout = "5s"
+    scheduleDelay = "1s" //(9)!
+    maxExportBatchSize = 512
+    maxQueueSize = 2048
+  }
+  attributes { //(10)!
+    "service.name" = "guide-observability-app"
+    "service.namespace" = "kora-guide"
+  }
+}
 
-===! ":material-code-json: `Hocon`"
+logging {
+  levels { //(11)!
+    "ROOT": "WARN"
+    "io.koraframework": "INFO"
+    "io.koraframework.guide.observability": "DEBUG"
+  }
+}
+```
 
-    ```javascript
-    httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
-      privateApiHttpMetricsPath = "/metrics" //(3)!
-      privateApiHttpLivenessPath = "/system/liveness" //(4)!
-      privateApiHttpReadinessPath = "/system/readiness" //(5)!
-      telemetry.logging.enabled = true //(6)!
-    }
+1.  Публичный HTTP-порт для эндпоинтов приложения (по умолчанию: `8080`).
+2.  Системный HTTP-порт, обслуживающий метрики и пробы (по умолчанию: `8085`).
+3.  Путь сбора Prometheus на системном сервере (по умолчанию: `/metrics`).
+4.  Путь жизнеспособности на системном сервере (по умолчанию: `/system/liveness`).
+5.  Путь готовности на системном сервере (по умолчанию: `/system/readiness`).
+6.  Включает логирование запросов публичного HTTP-сервера (по умолчанию: `false`).
+7.  Включает сбор метрик публичного HTTP-сервера (по умолчанию: `false`).
+8.  Адрес коллектора, куда экспортируются спаны (значения по умолчанию нет; без него ничего не экспортируется).
+9.  Задержка накопления партии, уменьшенная относительно `2s` по умолчанию, чтобы локальные трассировки появлялись быстро.
+10.  Идентичность сервиса, прикрепляемая к каждому экспортируемому спану (по умолчанию: `{}`).
+11.  Уровни логирования по именам логгеров.
 
-    tracing {
-      exporter {
-        endpoint = "http://localhost:4318/v1/traces" //(7)!
-      }
-    }
+### Умолчания телеметрии { #telemetry-defaults }
 
-    logging {
-      levels {
-        "ROOT" = "WARN" //(8)!
-        "ru.tinkoff.kora" = "INFO" //(9)!
-        "ru.tinkoff.kora.guide.observability" = "DEBUG" //(10)!
-      }
-    }
-    ```
+!!! warning "Трассировка включена по умолчанию. Метрики и логирование — нет."
 
-    1. Открытый HTTP-порт по умолчанию, который используется конечными точками приложения.
-    2. Закрытый HTTP-порт по умолчанию, который используется пробами, метриками и управляющими конечными точками.
-    3. Закрытый HTTP-путь по умолчанию, который открывает метрики.
-    4. Закрытый HTTP-путь по умолчанию, который используется для пробы живости.
-    5. Закрытый HTTP-путь по умолчанию, который используется для пробы готовности.
-    6. Включает возможность для этого раздела конфигурации.
-    7. Конечная точка экспортера телеметрии.
-    8. Уровень журналирования для `ROOT`.
-    9. Уровень журналирования для `ru.tinkoff.kora`.
-    10. Уровень журналирования для `ru.tinkoff.kora.guide.observability`.
+    `TelemetryConfig.TracingConfig#enabled` возвращает `true`, а `MetricsConfig#enabled` и `LoggingConfig#enabled` — оба `false`. Все модули Kora наследуют эти умолчания.
 
-=== ":simple-yaml: `YAML`"
+Эта асимметрия сбивает с толку, поэтому стоит сказать прямо. Приложение, подключившее `MetricsModule` и больше ничего, нормально стартует и отвечает на `/metrics` кодом `200` — но в теле будут только
+значения JVM, процесса и `kora.up`. Не будет ни `http_server_request_duration_seconds`, ни `http_client_*`, ни `db_*`, и в логах не будет объяснения. Собственный `telemetry.metrics.enabled` модуля тоже
+должен быть `true`.
 
-    ```yaml
-    httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
-      privateApiHttpMetricsPath: "/metrics" #(3)!
-      privateApiHttpLivenessPath: "/system/liveness" #(4)!
-      privateApiHttpReadinessPath: "/system/readiness" #(5)!
-      telemetry:
-        logging:
-          enabled: true #(6)!
-    tracing:
-      exporter:
-        endpoint: "http://localhost:4318/v1/traces" #(7)!
-    logging:
-      levels:
-        ROOT: "WARN" #(8)!
-        "ru.tinkoff.kora": "INFO" #(9)!
-        "ru.tinkoff.kora.guide.observability": "DEBUG" #(10)!
-    ```
+С трассировкой все наоборот. Подключите модуль экспортера, задайте адрес — и спаны пойдут без дополнительных переключателей. Молча выключает трассировку как раз *отсутствующий* адрес: без
+`tracing.exporter.endpoint` спаны по-прежнему создаются, а контекст по-прежнему передается, они просто никуда не отправляются — и об этом снова ничего не пишется в лог.
 
-    1. Открытый HTTP-порт по умолчанию, который используется конечными точками приложения.
-    2. Закрытый HTTP-порт по умолчанию, который используется пробами, метриками и управляющими конечными точками.
-    3. Закрытый HTTP-путь по умолчанию, который открывает метрики.
-    4. Закрытый HTTP-путь по умолчанию, который используется для пробы живости.
-    5. Закрытый HTTP-путь по умолчанию, который используется для пробы готовности.
-    6. Включает возможность для этого раздела конфигурации.
-    7. Конечная точка экспортера телеметрии.
-    8. Уровень журналирования для `ROOT`.
-    9. Уровень журналирования для `ru.tinkoff.kora`.
-    10. Уровень журналирования для `ru.tinkoff.kora.guide.observability`.
+Собственные метрики, которые вы регистрируете через `MeterRegistry`, ничем из этого не затронуты. Они появляются, как только подключен `MetricsModule` и отработал код, потому что сам реестр всегда жив.
+Флаг управляет только телеметрией модулей Kora.
 
-Почему это важно:
+Системный сервер — осознанное исключение в другую сторону: `SystemHttpServerConfig` переопределяет свою трассировку на `false`, поэтому оркестратор, опрашивающий готовность каждые несколько секунд, не
+закапывает ваши настоящие трассировки.
 
-- `/metrics`, `/system/liveness` и `/system/readiness` намеренно изолированы от открытого API
-- `telemetry.logging.enabled = true` позволяет HTTP-телеметрии обогащать журналы сведениями трассировки
-- экспортер трассировки может отправлять интервалы в любой OTLP HTTP-коллектор; если локально ничего не запущено, приложение все равно стартует, а тесты все равно могут проверять связь журналов с
-  трассировкой и управляющие конечные точки
+## Логирование { #logging }
 
-## Метрики { #metrics }
+Именно конфигурация Logback из руководства по HTTP-серверу связывает логи с трассировками:
 
-Kora уже автоматически открывает многие метрики фреймворка. Добавляйте пользовательские метрики только для бизнес-событий, важных для вашего приложения.
+```xml title="src/main/resources/logback.xml"
+<configuration debug="false">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+    </appender>
 
-===! ":fontawesome-brands-java: `Java`"
+    <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
+        <appender-ref ref="STDOUT"/>
+    </appender>
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/observability/service/MetricsService.java`:
+    <root level="WARN">
+        <appender-ref ref="ASYNC"/>
+    </root>
+</configuration>
+```
 
-    ```java
-    package ru.tinkoff.kora.guide.observability.service;
+`KoraAsyncAppender` захватывает текущий контекст спана в момент постановки события лога в очередь, а `ConsoleTextRecordEncoder` пишет `traceId=` и `spanId=` в строку всякий раз, когда этот захваченный
+контекст валиден. Нужны оба аппендера: без асинхронного не будет захваченного контекста спана, а без энкодера он никогда не попадет в вывод.
 
-    import io.micrometer.core.instrument.Counter;
-    import io.micrometer.core.instrument.MeterRegistry;
-    import io.micrometer.core.instrument.Timer;
-    import java.util.concurrent.Callable;
-    import ru.tinkoff.kora.common.Component;
+Уровни берутся из секции конфигурации `logging.levels`, а не из этого файла, — именно это позволяет поднять уровень логгера в рантайме, не пересобирая образ.
 
-    @Component
-    public final class MetricsService {
+## Сигналы вместе { #signals-together }
 
-        private final Counter userCreationCounter;
-        private final Timer userCreationTimer;
-
-        public MetricsService(MeterRegistry meterRegistry) {
-            this.userCreationCounter = Counter.builder("user.creation.total")
-                    .description("Total number of users created")
-                    .register(meterRegistry);
-            this.userCreationTimer = Timer.builder("user.creation.duration")
-                    .description("Time taken to create users")
-                    .register(meterRegistry);
-        }
-
-        public <T> T recordUserCreation(Callable<T> action) {
-            this.userCreationCounter.increment();
-            try {
-                return this.userCreationTimer.recordCallable(action);
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to record user creation metrics", e);
-            }
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/MetricsService.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import io.micrometer.core.instrument.Counter
-    import io.micrometer.core.instrument.MeterRegistry
-    import io.micrometer.core.instrument.Timer
-    import ru.tinkoff.kora.common.Component
-    import java.util.concurrent.Callable
-
-    @Component
-    class MetricsService(
-        meterRegistry: MeterRegistry
-    ) {
-        private val userCreationCounter: Counter = Counter.builder("user.creation.total")
-            .description("Total number of users created")
-            .register(meterRegistry)
-
-        private val userCreationTimer: Timer = Timer.builder("user.creation.duration")
-            .description("Time taken to create users")
-            .register(meterRegistry)
-
-        fun <T> recordUserCreation(action: Callable<T>): T {
-            userCreationCounter.increment()
-            return try {
-                userCreationTimer.recordCallable(action)
-            } catch (e: RuntimeException) {
-                throw e
-            } catch (e: Exception) {
-                throw IllegalStateException("Failed to record user creation metrics", e)
-            }
-        }
-    }
-    ```
-
-## Сервис трассировки { #tracing-service }
-
-Телеметрия фреймворка уже создает интервалы для поддерживаемых путей выполнения, например для обработки HTTP-запросов. Ручная трассировка нужна, когда вы хотите отметить бизнес-операцию внутри такого
-запроса, назвать ее в терминах предметной области и привязать успех или ошибку именно к этой части работы.
-
-В справочнике по трассировке этот шаблон разобран в разделе [Синхронная трассировка](../documentation/tracing.md#tracing-sync): внедрить `Tracer`, создать span с текущим контекстом как родителем,
-поместить span в `OpentelemetryContext` и всегда завершать span в `finally`.
+Когда подключены все четыре, одна бизнес-операция порождает все четыре сигнала сразу. Сервисный слой — то место, где они встречаются, потому что именно там живет доменный смысл:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/observability/service/TracingService.java`:
-
     ```java
-    package ru.tinkoff.kora.guide.observability.service;
-
-    import io.opentelemetry.api.trace.StatusCode;
-    import io.opentelemetry.api.trace.Tracer;
-    import java.util.concurrent.Callable;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Context;
-    import ru.tinkoff.kora.opentelemetry.common.OpentelemetryContext;
-
-    @Component
-    public final class TracingService {
-
-        private final Tracer tracer;
-
-        public TracingService(Tracer tracer) {
-            this.tracer = tracer;
-        }
-
-        public <T> T traceUserCreation(Callable<T> action) {
-            var ctx = Context.current();
-            var otctx = OpentelemetryContext.get(ctx);
-            var span = tracer.spanBuilder("user.create")
-                    .setParent(otctx.getContext())
-                    .startSpan();
-
-            OpentelemetryContext.set(ctx, otctx.add(span));
-            try {
-                var result = action.call();
-                span.setStatus(StatusCode.OK);
-                return result;
-            } catch (RuntimeException e) {
-                span.recordException(e);
-                span.setStatus(StatusCode.ERROR, e.getMessage());
-                throw e;
-            } catch (Exception e) {
-                span.recordException(e);
-                span.setStatus(StatusCode.ERROR, e.getMessage());
-                throw new IllegalStateException("Failed to trace user creation", e);
-            } finally {
-                span.end();
-                OpentelemetryContext.set(ctx, otctx);
-            }
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/TracingService.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import io.opentelemetry.api.trace.StatusCode
-    import io.opentelemetry.api.trace.Tracer
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Context
-    import ru.tinkoff.kora.opentelemetry.common.OpentelemetryContext
-
-    @Component
-    class TracingService(
-        private val tracer: Tracer
-    ) {
-        fun <T> traceUserCreation(action: () -> T): T {
-            val ctx = Context.current()
-            val otctx = OpentelemetryContext.get(ctx)
-            val span = tracer.spanBuilder("user.create")
-                .setParent(otctx.getContext())
-                .startSpan()
-
-            OpentelemetryContext.set(ctx, otctx.add(span))
-            try {
-                val result = action()
-                span.setStatus(StatusCode.OK)
-                return result
-            } catch (e: RuntimeException) {
-                span.recordException(e)
-                span.setStatus(StatusCode.ERROR, e.message)
-                throw e
-            } finally {
-                span.end()
-                OpentelemetryContext.set(ctx, otctx)
-            }
-        }
-    }
-    ```
-
-Этот span станет дочерним для текущего HTTP request span, когда операция выполняется во время обработки запроса. Если операция завершится ошибкой, span запишет исключение и будет экспортирован со
-статусом ошибки.
-
-## Интеграция трассировки { #tracing-integration }
-
-Сохраните HTTP-договор из предыдущего руководства и добавьте наблюдаемость там, где происходит бизнес-действие.
-
-В этом руководстве меняется только связывание конструктора `UserService` и `createUser()`. Остальные методы службы остаются такими же, как в руководстве по HTTP-серверу.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Обновите `src/main/java/ru/tinkoff/kora/guide/observability/service/UserService.java`:
-
-    ```java
-    package ru.tinkoff.kora.guide.observability.service;
-
-    import java.time.LocalDateTime;
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.observability.dto.UserRequest;
-    import ru.tinkoff.kora.guide.observability.dto.UserResponse;
-    import ru.tinkoff.kora.guide.observability.repository.UserRepository;
-
     @Component
     public final class UserService {
 
@@ -503,223 +360,100 @@ Kora уже автоматически открывает многие метр�
 
         private final UserRepository userRepository;
         private final MetricsService metricsService;
-        private final TracingService tracingService;
+        private final KoraTracer tracer;
 
-        public UserService(UserRepository userRepository, MetricsService metricsService, TracingService tracingService) {
+        public UserService(UserRepository userRepository, MetricsService metricsService, KoraTracer tracer) {
             this.userRepository = userRepository;
             this.metricsService = metricsService;
-            this.tracingService = tracingService;
+            this.tracer = tracer;
         }
 
         public UserResponse createUser(UserRequest request) {
-            logger.info("Creating user with name={} and email={}", request.name(), request.email());
-            return tracingService.traceUserCreation(() -> metricsService.recordUserCreation(() -> {
-                var generatedId = userRepository.save(request.name(), request.email());
-                var user = new UserResponse(generatedId, request.name(), request.email(), LocalDateTime.now());
-                logger.info("Created user with id={}", generatedId);
-                return user;
-            }));
-        }
+            return tracer.traceParent("user.create", span -> { //(1)!
+                logger.info("Creating user with name={}", request.name()); //(2)!
 
-        // getUser(), getUsers(), updateUser(), deleteUser(), and sorting logic
-        // stay the same as in the HTTP server guide.
+                return metricsService.recordUserCreation(() -> { //(3)!
+                    var generatedId = userRepository.save(request.name(), request.email());
+                    span.setAttribute("user.id", generatedId); //(4)!
+                    logger.info("Created user with id={}", generatedId);
+                    return new UserResponse(generatedId, request.name(), request.email(), LocalDateTime.now());
+                });
+            });
+        }
     }
     ```
 
+    1.  Трассировка: бизнес-спан, вложенный в спан HTTP-сервера.
+    2.  Логирование: эта строка несет `traceId` и `spanId`, потому что находится внутри спана.
+    3.  Метрики: счетчик и таймер операции.
+    4.  Значение с высокой кардинальностью уместно на спане и было бы неуместно как тег метрики.
+
 === ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/UserService.kt`:
-
     ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.observability.dto.UserRequest
-    import ru.tinkoff.kora.guide.observability.dto.UserResponse
-    import ru.tinkoff.kora.guide.observability.repository.UserRepository
-    import java.time.LocalDateTime
-
     @Component
     class UserService(
         private val userRepository: UserRepository,
         private val metricsService: MetricsService,
-        private val tracingService: TracingService
+        private val tracer: KoraTracer
     ) {
         private val logger = LoggerFactory.getLogger(UserService::class.java)
 
         fun createUser(request: UserRequest): UserResponse {
-            logger.info("Creating user with name={} and email={}", request.name, request.email)
-            return tracingService.traceUserCreation {
-                metricsService.recordUserCreation {
-                    val generatedId = userRepository.save(request.name, request.email)
-                    val user = UserResponse(generatedId, request.name, request.email, LocalDateTime.now())
-                    logger.info("Created user with id={}", generatedId)
-                    user
+            return tracer.traceParent("user.create", KoraTracer.TraceCallable<UserResponse, RuntimeException> { span -> //(1)!
+                logger.info("Creating user with name={}", request.name) //(2)!
+
+                metricsService.recordUserCreation { //(3)!
+                    val id = userRepository.save(request.name, request.email)
+                    span.setAttribute("user.id", id) //(4)!
+                    logger.info("Created user with id={}", id)
+                    UserResponse(id, request.name, request.email, LocalDateTime.now())
                 }
-            }
-        }
-
-        // getUser(), getUsers(), updateUser(), deleteUser(), and sorting logic
-        // stay the same as in the HTTP server guide.
-    }
-    ```
-
-## Пробы { #probes }
-
-Готовность должна стать здоровой после завершения запуска. Она не должна падать бесконечно.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Создайте `src/main/java/ru/tinkoff/kora/guide/observability/health/CustomReadinessProbe.java`:
-
-    ```java
-    package ru.tinkoff.kora.guide.observability.health;
-
-    import java.time.Duration;
-    import java.time.Instant;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.readiness.ReadinessProbe;
-    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure;
-
-    @Component
-    public final class CustomReadinessProbe implements ReadinessProbe {
-
-        private static final Duration WARMUP_PERIOD = Duration.ofMillis(500);
-
-        private final Instant startedAt = Instant.now();
-
-        @Override
-        public ReadinessProbeFailure probe() {
-            var readyAt = startedAt.plus(WARMUP_PERIOD);
-            if (Instant.now().isBefore(readyAt)) {
-                return new ReadinessProbeFailure("Service is warming up");
-            }
-            return null;
+            })
         }
     }
     ```
 
-    Создайте `src/main/java/ru/tinkoff/kora/guide/observability/health/ApplicationHealthProbe.java`:
+    1.  Трассировка: бизнес-спан, вложенный в спан HTTP-сервера.
+    2.  Логирование: эта строка несет `traceId` и `spanId`, потому что находится внутри спана.
+    3.  Метрики: счетчик и таймер операции.
+    4.  Значение с высокой кардинальностью уместно на спане и было бы неуместно как тег метрики.
 
-    ```java
-    package ru.tinkoff.kora.guide.observability.health;
+`MetricsService` — это небольшой компонент, который строится в [руководстве по метрикам](observability-metrics.md#metrics-service); пробы остаются в собственных компонентах, потому что им нечего делать
+на пути запроса.
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.liveness.LivenessProbe;
-    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure;
-
-    @Component
-    public final class ApplicationHealthProbe implements LivenessProbe {
-
-        @Override
-        public LivenessProbeFailure probe() {
-            return null;
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/observability/health/CustomReadinessProbe.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.health
-
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.readiness.ReadinessProbe
-    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure
-    import java.time.Duration
-    import java.time.Instant
-
-    @Component
-    class CustomReadinessProbe : ReadinessProbe {
-        private val startedAt = Instant.now()
-
-        override fun probe(): ReadinessProbeFailure? {
-            val readyAt = startedAt.plus(Duration.ofMillis(500))
-            return if (Instant.now().isBefore(readyAt)) {
-                ReadinessProbeFailure("Service is warming up")
-            } else {
-                null
-            }
-        }
-    }
-    ```
-
-    Создайте `src/main/kotlin/ru/tinkoff/kora/guide/observability/health/ApplicationHealthProbe.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.health
-
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.liveness.LivenessProbe
-    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure
-
-    @Component
-    class ApplicationHealthProbe : LivenessProbe {
-        override fun probe(): LivenessProbeFailure? = null
-    }
-    ```
+Один `POST /users` теперь оставляет за собой: инкремент `user.creation.total` и замер `user.creation.duration`, спан `user.create`, вложенный в HTTP-спан, две строки лога с тем же идентификатором
+трассировки — и никаких изменений в пробах, что правильно, потому что создание пользователя ничего не говорит о том, должен ли экземпляр принимать трафик.
 
 ## Docker Compose { #docker-compose }
 
-Если хотите локально изучить трассировки, запустите контейнер Jaeger all-in-one, который открывает и OTLP HTTP-точку приема, и пользовательский интерфейс Jaeger.
+Jaeger принимает экспортируемые трассировки локально:
 
-Создайте `docker-compose.yml` в каталоге модуля приложения:
-
-```yaml
+```yaml title="docker-compose.yml"
 services:
-    jaeger:
-        image: jaegertracing/all-in-one:latest
-        ports:
-            - "16686:16686"
-            - "4318:4318"
-        environment:
-            COLLECTOR_OTLP_ENABLED: "true"
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" #(1)!
+      - "4318:4318" #(2)!
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
 ```
 
-Запустите Jaeger:
-
-```bash
-docker compose up -d
-```
-
-Затем:
-
-- оставьте `tracing.exporter.endpoint = "http://localhost:4318/v1/traces"` в `application.conf`
-- запустите приложение через `./gradlew run`
-- отправьте несколько запросов на `http://localhost:8080/users`
-- откройте [http://localhost:16686](http://localhost:16686) и найдите службу `guide-observability-app`
-
-Остановите Jaeger, когда закончите:
-
-```bash
-docker compose down
-```
-
-Эта настройка необязательна, но это самый быстрый способ локально проверить, что интервалы экспортируются и что идентификаторы трассировки из журналов соответствуют трассировкам, видимым в
-пользовательском интерфейсе.
+1.  Интерфейс Jaeger.
+2.  Приемник `OTLP/HTTP` — тот порт, на который указывает `tracing.exporter.endpoint`.
 
 ## Проверка приложения { #check-app }
 
-Используйте обычный поток Gradle для руководств времени выполнения:
+Поднимите коллектор и приложение:
 
 ```bash
-./gradlew clean classes
-./gradlew test
+docker compose up -d
+
 ./gradlew run
 ```
 
-Когда приложение запущено, проверьте управляющие конечные точки на закрытом порту:
-
-```bash
-curl http://localhost:8085/system/liveness
-curl http://localhost:8085/system/readiness
-curl http://localhost:8085/metrics
-```
-
-Вы по-прежнему можете обращаться к открытому API на `8080`, например:
+Задействуйте бизнес-API:
 
 ```bash
 curl -X POST http://localhost:8080/users \
@@ -727,95 +461,147 @@ curl -X POST http://localhost:8080/users \
   -d '{"name":"Alice","email":"alice@example.com"}'
 ```
 
+Затем считайте все четыре сигнала обратно:
+
+```bash
+curl http://localhost:8085/metrics          # metrics
+curl -i http://localhost:8085/system/liveness   # probes
+curl -i http://localhost:8085/system/readiness
+```
+
+Трассировки — в интерфейсе Jaeger по адресу [http://localhost:16686](http://localhost:16686) под сервисом `guide-observability-app`, а логи — в собственном stdout приложения:
+
+```text
+09:41:12.508 INFO  [kora-undertow-4] i.k.g.o.service.UserService - traceId=4bf92f3577b34da6a3ce929d0e0e4736 spanId=00f067aa0ba902b7 Created user with id=1
+```
+
+`traceId` в этой строке — тот же идентификатор, который несет трассировка в Jaeger. В этом и состоит вся выгода от связывания сигналов между собой, а не по отдельности.
+
+## Тестирование { #testing }
+
+Наблюдаемость тестируема, и ее стоит тестировать — иначе сломанную пробу или пропавшую метрику обычно обнаруживают во время инцидента.
+
+Внутри процесса внедрите нужные части и проверяйте их напрямую:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class ObservabilityAppTest {
+
+        @TestComponent
+        private UserService userService;
+        @TestComponent
+        private MeterRegistry meterRegistry; //(1)!
+
+        @Test
+        void userCreationUpdatesCustomMetrics() {
+            userService.createUser(new UserRequest("Alice", "alice@example.com"));
+
+            var counter = meterRegistry.find("user.creation.total").counter();
+            assertNotNull(counter);
+            assertEquals(1.0d, counter.count());
+        }
+    }
+    ```
+
+    1.  Реестр — обычный компонент графа, поэтому тест может прочитать метрики, зарегистрированные кодом.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class ObservabilityAppTest {
+
+        @TestComponent
+        lateinit var userService: UserService
+        @TestComponent
+        lateinit var meterRegistry: MeterRegistry //(1)!
+
+        @Test
+        fun userCreationUpdatesCustomMetrics() {
+            userService.createUser(UserRequest("Alice", "alice@example.com"))
+
+            val counter = meterRegistry.find("user.creation.total").counter()
+            assertNotNull(counter)
+            assertEquals(1.0, counter!!.count())
+        }
+    }
+    ```
+
+    1.  Реестр — обычный компонент графа, поэтому тест может прочитать метрики, зарегистрированные кодом.
+
+В [черноящичном тесте](testing-black-box.md) дождитесь готовности для старта контейнера, а затем проверяйте системный порт: что `/metrics` содержит значения `http_server_*`, что обе пробы отвечают
+`200` и что в stdout контейнера есть `traceId=`. Последняя проверка — самый дешевый регрессионный тест на «трассировка все еще подключена».
+
 ## Лучшие практики { #best-practices }
 
-- Держите бизнес-метрики в отдельной службе, чтобы контроллеры оставались сосредоточены на HTTP-задачах.
-- Предпочитайте наблюдать бизнес-действия в слое службы, где встречаются журналы, метрики и контекст трассировки.
-- Используйте ручные span для доменных операций, которые инструментация фреймворка не может точно назвать сама.
-- Держите готовность легкой и временной. Проба готовности должна падать во время запуска или проверок зависимостей, а затем восстанавливаться.
-- Открывайте здоровье и метрики только на закрытом порту `8085`.
-- Рассматривайте тесты как источник истины для поведения наблюдаемости и держите их ограниченными тем, чему действительно учит руководство.
+- Держите все эксплуатационные конечные точки на системном порту и вне публичного `Service`.
+- Включайте телеметрию модулей осознанно — метрики и логирование выключены по умолчанию, трассировка включена.
+- Наблюдайте за бизнес-операциями в сервисном слое, где встречаются логи, метрики и контекст трассировки.
+- Держите значения с высокой кардинальностью в атрибутах спанов, а не в тегах метрик.
+- В пробах проверяйте внутреннее состояние, а внешние зависимости — через [CircuitBreaker](../documentation/resilient.md#circuitbreaker).
+- Задайте `service.name` и держите его стабильным для окружения.
+- Не помещайте персональные данные ни в логи, ни в атрибуты спанов, ни в теги метрик.
+- Проверяйте наблюдаемость в тестах: сигнал, который никто не проверяет, — это сигнал, который тихо исчезает.
 
 ## Итоги { #summary }
 
-Вы расширили приложение HTTP-сервера возможностями наблюдаемости Kora, не меняя договор открытого API. Теперь приложение открывает управляющие конечные точки на закрытом порту, записывает
-бизнес-метрики для создания пользователей, создает ручной span `user.create`, выдает журналы с учетом трассировки и сообщает живость/готовность через пробы Kora.
+Вы собрали одно приложение, несущее все четыре сигнала: метрики Micrometer на системном порту, трассировки OpenTelemetry, экспортируемые по `OTLP/HTTP`, строки логов, связанные через `traceId`, и пробы
+жизнеспособности и готовности — при неизменном контракте публичного API. У каждого сигнала есть отдельное руководство с той глубиной, в которую эта страница не заходит.
 
 ## Ключевые понятия { #key-concepts }
 
-- как `MetricsModule` включает метрики фреймворка и пользовательское использование `MeterRegistry`
-- как `OpentelemetryHttpExporterModule` добавляет экспорт трассировок в граф приложения
-- как внедренный `Tracer` и `OpentelemetryContext` создают ручной дочерний span для бизнес-операции
-- почему управляющим конечным точкам место на закрытом порту
-- как моделировать пробы живости и готовности с реалистичным поведением
-- как проверять возможности наблюдаемости сфокусированными компонентными тестами и тестами по принципу черного ящика
+Метрики:
+: агрегированные числа во времени — для трендов, частот и алертов.
+
+Трассировка:
+: путь одного запроса — чтобы найти, где потерялось время или корректность.
+
+Связь с логами:
+: `traceId` и `spanId` в строках логов, соединяющие то, что сказал код, с тем, что делал запрос.
+
+Пробы:
+: ответы о жизнеспособности и готовности, по которым действует платформа.
+
+Системный порт:
+: отдельный порт, обслуживающий `/metrics` и обе пробы в стороне от бизнес-API.
+
+Умолчания телеметрии:
+: трассировка включена, метрики и логирование выключены — по каждому модулю, пока не включите.
 
 ## Устранение неполадок { #troubleshooting }
 
-**`./gradlew clean` или `./gradlew test` зависает:**
+`/metrics` отвечает `200`, но показывает только значения JVM:
+: Задайте `<module>.telemetry.metrics.enabled = true`. Для каждого модуля значение по умолчанию — `false`.
 
-Остановите демоны Gradle и повторите:
+`/metrics` отвечает `# Metric Scraper disabled`:
+: `MetricsModule` не подключен, поэтому в графе нет `MetricsScraper`.
 
-```bash
-./gradlew --stop
-./gradlew clean classes
-./gradlew test
-```
+В коллектор трассировок ничего не приходит:
+: Проверьте `tracing.exporter.endpoint`. Без него спаны создаются и передаются, но никогда не экспортируются, и молча.
 
-**Windows сообщает `AccessDeniedException` в кеше Gradle:**
+В логах нет `traceId`:
+: Строка была залогирована вне трассируемой операции, либо в `logback.xml` не используется `KoraAsyncAppender` с `ConsoleTextRecordEncoder`.
 
-Обычно это значит, что демон или другой процесс все еще удерживает файлы в каталогах `.gradle` или `build`. Запустите `./gradlew --stop`, закройте процессы среда разработки, которые могут блокировать файлы, и
-повторите сборку.
+Любая эксплуатационная конечная точка отвечает `404`:
+: Вы на публичном порту. Все они живут на `httpServer.system.port` (по умолчанию: `8085`).
 
-**Readiness, Liveness или Metrics возвращает `404`:**
+Приложение перезапускается по кругу:
+: В жизнеспособности проверяется внешняя зависимость. Перенесите ее в готовность.
 
-Проверьте, что используете закрытый порт `8085`, а не открытый порт `8080`, и что эти пути настроены:
-
-Полный справочник по конфигурации смотрите в разделе [HTTP-сервер](../documentation/http-server.md).
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    privateApiHttpMetricsPath = "/metrics" //(1)!
-    privateApiHttpLivenessPath = "/system/liveness" //(2)!
-    privateApiHttpReadinessPath = "/system/readiness" //(3)!
-    ```
-
-    1. Закрытый HTTP-путь по умолчанию, который открывает метрики.
-    2. Закрытый HTTP-путь по умолчанию, который используется для пробы живости.
-    3. Закрытый HTTP-путь по умолчанию, который используется для пробы готовности.
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    privateApiHttpMetricsPath: "/metrics" #(1)!
-    privateApiHttpLivenessPath: "/system/liveness" #(2)!
-    privateApiHttpReadinessPath: "/system/readiness" #(3)!
-    ```
-
-    1. Закрытый HTTP-путь по умолчанию, который открывает метрики.
-    2. Закрытый HTTP-путь по умолчанию, который используется для пробы живости.
-    3. Закрытый HTTP-путь по умолчанию, который используется для пробы готовности.
-
-**Трассировки локально никуда не экспортируются:**
-
-Это ожидаемо, если на `http://localhost:4318/v1/traces` не запущен OTLP-коллектор. Приложение и тесты все равно работают, но для просмотра экспортированных трассировок понадобится коллектор, например
-Jaeger или OpenTelemetry Collector.
+Prometheus хранит огромное число рядов:
+: У тега метрики неограниченное множество значений. Перенесите это значение в атрибут спана.
 
 ## Что дальше? { #whats-next }
 
-- [Тестирование с JUnit](testing-junit.md), чтобы добавить сфокусированные компонентные тесты вокруг наблюдаемых компонентов.
-- [База данных JDBC](database-jdbc.md) перед [руководством по тестированию как черный ящик](testing-black-box.md), потому что это руководство предполагает приложение на JDBC.
-- [Сообщения с Kafka](messaging-kafka.md), чтобы наблюдать асинхронную обработку.
-- [Шаблоны устойчивости](resilient.md), чтобы связать метрики и трассировки со сбоями, повторами и автоматическими выключателями.
+- углубитесь в один сигнал в [Метриках](observability-metrics.md), [Трассировке](observability-tracing.md) или [Пробах](observability-probes.md)
+- добавьте точечные компонентные тесты в [Тестировании с JUnit](testing-junit.md)
+- проверьте собранное приложение целиком в [Черноящичном тестировании](testing-black-box.md)
+- свяжите телеметрию с отказами, повторами и предохранителями в [Устойчивых паттернах](resilient.md)
 
 ## Помощь { #help }
 
-Если что-то не совпадает с вашим локальным приложением:
-
-- сравните с [Kora Java Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-observability-app) и [Kora Kotlin Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-observability-app)
-- вернитесь к [HTTP-серверу](http-server.md), чтобы свериться с формой базового API
-- проверьте [документацию метрик](../documentation/metrics.md)
-- проверьте [документацию трассировки](../documentation/tracing.md)
-- проверьте [документацию журналирования](../documentation/logging-slf4j.md)
-- проверьте [документацию проб](../documentation/probes.md)
+- изучите готовые приложения по наблюдаемости на Java и Kotlin
+- сверьтесь со справочными деталями в [Метриках](../documentation/metrics.md), [Трассировке](../documentation/tracing.md), [Пробах](../documentation/probes.md) и [Логировании](../documentation/logging-slf4j.md)
+- вернитесь к [HTTP-серверу](http-server.md) за базовой формой API

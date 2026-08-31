@@ -1,16 +1,21 @@
-﻿---
+---
 search:
   exclude: true
 title: Observability & Monitoring with Kora
-summary: Learn how to extend the HTTP Server guide with metrics, tracing, structured logging, and health probes
+summary: Assemble metrics, tracing, structured logging, and health probes into one Kora application, and find the focused guide for each signal.
+description: "The Kora observability hub: how metrics, tracing, logging and probes fit together in one application, which telemetry is on by default and which is not, the complete module graph with MetricsModule and OpentelemetryHttpExporterModule, the full httpServer.system, tracing and logging configuration, traceId correlation in log lines, the system port that serves /metrics and the probes, and links to the focused metrics, tracing and probes guides."
+agent:
+  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
 tags: observability, metrics, tracing, logging, health-checks, monitoring
 ---
 
 # Observability and Monitoring with Kora { #observability-monitoring-kora }
 
-This guide introduces production-oriented observability for Kora applications. It covers how metrics, distributed tracing, structured logging, and health probes are wired into the application graph,
-how telemetry modules instrument common runtime paths, and how management endpoints expose operational state. You will also see how observability configuration turns local behavior into signals that
-monitoring systems can consume.
+This is the hub for Kora observability. It shows how the four signals — metrics, tracing, logging, and probes — fit together in one running application, and points at the focused guide that teaches
+each one step by step.
+
+Read this page when you want the whole picture: the complete module graph, the complete configuration, and the rules that cut across all four signals. Read the focused guides when you are implementing
+one of them.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -18,25 +23,28 @@ monitoring systems can consume.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-observability-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-observability-app).
 
-## What You'll Build { #youll-build }
+## What You Will Build { #youll-build }
 
-You will enhance the HTTP server application with:
+One application that carries all four signals:
 
-- Micrometer metrics for framework and business events
-- OpenTelemetry tracing export over HTTP
-- request logging enriched with trace context
-- liveness and readiness probes on the private management port
-- observability-focused tests that verify metrics, probes, and tracing behavior
+- Micrometer metrics on `/metrics`, framework and business
+- OpenTelemetry traces exported over `OTLP/HTTP`
+- log lines carrying `traceId` and `spanId`
+- liveness and readiness probes on the system port
+- one system port serving every operational endpoint
+- tests that assert on metrics, probes, and trace-aware logging
 
-## What You'll Need { #youll-need }
+## What You Will Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
-- Docker, if you want to run the black-box smoke test locally
+- JDK 25 or later
+- Gradle 9+
+- Docker, to run Jaeger and the black-box test locally
 - A text editor or IDE
 - Completed [HTTP Server Guide](http-server.md)
+
+Kora 2.0 artifacts are compiled for Java 25, so the JDK that compiles the application must be 25 or newer.
 
 ## Prerequisites { #prerequisites }
 
@@ -48,67 +56,86 @@ You will enhance the HTTP server application with:
 
 ## Overview { #overview }
 
-Observability is what lets you understand a running service without guessing from symptoms alone. When an API becomes slower, starts failing intermittently, or works in one environment but not
-another, you need signals from inside the application that explain what is happening.
+Observability is what lets you understand a running service without guessing from the symptoms. When an API gets slower, fails intermittently, or works in one environment and not another, you need
+signals from inside the application that explain what is actually happening.
 
-The important shift is that observability is not a separate debugging mode. It is part of the runtime contract of a production service. A service should expose enough metrics, traces, logs, and probes
-that operators can understand whether it is healthy and where failures are happening.
+The shift worth making early is that observability is not a debugging mode you switch on during an incident. It is part of the runtime contract of a production service — by the time you need the data,
+it has to already be there.
 
 ### Three Core Signals { #three-core-signals }
 
-In practice, Kora observability is built around three complementary signals:
+Kora observability rests on three signals plus one operational one:
 
-- [Micrometer](https://docs.micrometer.io/micrometer/reference/) metrics tell you how the system behaves in aggregate over time
-- [OpenTelemetry](https://opentelemetry.io/docs/) traces show the lifecycle of a single request across the call chain
-- probes tell the platform whether the process is alive and ready to receive traffic
+- [Micrometer](https://docs.micrometer.io/micrometer/reference/) **metrics** tell you how the system behaves in aggregate over time
+- [OpenTelemetry](https://opentelemetry.io/docs/) **traces** show the lifecycle of one request across the call chain
+- **logs** record what the code had to say, correlated to the trace that produced them
+- **probes** tell the platform whether the process is alive and ready for traffic
 
-Metrics are useful when you want trends, rates, and saturation signals instead of single-event details. Kora uses Micrometer, so the application can publish both framework metrics and business metrics
-in one place. In a typical service you will see several categories of metrics:
+Metrics answer questions about trends, rates, and saturation. Kora uses Micrometer, so framework metrics and business metrics land in one registry: JVM and process values, HTTP server latency and
+status distribution, database and messaging behavior, plus whatever counters and timers you register yourself.
 
-- infrastructure metrics such as JVM memory, CPU, threads, and process-level usage
-- HTTP server metrics such as request count, latency, active requests, and status code distribution
-- logging and runtime metrics that help explain internal activity
-- custom business metrics, for example how many users were created and how long that operation took
+Traces answer a different question. A metric can show that requests are slow; it cannot show *which* request was slow or where its time went. A trace follows one request through the application,
+attaching a trace id and span id to each step, which is what makes it possible to reconstruct a single execution instead of an average.
 
-These metric types answer different questions. Counters help track totals and rates, timers help measure duration and latency distributions, and gauges help observe values that go up and down over
-time. Together they let you spot regressions, alert on failures, and understand system behavior before users start reporting incidents.
+Logs are the oldest signal and become far more useful once traces exist, because every line emitted inside a traced operation carries the trace id. That is the join key between "what the code said" and
+"what the request did".
 
-Tracing solves a different problem. Metrics can show that requests are slow, but they do not show which individual request was slow or where the time was spent. Distributed tracing follows one request
-through the application and attaches a trace ID and span ID to the work being done. That makes it much easier to correlate logs, inspect request flow, and understand where latency or failures appear
-when a request crosses multiple layers or services.
+Probes are for machines rather than people. Liveness answers "should this process be restarted?" and readiness answers "should this instance receive traffic right now?" — and [Kubernetes](https://kubernetes.io/docs/home/)
+or a load balancer will act on the answer without asking anyone.
 
-Probes are primarily for operations and orchestration. A liveness probe answers "should this process be restarted?" and a readiness probe answers "is this instance ready to serve traffic right now?"
-They are critical for [Docker](https://docs.docker.com/) and [Kubernetes](https://kubernetes.io/docs/home/) style deployments because they let load balancers and orchestrators avoid sending traffic to
-an instance that is still warming up or is temporarily unhealthy.
+### Choosing a Signal { #choosing-a-signal }
+
+The four overlap enough that it helps to know which one answers which question:
+
+| Question | Signal |
+|----------|--------|
+| Is the service getting slower over the last hour? | metrics |
+| How many users were created today? | metrics |
+| Why was *this particular* request slow? | tracing |
+| Which step of the request failed? | tracing |
+| What did the code decide, and with what values? | logs |
+| Should this instance get traffic? | probes |
+| Should this process be restarted? | probes |
+
+The common failure is reaching for the wrong one: putting a high-cardinality user id in a metric tag, where it multiplies time series until the monitoring system falls over, when it belongs on a span
+attribute; or checking a database in a liveness probe, where a two-second outage restarts the entire fleet, when it belongs in readiness — or in a [CircuitBreaker](../documentation/resilient.md#circuitbreaker).
 
 ### Observability in Kora { #observability-kora }
 
-Kora wires observability through modules and configuration. Framework components can emit telemetry automatically, and application code can add custom business signals where the framework cannot know
-the domain meaning.
+Kora wires observability through modules and configuration. Framework components emit telemetry on their own once their module is connected and enabled; application code adds the business signals the
+framework cannot name.
 
-This guide adds observability concerns around the HTTP application:
+In the assembled application:
 
-- `MetricsModule` enables framework metrics and gives access to `MeterRegistry`
-- `OpentelemetryHttpExporterModule` exports traces to an OpenTelemetry-compatible collector
-- `CustomReadinessProbe` and `ApplicationHealthProbe` feed `/system/readiness` and `/system/liveness`
-- `MetricsService` records business metrics for user creation
-- observability tests become the source of truth for management endpoints and tracing-aware logging
+- `MetricsModule` puts a `MeterRegistry` in the graph and backs the `/metrics` endpoint
+- `OpentelemetryHttpExporterModule` creates spans and exports them, and provides `KoraTracer`
+- `LogbackModule` renders log records, including the trace identifiers
+- `UndertowPublicHttpServerModule` serves the business API and, through the system server it extends, `/metrics` and both probes
+- `MetricsService`, `KoraTracer` calls, and probe components carry the application-specific parts
 
 ### Operational Boundaries { #operational-boundaries }
 
-Observability endpoints usually belong on a private management port, not the public business API. That separation lets platforms, load balancers, and monitoring tools inspect service health without
-exposing internal operational details to normal clients. The guide keeps public API behavior and management behavior separate so the runtime shape matches production expectations.
+Every operational endpoint lives on the system port, never the public one. Business clients get `8080`; Prometheus, the kubelet, and your monitoring agent get `8085`. That separation is what lets you
+expose health and metrics to the platform without exposing them to the internet, and it is the default in Kora rather than something you assemble.
 
-The practical flow is:
+## Focused Guides { #focused-guides }
 
-1. add metrics, tracing, logging, and probe modules
-2. wire observability modules into the Kora graph
-3. add custom readiness and liveness probes
-4. record business metrics in service code
-5. configure management endpoints and telemetry export
-6. verify metrics, probes, and trace-aware logging in tests
+Each signal has its own guide with the full step-by-step treatment:
+
+[Metrics with Kora](observability-metrics.md):
+: Micrometer, the `MeterRegistry`, counters and timers, histogram buckets, tag cardinality, and why `/metrics` shows only JVM values until you enable module metrics.
+
+[Tracing with Kora](observability-tracing.md):
+: The OTLP exporter, service identity, business spans with `KoraTracer`, span attributes and errors, trace context propagation, and reading a trace in Jaeger.
+
+[Probes with Kora](observability-probes.md):
+: Liveness and readiness, warm-up, aggregation across several probes, built-in framework probes, the response contract, and Kubernetes wiring.
+
+For reference detail behind any of them, see [Metrics](../documentation/metrics.md), [Tracing](../documentation/tracing.md), [Probes](../documentation/probes.md), and [Logging](../documentation/logging-slf4j.md).
 
 ## Dependencies { #dependencies }
+
+The assembled application adds two artifacts to the HTTP server guide's build. Versions come from the `io.koraframework:kora-bom` platform.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -116,12 +143,15 @@ The practical flow is:
 
     ```groovy
     dependencies {
-        // ... existing dependencies from http-server guide ...
+        // ... existing dependencies from the HTTP server guide ...
 
-        implementation("ru.tinkoff.kora:micrometer-module")
-        implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
+        implementation "io.koraframework:micrometer-module" //(1)!
+        implementation "io.koraframework:opentelemetry-tracing-exporter-http" //(2)!
     }
     ```
+
+    1.  Micrometer metrics: the `PrometheusMeterRegistry` and the scrape contract for the system server.
+    2.  `OTLP/HTTP` span exporter. It transitively brings the core tracing wiring.
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -129,41 +159,46 @@ The practical flow is:
 
     ```kotlin
     dependencies {
-        // ... existing dependencies from http-server guide ...
+        // ... existing dependencies from the HTTP server guide ...
 
-        implementation("ru.tinkoff.kora:micrometer-module")
-        implementation("ru.tinkoff.kora:opentelemetry-tracing-exporter-http")
+        implementation("io.koraframework:micrometer-module") //(1)!
+        implementation("io.koraframework:opentelemetry-tracing-exporter-http") //(2)!
     }
     ```
 
+    1.  Micrometer metrics: the `PrometheusMeterRegistry` and the scrape contract for the system server.
+    2.  `OTLP/HTTP` span exporter. It transitively brings the core tracing wiring.
+
+Logging and probes add nothing: `LogbackModule` came with the HTTP server guide, and the probe interfaces arrive transitively in `io.koraframework:common`.
+
 ## Modules { #modules }
 
-Add the observability modules to the same application graph you created in the HTTP server guide.
+The complete graph for an application carrying all four signals:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/guide/observability/Application.java`:
+    Update `src/main/java/io/koraframework/guide/observability/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.observability;
+    package io.koraframework.guide.observability;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.micrometer.module.MetricsModule;
-    import ru.tinkoff.kora.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.micrometer.module.MetricsModule;
+    import io.koraframework.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
-            LogbackModule,
-            MetricsModule,  // <----- Connected module
-            UndertowHttpServerModule,
-            OpentelemetryHttpExporterModule {  // <----- Connected module
+            LogbackModule, //(1)!
+            MetricsModule, //(2)!
+            UndertowPublicHttpServerModule, //(3)!
+            OpentelemetryHttpExporterModule { //(4)!
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -171,328 +206,152 @@ Add the observability modules to the same application graph you created in the H
     }
     ```
 
+    1.  Logging, including the `traceId` and `spanId` fields on every log line inside a traced operation.
+    2.  Metrics: adds `MeterRegistry` and the `MetricsScraper` the system server uses for `/metrics`.
+    3.  Public HTTP server; extends the system server that serves `/metrics` and both probes.
+    4.  Tracing: creates spans, exports them over `OTLP/HTTP`, and provides `KoraTracer`.
+
 === ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/observability/Application.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/observability/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.observability
+    package io.koraframework.guide.observability
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.micrometer.module.MetricsModule
-    import ru.tinkoff.kora.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.micrometer.module.MetricsModule
+    import io.koraframework.opentelemetry.tracing.exporter.http.OpentelemetryHttpExporterModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
-        LogbackModule,
-        MetricsModule,  // <----- Connected module
-        UndertowHttpServerModule,
-        OpentelemetryHttpExporterModule  // <----- Connected module
+        LogbackModule, //(1)!
+        MetricsModule, //(2)!
+        UndertowPublicHttpServerModule, //(3)!
+        OpentelemetryHttpExporterModule //(4)!
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
+    1.  Logging, including the `traceId` and `spanId` fields on every log line inside a traced operation.
+    2.  Metrics: adds `MeterRegistry` and the `MetricsScraper` the system server uses for `/metrics`.
+    3.  Public HTTP server; extends the system server that serves `/metrics` and both probes.
+    4.  Tracing: creates spans, exports them over `OTLP/HTTP`, and provides `KoraTracer`.
+
+There is no separate management module to connect. `UndertowPublicHttpServerModule` extends `UndertowSystemHttpServerModule`, so one `extends` clause gives you two servers: the public one on
+`httpServer.port` and the system one on `httpServer.system.port` answering `/metrics`, `/system/liveness`, and `/system/readiness`.
+
 ## Configuration { #config }
 
-The public API still runs on `8080`, but all management endpoints in this guide live on the private port `8085`.
+The complete observability configuration for the assembled application:
 
-Update `src/main/resources/application.conf`:
+```hocon title="src/main/resources/application.conf"
+httpServer {
+  port = 8080 //(1)!
+  system {
+    port = 8085 //(2)!
+    metricsPath = "/metrics" //(3)!
+    livenessPath = "/system/liveness" //(4)!
+    readinessPath = "/system/readiness" //(5)!
+  }
+  telemetry.logging.enabled = true //(6)!
+  telemetry.metrics.enabled = true //(7)!
+}
 
-For the full configuration reference, see [HTTP Server](../documentation/http-server.md), [Tracing](../documentation/tracing.md) and [Logging SLF4J](../documentation/logging-slf4j.md).
+tracing {
+  exporter {
+    endpoint = "http://localhost:4318/v1/traces" //(8)!
+    exportTimeout = "5s"
+    scheduleDelay = "1s" //(9)!
+    maxExportBatchSize = 512
+    maxQueueSize = 2048
+  }
+  attributes { //(10)!
+    "service.name" = "guide-observability-app"
+    "service.namespace" = "kora-guide"
+  }
+}
 
-===! ":material-code-json: `Hocon`"
+logging {
+  levels { //(11)!
+    "ROOT": "WARN"
+    "io.koraframework": "INFO"
+    "io.koraframework.guide.observability": "DEBUG"
+  }
+}
+```
 
-    ```javascript
-    httpServer {
-      publicApiHttpPort = 8080 //(1)!
-      privateApiHttpPort = 8085 //(2)!
-      privateApiHttpMetricsPath = "/metrics" //(3)!
-      privateApiHttpLivenessPath = "/system/liveness" //(4)!
-      privateApiHttpReadinessPath = "/system/readiness" //(5)!
-      telemetry.logging.enabled = true //(6)!
-    }
+1.  Public HTTP port used by application endpoints (default: `8080`).
+2.  System HTTP port serving metrics and probes (default: `8085`).
+3.  Prometheus scrape path on the system server (default: `/metrics`).
+4.  Liveness path on the system server (default: `/system/liveness`).
+5.  Readiness path on the system server (default: `/system/readiness`).
+6.  Enables request logging for the public HTTP server (default: `false`).
+7.  Enables metric collection for the public HTTP server (default: `false`).
+8.  Collector endpoint spans are exported to (no default; without it nothing is exported).
+9.  Batching delay, lowered from the `2s` default so local traces appear promptly.
+10.  Service identity attached to every exported span (default: `{}`).
+11.  Log levels per logger name.
 
-    tracing {
-      exporter {
-        endpoint = "http://localhost:4318/v1/traces" //(7)!
-      }
-    }
+### Telemetry Defaults { #telemetry-defaults }
 
-    logging {
-      levels {
-        "ROOT" = "WARN" //(8)!
-        "ru.tinkoff.kora" = "INFO" //(9)!
-        "ru.tinkoff.kora.guide.observability" = "DEBUG" //(10)!
-      }
-    }
-    ```
+!!! warning "Tracing is on by default. Metrics and logging are not."
 
-    1. Default public HTTP port used by application endpoints.
-    2. Default private HTTP port used by probes, metrics, and management endpoints.
-    3. Default private HTTP path that exposes metrics.
-    4. Default private HTTP path used for the liveness probe.
-    5. Default private HTTP path used for the readiness probe.
-    6. Enables the feature for this configuration section.
-    7. Telemetry exporter endpoint.
-    8. Log level for `ROOT`.
-    9. Log level for `ru.tinkoff.kora`.
-    10. Log level for `ru.tinkoff.kora.guide.observability`.
+    `TelemetryConfig.TracingConfig#enabled` returns `true`, while `MetricsConfig#enabled` and `LoggingConfig#enabled` both return `false`. Every Kora module inherits those defaults.
 
-=== ":simple-yaml: `YAML`"
+This asymmetry catches people out, so it is worth stating plainly. An application that connects `MetricsModule` and nothing else starts fine and answers `/metrics` with `200` — but the body holds only
+JVM, process, and `kora.up` values. There is no `http_server_request_duration_seconds`, no `http_client_*`, no `db_*`, and nothing in the log explains why. The module's own
+`telemetry.metrics.enabled` has to be `true` as well.
 
-    ```yaml
-    httpServer:
-      publicApiHttpPort: 8080 #(1)!
-      privateApiHttpPort: 8085 #(2)!
-      privateApiHttpMetricsPath: "/metrics" #(3)!
-      privateApiHttpLivenessPath: "/system/liveness" #(4)!
-      privateApiHttpReadinessPath: "/system/readiness" #(5)!
-      telemetry:
-        logging:
-          enabled: true #(6)!
-    tracing:
-      exporter:
-        endpoint: "http://localhost:4318/v1/traces" #(7)!
-    logging:
-      levels:
-        ROOT: "WARN" #(8)!
-        "ru.tinkoff.kora": "INFO" #(9)!
-        "ru.tinkoff.kora.guide.observability": "DEBUG" #(10)!
-    ```
+Tracing works the other way. Connect an exporter module, set an endpoint, and spans flow without any further switch. The thing that silently disables tracing is a *missing* endpoint: with no
+`tracing.exporter.endpoint`, spans are still created and the trace context still propagates, they are simply never sent anywhere — and again, nothing is logged about it.
 
-    1. Default public HTTP port used by application endpoints.
-    2. Default private HTTP port used by probes, metrics, and management endpoints.
-    3. Default private HTTP path that exposes metrics.
-    4. Default private HTTP path used for the liveness probe.
-    5. Default private HTTP path used for the readiness probe.
-    6. Enables the feature for this configuration section.
-    7. Telemetry exporter endpoint.
-    8. Log level for `ROOT`.
-    9. Log level for `ru.tinkoff.kora`.
-    10. Log level for `ru.tinkoff.kora.guide.observability`.
+Custom metrics you register yourself through `MeterRegistry` are not affected by any of this. They appear as soon as `MetricsModule` is connected and the code runs, because the registry is always live.
+The flag only gates the telemetry of Kora modules.
 
-Why this matters:
+The system server is the deliberate exception in the other direction: `SystemHttpServerConfig` overrides its tracing to `false`, so an orchestrator polling readiness every few seconds does not bury
+your real traces.
 
-- `/metrics`, `/system/liveness`, and `/system/readiness` are intentionally isolated from the public API
-- `telemetry.logging.enabled = true` lets HTTP telemetry enrich logs with trace information
-- the tracing exporter can send spans to any OTLP HTTP collector; if none is running locally, the application still starts and your tests can still validate log correlation and management endpoints
+## Logging { #logging }
 
-## Metrics { #metrics }
+The Logback configuration from the HTTP server guide is what makes logs correlate with traces:
 
-Kora already exposes many framework metrics automatically. Add custom metrics only for business events that matter to your application.
+```xml title="src/main/resources/logback.xml"
+<configuration debug="false">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+    </appender>
 
-===! ":fontawesome-brands-java: `Java`"
+    <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
+        <appender-ref ref="STDOUT"/>
+    </appender>
 
-    Create `src/main/java/ru/tinkoff/kora/guide/observability/service/MetricsService.java`:
+    <root level="WARN">
+        <appender-ref ref="ASYNC"/>
+    </root>
+</configuration>
+```
 
-    ```java
-    package ru.tinkoff.kora.guide.observability.service;
+`KoraAsyncAppender` captures the current span context at the moment a log event is queued, and `ConsoleTextRecordEncoder` writes `traceId=` and `spanId=` into the line whenever that captured context
+is valid. Both appenders are needed: without the async appender there is no captured span context, and without the encoder it is never written out.
 
-    import io.micrometer.core.instrument.Counter;
-    import io.micrometer.core.instrument.MeterRegistry;
-    import io.micrometer.core.instrument.Timer;
-    import java.util.concurrent.Callable;
-    import ru.tinkoff.kora.common.Component;
+Levels come from the `logging.levels` config section rather than from this file, which is what lets you raise a logger at runtime without rebuilding the image.
 
-    @Component
-    public final class MetricsService {
+## Signals Together { #signals-together }
 
-        private final Counter userCreationCounter;
-        private final Timer userCreationTimer;
-
-        public MetricsService(MeterRegistry meterRegistry) {
-            this.userCreationCounter = Counter.builder("user.creation.total")
-                    .description("Total number of users created")
-                    .register(meterRegistry);
-            this.userCreationTimer = Timer.builder("user.creation.duration")
-                    .description("Time taken to create users")
-                    .register(meterRegistry);
-        }
-
-        public <T> T recordUserCreation(Callable<T> action) {
-            this.userCreationCounter.increment();
-            try {
-                return this.userCreationTimer.recordCallable(action);
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to record user creation metrics", e);
-            }
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/MetricsService.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import io.micrometer.core.instrument.Counter
-    import io.micrometer.core.instrument.MeterRegistry
-    import io.micrometer.core.instrument.Timer
-    import ru.tinkoff.kora.common.Component
-    import java.util.concurrent.Callable
-
-    @Component
-    class MetricsService(
-        meterRegistry: MeterRegistry
-    ) {
-        private val userCreationCounter: Counter = Counter.builder("user.creation.total")
-            .description("Total number of users created")
-            .register(meterRegistry)
-
-        private val userCreationTimer: Timer = Timer.builder("user.creation.duration")
-            .description("Time taken to create users")
-            .register(meterRegistry)
-
-        fun <T> recordUserCreation(action: Callable<T>): T {
-            userCreationCounter.increment()
-            return try {
-                userCreationTimer.recordCallable(action)
-            } catch (e: RuntimeException) {
-                throw e
-            } catch (e: Exception) {
-                throw IllegalStateException("Failed to record user creation metrics", e)
-            }
-        }
-    }
-    ```
-
-## Tracing Service { #tracing-service }
-
-Framework telemetry already creates spans for supported runtime paths such as HTTP handling. Manual tracing is useful when you want to mark a business operation inside that request, name it in domain
-terms, and attach success or failure to that specific piece of work.
-
-The tracing reference shows the general pattern in [Tracing Sync](../documentation/tracing.md#tracing-sync): inject `Tracer`, create a span with the current context as parent, put the span into
-`OpentelemetryContext`, and always end the span in `finally`.
+Once all four are connected, one business operation produces all four signals at once. The service layer is where they meet, because that is where the domain meaning lives:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/observability/service/TracingService.java`:
-
     ```java
-    package ru.tinkoff.kora.guide.observability.service;
-
-    import io.opentelemetry.api.trace.StatusCode;
-    import io.opentelemetry.api.trace.Tracer;
-    import java.util.concurrent.Callable;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Context;
-    import ru.tinkoff.kora.opentelemetry.common.OpentelemetryContext;
-
-    @Component
-    public final class TracingService {
-
-        private final Tracer tracer;
-
-        public TracingService(Tracer tracer) {
-            this.tracer = tracer;
-        }
-
-        public <T> T traceUserCreation(Callable<T> action) {
-            var ctx = Context.current();
-            var otctx = OpentelemetryContext.get(ctx);
-            var span = tracer.spanBuilder("user.create")
-                    .setParent(otctx.getContext())
-                    .startSpan();
-
-            OpentelemetryContext.set(ctx, otctx.add(span));
-            try {
-                var result = action.call();
-                span.setStatus(StatusCode.OK);
-                return result;
-            } catch (RuntimeException e) {
-                span.recordException(e);
-                span.setStatus(StatusCode.ERROR, e.getMessage());
-                throw e;
-            } catch (Exception e) {
-                span.recordException(e);
-                span.setStatus(StatusCode.ERROR, e.getMessage());
-                throw new IllegalStateException("Failed to trace user creation", e);
-            } finally {
-                span.end();
-                OpentelemetryContext.set(ctx, otctx);
-            }
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/TracingService.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import io.opentelemetry.api.trace.StatusCode
-    import io.opentelemetry.api.trace.Tracer
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Context
-    import ru.tinkoff.kora.opentelemetry.common.OpentelemetryContext
-
-    @Component
-    class TracingService(
-        private val tracer: Tracer
-    ) {
-        fun <T> traceUserCreation(action: () -> T): T {
-            val ctx = Context.current()
-            val otctx = OpentelemetryContext.get(ctx)
-            val span = tracer.spanBuilder("user.create")
-                .setParent(otctx.getContext())
-                .startSpan()
-
-            OpentelemetryContext.set(ctx, otctx.add(span))
-            try {
-                val result = action()
-                span.setStatus(StatusCode.OK)
-                return result
-            } catch (e: RuntimeException) {
-                span.recordException(e)
-                span.setStatus(StatusCode.ERROR, e.message)
-                throw e
-            } finally {
-                span.end()
-                OpentelemetryContext.set(ctx, otctx)
-            }
-        }
-    }
-    ```
-
-This span becomes a child of the current HTTP request span when the operation is executed during request handling. If the operation fails, the span records the exception and is exported with error
-status.
-
-## Tracing Integration { #tracing-integration }
-
-Keep the HTTP contract from the previous guide and add observability where the business action happens.
-
-Only `UserService` constructor wiring and `createUser()` change in this guide. The rest of the service methods stay the same as in the HTTP server guide.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Update `src/main/java/ru/tinkoff/kora/guide/observability/service/UserService.java`:
-
-    ```java
-    package ru.tinkoff.kora.guide.observability.service;
-
-    import java.time.LocalDateTime;
-    import org.slf4j.Logger;
-    import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.observability.dto.UserRequest;
-    import ru.tinkoff.kora.guide.observability.dto.UserResponse;
-    import ru.tinkoff.kora.guide.observability.repository.UserRepository;
-
     @Component
     public final class UserService {
 
@@ -500,222 +359,99 @@ Only `UserService` constructor wiring and `createUser()` change in this guide. T
 
         private final UserRepository userRepository;
         private final MetricsService metricsService;
-        private final TracingService tracingService;
+        private final KoraTracer tracer;
 
-        public UserService(UserRepository userRepository, MetricsService metricsService, TracingService tracingService) {
+        public UserService(UserRepository userRepository, MetricsService metricsService, KoraTracer tracer) {
             this.userRepository = userRepository;
             this.metricsService = metricsService;
-            this.tracingService = tracingService;
+            this.tracer = tracer;
         }
 
         public UserResponse createUser(UserRequest request) {
-            logger.info("Creating user with name={} and email={}", request.name(), request.email());
-            return tracingService.traceUserCreation(() -> metricsService.recordUserCreation(() -> {
-                var generatedId = userRepository.save(request.name(), request.email());
-                var user = new UserResponse(generatedId, request.name(), request.email(), LocalDateTime.now());
-                logger.info("Created user with id={}", generatedId);
-                return user;
-            }));
-        }
+            return tracer.traceParent("user.create", span -> { //(1)!
+                logger.info("Creating user with name={}", request.name()); //(2)!
 
-        // getUser(), getUsers(), updateUser(), deleteUser(), and sorting logic
-        // stay the same as in the HTTP server guide.
+                return metricsService.recordUserCreation(() -> { //(3)!
+                    var generatedId = userRepository.save(request.name(), request.email());
+                    span.setAttribute("user.id", generatedId); //(4)!
+                    logger.info("Created user with id={}", generatedId);
+                    return new UserResponse(generatedId, request.name(), request.email(), LocalDateTime.now());
+                });
+            });
+        }
     }
     ```
 
+    1.  Tracing: a business span nested under the HTTP server span.
+    2.  Logging: this line carries `traceId` and `spanId` because it is inside the span.
+    3.  Metrics: the counter and timer for the operation.
+    4.  A high-cardinality value is fine on a span, and would not be fine as a metric tag.
+
 === ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/observability/service/UserService.kt`:
-
     ```kotlin
-    package ru.tinkoff.kora.guide.observability.service
-
-    import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.observability.dto.UserRequest
-    import ru.tinkoff.kora.guide.observability.dto.UserResponse
-    import ru.tinkoff.kora.guide.observability.repository.UserRepository
-    import java.time.LocalDateTime
-
     @Component
     class UserService(
         private val userRepository: UserRepository,
         private val metricsService: MetricsService,
-        private val tracingService: TracingService
+        private val tracer: KoraTracer
     ) {
         private val logger = LoggerFactory.getLogger(UserService::class.java)
 
         fun createUser(request: UserRequest): UserResponse {
-            logger.info("Creating user with name={} and email={}", request.name, request.email)
-            return tracingService.traceUserCreation {
-                metricsService.recordUserCreation {
-                    val generatedId = userRepository.save(request.name, request.email)
-                    val user = UserResponse(generatedId, request.name, request.email, LocalDateTime.now())
-                    logger.info("Created user with id={}", generatedId)
-                    user
+            return tracer.traceParent("user.create", KoraTracer.TraceCallable<UserResponse, RuntimeException> { span -> //(1)!
+                logger.info("Creating user with name={}", request.name) //(2)!
+
+                metricsService.recordUserCreation { //(3)!
+                    val id = userRepository.save(request.name, request.email)
+                    span.setAttribute("user.id", id) //(4)!
+                    logger.info("Created user with id={}", id)
+                    UserResponse(id, request.name, request.email, LocalDateTime.now())
                 }
-            }
-        }
-
-        // getUser(), getUsers(), updateUser(), deleteUser(), and sorting logic
-        // stay the same as in the HTTP server guide.
-    }
-    ```
-
-## Probes { #probes }
-
-Readiness should become healthy after startup work finishes. It should not fail forever.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    Create `src/main/java/ru/tinkoff/kora/guide/observability/health/CustomReadinessProbe.java`:
-
-    ```java
-    package ru.tinkoff.kora.guide.observability.health;
-
-    import java.time.Duration;
-    import java.time.Instant;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.readiness.ReadinessProbe;
-    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure;
-
-    @Component
-    public final class CustomReadinessProbe implements ReadinessProbe {
-
-        private static final Duration WARMUP_PERIOD = Duration.ofMillis(500);
-
-        private final Instant startedAt = Instant.now();
-
-        @Override
-        public ReadinessProbeFailure probe() {
-            var readyAt = startedAt.plus(WARMUP_PERIOD);
-            if (Instant.now().isBefore(readyAt)) {
-                return new ReadinessProbeFailure("Service is warming up");
-            }
-            return null;
+            })
         }
     }
     ```
 
-    Create `src/main/java/ru/tinkoff/kora/guide/observability/health/ApplicationHealthProbe.java`:
+    1.  Tracing: a business span nested under the HTTP server span.
+    2.  Logging: this line carries `traceId` and `spanId` because it is inside the span.
+    3.  Metrics: the counter and timer for the operation.
+    4.  A high-cardinality value is fine on a span, and would not be fine as a metric tag.
 
-    ```java
-    package ru.tinkoff.kora.guide.observability.health;
+`MetricsService` is the small component built in the [metrics guide](observability-metrics.md#metrics-service); probes stay in their own components, since nothing about them belongs in a request path.
 
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.liveness.LivenessProbe;
-    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure;
-
-    @Component
-    public final class ApplicationHealthProbe implements LivenessProbe {
-
-        @Override
-        public LivenessProbeFailure probe() {
-            return null;
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/observability/health/CustomReadinessProbe.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.health
-
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.readiness.ReadinessProbe
-    import ru.tinkoff.kora.common.readiness.ReadinessProbeFailure
-    import java.time.Duration
-    import java.time.Instant
-
-    @Component
-    class CustomReadinessProbe : ReadinessProbe {
-        private val startedAt = Instant.now()
-
-        override fun probe(): ReadinessProbeFailure? {
-            val readyAt = startedAt.plus(Duration.ofMillis(500))
-            return if (Instant.now().isBefore(readyAt)) {
-                ReadinessProbeFailure("Service is warming up")
-            } else {
-                null
-            }
-        }
-    }
-    ```
-
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/observability/health/ApplicationHealthProbe.kt`:
-
-    ```kotlin
-    package ru.tinkoff.kora.guide.observability.health
-
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.liveness.LivenessProbe
-    import ru.tinkoff.kora.common.liveness.LivenessProbeFailure
-
-    @Component
-    class ApplicationHealthProbe : LivenessProbe {
-        override fun probe(): LivenessProbeFailure? = null
-    }
-    ```
+One `POST /users` now leaves behind: a `user.creation.total` increment and a `user.creation.duration` sample, a `user.create` span nested in the HTTP span, two log lines carrying the same trace id, and
+no change at all to the probes — which is correct, because creating a user says nothing about whether the instance should receive traffic.
 
 ## Docker Compose { #docker-compose }
 
-If you want to inspect traces locally, start a Jaeger all-in-one container that exposes both the OTLP HTTP ingestion endpoint and the Jaeger UI.
+Jaeger receives the exported traces locally:
 
-Create `docker-compose.yml` in the application module directory:
-
-```yaml
+```yaml title="docker-compose.yml"
 services:
-    jaeger:
-        image: jaegertracing/all-in-one:latest
-        ports:
-            - "16686:16686"
-            - "4318:4318"
-        environment:
-            COLLECTOR_OTLP_ENABLED: "true"
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" #(1)!
+      - "4318:4318" #(2)!
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
 ```
 
-Start Jaeger:
-
-```bash
-docker compose up -d
-```
-
-Then:
-
-- keep `tracing.exporter.endpoint = "http://localhost:4318/v1/traces"` in `application.conf`
-- start the application with `./gradlew run`
-- send a few requests to `http://localhost:8080/users`
-- open [http://localhost:16686](http://localhost:16686) and search for the `guide-observability-app` service
-
-Stop Jaeger when you are done:
-
-```bash
-docker compose down
-```
-
-This setup is optional, but it is the fastest way to verify locally that spans are being exported and that trace IDs from logs correspond to traces visible in the UI.
+1.  Jaeger UI.
+2.  `OTLP/HTTP` receiver — the port `tracing.exporter.endpoint` points at.
 
 ## Check Application { #check-app }
 
-Use the normal Gradle flow for runtime guides:
+Start the collector and the application:
 
 ```bash
-./gradlew clean classes
-./gradlew test
+docker compose up -d
+
 ./gradlew run
 ```
 
-Once the app is running, verify the management endpoints on the private port:
-
-```bash
-curl http://localhost:8085/system/liveness
-curl http://localhost:8085/system/readiness
-curl http://localhost:8085/metrics
-```
-
-You can still hit the public API on `8080`, for example:
+Exercise the business API:
 
 ```bash
 curl -X POST http://localhost:8080/users \
@@ -723,94 +459,147 @@ curl -X POST http://localhost:8080/users \
   -d '{"name":"Alice","email":"alice@example.com"}'
 ```
 
+Then read all four signals back:
+
+```bash
+curl http://localhost:8085/metrics          # metrics
+curl -i http://localhost:8085/system/liveness   # probes
+curl -i http://localhost:8085/system/readiness
+```
+
+Traces are in the Jaeger UI at [http://localhost:16686](http://localhost:16686) under the `guide-observability-app` service, and the logs are on the application's own stdout:
+
+```text
+09:41:12.508 INFO  [kora-undertow-4] i.k.g.o.service.UserService - traceId=4bf92f3577b34da6a3ce929d0e0e4736 spanId=00f067aa0ba902b7 Created user with id=1
+```
+
+The `traceId` in that line is the same id the trace carries in Jaeger. That is the whole payoff of wiring the signals together rather than separately.
+
+## Testing { #testing }
+
+Observability is testable, and worth testing — a broken probe or a missing metric is usually discovered during an incident otherwise.
+
+In-process, inject the pieces and assert on them directly:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraAppTest(Application.class)
+    class ObservabilityAppTest {
+
+        @TestComponent
+        private UserService userService;
+        @TestComponent
+        private MeterRegistry meterRegistry; //(1)!
+
+        @Test
+        void userCreationUpdatesCustomMetrics() {
+            userService.createUser(new UserRequest("Alice", "alice@example.com"));
+
+            var counter = meterRegistry.find("user.creation.total").counter();
+            assertNotNull(counter);
+            assertEquals(1.0d, counter.count());
+        }
+    }
+    ```
+
+    1.  The registry is an ordinary graph component, so a test can read the meters the code registered.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraAppTest(Application::class)
+    class ObservabilityAppTest {
+
+        @TestComponent
+        lateinit var userService: UserService
+        @TestComponent
+        lateinit var meterRegistry: MeterRegistry //(1)!
+
+        @Test
+        fun userCreationUpdatesCustomMetrics() {
+            userService.createUser(UserRequest("Alice", "alice@example.com"))
+
+            val counter = meterRegistry.find("user.creation.total").counter()
+            assertNotNull(counter)
+            assertEquals(1.0, counter!!.count())
+        }
+    }
+    ```
+
+    1.  The registry is an ordinary graph component, so a test can read the meters the code registered.
+
+In a [black-box test](testing-black-box.md), wait on readiness to start the container, then assert on the system port — that `/metrics` contains `http_server_*` values, that both probes answer `200`,
+and that the container's stdout contains `traceId=`. That last assertion is the cheapest possible regression test for "is tracing still wired up".
+
 ## Best Practices { #best-practices }
 
-- Keep business metrics in a dedicated service so controllers stay focused on HTTP concerns.
-- Prefer observing business actions in the service layer, where logs, metrics, and trace context meet.
-- Use manual spans for domain operations that framework instrumentation cannot name precisely.
-- Keep readiness lightweight and temporary. A readiness probe should fail during startup or dependency checks, then recover.
-- Expose health and metrics only on the private port `8085`.
-- Treat tests as the source of truth for observability behavior and keep them scoped to what the guide actually teaches.
+- Keep every operational endpoint on the system port and off the public `Service`.
+- Enable module telemetry deliberately — metrics and logging are off by default, tracing is on.
+- Observe business operations in the service layer, where logs, metrics, and trace context all meet.
+- Keep high-cardinality values on span attributes, never on metric tags.
+- Check internal state in probes, and external dependencies with a [CircuitBreaker](../documentation/resilient.md#circuitbreaker).
+- Set `service.name` and keep it stable per environment.
+- Keep personal data out of logs, span attributes, and metric tags alike.
+- Assert on observability in tests; a signal nobody verifies is a signal that quietly disappears.
 
 ## Summary { #summary }
 
-You extended the HTTP server application with Kora observability features without changing the public API contract. The app now exposes management endpoints on the private port, records business
-metrics for user creation, creates a manual `user.create` span, emits tracing-aware logs, and reports liveness/readiness through Kora probes.
+You assembled one application carrying all four signals: Micrometer metrics on the system port, OpenTelemetry traces exported over `OTLP/HTTP`, log lines correlated by `traceId`, and liveness and
+readiness probes — with the public API contract unchanged. Each signal has a focused guide for the depth this page does not go into.
 
 ## Key Concepts { #key-concepts }
 
-- how `MetricsModule` enables framework metrics and custom `MeterRegistry` usage
-- how `OpentelemetryHttpExporterModule` adds tracing export to the application graph
-- how an injected `Tracer` and `OpentelemetryContext` create a manual child span for business work
-- why management endpoints belong on a private port
-- how to model liveness and readiness probes with realistic behavior
-- how to validate observability features with focused component and black-box tests
+Metrics:
+: aggregate numbers over time, for trends, rates, and alerting.
+
+Tracing:
+: the path of one request, for locating where time or correctness was lost.
+
+Log correlation:
+: `traceId` and `spanId` on log lines, joining what the code said to what the request did.
+
+Probes:
+: the liveness and readiness answers a platform acts on.
+
+System port:
+: the separate port serving `/metrics` and both probes, away from the business API.
+
+Telemetry defaults:
+: tracing on, metrics and logging off — per module, until enabled.
 
 ## Troubleshooting { #troubleshooting }
 
-**`./gradlew clean` or `./gradlew test` hangs:**
+`/metrics` answers `200` but shows only JVM values:
+: Set `<module>.telemetry.metrics.enabled = true`. It defaults to `false` for every module.
 
-Stop Gradle daemons and retry:
+`/metrics` answers `# Metric Scraper disabled`:
+: `MetricsModule` is not connected, so there is no `MetricsScraper` in the graph.
 
-```bash
-./gradlew --stop
-./gradlew clean classes
-./gradlew test
-```
+Nothing reaches the trace collector:
+: Check `tracing.exporter.endpoint`. Without it, spans are created and propagated but never exported, silently.
 
-**Windows reports `AccessDeniedException` in the Gradle cache:**
+Logs have no `traceId`:
+: The line was logged outside a traced operation, or `logback.xml` is not using `KoraAsyncAppender` with `ConsoleTextRecordEncoder`.
 
-This usually means a daemon or another process still holds files in `.gradle` or `build` directories. Run `./gradlew --stop`, close IDE processes that may lock files, and retry the build.
+Any operational endpoint answers `404`:
+: You are on the public port. All of them live on `httpServer.system.port` (default: `8085`).
 
-**Readiness or Liveness or Metrics returns `404`:**
+The application restarts in a loop:
+: An external dependency is being checked in liveness. Move it to readiness.
 
-Check that you are using the private port `8085`, not the public port `8080`, and that these paths are configured:
-
-For the full configuration reference, see [HTTP Server](../documentation/http-server.md).
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    privateApiHttpMetricsPath = "/metrics" //(1)!
-    privateApiHttpLivenessPath = "/system/liveness" //(2)!
-    privateApiHttpReadinessPath = "/system/readiness" //(3)!
-    ```
-
-    1. Default private HTTP path that exposes metrics.
-    2. Default private HTTP path used for the liveness probe.
-    3. Default private HTTP path used for the readiness probe.
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    privateApiHttpMetricsPath: "/metrics" #(1)!
-    privateApiHttpLivenessPath: "/system/liveness" #(2)!
-    privateApiHttpReadinessPath: "/system/readiness" #(3)!
-    ```
-
-    1. Default private HTTP path that exposes metrics.
-    2. Default private HTTP path used for the liveness probe.
-    3. Default private HTTP path used for the readiness probe.
-
-**Traces are not exported anywhere locally:**
-
-That is expected if no OTLP collector is running on `http://localhost:4318/v1/traces`. The application and tests still work, but you will need a collector such as Jaeger or OpenTelemetry Collector to
-inspect exported traces.
+Prometheus stores a huge number of series:
+: A metric tag has an unbounded value set. Move that value to a span attribute.
 
 ## What's Next? { #whats-next }
 
-- [Testing with JUnit](testing-junit.md) to add focused component tests around observable components.
-- [Database JDBC](database-jdbc.md) before [Black Box Testing](testing-black-box.md), because the black-box guide assumes the JDBC-backed app.
-- [Messaging with Kafka](messaging-kafka.md) to observe asynchronous processing.
-- [Resilient Patterns](resilient.md) to connect metrics and traces with failures, retries, and circuit breakers.
+- go deep on one signal in [Metrics](observability-metrics.md), [Tracing](observability-tracing.md), or [Probes](observability-probes.md)
+- add focused component tests in [Testing with JUnit](testing-junit.md)
+- verify the packaged application end to end in [Black-Box Testing](testing-black-box.md)
+- connect telemetry to failures, retries, and circuit breakers in [Resilient Patterns](resilient.md)
 
 ## Help { #help }
 
-If something does not match your local application:
-
-- compare with [Kora Java Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-observability-app) and [Kora Kotlin Observability App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-observability-app)
+- inspect the finished Java and Kotlin observability applications
+- check reference detail in [Metrics](../documentation/metrics.md), [Tracing](../documentation/tracing.md), [Probes](../documentation/probes.md), and [Logging](../documentation/logging-slf4j.md)
 - revisit [HTTP Server](http-server.md) for the base API shape
-- check the [Metrics documentation](../documentation/metrics.md)
-- check the [Tracing documentation](../documentation/tracing.md)
-- check the [Logging documentation](../documentation/logging-slf4j.md)
-- check the [Probes documentation](../documentation/probes.md)

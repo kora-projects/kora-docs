@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Интеграция с базой данных в Kora
 summary: Learn how to integrate databases with Kora using JDBC and perform CRUD operations
+description: "Step-by-step PostgreSQL persistence with Kora JDBC: the io.koraframework:database-jdbc and database-flyway artifacts, JdbcDatabaseModule and FlywayJdbcDatabaseModule, an @EntityJdbc DAO with @Column mapping, a @Repository extending JdbcRepository with @Query, Optional and UpdateCount results, the jdbc configuration section with Hikari pool settings, flyway.locations and the generated repository and row mapper sources."
+agent:
+  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup."
 tags: database, jdbc, crud, persistence
 ---
 
@@ -33,9 +36,9 @@ tags: database, jdbc, crud, persistence
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
+- JDK 25 или новее
 - база данных PostgreSQL (или Docker)
-- Gradle 7+
+- Gradle 9+
 - текстовый редактор или среда разработки
 - пройденное руководство [HTTP-сервер](http-server.md)
 
@@ -160,7 +163,7 @@ JDBC также вводит инфраструктуру времени вып�
 
 ## Зависимости { #dependencies }
 
-Теперь добавьте зависимости базы данных для поддержки PostgreSQL и JDBC:
+Теперь добавьте зависимости для PostgreSQL, JDBC-репозиториев и миграций Flyway:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -170,8 +173,11 @@ JDBC также вводит инфраструктуру времени вып�
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
 
@@ -183,10 +189,17 @@ JDBC также вводит инфраструктуру времени вып�
     dependencies {
         // ... existing dependencies ...
 
-        runtimeOnly("org.postgresql:postgresql:42.7.7")
-        implementation("ru.tinkoff.kora:database-jdbc")
+        implementation("io.koraframework:database-jdbc")
+        implementation("io.koraframework:database-flyway")
+        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+
+        runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
     ```
+
+`database-jdbc` даёт инфраструктуру репозиториев и пул соединений Hikari. `database-flyway` выполняет миграции схемы до того, как репозитории начнут работать, но тянет за собой только `flyway-core`:
+начиная с Flyway 10 поддержка каждой СУБД вынесена в отдельный артефакт, поэтому `org.flywaydb:flyway-database-postgresql` нужно добавить явно. Без него приложение падает на старте с ошибкой
+`Unsupported Database: PostgreSQL`. Версию диалекта держите совпадающей с версией `flyway-core`, которую приносит Kora `2.0.0.RC1`, — это `13.3.0`. Драйвер PostgreSQL нужен только во время выполнения.
 
 ## Модули { #modules }
 
@@ -194,28 +207,28 @@ JDBC также вводит инфраструктуру времени вып�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/Application.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc;
+    package io.koraframework.guide.databasejdbc;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule;
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule;
+    import io.koraframework.database.jdbc.JdbcDatabaseModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            JdbcDatabaseModule,  // <----- Подключили модуль
-            FlywayJdbcDatabaseModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            JdbcDatabaseModule,  // <----- Connected module
+            FlywayJdbcDatabaseModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -225,28 +238,28 @@ JDBC также вводит инфраструктуру времени вып�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/Application.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc
+    package io.koraframework.guide.databasejdbc
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.database.flyway.FlywayJdbcDatabaseModule
-    import ru.tinkoff.kora.database.jdbc.JdbcDatabaseModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.database.flyway.FlywayJdbcDatabaseModule
+    import io.koraframework.database.jdbc.JdbcDatabaseModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        JdbcDatabaseModule,  // <----- Подключили модуль
-        FlywayJdbcDatabaseModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        JdbcDatabaseModule,  // <----- Connected module
+        FlywayJdbcDatabaseModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -259,14 +272,14 @@ JDBC также вводит инфраструктуру времени вып�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/repository/UserDAO.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/repository/UserDAO.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.repository;
+    package io.koraframework.guide.databasejdbc.repository;
 
     import java.time.LocalDateTime;
-    import ru.tinkoff.kora.database.common.annotation.Column;
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc;
+    import io.koraframework.database.common.annotation.Column;
+    import io.koraframework.database.jdbc.annotation.EntityJdbc;
 
     @EntityJdbc
     public record UserDAO(
@@ -278,14 +291,14 @@ JDBC также вводит инфраструктуру времени вып�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/UserDAO.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/repository/UserDAO.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.repository
+    package io.koraframework.guide.databasejdbc.repository
 
     import java.time.LocalDateTime
-    import ru.tinkoff.kora.database.common.annotation.Column
-    import ru.tinkoff.kora.database.jdbc.EntityJdbc
+    import io.koraframework.database.common.annotation.Column
+    import io.koraframework.database.jdbc.annotation.EntityJdbc
 
     @EntityJdbc
     data class UserDAO(
@@ -304,17 +317,17 @@ JDBC также вводит инфраструктуру времени вып�
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasejdbc/repository/UserRepository.java`:
+    `src/main/java/io/koraframework/guide/databasejdbc/repository/UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.repository;
+    package io.koraframework.guide.databasejdbc.repository;
 
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.database.common.UpdateCount;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository;
+    import io.koraframework.database.common.UpdateCount;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
+    import io.koraframework.database.jdbc.JdbcRepository;
 
     @Repository
     public interface UserRepository extends JdbcRepository {
@@ -338,15 +351,15 @@ JDBC также вводит инфраструктуру времени вып�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/UserRepository.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasejdbc/repository/UserRepository.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.repository
+    package io.koraframework.guide.databasejdbc.repository
 
-    import ru.tinkoff.kora.database.common.UpdateCount
-    import ru.tinkoff.kora.database.common.annotation.Query
-    import ru.tinkoff.kora.database.common.annotation.Repository
-    import ru.tinkoff.kora.database.jdbc.JdbcRepository
+    import io.koraframework.database.common.UpdateCount
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+    import io.koraframework.database.jdbc.JdbcRepository
 
     @Repository
     interface UserRepository : JdbcRepository {
@@ -376,17 +389,17 @@ JDBC также вводит инфраструктуру времени вып�
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserRepository_Impl.java
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.java
-    guides/guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserRepository_Impl.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.java
+    guides/java/kora-java-guide-database-jdbc-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserRepository_Impl.kt
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.kt
-    guides/kotlin/guide-kotlin-database-jdbc-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserRepository_Impl.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcResultSetMapper.kt
+    guides/kotlin/kora-kotlin-guide-database-jdbc-app/build/generated/ksp/main/kotlin/io/koraframework/guide/databasejdbc/repository/$UserDAO_JdbcRowMapper.kt
     ```
 
 Этот сокращенный фрагмент сгенерированного репозитория показывает, как именованные SQL-параметры становятся параметрами подготовленного JDBC-выражения:
@@ -402,26 +415,36 @@ JDBC также вводит инфраструктуру времени вып�
 
     @Override
     public long save(String name, String email) {
-        var _ctxCurrent = ru.tinkoff.kora.common.Context.current();
         var _query = QUERY_CONTEXT_3;
-        var _telemetry = this._connectionFactory.telemetry().createContext(_ctxCurrent, _query);
-        var _conToUse = this._connectionFactory.currentConnection();
-        Connection _conToClose;
-        if (_conToUse == null) {
-            _conToUse = this._connectionFactory.newConnection();
-            _conToClose = _conToUse;
-        } else {
-            _conToClose = null;
-        }
-        try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql())) {
-            _stmt.setString(1, name);
-            _stmt.setString(2, email);
-            try (var _rs = _stmt.executeQuery()) {
-                var _result = _result_mapper_3.apply(_rs);
-                _telemetry.close(null);
-                return _result;
-            }
-        }
+        var _observation = this._jdbcExecutor.telemetry().observe(_query);
+        return ScopedValue.where(Observation.VALUE, _observation)
+            .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+            .call(() -> {
+                var _conToUse = this._jdbcExecutor.currentConnection();
+                Connection _conToClose;
+                if (_conToUse == null) {
+                    _conToUse = this._jdbcExecutor.acquireConnection();
+                    _conToClose = _conToUse;
+                } else {
+                    _conToClose = null;
+                }
+                try (_conToClose; var _stmt = _conToUse.prepareStatement(_query.sql())) {
+                    _stmt.setString(1, name);
+                    _stmt.setString(2, email);
+                    try (var _rs = _stmt.executeQuery()) {
+                        var _result = _result_mapper_3.apply(_rs);
+                        return _result;
+                    }
+                } catch (java.sql.SQLException e) {
+                    _observation.observeError(e);
+                    throw new io.koraframework.database.jdbc.exception.UncheckedSqlException(e);
+                } catch (Exception e) {
+                    _observation.observeError(e);
+                    throw e;
+                } finally {
+                    _observation.end();
+                }
+            });
     }
     ```
 
@@ -436,31 +459,39 @@ JDBC также вводит инфраструктуру времени вып�
 
     override fun save(name: String, email: String): Long {
       val _query = _queryContext_3
-      val _ctxCurrent = Context.current()
-      val _telemetry = _jdbcConnectionFactory.telemetry().createContext(_ctxCurrent, _query)
-      var _conToUse = _jdbcConnectionFactory.currentConnection()
-      val _conToClose = if (_conToUse == null) {
-        _conToUse = _jdbcConnectionFactory.newConnection()
-        _conToUse
-      } else {
-        null
-      }
-      try {
-        _conToClose.use {
-          _conToUse!!.prepareStatement(_query.sql()).use { _stmt ->
-            _stmt.setString(1, name)
-            _stmt.setString(2, email)
-            _stmt.executeQuery().use { _rs ->
-              val _result = _result_mapper_3.apply(_rs)
-                ?: throw NullPointerException("Result mapping is expected non-null, but was null")
-              _telemetry.close(null)
-              return _result
+      val _observation = _jdbcExecutor.telemetry().observe(_query)
+      return ScopedValue.where(Observation.VALUE, _observation)
+        .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+        .call<Long, RuntimeException> {
+          var _conToUse = _jdbcExecutor.currentConnection()
+          val _conToClose = if (_conToUse == null) {
+            _conToUse = _jdbcExecutor.acquireConnection()
+            _conToUse
+          } else {
+            null
+          }
+          try {
+            _conToClose.use {
+              _conToUse!!.prepareStatement(_query.sql()).use { _stmt ->
+                _stmt.setString(1, name)
+                _stmt.setString(2, email)
+                _stmt.executeQuery().use { _rs ->
+                  val _result = _result_mapper_3.apply(_rs)
+                    ?: throw NullPointerException("Result mapping is expected non-null, but was null")
+                  return@use _result
+                }
+              }
             }
+          } catch (_e: java.sql.SQLException) {
+            _observation.observeError(_e)
+            throw io.koraframework.database.jdbc.exception.UncheckedSqlException(_e)
+          } catch (_e: Exception) {
+            _observation.observeError(_e)
+            throw _e
+          } finally {
+            _observation.end()
           }
         }
-      } finally {
-        _ctxCurrent.inject()
-      }
     }
     ```
 
@@ -477,11 +508,24 @@ JDBC также вводит инфраструктуру времени вып�
     var _createdAtColumn = _rs.findColumn("created_at");
 
     Long id = _rs.getLong(_idColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field id is not nullable but row id has null");
+    }
     String name = _rs.getString(_nameColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field name is not nullable but row name has null");
+    }
     String email = _rs.getString(_emailColumn);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field email is not nullable but row email has null");
+    }
     LocalDateTime createdAt = _rs.getObject(_createdAtColumn, LocalDateTime.class);
+    if (_rs.wasNull()) {
+      throw new NullPointerException("Result field createdAt is not nullable but row created_at has null");
+    }
 
-    return new UserDAO(id, name, email, createdAt);
+    var _result = new UserDAO(id, name, email, createdAt);
+    return _result;
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -609,23 +653,23 @@ JDBC также вводит инфраструктуру времени вып�
 - При неправильном формате идентификатор в пути выбрасывайте `HttpServerResponseException` с `400`.
 - При обновлении или удалении, когда ни одна строка не затронута, выбрасывайте `HttpServerResponseException` с `404`.
 
-===! ":fontawesome-brands-java: Java"
+===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/databasejdbc/service/UserService.java`:
+    Обновите `src/main/java/io/koraframework/guide/databasejdbc/service/UserService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasejdbc.service;
+    package io.koraframework.guide.databasejdbc.service;
 
     import java.time.LocalDateTime;
     import java.util.Comparator;
     import java.util.List;
     import java.util.Optional;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest;
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserResponse;
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO;
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.databasejdbc.dto.UserRequest;
+    import io.koraframework.guide.databasejdbc.dto.UserResponse;
+    import io.koraframework.guide.databasejdbc.repository.UserDAO;
+    import io.koraframework.guide.databasejdbc.repository.UserRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class UserService {
@@ -702,21 +746,21 @@ JDBC также вводит инфраструктуру времени вып�
     }
     ```
 
-=== ":simple-kotlin: Kotlin"
+=== ":simple-kotlin: `Kotlin`"
 
-    Обновите `src/main/kotlin/ru/tinkoff/kora/guide/databasejdbc/service/UserService.kt`:
+    Обновите `src/main/kotlin/io/koraframework/guide/databasejdbc/service/UserService.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasejdbc.service
+    package io.koraframework.guide.databasejdbc.service
 
     import java.time.LocalDateTime
     import java.util.Comparator
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserRequest
-    import ru.tinkoff.kora.guide.databasejdbc.dto.UserResponse
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserDAO
-    import ru.tinkoff.kora.guide.databasejdbc.repository.UserRepository
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.databasejdbc.dto.UserRequest
+    import io.koraframework.guide.databasejdbc.dto.UserResponse
+    import io.koraframework.guide.databasejdbc.repository.UserDAO
+    import io.koraframework.guide.databasejdbc.repository.UserRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
 
     @Component
     class UserService(private val userRepository: UserRepository) {
@@ -783,45 +827,50 @@ JDBC также вводит инфраструктуру времени вып�
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
-    db {
-      jdbcUrl = ${POSTGRES_JDBC_URL} //(1)!
-      username = ${POSTGRES_USER} //(2)!
-      password = ${POSTGRES_PASS} //(3)!
-      maxPoolSize = 10 //(4)!
-      poolName = "guide-jdbc" //(5)!
+    jdbc { //(1)!
+      jdbcUrl = ${POSTGRES_JDBC_URL} //(2)!
+      username = ${POSTGRES_USER} //(3)!
+      password = ${POSTGRES_PASS} //(4)!
+      maxPoolSize = 10 //(5)!
+      poolName = "guide-jdbc" //(6)!
     }
 
     flyway {
-      locations = "db/migration" //(6)!
+      locations = "db/migration" //(7)!
     }
     ```
 
-    1. URL JDBC-соединения. Необязательное переопределение через `POSTGRES_JDBC_URL`.
-    2. Имя пользователя базы данных. Необязательное переопределение через `POSTGRES_USER`.
-    3. Пароль пользователя базы данных. Необязательное переопределение через `POSTGRES_PASS`.
-    4. Максимальное число соединений в пуле.
-    5. Человекочитаемое имя пула соединений, используемое в диагностике.
-    6. Расположения миграций, которые просматривает Flyway.
+    1. Секция конфигурации, которую читает `JdbcDatabaseModule`.
+    2. URL JDBC-соединения (обязательно, без значения по умолчанию). Берётся из `POSTGRES_JDBC_URL`.
+    3. Имя пользователя базы данных (обязательно, без значения по умолчанию). Берётся из `POSTGRES_USER`.
+    4. Пароль пользователя базы данных (обязательно, без значения по умолчанию). Берётся из `POSTGRES_PASS`.
+    5. Максимальное число соединений в пуле Hikari (по умолчанию: `10`).
+    6. Имя пула соединений Hikari, используемое в диагностике (обязательно, без значения по умолчанию).
+    7. Расположения миграций, которые просматривает Flyway (по умолчанию: `db/migration`).
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
-    db:
-      jdbcUrl: ${POSTGRES_JDBC_URL} #(1)!
-      username: ${POSTGRES_USER} #(2)!
-      password: ${POSTGRES_PASS} #(3)!
-      maxPoolSize: 10 #(4)!
-      poolName: "guide-jdbc" #(5)!
+    jdbc: #(1)!
+      jdbcUrl: ${POSTGRES_JDBC_URL} #(2)!
+      username: ${POSTGRES_USER} #(3)!
+      password: ${POSTGRES_PASS} #(4)!
+      maxPoolSize: 10 #(5)!
+      poolName: "guide-jdbc" #(6)!
     flyway:
-      locations: "db/migration" #(6)!
+      locations: "db/migration" #(7)!
     ```
 
-    1. URL JDBC-соединения. Необязательное переопределение через `POSTGRES_JDBC_URL`.
-    2. Имя пользователя базы данных. Необязательное переопределение через `POSTGRES_USER`.
-    3. Пароль пользователя базы данных. Необязательное переопределение через `POSTGRES_PASS`.
-    4. Максимальное число соединений в пуле.
-    5. Человекочитаемое имя пула соединений, используемое в диагностике.
-    6. Расположения миграций, которые просматривает Flyway.
+    1. Секция конфигурации, которую читает `JdbcDatabaseModule`.
+    2. URL JDBC-соединения (обязательно, без значения по умолчанию). Берётся из `POSTGRES_JDBC_URL`.
+    3. Имя пользователя базы данных (обязательно, без значения по умолчанию). Берётся из `POSTGRES_USER`.
+    4. Пароль пользователя базы данных (обязательно, без значения по умолчанию). Берётся из `POSTGRES_PASS`.
+    5. Максимальное число соединений в пуле Hikari (по умолчанию: `10`).
+    6. Имя пула соединений Hikari, используемое в диагностике (обязательно, без значения по умолчанию).
+    7. Расположения миграций, которые просматривает Flyway (по умолчанию: `db/migration`).
+
+Имя секции задаётся не произвольно: `JdbcDatabaseModule` читает секцию `jdbc`, а `FlywayJdbcDatabaseModule` — секцию `flyway`. Ошибка в имени секции не ловится компилятором, она проявляется при старте
+приложения, например как `ConfigValueException: Config value 'ROOT.jdbc.username' is required`.
 
 ## Настройка базы данных { #database-setup }
 
@@ -830,7 +879,6 @@ JDBC также вводит инфраструктуру времени вып�
 Создайте файл `docker-compose.yml` в каталоге модуля приложения:
 
 ```yaml
-version: '3.8'
 services:
   postgres:
     image: postgres:17.6-alpine
@@ -956,12 +1004,14 @@ HTTP-контракт остается стабильным, пока слой �
 **Ошибки компиляции:**
 
 - Убедитесь, что добавлены зависимости JDBC и PostgreSQL.
-- Убедитесь, что обработка аннотаций включена для Kora.
-- Проверьте совместимость версии Java (17+).
+- Убедитесь, что обработка аннотаций включена для Kora (`annotation-processors` для Java, `symbol-processors` для Kotlin).
+- Проверьте совместимость версии Java (25+).
 
 **Ошибки во время выполнения:**
 
 - Проверьте журналы Flyway и подключение к базе данных.
+- `Unsupported Database: PostgreSQL` означает, что не подключён артефакт диалекта Flyway `org.flywaydb:flyway-database-postgresql`.
+- `ConfigValueException` про `ROOT.jdbc.*` означает, что настройки соединения лежат не в секции `jdbc` либо не заданы переменные окружения.
 - Убедитесь, что схема таблицы соответствует сопоставлениям столбцов `UserDAO`.
 - Изучите журналы приложения для подробностей ошибок SQL/HTTP.
 

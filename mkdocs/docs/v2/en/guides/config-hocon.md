@@ -1,16 +1,19 @@
-﻿---
+---
 search:
   exclude: true
 title: Configuration Management with Kora
 summary: Learn how to bind HOCON configuration to type-safe interfaces, separate required and optional values, and reuse one config shape across multiple integrations
-tags: configuration, hocon, configsource, configvalueextractor
+description: "Step-by-step type-safe HOCON configuration for a Kora 2.0 service: the io.koraframework:config-hocon artifact, HoconConfigModule, @ConfigSource for an application section, @ConfigMapper plus ConfigValueMapper.mapOrThrow for a reusable library shape, @Tag to bind one config type to several paths, required ${VAR} and optional ${?VAR} substitutions, HOCON object reuse and include, config.resource and config.file selection, and the generated config mapper and module sources."
+agent:
+  use_when: "Use this file for questions about typed HOCON configuration in a Kora 2.0 service: io.koraframework:config-hocon, HoconConfigModule, @ConfigSource, @ConfigMapper, ConfigValueMapper with map and mapOrThrow, Config.get, @Tag for two instances of one config type, required values versus @Nullable and default methods, ${APP_VERSION} and ${?APP_NAME} substitutions, HOCON object reuse and include, -Dconfig.resource and -Dconfig.file, and generated $Type_ConfigValueMapper sources."
+tags: configuration, hocon, configsource, configmapper
 ---
 
 # HOCON Configuration Management with Kora { #hocon-configuration-management-kora }
 
-This guide introduces type-safe configuration with Kora and HOCON. It covers how configuration records are extracted from `application.conf`, how required and optional values are represented in Java
-code, and how reusable config fragments can be injected into multiple components without duplicating the whole block. You will also see how environment variables and printed runtime output make
-resolved configuration easy to inspect.
+This guide introduces type-safe configuration with Kora and HOCON. It covers how configuration values are mapped from `application.conf` into typed interfaces, how required and optional values are
+represented in Java and Kotlin code, and how one reusable config shape can be bound to several sections without duplicating the whole block. You will also see how environment variables and printed
+runtime output make resolved configuration easy to inspect.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -18,7 +21,7 @@ resolved configuration easy to inspect.
 
 === ":simple-kotlin: `Kotlin`"
 
-    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-config-hocon-app).
+    If you want to check your progress along the way, use the finished working example: [Kora Kotlin Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-config-hocon-app).
 
 ## What You'll Build { #youll-build }
 
@@ -27,16 +30,18 @@ You'll build a small runnable Kora application that:
 - binds `app.name`, `app.version`, and `app.environment` through `@ConfigSource`
 - treats `APP_VERSION` as required and `APP_NAME` as an optional override
 - defines one reusable `LibConfig` with `endpoint` and `requestTimeout`
-- extracts that same `LibConfig` for `lib1` and `lib2`
+- maps that same `LibConfig` for `lib1` and `lib2`
 - reuses one shared HOCON object and overrides only one field for the second library
 - prints all resolved values to `stdout` during startup
 
 ## What You'll Need { #youll-need }
 
-- JDK 17 or later
-- Gradle 7+
+- JDK 25 or later
+- Gradle 9+
 - A text editor or IDE
 - Completed [Creating Your First Kora App](getting-started.md) guide
+
+Kora 2.0 artifacts are compiled for Java 25, so the JDK that compiles the application must be 25 or newer.
 
 ## Prerequisites { #prerequisites }
 
@@ -54,18 +59,21 @@ compiled classes, but application code still needs a type-safe way to read them.
 The main lesson is that configuration should be explicit at the application boundary. Components should not search environment variables or parse files by themselves; they should receive typed
 configuration from the graph.
 
-### HOCON and Type-Safe Extraction { #hocon-type-safe-extraction }
+### HOCON and Type-Safe Mapping { #hocon-type-safe-extraction }
 
-Kora can read [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) configuration and extract it into Java interfaces or records. Instead of passing raw strings and maps through the
+Kora can read [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) configuration and map it into Java or Kotlin interfaces. Instead of passing raw strings and maps through the
 application, components receive typed configuration objects. This makes required values explicit and lets the compiler help with configuration usage.
 
 This guide uses two complementary mapping styles:
 
 - `@ConfigSource("app")` maps one fixed config section to a type-safe dependency
-- `@ConfigValueExtractor` maps a reusable config shape that can be extracted from different paths
+- `@ConfigMapper` maps a reusable config shape that can be bound to different paths
 
-Use `@ConfigSource` when a component needs one stable section of application configuration. Use `@ConfigValueExtractor` when the same structure appears in several places and you want one reusable
-extractor.
+Use `@ConfigSource` when a component needs one stable section of application configuration. Use `@ConfigMapper` when the same structure appears in several places and you want one reusable
+mapping rule whose path is chosen in a module factory.
+
+Both annotations generate a `ConfigValueMapper<T>` implementation at compile time. The difference is only who picks the path: `@ConfigSource` bakes it into a generated module, while `@ConfigMapper`
+leaves it to you.
 
 ### Required and Optional Values { #required-optional }
 
@@ -77,7 +85,8 @@ HOCON supports useful composition features:
 
 These features let one configuration file stay readable while still adapting to local development, tests, and deployed environments.
 
-Like the protobuf contract in gRPC or the cache contract in caching, a config type is a boundary contract. It says which runtime values the application expects and what shape those values must have.
+On the code side the rule is just as short: every method of a config interface is a required value unless you mark it nullable or give it a `default` implementation. Like the protobuf contract in gRPC
+or the cache contract in caching, a config type is a boundary contract. It says which runtime values the application expects and what shape those values must have.
 
 ### Configuration as a Graph Dependency { #configuration-graph-dependency }
 
@@ -89,7 +98,7 @@ The practical flow is:
 1. add the HOCON configuration module
 2. define a fixed application config source
 3. bind required and optional values
-4. define a reusable value extractor
+4. define a reusable config mapper
 5. reuse one config shape for multiple library settings
 6. run the app and inspect resolved configuration
 
@@ -107,8 +116,8 @@ Add the HOCON module to your existing project and keep logging enabled so startu
     }
 
     dependencies {
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:logging-logback"
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:logging-logback"
     }
     ```
 
@@ -122,8 +131,8 @@ Add the HOCON module to your existing project and keep logging enabled so startu
     }
 
     dependencies {
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:logging-logback")
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:logging-logback")
     }
     ```
 
@@ -131,6 +140,8 @@ Why this matters:
 
 - `config-hocon` enables HOCON file loading in the application graph
 - `logging-logback` keeps startup and troubleshooting visible while the app runs
+
+Versions come from the `io.koraframework:kora-bom` platform the project already imports, so no explicit version is needed here.
 
 ## Modules { #modules }
 
@@ -140,15 +151,15 @@ At this point we are not adding application-specific configuration yet. We are o
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/config/hocon/Application.java`:
+    Create `src/main/java/io/koraframework/guide/config/hocon/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
@@ -163,15 +174,15 @@ At this point we are not adding application-specific configuration yet. We are o
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/Application.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/config/hocon/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
@@ -189,6 +200,9 @@ Why this matters:
 - `LogbackModule` adds basic startup and troubleshooting logs
 - the graph stays minimal for now: it can start the application and read the config file
 
+`HoconConfigModule` also decides which file to read. With no system property set it looks for `application.conf` on the classpath; `config.resource` and `config.file` override that, and we use the
+first of them at the end of this guide.
+
 Typed sections are introduced gradually: first the application section, then a reusable library shape, and only after that the explicit mapping from `libs.lib1` and `libs.lib2` to two instances of the same type.
 
 If you want more background on graph wiring and factories, see the [Container documentation](../documentation/container.md).
@@ -201,12 +215,12 @@ This is the simplest and most common config pattern in Kora. Instead of reading 
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/config/hocon/AppConfig.java`:
+    Create `src/main/java/io/koraframework/guide/config/hocon/AppConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource;
+    import io.koraframework.config.common.annotation.ConfigSource;
 
     @ConfigSource("app")
     public interface AppConfig {
@@ -221,12 +235,12 @@ This is the simplest and most common config pattern in Kora. Instead of reading 
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/AppConfig.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/config/hocon/AppConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.config.common.annotation.ConfigSource
+    import io.koraframework.config.common.annotation.ConfigSource
 
     @ConfigSource("app")
     interface AppConfig {
@@ -241,6 +255,9 @@ Why this matters:
 - `@ConfigSource("app")` makes the `app` section a first-class dependency
 - the contract stays close to the code that consumes it
 - refactoring config keys becomes safer because the structure is explicit in one place
+
+All three methods return non-nullable types, so all three values are required. Making one of them optional is a code change, not a file change: mark it `@Nullable` in Java or return a nullable type in
+Kotlin. Method names are matched leniently, so `someBarString()` also reads `some-bar-string` and `some_bar_string` from the file.
 
 ## Required Values { #required-values }
 
@@ -265,6 +282,9 @@ What this means:
 
 This is an important HOCON pattern: make critical values fail fast, but keep cosmetic or environment-specific overrides optional.
 
+Note that the two `name` lines are not a mistake. HOCON keeps the last assignment for a key, and `${?APP_NAME}` contributes nothing when the variable is unset, so the literal above it survives. This is
+how a default plus an optional override is spelled in HOCON.
+
 For more on substitution rules and supported value types, see the [Configuration documentation](../documentation/config.md).
 
 ## Library Configuration { #library-config }
@@ -280,15 +300,15 @@ Instead of keeping those as raw keys, define them once as a type.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/config/hocon/LibConfig.java`:
+    Create `src/main/java/io/koraframework/guide/config/hocon/LibConfig.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
     import java.time.Duration;
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor;
+    import io.koraframework.config.common.annotation.ConfigMapper;
 
-    @ConfigValueExtractor
+    @ConfigMapper
     public interface LibConfig {
 
         String endpoint();
@@ -299,15 +319,15 @@ Instead of keeping those as raw keys, define them once as a type.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/LibConfig.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/config/hocon/LibConfig.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
+    import io.koraframework.config.common.annotation.ConfigMapper
     import java.time.Duration
-    import ru.tinkoff.kora.config.common.annotation.ConfigValueExtractor
 
-    @ConfigValueExtractor
+    @ConfigMapper
     interface LibConfig {
         fun endpoint(): String
         fun requestTimeout(): Duration
@@ -316,44 +336,40 @@ Instead of keeping those as raw keys, define them once as a type.
 
 Now that `LibConfig` exists, return to the application graph and show explicitly where the two library configs come from.
 
-`@ConfigValueExtractor` generates an extractor for the `LibConfig` shape, and the graph methods choose concrete branches of the config file. This gives Kora two different instances of the same type: one for `libs.lib1` and one for `libs.lib2`.
+`@ConfigMapper` generates a `ConfigValueMapper<LibConfig>` for the shape but binds no path, and the graph methods choose concrete branches of the config file. This gives Kora two different instances of the same type: one for `libs.lib1` and one for `libs.lib2`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Update `src/main/java/ru/tinkoff/kora/guide/config/hocon/Application.java`:
+    Update `src/main/java/io/koraframework/guide/config/hocon/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.config.common.Config;
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.config.common.Config;
+    import io.koraframework.config.common.mapper.ConfigValueMapper;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,  // <----- Connected module
             LogbackModule {
 
-        final class Lib1Tag {
-            private Lib1Tag() {}
-        }
+        final class Lib1Tag {}
 
-        final class Lib2Tag {
-            private Lib2Tag() {}
-        }
+        final class Lib2Tag {}
 
         @Tag(Lib1Tag.class)
-        default LibConfig lib1Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib1"));
+        default LibConfig lib1Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib1"));
         }
 
         @Tag(Lib2Tag.class)
-        default LibConfig lib2Config(Config config, ConfigValueExtractor<LibConfig> extractor) {
-            return extractor.extract(config.get("libs.lib2"));
+        default LibConfig lib2Config(Config config, ConfigValueMapper<LibConfig> mapper) {
+            return mapper.mapOrThrow(config.get("libs.lib2"));
         }
 
         static void main(String[] args) {
@@ -364,18 +380,18 @@ Now that `LibConfig` exists, return to the application graph and show explicitly
 
 === ":simple-kotlin: `Kotlin`"
 
-    Update `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/Application.kt`:
+    Update `src/main/kotlin/io/koraframework/guide/config/hocon/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.config.common.Config
-    import ru.tinkoff.kora.config.common.extractor.ConfigValueExtractor
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.config.common.Config
+    import io.koraframework.config.common.mapper.ConfigValueMapper
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
@@ -386,13 +402,13 @@ Now that `LibConfig` exists, return to the application graph and show explicitly
         class Lib2Tag private constructor()
 
         @Tag(Lib1Tag::class)
-        fun lib1Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib1"))
+        fun lib1Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib1"))
         }
 
         @Tag(Lib2Tag::class)
-        fun lib2Config(config: Config, extractor: ConfigValueExtractor<LibConfig>): LibConfig {
-            return extractor.extract(config.get("libs.lib2"))
+        fun lib2Config(config: Config, mapper: ConfigValueMapper<LibConfig>): LibConfig {
+            return mapper.mapOrThrow(config.get("libs.lib2"))
         }
     }
 
@@ -405,9 +421,12 @@ What happens here:
 
 - `Lib1Tag` and `Lib2Tag` distinguish two `LibConfig` instances in the graph
 - `config.get("libs.lib1")` and `config.get("libs.lib2")` select different config branches
-- `ConfigValueExtractor<LibConfig>` converts each branch into a typed object
+- `ConfigValueMapper<LibConfig>` converts each branch into a typed object
 
-Add the first library section to `application.conf`:
+`ConfigValueMapper<T>` offers two reading methods. `map(...)` may return `null`, while `mapOrThrow(...)` turns that `null` into a `ConfigValueException`. Factory methods normally use `mapOrThrow(...)`,
+because a missing library section is a startup error rather than a valid state.
+
+Both factories are now part of the graph, so both sections have to exist. Add them to `application.conf`:
 
 ```hocon title="src/main/resources/application.conf"
 app {
@@ -417,19 +436,25 @@ app {
   environment = "development"
 }
 
-libs.lib1 {
-  endpoint = "https://integration.local/api"
-  requestTimeout = 5s
+libs {
+  lib1 {
+    endpoint = "https://integration.local/api"
+    requestTimeout = 5s
+  }
+  lib2 {
+    endpoint = "https://integration-2.local/api"
+    requestTimeout = 5s
+  }
 }
 ```
 
-At this stage, `LibConfig` is only used for `lib1`. The application graph extracts it from `libs.lib1`, and Kora converts `5s` directly into `Duration`.
+At this stage the application starts, and Kora converts `5s` directly into `Duration`. But the two sections are almost identical, and that duplication is what the next step removes.
 
 ## Configuration file { #config-file }
 
-Now suppose a second library needs exactly the same shape.
+Both libraries need exactly the same shape, and right now the shared values are copied twice.
 
-You could duplicate the whole config block, but HOCON gives you a better option: place the shared values in one object and reuse that object where needed.
+HOCON gives you a better option: place the shared values in one object and reuse that object where needed.
 
 Update `application.conf` again:
 
@@ -458,7 +483,9 @@ What changed:
 - `libs.lib2` also reuses the whole object
 - `libs.lib2.endpoint` overrides only one field after reuse
 
-This is the payoff of combining HOCON reuse with `@ConfigValueExtractor`: one config shape, multiple extracted instances, minimal duplication.
+Order matters in the last three lines: `libs.lib2.endpoint` has to come after `libs.lib2 = ${common-lib}`, otherwise the whole-object assignment would replace it.
+
+This is the payoff of combining HOCON reuse with `@ConfigMapper`: one config shape, multiple mapped instances, minimal duplication.
 
 ## Resolved Values { #resolved-values }
 
@@ -469,17 +496,17 @@ dependency injection guide.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Create `src/main/java/ru/tinkoff/kora/guide/config/hocon/ConfigRunner.java`:
+    Create `src/main/java/io/koraframework/guide/config/hocon/ConfigRunner.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.config.hocon;
+    package io.koraframework.guide.config.hocon;
 
     import java.util.LinkedHashMap;
     import java.util.Map;
-    import ru.tinkoff.kora.application.graph.Lifecycle;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.common.Tag;
-    import ru.tinkoff.kora.common.annotation.Root;
+    import io.koraframework.application.graph.Lifecycle;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Root;
+    import io.koraframework.common.annotation.Tag;
 
     @Root
     @Component
@@ -526,15 +553,15 @@ dependency injection guide.
 
 === ":simple-kotlin: `Kotlin`"
 
-    Create `src/main/kotlin/ru/tinkoff/kora/guide/config/hocon/ConfigRunner.kt`:
+    Create `src/main/kotlin/io/koraframework/guide/config/hocon/ConfigRunner.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.config.hocon
+    package io.koraframework.guide.config.hocon
 
-    import ru.tinkoff.kora.application.graph.Lifecycle
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.common.Tag
-    import ru.tinkoff.kora.common.annotation.Root
+    import io.koraframework.application.graph.Lifecycle
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Root
+    import io.koraframework.common.annotation.Tag
 
     @Root
     @Component
@@ -573,6 +600,81 @@ Why this matters:
 - `Lifecycle` gives you a natural place to print or validate injected values
 - `snapshot()` keeps the runtime output and the tests aligned around one contract
 
+The same `@Tag` markers that disambiguated the two factories now select which `LibConfig` each constructor parameter receives. Without them the graph could not tell the two components apart.
+
+## Generated Configuration Code { #config-code }
+
+Like the rest of Kora, configuration mapping is generated at compile time. After `./gradlew clean classes`, look at what the processor produced:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```text
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/AppConfigModule.java
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/$AppConfig_ConfigValueMapper.java
+    guides/java/kora-java-guide-config-hocon-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/config/hocon/$LibConfig_ConfigValueMapper.java
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```text
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/AppConfigModule.kt
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/$AppConfig_ConfigValueMapper.kt
+    guides/kotlin/kora-kotlin-guide-config-hocon-app/build/generated/ksp/main/kotlin/io/koraframework/guide/config/hocon/$LibConfig_ConfigValueMapper.kt
+    ```
+
+`@ConfigSource` produced an entire module, and it looks exactly like the factories you wrote by hand for `LibConfig`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface AppConfigModule {
+      default AppConfig appConfig(Config config, ConfigValueMapper<AppConfig> mapper) {
+        return mapper.mapOrThrow(config.get("app"));
+      }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    public interface AppConfigModule {
+      public fun appConfig(config: Config, mapper: ConfigValueMapper<AppConfig>): AppConfig = mapper.mapOrThrow(config.get("app"))
+    }
+    ```
+
+That is the whole difference between the two annotations: `@ConfigSource` writes this module for you at a fixed path, `@ConfigMapper` does not, which is why you wrote two tagged factories instead.
+
+The mapper itself shows where required values are enforced:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    private String parse_endpoint(ConfigValue.ObjectValue config) {
+      var value = config.get(_endpoint_path);
+      if (value instanceof ConfigValue.NullValue nullValue) {
+        throw ConfigValueException.missingValue(nullValue);
+      }
+      return value.asString();
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    private fun parse_endpoint(config: ConfigValue.ObjectValue): String {
+      val value = config.get(_endpoint_path)
+      if (value is ConfigValue.NullValue) {
+        throw ConfigValueException.missingValue(value)
+      }
+      return value.asString()
+    }
+    ```
+
+`requestTimeout` is handled differently: instead of a hand-written branch, the generated mapper takes a `ConfigValueMapper<Duration>` as a constructor dependency. Every supported value type reaches the
+mapper the same way, which is how a custom type can be added later without touching the config interface.
+
 ## Run Application { #run-app }
 
 Use the standard guide flow:
@@ -580,20 +682,25 @@ Use the standard guide flow:
 ```bash
 ./gradlew clean classes
 ./gradlew test
-./gradlew run
 ```
 
-In the runnable sample, `run` injects `APP_VERSION` from `koraVersion` in `gradle.properties`, so ordinary `./gradlew run` works out of the box.
+`app.version` is required, so `APP_VERSION` must be present before the application starts:
+
+```bash
+APP_VERSION=1.0.0 ./gradlew run
+```
+
+In the runnable Java sample, the `run` task already injects `APP_VERSION` from `koraVersion` in `gradle.properties`, so a plain `./gradlew run` works there out of the box.
 
 If you want to override the application name too, add `APP_NAME` before startup:
 
 ```bash
-APP_NAME="Custom Task App" ./gradlew run
+APP_VERSION=1.0.0 APP_NAME="Custom Task App" ./gradlew run
 ```
 
 ## Application Output { #output }
 
-When the application starts, it should print output similar to this:
+When the application starts, it prints:
 
 ```text
 Config guide start
@@ -606,7 +713,12 @@ lib2.endpoint=https://integration-2.local/api
 lib2.requestTimeout=PT5S
 ```
 
-If you provide `APP_NAME`, the printed `name=` line should reflect the override.
+`PT5S` is the ISO-8601 form of `Duration.ofSeconds(5)`, which confirms that `5s` was mapped to a real `Duration` and not to a string. If you provide `APP_NAME`, the printed `name=` line reflects the
+override:
+
+```text
+name=Custom Task App
+```
 
 ## Prod configuration { #config-2 }
 
@@ -614,7 +726,7 @@ A common next step is to keep separate config files for different environments s
 
 For example, create `src/main/resources/application-prod.conf`:
 
-```hocon
+```hocon title="src/main/resources/application-prod.conf"
 include "application"
 
 app {
@@ -622,33 +734,59 @@ app {
 }
 ```
 
-This file reuses the base configuration from `application.conf` and overrides only the values that differ for production. That is a common HOCON pattern for environment-specific config.
+This file reuses the base configuration from `application.conf` through the HOCON `include` directive and overrides only the values that differ for production. Included files take part in the same
+merge and substitution resolution as the main file, so `${APP_VERSION}` still works.
 
-You can run the application with that config by passing Kora's `config.resource` system property:
+Select the alternative file with the `config.resource` system property. The Gradle `application` plugin does not forward `-D` flags from the command line to the application process, so declare it on
+the `run` task:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy title="build.gradle"
+    run {
+        jvmArgs += [
+                "-Dconfig.resource=application-prod.conf"
+        ]
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin title="build.gradle.kts"
+    tasks.named<JavaExec>("run") {
+        jvmArgs("-Dconfig.resource=application-prod.conf")
+    }
+    ```
+
+A built distribution takes the same property through `JAVA_OPTS`:
 
 ```bash
-./gradlew run -Dconfig.resource=application-prod.conf
+JAVA_OPTS="-Dconfig.resource=application-prod.conf" ./bin/application
 ```
 
-With that override in place, the startup output should print:
+With that override in place, the startup output prints:
 
 ```text
 environment=production
 ```
+
+Use `config.file` instead of `config.resource` to read a file from disk rather than from the classpath. Only one of the two may be set: if both are, the application fails at startup with
+`Application config source is ambiguous`.
 
 For more on file resolution and external config files, see the [Configuration documentation](../documentation/config.md).
 
 ## Best Practices { #best-practices }
 
 - Use `@ConfigSource` for stable application-level config that belongs to one well-known section.
-- Use `@ConfigValueExtractor` when the same config shape is reused under multiple paths.
+- Use `@ConfigMapper` when the same config shape is reused under multiple paths, and pick the path in a module factory.
+- Prefer `mapOrThrow(...)` over `map(...)` in factories, so a missing section fails at startup instead of producing `null`.
 - Keep required values explicit with `${VAR_NAME}` and optional overrides explicit with `${?VAR_NAME}`.
 - Prefer object reuse plus small field overrides over copying large config blocks.
 - Keep startup diagnostics simple while exploring configuration behavior; `System.out.println(...)` is enough for learning flows.
 
 ## Summary { #summary }
 
-You now have a working HOCON-based Kora application that binds configuration in two ways. `AppConfig` maps a stable `app` section, while `LibConfig` is extracted twice from two different paths with
+You now have a working HOCON-based Kora application that binds configuration in two ways. `AppConfig` maps a stable `app` section, while `LibConfig` is mapped twice from two different paths with
 different tags. HOCON reuse keeps the file compact, and one override changes only the second library endpoint.
 
 ## Key Concepts { #key-concepts }
@@ -656,16 +794,19 @@ different tags. HOCON reuse keeps the file compact, and one override changes onl
 **`@ConfigSource`:**
 
 - maps one fixed config section to a type-safe interface
+- generates a module that calls `mapOrThrow(config.get("app"))` for you
 - works well for application settings like `app.name` and `app.environment`
 
 **Required vs Optional Values:**
 
+- every interface method is required unless it is nullable or has a `default` implementation
 - `${APP_VERSION}` is required and fails fast when missing
 - `${?APP_NAME}` is optional and overrides the default only when present
 
-**`@ConfigValueExtractor` and Reuse:**
+**`@ConfigMapper` and Reuse:**
 
-- one config shape can be extracted from multiple paths
+- generates a `ConfigValueMapper<T>` without binding a path
+- one config shape can be mapped from multiple paths, disambiguated with `@Tag`
 - `${common-lib}` copies the full object into another path
 - a later assignment such as `libs.lib2.endpoint = ...` overrides only one field
 
@@ -673,7 +814,12 @@ different tags. HOCON reuse keeps the file compact, and one override changes onl
 
 **Application fails at startup with an unresolved substitution:**
 
-`app.version = ${APP_VERSION}` is mandatory. In the runnable sample, `run` provides it automatically from `koraVersion`. If you remove that Gradle wiring, you must set `APP_VERSION` before startup.
+`app.version = ${APP_VERSION}` is mandatory. In the runnable Java sample, `run` provides it automatically from `koraVersion`. Otherwise you must set `APP_VERSION` before startup.
+
+**Startup fails with `Config expected value, but got null at path: '...'`:**
+
+A required value is missing from the resulting configuration. Either add the key to the file, or make the method optional with `@Nullable` in Java or a nullable return type in Kotlin, or give it a
+`default` implementation.
 
 **`APP_NAME` does not override the default name:**
 
@@ -687,6 +833,10 @@ name = ${?APP_NAME}
 **Library config values are duplicated across sections:**
 
 Move the shared values into one object such as `common-lib` and reuse it through `${common-lib}` instead of copying the full block into both libraries.
+
+**`Application config source is ambiguous`:**
+
+Both `config.resource` and `config.file` are set. Remove one of the two system properties.
 
 **Build hangs or fails unexpectedly:**
 
@@ -716,7 +866,8 @@ GRADLE_USER_HOME=.gradle-user-home ./gradlew test
 
 If you encounter issues:
 
-- compare with [Kora Java Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-config-hocon-app) and [Kora Kotlin Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-config-hocon-app)
+- compare with [Kora Java Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-config-hocon-app) and [Kora Kotlin Config HOCON App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-config-hocon-app)
 - check the [Configuration documentation](../documentation/config.md)
 - check the [Container documentation](../documentation/container.md)
+- check the [HOCON config example](https://github.com/kora-projects/kora-examples/tree/master/examples/java/kora-java-config-hocon)
 - read the [HOCON specification](https://github.com/lightbend/config/blob/master/HOCON.md)

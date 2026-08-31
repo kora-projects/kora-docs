@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
+description: "Explains Kora Camunda 8 Zeebe worker integration, CamundaClient configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, @JobVariable, @JobVariables, CamundaClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, worker configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, @JobVariable, @JobVariables, ZeebeClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
+  use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, CamundaClient configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, @JobVariable, @JobVariables, CamundaClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 ---
 
 ??? warning "Experimental module"
@@ -14,13 +14,16 @@ creates job workers for an external process orchestrator. In `Kora`, such a work
 a method annotated with `@JobWorker` receives process variables, performs work, and returns a result that is sent back
 to `Zeebe`.
 
+The module is built on the `io.camunda:camunda-client-java` client, so the client type is `io.camunda.client.CamundaClient`
+and its command responses live in the `io.camunda.client.api.response` package.
+
 ## Dependency { #dependency }
 
 ===! ":fontawesome-brands-java: `Java`"
 
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora.experimental:camunda-zeebe-worker"
+    implementation "io.koraframework.experimental:camunda-zeebe-worker"
     ```
 
     Module:
@@ -33,7 +36,7 @@ to `Zeebe`.
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora.experimental:camunda-zeebe-worker")
+    implementation("io.koraframework.experimental:camunda-zeebe-worker")
     ```
 
     Module:
@@ -46,50 +49,49 @@ to `Zeebe`.
 
 Example of a complete client configuration described in the `ZeebeClientConfig` class (example values or default values are specified):
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     zeebe {
         client {
-            executionThreads = 2 //(1)!
+            executionThreads = 4 //(1)!
             keepAlive = "45s" //(2)!
-            tls = true //(3)!
-            certificatePath = "/file/path/to/cert.crt" //(4)!
-            initializationFailTimeout = "15s" //(5)!
+            certificatePath = "/file/path/to/cert.crt" //(3)!
+            initializationFailTimeout = "15s" //(4)!
             grpc {
-                url = "grpc://localhost:8090" //(6)!
-                ttl = "1h" //(7)!
-                maxMessageSize = "4Mib" //(8)!
+                url = "http://localhost:26500" //(5)!
+                ttl = "1h" //(6)!
+                maxMessageSize = "4MiB" //(7)!
                 retryPolicy {
-                    enabled = true //(9)!
-                    attempts = 5 //(10)!
-                    delay = "100ms" //(11)!
-                    delayMax = "5s" //(12)!
-                    step = 3.0 //(13)!
+                    enabled = true //(8)!
+                    attempts = 5 //(9)!
+                    delay = "100ms" //(10)!
+                    delayMax = "5s" //(11)!
+                    step = 3.0 //(12)!
                 }
             }
             rest {
-                url = "http://localhost:8080" //(14)!
+                url = "http://localhost:8080" //(13)!
             }
             deployment {
-                resources = "classpath:bpm" //(15)!
-                timeout = "45s" //(16)!
+                resources = "classpath:bpm" //(14)!
+                timeout = "45s" //(15)!
             }
             telemetry {
                 logging {
-                    enabled = false //(17)!
+                    enabled = false //(16)!
                 }
                 metrics {
-                    enabled = true //(18)!
-                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(19)!
-                    tags = { // (20)!
+                    enabled = false //(17)!
+                    slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(18)!
+                    tags = { //(19)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
                 }
                 tracing {
-                    enabled = true //(21)!
-                    attributes = { // (22)!
+                    enabled = true //(20)!
+                    attributes = { //(21)!
                         "key1" = "value1"
                         "key2" = "value2"
                     }
@@ -99,92 +101,105 @@ Example of a complete client configuration described in the `ZeebeClientConfig` 
     }
     ```
 
-    1. Maximum number of threads for job workers (default: number of CPU cores, but not less than `2`)
+    1. Maximum number of threads for job workers (default: twice the number of available processors, but not less than `2`)
     2. Time without read activity before sending a `KeepAlive` check (default: `45s`)
-    3. Whether to use `TLS` for the connection (default: `true`)
-    4. [File path](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/FileInputStream.html) to the certificate for the connection; if not specified, the system certificate is used (default unspecified, optional)
-    5. Maximum time to wait for topology availability check on client startup (default unspecified, optional)
-    6. `URL` for connecting through `gRPC` (`required`, default unspecified)
-    7. How long the message should be kept on the broker when sent through `gRPC` (default: `1h`)
-    8. Maximum inbound message size for `gRPC` (default: `4Mib`)
-    9. Whether the retry policy for the `gRPC` connection is enabled (default: `true`)
-    10. Number of attempts (default: `5`)
-    11. Initial delay between attempts (default: `100ms`)
-    12. Maximum delay between attempts (default: `5s`)
-    13. Delay multiplier between attempts (default: `3.0`)
-    14. `URL` for connecting to the `Zeebe` `REST` address; if specified, the client prefers `REST` over `gRPC` for supported operations (`required` inside the optional `rest` section, default unspecified)
-    15. Paths for searching resources that will be uploaded to the orchestrator after startup (default: `[]`)
-    16. Maximum time to wait for resource upload (default: `45s`)
-    17. Enables module logging (default: `false`)
-    18. Enables module metrics (default: `true`)
-    19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    20. Configures tags for metrics (default: `{}`)
-    21. Enables module tracing (default: `true`)
-    22. Configures attributes for tracing (default: `{}`)
+    3. [File path](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/FileInputStream.html) to the certificate for the connection; if not specified, the system certificate is used (optional)
+    4. Maximum time to wait for the topology availability check on client startup; if not specified, the check is skipped (optional)
+    5. `URL` of the `Zeebe` `gRPC` gateway (required, no default)
+    6. How long the message should be kept on the broker when sent through `gRPC` (default: `1h`)
+    7. Maximum inbound message size for `gRPC` (default: `4MiB`)
+    8. Whether the retry policy for the `gRPC` connection is enabled (default: `true`)
+    9. Number of attempts (default: `5`)
+    10. Initial delay between attempts (default: `100ms`)
+    11. Maximum delay between attempts (default: `5s`)
+    12. Delay multiplier between attempts (default: `3.0`)
+    13. `URL` of the `Zeebe` `REST` gateway (required, no default)
+    14. Paths for searching resources that will be uploaded to the orchestrator after startup (default: `[]`)
+    15. Maximum time to wait for resource upload (default: `45s`)
+    16. Enables module logging (default: `false`)
+    17. Enables module metrics (default: `false`)
+    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Configures tags for metrics (default: `{}`)
+    20. Enables module tracing (default: `true`)
+    21. Configures attributes for tracing (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     zeebe:
       client:
-        executionThreads: 2 #(1)!
+        executionThreads: 4 #(1)!
         keepAlive: "45s" #(2)!
-        tls: true #(3)!
-        certificatePath: "/file/path/to/cert.crt" #(4)!
-        initializationFailTimeout: "15s" #(5)!
+        certificatePath: "/file/path/to/cert.crt" #(3)!
+        initializationFailTimeout: "15s" #(4)!
         grpc:
-          url: "grpc://localhost:8090" #(6)!
-          ttl: "1h" #(7)!
-          maxMessageSize: "4Mib" #(8)!
+          url: "http://localhost:26500" #(5)!
+          ttl: "1h" #(6)!
+          maxMessageSize: "4MiB" #(7)!
           retryPolicy:
-            enabled: true #(9)!
-            attempts: 5 #(10)!
-            delay: "100ms" #(11)!
-            delayMax: "5s" #(12)!
-            step: 3.0 #(13)!
+            enabled: true #(8)!
+            attempts: 5 #(9)!
+            delay: "100ms" #(10)!
+            delayMax: "5s" #(11)!
+            step: 3.0 #(12)!
         rest:
-          url: "http://localhost:8080" #(14)!
+          url: "http://localhost:8080" #(13)!
         deployment:
-          resources: "classpath:bpm" #(15)!
-          timeout: "45s" #(16)!
+          resources: "classpath:bpm" #(14)!
+          timeout: "45s" #(15)!
         telemetry:
           logging:
-            enabled: false #(17)!
+            enabled: false #(16)!
           metrics:
-            enabled: true #(18)!
-            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(19)!
-            tags: #(20)!
+            enabled: false #(17)!
+            slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(18)!
+            tags: #(19)!
               key1: value1
               key2: value2
           tracing:
-            enabled: true #(21)!
-            attributes: #(22)!
+            enabled: true #(20)!
+            attributes: #(21)!
               key1: value1
               key2: value2
     ```
 
-    1. Maximum number of threads for job workers (default: number of CPU cores, but not less than `2`)
+    1. Maximum number of threads for job workers (default: twice the number of available processors, but not less than `2`)
     2. Time without read activity before sending a `KeepAlive` check (default: `45s`)
-    3. Whether to use `TLS` for the connection (default: `true`)
-    4. [File path](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/FileInputStream.html) to the certificate for the connection; if not specified, the system certificate is used (default unspecified, optional)
-    5. Maximum time to wait for topology availability check on client startup (default unspecified, optional)
-    6. `URL` for connecting through `gRPC` (`required`, default unspecified)
-    7. How long the message should be kept on the broker when sent through `gRPC` (default: `1h`)
-    8. Maximum inbound message size for `gRPC` (default: `4Mib`)
-    9. Whether the retry policy for the `gRPC` connection is enabled (default: `true`)
-    10. Number of attempts (default: `5`)
-    11. Initial delay between attempts (default: `100ms`)
-    12. Maximum delay between attempts (default: `5s`)
-    13. Delay multiplier between attempts (default: `3.0`)
-    14. `URL` for connecting to the `Zeebe` `REST` address; if specified, the client prefers `REST` over `gRPC` for supported operations (`required` inside the optional `rest` section, default unspecified)
-    15. Paths for searching resources that will be uploaded to the orchestrator after startup (default: `[]`)
-    16. Maximum time to wait for resource upload (default: `45s`)
-    17. Enables module logging (default: `false`)
-    18. Enables module metrics (default: `true`)
-    19. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    20. Configures tags for metrics (default: `{}`)
-    21. Enables module tracing (default: `true`)
-    22. Configures attributes for tracing (default: `{}`)
+    3. [File path](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/FileInputStream.html) to the certificate for the connection; if not specified, the system certificate is used (optional)
+    4. Maximum time to wait for the topology availability check on client startup; if not specified, the check is skipped (optional)
+    5. `URL` of the `Zeebe` `gRPC` gateway (required, no default)
+    6. How long the message should be kept on the broker when sent through `gRPC` (default: `1h`)
+    7. Maximum inbound message size for `gRPC` (default: `4MiB`)
+    8. Whether the retry policy for the `gRPC` connection is enabled (default: `true`)
+    9. Number of attempts (default: `5`)
+    10. Initial delay between attempts (default: `100ms`)
+    11. Maximum delay between attempts (default: `5s`)
+    12. Delay multiplier between attempts (default: `3.0`)
+    13. `URL` of the `Zeebe` `REST` gateway (required, no default)
+    14. Paths for searching resources that will be uploaded to the orchestrator after startup (default: `[]`)
+    15. Maximum time to wait for resource upload (default: `45s`)
+    16. Enables module logging (default: `false`)
+    17. Enables module metrics (default: `false`)
+    18. Configures [SLO](https://www.atlassian.com/ru/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    19. Configures tags for metrics (default: `{}`)
+    20. Enables module tracing (default: `true`)
+    21. Configures attributes for tracing (default: `{}`)
+
+!!! warning "Both addresses are required"
+
+    The client always opens a `gRPC` channel and always reads the `REST` address, so `zeebe.client.grpc.url`
+    and `zeebe.client.rest.url` must both be present. A configuration that declares only one of the two
+    fails on application startup.
+
+The connection scheme is taken from `grpc.url`: `http` opens a plaintext channel, `https` opens a `TLS` channel.
+For a self-signed certificate, point `certificatePath` at the certificate file; otherwise the system trust store is used.
+The default `Zeebe` ports are `26500` for `gRPC` and `8080` for `REST`.
+
+The `gRPC` channel has its own telemetry section `zeebe.client.grpc.telemetry` with the same options as any
+[gRPC client](grpc-client.md#configuration); it describes the transport calls to the orchestrator, while
+`zeebe.client.telemetry` describes the job workers themselves.
+Job worker logs are written to the `io.koraframework.camunda.zeebe.worker.<jobType>` logger, so log levels can be raised
+for a single worker; at the `DEBUG` level the log record also contains the job variables.
 
 Module metrics are described in the [Metrics Reference](metrics.md#camunda-8-worker) section.
 
@@ -203,7 +218,7 @@ src/main/resources/
     └── demo.bpmn
 ```
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     zeebe {
@@ -230,7 +245,7 @@ src/main/resources/
 
 ### Client { #client }
 
-The module creates a `ZeebeClient` component that can be injected into your own services when you need to manually start
+The module creates a `CamundaClient` component that can be injected into your own services when you need to manually start
 processes, publish messages, or execute other `Zeebe` commands.
 
 For example, to start a new process instance:
@@ -241,9 +256,9 @@ For example, to start a new process instance:
     @Component
     public final class ProcessStarter {
 
-        private final ZeebeClient client;
+        private final CamundaClient client;
 
-        public ProcessStarter(ZeebeClient client) {
+        public ProcessStarter(CamundaClient client) {
             this.client = client;
         }
 
@@ -261,13 +276,13 @@ For example, to start a new process instance:
     1. `BPMN` process identifier of the process to start
     2. Start the latest deployed version of the process
     3. Initial process variables as a `JSON` string (a `Map` or a `@Json` object are also accepted)
-    4. Send the command and block until `Zeebe` acknowledges it (use the returned `CompletionStage` for a non-blocking call)
+    4. Send the command and block until `Zeebe` acknowledges it (`send()` returns a `CamundaFuture`, which is also a `CompletionStage`)
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class ProcessStarter(private val client: ZeebeClient) {
+    class ProcessStarter(private val client: CamundaClient) {
 
         fun start() {
             val event = client.newCreateInstanceCommand()
@@ -283,18 +298,21 @@ For example, to start a new process instance:
     1. `BPMN` process identifier of the process to start
     2. Start the latest deployed version of the process
     3. Initial process variables as a `JSON` string (a `Map` or a `@Json` object are also accepted)
-    4. Send the command and block until `Zeebe` acknowledges it (use the returned `CompletionStage` for a non-blocking call)
+    4. Send the command and block until `Zeebe` acknowledges it (`send()` returns a `CamundaFuture`, which is also a `CompletionStage`)
 
-The same client publishes messages (`client.newPublishMessageCommand()`) and executes any other `Zeebe` command.
+The same client publishes messages (`client.newPublishMessageCommand()`), deploys resources
+(`client.newDeployResourceCommand()`), and executes any other `Zeebe` command.
 
 #### Client customization { #client-customization }
 
-The `ZeebeClient` can be tuned with optional graph components that the module picks up automatically:
+The `CamundaClient` can be tuned with optional graph components that the module picks up automatically:
 
 * `CredentialsProvider` — authorization for `Zeebe` (`Camunda 8 SaaS` or self-managed with `OAuth`);
-* `JsonMapper` — custom `JSON` mapper used by `ZeebeClient` for variable (de)serialization;
+* `JsonMapper` — custom `JSON` mapper (`io.camunda.client.api.JsonMapper`) used by `CamundaClient` for variable (de)serialization;
 * `ScheduledExecutorService` — executor used by job workers;
-* `ClientInterceptor` — a `gRPC` interceptor applied to the `Zeebe` channel (all registered interceptors are collected).
+* `ClientInterceptor` — every `gRPC` interceptor declared **without** a `@Tag` is collected and applied to the `Zeebe` channel,
+  in addition to the module's own telemetry interceptor. Interceptors that belong to another client must therefore be
+  [tagged with their service](grpc-client.md#shared-interceptors) so that they do not end up on the `Zeebe` channel.
 
 For example, to authenticate against `Camunda 8` with `OAuth`, provide a `CredentialsProvider` bean:
 
@@ -346,7 +364,7 @@ If the `zeebe.worker.job` section is not specified, the built-in default configu
 
 Example of a complete worker configuration described in the `ZeebeWorkerConfig` class (example values or default values are specified):
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     zeebe {
@@ -354,18 +372,19 @@ Example of a complete worker configuration described in the `ZeebeWorkerConfig` 
             job {
                 default { //(1)!
                     enabled = true //(2)!
-                    timeout = "15m" //(3)!
-                    maxJobsActive = 32 //(4)!
-                    requestTimeout = "15s" //(5)!
-                    pollInterval = "100ms" //(6)!
-                    tenantIds = [] //(7)!
-                    streamEnabled = false //(8)!
-                    streamTimeout = "15s" //(9)!
+                    name = "default" //(3)!
+                    timeout = "15m" //(4)!
+                    maxJobsActive = 32 //(5)!
+                    requestTimeout = "15s" //(6)!
+                    pollInterval = "100ms" //(7)!
+                    tenantIds = [] //(8)!
+                    streamEnabled = false //(9)!
+                    streamTimeout = "15s" //(10)!
                     backoff {
                         minDelay = "100ms" //(11)!
                         maxDelay = "500ms" //(12)!
-                        factor = 1.0 //(10)!
-                        jitter = 1.1 //(13)!
+                        factor = 1.0 //(13)!
+                        jitter = 1.1 //(14)!
                     }
                 }
             }
@@ -375,17 +394,18 @@ Example of a complete worker configuration described in the `ZeebeWorkerConfig` 
 
     1. [Worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/) or the default settings name `default`
     2. Whether the worker is enabled (default: `true`)
-    3. Maximum time for one job execution by the worker (default: `15m`)
-    4. Maximum number of jobs that will be activated simultaneously for this worker; used to align job fetching speed with processing speed (`backpressure`) (default: `32`)
-    5. Request timeout used for polling a new job by the worker (default: `15s`)
-    6. Maximum interval between polling new jobs; if no jobs are activated after work is completed, the worker periodically polls the broker (default: `100ms`)
-    7. `tenant` identifiers for which the worker can receive jobs (default: `[]`)
-    8. Whether to use streaming together with polling for job activation (default: `false`)
-    9. Maximum stream lifetime when streaming is enabled (default: `15s`)
-    10. Minimum retry delay; due to `jitter`, the actual delay can be lower than this minimum (default: `100ms`)
-    11. Maximum retry delay; due to `jitter`, the actual delay can exceed this value (default: `500ms`)
-    12. Delay multiplication factor: the previous delay is multiplied by this value (default: `1.0`)
-    13. `jitter` factor: the next delay is randomly changed within the `+/-` range of this factor (default: `1.1`)
+    3. Name the worker is registered under on the broker (default: `default`)
+    4. Maximum time for one job execution by the worker (default: `15m`)
+    5. Maximum number of jobs that will be activated simultaneously for this worker; used to align job fetching speed with processing speed (`backpressure`) (default: `32`)
+    6. Request timeout used for polling a new job by the worker (default: `15s`)
+    7. Maximum interval between polling new jobs; if no jobs are activated after work is completed, the worker periodically polls the broker (default: `100ms`)
+    8. `tenant` identifiers for which the worker can receive jobs (default: `[]`)
+    9. Whether to use streaming together with polling for job activation (default: `false`)
+    10. Maximum stream lifetime when streaming is enabled (default: `15s`)
+    11. Minimum retry delay; due to `jitter`, the actual delay can be lower than this minimum (default: `100ms`)
+    12. Maximum retry delay; due to `jitter`, the actual delay can exceed this value (default: `500ms`)
+    13. Delay multiplication factor: the previous delay is multiplied by this value (default: `1.0`)
+    14. `jitter` factor: the next delay is randomly changed within the `+/-` range of this factor (default: `1.1`)
 
 === ":simple-yaml: `YAML`"
 
@@ -395,40 +415,42 @@ Example of a complete worker configuration described in the `ZeebeWorkerConfig` 
         job:
           default: #(1)!
             enabled: true #(2)!
-            timeout: "15m" #(3)!
-            maxJobsActive: 32 #(4)!
-            requestTimeout: "15s" #(5)!
-            pollInterval: "100ms" #(6)!
-            tenantIds: [] #(7)!
-            streamEnabled: false #(8)!
-            streamTimeout: "15s" #(9)!
+            name: "default" #(3)!
+            timeout: "15m" #(4)!
+            maxJobsActive: 32 #(5)!
+            requestTimeout: "15s" #(6)!
+            pollInterval: "100ms" #(7)!
+            tenantIds: [] #(8)!
+            streamEnabled: false #(9)!
+            streamTimeout: "15s" #(10)!
             backoff:
               minDelay: "100ms" #(11)!
               maxDelay: "500ms" #(12)!
-              factor: 1.0 #(10)!
-              jitter: 1.1 #(13)!
+              factor: 1.0 #(13)!
+              jitter: 1.1 #(14)!
     ```
 
     1. [Worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/) or the default settings name `default`
     2. Whether the worker is enabled (default: `true`)
-    3. Maximum time for one job execution by the worker (default: `15m`)
-    4. Maximum number of jobs that will be activated simultaneously for this worker; used to align job fetching speed with processing speed (`backpressure`) (default: `32`)
-    5. Request timeout used for polling a new job by the worker (default: `15s`)
-    6. Maximum interval between polling new jobs; if no jobs are activated after work is completed, the worker periodically polls the broker (default: `100ms`)
-    7. `tenant` identifiers for which the worker can receive jobs (default: `[]`)
-    8. Whether to use streaming together with polling for job activation (default: `false`)
-    9. Maximum stream lifetime when streaming is enabled (default: `15s`)
-    10. Minimum retry delay; due to `jitter`, the actual delay can be lower than this minimum (default: `100ms`)
-    11. Maximum retry delay; due to `jitter`, the actual delay can exceed this value (default: `500ms`)
-    12. Delay multiplication factor: the previous delay is multiplied by this value (default: `1.0`)
-    13. `jitter` factor: the next delay is randomly changed within the `+/-` range of this factor (default: `1.1`)
+    3. Name the worker is registered under on the broker (default: `default`)
+    4. Maximum time for one job execution by the worker (default: `15m`)
+    5. Maximum number of jobs that will be activated simultaneously for this worker; used to align job fetching speed with processing speed (`backpressure`) (default: `32`)
+    6. Request timeout used for polling a new job by the worker (default: `15s`)
+    7. Maximum interval between polling new jobs; if no jobs are activated after work is completed, the worker periodically polls the broker (default: `100ms`)
+    8. `tenant` identifiers for which the worker can receive jobs (default: `[]`)
+    9. Whether to use streaming together with polling for job activation (default: `false`)
+    10. Maximum stream lifetime when streaming is enabled (default: `15s`)
+    11. Minimum retry delay; due to `jitter`, the actual delay can be lower than this minimum (default: `100ms`)
+    12. Maximum retry delay; due to `jitter`, the actual delay can exceed this value (default: `500ms`)
+    13. Delay multiplication factor: the previous delay is multiplied by this value (default: `1.0`)
+    14. `jitter` factor: the next delay is randomly changed within the `+/-` range of this factor (default: `1.1`)
 
 To override settings for a single worker, add a section keyed by the [worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 declared in `@JobWorker`. A named section is merged over `default`, which in turn is merged over the built-in defaults,
 so a named section only needs to list the keys it changes. Setting `enabled = false` on a named type disables just that
 one worker.
 
-===! ":material-code-json: `HOCON`"
+===! ":material-code-json: `Hocon`"
 
     ```javascript
     zeebe {
@@ -473,8 +495,14 @@ within the `Zeebe` orchestrator.
 The `@JobWorker` annotation specifies the [worker type (`Type`)](https://docs.camunda.io/docs/components/concepts/job-workers/)
 from the process. `Zeebe` uses this value to connect a job from a `BPMN` process with a handler in the application.
 
-A worker method may only declare `@JobVariable`, `@JobVariables`, and `JobContext` parameters — any other parameter type
-is rejected at compile time. The raw `JobClient` and `ActivatedJob` are available only in the [imperative](#imperative) worker.
+Worker methods must satisfy the following requirements:
+
+- The enclosing class must be a component in the [dependency graph](container.md), for example annotated with `@Component`.
+- The method must not be `private` — compilation fails with `@JobWorker method can't be private`.
+- The method may only declare `@JobVariable`, `@JobVariables`, and `JobContext` parameters — any other parameter type
+  is rejected at compile time. The raw `JobClient` and `ActivatedJob` are available only in the [imperative](#imperative) worker.
+- A variable name (both for arguments and for the result) must be alphanumeric, may contain `_`, must not start with
+  a digit, and must not be a `FEEL` keyword such as `if`, `then`, `else`, `for` or `not`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -501,6 +529,9 @@ is rejected at compile time. The raw `JobClient` and `ActivatedJob` are availabl
         }
     }
     ```
+
+For each annotated method Kora generates a separate `KoraJobWorker` component and registers it on the broker at startup.
+If several workers declare the same type, all of them are registered and a warning is written to the log.
 
 #### Parameter context { #parameter-context }
 
@@ -538,7 +569,7 @@ You can inject the job context as a method argument.
 | Method                       | Description                                                                          |
 |------------------------------|--------------------------------------------------------------------------------------|
 | `jobKey()`                   | Unique key of the activated job                                                      |
-| `jobName()`                  | Worker name/type this handler is registered under (the `@JobWorker` value)           |
+| `jobName()`                  | Name the worker is registered under on the broker (the `name` configuration option)  |
 | `jobType()`                  | Job type of the activated job as defined in the `BPMN` process                       |
 | `jobWorker()`                | Name of the worker that activated the job on the broker side                         |
 | `tenantId()`                 | Tenant identifier the job belongs to                                                 |
@@ -582,6 +613,10 @@ You can inject the job context as a method argument.
     }
     ```
 
+The context of the job being handled is also bound to the `JobContext.VALUE`
+[scoped value](https://openjdk.org/jeps/506) for the whole duration of the call, so code that is called from a worker can
+read the job metadata through `JobContext.VALUE.get()` without passing the argument down the call stack.
+
 #### Parameter variable { #parameter-variable }
 
 You can inject [process variables](https://docs.camunda.io/docs/components/concepts/variables/) as method arguments.
@@ -618,6 +653,9 @@ If `@JobVariable` is not used, the worker asks for all job variables.
 
 You can specify the variable name explicitly in `@JobVariable`, or the method argument name will be used by default.
 
+A variable argument is required by default: if the process does not provide it, the job fails.
+Mark the argument as nullable (`@Nullable` in `Java`, `T?` in `Kotlin`) to accept a missing or `null` variable.
+
 Since process variables are passed as `JSON`, the method argument can be a user type that has `JsonReader` and `JsonWriter`
 available.
 
@@ -643,6 +681,7 @@ available.
     @Component
     class SomeJob {
 
+        @Json
         data class User(val name: String, val code: Int)
 
         @JobWorker("someJobType")
@@ -656,6 +695,7 @@ available.
 
 You can inject multiple [process variables](https://docs.camunda.io/docs/components/concepts/variables/) as one method
 argument through `@JobVariables`. This argument represents all job variables as one `JSON` object.
+Only one `@JobVariables` argument is allowed per worker method.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -682,8 +722,10 @@ argument through `@JobVariables`. This argument represents all job variables as 
     @Component
     class SomeJob {
 
+        @Json
         data class User(val name: String, val code: Int)
 
+        @Json
         data class UserContext(val startId: String, val user: User)
 
         @JobWorker("someJobType")
@@ -753,6 +795,7 @@ In this case, it is obligatory to specify the name of the variable in the `@JobV
     @Component
     class SomeJob {
 
+        @Json
         data class User(val name: String, val code: Int)
 
         @JobVariable("user")
@@ -765,20 +808,12 @@ In this case, it is obligatory to specify the name of the variable in the `@JobV
 
 #### Errors { #errors }
 
-If you need to complete execution with a process error, throw `JobWorkerException`.
+If you need to complete execution with a process error, throw `JobWorkerException` from the
+`io.koraframework.camunda.zeebe.worker.exception` package.
 The exception can contain an error code, message, and process variables if they are required.
 This exception is converted to a `throwError` command for `Zeebe`: the `getCode()`, message, and `getVariables()`
-of the exception are sent as the error code, error message, and variables of the command.
-
-If the handler throws any other exception, the module wraps it into a `JobWorkerException` with one of the following
-built-in codes:
-
-| Code              | When it is used                                                             |
-|-------------------|-----------------------------------------------------------------------------|
-| `DESERIALIZATION` | A job variable could not be read/deserialized into a method argument       |
-| `SERIALIZATION`   | The worker result could not be written/serialized into variables           |
-| `UNEXPECTED`      | An unexpected error was thrown from a synchronous handler                   |
-| `INTERNAL`        | Fallback code for any other error not covered above                        |
+of the exception are sent as the error code, error message, and variables of the command, and the `BPMN` model decides
+how to handle the error, for example through a boundary error event.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -810,9 +845,18 @@ built-in codes:
 
     1. Additional overloads accept a message/cause and a `Map<String, Any>` of variables to attach to the `throwError` command
 
+Any other exception is a technical failure rather than a process error: the module wraps it into a `JobWorkerException`
+with one of the built-in codes below and lets it propagate. The job is then failed on the broker and reactivated
+according to the worker `backoff` settings until the retries are exhausted and an incident is created.
+
+| Code            | When it is used                                                                                     |
+|-----------------|-----------------------------------------------------------------------------------------------------|
+| `SERIALIZATION` | The worker result could not be written into process variables                                       |
+| `UNEXPECTED`    | Any other error from the worker method, including a job variable that could not be read into an argument |
+
 ### Imperative { #imperative }
 
-You can also create lower-level workers and work directly with `ZeebeClient` contracts.
+You can also create lower-level workers and work directly with `CamundaClient` contracts.
 To do that, the component must implement the `KoraJobWorker` interface.
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -832,13 +876,14 @@ To do that, the component must implement the `KoraJobWorker` interface.
         }
 
         @Override
-        public CompletionStage<FinalCommandStep<?>> handle(JobClient client, ActivatedJob job) {
-            return CompletableFuture.completedFuture(client.newCompleteCommand(job));
+        public FinalCommandStep<?> handle(JobClient client, ActivatedJob job) {
+            return client.newCompleteCommand(job); //(2)!
         }
     }
     ```
 
     1. Only these variables are fetched from `Zeebe`; return an empty list (the default) to fetch **all** variables
+    2. The returned command is sent by the module after the telemetry of the call is recorded
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -850,18 +895,21 @@ To do that, the component must implement the `KoraJobWorker` interface.
 
         override fun fetchVariables(): List<String> = listOf("startId") //(1)!
 
-        override fun handle(client: JobClient, job: ActivatedJob): CompletionStage<FinalCommandStep<*>> {
-            return CompletableFuture.completedFuture(client.newCompleteCommand(job))
+        override fun handle(client: JobClient, job: ActivatedJob): FinalCommandStep<*> {
+            return client.newCompleteCommand(job) //(2)!
         }
     }
     ```
 
     1. Only these variables are fetched from `Zeebe`; return an empty list (the default) to fetch **all** variables
+    2. The returned command is sent by the module after the telemetry of the call is recorded
 
 The `fetchVariables()` method is the imperative analogue of `@JobVariable`: it controls which process variables `Zeebe`
 sends with the job. By default it returns an empty list, which fetches all variables; returning a non-empty list limits
 the payload to just those variables. Unlike declarative workers, `handle` receives the raw `JobClient` and `ActivatedJob`
-and is responsible for completing the job (for example with `client.newCompleteCommand(job)`).
+and decides itself which command finishes the job — `client.newCompleteCommand(job)` to complete it, or
+`client.newThrowErrorCommand(job).errorCode("DOESNT_WORK").errorMessage("...")` to raise a `BPMN` error.
+An exception thrown out of `handle` fails the job instead, and the broker reactivates it according to the `backoff` settings.
 
 ## Signatures { #signatures }
 
@@ -869,18 +917,24 @@ Available signatures for worker methods out of the box:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    The `T` refers to the type of the return value or `Void`.
+    The `T` refers to the type of the return value or `void`.
     If the result is `null` or `Optional.empty()`, the job is completed without adding variables.
 
+    - `void myMethod()`
     - `T myMethod()`
     - `Optional<T> myMethod()`
-    - `CompletionStage<T> myMethod()` [CompletionStage](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html)
-    - `Mono<T> myMethod()` [Project Reactor](https://projectreactor.io/docs/core/release/reference/) (add [dependency](https://mvnrepository.com/artifact/io.projectreactor/reactor-core))
+
+    Asynchronous signatures are not supported: `CompletionStage`, `Future` and `Publisher` / `Mono` return types are
+    rejected at compile time with `Async invocation is not supported`.
 
 === ":simple-kotlin: `Kotlin`"
 
-    By `T` we mean the type of the return value, either `T?` or `Unit`.
+    By `T` we mean the type of the return value, either `T`, `T?` or `Unit`.
     If the result is `null`, the job is completed without adding variables.
 
+    - `myMethod()`
     - `myMethod(): T`
-    - `myMethod(): Deferred<T>` [Kotlin Coroutine](https://kotlinlang.org/docs/coroutines-basics.html#your-first-coroutine) (add [dependency](https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core) as `implementation`)
+    - `myMethod(): T?`
+
+    Asynchronous signatures are not supported: `suspend` functions and `Deferred`, `Mono`, `Flux` and `CompletionStage`
+    return types are rejected at compile time.

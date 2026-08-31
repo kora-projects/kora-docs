@@ -3,6 +3,9 @@ search:
   exclude: true
 title: Интеграция базы данных Cassandra с Kora
 summary: Learn how to integrate Cassandra-compatible storage with Kora and perform CRUD operations
+description: "Step-by-step Cassandra-compatible persistence for a Kora 2.0 service: the io.koraframework:database-cassandra artifact and CassandraDatabaseModule, a @Repository interface extending CassandraRepository with explicit CQL @Query methods, an @EntityCassandra DAO record mapped with @Table and @Column, service-level existence checks that keep 404 behavior because Cassandra mutations carry no affected-row count, the cassandra.auth and cassandra.basic configuration section with contactPoints, dc, sessionKeyspace and request.timeout, and Scylla Testcontainers verification of the generated repository implementation."
+agent:
+  use_when: "Use this file for questions about backing a Kora 2.0 service with Cassandra or ScyllaDB: io.koraframework:database-cassandra, CassandraDatabaseModule, @Repository extending CassandraRepository, CQL @Query methods, @EntityCassandra with @Table and @Column on a DAO record, why INSERT, UPDATE and DELETE return no update count, the cassandra.basic.contactPoints, cassandra.basic.dc, cassandra.basic.sessionKeyspace and cassandra.basic.request.timeout keys, cassandra.auth.login and cassandra.telemetry.logging.enabled, Scylla Testcontainers tests with io.koraframework:test-junit5, and reading the generated $UserRepository_Impl for parameter binding."
 tags: database, cassandra, scylla, cql, crud, persistence
 ---
 
@@ -170,7 +173,10 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
     dependencies {
         // ... existing dependencies ...
 
-        implementation("ru.tinkoff.kora:database-cassandra")
+        implementation("io.koraframework:database-cassandra")
+
+        testImplementation("io.koraframework:test-junit5")
+        testImplementation("io.goodforgod:testcontainers-extensions-scylla:0.15.0")
     }
     ```
 
@@ -182,7 +188,10 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
     dependencies {
         // ... existing dependencies ...
 
-        implementation("ru.tinkoff.kora:database-cassandra")
+        implementation("io.koraframework:database-cassandra")
+
+        testImplementation("io.koraframework:test-junit5")
+        testImplementation("io.goodforgod:testcontainers-extensions-scylla:0.15.0")
     }
     ```
 
@@ -192,26 +201,26 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasecassandra/Application.java`:
+    `src/main/java/io/koraframework/guide/databasecassandra/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasecassandra;
+    package io.koraframework.guide.databasecassandra;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.database.cassandra.CassandraDatabaseModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.database.cassandra.CassandraDatabaseModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
             JsonModule,
             LogbackModule,
-            CassandraDatabaseModule,  // <----- Подключили модуль
-            UndertowHttpServerModule {
+            CassandraDatabaseModule,  // <----- Connected module
+            UndertowPublicHttpServerModule {
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -221,26 +230,26 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasecassandra/Application.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasecassandra/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasecassandra
+    package io.koraframework.guide.databasecassandra
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.database.cassandra.CassandraDatabaseModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.database.cassandra.CassandraDatabaseModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         JsonModule,
         LogbackModule,
-        CassandraDatabaseModule,  // <----- Подключили модуль
-        UndertowHttpServerModule
+        CassandraDatabaseModule,  // <----- Connected module
+        UndertowPublicHttpServerModule
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
@@ -253,15 +262,15 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasecassandra/repository/UserDAO.java`:
+    `src/main/java/io/koraframework/guide/databasecassandra/repository/UserDAO.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasecassandra.repository;
+    package io.koraframework.guide.databasecassandra.repository;
 
     import java.time.Instant;
-    import ru.tinkoff.kora.database.cassandra.annotation.EntityCassandra;
-    import ru.tinkoff.kora.database.common.annotation.Column;
-    import ru.tinkoff.kora.database.common.annotation.Table;
+    import io.koraframework.database.cassandra.annotation.EntityCassandra;
+    import io.koraframework.database.common.annotation.Column;
+    import io.koraframework.database.common.annotation.Table;
 
     @EntityCassandra
     @Table("users")
@@ -274,15 +283,15 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/databasecassandra/repository/UserDAO.kt`:
+    `src/main/kotlin/io/koraframework/guide/databasecassandra/repository/UserDAO.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.databasecassandra.repository
+    package io.koraframework.guide.databasecassandra.repository
 
     import java.time.Instant
-    import ru.tinkoff.kora.database.cassandra.annotation.EntityCassandra
-    import ru.tinkoff.kora.database.common.annotation.Column
-    import ru.tinkoff.kora.database.common.annotation.Table
+    import io.koraframework.database.cassandra.annotation.EntityCassandra
+    import io.koraframework.database.common.annotation.Column
+    import io.koraframework.database.common.annotation.Table
 
     @EntityCassandra
     @Table("users")
@@ -303,16 +312,16 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/databasecassandra/repository/UserRepository.java`:
+    `src/main/java/io/koraframework/guide/databasecassandra/repository/UserRepository.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasecassandra.repository;
+    package io.koraframework.guide.databasecassandra.repository;
 
-    import jakarta.annotation.Nullable;
+    import org.jspecify.annotations.Nullable;
     import java.util.List;
-    import ru.tinkoff.kora.database.cassandra.CassandraRepository;
-    import ru.tinkoff.kora.database.common.annotation.Query;
-    import ru.tinkoff.kora.database.common.annotation.Repository;
+    import io.koraframework.database.cassandra.CassandraRepository;
+    import io.koraframework.database.common.annotation.Query;
+    import io.koraframework.database.common.annotation.Repository;
 
     @Repository
     public interface UserRepository extends CassandraRepository {
@@ -342,22 +351,66 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
     }
     ```
 
+=== ":simple-kotlin: `Kotlin`"
+
+    `src/main/kotlin/io/koraframework/guide/databasecassandra/repository/UserRepository.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.databasecassandra.repository
+
+    import io.koraframework.database.cassandra.CassandraRepository
+    import io.koraframework.database.common.annotation.Query
+    import io.koraframework.database.common.annotation.Repository
+
+    @Repository
+    interface UserRepository : CassandraRepository {
+
+        @Query("SELECT id, name, email, created_at FROM users")
+        fun findAll(): List<UserDAO>
+
+        @Query("SELECT id, name, email, created_at FROM users WHERE id = :id")
+        fun findById(id: String): UserDAO?
+
+        @Query(
+            """
+            INSERT INTO users(id, name, email, created_at)
+            VALUES (:user.id, :user.name, :user.email, :user.createdAt)
+            """
+        )
+        fun save(user: UserDAO)
+
+        @Query(
+            """
+            UPDATE users
+            SET name = :user.name, email = :user.email, created_at = :user.createdAt
+            WHERE id = :user.id
+            """
+        )
+        fun update(user: UserDAO)
+
+        @Query("DELETE FROM users WHERE id = :id")
+        fun deleteById(id: String)
+    }
+    ```
+
 После компиляции Kora генерирует реализацию репозитория и преобразователи:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-database-cassandra-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasecassandra/repository/$UserRepository_Impl.java
-    guides/guide-database-cassandra-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasecassandra/repository/$UserDAO_CassandraRowMapper.java
-    guides/guide-database-cassandra-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/databasecassandra/repository/$UserDAO_ListCassandraResultSetMapper.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasecassandra/repository/$UserRepository_Impl.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasecassandra/repository/$UserDAO_CassandraRowMapper.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasecassandra/repository/$UserDAO_CassandraResultSetMapper.java
+    build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/databasecassandra/repository/$UserDAO_ListCassandraResultSetMapper.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-database-cassandra-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasecassandra/repository/$UserRepository_Impl.kt
-    guides/kotlin/guide-kotlin-database-cassandra-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasecassandra/repository/$UserDAO_CassandraRowMapper.kt
-    guides/kotlin/guide-kotlin-database-cassandra-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/databasecassandra/repository/$UserDAO_ListCassandraResultSetMapper.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/databasecassandra/repository/$UserRepository_Impl.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/databasecassandra/repository/$UserDAO_CassandraRowMapper.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/databasecassandra/repository/$UserDAO_CassandraResultSetMapper.kt
+    build/generated/ksp/main/kotlin/io/koraframework/guide/databasecassandra/repository/$UserDAO_ListCassandraResultSetMapper.kt
     ```
 
 Этот сокращенный фрагмент сгенерированного репозитория показывает, как именованные CQL-параметры становятся параметрами выражения драйвера DataStax:
@@ -376,22 +429,28 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
     @Override
     public void save(UserDAO user) {
         var _query = QUERY_CONTEXT_3;
-        var _ctxCurrent = Context.current();
-        var _telemetry = this._connectionFactory.telemetry().createContext(_ctxCurrent, _query);
-        var _session = this._connectionFactory.currentSession();
-        var _stmt = _session.prepare(_query.sql()).boundStatementBuilder();
-        _stmt.setString(0, user.id());
-        _stmt.setString(1, user.name());
-        _stmt.setString(2, user.email());
-        _stmt.setInstant(3, user.createdAt());
-        var _s = _stmt.build();
-        try {
-            var _rs = _session.execute(_s);
-            _telemetry.close(null);
-        } catch (Exception _e) {
-            _telemetry.close(_e);
-            throw _e;
-        }
+        var _observation = this._cassandraSession.telemetry().observe(_query);
+        var _session = this._cassandraSession.currentSession();
+        ScopedValue.where(Observation.VALUE, _observation)
+            .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+            .run(() -> {
+                _observation.observeConnection();
+                var _stmt = _session.prepare(_query.sql()).boundStatementBuilder();
+                _stmt.setString(0, user.id());
+                _stmt.setString(1, user.name());
+                _stmt.setString(2, user.email());
+                _stmt.setInstant(3, user.createdAt());
+                var _s = _stmt.build();
+                _observation.observeStatement();
+                try {
+                    var _rs = _session.execute(_s);
+                } catch (Exception _e) {
+                    _observation.observeError(_e);
+                    throw _e;
+                } finally {
+                    _observation.end();
+                }
+            });
     }
     ```
 
@@ -406,22 +465,28 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
     override fun save(user: UserDAO) {
       val _query = _queryContext_3
-      val _ctxCurrent = Context.current()
-      val _telemetry = this._cassandraConnectionFactory.telemetry().createContext(_ctxCurrent, _query)
-      val _session = this._cassandraConnectionFactory.currentSession()
-      var _stmt = _session.prepare(_query.sql()).boundStatementBuilder()
-      _stmt.setString(0, user.id)
-      _stmt.setString(1, user.name)
-      _stmt.setString(2, user.email)
-      _stmt.setInstant(3, user.createdAt)
-      val _s = _stmt.build()
-      try {
-        _session.execute(_s)
-        _telemetry.close(null)
-      } catch (_e: Exception) {
-        _telemetry.close(_e)
-        throw _e
-      }
+      val _observation = this._cassandraSession.telemetry().observe(_query)
+      val _session = this._cassandraSession.currentSession()
+      _observation.observeConnection()
+      return ScopedValue.where(Observation.VALUE, _observation)
+        .where(OpentelemetryContext.VALUE, Context.current().with(_observation.span()))
+        .call<Unit, RuntimeException> {
+          var _stmt = _session.prepare(_query.sql()).boundStatementBuilder()
+          _stmt.setString(0, user.id)
+          _stmt.setString(1, user.name)
+          _stmt.setString(2, user.email)
+          _stmt.setInstant(3, user.createdAt)
+          val _s = _stmt.build()
+          _observation.observeStatement()
+          try {
+            _session.execute(_s)
+          } catch (_e: Exception) {
+            _observation.observeError(_e)
+            throw _e
+          } finally {
+            _observation.end()
+          }
+        }
     }
     ```
 
@@ -436,11 +501,24 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
     var _idx_createdAt = _row.firstIndexOf("created_at");
 
     String id = _row.getString(_idx_id);
+    if (_row.isNull(_idx_id)) {
+      throw new NullPointerException("Result field id is not nullable but row id has null");
+    }
     String name = _row.getString(_idx_name);
+    if (_row.isNull(_idx_name)) {
+      throw new NullPointerException("Result field name is not nullable but row name has null");
+    }
     String email = _row.getString(_idx_email);
+    if (_row.isNull(_idx_email)) {
+      throw new NullPointerException("Result field email is not nullable but row email has null");
+    }
     Instant createdAt = _row.getInstant(_idx_createdAt);
+    if (_row.isNull(_idx_createdAt)) {
+      throw new NullPointerException("Result field createdAt is not nullable but row created_at has null");
+    }
 
-    return new UserDAO(id, name, email, createdAt);
+    var _result = new UserDAO(id, name, email, createdAt);
+    return _result;
     ```
 
 === ":simple-kotlin: `Kotlin`"
@@ -487,22 +565,22 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    Обновите `src/main/java/ru/tinkoff/kora/guide/databasecassandra/service/UserService.java`:
+    Обновите `src/main/java/io/koraframework/guide/databasecassandra/service/UserService.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.databasecassandra.service;
+    package io.koraframework.guide.databasecassandra.service;
 
     import java.time.Instant;
     import java.util.Comparator;
     import java.util.List;
     import java.util.Optional;
     import java.util.UUID;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.databasecassandra.dto.UserRequest;
-    import ru.tinkoff.kora.guide.databasecassandra.dto.UserResponse;
-    import ru.tinkoff.kora.guide.databasecassandra.repository.UserDAO;
-    import ru.tinkoff.kora.guide.databasecassandra.repository.UserRepository;
-    import ru.tinkoff.kora.http.server.common.HttpServerResponseException;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.databasecassandra.dto.UserRequest;
+    import io.koraframework.guide.databasecassandra.dto.UserResponse;
+    import io.koraframework.guide.databasecassandra.repository.UserDAO;
+    import io.koraframework.guide.databasecassandra.repository.UserRepository;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
 
     @Component
     public final class UserService {
@@ -560,6 +638,66 @@ Kora подключает Cassandra через `CassandraDatabaseModule`. Гра
                 case "createdat" -> Comparator.comparing(UserResponse::createdAt);
                 default -> Comparator.comparing(UserResponse::name);
             };
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    Обновите `src/main/kotlin/io/koraframework/guide/databasecassandra/service/UserService.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.databasecassandra.service
+
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.databasecassandra.dto.UserRequest
+    import io.koraframework.guide.databasecassandra.dto.UserResponse
+    import io.koraframework.guide.databasecassandra.repository.UserDAO
+    import io.koraframework.guide.databasecassandra.repository.UserRepository
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import java.time.Instant
+    import java.util.UUID
+
+    @Component
+    class UserService(private val userRepository: UserRepository) {
+
+        fun createUser(request: UserRequest): UserResponse {
+            val user = UserDAO(UUID.randomUUID().toString(), request.name, request.email, Instant.now())
+            userRepository.save(user)
+            return toResponse(user)
+        }
+
+        fun getUser(id: String): UserResponse? = userRepository.findById(id)?.let(::toResponse)
+
+        fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> =
+            userRepository.findAll()
+                .map(::toResponse)
+                .sortedWith(getComparator(sort))
+                .drop(page * size)
+                .take(size)
+
+        fun updateUser(id: String, request: UserRequest): UserResponse {
+            val existing = userRepository.findById(id) ?: throw HttpServerResponseException.of(404, "User not found")
+            val updated = UserDAO(id, request.name, request.email, existing.createdAt)
+            userRepository.update(updated)
+            return toResponse(updated)
+        }
+
+        fun deleteUser(id: String) {
+            if (userRepository.findById(id) == null) {
+                throw HttpServerResponseException.of(404, "User not found")
+            }
+            userRepository.deleteById(id)
+        }
+
+        private fun toResponse(user: UserDAO): UserResponse =
+            UserResponse(user.id, user.name, user.email, user.createdAt)
+
+        private fun getComparator(sort: String): Comparator<UserResponse> = when (sort.lowercase()) {
+            "name" -> compareBy { it.name }
+            "email" -> compareBy { it.email }
+            "createdat" -> compareBy { it.createdAt }
+            else -> compareBy { it.name }
         }
     }
     ```
@@ -761,7 +899,7 @@ HTTP-контракт остается стабильным, а слой хра�
 
 **Ошибки компиляции:**
 
-- Убедитесь, что добавлена зависимость `ru.tinkoff.kora:database-cassandra`.
+- Убедитесь, что добавлена зависимость `io.koraframework:database-cassandra`.
 - Убедитесь, что обработка аннотаций включена для Kora.
 - Используйте `@EntityCassandra` для DAO-моделей, которые возвращают репозитории.
 

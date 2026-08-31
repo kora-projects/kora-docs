@@ -2,7 +2,10 @@
 search:
   exclude: true
 title: gRPC-сервер с Kora
-summary: Build a gRPC CRUD service with Protocol Buffers, generated handlers, and Kora modules
+summary: Build a gRPC CRUD service on Kora 2.0 with Protocol Buffers, generated handlers, and GrpcServerModule
+description: "Step-by-step unary gRPC server on Kora 2.0: the io.koraframework:grpc-server artifact and GrpcServerModule, the com.google.protobuf Gradle plugin with protoc 4.35.1 and the io.grpc runtime pinned to 1.83.1, a user_service.proto contract using google.protobuf.Empty and Timestamp, a @Component handler extending the generated UserServiceGrpc.UserServiceImplBase that answers through StreamObserver, Status.NOT_FOUND and Status.INTERNAL error mapping, and the grpcServer.port and grpcServer.telemetry.logging.enabled configuration."
+agent:
+  use_when: "Use this file for questions about exposing a Kora 2.0 service over gRPC: io.koraframework:grpc-server, GrpcServerModule, the com.google.protobuf Gradle plugin and generated protobuf and gRPC sources, writing a .proto contract, implementing the generated ImplBase class as a @Component, StreamObserver onNext, onCompleted and onError, mapping failures with Status.NOT_FOUND and Status.INTERNAL, grpcServer.port (default 8090), the 4MiB message cap and reflectionEnabled default, and fixing missing generated classes, an UNIMPLEMENTED response or an AbstractMethodError from mismatched io.grpc versions."
 tags: grpc-server, protobuf, rpc, microservices
 ---
 
@@ -33,10 +36,12 @@ tags: grpc-server, protobuf, rpc, microservices
 
 ## Что понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7+
+- JDK 25 или новее
+- Gradle 9+ (эталонные приложения используют Gradle Wrapper `9.5.1`)
 - текстовый редактор или среда разработки
 - необязательно: `grpcurl` для ручных RPC-проверок
+
+Артефакты Kora собраны под Java 25, поэтому JDK, которым компилируется ваш код, должен быть версии 25 или новее.
 
 ## Требования { #prerequisites }
 
@@ -61,6 +66,12 @@ protobuf-генерации, а не из написанных вручную DT
 3. реализовать компонент Kora, который обрабатывает сгенерированные вызовы службы
 4. сопоставить protobuf-сообщения с существующим слоем службы
 5. открыть gRPC-сервер через конфигурацию Kora
+
+Две особенности времени выполнения стоит знать заранее, потому что они определяют, как писать код обработчиков:
+
+- Kora строит сервер на транспорте **gRPC OkHttp**. Отдельный артефакт транспорта подключать не нужно: `io.koraframework:grpc-server` уже приносит `grpc-okhttp` и `grpc-stub`.
+- Каждое клиентское соединение получает собственный однопоточный исполнитель на **виртуальном потоке**. Блокировка внутри обработчика безопасна — несущий поток освобождается, — но она задерживает
+  остальные вызовы *того же* соединения. Именно поэтому обработчики в этом руководстве представляют собой обычные синхронные методы без собственных пулов потоков.
 
 ### Что такое gRPC? { #grpc }
 
@@ -178,6 +189,13 @@ service UserService {
 
 Мы начинаем с добавления модуля gRPC-сервера и Gradle-плагина protobuf.
 
+Версии модулей Kora приходят из BOM `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
+
+```properties title="gradle.properties"
+koraVersion=2.0.0.RC1
+junitVersion=6.1.3
+```
+
 ===! ":fontawesome-brands-java: `Java`"
 
     Обновите `build.gradle`:
@@ -185,26 +203,38 @@ service UserService {
     ```groovy title="build.gradle"
     plugins {
         id "application"
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
+    }
+
+    configurations {
+        koraBom
+        compileOnly.extendsFrom(koraBom)
+        annotationProcessor.extendsFrom(koraBom)
+        implementation.extendsFrom(koraBom)
+        testCompileOnly.extendsFrom(koraBom)
+        testAnnotationProcessor.extendsFrom(koraBom)
+        testImplementation.extendsFrom(koraBom)
     }
 
     dependencies {
-        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
-        annotationProcessor "ru.tinkoff.kora:annotation-processors"
+        koraBom platform("io.koraframework:kora-bom:$koraVersion")
 
-        implementation "ru.tinkoff.kora:config-hocon"
-        implementation "ru.tinkoff.kora:grpc-server"
-        implementation "ru.tinkoff.kora:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.74.0"
-        implementation "io.grpc:grpc-services:1.74.0"
+        compileOnly "javax.annotation:javax.annotation-api:1.3.2"
+        annotationProcessor "io.koraframework:annotation-processors"
+
+        implementation "io.koraframework:config-hocon"
+        implementation "io.koraframework:grpc-server"
+        implementation "io.koraframework:logging-logback"
+        implementation "io.grpc:grpc-protobuf:1.83.1"
+        implementation "io.grpc:grpc-services:1.83.1"
 
         testCompileOnly "javax.annotation:javax.annotation-api:1.3.2"
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors"
+        testAnnotationProcessor "io.koraframework:annotation-processors"
 
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-netty:1.74.0"
+        testImplementation "io.grpc:grpc-netty:1.83.1"
         testImplementation "org.junit.jupiter:junit-jupiter"
-        testImplementation "ru.tinkoff.kora:test-junit5"
+        testImplementation "io.koraframework:test-junit5"
     }
     ```
 
@@ -219,35 +249,43 @@ service UserService {
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("com.google.protobuf") version "0.9.4"
+        id("com.google.protobuf") version "0.10.0"
     }
 
     dependencies {
-        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
-        ksp("ru.tinkoff.kora:symbol-processors")
+        implementation(platform("io.koraframework:kora-bom:${property("koraVersion")}"))
 
-        implementation("ru.tinkoff.kora:config-hocon")
-        implementation("ru.tinkoff.kora:grpc-server")
-        implementation("ru.tinkoff.kora:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.74.0")
-        implementation("io.grpc:grpc-services:1.74.0")
+        compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+        ksp("io.koraframework:symbol-processors:${property("koraVersion")}")
+
+        implementation("io.koraframework:config-hocon")
+        implementation("io.koraframework:grpc-server")
+        implementation("io.koraframework:logging-logback")
+        implementation("io.grpc:grpc-protobuf:1.83.1")
+        implementation("io.grpc:grpc-services:1.83.1")
 
         testCompileOnly("javax.annotation:javax.annotation-api:1.3.2")
-        kspTest("ru.tinkoff.kora:symbol-processors")
 
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-netty:1.74.0")
+        testImplementation("io.grpc:grpc-netty:1.83.1")
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("ru.tinkoff.kora:test-junit5")
+        testImplementation("io.koraframework:test-junit5")
     }
     ```
 
 Зачем нужны эти зависимости:
 
-- `ru.tinkoff.kora:grpc-server` встраивает gRPC-сервер в граф приложения Kora
+- `io.koraframework:grpc-server` встраивает gRPC-сервер в граф приложения Kora и приносит с собой среду выполнения gRPC
 - `io.grpc:grpc-protobuf` дает поддержку времени выполнения для сериализации protobuf-сообщений
-- `io.grpc:grpc-services` полезна для стандартных gRPC-служб и поддержки, связанной с рефлексией
+- `io.grpc:grpc-services` содержит стандартные gRPC-службы, включая службу рефлексии, которая используется в [продвинутом руководстве](grpc-server-advanced.md#server-reflection)
+- `javax.annotation:javax.annotation-api` нужен только на этапе компиляции, потому что сгенерированные заглушки ссылаются на `@javax.annotation.Generated`
 - Gradle-плагин protobuf генерирует Java-классы из `.proto`-файлов
+
+!!! warning "Держите все артефакты `io.grpc` на одной версии"
+
+    Среда выполнения gRPC, которая поставляется с `io.koraframework:grpc-server`, - это `1.83.1`. Любой другой артефакт `io.grpc`, который вы объявляете, - `grpc-protobuf`, `grpc-services` и всё,
+    что попадает в тестовую область, например `grpc-netty`, - должен использовать ровно эту версию. Более старая зафиксированная версия компилируется без ошибок и падает только во время выполнения с
+    `AbstractMethodError: ... does not define or inherit an implementation of the resolved method 'buildClientTransportServers(List, MetricRecorder)'`.
 
 ## Генерация кода { #code-generation }
 
@@ -259,9 +297,9 @@ service UserService {
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -284,9 +322,9 @@ service UserService {
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all().forEach { task ->
@@ -309,7 +347,8 @@ service UserService {
 - классы protobuf-сообщений, например `CreateUserRequest`
 - классы gRPC-службы, например `UserServiceGrpc`
 
-Этот сгенерированный код становится частью обычных исходников приложения.
+Этот сгенерированный код становится частью обычных исходников приложения. Плагин порождает **Java**-классы даже в Kotlin-проекте, поэтому в обоих вариантах сгенерированные каталоги регистрируются в
+исходном наборе `java`.
 
 ## Модули { #modules }
 
@@ -317,20 +356,20 @@ service UserService {
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcserver/Application.java"
-    package ru.tinkoff.kora.guide.grpcserver;
+    ```java title="src/main/java/io/koraframework/guide/grpcserver/Application.java"
+    package io.koraframework.guide.grpcserver;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.grpc.server.GrpcServerModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.grpc.server.GrpcServerModule;
+    import io.koraframework.logging.logback.LogbackModule;
 
     @KoraApp
     public interface Application extends
         HoconConfigModule,
-        GrpcServerModule,  // <----- Подключили модуль
-        LogbackModule {
+        LogbackModule,
+        GrpcServerModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -340,27 +379,28 @@ service UserService {
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcserver/Application.kt"
-    package ru.tinkoff.kora.guide.grpcserver
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcserver/Application.kt"
+    package io.koraframework.guide.grpcserver
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.grpc.server.GrpcServerModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.grpc.server.GrpcServerModule
+    import io.koraframework.logging.logback.LogbackModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
         LogbackModule,
-        GrpcServerModule  // <----- Подключили модуль
+        GrpcServerModule  // <----- Connected module
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
-На этом этапе Kora знает, что приложение должно запустить gRPC-сервер.
+На этом этапе Kora знает, что приложение должно запустить gRPC-сервер. Каждый `BindableService`, найденный в графе приложения, - то есть каждый `@Component`, наследующий сгенерированный
+`...ImplBase`, - регистрируется на этом сервере автоматически. Никакой аннотации `@GrpcService` и никакого ручного вызова `addService` не требуется.
 
 ## API в Protobuf { #protobuf-api }
 
@@ -372,13 +412,13 @@ service UserService {
 
     ```protobuf title="src/main/proto/user_service.proto"
     syntax = "proto3";
-    
-    package ru.tinkoff.kora.guide.grpcserver;
+
+    package io.koraframework.guide.grpcserver;
     option java_multiple_files = true;
-    
+
     import "google/protobuf/empty.proto";
     import "google/protobuf/timestamp.proto";
-    
+
     service UserService {
       rpc CreateUser(CreateUserRequest) returns (UserResponse) {}
       rpc GetUser(GetUserRequest) returns (UserResponse) {}
@@ -386,36 +426,36 @@ service UserService {
       rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
       rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {}
     }
-    
+
     message CreateUserRequest {
       string name = 1;
       string email = 2;
     }
-    
+
     message GetUserRequest {
       string user_id = 1;
     }
-    
+
     message GetUsersRequest {
       int32 page = 1;
       int32 size = 2;
       string sort = 3;
     }
-    
+
     message GetUsersResponse {
       repeated UserResponse users = 1;
     }
-    
+
     message UpdateUserRequest {
       string user_id = 1;
       string name = 2;
       string email = 3;
     }
-    
+
     message DeleteUserRequest {
       string user_id = 1;
     }
-    
+
     message UserResponse {
       string id = 1;
       string name = 2;
@@ -461,8 +501,8 @@ service UserService {
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    ```java title="src/main/java/ru/tinkoff/kora/guide/grpcserver/grpc/UserServiceGrpcHandler.java"
-    package ru.tinkoff.kora.guide.grpcserver.grpc;
+    ```java title="src/main/java/io/koraframework/guide/grpcserver/grpc/UserServiceGrpcHandler.java"
+    package io.koraframework.guide.grpcserver.grpc;
 
     import com.google.protobuf.Empty;
     import com.google.protobuf.Timestamp;
@@ -473,18 +513,18 @@ service UserService {
 
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
-    import ru.tinkoff.kora.common.Component;
-    import ru.tinkoff.kora.guide.grpcserver.CreateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.DeleteUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersRequest;
-    import ru.tinkoff.kora.guide.grpcserver.GetUsersResponse;
-    import ru.tinkoff.kora.guide.grpcserver.UpdateUserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.UserResponse;
-    import ru.tinkoff.kora.guide.grpcserver.UserServiceGrpc;
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserRequest;
-    import ru.tinkoff.kora.guide.grpcserver.service.UserNotFoundException;
-    import ru.tinkoff.kora.guide.grpcserver.service.UserService;
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.guide.grpcserver.CreateUserRequest;
+    import io.koraframework.guide.grpcserver.DeleteUserRequest;
+    import io.koraframework.guide.grpcserver.GetUserRequest;
+    import io.koraframework.guide.grpcserver.GetUsersRequest;
+    import io.koraframework.guide.grpcserver.GetUsersResponse;
+    import io.koraframework.guide.grpcserver.UpdateUserRequest;
+    import io.koraframework.guide.grpcserver.UserResponse;
+    import io.koraframework.guide.grpcserver.UserServiceGrpc;
+    import io.koraframework.guide.grpcserver.dto.UserRequest;
+    import io.koraframework.guide.grpcserver.service.UserNotFoundException;
+    import io.koraframework.guide.grpcserver.service.UserService;
 
     @Component
     public final class UserServiceGrpcHandler extends UserServiceGrpc.UserServiceImplBase {
@@ -566,7 +606,7 @@ service UserService {
             }
         }
 
-        private UserResponse toGrpcUser(ru.tinkoff.kora.guide.grpcserver.dto.UserResponse user) {
+        private UserResponse toGrpcUser(io.koraframework.guide.grpcserver.dto.UserResponse user) {
             return UserResponse.newBuilder()
                 .setId(user.id())
                 .setName(user.name())
@@ -582,20 +622,20 @@ service UserService {
 
 === ":simple-kotlin: `Kotlin`"
 
-    ```kotlin title="src/main/kotlin/ru/tinkoff/kora/guide/grpcserver/grpc/UserServiceGrpcHandler.kt"
-    package ru.tinkoff.kora.guide.grpcserver.grpc
+    ```kotlin title="src/main/kotlin/io/koraframework/guide/grpcserver/grpc/UserServiceGrpcHandler.kt"
+    package io.koraframework.guide.grpcserver.grpc
 
     import com.google.protobuf.Empty
     import com.google.protobuf.Timestamp
     import io.grpc.Status
     import io.grpc.stub.StreamObserver
     import org.slf4j.LoggerFactory
-    import ru.tinkoff.kora.common.Component
-    import ru.tinkoff.kora.guide.grpcserver.*
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserRequest
-    import ru.tinkoff.kora.guide.grpcserver.dto.UserResponse
-    import ru.tinkoff.kora.guide.grpcserver.service.UserNotFoundException
-    import ru.tinkoff.kora.guide.grpcserver.service.UserService
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.guide.grpcserver.*
+    import io.koraframework.guide.grpcserver.dto.UserRequest
+    import io.koraframework.guide.grpcserver.dto.UserResponse
+    import io.koraframework.guide.grpcserver.service.UserNotFoundException
+    import io.koraframework.guide.grpcserver.service.UserService
     import java.time.ZoneOffset
 
     @Component
@@ -607,7 +647,7 @@ service UserService {
 
         override fun createUser(
             request: CreateUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 logger.info("Creating user: name={}, email={}", request.name, request.email)
@@ -624,7 +664,7 @@ service UserService {
 
         override fun getUser(
             request: GetUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 logger.info("Getting user: id={}", request.userId)
@@ -658,7 +698,7 @@ service UserService {
 
         override fun updateUser(
             request: UpdateUserRequest,
-            responseObserver: StreamObserver<ru.tinkoff.kora.guide.grpcserver.UserResponse>
+            responseObserver: StreamObserver<io.koraframework.guide.grpcserver.UserResponse>
         ) {
             try {
                 val updated = userService.updateUser(request.userId, UserRequest(request.name, request.email))
@@ -681,8 +721,8 @@ service UserService {
             }
         }
 
-        private fun toGrpcUser(user: UserResponse): ru.tinkoff.kora.guide.grpcserver.UserResponse {
-            return ru.tinkoff.kora.guide.grpcserver.UserResponse.newBuilder()
+        private fun toGrpcUser(user: UserResponse): io.koraframework.guide.grpcserver.UserResponse {
+            return io.koraframework.guide.grpcserver.UserResponse.newBuilder()
                 .setId(user.id)
                 .setName(user.name)
                 .setEmail(user.email)
@@ -697,12 +737,14 @@ service UserService {
     }
     ```
 
-Здесь есть две особенно важные идеи:
+Здесь есть три особенно важные идеи:
 
-- обработчик расширяет сгенерированный `UserServiceGrpc.UserServiceImplBase`
+- обработчик расширяет сгенерированный `UserServiceGrpc.UserServiceImplBase` и регистрируется в графе обычной аннотацией `@Component`
 - транспортные ошибки выражаются через gRPC `Status`, а не через HTTP-исключения
+- каждый метод синхронный и блокирующий: Kora выполняет его на виртуальном потоке соединения, поэтому нет ни реактивных оберток, ни `CompletionStage` в возвращаемом типе
 
-Второй пункт очень важен. Это уже не HTTP-приложение, поэтому язык транспорта должен быть родным для gRPC.
+Второй пункт очень важен. Это уже не HTTP-приложение, поэтому язык транспорта должен быть родным для gRPC. Исключение, вылетевшее из обработчика без сообщения через наблюдателя, закрывается gRPC
+как `UNKNOWN`, что не говорит вызывающей стороне ничего полезного, - всегда переводите отказы в явный `Status`.
 
 ## Конфигурация { #config }
 
@@ -723,17 +765,17 @@ service UserService {
     logging {
       levels {
         "ROOT": "WARN" //(3)!
-        "ru.tinkoff.kora": "INFO" //(4)!
-        "ru.tinkoff.kora.guide.grpcserver": "INFO" //(5)!
+        "io.koraframework": "INFO" //(4)!
+        "io.koraframework.guide.grpcserver": "INFO" //(5)!
       }
     }
     ```
 
-    1. Порт gRPC-сервера по умолчанию, который используется в этом руководстве.
-    2. Включает возможность для этого раздела конфигурации.
+    1. Порт gRPC-сервера (по умолчанию: `8090`).
+    2. Включает журналирование gRPC-вызовов для этого сервера (по умолчанию: `false`).
     3. Уровень журналирования для `ROOT`.
-    4. Уровень журналирования для `ru.tinkoff.kora`.
-    5. Уровень журналирования для `ru.tinkoff.kora.guide.grpcserver`.
+    4. Уровень журналирования для `io.koraframework`.
+    5. Уровень журналирования для `io.koraframework.guide.grpcserver`.
 
 === ":simple-yaml: `YAML`"
 
@@ -746,21 +788,24 @@ service UserService {
     logging:
       levels:
         ROOT: "WARN" #(3)!
-        "ru.tinkoff.kora": "INFO" #(4)!
-        "ru.tinkoff.kora.guide.grpcserver": "INFO" #(5)!
+        "io.koraframework": "INFO" #(4)!
+        "io.koraframework.guide.grpcserver": "INFO" #(5)!
     ```
 
-    1. Порт gRPC-сервера по умолчанию, который используется в этом руководстве.
-    2. Включает возможность для этого раздела конфигурации.
+    1. Порт gRPC-сервера (по умолчанию: `8090`).
+    2. Включает журналирование gRPC-вызовов для этого сервера (по умолчанию: `false`).
     3. Уровень журналирования для `ROOT`.
-    4. Уровень журналирования для `ru.tinkoff.kora`.
-    5. Уровень журналирования для `ru.tinkoff.kora.guide.grpcserver`.
+    4. Уровень журналирования для `io.koraframework`.
+    5. Уровень журналирования для `io.koraframework.guide.grpcserver`.
 
 Это дает нам:
 
 - gRPC-сервер на порту `8090`
 - журналирование gRPC-запросов Kora
 - читаемые журналы для демонстрационного модуля
+
+У всего остального есть рабочие значения по умолчанию: размер сообщения ограничен `4MiB`, мягкая остановка ждет `30s`, а gRPC-рефлексия остается **выключенной** (`reflectionEnabled = false`).
+[Продвинутое руководство](grpc-server-advanced.md#server-reflection) включает рефлексию.
 
 ## Запуск приложения { #run-app }
 
@@ -776,21 +821,26 @@ service UserService {
 ./gradlew run
 ```
 
-Затем вызовите его через `grpcurl`:
+Затем вызовите его через `grpcurl`. Поскольку рефлексия в этом руководстве выключена, укажите `grpcurl` договор явно:
 
 ```bash
-grpcurl -plaintext -d "{\"name\":\"Alice\",\"email\":\"alice@example.com\"}" \
-  localhost:8090 ru.tinkoff.kora.guide.grpcserver.UserService/CreateUser
+grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
+  -d '{"name":"Alice","email":"alice@example.com"}' \
+  localhost:8090 io.koraframework.guide.grpcserver.UserService/CreateUser
 ```
 
 ```bash
-grpcurl -plaintext -d "{\"page\":0,\"size\":10,\"sort\":\"name\"}" \
-  localhost:8090 ru.tinkoff.kora.guide.grpcserver.UserService/GetUsers
+grpcurl -plaintext -import-path src/main/proto -proto user_service.proto \
+  -d '{"page":0,"size":10,"sort":"name"}' \
+  localhost:8090 io.koraframework.guide.grpcserver.UserService/GetUsers
 ```
 
 ## Запуск тестов { #testing }
 
 Сопутствующее приложение включает JUnit-тесты, которые используют настоящий gRPC-канал к приложению.
+
+`@KoraAppTest` поднимает весь граф, поэтому gRPC-сервер занимает реальный порт, а тест обращается к нему через обычный `ManagedChannel`. Клиентской стороне такого теста нужен gRPC-транспорт в
+тестовом classpath - поэтому в тестовой области объявлен `io.grpc:grpc-netty:1.83.1`, зафиксированный на той же версии, что и среда выполнения gRPC из `io.koraframework:grpc-server`.
 
 Запустите их:
 
@@ -805,8 +855,10 @@ grpcurl -plaintext -d "{\"page\":0,\"size\":10,\"sort\":\"name\"}" \
 - Держите protobuf-договоры сфокусированными на транспортных задачах, а не на деталях реализации предметной области.
 - Держите бизнес-логику в `UserService`, а не в gRPC-обработчике.
 - Сопоставляйте отсутствующие ресурсы с `Status.NOT_FOUND`, а не с общими внутренними ошибками.
+- Всегда завершайте вызов через наблюдателя ответа: `onNext` + `onCompleted` либо `onError` с явным `Status`.
 - Переиспользуйте одну и ту же архитектуру приложения между транспортами, когда это возможно.
 - Рассматривайте сгенерированный protobuf-код как транспортные типы, а не как доменные модели.
+- Держите все артефакты `io.grpc` на той версии, которая поставляется с `io.koraframework:grpc-server`.
 - Помечайте написанные вручную DTO аннотацией `@Json` только тогда, когда они пересекают HTTP/JSON-границу; сгенерированным protobuf-сообщениям JSON-аннотации не нужны.
 
 ## Итоги { #summary }
@@ -823,9 +875,10 @@ grpcurl -plaintext -d "{\"page\":0,\"size\":10,\"sort\":\"name\"}" \
 
 - что такое gRPC и почему он полезен для взаимодействия служба-с-службой
 - как Protocol Buffers определяет общий RPC-договор
-- как Kora запускает и связывает gRPC-сервер
+- как Kora запускает gRPC-сервер и подхватывает из графа каждый `BindableService`
 - как унарные RPC-методы сопоставляются со знакомыми CRUD-операциями
 - как ошибки gRPC `Status` заменяют транспортные ошибки в HTTP-стиле
+- почему обработчики остаются синхронными в модели выполнения Kora на виртуальных потоках
 
 ## Устранение неполадок { #troubleshooting }
 
@@ -835,11 +888,20 @@ grpcurl -plaintext -d "{\"page\":0,\"size\":10,\"sort\":\"name\"}" \
 
 **Сервер не запускается:**
 
-Проверьте, что gRPC-порт в `application.conf` свободен и что `GrpcServerModule` включен в граф приложения.
+Проверьте, что gRPC-порт в `application.conf` свободен и что `GrpcServerModule` включен в граф приложения. Занятый порт останавливает сборку графа с сообщением
+`gRPC server failed to start on port '8090': port is already in use`.
 
 **RPC возвращает `UNIMPLEMENTED`:**
 
 Проверьте, что сгенерированное имя службы и имена методов соответствуют `.proto`-договору, который использует клиент.
+
+**Тесты падают с `AbstractMethodError` и упоминанием `buildClientTransportServers`:**
+
+Артефакт gRPC в тестовой области зафиксирован на версии, отличной от среды выполнения из `io.koraframework:grpc-server`. Приведите все зависимости `io.grpc` к версии `1.83.1`.
+
+**`grpcurl` сообщает, что сервер не поддерживает рефлексию:**
+
+Рефлексия выключена по умолчанию. Либо передавайте `-import-path`/`-proto`, как показано выше, либо включите ее так, как описано в [продвинутом gRPC-сервере](grpc-server-advanced.md#server-reflection).
 
 ## Что дальше? { #whats-next }
 

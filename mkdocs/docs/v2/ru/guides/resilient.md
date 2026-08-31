@@ -3,14 +3,17 @@ search:
   exclude: true
 title: Шаблоны отказоустойчивости
 summary: Extend the HTTP Server guide by applying Kora resilience annotations directly to your existing UserService methods
-tags: resilient, retry, timeout, circuitbreaker, fallback, http-server, hocon
+description: "Step-by-step resilience for a Kora 2.0 service: the io.koraframework:resilient-kora artifact and ResilientModule, typed spec interfaces declared with @RetrySpec, @TimeoutSpec, @CircuitBreakerSpec and @RateLimiterSpec, the @Retryable, @Timeout, @CircuitBreakable, @RateLimited and @Fallback aspects that reference them by class, the resilient configuration section with countBased.windowSize and the circuit breaker type, a CircuitBreakerPredicate bound with @Tag, @Fallback.Reason, and the generated AOP proxy sources."
+agent:
+  use_when: "Use this file for questions about making a Kora 2.0 service fault tolerant: io.koraframework:resilient-kora, ResilientModule, @RetrySpec / @TimeoutSpec / @CircuitBreakerSpec / @RateLimiterSpec interfaces, @Retryable(Spec.class), @Timeout(Spec.class), @CircuitBreakable(Spec.class), @RateLimited(Spec.class), @Fallback(method) and @Fallback.Reason, CircuitBreakerPredicate and RetryPredicate bound with @Tag(Spec.class), the resilient.* config keys (attempts, delay, delayStep, backoff, jitter, retryBudget, duration, type, countBased.windowSize, minimumRequiredCalls, failureRateThreshold, waitDurationInOpenState, limitForPeriod, limitRefreshPeriod), aspect ordering, and reading the generated $UserService__AopProxy."
+tags: resilient, retry, timeout, circuitbreaker, ratelimiter, fallback, http-server, hocon
 ---
 
 # Шаблоны отказоустойчивости { #resilience-patterns }
 
-Это руководство знакомит с шаблонами отказоотказоустойчивости для сервисных методов Kora. В нем разбирается, как аннотации повторная попытка, ограничитель времени, прерыватель и резервный метод оборачивают операции приложения, как
-конфигурация отказоустойчивости управляет поведением при сбоях и как HTTP API может оставаться неизменным, пока вызовы сервисов становятся более устойчивыми к отказам. Вы также увидите, как каждый паттерн
-защищает от своего вида нестабильной зависимости или операции.
+Это руководство знакомит с шаблонами отказоустойчивости для сервисных методов Kora. В нем разбирается, как аннотации повторных попыток, ограничения времени, прерывателя, ограничителя частоты и
+резервного метода оборачивают операции приложения, как конфигурация отказоустойчивости управляет поведением при сбоях и как HTTP API может оставаться неизменным, пока вызовы сервисов становятся более
+устойчивыми к отказам. Вы также увидите, как каждый шаблон защищает свой тип нестабильной зависимости или операции.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -22,122 +25,149 @@ tags: resilient, retry, timeout, circuitbreaker, fallback, http-server, hocon
 
 ## Что вы создадите { #youll-build }
 
-Вы улучшите `UserService` из руководства по HTTP-сервер с помощью:
+Вы дополните `UserService` из руководства по HTTP-серверу:
 
-- `@Retry` на `getUser()` для временных сбоев чтения
-- `@Fallback` на `createUser()` для мягкой деградации, когда создание не удается
-- `@Timeout` на `deleteUser()`, чтобы останавливать зависающие операции удаления
-- `@CircuitBreaker` на `updateUser()`, чтобы останавливать повторяющиеся падающие обновления
-- объединенной цепочки `@CircuitBreaker + @Retry + @Timeout` на `getUsers()`
+- `@Retryable` на `getUser()` для кратковременных сбоев чтения
+- `@Fallback` на `createUser()` для плавной деградации, когда создание не удалось
+- `@Timeout` на `deleteUser()`, чтобы остановить зависшие операции удаления
+- `@CircuitBreakable` на `updateUser()`, чтобы прекратить повторяющиеся неудачные обновления
+- комбинированную цепочку `@CircuitBreakable + @Retryable + @Timeout` на `getUsers()`
+
+Каждая из этих аннотаций указывает на небольшой интерфейс-спецификацию, который вы объявляете сами — именно так Kora 2.0 связывает метод с секцией конфигурации.
 
 ## Что вам понадобится { #youll-need }
 
-- JDK 17 или новее
-- Gradle 7.0 или новее
+- JDK 25 или новее
+- Gradle 9+
 - текстовый редактор или среда разработки
 - рабочий проект из руководства [HTTP-сервер](http-server.md)
 
 ## Требования { #prerequisites }
 
-!!! note "Обязательно: пройдите руководство по HTTP-сервер"
+!!! note "Обязательно: пройдите руководство по HTTP-серверу"
 
     Это руководство предполагает, что вы прошли **[HTTP-сервер](http-server.md)** и у вас уже есть `Application`, `UserController`, `UserService`, `UserRepository`, `InMemoryUserRepository`, `UserRequest` и `UserResponse`.
 
-    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что здесь паттерны отказоустойчивости добавляются в существующий CRUD API, а не создают API с нуля.
+    Если вы еще не прошли руководство по HTTP-серверу, сначала сделайте это, потому что здесь шаблоны отказоустойчивости добавляются к существующему CRUD API, а не создают API с нуля.
 
 ## Обзор { #overview }
 
-[Устойчивость Kora](../documentation/resilient.md) — это управление тем, как приложение ведет себя, когда зависимость работает медленно, нестабильно или временно недоступна. Без явных правил
-отказоустойчивости сбои обычно распространяются: одна медленная операция может занять потоки обработки запросов, повторяющиеся временные ошибки могут перегрузить зависимость, а падающий нижестоящий вызов
-может сделать все конечные точки выглядящими сломанными.
+[Отказоустойчивость в Kora](../documentation/resilient.md) — это управление поведением приложения, когда зависимость медленная, нестабильная или временно недоступна. Без явных правил отказоустойчивости
+сбои имеют свойство распространяться: одна медленная операция может занять потоки запросов, повторяющиеся кратковременные ошибки могут перегрузить зависимость, а падающий нижестоящий вызов может
+сделать нерабочими все эндпоинты сразу.
 
-Цель не в том, чтобы скрыть каждый сбой. Цель в том, чтобы сделать поведение при сбоях осознанным. Сервис должен знать, когда попробовать еще раз, когда перестать ждать, когда на время не обращаться к
-зависимости и когда безопасный запасной путь допустим.
+Цель не в том, чтобы скрыть каждый сбой. Цель в том, чтобы поведение при сбое было осознанным. Сервис должен знать, когда повторить попытку, когда прекратить ожидание, когда на время отказаться от
+зависимости и когда безопасный резервный ответ допустим.
 
 ### Основы отказоустойчивости { #resilience-basics }
 
-В этом руководстве HTTP-контракт остается неизменным. Поведение отказоустойчивости добавляется вокруг сервисных методов, потому что сервисы — это место, где прикладные операции встречаются с нестабильной
-работой: вызовами хранилища, удаленными вызовами, дорогими вычислениями или фоновыми зависимостями. Если держать отказоустойчивость на этой границе, контроллеры сохраняют роль маршрутизации, а сервисные
-операции становятся более защитными.
+В этом руководстве HTTP-контракт не меняется. Отказоустойчивость добавляется вокруг сервисных методов, потому что именно в сервисах операции приложения встречаются с нестабильной работой: вызовами
+хранилища, удаленными вызовами, дорогими вычислениями или фоновыми зависимостями. Удержание отказоустойчивости на этой границе позволяет контроллерам сохранять роль маршрутизации, пока сервисные
+операции становятся более защищенными.
 
 ### Основные подходы { #core-patterns }
 
-Модуль отказоустойчивости Kora предоставляет несколько паттернов, каждый со своей задачей:
+Модуль отказоустойчивости Kora предоставляет несколько шаблонов, каждый со своим назначением:
 
-- повторная попытка повторяет операцию, когда сбой может быть временным
-- ограничитель времени перестает ждать, когда операция выполняется слишком долго
-- прерыватель на некоторое время перестает вызывать операцию, которая повторно падает
-- резервный метод предоставляет альтернативный результат или поведение, когда основной путь не сработал
+- повторная попытка выполняет операцию заново, если сбой может быть временным
+- ограничение времени прекращает ожидание, когда операция длится слишком долго
+- прерыватель на время прекращает вызовы к постоянно падающей операции
+- ограничитель частоты задает потолок числа вызовов операции за интервал времени
+- резервный метод дает альтернативный результат или поведение, когда основной путь не сработал
 
-Эти паттерны не стоит применять вслепую. Повтор неидемпотентной записи может продублировать работу. Слишком короткий тайм-аут может создавать ложные сбои. Слишком широкий запасной путь может скрыть
-настоящие аварии. Руководство держит каждый паттерн видимым, чтобы компромисс был понятен.
+Эти шаблоны нельзя применять вслепую. Повторение неидемпотентной записи может продублировать работу. Слишком короткий таймаут создает ложные сбои. Слишком широкий резервный метод способен скрыть
+настоящую аварию. Руководство держит каждый шаблон на виду, чтобы компромисс был очевиден.
+
+### Типизированные спецификации { #typed-specs }
+
+Kora 2.0 не связывает политику отказоустойчивости с методом по имени. Каждая политика описывается интерфейсом-спецификацией, который вы объявляете в своем коде:
+
+- это `interface`, а не класс
+- он наследует контракт шаблона: `Retry`, `Timeouter`, `CircuitBreaker` или `RateLimiter`
+- он несет одну аннотацию — `@RetrySpec`, `@TimeoutSpec`, `@CircuitBreakerSpec` или `@RateLimiterSpec`, значением которой является путь конфигурации, читаемый этой политикой
+
+Обработчик аннотаций затем генерирует для каждой спецификации две вещи: реализацию `$DefaultRetry_Impl` и `@Module` с именем `$DefaultRetry_Module`, который публикует ее в графе. Аспекты уровня метода
+ссылаются на спецификацию по классу, поэтому `@Retryable(DefaultRetry.class)` проверяется на этапе компиляции. Опечатка в имени политики теперь ошибка компиляции, а не поиск в рантайме, который молча
+ничего не находит.
+
+Интерфейс-спецификация также является компонентом, который вы внедряете, когда хотите использовать политику императивно. Поскольку `DefaultRetry` наследует `Retry`, внедрение `DefaultRetry` сразу дает
+`retry(...)` и `asState()`. В Kora 2.0 нет отдельных объектов-менеджеров: спецификация и есть рукоятка управления.
 
 ### Конфигурация и композиция { #configuration-composition }
 
-Поведение отказоустойчивости принадлежит конфигурации не меньше, чем аннотациям. Пороги, попытки, задержки и длительности тайм-аутов часто отличаются между локальной разработкой и промышленной средой.
-Аннотации Kora отмечают, какой паттерн применяется к какому методу, а конфигурация управляет тем, насколько агрессивно работает этот паттерн.
+Поведение отказоустойчивости живет в конфигурации не меньше, чем в аннотациях. Пороги, число попыток, задержки и длительности таймаутов часто различаются между локальной разработкой и промышленной
+средой. Интерфейс-спецификация называет применяемую секцию конфигурации, а сама конфигурация задает, насколько агрессивна политика.
 
-Руководство также показывает объединенное поведение отказоотказоустойчивости. В настоящих сервисах путь чтения может нуждаться в повторная попытка, ограничитель времени и прерыватель одновременно. Важный урок — осознанно компоновать
-эти паттерны вокруг хорошо определенной операции, а затем тестировать поведение как часть контракта сервиса.
+Руководство также показывает комбинированное поведение. В реальных сервисах путь чтения может нуждаться в повторных попытках, таймауте и прерывателе одновременно. Главный урок — компоновать эти шаблоны
+осознанно вокруг четко определенной операции, а затем проверять поведение как часть контракта сервиса.
 
-Практический путь такой:
+Практический порядок такой:
 
-1. добавить модуль отказоустойчивости в граф приложения
-2. аннотировать сервисные методы по одному паттерну за раз
-3. настроить пороги, задержки и тайм-ауты в HOCON
-4. смоделировать режимы отказа в тестах
-5. проверить, что HTTP-контракт остается стабильным, пока поведение сервиса становится более защитным
+1. подключить модуль отказоустойчивости в граф приложения
+2. объявить интерфейс-спецификацию, указывающую на путь конфигурации
+3. разметить сервисный метод соответствующим аспектом, по одному шаблону за раз
+4. настроить пороги, задержки и таймауты в HOCON
+5. смоделировать сценарии сбоев в тестах
+6. убедиться, что HTTP-контракт остается стабильным, пока поведение сервиса становится более защищенным
 
 ## Зависимости { #dependencies }
 
-Добавьте зависимость отказоустойчивости в существующий проект из руководства по HTTP-сервер.
+Добавьте зависимость отказоустойчивости в существующий проект из руководства по HTTP-серверу.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `build.gradle`:
+    Добавьте в блок `dependencies` в `build.gradle`:
 
     ```groovy
     dependencies {
-        implementation("ru.tinkoff.kora:resilient-kora")
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:resilient-kora")
     }
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
-    `build.gradle.kts`:
+    Добавьте в блок `dependencies` в `build.gradle.kts`:
 
     ```kotlin
     dependencies {
-        implementation("ru.tinkoff.kora:resilient-kora")
+        // ... existing dependencies ...
+
+        implementation("io.koraframework:resilient-kora")
     }
     ```
 
+Версия приходит из платформы `io.koraframework:kora-bom`, которая уже применена в руководстве по HTTP-серверу. Отдельный обработчик аннотаций не нужен: процессор отказоустойчивости и AOP-аспекты
+поставляются внутри артефактов `annotation-processors` (Java) и `symbol-processors` (Kotlin), которые у вас уже есть.
+
 ## Модули { #modules }
 
-Сначала включите инфраструктуру отказоотказоустойчивости в графе приложения Kora. Это делает аннотации повторная попытка, ограничитель времени, прерыватель и резервный метод доступными для ваших компонентов.
+Сначала включите инфраструктуру отказоустойчивости в граф приложения Kora. Это делает аспекты повторных попыток, таймаута, прерывателя, ограничителя частоты и резервного метода доступными вашим
+компонентам.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/Application.java`:
+    `src/main/java/io/koraframework/guide/resilient/Application.java`:
 
     ```java
-    package ru.tinkoff.kora.guide.resilient;
+    package io.koraframework.guide.resilient;
 
-    import ru.tinkoff.kora.application.graph.KoraApplication;
-    import ru.tinkoff.kora.common.KoraApp;
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule;
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule;
-    import ru.tinkoff.kora.json.module.JsonModule;
-    import ru.tinkoff.kora.logging.logback.LogbackModule;
-    import ru.tinkoff.kora.resilient.ResilientModule;
+    import io.koraframework.application.graph.KoraApplication;
+    import io.koraframework.common.annotation.KoraApp;
+    import io.koraframework.config.hocon.HoconConfigModule;
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule;
+    import io.koraframework.json.common.JsonModule;
+    import io.koraframework.logging.logback.LogbackModule;
+    import io.koraframework.resilient.ResilientModule;
 
     @KoraApp
     public interface Application extends
             HoconConfigModule,
-            UndertowHttpServerModule,
+            UndertowPublicHttpServerModule,
             JsonModule,
             LogbackModule,
-            ResilientModule {  // <----- Подключили модуль
+            ResilientModule {  // <----- Connected module
 
         static void main(String[] args) {
             KoraApplication.run(ApplicationGraph::graph);
@@ -147,66 +177,62 @@ tags: resilient, retry, timeout, circuitbreaker, fallback, http-server, hocon
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/Application.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/Application.kt`:
 
     ```kotlin
-    package ru.tinkoff.kora.guide.resilient
+    package io.koraframework.guide.resilient
 
-    import ru.tinkoff.kora.application.graph.KoraApplication
-    import ru.tinkoff.kora.common.KoraApp
-    import ru.tinkoff.kora.config.hocon.HoconConfigModule
-    import ru.tinkoff.kora.http.server.undertow.UndertowHttpServerModule
-    import ru.tinkoff.kora.json.module.JsonModule
-    import ru.tinkoff.kora.logging.logback.LogbackModule
-    import ru.tinkoff.kora.resilient.ResilientModule
+    import io.koraframework.application.graph.KoraApplication
+    import io.koraframework.common.annotation.KoraApp
+    import io.koraframework.config.hocon.HoconConfigModule
+    import io.koraframework.http.server.undertow.UndertowPublicHttpServerModule
+    import io.koraframework.json.common.JsonModule
+    import io.koraframework.logging.logback.LogbackModule
+    import io.koraframework.resilient.ResilientModule
 
     @KoraApp
     interface Application :
         HoconConfigModule,
-        UndertowHttpServerModule,
+        UndertowPublicHttpServerModule,
         JsonModule,
         LogbackModule,
-        ResilientModule  // <----- Подключили модуль
+        ResilientModule  // <----- Connected module
 
     fun main() {
         KoraApplication.run(ApplicationGraph::graph)
     }
     ```
 
+`ResilientModule` — это зонтичный модуль: он наследует `CircuitBreakerModule`, `RetryModule`, `TimeoutModule`, `FallbackModule` и `RateLimiterModule` и читает общие настройки телеметрии из
+`resilient.telemetry`. Модули, сгенерированные для ваших собственных интерфейсов-спецификаций, обнаруживаются автоматически, потому что каждый из них помечен `@Module`.
+
 ## Повторные попытки { #retry }
 
-`Retry` — самое безопасное место для старта, потому что временные сбои чаще всего встречаются на чтении. Короткий сетевой сбой, временная проблема с соединением или краткая перегрузка часто исчезают,
-если повторить ту же операцию через несколько мгновений.
-
-Kora позволяет использовать отказоустойчивость и декларативно через аннотации, и императивно через API менеджеров, такие как `RetryManager`, `TimeoutManager`, `CircuitBreakerManager` и `FallbackManager`. В
-этом руководстве мы используем AOP-стиль, потому что это самый короткий способ развить существующий `UserService`, а императивный подход описан
-в [справочнике модуля отказоотказоустойчивости](../documentation/resilient.md).
-
-Поскольку этот шаг использует аннотации, класс все еще должен удовлетворять правилам AOP:
-
-- в Java класс не должен быть `final`
-- в Kotlin класс должен быть `open`
+`Retry` — самое безопасное место для начала, потому что кратковременные сбои чаще всего случаются на чтении. Короткий сетевой сбой, временная проблема с соединением или кратковременная перегрузка часто
+исчезают, если ту же операцию повторить через мгновение.
 
 Повторная попытка полезна, когда:
 
 - сбои кратковременны и обычно проходят на следующей попытке
 - операцию безопасно повторять
-- дополнительная задержка от повторов допустима
+- дополнительная задержка от повторов приемлема
 
-Используйте его осторожно, когда:
+Применяйте осторожно, когда:
 
 - операция меняет состояние и может быть неидемпотентной
-- нижестоящий сервис уже перегружен, и повторы усилят давление
-- общий бюджет ожидания уже очень мал
+- нижестоящий сервис уже перегружен, и повторы только усилят давление
+- бюджет времени и без того очень мал
 
-Повторная попытка не обязана реагировать на каждое исключение. По умолчанию Kora использует встроенный предикат повторов, но вы можете сузить или заменить это поведение, реализовав `RetryPredicate` и привязав его
-в конфигурации. Так вы говорите, какие сбои действительно временные и заслуживают повтора. Подробности о предикатах и конфигурации смотрите в [документации по отказоотказоустойчивости](../documentation/resilient.md).
+Поскольку на этом шаге используются аннотации, размеченный класс должен соблюдать правила AOP:
 
-Добавьте конфигурацию повторная попытка ровно там, где вводите аннотацию.
+- в Java класс не должен быть `final`
+- в Kotlin класс и размеченные методы должны быть `open`
+
+Начните с конфигурации, потому что интерфейс-спецификация ссылается на нее по пути.
 
 `src/main/resources/application.conf`:
 
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
+Полный справочник по конфигурации смотрите в [Resilient](../documentation/resilient.md).
 
 ===! ":material-code-json: `Hocon`"
 
@@ -224,7 +250,7 @@ Kora позволяет использовать отказоустойчиво�
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
+    3. Линейная добавка к задержке на каждой следующей попытке.
 
 === ":simple-yaml: `YAML`"
 
@@ -239,11 +265,48 @@ Kora позволяет использовать отказоустойчиво�
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
+    3. Линейная добавка к задержке на каждой следующей попытке.
+
+Теперь объявите интерфейс-спецификацию, которая связывает этот путь конфигурации с переиспользуемой типизированной политикой.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/UserService.java`:
+    `src/main/java/io/koraframework/guide/resilient/service/DefaultRetry.java`:
+
+    ```java
+    package io.koraframework.guide.resilient.service;
+
+    import io.koraframework.resilient.retry.Retry;
+    import io.koraframework.resilient.retry.annotation.RetrySpec;
+
+    @RetrySpec("resilient.retry.default")
+    public interface DefaultRetry extends Retry {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    `src/main/kotlin/io/koraframework/guide/resilient/service/DefaultRetry.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.resilient.service
+
+    import io.koraframework.resilient.retry.Retry
+    import io.koraframework.resilient.retry.annotation.RetrySpec
+
+    @RetrySpec("resilient.retry.default")
+    interface DefaultRetry : Retry
+    ```
+
+Интерфейс намеренно остается пустым. Его единственная задача — дать пути конфигурации `resilient.retry.default` тип, чтобы аспект метода и любое императивное использование ссылались на одну и ту же
+политику.
+
+Теперь разметьте метод чтения:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `src/main/java/io/koraframework/guide/resilient/service/UserService.java`:
 
     ```java
     @Component
@@ -255,7 +318,7 @@ Kora позволяет использовать отказоустойчиво�
             this.userRepository = userRepository;
         }
 
-        @Retry("default")
+        @Retryable(DefaultRetry.class)
         public Optional<UserResponse> getUser(String id) {
             return userRepository.findById(id);
         }
@@ -266,7 +329,7 @@ Kora позволяет использовать отказоустойчиво�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/UserService.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/UserService.kt`:
 
     ```kotlin
     @Component
@@ -274,26 +337,59 @@ Kora позволяет использовать отказоустойчиво�
         private val userRepository: UserRepository,
     ) {
 
-        @Retry("default")
+        @Retryable(DefaultRetry::class)
         open fun getUser(id: String): UserResponse? = userRepository.findById(id)
 
         // other methods stay unchanged for now
     }
     ```
 
-Контроллеру не нужна новая конечная точка. `GET /users/{userId}` уже делегирует в `getUser()`, поэтому поведение отказоотказоустойчивости автоматически применяется на границе сервиса.
+Контроллеру не нужен новый эндпоинт. `GET /users/{userId}` уже делегирует в `getUser()`, поэтому поведение отказоустойчивости применяется автоматически на границе сервиса.
 
-После компиляции сгенерированный прокси показывает, что `@Retry` оборачивает исходный вызов метода напрямую:
+Повторная попытка не обязана реагировать на каждое исключение. Реализуйте `RetryPredicate` и привяжите его к спецификации через `@Tag` — тогда повторяться будут только принятые вами сбои:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Tag(DefaultRetry.class)
+    @Component
+    public final class TransientOnlyRetryPredicate implements RetryPredicate {
+
+        @Override
+        public boolean isRetryFailure(Throwable throwable) {
+            return !(throwable instanceof IllegalArgumentException);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(DefaultRetry::class)
+    @Component
+    class TransientOnlyRetryPredicate : RetryPredicate {
+
+        override fun isRetryFailure(throwable: Throwable): Boolean =
+            throwable !is IllegalArgumentException
+    }
+    ```
+
+Предикат необязателен. Без него повторяется любое исключение — именно это поведение и оставляет руководство.
+
+Помимо `delay`, `delayStep` и `attempts` секция повторных попыток принимает блок `backoff` (`type = EXPONENTIAL`, `multiplier`, `delayMax`), блок `jitter` (`type = NONE` или `FULL`, `ratio`) и блок
+`retryBudget`, ограничивающий, какую долю трафика могут составлять повторы. К ним стоит обращаться, когда сервис повторяет запросы к зависимости, общей с другими вызывающими сторонами.
+
+После компиляции сгенерированный прокси показывает, что `@Retryable` оборачивает исходный вызов метода напрямую:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
     ```java
     private Optional<UserResponse> _getUser_AopProxy_RetryKoraAspect(String id) {
-        return retry1.retry(() -> super.getUser(id));
+        return defaultRetry1.retry(() -> super.getUser(id));
     }
 
     @Override
@@ -305,88 +401,44 @@ Kora позволяет использовать отказоустойчиво�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
     private fun _getUser_AopProxy_RetryKoraAspect(id: String): UserResponse? =
-        retry1.retry(Retry.RetrySupplier { super.getUser(id) })
+        defaultRetry1.retry(ThrowableCallable { super.getUser(id) })
 
     override fun getUser(id: String): UserResponse? = _getUser_AopProxy_RetryKoraAspect(id)
     ```
 
-Важная часть — `retry1.retry(() -> super.getUser(id))`: Kora сгенерировала границу повтора вокруг вашего сервисного метода, а ваш исходный код по-прежнему остается вызовом `super.getUser(id)` внутри
-этой границы.
+Главное здесь — `defaultRetry1.retry(() -> super.getUser(id))`: Kora сгенерировала границу повторных попыток вокруг вашего сервисного метода, внедренное поле — это ваша собственная спецификация
+`DefaultRetry`, а исходный код по-прежнему остается вызовом `super.getUser(id)` внутри этой границы.
 
 ## Резервный метод { #fallback }
 
-`Fallback` отвечает за мягкую деградацию. Если основной путь падает, вы возвращаете контролируемую альтернативу вместо простого распространения сбоя.
-
-Kora снова поддерживает и AOP-аннотации, и императивное использование резервный метод через `FallbackManager`. В этом руководстве мы остаемся в стиле аннотаций, чтобы существующий метод `createUser()`
-развивался на месте.
+`Fallback` — это про плавную деградацию. Если основной путь не сработал, вы возвращаете контролируемую альтернативу вместо простого пробрасывания сбоя.
 
 Резервный метод полезен, когда:
 
-- можно вернуть безопасную замену или ответ об отложенной обработке
-- пользовательский опыт лучше с ухудшенным ответом, чем с жестким сбоем
-- у вас есть четко определенная резервная политика
+- вы можете вернуть безопасную замену или ответ об отложенной обработке
+- пользователю лучше получить ухудшенный ответ, чем жесткую ошибку
+- у вас есть четко определенная запасная политика
 
-Используйте его осторожно, когда:
+Применяйте осторожно, когда:
 
-- запасной путь слишком долго скрывает серьезный инцидент
-- запасной путь может создать несогласованное бизнес-состояние
-- команда начинает использовать резервный метод как тихую замену нормальной надежности хранения или доставки
+- резервный метод слишком долго скрывает серьезный инцидент
+- резервный метод может создать несогласованное бизнес-состояние
+- команда начинает использовать резервный метод как молчаливую замену настоящему сохранению или гарантиям доставки
 
-Резервный метод также не обязан реагировать на каждое исключение. Kora может решать, должен ли конкретный сбой запускать запасной путь, через предикат. Если нужно управлять этим поведением,
-реализуйте `FallbackPredicate` и подключите его через именованную конфигурацию. Смотрите раздел о предикатах в [документации по отказоотказоустойчивости](../documentation/resilient.md).
-
-Теперь добавьте только то поведение с резервный метод, которое нужно для `createUser()`.
-
-`src/main/resources/application.conf`:
-
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    resilient {
-      retry {
-        default {
-          delay = 20ms //(1)!
-          attempts = 3 //(2)!
-          delayStep = 20ms //(3)!
-        }
-      }
-    }
-    ```
-
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    resilient:
-      retry:
-        default:
-          delay: 20ms #(1)!
-          attempts: 3 #(2)!
-          delayStep: 20ms #(3)!
-    ```
-
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-
-Отдельный блок `fallback.default {}` здесь не нужен, потому что стандартное поведение резервный метод уже доступно.
+`@Fallback` — единственный шаблон в этом руководстве без интерфейса-спецификации и без секции конфигурации, потому что настраивать нечего: у него единственный атрибут `method`, называющий запасной
+метод для вызова.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/UserService.java`:
+    `src/main/java/io/koraframework/guide/resilient/service/UserService.java`:
 
     ```java
-    @Fallback(value = "default", method = "createUserFallback(request)")
+    @Fallback(method = "createUserFallback(request)")
     public UserResponse createUser(UserRequest request) {
         var generatedId = userRepository.save(request.name(), request.email());
         return new UserResponse(generatedId, request.name(), request.email(), LocalDateTime.now());
@@ -401,49 +453,71 @@ Kora снова поддерживает и AOP-аннотации, и импе�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/UserService.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/UserService.kt`:
 
     ```kotlin
-    @Fallback(value = "default", method = "createUserFallback(request)")
+    @Fallback(method = "createUserFallback(request)")
     open fun createUser(request: UserRequest): UserResponse {
         val generatedId = userRepository.save(request.name, request.email)
         return UserResponse(generatedId, request.name, request.email, LocalDateTime.now())
     }
 
-    protected open fun createUserFallback(request: UserRequest): UserResponse {
-        // Never do this in real systems: imagine we wrote the request to a file
-        // and planned to recreate the user during application startup.
+    // Never do this in real systems: imagine we wrote the request to a file
+    // and planned to recreate the user during application startup.
+    protected open fun createUserFallback(request: UserRequest): UserResponse =
+        UserResponse("pending-file-write", request.name, request.email, LocalDateTime.now())
+    ```
+
+Резервный метод не меняет контракт контроллера. `POST /users` по-прежнему возвращает `UserResponse`, но теперь сервис умеет плавно деградировать, когда основной путь не сработал.
+
+Важно понимать, когда именно вызывается резервный метод:
+
+1. Kora сначала вызывает исходный метод.
+2. Если исходный метод отработал успешно, резервный не используется вовсе.
+3. Если исходный метод выбросил исключение, Kora решает, относится ли этот сбой к тем, что резервный метод должен обработать.
+4. Если да, Kora вызывает метод, объявленный в `method = "..."`.
+5. Результат резервного метода становится итоговым результатом для вызывающей стороны.
+
+Так что резервный метод никогда не является основным путем выполнения. Это только запасной путь, который выполняется после того, как исходный метод уже упал.
+
+`createUserFallback(request)` получает тот же аргумент `request` из неудавшегося вызова `createUser(request)`. Именно это и означает объявление `method = "createUserFallback(request)"`: имена в скобках
+должны быть именами параметров размеченного метода, и Kora передает именно их, в том же порядке, в резервный метод. Ссылка на имя, которое не является параметром, — ошибка компиляции.
+
+Чтобы ограничить, какие сбои доходят до резервного метода, добавьте один параметр с аннотацией `@Fallback.Reason`. Он получает исключение, вызвавшее резервный путь, а все, что не является экземпляром
+объявленного типа, пробрасывается без изменений:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    protected UserResponse createUserFallback(UserRequest request, @Fallback.Reason RuntimeException reason) {
+        log.warn("Falling back on user creation: {}", reason.getMessage());
+        return new UserResponse("pending-file-write", request.name(), request.email(), LocalDateTime.now());
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    protected open fun createUserFallback(request: UserRequest, @Fallback.Reason reason: RuntimeException): UserResponse {
+        log.warn("Falling back on user creation: {}", reason.message)
         return UserResponse("pending-file-write", request.name, request.email, LocalDateTime.now())
     }
     ```
 
-Метод резервный метод не меняет контракт контроллера. `POST /users` по-прежнему возвращает `UserResponse`, но теперь сервис может мягко деградировать, когда основной путь падает.
+Тип параметра выбирается не свободно: это `RuntimeException`, когда размеченный метод не объявляет проверяемых исключений, `Exception`, когда объявляет, и `Throwable`, когда объявлен
+`throws Throwable`. Допускается не более одного параметра `@Fallback.Reason`, и он не входит в число аргументов, перечисленных в `method = "..."`.
 
-Важно точно понимать, когда вызывается резервный метод:
+Резервный метод отлично подходит для плавной деградации, но он же способен скрыть настоящие сбои, если ответ слишком похож на успешный. Этот риск особенно важен для операций записи вроде
+`createUser()`, где резервный метод может вернуть что-то полезное вызывающей стороне, хотя исходная запись на самом деле не выполнилась.
 
-1. Kora сначала вызывает исходный метод.
-2. Если исходный метод успешно возвращает результат, резервный метод вообще не используется.
-3. Если исходный метод выбрасывает исключение, Kora проверяет, может ли резервный метод обработать этот сбой.
-4. Если сбой соответствует правилам резервный метод, Kora вызывает резервный метод, объявленный в `method = "..."`.
-5. Результат резервный метода становится итоговым результатом, возвращенным вызывающему коду.
+`@Fallback` поддерживает синхронные методы и `CompletionStage`. Обычный `Future` и реактивный `Publisher` отклоняются на этапе компиляции.
 
-Поэтому резервный метод никогда не является основным путем выполнения. Это только резервный путь, который запускается после того, как исходный метод уже упал.
-
-В этом примере `createUserFallback(request)` получает тот же аргумент `request` из упавшего вызова `createUser(request)`. Именно это означает объявление `method = "createUserFallback(request)"`: Kora
-берет аргументы исходного метода и передает выбранные из них в резервный метод в объявленном порядке.
-
-Поэтому резервный метод также нужно использовать осторожно. Он отлично подходит для мягкой деградации, но может скрыть реальные сбои, если запасной ответ слишком похож на настоящий успех. Этот риск особенно
-важен для операций записи, таких как `createUser()`, где резервный метод может вернуть вызывающему коду что-то полезное, хотя исходная запись фактически не завершилась.
-
-Kora поддерживает и AOP-использование на основе аннотаций, и императивное использование резервный метод через `FallbackManager`. В этом руководстве мы используем AOP-стиль, потому что он держит объяснение
-близко к существующему сервисному методу.
-
-После компиляции сгенерированный прокси показывает решение резервный метод рядом с исходным вызовом:
+После компиляции сгенерированный прокси показывает решение о резервном пути рядом с исходным вызовом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
     ```java
@@ -451,14 +525,18 @@ Kora поддерживает и AOP-использование на основ�
         try {
             return super.createUser(request);
         } catch (Throwable _e) {
-            if (fallback1.canFallback(_e)) {
+            var _fallbackObservation = fallbackTelemetry1.observe();
+            try {
+                _fallbackObservation.recordExecute(_e);
                 return createUserFallback(request);
-            } else {
-                throw _e;
+            } catch (Throwable _fallbackException) {
+                _fallbackObservation.observeError(_fallbackException);
+                throw _fallbackException;
+            } finally {
+                _fallbackObservation.end();
             }
         }
     }
-
 
     @Override
     public UserResponse createUser(UserRequest request) {
@@ -469,17 +547,22 @@ Kora поддерживает и AOP-использование на основ�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
     private fun _createUser_AopProxy_FallbackKoraAspect(request: UserRequest): UserResponse = try {
       super.createUser(request)
     } catch (_e: Throwable) {
-      if(fallback1.canFallback(_e)) {
+      val _fallbackObservation = fallbackTelemetry1.observe()
+      try {
+        _fallbackObservation.recordExecute(_e)
         createUserFallback(request)
-      } else {
-        throw _e
+      } catch (_fallbackException: Throwable) {
+        _fallbackObservation.observeError(_fallbackException)
+        throw _fallbackException
+      } finally {
+        _fallbackObservation.end()
       }
     }
 
@@ -487,36 +570,30 @@ Kora поддерживает и AOP-использование на основ�
         _createUser_AopProxy_FallbackKoraAspect(request)
     ```
 
-Это делает правило резервный метод конкретным: Kora сначала вызывает `super.createUser(request)`, и только если этот вызов выбрасывает исключение, спрашивает `fallback1.canFallback(_e)` перед
-вызовом `createUserFallback(request)`.
+Это делает правило резервного метода наглядным: Kora сначала вызывает `super.createUser(request)`, и только если этот вызов упал, она фиксирует сбой и вызывает `createUserFallback(request)`. При
+наличии параметра `@Fallback.Reason` в начале блока `catch` появляется охрана `if (!(_e instanceof RuntimeException)) { throw _e; }`.
 
 ## Ограничение времени { #timeout }
 
-`Timeout` не дает медленным операциям бесконечно потреблять ресурсы. Даже если сбой редок, зависающий вызов все равно может повредить всему приложению, заняв потоки и емкость обработки запросов.
+`Timeout` не дает медленным операциям бесконечно потреблять ресурсы. Даже когда сбой редок, зависший вызов способен навредить всему приложению, занимая потоки и емкость обработки запросов.
 
-Kora поддерживает ограничитель времени и через аннотации, и через `TimeoutManager`. Здесь мы оставляем подход с аннотацией, потому что он естественно читается на существующем методе.
+Ограничение времени полезно, когда:
 
-Ограничитель времени полезен, когда:
+- медленные операции хуже быстрой ошибки
+- вызывающей стороне нужна предсказуемая верхняя граница задержки
+- вы хотите, чтобы повторы или прерыватель работали поверх ограниченного времени выполнения
 
-- медленные операции хуже быстрого отказа
-- вызывающему коду нужна предсказуемая верхняя граница задержки
-- вы хотите, чтобы повторная попытка или прерыватель работали поверх ограниченного времени выполнения
+Применяйте осторожно, когда:
 
-Используйте его осторожно, когда:
+- таймаут короче нормальной здоровой задержки
+- у операции есть побочные эффекты, которые продолжаются после того, как вызывающая сторона отвалилась по таймауту
+- вы кладете повторы поверх таймаутов, не подумав об общей худшей задержке
 
-- тайм-аут короче обычной здоровой задержки
-- операция имеет побочные эффекты, которые могут продолжиться после того, как вызывающий код перестал ждать
-- вы накладываете повторная попытка поверх ограничитель времени, не думая об общей худшей задержке
-
-Ограничитель времени сам по себе основан на длительности, но когда вы сочетаете его с повторная попытка, прерыватель или резервный метод, итоговый поток исключений все равно определяет, что произойдет дальше. Это означает, что
-последующие слои могут реагировать или не реагировать на исключения ограничитель времени в зависимости от настроенных предикатов. Подробности о композиции смотрите
-в [документации по отказоотказоустойчивости](../documentation/resilient.md).
-
-Теперь добавьте конфигурацию ограничитель времени для `deleteUser()`.
+`@Timeout` сохранила свое имя в Kora 2.0, но ее атрибут теперь класс спецификации, а не имя политики. Сначала добавьте конфигурацию таймаута:
 
 `src/main/resources/application.conf`:
 
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
+Полный справочник по конфигурации смотрите в [Resilient](../documentation/resilient.md).
 
 ===! ":material-code-json: `Hocon`"
 
@@ -539,8 +616,8 @@ Kora поддерживает ограничитель времени и чер�
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
+    3. Линейная добавка к задержке на каждой следующей попытке.
+    4. Длительность таймаута для защищаемой операции.
 
 === ":simple-yaml: `YAML`"
 
@@ -558,15 +635,49 @@ Kora поддерживает ограничитель времени и чер�
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
+    3. Линейная добавка к задержке на каждой следующей попытке.
+    4. Длительность таймаута для защищаемой операции.
+
+Затем объявите спецификацию. Обратите внимание на имя контракта: интерфейс наследует `Timeouter`, а не `Timeout`, потому что `Timeout` — это аннотация аспекта.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/UserService.java`:
+    `src/main/java/io/koraframework/guide/resilient/service/DefaultTimeouter.java`:
 
     ```java
-    @Timeout("default")
+    package io.koraframework.guide.resilient.service;
+
+    import io.koraframework.resilient.timeout.Timeouter;
+    import io.koraframework.resilient.timeout.annotation.TimeoutSpec;
+
+    @TimeoutSpec("resilient.timeout.default")
+    public interface DefaultTimeouter extends Timeouter {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    `src/main/kotlin/io/koraframework/guide/resilient/service/DefaultTimeouter.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.resilient.service
+
+    import io.koraframework.resilient.timeout.Timeouter
+    import io.koraframework.resilient.timeout.annotation.TimeoutSpec
+
+    @TimeoutSpec("resilient.timeout.default")
+    interface DefaultTimeouter : Timeouter
+    ```
+
+Теперь ограничьте операцию удаления:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `src/main/java/io/koraframework/guide/resilient/service/UserService.java`:
+
+    ```java
+    @Timeout(DefaultTimeouter.class)
     public void deleteUser(String id) {
         boolean deleted = userRepository.deleteById(id);
         if (!deleted) {
@@ -577,31 +688,30 @@ Kora поддерживает ограничитель времени и чер�
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/UserService.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/UserService.kt`:
 
     ```kotlin
-    @Timeout("default")
+    @Timeout(DefaultTimeouter::class)
     open fun deleteUser(id: String) {
-        val deleted = userRepository.deleteById(id)
-        if (!deleted) {
+        if (!userRepository.deleteById(id)) {
             throw HttpServerResponseException.of(404, "User not found")
         }
     }
     ```
 
-Конечная точка остается `DELETE /users/{userId}`. Меняется только метод сервиса.
+Эндпоинт остается `DELETE /users/{userId}`. Меняется только сервисный метод. Когда длительность истекает, вызывающая сторона получает `TimeoutExhaustedException`.
 
-После компиляции сгенерированный прокси показывает, что ограничитель времени ограничивает исходную операцию удаления:
+После компиляции сгенерированный прокси показывает, что таймаут ограничивает исходную операцию удаления:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
     ```java
     private void _deleteUser_AopProxy_TimeoutKoraAspect(String id) {
-        timeout1.execute(() -> {
+        defaultTimeouter1.execute(() -> {
             super.deleteUser(id);
             return null;
         });
@@ -616,12 +726,12 @@ Kora поддерживает ограничитель времени и чер�
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
     private fun _deleteUser_AopProxy_TimeoutKoraAspect(id: String) {
-      timeout1.execute(Callable { super.deleteUser(id) })
+      defaultTimeouter1.execute(ThrowableRunnable { super.deleteUser(id) })
     }
 
     override fun deleteUser(id: String) {
@@ -629,49 +739,52 @@ Kora поддерживает ограничитель времени и чер�
     }
     ```
 
-Сгенерированный код особенно полезен для методов `void`: Kora оборачивает `super.deleteUser(id)` в `timeout1.execute(...)` и возвращает `null` только для соответствия форме лямбды.
+Сгенерированный код особенно нагляден для методов без возвращаемого значения: Kora оборачивает `super.deleteUser(id)` в `defaultTimeouter1.execute(...)` и в Java возвращает `null` лишь для того, чтобы
+подошла форма вызываемого объекта.
 
 ## Прерыватель { #circuit-breaker }
 
-`CircuitBreaker` защищает систему от повторных вызовов пути, который уже падает. Когда происходит достаточно сбоев, Kora открывает прерыватель и некоторое время быстро завершает вызовы ошибкой вместо
-того, чтобы снова и снова выполнять дорогую работу, которая, скорее всего, снова упадет.
+`CircuitBreaker` защищает систему от повторяющихся вызовов пути, который уже падает. Как только сбоев набирается достаточно, Kora размыкает прерыватель и на время начинает быстро отказывать вместо того,
+чтобы снова и снова делать дорогую работу, которая, скорее всего, снова не удастся.
 
-Этот паттерн особенно полезен, когда настоящая проблема не в логике вашего контроллера или сервиса, а в том, от чего зависит метод: базе данных, другом HTTP-сервисе, брокере сообщений или любой
-нестабильной нижестоящей операции. Без прерыватель каждый новый запрос продолжает пробовать тот же падающий путь, что тратит потоки, увеличивает задержку и часто ухудшает аварию.
+Этот шаблон особенно полезен, когда настоящая проблема не в логике вашего контроллера или сервиса, а в чем-то, от чего зависит метод: база данных, другой HTTP-сервис, брокер сообщений или любая
+нестабильная нижестоящая операция. Без прерывателя каждый новый запрос продолжает пробовать тот же падающий путь, что тратит потоки, увеличивает задержку и часто усугубляет аварию.
 
-Kora описывает прерыватель как прокси вокруг конкретного метода. Он наблюдает за недавними вызовами и проходит через три классических состояния:
+Kora описывает прерыватель как прокси вокруг конкретного метода. Он следит за недавними вызовами и переходит между тремя классическими состояниями:
 
-- `CLOSED`: вызовы пропускаются обычно, а Kora считает недавние сбои внутри настроенного `slidingWindowSize`
-- `OPEN`: когда есть достаточно вызовов для оценки (`minimumRequiredCalls`) и доля сбоев пересекает `failureRateThreshold`, Kora перестает вызывать защищенный метод и сразу быстро отказывает
-- `HALF-OPEN`: после истечения `waitDurationInOpenState` Kora разрешает только ограниченное число пробных вызовов (`permittedCallsInHalfOpenState`), чтобы проверить, восстановилась ли зависимость
+- `CLOSED`: вызовы проходят обычным образом, и Kora считает недавние сбои внутри настроенного окна
+- `OPEN`: как только вызовов хватает для оценки (`minimumRequiredCalls`) и доля сбоев переходит `failureRateThreshold`, Kora перестает вызывать защищаемый метод и сразу отказывает с `CallNotPermittedException`
+- `HALF_OPEN`: после истечения `waitDurationInOpenState` Kora пропускает лишь ограниченное число пробных вызовов (`permittedCallsInHalfOpenState`), чтобы проверить, восстановилась ли зависимость
 
-Если эти пробные вызовы в полуоткрытом состоянии проходят успешно, прерыватель снова закрывается и обычный трафик возобновляется. Если один из них падает, прерыватель снова открывается и начинает новый период
-ожидания. В этом главная ценность паттерна: дать нездоровой зависимости время восстановиться вместо постоянного давления на нее, но при этом периодически проверять, стала ли она снова здоровой.
-
-Kora поддерживает и аннотированное, и императивное использование прерыватель. Здесь мы сохраняем декларативный стиль, потому что он чисто ложится на существующий метод `updateUser()`. Если нужен
-более тонкий контроль, можно внедрить `CircuitBreakerManager` и использовать прерыватель императивно, как описано в [документации модуля отказоотказоустойчивости](../documentation/resilient.md).
+Если пробные вызовы в полуоткрытом состоянии успешны, прерыватель снова замыкается, и обычный трафик возобновляется. Если один из них падает, прерыватель размыкается опять и начинает новый период
+ожидания. В этом и есть главная ценность шаблона: дать нездоровой зависимости время восстановиться вместо непрерывного долбления, но при этом периодически проверять, здорова ли она снова.
 
 Прерыватель полезен, когда:
 
 - нижестоящая зависимость нездорова, и повторные вызовы только тратят ресурсы
-- быстрый отказ лучше долгих повторяющихся тайм-аутов
-- вы хотите дать окно восстановления перед повторным допуском трафика
+- быстрый отказ лучше долгих повторяющихся таймаутов
+- вам нужно окно восстановления, прежде чем снова пускать трафик
 
-Используйте его осторожно, когда:
+Применяйте осторожно, когда:
 
-- пороги настроены слишком агрессивно и здоровый трафик блокируется
-- сбои, которые должны обрабатываться по-разному, все сгруппированы вместе
-- прерыватель поставлен вокруг очень дешевых внутрипроцессных операций, где цена срабатывания выше цены повтора
+- пороги настроены слишком агрессивно, и здоровый трафик оказывается заблокирован
+- сбои, которые следовало бы разделять, свалены в одну кучу
+- прерыватель ставится вокруг очень дешевых внутрипроцессных операций, где цена срабатывания выше цены повтора
 
-Прерыватель не обязан считать каждое исключение сбоем прерывателя. Kora поддерживает пользовательскую фильтрацию через `CircuitBreakerPredicate`, поэтому вы можете решить, какие ошибки должны
-влиять на состояние прерывателя, а какие нужно игнорировать. В этом руководстве мы используем это на следующем шаге, потому что `updateUser()` может законно возвращать `404 Not Found`, а отсутствующий
-пользователь не должен выглядеть как нестабильность инфраструктуры.
+Kora 2.0 позволяет выбрать способ подсчета окна через ключ `type`, и от этого выбора зависит форма блока окна:
 
-Начните с добавления самой конфигурации прерыватель.
+| `type`           | Блок окна    | Что считается                                                                  |
+|------------------|--------------|--------------------------------------------------------------------------------|
+| `STRIPED_APPROX` | `countBased` | По умолчанию. Приблизительный подсчет по полосам счетчиков, дешевле всего при конкуренции. |
+| `FIXED_WINDOW`   | `countBased` | Точный подсчет по фиксированному числу вызовов. Проще всего рассуждать в тестах. |
+| `RING_BUFFER`    | `countBased` | Точный подсчет по скользящему кольцевому буферу последних `windowSize` вызовов.  |
+| `TIME_BASED`     | `timeBased`  | Подсчет по `windowDuration`, разбитой на `sampleCount` корзин, а не по вызовам.  |
+
+Поскольку руководству нужен прерыватель, предсказуемо срабатывающий после двух сбоев, оно использует `FIXED_WINDOW`.
 
 `src/main/resources/application.conf`:
 
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
+Полный справочник по конфигурации смотрите в [Resilient](../documentation/resilient.md).
 
 ===! ":material-code-json: `Hocon`"
 
@@ -691,11 +804,12 @@ Kora поддерживает и аннотированное, и императ
       }
       circuitbreaker {
         default {
-          slidingWindowSize = 2 //(5)!
-          minimumRequiredCalls = 2 //(6)!
-          failureRateThreshold = 100 //(7)!
-          permittedCallsInHalfOpenState = 1 //(8)!
-          waitDurationInOpenState = 200ms //(9)!
+          type = FIXED_WINDOW //(5)!
+          countBased.windowSize = 2 //(6)!
+          minimumRequiredCalls = 2 //(7)!
+          failureRateThreshold = 100 //(8)!
+          permittedCallsInHalfOpenState = 1 //(9)!
+          waitDurationInOpenState = 200ms //(10)!
         }
       }
     }
@@ -703,13 +817,14 @@ Kora поддерживает и аннотированное, и императ
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
+    3. Линейная добавка к задержке на каждой следующей попытке.
+    4. Длительность таймаута для защищаемой операции.
+    5. Реализация окна. При отсутствии ключа используется `STRIPED_APPROX`.
+    6. Число вызовов, хранимых в окне прерывателя.
+    7. Минимальное число вызовов, прежде чем прерыватель оценивает сбои.
+    8. Доля сбоев в процентах, при которой прерыватель размыкается.
+    9. Число пробных вызовов, разрешенных в полуоткрытом состоянии.
+    10. Время, которое прерыватель остается разомкнутым до проверки восстановления.
 
 === ":simple-yaml: `YAML`"
 
@@ -725,31 +840,69 @@ Kora поддерживает и аннотированное, и императ
           duration: 100ms #(4)!
       circuitbreaker:
         default:
-          slidingWindowSize: 2 #(5)!
-          minimumRequiredCalls: 2 #(6)!
-          failureRateThreshold: 100 #(7)!
-          permittedCallsInHalfOpenState: 1 #(8)!
-          waitDurationInOpenState: 200ms #(9)!
+          type: FIXED_WINDOW #(5)!
+          countBased:
+            windowSize: 2 #(6)!
+          minimumRequiredCalls: 2 #(7)!
+          failureRateThreshold: 100 #(8)!
+          permittedCallsInHalfOpenState: 1 #(9)!
+          waitDurationInOpenState: 200ms #(10)!
     ```
 
     1. Начальная задержка перед повторной попыткой.
     2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
+    3. Линейная добавка к задержке на каждой следующей попытке.
+    4. Длительность таймаута для защищаемой операции.
+    5. Реализация окна. При отсутствии ключа используется `STRIPED_APPROX`.
+    6. Число вызовов, хранимых в окне прерывателя.
+    7. Минимальное число вызовов, прежде чем прерыватель оценивает сбои.
+    8. Доля сбоев в процентах, при которой прерыватель размыкается.
+    9. Число пробных вызовов, разрешенных в полуоткрытом состоянии.
+    10. Время, которое прерыватель остается разомкнутым до проверки восстановления.
 
-Ключевая деталь здесь в том, что Kora использует `minimumRequiredCalls`, а не `minimumNumberOfCalls`.
+В двух ключах легко ошибиться. Размер окна живет в `countBased.windowSize`, а не на верхнем уровне секции, а минимальное число вызовов — это `minimumRequiredCalls`, а не `minimumNumberOfCalls`. Kora
+проверяет весь блок при старте и отказывается собирать граф, называя проблемный ключ в сообщении, так что опечатка падает сразу, а не тихо отключает прерыватель.
+
+Объявите спецификацию:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/UserService.java`:
+    `src/main/java/io/koraframework/guide/resilient/service/DefaultCircuitBreaker.java`:
 
     ```java
-    @CircuitBreaker("default")
+    package io.koraframework.guide.resilient.service;
+
+    import io.koraframework.resilient.circuitbreaker.CircuitBreaker;
+    import io.koraframework.resilient.circuitbreaker.annotation.CircuitBreakerSpec;
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.default")
+    public interface DefaultCircuitBreaker extends CircuitBreaker {
+
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    `src/main/kotlin/io/koraframework/guide/resilient/service/DefaultCircuitBreaker.kt`:
+
+    ```kotlin
+    package io.koraframework.guide.resilient.service
+
+    import io.koraframework.resilient.circuitbreaker.CircuitBreaker
+    import io.koraframework.resilient.circuitbreaker.annotation.CircuitBreakerSpec
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.default")
+    interface DefaultCircuitBreaker : CircuitBreaker
+    ```
+
+И защитите метод обновления через `@CircuitBreakable`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `src/main/java/io/koraframework/guide/resilient/service/UserService.java`:
+
+    ```java
+    @CircuitBreakable(DefaultCircuitBreaker.class)
     public UserResponse updateUser(String id, UserRequest request) {
         boolean updated = userRepository.update(id, request.name(), request.email());
         if (!updated) {
@@ -761,40 +914,39 @@ Kora поддерживает и аннотированное, и императ
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/UserService.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/UserService.kt`:
 
     ```kotlin
-    @CircuitBreaker("default")
+    @CircuitBreakable(DefaultCircuitBreaker::class)
     open fun updateUser(id: String, request: UserRequest): UserResponse {
-        val updated = userRepository.update(id, request.name, request.email)
-        if (!updated) {
+        if (!userRepository.update(id, request.name, request.email)) {
             throw HttpServerResponseException.of(404, "User not found")
         }
         return UserResponse(id, request.name, request.email, LocalDateTime.now())
     }
     ```
 
-Контроллер снова остается тем же. `PUT /users/{userId}` по-прежнему вызывает `updateUser()`, но после достаточного числа сбоев прерыватель может открыться и быстро отказывать.
+Контроллер снова не меняется. `PUT /users/{userId}` по-прежнему вызывает `updateUser()`, но после достаточного числа сбоев прерыватель может разомкнуться и быстро отказывать.
 
-После компиляции сгенерированный прокси показывает жизненный цикл прерыватель вокруг исходного обновления:
+После компиляции сгенерированный прокси показывает жизненный цикл прерывателя вокруг исходного обновления:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
     ```java
     private UserResponse _updateUser_AopProxy_CircuitBreakerKoraAspect(String id, UserRequest request) {
         try {
-            circuitBreaker1.acquire();
+            defaultCircuitBreaker1.acquire();
             var _result = super.updateUser(id, request);
-            circuitBreaker1.releaseOnSuccess();
+            defaultCircuitBreaker1.releaseOnSuccess();
             return _result;
         } catch (CallNotPermittedException _e) {
             throw _e;
         } catch (Throwable _e) {
-            circuitBreaker1.releaseOnError(_e);
+            defaultCircuitBreaker1.releaseOnError(_e);
             throw _e;
         }
     }
@@ -808,20 +960,20 @@ Kora поддерживает и аннотированное, и императ
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
     private fun _updateUser_AopProxy_CircuitBreakerKoraAspect(id: String, request: UserRequest):
         UserResponse = try {
-      circuitBreaker1.acquire()
+      defaultCircuitBreaker1.acquire()
       val t = super.updateUser(id, request)
-      circuitBreaker1.releaseOnSuccess()
+      defaultCircuitBreaker1.releaseOnSuccess()
       t
     } catch (e: CallNotPermittedException) {
       throw e
     } catch (e: Throwable) {
-      circuitBreaker1.releaseOnError(e)
+      defaultCircuitBreaker1.releaseOnError(e)
       throw e
     }
 
@@ -829,38 +981,44 @@ Kora поддерживает и аннотированное, и императ
         _updateUser_AopProxy_CircuitBreakerKoraAspect(id, request)
     ```
 
-Этот фрагмент прямо показывает протокол прерывателя: получить разрешение, вызвать исходный метод, отметить успех при хорошем результате и отметить ошибку, когда защищенный метод падает.
+Этот фрагмент прямо показывает протокол прерывателя: получить разрешение, вызвать исходный метод, отпустить с успехом на хорошем результате и отпустить с ошибкой, когда защищаемый метод упал. Обратите
+внимание, что `CallNotPermittedException` пробрасывается без учета, потому что отклоненный вызов — это прерыватель, делающий свою работу, а не новый сбой для подсчета.
 
 ## Предикат прерывателя { #circuit-breaker-predicate }
 
-Теперь сделаем прерыватель умнее для этого конкретного API. Мы не хотим, чтобы каждое исключение считалось сбоем прерыватель.
+Теперь сделаем прерыватель умнее применительно к конкретно этому API. Мы не хотим, чтобы каждое исключение считалось сбоем прерывателя.
 
-В этом руководстве `updateUser()` может падать по двум очень разным причинам:
+В этом руководстве `updateUser()` может упасть по двум очень разным причинам:
 
-- пользователь действительно не существует, это нормальный бизнес-исход и должен просто возвращать `404 Not Found`
-- путь обновления действительно нездоров, например из-за того, что какая-то нижестоящая зависимость или внутренняя операция повторно падает
+- пользователя действительно нет, и это нормальный бизнес-исход, который должен просто вернуть `404 Not Found`
+- путь обновления по-настоящему нездоров, например потому что какая-то нижестоящая зависимость или внутренняя операция падает раз за разом
 
-`CircuitBreakerFailurePredicate` позволяет разделить эти случаи. Мы не хотим, чтобы отсутствующий пользователь толкал прерыватель к `OPEN`, потому что это научило бы прерыватель неверному выводу о
-здоровье системы. Мы хотим, чтобы прерыватель реагировал только на сбои, которые действительно указывают на нестабильность.
+`CircuitBreakerPredicate` позволяет разделить эти случаи. Мы не хотим, чтобы отсутствующий пользователь толкал прерыватель к `OPEN`, потому что это научило бы прерыватель неверному представлению о
+здоровье системы. Мы хотим, чтобы прерыватель реагировал только на сбои, действительно указывающие на нестабильность.
 
-Kora вызывает этот предикат всякий раз, когда защищенный метод выбрасывает исключение. Если предикат возвращает `true`, этот сбой учитывается прерыватель. Если он возвращает `false`, исключение
-все равно возвращается вызывающему коду, но не влияет на состояние прерывателя.
+Kora вызывает этот предикат каждый раз, когда защищаемый метод выбрасывает исключение. Если `isCircuitBreakerFailure` возвращает `true`, сбой учитывается прерывателем. Если возвращает `false`,
+исключение все равно доходит до вызывающей стороны, но не влияет на состояние прерывателя.
+
+В Kora 2.0 предикат привязывается к прерывателю пометкой класса спецификации. Ключа `failurePredicateName` больше нет, как нет и метода `name()` для переопределения: привязкой служит `@Tag`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/CircuitBreakerFailurePredicate.java`:
+    `src/main/java/io/koraframework/guide/resilient/service/CircuitBreakerFailurePredicate.java`:
 
     ```java
+    package io.koraframework.guide.resilient.service;
+
+    import io.koraframework.common.annotation.Component;
+    import io.koraframework.common.annotation.Tag;
+    import io.koraframework.http.server.common.response.HttpServerResponseException;
+    import io.koraframework.resilient.circuitbreaker.CircuitBreakerPredicate;
+
+    @Tag(DefaultCircuitBreaker.class)
     @Component
     public final class CircuitBreakerFailurePredicate implements CircuitBreakerPredicate {
 
         @Override
-        public String name() {
-            return "RecordServerErrorsOnly";
-        }
-
-        @Override
-        public boolean test(Throwable throwable) {
+        public boolean isCircuitBreakerFailure(Throwable throwable) {
             if (throwable instanceof HttpServerResponseException exception) {
                 return exception.code() >= 500;
             }
@@ -871,210 +1029,148 @@ Kora вызывает этот предикат всякий раз, когда 
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/CircuitBreakerFailurePredicate.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/CircuitBreakerFailurePredicate.kt`:
 
     ```kotlin
+    package io.koraframework.guide.resilient.service
+
+    import io.koraframework.common.annotation.Component
+    import io.koraframework.common.annotation.Tag
+    import io.koraframework.http.server.common.response.HttpServerResponseException
+    import io.koraframework.resilient.circuitbreaker.CircuitBreakerPredicate
+
+    @Tag(DefaultCircuitBreaker::class)
     @Component
     class CircuitBreakerFailurePredicate : CircuitBreakerPredicate {
 
-        override fun name(): String = "RecordServerErrorsOnly"
-
-        override fun test(throwable: Throwable): Boolean {
-            return if (throwable is HttpServerResponseException) {
-                throwable.code() >= 500
-            } else {
-                true
+        override fun isCircuitBreakerFailure(throwable: Throwable): Boolean {
+            if (throwable is HttpServerResponseException) {
+                return throwable.code() >= 500
             }
+            return true
         }
     }
     ```
 
-Затем привяжите его в конфигурации прерыватель:
+Менять конфигурацию не нужно. Модуль, сгенерированный для `DefaultCircuitBreaker`, объявляет параметр `@Tag(DefaultCircuitBreaker.class) @Nullable CircuitBreakerPredicate`, поэтому ваш помеченный
+компонент подхватывается просто фактом своего присутствия в графе. Уберите `@Tag` — и предикат больше не связан с этим прерывателем; уберите компонент целиком — и прерыватель вернется к подсчету всех
+исключений.
 
-`src/main/resources/application.conf`:
+Тот же механизм привязывает `RetryPredicate` к интерфейсу с `@RetrySpec`. У `@TimeoutSpec` и `@RateLimiterSpec` предиката нет: таймаут решается прошедшим временем, а ограничитель частоты —
+разрешениями, так что классифицировать нечего.
 
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
+## Ограничитель частоты { #rate-limiter }
+
+`RateLimiter` появился в Kora 2.0. Там, где прерыватель реагирует на сбои, ограничитель частоты реагирует на объем: он задает потолок числа вызовов операции за период обновления и сразу отклоняет
+остальные через `RateLimitExceededException`.
+
+Ограничитель частоты полезен, когда:
+
+- нижестоящая зависимость публикует жесткую квоту, которую нельзя превышать
+- дорогая операция никогда не должна занимать весь пул потоков
+- вам нужно обратное давление, которое предсказуемо, а не возникает само собой
+
+Применяйте осторожно, когда:
+
+- лимит общий для всех экземпляров, ведь у каждого экземпляра приложения свой локальный ограничитель
+- у вызывающих сторон нет разумного способа отреагировать на отказ
+- операция настолько дешева, что ограничение лишь добавляет задержку
+
+Он следует ровно тому же шаблону спецификации. Добавьте конфигурацию:
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     resilient {
-      retry {
+      ratelimiter {
         default {
-          delay = 20ms //(1)!
-          attempts = 3 //(2)!
-          delayStep = 20ms //(3)!
-        }
-      }
-      timeout {
-        default {
-          duration = 100ms //(4)!
-        }
-      }
-      circuitbreaker {
-        default {
-          slidingWindowSize = 2 //(5)!
-          minimumRequiredCalls = 2 //(6)!
-          failureRateThreshold = 100 //(7)!
-          permittedCallsInHalfOpenState = 1 //(8)!
-          waitDurationInOpenState = 200ms //(9)!
-          failurePredicateName = "RecordServerErrorsOnly" //(10)!
+          limitForPeriod = 100 //(1)!
+          limitRefreshPeriod = 1s //(2)!
         }
       }
     }
     ```
 
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
-    10. Значение для `resilient.circuitbreaker.default.failurePredicateName`.
+    1. Число разрешений, выдаваемых в каждом периоде обновления.
+    2. Как часто пополняется бюджет разрешений.
 
 === ":simple-yaml: `YAML`"
 
     ```yaml
     resilient:
-      retry:
+      ratelimiter:
         default:
-          delay: 20ms #(1)!
-          attempts: 3 #(2)!
-          delayStep: 20ms #(3)!
-      timeout:
-        default:
-          duration: 100ms #(4)!
-      circuitbreaker:
-        default:
-          slidingWindowSize: 2 #(5)!
-          minimumRequiredCalls: 2 #(6)!
-          failureRateThreshold: 100 #(7)!
-          permittedCallsInHalfOpenState: 1 #(8)!
-          waitDurationInOpenState: 200ms #(9)!
-          failurePredicateName: "RecordServerErrorsOnly" #(10)!
+          limitForPeriod: 100 #(1)!
+          limitRefreshPeriod: 1s #(2)!
     ```
 
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
-    10. Значение для `resilient.circuitbreaker.default.failurePredicateName`.
+    1. Число разрешений, выдаваемых в каждом периоде обновления.
+    2. Как часто пополняется бюджет разрешений.
 
-## Комбинированный подход { #combined-pattern }
-
-Финальный шаг показывает, как несколько инструментов отказоустойчивости могут совместно работать на одном методе. `getUsers()` хорошо подходит для демонстрации, потому что операции получения списка часто
-становятся точками агрегации: сортировка, постраничный вывод, обращения к кешу, удаленное получение данных или дорогие чтения.
-
-Kora позволяет выразить ту же объединенную логику и декларативно через аннотации, и императивно через API менеджеров. В этом руководстве мы остаемся на декларативном пути, потому что порядок виден
-прямо над методом.
-
-Эта объединенная цепочка полезна, когда:
-
-- вам нужна жесткая верхняя граница времени
-- вы все еще хотите несколько повторов для временных сбоев
-- вы также хотите, чтобы прерыватель открылся, если метод продолжает падать
-
-Используйте ее осторожно, когда:
-
-- вы накладываете слишком много политик и делаете итоговое поведение трудным для понимания
-- повторные попытки вместе с ограничитель времени создают намного большую худшую задержку, чем ожидалось
-- сбои становится сложнее отлаживать, потому что несколько слоев могут преобразовать финальный путь ошибки
-
-Добавьте те же блоки конфигурации, которые нужны объединенному методу.
-
-`src/main/resources/application.conf`:
-
-Полный справочник по конфигурации смотрите в [отказоотказоустойчивости](../documentation/resilient.md).
-
-===! ":material-code-json: `Hocon`"
-
-    ```javascript
-    resilient {
-      retry {
-        default {
-          delay = 20ms //(1)!
-          attempts = 3 //(2)!
-          delayStep = 20ms //(3)!
-        }
-      }
-      timeout {
-        default {
-          duration = 100ms //(4)!
-        }
-      }
-      circuitbreaker {
-        default {
-          slidingWindowSize = 2 //(5)!
-          minimumRequiredCalls = 2 //(6)!
-          failureRateThreshold = 100 //(7)!
-          permittedCallsInHalfOpenState = 1 //(8)!
-          waitDurationInOpenState = 200ms //(9)!
-          failurePredicateName = "RecordServerErrorsOnly" //(10)!
-        }
-      }
-    }
-    ```
-
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
-    10. Значение для `resilient.circuitbreaker.default.failurePredicateName`.
-
-=== ":simple-yaml: `YAML`"
-
-    ```yaml
-    resilient:
-      retry:
-        default:
-          delay: 20ms #(1)!
-          attempts: 3 #(2)!
-          delayStep: 20ms #(3)!
-      timeout:
-        default:
-          duration: 100ms #(4)!
-      circuitbreaker:
-        default:
-          slidingWindowSize: 2 #(5)!
-          minimumRequiredCalls: 2 #(6)!
-          failureRateThreshold: 100 #(7)!
-          permittedCallsInHalfOpenState: 1 #(8)!
-          waitDurationInOpenState: 200ms #(9)!
-          failurePredicateName: "RecordServerErrorsOnly" #(10)!
-    ```
-
-    1. Начальная задержка перед повторной попыткой.
-    2. Максимальное число повторных попыток.
-    3. Прирост задержки между повторными попытками.
-    4. Длительность тайм-аута для защищенной операции.
-    5. Число вызовов, хранящихся в скользящем окне прерыватель.
-    6. Минимальное число вызовов, необходимое до оценки сбоев прерыватель.
-    7. Доля сбоев, при которой прерыватель открывается.
-    8. Число пробных вызовов, разрешенных, пока прерыватель находится в полуоткрытом состоянии.
-    9. Время, которое прерыватель остается открытым перед проверкой восстановления.
-    10. Значение для `resilient.circuitbreaker.default.failurePredicateName`.
+Объявите спецификацию и разметьте метод:
 
 ===! ":fontawesome-brands-java: `Java`"
 
-    `src/main/java/ru/tinkoff/kora/guide/resilient/service/UserService.java`:
+    ```java
+    @RateLimiterSpec("resilient.ratelimiter.default")
+    public interface DefaultRateLimiter extends RateLimiter {
+
+    }
+    ```
 
     ```java
-    @CircuitBreaker("default")
-    @Retry("default")
-    @Timeout("default")
+    @RateLimited(DefaultRateLimiter.class)
+    public List<UserResponse> getUsers(int page, int size, String sort) {
+        // ...
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @RateLimiterSpec("resilient.ratelimiter.default")
+    interface DefaultRateLimiter : RateLimiter
+    ```
+
+    ```kotlin
+    @RateLimited(DefaultRateLimiter::class)
+    open fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> {
+        // ...
+    }
+    ```
+
+В отличие от остальных аспектов, `@RateLimited` поддерживает только синхронные методы и `Flow` в Kotlin. Возвращаемые типы `CompletionStage`, `Future` и реактивный `Publisher` отклоняются на этапе
+компиляции, потому что разрешение, полученное перед асинхронным вызовом, ничего не говорит о том, когда этот вызов на самом деле завершится.
+
+Дальше в руководстве ограничитель частоты не используется, так что оставьте `getUsers()` без него и переходите к комбинированной цепочке ниже.
+
+## Комбинированный подход { #combined-pattern }
+
+Последний шаг показывает, как несколько инструментов отказоустойчивости могут работать вместе на одном методе. `getUsers()` — хорошее место для демонстрации, потому что операции получения списков часто
+становятся точками агрегации: сортировка, постраничная выдача, обращения к кешу, получение удаленных данных или дорогие чтения.
+
+Эта комбинированная цепочка полезна, когда:
+
+- вам нужен жесткий верхний предел по времени
+- вы все же хотите несколько повторов для кратковременных сбоев
+- вы также хотите, чтобы прерыватель размыкался, если метод продолжает падать
+
+Применяйте осторожно, когда:
+
+- вы наслаиваете слишком много политик и итоговое поведение становится трудно понять
+- повторы вместе с таймаутом дают гораздо большую худшую задержку, чем ожидалось
+- сбои сложнее отлаживать, потому что несколько слоев могут преобразовать итоговый путь ошибки
+
+Все три блока конфигурации уже на месте, поэтому меняется только метод:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    `src/main/java/io/koraframework/guide/resilient/service/UserService.java`:
+
+    ```java
+    @CircuitBreakable(DefaultCircuitBreaker.class)
+    @Retryable(DefaultRetry.class)
+    @Timeout(DefaultTimeouter.class)
     public List<UserResponse> getUsers(int page, int size, String sort) {
         return userRepository.findAll().stream()
                 .sorted(getComparator(sort))
@@ -1086,70 +1182,72 @@ Kora позволяет выразить ту же объединенную ло
 
 === ":simple-kotlin: `Kotlin`"
 
-    `src/main/kotlin/ru/tinkoff/kora/guide/resilient/service/UserService.kt`:
+    `src/main/kotlin/io/koraframework/guide/resilient/service/UserService.kt`:
 
     ```kotlin
-    @CircuitBreaker("default")
-    @Retry("default")
-    @Timeout("default")
+    @CircuitBreakable(DefaultCircuitBreaker::class)
+    @Retryable(DefaultRetry::class)
+    @Timeout(DefaultTimeouter::class)
     open fun getUsers(page: Int, size: Int, sort: String): List<UserResponse> =
-        userRepository.findAll().stream()
-            .sorted(getComparator(sort))
-            .skip((page.toLong()) * size)
-            .limit(size.toLong())
-            .toList()
+        userRepository.findAll()
+            .sortedWith(getComparator(sort))
+            .drop(page * size)
+            .take(size)
     ```
 
-Порядок аннотаций важен, потому что он определяет порядок, в котором Kora применяет аспекты вокруг метода. Другими словами, аннотация, ближайшая к методу, становится самым внутренним слоем, а
-аннотация, указанная первой, становится самым внешним слоем.
+Порядок аннотаций важен, потому что он задает порядок, в котором Kora применяет аспекты вокруг метода. Аннотация, ближайшая к методу, — самый внутренний слой, а перечисленная первой становится самым
+внешним слоем.
 
-В этом руководстве процесс вызова такой:
+В этом руководстве поток вызова такой:
 
-1. `@CircuitBreaker`
-2. `@Retry`
+1. `@CircuitBreakable`
+2. `@Retryable`
 3. `@Timeout`
 
-Очень распространенный порядок, который хорошо работает для многих реальных систем:
+Очень распространенный порядок, который хорошо работает во многих реальных системах:
 
-1. `@Fallback` последним, если вам действительно нужен ухудшенный резервный ответ
-2. `@CircuitBreaker`, чтобы остановить повторяющиеся падающие вызовы, которые иначе продолжались бы бесконечно
-3. `@Retry`, чтобы ограниченно повторять временные сбои
+1. `@Fallback` первым, чтобы он был самым внешним слоем и видел только те сбои, которые внутренние слои не смогли поглотить
+2. `@CircuitBreakable`, чтобы повторяющиеся неудачные вызовы не продолжались бесконечно
+3. `@Retryable`, чтобы ограниченное число раз повторить кратковременные сбои
 4. `@Timeout`, чтобы ограничить одну попытку
 
-Такой порядок распространен, потому что `@Timeout` является самым внутренним слоем и ограничивает одну конкретную попытку, `@Retry` оборачивает эту ограниченную попытку и повторяет ее ограниченное
-число раз, `@CircuitBreaker` оборачивает поток повторов и наблюдает, продолжает ли вся операция падать, а `@Fallback` является самым внешним слоем, который получает шанс вернуть ухудшенный ответ
-только после того, как внутренние слои уже упали. Это не единственно допустимый порядок, но обычно его проще всего понимать.
+Этот порядок распространен, потому что `@Timeout` — самый внутренний слой и ограничивает одну конкретную попытку, `@Retryable` оборачивает эту ограниченную попытку и повторяет ее ограниченное число раз,
+`@CircuitBreakable` оборачивает поток повторов и наблюдает, продолжает ли падать операция целиком, а `@Fallback` — самый внешний слой, который получает шанс выдать ухудшенный ответ только после того,
+как внутренние слои уже не справились. Это не единственный допустимый порядок, но обычно о нем проще всего рассуждать.
 
-Также помните, что эти аспекты могут реагировать только на выбранные сбои. Повторная попытка, прерыватель и резервный метод все могут быть настроены пользовательскими предикатами, поэтому даже в объединенной цепочке
-они не обязаны одинаково трактовать каждое исключение. Это соответствует [правилам комбинирования в документации](../documentation/resilient.md#combination).
+Поскольку прерыватель стоит снаружи повторов, обратите внимание, что именно он считает: одну исчерпанную последовательность повторов, а не каждую отдельную попытку. Обычно это то, что нужно, но это
+значит, что `minimumRequiredCalls` считает операции целиком, а не попытки.
 
-После компиляции сгенерированный прокси показывает точную вложенность для объединенного метода:
+Помните также, что повторы и прерыватель можно по отдельности сузить помеченным предикатом, так что даже в комбинированной цепочке они не обязаны относиться ко всем исключениям одинаково. Это
+соответствует [правилам комбинирования из документации](../documentation/resilient.md).
+
+После компиляции сгенерированный прокси показывает точную вложенность для комбинированного метода:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
     ```java
     private List<UserResponse> _getUsers_AopProxy_TimeoutKoraAspect(int page, int size, String sort) {
-        return timeout1.execute(() -> super.getUsers(page, size, sort));
+        return defaultTimeouter1.execute(() -> super.getUsers(page, size, sort));
     }
 
     private List<UserResponse> _getUsers_AopProxy_RetryKoraAspect(int page, int size, String sort) {
-        return retry1.retry(() -> _getUsers_AopProxy_TimeoutKoraAspect(page, size, sort));
+        return defaultRetry1.retry(() -> _getUsers_AopProxy_TimeoutKoraAspect(page, size, sort));
     }
 
     private List<UserResponse> _getUsers_AopProxy_CircuitBreakerKoraAspect(int page, int size, String sort) {
         try {
-            circuitBreaker1.acquire();
+            defaultCircuitBreaker1.acquire();
             var _result = _getUsers_AopProxy_RetryKoraAspect(page, size, sort);
-            circuitBreaker1.releaseOnSuccess();
+            defaultCircuitBreaker1.releaseOnSuccess();
             return _result;
         } catch (CallNotPermittedException _e) {
             throw _e;
         } catch (Throwable _e) {
-            circuitBreaker1.releaseOnError(_e);
+            defaultCircuitBreaker1.releaseOnError(_e);
             throw _e;
         }
     }
@@ -1163,7 +1261,7 @@ Kora позволяет выразить ту же объединенную ло
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
     ```kotlin
@@ -1171,13 +1269,13 @@ Kora позволяет выразить ту же объединенную ло
       page: Int,
       size: Int,
       sort: String,
-    ): List<UserResponse> = timeout1.execute(Callable { super.getUsers(page, size, sort) })
+    ): List<UserResponse> = defaultTimeouter1.execute(ThrowableCallable { super.getUsers(page, size, sort) })
 
     private fun _getUsers_AopProxy_RetryKoraAspect(
       page: Int,
       size: Int,
       sort: String,
-    ): List<UserResponse> = retry1.retry(Retry.RetrySupplier {
+    ): List<UserResponse> = defaultRetry1.retry(ThrowableCallable {
       _getUsers_AopProxy_TimeoutKoraAspect(page, size, sort)
     })
 
@@ -1186,71 +1284,77 @@ Kora позволяет выразить ту же объединенную ло
       size: Int,
       sort: String,
     ): List<UserResponse> = try {
-      circuitBreaker1.acquire()
+      defaultCircuitBreaker1.acquire()
       val t = _getUsers_AopProxy_RetryKoraAspect(page, size, sort)
-      circuitBreaker1.releaseOnSuccess()
+      defaultCircuitBreaker1.releaseOnSuccess()
       t
+    } catch (e: CallNotPermittedException) {
+      throw e
     } catch (e: Throwable) {
-      circuitBreaker1.releaseOnError(e)
+      defaultCircuitBreaker1.releaseOnError(e)
       throw e
     }
     ```
 
-Это самый ясный способ проверить порядок аспектов: публичный метод входит в прерыватель, прерыватель вызывает повторная попытка, повторная попытка вызывает ограничитель времени, и ограничитель времени наконец вызывает `super.getUsers(...)`.
+Это самый ясный способ проверить порядок аспектов: публичный метод входит в прерыватель, прерыватель вызывает повторы, повторы вызывают таймаут, а таймаут наконец вызывает `super.getUsers(...)`.
 
 ## Сгенерированный код { #generated-code }
 
-Аннотации отказоустойчивости в этом руководстве применяются через AOP во время компиляции так же, как аннотации проверки данных и кеширования.
+Kora генерирует для этого руководства два вида исходников, и их стоит различать.
 
-Kora не изменяет `UserService.java` или `UserService.kt` напрямую. Вместо этого она генерирует подкласс-прокси вокруг `UserService` и помещает поведение отказоотказоустойчивости в этот сгенерированный класс. Этот
-прокси решает, когда:
+Исходники спецификаций порождаются из `@RetrySpec`, `@TimeoutSpec`, `@CircuitBreakerSpec` и `@RateLimiterSpec`. Для каждого размеченного интерфейса процессор пишет реализацию и модуль:
+
+```text
+$DefaultRetry_Impl.java
+$DefaultRetry_Module.java
+```
+
+`$DefaultRetry_Impl` наследует реализацию фреймворка (`KoraRetry`, `KoraTimeouter`, `KoraCircuitBreaker`, `KoraRateLimiter`) и закрепляет объявленный вами путь конфигурации. `$DefaultRetry_Module`
+помечен `@Module`, читает этот путь в `RetryConfig` и публикует ваш интерфейс как компонент. Именно поэтому регистрировать что-либо вручную не нужно.
+
+Исходник прокси порождается аспектами методов. Kora не меняет `UserService.java` или `UserService.kt` напрямую. Вместо этого она генерирует класс-наследник вокруг `UserService` и помещает поведение
+отказоустойчивости в этот сгенерированный класс. Этот прокси решает, когда:
 
 - повторить исходный вызов
-- перестать ждать из-за ограничитель времени
-- быстро оборвать вызов через прерыватель
+- прекратить ожидание из-за таймаута
+- закоротить вызов через прерыватель
+- отклонить вызов, потому что лимит частоты исчерпан
 - вызвать резервный метод после сбоя
 
-Именно поэтому правила наследования так важны:
+Именно поэтому так важны правила наследования:
 
-- в Java аннотированный сервисный класс не должен быть `final`
-- в Kotlin аннотированный сервисный класс и аннотированные методы должны быть `open`
+- в Java размеченный класс сервиса не должен быть `final`
+- в Kotlin размеченный класс сервиса и размеченные методы должны быть `open`
 
-После запуска:
+После выполнения:
 
 ```bash
 ./gradlew clean classes
 ```
 
-можно изучить сгенерированный прокси здесь:
+сгенерированный прокси можно посмотреть здесь:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
-Этот файл — самое практичное место, где видно, как Kora компонует методы, введенные выше:
-
-- `@Retry`
-- `@Fallback`
-- `@Timeout`
-- `@CircuitBreaker`
-
-Предыдущие главы показывали сгенерированные фрагменты прямо рядом с возможностью, которая их породила. Используйте этот финальный раздел как карту: когда поведение удивляет, откройте прокси и найдите
-имя метода, который отлаживаете.
+В предыдущих главах сгенерированные фрагменты показывались прямо рядом с породившей их возможностью. Используйте этот финальный раздел как карту: когда поведение удивляет, откройте прокси и найдите имя
+метода, который отлаживаете.
 
 Читать сгенерированный прокси полезно, когда:
 
 - вы хотите подтвердить реальный порядок аспектов
-- вы хотите понять, почему один инструмент отказоустойчивости реагирует раньше другого
-- вы отлаживаете, пришел ли сбой из тела вашего метода или из внешнего слоя отказоустойчивости
-- вы хотите, чтобы ИИ-помощник изучил фактическое скомпилированное поведение фреймворка, а не угадывал, как применяются аннотации
+- вы хотите понять, почему один инструмент отказоустойчивости срабатывает раньше другого
+- вы выясняете, пришел сбой из тела вашего метода или из внешнего слоя отказоустойчивости
+- вы хотите, чтобы AI-ассистент изучил реальное скомпилированное поведение фреймворка, а не гадал, как применяются аннотации
 
 ## Проверка приложения { #check-app }
 
@@ -1272,11 +1376,11 @@ Kora не изменяет `UserService.java` или `UserService.kt` напря
 ./gradlew run
 ```
 
-Затем выполните те же HTTP-конечные точки из руководства HTTP-сервер:
+Затем обратитесь к тем же HTTP-эндпоинтам из руководства по HTTP-серверу:
 
 ```bash
 curl http://localhost:8080/users/1
-curl http://localhost:8080/users?page=0&size=10&sort=name
+curl "http://localhost:8080/users?page=0&size=10&sort=name"
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
   -d '{"name":"John Doe","email":"john@example.com"}'
@@ -1286,95 +1390,116 @@ curl -X PUT http://localhost:8080/users/1 \
 curl -X DELETE http://localhost:8080/users/1
 ```
 
-Пути конечных точек не меняются. Устойчивость применяется внутри сервисного слоя.
+Пути эндпоинтов не меняются. Отказоустойчивость применяется внутри слоя сервиса.
 
 ## Лучшие практики { #best-practices }
 
-- Добавляйте отказоустойчивость к существующей сервисной границе вместо создания отдельных демонстрационных методов вроде `getUserWithRetry()` или `deleteUserWithTimeout()`.
-- Держите контракт контроллера стабильным, пока развиваете поведение сервиса.
-- Начните с одной конфигурации отказоустойчивости `default`, затем вводите именованные конфигурации только когда действительно нужны разные поведения.
-- Помните, что Kora поддерживает и AOP-аннотации, и императивные менеджеры, и выбирайте стиль, в котором код проще всего понимать.
-- Держите Java-классы не-`final`, а Kotlin-классы `open`, когда используете AOP-стиль на основе аннотаций.
-- Относитесь к резервный метод как к мягкой деградации, а не как к скрытому слою постоянного хранения.
-- Будьте консервативны с повторная попытка и ограничитель времени, чтобы общая худшая задержка оставалась понятной.
-- Используйте пользовательские предикаты, когда некоторые ошибки являются допустимыми бизнес-исходами и не должны влиять на состояние отказоустойчивости.
-- Изучайте сгенерированный исходник прокси, когда поведение объединенных аннотаций во время выполнения кажется неожиданным.
+- Добавляйте отказоустойчивость на существующую границу сервиса, а не создавайте отдельные демонстрационные методы вроде `getUserWithRetry()` или `deleteUserWithTimeout()`.
+- Сохраняйте контракт контроллера стабильным, развивая поведение сервиса.
+- Называйте интерфейсы-спецификации по политике, которую они представляют, а не по методу, который их использует, чтобы одну настроенную политику могли делить несколько методов.
+- Начинайте с единственной секции `default` на шаблон, а именованные секции вводите только тогда, когда действительно нужно разное поведение.
+- Внедряйте интерфейс-спецификацию, когда нужен императивный контроль: он уже и есть `Retry`, `Timeouter`, `CircuitBreaker` или `RateLimiter`.
+- Держите Java-классы не `final`, а Kotlin-классы `open`, когда используете стиль AOP на аннотациях.
+- Относитесь к резервному методу как к плавной деградации, а не как к скрытому слою хранения, и сужайте его через `@Fallback.Reason`, когда ухудшенного ответа заслуживают только некоторые сбои.
+- Будьте сдержанны с повторами и таймаутами, чтобы общая худшая задержка оставалась понятной, и подумайте о `retryBudget`, когда зависимость делят несколько вызывающих сторон.
+- Используйте помеченные предикаты, когда часть ошибок — допустимые бизнес-исходы и не должны влиять на состояние отказоустойчивости.
+- Изучайте исходник сгенерированного прокси, когда поведение комбинированных аннотаций в рантайме кажется неожиданным.
 
 ## Итоги { #summary }
 
-Вы взяли CRUD-сервис, созданный в руководстве HTTP-сервер, и сделали те же методы более устойчивыми:
+Вы начали с CRUD-сервиса, созданного в руководстве по HTTP-серверу, и сделали те же методы более устойчивыми:
 
-- `getUser()` теперь повторяет временные сбои
-- `createUser()` может вернуться к резервному ответу
-- `deleteUser()` ограничен тайм-аутом
-- `updateUser()` защищен прерыватель
-- `getUsers()` демонстрирует, как повторная попытка, ограничитель времени и прерыватель работают вместе
+- `getUser()` теперь повторяет кратковременные сбои
+- `createUser()` умеет уходить в резервный ответ
+- `deleteUser()` ограничен таймаутом
+- `updateUser()` защищен прерывателем, предикат которого игнорирует ответы `404`
+- `getUsers()` демонстрирует, как повторы, таймаут и прерыватель работают вместе
 
-В результате руководство развивает тот же контракт API, а не заменяет его отдельными конечными точками только для отказоустойчивости.
+Каждая политика — небольшой типизированный интерфейс, указывающий на путь конфигурации, так что вся поверхность отказоустойчивости сервиса видна в четырех коротких файлах.
 
 ## Ключевые понятия { #key-concepts }
 
-- Устойчивость Kora можно использовать и через AOP-аннотации, и через императивные API менеджеров.
-- Устойчивость на основе аннотаций в Java требует не-`final` класс, а в Kotlin — `open` класс.
-- `@Retry`, `@Timeout`, `@CircuitBreaker` и `@Fallback` решают разные режимы отказа и должны выбираться осознанно.
-- `CircuitBreakerPredicate` позволяет исключить бизнес-ошибки, такие как `404`, из статистики прерывателя.
-- Порядок аннотаций важен, когда несколько паттернов отказоустойчивости объединены.
-- `minimumRequiredCalls` — правильный ключ прерыватель в конфигурации Kora.
-- исходник сгенерированного `$UserService__AopProxy` показывает, как Kora на самом деле наслаивает аспекты отказоустойчивости
+- Политика отказоустойчивости в Kora 2.0 — это интерфейс-спецификация: интерфейс, наследующий `Retry`, `Timeouter`, `CircuitBreaker` или `RateLimiter`, с соответствующей аннотацией `Spec`, значение которой — путь конфигурации.
+- Аспекты методов ссылаются на спецификации по классу, поэтому `@Retryable(DefaultRetry.class)`, `@Timeout(DefaultTimeouter.class)`, `@CircuitBreakable(DefaultCircuitBreaker.class)` и `@RateLimited(DefaultRateLimiter.class)` проверяются на этапе компиляции.
+- У `@Fallback` единственный атрибут `method` и необязательный параметр `@Fallback.Reason`, сужающий круг обрабатываемых исключений.
+- Предикаты привязываются через `@Tag(DefaultCircuitBreaker.class)`: `CircuitBreakerPredicate.isCircuitBreakerFailure` и `RetryPredicate.isRetryFailure`.
+- Окно прерывателя живет в `countBased.windowSize` (или в `timeBased` при `type = TIME_BASED`), а ключ минимального числа вызовов — `minimumRequiredCalls`.
+- Отказоустойчивость на аннотациях требует в Java не `final` класса, а в Kotlin — `open` класса с `open` методами.
+- Порядок аннотаций решает вложенность аспектов: аннотация ближе к методу — внутреннее.
+- Исходник сгенерированного `$UserService__AopProxy` показывает, как Kora на самом деле наслаивает аспекты отказоустойчивости.
 
 ## Устранение неполадок { #troubleshooting }
 
 **Аннотации отказоустойчивости не срабатывают:**
 
-Убедитесь, что Java-класс не является `final`, а Kotlin-класс является `open`. Kora использует сгенерированные AOP-обертки для стиля на основе аннотаций.
+Убедитесь, что Java-класс не `final`, а Kotlin-класс и его методы `open`. Для стиля на аннотациях Kora использует сгенерированные AOP-обертки.
 
-**Я хочу увидеть, где на самом деле применяются повторная попытка, ограничитель времени, прерыватель и резервный метод:**
+**`@RetrySpec can only be applied to an interface`:**
 
-Запустите:
+Спецификация должна быть `interface`, а не классом или записью. То же правило действует для `@TimeoutSpec`, `@CircuitBreakerSpec` и `@RateLimiterSpec`.
+
+**`@RetrySpec annotated interface must extend Retry`:**
+
+У каждой аннотации спецификации один соответствующий контракт: `@RetrySpec` требует `Retry`, `@TimeoutSpec` — `Timeouter`, `@CircuitBreakerSpec` — `CircuitBreaker`, `@RateLimiterSpec` — `RateLimiter`.
+На `Timeouter` часто спотыкаются, потому что аннотация называется `@Timeout`.
+
+**Хочу увидеть, где на самом деле применяются повторы, таймаут, прерыватель и резервный метод:**
+
+Выполните:
 
 ```bash
 ./gradlew clean classes
 ```
 
-Затем изучите:
+Затем откройте:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```text
-    guides/guide-resilient-app/build/generated/sources/annotationProcessor/java/main/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.java
+    guides/java/kora-java-guide-resilient-app/build/generated/sources/annotationProcessor/java/main/io/koraframework/guide/resilient/service/$UserService__AopProxy.java
     ```
 
 === ":simple-kotlin: `Kotlin`"
 
     ```text
-    guides/kotlin/guide-kotlin-resilient-app/build/generated/ksp/main/kotlin/ru/tinkoff/kora/guide/resilient/service/$UserService__AopProxy.kt
+    guides/kotlin/kora-kotlin-guide-resilient-app/build/generated/ksp/main/kotlin/io/koraframework/guide/resilient/service/$UserService__AopProxy.kt
     ```
 
-Этот сгенерированный файл показывает фактическую логику оберток вокруг методов `UserService` и является лучшим местом для проверки порядка аспектов и потока сбоев.
+Этот сгенерированный файл показывает реальную логику оберток вокруг ваших методов `UserService` и является лучшим местом для проверки порядка аспектов и потока сбоев.
 
-**Повторные попытки делают конечную точку медленнее ожидаемого:**
+**Повторы делают эндпоинт медленнее, чем ожидалось:**
 
-Повторы добавляют задержку и могут умножить общую задержку. Проверьте настроенные `attempts`, `delay` и `delayStep`, затем оцените худший временной бюджет.
+Повторы добавляют задержку и могут умножать общее время. Проверьте настроенные `attempts`, `delay` и `delayStep`, затем оцените худший бюджет времени. Если присутствует блок `backoff`, рост будет
+мультипликативным, а не линейным.
 
-**Прерыватель никогда не открывается:**
+**`CircuitBreaker 'default' property 'countBased' is not configured`:**
 
-Проверьте, что в конфигурации используется `minimumRequiredCalls`, а не `minimumNumberOfCalls`, и убедитесь, что происходит достаточно сбоев для пересечения порога.
+Всем типам, кроме `TIME_BASED`, нужен блок `countBased` с `windowSize`. Если вы выбрали `type = TIME_BASED`, задайте вместо него блок `timeBased` с `windowDuration`.
+
+**Прерыватель никогда не размыкается:**
+
+Проверьте, что в конфигурации используется `minimumRequiredCalls` и что `countBased.windowSize` не меньше его, затем убедитесь, что сбоев достаточно для перехода через `failureRateThreshold`.
 
 **Прерыватель реагирует на бизнес-ошибки:**
 
-Добавьте пользовательский `CircuitBreakerPredicate` и привяжите его через `failurePredicateName`, чтобы бизнес-исходы вроде `404 Not Found` не считались инфраструктурными сбоями.
+Добавьте компонент `CircuitBreakerPredicate` с аннотацией `@Tag(DefaultCircuitBreaker.class)`, чтобы бизнес-исходы вроде `404 Not Found` не считались инфраструктурными сбоями.
+
+**Мой предикат игнорируется:**
+
+`@Tag` должен называть интерфейс-спецификацию, а не контракт. `@Tag(CircuitBreaker.class)` не привяжется, а `@Tag(DefaultCircuitBreaker.class)` привяжется.
 
 **Резервный метод не вызывается:**
 
-Проверьте, что сигнатура резервный метода совпадает с объявлением метода, используемым в `@Fallback(value = "default", method = "...")`.
+Проверьте, что имена внутри `@Fallback(method = "...")` — это параметры размеченного метода и что метод с подходящей сигнатурой существует в том же классе. Если резервный метод объявляет параметр
+`@Fallback.Reason`, проверьте, что выброшенное исключение действительно является экземпляром типа этого параметра.
 
-**Ограничитель времени никогда не срабатывает:**
+**Таймаут никогда не срабатывает:**
 
-Убедитесь, что операция действительно превышает настроенную длительность ограничитель времени.
+Убедитесь, что операция действительно превышает настроенную `duration`, и помните, что таймаут на блокирующем вызове прерывает ожидающего, а не обязательно саму работу.
 
 **Gradle зависает или неожиданно падает:**
 
-Остановите демоны Gradle и запустите повторно:
+Остановите демоны Gradle и повторите:
 
 ```bash
 ./gradlew --stop
@@ -1383,11 +1508,11 @@ curl -X DELETE http://localhost:8080/users/1
 
 **Windows показывает AccessDeniedException в кеше Gradle:**
 
-Обычно это означает, что другой процесс Gradle или Java все еще держит файлы открытыми. Остановите демоны через `./gradlew --stop`, закройте запускатели тестов в среда разработки и повторите сборку.
+Обычно это значит, что другой процесс Gradle или Java еще держит файлы открытыми. Остановите демоны через `./gradlew --stop`, закройте запуски тестов в IDE и повторите сборку.
 
-**Конечная точка готовности недоступна:**
+**Эндпоинт готовности недоступен:**
 
-Приватный HTTP-сервер использует порт `8085`. Проверьте:
+Системный HTTP-сервер использует порт `8085`. Проверьте:
 
 ```text
 http://localhost:8085/system/readiness
@@ -1395,17 +1520,17 @@ http://localhost:8085/system/readiness
 
 ## Что дальше? { #whats-next }
 
-- [Наблюдаемость](observability.md), чтобы измерять попытки повторная попытка, сбои ограничитель времени, изменения состояния прерыватель и использование резервный метод.
-- [HTTP-клиент](http-client.md), чтобы применять отказоустойчивость вокруг исходящих вызовов.
-- [Продвинутый HTTP-сервер](http-server-advanced.md), а затем [Продвинутый HTTP-клиент](http-client-advanced.md), если нужны продвинутые примеры исходящих вызовов.
-- [Тестирование с JUnit](testing-junit.md), чтобы тестировать резервный метод и поведение при сбоях на уровне компонентов.
-- [База данных JDBC](database-jdbc.md) перед руководством по тестированию как черный ящик, если вам нужен сквозной путь тестирования с JDBC.
+- [Наблюдаемость](observability.md), чтобы измерять число повторных попыток, сбои по таймауту, смены состояния прерывателя и использование резервного метода.
+- [HTTP-клиент](http-client.md), чтобы применить отказоустойчивость вокруг исходящих вызовов.
+- [HTTP-сервер продвинутый](http-server-advanced.md), а затем [HTTP-клиент продвинутый](http-client-advanced.md), если нужны продвинутые примеры исходящих вызовов.
+- [Тестирование с JUnit](testing-junit.md), чтобы протестировать резервный метод и поведение при сбоях на уровне компонентов.
+- [База данных JDBC](database-jdbc.md) перед черноящичным тестированием, если нужен сквозной путь тестов поверх JDBC.
 
 ## Помощь { #help }
 
-Если вы столкнулись с проблемами:
+Если возникнут сложности:
 
 - сравните с [Kora Java Resilient App](https://github.com/kora-projects/kora-examples/tree/master/guides/java/kora-java-guide-resilient-app) и [Kora Kotlin Resilient App](https://github.com/kora-projects/kora-examples/tree/master/guides/kotlin/kora-kotlin-guide-resilient-app)
-- проверьте [документацию по отказоотказоустойчивости](../documentation/resilient.md)
-- вернитесь к [HTTP-сервер](http-server.md) для базового CRUD-потока
-- вернитесь к [Тестирование с JUnit](testing-junit.md) для шаблонов проверки на уровне компонентов
+- посмотрите [документацию по Resilient](../documentation/resilient.md)
+- перечитайте [HTTP-сервер](http-server.md) для базового CRUD-потока
+- перечитайте [Тестирование с JUnit](testing-junit.md) для приемов проверки на уровне компонентов

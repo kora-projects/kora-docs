@@ -1,7 +1,7 @@
 ---
-description: "Explains Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping. Use when working with GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+description: "Explains the Kora gRPC client: the grpc-client module, protobuf Gradle plugin setup, the grpcClient configuration section, injecting generated stubs, per-client interceptors, TLS credentials, channel tuning and telemetry. Use when working with GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, ManagedChannelLifecycle, ChannelCredentials, protobuf plugin."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora gRPC client generation, protobuf Gradle plugin setup, client configuration, generated services, interceptors, and mapping; key triggers include GrpcClientModule, @GrpcClient, @InterceptWith, GrpcClientConfig, GrpcClientInterceptor, protobuf plugin."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC client: injecting BlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.<Service> configuration section, url scheme and TLS, deadlines, keepAlive and load balancing, per-client ClientInterceptor tagging, authorization metadata, error handling and telemetry; key triggers include GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, GrpcOkHttpClientChannelFactory, ManagedChannelLifecycle, Configurer, ChannelCredentials, protobuf plugin."
 ---
 
 `gRPC-клиент` вызывает удалённые службы, используя контракт `protobuf` и транспорт `HTTP/2`.
@@ -11,7 +11,8 @@ agent:
 исходный `io.grpc.Channel` и итоговый `GrpcClientConfig`, различая каждый клиент по `@Tag` сгенерированного класса службы
 (например, `@Tag(SimpleServiceGrpc.class)`).
 
-Транспорт gRPC-клиента использует Netty, поэтому общие настройки `event loop` и транспорта можно задать в разделе [Netty](netty.md).
+Транспорт gRPC-клиента — `grpc-okhttp`: для каждого клиента Kora строит `OkHttpChannelBuilder` через `GrpcOkHttpClientChannelFactory`,
+поэтому настройка канала выполняется через конфигурацию или настройщик построителя, а не через общий транспортный модуль.
 
 Если нужен пошаговый разбор перед справочным описанием, смотрите [gRPC-клиент](../guides/grpc-client.md) и [продвинутый gRPC-клиент](../guides/grpc-client-advanced.md).
 
@@ -21,8 +22,8 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
-    implementation "ru.tinkoff.kora:grpc-client"
-    implementation "io.grpc:grpc-protobuf:1.74.0"
+    implementation "io.koraframework:grpc-client"
+    implementation "io.grpc:grpc-protobuf:1.83.1"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -36,8 +37,8 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    implementation("ru.tinkoff.kora:grpc-client")
-    implementation("io.grpc:grpc-protobuf:1.74.0")
+    implementation("io.koraframework:grpc-client")
+    implementation("io.grpc:grpc-protobuf:1.83.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -50,20 +51,20 @@ agent:
 ### Плагин { #plugin }
 
 Код `gRPC-клиента` создаётся с помощью [Gradle-плагина protobuf](https://github.com/google/protobuf-gradle-plugin).
-Плагин генерирует классы Java-сообщений из контракта `protobuf` и gRPC-классы `stub`, которые затем используются Kora.
+Плагин генерирует Java-классы сообщений из контракта `protobuf` и классы `stub` для gRPC, которые затем использует Kora.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     Плагин `build.gradle`:
     ```groovy
     plugins {
-        id "com.google.protobuf" version "0.9.4"
+        id "com.google.protobuf" version "0.10.0"
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -85,13 +86,13 @@ agent:
     import com.google.protobuf.gradle.id
 
     plugins {
-        id("com.google.protobuf") version ("0.9.4")
+        id("com.google.protobuf") version ("0.10.0")
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:3.25.3" }
+        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.74.0" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
         }
         generateProtoTasks {
             ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
@@ -106,9 +107,35 @@ agent:
     }
     ```
 
+    Дополнительно подключайте [генератор gRPC Kotlin](https://github.com/grpc/grpc-kotlin), только если нужны корутинные stub-классы:
+    ```groovy
+    dependencies {
+        implementation("io.grpc:grpc-kotlin-stub:1.5.0")
+    }
+
+    protobuf {
+        plugins {
+            id("grpckt") { artifact = "io.grpc:protoc-gen-grpc-kotlin:1.5.0:jdk8@jar" }
+        }
+        generateProtoTasks {
+            ofSourceSet("main").forEach { it.plugins { id("grpc") { }; id("grpckt") { } } }
+        }
+    }
+
+    kotlin {
+        sourceSets.main {
+            kotlin.srcDir("build/generated/source/proto/main/grpckt")
+        }
+    }
+    ```
+
 ## Конфигурация { #configuration }
 
 `gRPC-клиент` для службы `SimpleService` будет иметь путь конфигурации `grpcClient.SimpleService`.
+
+Сегмент пути — это *простое* имя службы `protobuf`: Kora берёт сгенерированную константу `SERVICE_NAME`
+(полное имя вместе с `proto`-пакетом) и оставляет только часть после последней точки.
+Служба, объявленная как `package my.company.api; service SimpleService`, настраивается в `grpcClient.SimpleService`.
 
 Основные параметры конфигурации:
 
@@ -123,8 +150,8 @@ agent:
     }
     ```
 
-    1. `URL` сервера, куда будут отправляться запросы (`обязательный`, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+    1. `URL` сервера, куда будут отправляться запросы (`обязательный`, без значения по умолчанию).
+    2. Максимальное время выполнения запроса (по умолчанию не указано, опционально). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
 
 === ":simple-yaml: `YAML`"
 
@@ -135,8 +162,8 @@ agent:
         timeout: "10s" #(2)!
     ```
 
-    1. `URL` сервера, куда будут отправляться запросы (`обязательный`, по умолчанию не указано).
-    2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+    1. `URL` сервера, куда будут отправляться запросы (`обязательный`, без значения по умолчанию).
+    2. Максимальное время выполнения запроса (по умолчанию не указано, опционально). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
 
 ??? note "Полная конфигурация"
 
@@ -149,9 +176,9 @@ agent:
             SimpleService {
                 url = "http://localhost:8090" //(1)!
                 timeout = "10s"  //(2)!
-                keepAliveTime = "0s" //(3)!
-                keepAliveTimeout = "0s" //(4)!
-                loadBalancingPolicy = "pick_first" //(5)!
+                keepAliveTime = "30s" //(3)!
+                keepAliveTimeout = "10s" //(4)!
+                loadBalancingPolicy = "round_robin" //(5)!
                 defaultServiceConfig { //(6)!
                     loadBalancingConfig = [
                         {
@@ -164,7 +191,7 @@ agent:
                         enabled = false //(7)!
                     }
                     metrics {
-                        enabled = true //(8)!
+                        enabled = false //(8)!
                         slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
                         tags = { // (10)!
                             "key1" = "value1"
@@ -183,15 +210,15 @@ agent:
         }
         ```
 
-        1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
-        2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
-        3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
-        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
-        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
-        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
+        1. `URL` сервера, куда будут отправляться запросы (обязательный, без значения по умолчанию).
+        2. Максимальное время выполнения запроса (по умолчанию не указано, опционально). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+        3. Интервал между фреймами `PING` протокола gRPC (по умолчанию не указано, опционально).
+        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, опционально).
+        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, опционально).
         7. Включает логирование модуля (по умолчанию: `false`).
-        8. Включает метрики модуля (по умолчанию: `true`).
-        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        8. Включает метрики модуля (по умолчанию: `false`).
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
         10. Дополнительные теги для метрик (по умолчанию: `{}`).
         11. Включает трассировку модуля (по умолчанию: `true`).
         12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
@@ -203,9 +230,9 @@ agent:
           SimpleService:
             url: "http://localhost:8090" #(1)!
             timeout: "10s" #(2)!
-            keepAliveTime: "0s" #(3)!
-            keepAliveTimeout: "0s" #(4)!
-            loadBalancingPolicy: "pick_first" #(5)!
+            keepAliveTime: "30s" #(3)!
+            keepAliveTimeout: "10s" #(4)!
+            loadBalancingPolicy: "round_robin" #(5)!
             defaultServiceConfig: #(6)!
               loadBalancingConfig:
                 - round_robin: {}
@@ -213,7 +240,7 @@ agent:
               logging:
                 enabled: false #(7)!
               metrics:
-                enabled: true #(8)!
+                enabled: false #(8)!
                 slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
                 tags: #(10)!
                   key1: value1
@@ -225,33 +252,35 @@ agent:
                   key2: value2
         ```
 
-        1. `URL` сервера, куда будут отправляться запросы (`обязательная`, по умолчанию не указано).
-        2. Максимальное время выполнения запроса (по умолчанию не указано, необязательно). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
-        3. Интервал между gRPC-фреймами `PING` (по умолчанию не указано, необязательно).
-        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, необязательно). Если подтверждение не получено за это время, соединение закрывается.
-        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, необязательно).
-        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, необязательно).
+        1. `URL` сервера, куда будут отправляться запросы (обязательный, без значения по умолчанию).
+        2. Максимальное время выполнения запроса (по умолчанию не указано, опционально). Значение применяется как `deadline`, если у вызова ещё нет собственного `deadline`.
+        3. Интервал между фреймами `PING` протокола gRPC (по умолчанию не указано, опционально).
+        4. Время ожидания подтверждения фрейма `PING` (по умолчанию не указано, опционально). Если подтверждение не получено за это время, соединение закрывается.
+        5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, опционально).
+        6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, опционально).
         7. Включает логирование модуля (по умолчанию: `false`).
-        8. Включает метрики модуля (по умолчанию: `true`).
-        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`).
+        8. Включает метрики модуля (по умолчанию: `false`).
+        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
         10. Дополнительные теги для метрик (по умолчанию: `{}`).
         11. Включает трассировку модуля (по умолчанию: `true`).
         12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 ### Транспорт и TLS { #transport-tls }
 
-Схема в `url` выбирает транспорт при создании `ManagedChannel` (`ManagedChannelLifecycle`):
+Схема в `url` определяет транспорт при создании `ManagedChannel` (`ManagedChannelLifecycle`):
 
-- `http` — незашифрованный транспорт `plaintext` (`usePlaintext()` у построителя), порт по умолчанию `80`, если порт не указан.
+- `http` — незашифрованный транспорт (`usePlaintext()` у построителя), порт по умолчанию `80`, если порт не указан.
 - `https` — транспорт `TLS`, порт по умолчанию `443`, если порт не указан.
-- любая другая схема — порт должен быть указан явно, иначе при определении порта по умолчанию во время запуска будет выброшено исключение `IllegalArgumentException` с сообщением `Unknown scheme '<scheme>'`. Режим `plaintext` включается только для схемы `http`, поэтому остальные схемы используют транспорт gRPC по умолчанию (`TLS`), если недоступен порт `plaintext`.
+- любая другая схема — порт нужно указать явно, иначе приложение не запустится с ошибкой
+  `IllegalArgumentException: Unsupported gRPC client URL scheme '<scheme>' in '<url>'; use http://host[:port] or https://host[:port]`.
+  Режим plaintext включается только для схемы `http`, поэтому другая схема с явным портом всё равно использует транспорт `TLS`.
 
 ===! ":material-code-json: `Hocon`"
 
     ```javascript
     grpcClient {
         SimpleService {
-            url = "http://localhost:8090" // plaintext, порт по умолчанию 80
+            url = "http://localhost:8090" // plaintext, default port 80
         }
     }
     ```
@@ -261,37 +290,72 @@ agent:
     ```yaml
     grpcClient:
       SimpleService:
-        url: "http://localhost:8090" # plaintext, порт по умолчанию 80
+        url: "http://localhost:8090" # plaintext, default port 80
     ```
 
-Для нестандартного `TLS` (`mTLS`, собственное хранилище доверенных сертификатов или транспорт, отличный от Netty) зарегистрируйте свой компонент `GrpcClientChannelFactory`.
-Он создаёт `ManagedChannelBuilder` и может передавать `io.grpc.ChannelCredentials`; реализация по умолчанию — `GrpcNettyClientChannelFactory`,
-которая привязывает канал к общей для Kora группе Netty `EventLoopGroup`.
+Для собственного `TLS` (`mTLS`, приватный удостоверяющий центр) зарегистрируйте компонент `io.grpc.ChannelCredentials` с тегом сгенерированного класса службы.
+`ManagedChannelLifecycle` подхватывает его для конкретного клиента и создаёт канал с этими учётными данными вместо настроек транспорта по умолчанию:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends HoconConfigModule, GrpcClientModule {
+
+        @Tag(SimpleServiceGrpc.class)
+        default ChannelCredentials simpleServiceCredentials() {
+            try {
+                return TlsChannelCredentials.newBuilder()
+                    .trustManager(new File("/etc/certs/ca.pem")) //(1)!
+                    .keyManager(new File("/etc/certs/client.pem"), new File("/etc/certs/client.key")) //(2)!
+                    .build();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to read gRPC client TLS certificates", e);
+            }
+        }
+    }
+    ```
+
+    1. Доверенный удостоверяющий центр в формате `PEM`, используемый для проверки сертификата сервера.
+    2. Сертификат клиента и приватный ключ в формате `PEM` — нужны только для `mTLS`.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : HoconConfigModule, GrpcClientModule {
+
+        @Tag(SimpleServiceGrpc::class)
+        fun simpleServiceCredentials(): ChannelCredentials = TlsChannelCredentials.newBuilder()
+            .trustManager(File("/etc/certs/ca.pem")) //(1)!
+            .keyManager(File("/etc/certs/client.pem"), File("/etc/certs/client.key")) //(2)!
+            .build()
+    }
+    ```
+
+    1. Доверенный удостоверяющий центр в формате `PEM`, используемый для проверки сертификата сервера.
+    2. Сертификат клиента и приватный ключ в формате `PEM` — нужны только для `mTLS`.
+
+Учётные данные необязательны: без такого компонента канал создаётся только по `url`.
+Если учётные данные заданы, оставляйте в `url` схему `https` (или явный порт) — схема `http` включает `usePlaintext()` и отключает их.
+
+Чтобы заменить сам транспорт, зарегистрируйте собственный компонент `GrpcClientChannelFactory`. Это один общий компонент на все gRPC-клиенты,
+и он переопределяет реализацию по умолчанию `GrpcOkHttpClientChannelFactory`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class TlsGrpcClientChannelFactory implements GrpcClientChannelFactory {
-
-        @Override
-        public ManagedChannelBuilder<?> forAddress(SocketAddress serverAddress) {
-            return NettyChannelBuilder.forAddress(serverAddress);
-        }
-
-        @Override
-        public ManagedChannelBuilder<?> forAddress(SocketAddress serverAddress, ChannelCredentials creds) {
-            return NettyChannelBuilder.forAddress(serverAddress, creds);
-        }
+    public final class CustomGrpcClientChannelFactory implements GrpcClientChannelFactory {
 
         @Override
         public ManagedChannelBuilder<?> forTarget(String target) {
-            return NettyChannelBuilder.forTarget(target);
+            return OkHttpChannelBuilder.forTarget(target);
         }
 
         @Override
         public ManagedChannelBuilder<?> forTarget(String target, ChannelCredentials creds) {
-            return NettyChannelBuilder.forTarget(target, creds);
+            return OkHttpChannelBuilder.forTarget(target, creds);
         }
     }
     ```
@@ -300,33 +364,25 @@ agent:
 
     ```kotlin
     @Component
-    class TlsGrpcClientChannelFactory : GrpcClientChannelFactory {
-
-        override fun forAddress(serverAddress: SocketAddress): ManagedChannelBuilder<*> {
-            return NettyChannelBuilder.forAddress(serverAddress)
-        }
-
-        override fun forAddress(serverAddress: SocketAddress, creds: ChannelCredentials): ManagedChannelBuilder<*> {
-            return NettyChannelBuilder.forAddress(serverAddress, creds)
-        }
+    class CustomGrpcClientChannelFactory : GrpcClientChannelFactory {
 
         override fun forTarget(target: String): ManagedChannelBuilder<*> {
-            return NettyChannelBuilder.forTarget(target)
+            return OkHttpChannelBuilder.forTarget(target)
         }
 
         override fun forTarget(target: String, creds: ChannelCredentials): ManagedChannelBuilder<*> {
-            return NettyChannelBuilder.forTarget(target, creds)
+            return OkHttpChannelBuilder.forTarget(target, creds)
         }
     }
     ```
 
-Реализация для промышленного окружения также должна привязывать построитель к общей для Kora группе Netty `EventLoopGroup` и `NettyChannelFactory`
-так же, как это делает `GrpcNettyClientChannelFactory`, вместо того чтобы позволять Netty создавать собственный event loop.
+Реализовать нужно только `forTarget` — у перегрузок `forAddress(host, port)` есть реализации по умолчанию, которые собирают строку `host:port` и делегируют в `forTarget`.
+Переопределяйте `forAddress` дополнительно, если транспорт ожидает не такую строку адреса.
 
 ### Ограничение по времени { #timeouts }
 
 Значение `timeout` применяется всегда включённым перехватчиком `GrpcClientConfigInterceptor` как `deadline` вызова, но **только если у вызова нет собственного deadline**.
-Заданный для конкретного вызова deadline через stub всегда имеет приоритет над настроенным `timeout`:
+Заданный для конкретного вызова deadline попадает в `CallOptions` ещё до запуска перехватчиков, поэтому он всегда имеет приоритет над настроенным `timeout`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -354,40 +410,72 @@ agent:
 
 - `keepAliveTime` / `keepAliveTimeout` соответствуют настройкам `PING` у `ManagedChannelBuilder`. `keepAliveTime` — интервал между фреймами `PING` протокола `HTTP/2` на простаивающем соединении; `keepAliveTimeout` — как долго ждать подтверждения `PING` перед закрытием соединения. Оба отключены, если не заданы.
 - `loadBalancingPolicy` соответствует `ManagedChannelBuilder.defaultLoadBalancingPolicy`. Значение по умолчанию в gRPC — `pick_first` (единственное соединение с первым разрешённым адресом); `round_robin` распределяет вызовы по всем разрешённым адресам и обычно используется с DNS-адресами, возвращающими несколько записей `A`/`AAAA`.
-- `defaultServiceConfig` передаётся как есть в `ManagedChannelBuilder.defaultServiceConfig` и содержит нативную карту [конфигурации службы](https://github.com/grpc/grpc/blob/master/doc/service_config.md) gRPC (`loadBalancingConfig`, `methodConfig` для отдельных методов с политикой повторов/хеджирования и т. д.). Она описана обёрткой `DefaultServiceConfig` над `Map<String, Object>`.
+- `defaultServiceConfig` передаётся как есть в `ManagedChannelBuilder.defaultServiceConfig` и содержит нативную карту [конфигурации службы](https://github.com/grpc/grpc/blob/master/doc/service_config.md) gRPC (`loadBalancingConfig`, `methodConfig` для отдельных методов с политикой повторов/хеджирования и т. д.). Она описана обёрткой `DefaultServiceConfig` над `Map<String, Object>`, и все числа в ней читаются как значения `double`, как того требует формат service config в gRPC.
 
 ### Настройщик построителя канала { #builder-configurer }
 
-Если конфигурации через файл недостаточно, можно зарегистрировать компонент `GrpcClientBuilderConfigurer`.
-Он получает уже подготовленный `ManagedChannelBuilder` и позволяет настроить канал в коде до его создания.
-Сначала применяются настройки из `GrpcClientConfig`, затем вызывается `GrpcClientBuilderConfigurer`.
+Если конфигурации из файла недостаточно, можно зарегистрировать компонент `Configurer<ManagedChannelBuilder<?>>`.
+Он получает уже подготовленный `ManagedChannelBuilder` и позволяет донастроить канал в коде до его создания.
+
+Компонент регистрируется на двух уровнях:
+
+- **с тегом сгенерированного класса службы** — применяется только к этому клиенту, после всего из `GrpcClientConfig` (перехватчики, `keepAlive`, `loadBalancingPolicy`, `defaultServiceConfig`), поэтому может переопределить любую из этих настроек;
+- **без тега** — передаётся в фабрику по умолчанию `GrpcOkHttpClientChannelFactory` и применяется к построителю каждого gRPC-клиента в момент создания, то есть до значений конфигурации.
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @Tag(SimpleServiceGrpc.class)
     @Component
-    public final class CustomGrpcClientBuilderConfigurer implements GrpcClientBuilderConfigurer {
+    public final class SimpleServiceChannelConfigurer implements Configurer<ManagedChannelBuilder<?>> { //(1)!
+
         @Override
         public ManagedChannelBuilder<?> configure(ManagedChannelBuilder<?> builder) {
             return builder.maxInboundMessageSize(8 * 1024 * 1024);
         }
     }
-    ```
 
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
     @Component
-    class CustomGrpcClientBuilderConfigurer : GrpcClientBuilderConfigurer {
-        override fun configure(builder: ManagedChannelBuilder<*>): ManagedChannelBuilder<*> {
-            return builder.maxInboundMessageSize(8 * 1024 * 1024)
+    public final class CommonChannelConfigurer implements Configurer<ManagedChannelBuilder<?>> { //(2)!
+
+        @Override
+        public ManagedChannelBuilder<?> configure(ManagedChannelBuilder<?> builder) {
+            return builder.userAgent("my-service");
         }
     }
     ```
 
-Также можно настроить [транспорт Netty](netty.md).
+    1. Применяется только к клиенту `SimpleService` и позже всех остальных настроек.
+    2. Применяется к каждому gRPC-клиенту приложения.
 
-Предоставляемые метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-client).
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Tag(SimpleServiceGrpc::class)
+    @Component
+    class SimpleServiceChannelConfigurer : Configurer<ManagedChannelBuilder<*>> { //(1)!
+
+        override fun configure(builder: ManagedChannelBuilder<*>): ManagedChannelBuilder<*> {
+            return builder.maxInboundMessageSize(8 * 1024 * 1024)
+        }
+    }
+
+    @Component
+    class CommonChannelConfigurer : Configurer<ManagedChannelBuilder<*>> { //(2)!
+
+        override fun configure(builder: ManagedChannelBuilder<*>): ManagedChannelBuilder<*> {
+            return builder.userAgent("my-service")
+        }
+    }
+    ```
+
+    1. Применяется только к клиенту `SimpleService` и позже всех остальных настроек.
+    2. Применяется к каждому gRPC-клиенту приложения.
+
+Настройщик без тега — это параметр фабрики `GrpcClientChannelFactory` по умолчанию, поэтому он игнорируется, если вы заменили эту фабрику своим компонентом:
+в таком случае подключите его самостоятельно.
+
+Метрики модуля описаны в разделе [Справочник метрик](metrics.md#grpc-client).
 
 ## Служба { #service }
 
@@ -416,7 +504,7 @@ agent:
     }
     ```
 
-stub также можно внедрить напрямую в конструктор `@Component`:
+Stub можно внедрить и напрямую в конструктор `@Component`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -441,18 +529,18 @@ stub также можно внедрить напрямую в конструк
 
 ### Типы реализаций { #stub-types }
 
-Плагин `protobuf` генерирует для одной службы (`SimpleService`) несколько stub-классов. Каждый доступен для внедрения простым объявлением соответствующего типа;
-на самом stub указывать `@Tag` не нужно (Kora самостоятельно разрешает помеченный тегом `Channel`):
+Плагин `protobuf` генерирует для одной службы (`SimpleService`) несколько классов stub. Каждый внедряется простым объявлением соответствующего типа;
+`@Tag` на самом stub не требуется (Kora сама подставляет `Channel` с нужным тегом):
 
-| Тип stub                               | Модель вызова                                                          | Когда использовать                                   |
+| Тип stub                               | Модель вызова                                                           | Когда использовать                                   |
 |----------------------------------------|------------------------------------------------------------------------|------------------------------------------------------|
-| `SimpleServiceBlockingStub`            | Синхронная; возвращает ответ напрямую (или `Iterator` для серверной потоковой передачи) | Блокирующий код, простейший стиль вызова             |
-| `SimpleServiceFutureStub`              | Асинхронная; возвращает `ListenableFuture<T>` (только унарные вызовы)  | Неблокирующий код с использованием `ListenableFuture`|
-| `SimpleServiceStub` (асинхронный)      | Асинхронная; передаёт результаты через обратные вызовы `StreamObserver<T>` | Любая потоковая передача, асинхронные вызовы на обратных вызовах |
+| `SimpleServiceBlockingStub`            | Синхронная; возвращает ответ напрямую (или `Iterator` для серверного стриминга) | Блокирующий код, самый простой стиль вызова          |
+| `SimpleServiceFutureStub`              | Асинхронная; возвращает `ListenableFuture<T>` (только unary)           | Неблокирующий код на `ListenableFuture`              |
+| `SimpleServiceStub` (async)            | Асинхронная; отдаёт результаты через колбэки `StreamObserver<T>`        | Любой стриминг, асинхронные вызовы в стиле колбэков  |
 | Корутинный stub для Kotlin             | `suspend`-функции и `Flow<T>`                                          | Идиоматичные корутины Kotlin                         |
 
-`BlockingStub`, `FutureStub` и асинхронный `Stub` связываются расширением обработчика аннотаций (`GrpcClientExtension`), которое обнаруживает stub-типы `@GrpcGenerated`
-и вызывает сгенерированную фабрику `newBlockingStub` / `newFutureStub` / `newStub` для помеченного тегом `Channel`.
+`BlockingStub`, `FutureStub` и асинхронный `Stub` подключает расширение `GrpcClientExtension` для процессора аннотаций (или KSP): оно находит типы stub, помеченные `@GrpcGenerated`,
+и вызывает сгенерированные фабрики `newBlockingStub` / `newFutureStub` / `newStub` для `Channel` с соответствующим тегом.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -485,65 +573,57 @@ stub также можно внедрить напрямую в конструк
         fun futureCaller(stub: SimpleServiceGrpc.SimpleServiceFutureStub) = FutureCaller(stub)
 
         fun asyncCaller(stub: SimpleServiceGrpc.SimpleServiceStub) = AsyncCaller(stub)
+
+        fun coroutineCaller(stub: SimpleServiceGrpcKt.SimpleServiceCoroutineStub) = CoroutineCaller(stub) //(1)!
     }
     ```
 
-Для вызовов на корутинах Kotlin сгенерируйте корутинный stub с помощью [генератора gRPC Kotlin](https://github.com/grpc/grpc-kotlin)
-(`io.grpc:protoc-gen-grpc-kotlin`). Сгенерированный stub наследуется от `io.grpc.kotlin.AbstractCoroutineStub` и помечен аннотацией `@StubFor`;
-далее обработчик символов KSP генерирует модуль Kora, который предоставляет его как `@DefaultComponent`, привязанный к помеченному тегом `Channel`, поэтому он внедряется таким же образом:
-
-===! ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @KoraApp
-    interface Application : HoconConfigModule, GrpcClientModule {
-
-        fun coroutineCaller(stub: SimpleServiceGrpcKt.SimpleServiceCoroutineStub) = CoroutineCaller(stub)
-    }
-    ```
+    1. Требует [генератор gRPC Kotlin](#plugin). Сгенерированный stub наследует `io.grpc.kotlin.AbstractCoroutineStub` и помечен аннотацией `@StubFor`;
+       KSP-процессор рядом с ним создаёт Kora-модуль `@Module`, который публикует этот stub как `@DefaultComponent`, связанный с `Channel` нужного тега.
+       Kora подхватывает такой модуль автоматически, наследовать его вручную не нужно, а компонент можно переопределить, объявив свой.
 
 ### Стили вызова { #call-styles }
 
-Форма `rpc` в контракте `.proto` (одиночный или `stream` запрос/ответ) определяет сигнатуру сгенерированного метода.
-В примерах ниже базовый контракт дополнен всеми четырьмя стилями вызова:
+Форма `rpc` в контракте `.proto` (одиночное значение или `stream` в запросе/ответе) определяет сигнатуру сгенерированного метода.
+Примеры ниже расширяют базовый контракт всеми четырьмя стилями вызова:
 
 ```protobuf
 service SimpleService {
-  rpc unary(RequestEvent) returns (ResponseEvent) {}                     // унарный
-  rpc serverStream(RequestEvent) returns (stream ResponseEvent) {}       // серверная потоковая передача
-  rpc clientStream(stream RequestEvent) returns (ResponseEvent) {}       // клиентская потоковая передача
-  rpc biDiStream(stream RequestEvent) returns (stream ResponseEvent) {}  // двунаправленная потоковая передача
+  rpc unary(RequestEvent) returns (ResponseEvent) {}                     // unary
+  rpc serverStream(RequestEvent) returns (stream ResponseEvent) {}       // server streaming
+  rpc clientStream(stream RequestEvent) returns (ResponseEvent) {}       // client streaming
+  rpc biDiStream(stream RequestEvent) returns (stream ResponseEvent) {}  // bidirectional streaming
 }
 ```
 
-Запросы создаются с помощью сгенерированных построителей сообщений (`RequestEvent.newBuilder()`).
-В Java унарные вызовы и серверная потоковая передача доступны у `BlockingStub`, тогда как клиентская потоковая передача и двунаправленные вызовы требуют асинхронного `Stub`
-(у них нет блокирующего варианта). Корутинный stub Kotlin выражает каждый стиль через `suspend`-функции и `Flow<T>`:
+Запросы собираются сгенерированными построителями сообщений (`RequestEvent.newBuilder()`).
+В Java unary- и серверный стриминг доступны у `BlockingStub`, а клиентский и двунаправленный стриминг требуют асинхронного `Stub`
+(блокирующего варианта у них нет). Корутинный stub для Kotlin выражает все стили через `suspend`-функции и `Flow<T>`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     var request = RequestEvent.newBuilder().setName("bob").setCode("b1").build();
 
-    // унарный — BlockingStub
+    // unary — BlockingStub
     ResponseEvent unary = blockingStub.unary(request);
 
-    // унарный — FutureStub
+    // unary — FutureStub
     ListenableFuture<ResponseEvent> future = futureStub.unary(request);
 
-    // серверная потоковая передача — BlockingStub возвращает итератор
+    // server streaming — BlockingStub returns an iterator
     Iterator<ResponseEvent> responses = blockingStub.serverStream(request);
 
-    // серверная потоковая передача — асинхронный Stub передаёт результаты в StreamObserver
+    // server streaming — async Stub delivers results to a StreamObserver
     asyncStub.serverStream(request, new StreamObserver<>() {
         @Override public void onNext(ResponseEvent value) { /* ... */ }
         @Override public void onError(Throwable t) { /* ... */ }
         @Override public void onCompleted() { /* ... */ }
     });
 
-    // клиентская потоковая передача — асинхронный Stub, пишем запросы, читаем один ответ
+    // client streaming — async Stub, write requests, read one response
     StreamObserver<ResponseEvent> responseObserver = new StreamObserver<>() {
-        @Override public void onNext(ResponseEvent value) { /* единственный ответ */ }
+        @Override public void onNext(ResponseEvent value) { /* single response */ }
         @Override public void onError(Throwable t) { /* ... */ }
         @Override public void onCompleted() { /* ... */ }
     };
@@ -551,7 +631,7 @@ service SimpleService {
     requestObserver.onNext(request);
     requestObserver.onCompleted();
 
-    // двунаправленная потоковая передача — асинхронный Stub, потоки с обеих сторон
+    // bidirectional streaming — async Stub, both sides stream
     StreamObserver<RequestEvent> bidi = asyncStub.biDiStream(responseObserver);
     bidi.onNext(request);
     bidi.onCompleted();
@@ -562,25 +642,27 @@ service SimpleService {
     ```kotlin
     val request = RequestEvent.newBuilder().setName("bob").setCode("b1").build()
 
-    // унарный — suspend-функция
+    // unary — suspend function
     val response: ResponseEvent = coroutineStub.unary(request)
 
-    // серверная потоковая передача — возвращает Flow
+    // server streaming — returns a Flow
     val serverFlow: Flow<ResponseEvent> = coroutineStub.serverStream(request)
     serverFlow.collect { event -> /* ... */ }
 
-    // клиентская потоковая передача — принимает Flow, возвращает один ответ
+    // client streaming — accepts a Flow, returns a single response
     val clientResponse: ResponseEvent = coroutineStub.clientStream(flowOf(request))
 
-    // двунаправленная потоковая передача — Flow на вход, Flow на выход
+    // bidirectional streaming — Flow in, Flow out
     val biDiFlow: Flow<ResponseEvent> = coroutineStub.biDiStream(flowOf(request))
     biDiFlow.collect { event -> /* ... */ }
     ```
 
+Java-совместимые stub-классы работают в Kotlin точно так же, поэтому асинхронный `Stub` со `StreamObserver` остаётся доступен и там, где генератор корутин не подключён.
+
 ### Внедрение Channel и конфигурации { #inject-channel-config }
 
 Для продвинутого или ручного создания stub можно внедрить исходный `io.grpc.Channel` и итоговый `GrpcClientConfig`,
-пометив их сгенерированным классом службы. Оба предоставляются `GrpcClientExtension`:
+пометив их тегом сгенерированного класса службы. Оба предоставляются расширением `GrpcClientExtension`:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -614,15 +696,15 @@ service SimpleService {
 
 ### По умолчанию { #default }
 
-По умолчанию при запуске клиента используются следующие перехватчики:
+Для каждого клиента регистрируются следующие перехватчики:
 
+- `GrpcClientTelemetryInterceptor` — открывает наблюдение телеметрии для вызова. Регистрируется всегда и становится сквозным, если логирование, метрики и трассировка выключены.
 - `GrpcClientConfigInterceptor` — применяет `timeout` как `deadline` вызова, если у вызова его нет.
-- `GrpcClientTelemetryInterceptor`, если для клиента доступна телеметрия.
 
 ### Собственные { #custom }
 
-В отличие от [HTTP-клиента](http-client.md#interceptors), у перехватчиков gRPC нет уровней метода/класса/глобального уровня.
-Каждый перехватчик действует **в пределах одного клиента** — за счёт пометки компонента сгенерированным классом службы (`@Tag(SimpleServiceGrpc.class)`).
+В отличие от [HTTP-клиента](http-client.md#interceptors), у gRPC-перехватчиков нет уровней метода/класса/приложения.
+Каждый перехватчик действует **в рамках одного клиента** — за счёт тега компонента со сгенерированным классом службы (`@Tag(SimpleServiceGrpc.class)`).
 Зарегистрируйте перехватчик как компонент с этим тегом:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -655,17 +737,32 @@ service SimpleService {
     }
     ```
 
-Чтобы применить один компонент-перехватчик к нескольким клиентам («общий» перехватчик), укажите ему несколько значений `@Tag` — по одному сгенерированному классу службы на каждый клиент:
+### Общие для нескольких клиентов { #shared-interceptors }
+
+У компонента ровно один `@Tag`, поэтому один экземпляр перехватчика не может обслуживать несколько клиентов.
+Чтобы переиспользовать одну реализацию, объявите класс без `@Component` и опубликуйте его из модуля приложения по разу на каждый клиент, каждый раз со своим тегом:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    @Tag({SimpleServiceGrpc.class, OtherServiceGrpc.class})
-    @Component
     public final class SharedInterceptor implements ClientInterceptor {
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
             return next.newCall(method, callOptions);
+        }
+    }
+
+    @KoraApp
+    public interface Application extends HoconConfigModule, GrpcClientModule {
+
+        @Tag(SimpleServiceGrpc.class)
+        default ClientInterceptor simpleServiceSharedInterceptor() {
+            return new SharedInterceptor();
+        }
+
+        @Tag(OtherServiceGrpc.class)
+        default ClientInterceptor otherServiceSharedInterceptor() {
+            return new SharedInterceptor();
         }
     }
     ```
@@ -673,8 +770,6 @@ service SimpleService {
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    @Tag(SimpleServiceGrpc::class, OtherServiceGrpc::class)
-    @Component
     class SharedInterceptor : ClientInterceptor {
         override fun <ReqT : Any, RespT : Any> interceptCall(
             method: MethodDescriptor<ReqT, RespT>,
@@ -684,32 +779,44 @@ service SimpleService {
             return next.newCall(method, callOptions)
         }
     }
+
+    @KoraApp
+    interface Application : HoconConfigModule, GrpcClientModule {
+
+        @Tag(SimpleServiceGrpc::class)
+        fun simpleServiceSharedInterceptor(): ClientInterceptor = SharedInterceptor()
+
+        @Tag(OtherServiceGrpc::class)
+        fun otherServiceSharedInterceptor(): ClientInterceptor = SharedInterceptor()
+    }
     ```
 
 **Порядок выполнения:**
 
-`ManagedChannelLifecycle` собирает все перехватчики, помеченные для службы, как `All<ClientInterceptor>` и применяет их в фиксированном порядке:
-сначала ваши собственные перехватчики, затем перехватчик телеметрии (если телеметрия включена), и последним — перехватчик конфигурации/deadline.
+`ManagedChannelLifecycle` собирает все перехватчики с тегом службы как `All<ClientInterceptor>` и регистрирует их у построителя канала
+в порядке: сначала ваши перехватчики, затем перехватчик телеметрии, затем перехватчик конфигурации/deadline.
+gRPC выполняет зарегистрированные перехватчики в обратном порядке регистрации, поэтому вызов проходит так:
 
 ```
-Запрос → Собственные перехватчики → Перехватчик телеметрии → Перехватчик конфигурации (deadline) → gRPC-сервер
+Call → Config (deadline) interceptor → Telemetry interceptor → Custom interceptors → gRPC Server
 ```
 
-Поскольку перехватчик deadline выполняется последним, deadline, установленный собственным перехватчиком в `CallOptions`, сохраняется, а настроенный `timeout`
-применяется только тогда, когда его не задал ни один более ранний перехватчик (или `withDeadlineAfter` для конкретного вызова).
+Отсюда два практических следствия: ваши перехватчики уже видят итоговый `deadline` в `CallOptions` и могут заменить его через `withDeadlineAfter`,
+а всё, что они делают, попадает внутрь span телеметрии и в измеряемую длительность вызова.
+Относительный порядок нескольких собственных перехватчиков — это обратный порядок их объявления в графе; не стройте на нём логику.
 
-В качестве альтернативы можно изменить `stub` с помощью [GraphInterceptor](container.md#component-inspection).
+Также можно изменить `stub` с помощью [GraphInterceptor](container.md#component-inspection).
 
 ## Авторизация { #authorization }
 
-В gRPC нет отдельного модуля авторизации: авторизация выполняется с помощью `ClientInterceptor`, помеченного классом службы, который добавляет заголовок
-`Authorization` (или API-ключа) в `Metadata` исходящего вызова. Перехватчик оборачивает вызов в `ForwardingClientCall.SimpleForwardingClientCall`
-и помещает заголовок в `start(...)`, до отправки запроса.
+У gRPC нет отдельного модуля авторизации: авторизация делается перехватчиком `ClientInterceptor` с тегом класса службы, который добавляет
+заголовок `Authorization` (или API-ключ) в `Metadata` исходящего вызова. Перехватчик оборачивает вызов в `ForwardingClientCall.SimpleForwardingClientCall`
+и кладёт заголовок в `start(...)`, до отправки запроса.
 
 ### Bearer { #bearer }
 
-Перехватчик [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/) читает токен из вашего собственного поставщика и
-помещает его в заголовок `Authorization` каждого вызова. `TokenProvider` ниже — ваш собственный компонент:
+Перехватчик [Bearer](https://swagger.io/docs/specification/authentication/bearer-authentication/) берёт токен у вашего поставщика и
+кладёт его в заголовок `Authorization` каждого вызова. `TokenProvider` ниже — ваш собственный компонент:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -769,7 +876,7 @@ service SimpleService {
 
 ### ApiKey { #apikey }
 
-Перехватчик [API-ключа](https://swagger.io/docs/specification/authentication/api-keys/) помещает статический ключ в собственный заголовок метаданных (например, `X-API-KEY`).
+Перехватчик [API-ключа](https://swagger.io/docs/specification/authentication/api-keys/) кладёт статический ключ в собственный заголовок metadata (например, `X-API-KEY`).
 Ключ читается из интерфейса [`@ConfigSource`](config.md), внедрённого в перехватчик:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -785,7 +892,7 @@ service SimpleService {
         private final String apiKey;
 
         public ApiKeyInterceptor(ApiKeyConfig config) { //(1)!
-            this.apiKey = config.apiKey();
+            this.apiKey = config.value();
         }
 
         @Override
@@ -801,7 +908,7 @@ service SimpleService {
     }
     ```
 
-    1. Любой интерфейс `@ConfigSource`, предоставляющий API-ключ, например `String apiKey();`
+    1. Любой интерфейс `@ConfigSource`, отдающий API-ключ, например `@ConfigSource("auth.apiKey") public interface ApiKeyConfig { String value(); }`
 
 === ":simple-kotlin: `Kotlin`"
 
@@ -810,7 +917,7 @@ service SimpleService {
     @Component
     class ApiKeyInterceptor(config: ApiKeyConfig) : ClientInterceptor { //(1)!
 
-        private val apiKey: String = config.apiKey()
+        private val apiKey: String = config.value()
 
         override fun <ReqT : Any, RespT : Any> interceptCall(
             method: MethodDescriptor<ReqT, RespT>,
@@ -832,24 +939,24 @@ service SimpleService {
     }
     ```
 
-    1. Любой интерфейс `@ConfigSource`, предоставляющий API-ключ, например `fun apiKey(): String`
+    1. Любой интерфейс `@ConfigSource`, отдающий API-ключ, например `@ConfigSource("auth.apiKey") interface ApiKeyConfig { fun value(): String }`
 
 ## Обработка ошибок { #error-handling }
 
-Неуспешный вызов gRPC выбрасывает `io.grpc.StatusRuntimeException`. Его `getStatus()` несёт `Status.Code`
+Неудачный gRPC-вызов бросает `io.grpc.StatusRuntimeException`. Его `getStatus()` несёт `Status.Code`
 ([коды статусов](https://grpc.io/docs/guides/status-codes/)), например `UNAVAILABLE` (сервер недоступен), `DEADLINE_EXCEEDED` (истёк `timeout`/deadline),
-`UNAUTHENTICATED` (отклонённые учётные данные) или `INVALID_ARGUMENT`. Метаданные ответа доступны через `getTrailers()`.
+`UNAUTHENTICATED` (учётные данные отклонены) или `INVALID_ARGUMENT`. Metadata ответа доступна через `getTrailers()`.
 
 **Причины:**
 
-- `UNAVAILABLE` — неверный `url`, несоответствие plaintext/TLS или сервер не работает.
-- `DEADLINE_EXCEEDED` — превышен настроенный `timeout` или `withDeadlineAfter` для конкретного вызова.
-- `UNAUTHENTICATED` / `PERMISSION_DENIED` — отсутствуют или недействительны метаданные авторизации.
+- `UNAVAILABLE` — неверный `url`, несовпадение plaintext/TLS или сервер не работает.
+- `DEADLINE_EXCEEDED` — превышен настроенный `timeout` или заданный для вызова `withDeadlineAfter`.
+- `UNAUTHENTICATED` / `PERMISSION_DENIED` — отсутствующая или неверная metadata авторизации.
 
 **Рекомендации:**
 
 - Ветвитесь по `e.getStatus().getCode()`, а не по типу исключения.
-- Используйте аспекты [отказоустойчивости](resilient.md) (`@Retry`, `@CircuitBreaker`, `@Timeout`) на оборачивающем методе службы для временных сбоев.
+- Для временных сбоев используйте аспекты [resilient](resilient.md) (`@Retryable`, `@CircuitBreakable`, `@Timeout`) на методе обёртывающей службы.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -859,9 +966,9 @@ service SimpleService {
     } catch (StatusRuntimeException e) {
         var code = e.getStatus().getCode();
         if (code == Status.Code.DEADLINE_EXCEEDED) {
-            // превышен timeout / deadline
+            // timeout / deadline exceeded
         } else if (code == Status.Code.UNAVAILABLE) {
-            // сервер недоступен
+            // server unreachable
         }
     }
     ```
@@ -873,17 +980,20 @@ service SimpleService {
         val response = stub.createUser(request)
     } catch (e: StatusRuntimeException) {
         when (e.status.code) {
-            Status.Code.DEADLINE_EXCEEDED -> { /* превышен timeout / deadline */ }
-            Status.Code.UNAVAILABLE -> { /* сервер недоступен */ }
+            Status.Code.DEADLINE_EXCEEDED -> { /* timeout / deadline exceeded */ }
+            Status.Code.UNAVAILABLE -> { /* server unreachable */ }
             else -> throw e
         }
     }
     ```
 
+Сам запуск канала не роняет приложение: `ManagedChannelLifecycle` пишет предупреждение, если первая проба `getState(true)` не удалась,
+а соединение будет установлено позже, при вызове. Ошибки конфигурации, наоборот, ломают сборку графа — отсутствующий `url` или неподдерживаемая схема прерывают запуск.
+
 ## Тестирование { #testing }
 
 gRPC-клиент тестируется как любой другой компонент Kora с помощью [`@KoraAppTest`](junit5.md).
-Реализуйте `KoraAppTestConfigModifier`, чтобы задать `url` (например, через подстановку переменной окружения `GRPC_URL`, используемую в примере),
+Реализуйте `KoraAppTestConfigModifier`, чтобы задать `url` (через ту же подстановку переменной окружения, что используется в конфигурации приложения),
 внедрите службу на основе stub через `@TestComponent`, соберите запрос сгенерированным построителем и проверьте `StatusRuntimeException`:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -897,7 +1007,7 @@ gRPC-клиент тестируется как любой другой комп
 
         @Override
         public KoraConfigModification config() {
-            return KoraConfigModification.ofSystemProperty("GRPC_URL", "grpc://localhost:8090");
+            return KoraConfigModification.ofSystemProperty("GRPC_URL", "http://localhost:8090");
         }
 
         @Test
@@ -923,7 +1033,7 @@ gRPC-клиент тестируется как любой другой комп
         lateinit var service: RootService
 
         override fun config(): KoraConfigModification =
-            KoraConfigModification.ofSystemProperty("GRPC_URL", "grpc://localhost:8090")
+            KoraConfigModification.ofSystemProperty("GRPC_URL", "http://localhost:8090")
 
         @Test
         fun createUser() {
@@ -942,14 +1052,20 @@ gRPC-клиент тестируется как любой другой комп
 
 gRPC Client использует контракт телеметрии для логирования, метрик и трассировки вызовов.
 Конфигурация телеметрии (секция `telemetry { logging / metrics / tracing }`) описана в разделе [Конфигурация](#configuration).
-Точки расширения находятся в `ru.tinkoff.kora.grpc.client.common.telemetry`.
+Точки расширения находятся в `io.koraframework.grpc.client.telemetry` и `io.koraframework.grpc.client.telemetry.impl`.
 
-Для каждого gRPC-вызова создаётся `GrpcClientTelemetry.GrpcClientTelemetryContext`, который закрывается по завершении вызова.
-Вызов описывается через параметры обработчика телеметрии, включая сервис, метод, статус ответа и длительность.
+`GrpcClientTelemetryFactory` строит по одному `GrpcClientTelemetry` на клиент из `GrpcClientTelemetryConfig`, `ServiceDescriptor` и целевого `URI`.
+Для каждого gRPC-вызова `GrpcClientTelemetry.observe(...)` создаёт `GrpcClientObservation`, который получает события `observeStart`, `observeSend`, `observeReceive`,
+`observeClose` и `observeError` и закрывается вызовом `end()` по завершении вызова.
 
-Фабрика по умолчанию `DefaultGrpcClientTelemetryFactory` объединяет три фабрики:
-- `GrpcClientLoggerFactory` строит `GrpcClientLogger` для логирования начала/конца вызова;
-- `GrpcClientMetricsFactory` строит `GrpcClientMetrics` для записи метрик вызовов;
-- `GrpcClientTracerFactory` строит `GrpcClientTracer` для распределённой трассировки.
+Фабрика по умолчанию `DefaultGrpcClientTelemetryFactory` объединяет:
+
+- `Tracer` из OpenTelemetry — span вида `CLIENT` на каждый вызов с именем полного gRPC-метода и атрибутами `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`;
+- `MeterRegistry` из Micrometer — таймер `rpc.client.duration` с настроенными корзинами `slo`;
+- `DefaultGrpcClientLoggerFactory` — логи начала и конца вызова в логгеры `<serviceName>.request` и `<serviceName>.response`, где `serviceName` — полное имя службы `protobuf`. Заголовки запроса и ответа добавляются на уровне `DEBUG`;
+- `DefaultGrpcClientMetricsFactory` — саму реализацию метрик.
+
+Если для клиента выключены логирование, метрики и трассировка, фабрика возвращает `NoopGrpcClientTelemetry`, а перехватчик телеметрии становится сквозным.
+Дополнительно метрикам нужен `MeterRegistry` в графе, а трассировке — `Tracer`; без них соответствующая часть остаётся выключенной независимо от конфигурации.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#grpc-client).
