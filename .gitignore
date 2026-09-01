@@ -12,3 +12,6 @@
 
 # Local Kora sources/examples used for docs verification (never commit)
 .kora-agent/
+
+# Local preview assembly produced by scripts/serve-local.sh
+.local-serve/

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Redirect</title>
-    <meta charset="UTF-8" http-equiv="refresh" content="0; url=/kora-docs/v1/ru/" />
+    <meta charset="UTF-8" http-equiv="refresh" content="0; url=/kora-docs/v2/ru/" />
     <style>
         .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
     </style>
@@ -29,17 +29,22 @@
                 lang = nav.indexOf("ru") === 0 ? "ru" : "en";
             }
 
-            location.replace("/kora-docs/" + lang + "/");
+            // 3. Send them into whichever docs version they last read (cookie is
+            //    set by every docs page). Defaults to the current version, v2.
+            var vMatch = document.cookie.match(/(?:^|; )kora_docs_version=(v\d+)(?:;|$)/);
+            var version = vMatch ? vMatch[1] : "v2";
+
+            location.replace("/kora-docs/" + version + "/" + lang + "/");
         })();
     </script>
     <!-- non-JS / crawler fallback -->
     <noscript>
-        <meta http-equiv="refresh" content="0; url=/kora-docs/en/">
+        <meta http-equiv="refresh" content="0; url=/kora-docs/v2/en/">
     </noscript>
 </head>
 <body>
 <div class="centralizedContainer">
-    <div><a href="/kora-docs/v1/ru/">Redirect</a> to landing page.</div>
+    <div><a href="/kora-docs/v2/ru/">Redirect</a> to landing page.</div>
 </div>
 </body>
 </html>

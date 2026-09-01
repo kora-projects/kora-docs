@@ -8,9 +8,9 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="Kora Framework">
     <meta property="og:description" content="A compile-time Java and Kotlin framework for fast, transparent, cloud-native services.">
-    <meta property="og:image" content="/kora-docs/en/assets/img/kora-long.png">
+    <meta property="og:image" content="{{ 'assets/img/kora-long.png' | url }}">
     <title>Kora Framework - Compile-time Java and Kotlin services</title>
-    <link rel="icon" type="image/x-icon" href="/kora-docs/en/assets/img/kora.ico?v=2">
+    <link rel="icon" type="image/x-icon" href="{{ 'assets/img/kora.ico' | url }}?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Commissioner:FLAR,wght@0..100,100..900&display=swap" rel="stylesheet">
@@ -3224,13 +3224,13 @@
     </div>
     <header class="topbar">
         <nav class="nav" aria-label="Primary navigation">
-            <a class="brand" href="/kora-docs/">
+            <a class="brand" href="{{ '.' | url }}">
                 <span class="brand-icon" aria-hidden="true">K</span>
                 <span class="brand-mark">Kora <span class="brand-version">2.0.0.RC1</span></span>
             </a>
             <div class="nav-links" aria-label="Page sections">
                 <a href="#philosophy">Principles</a>
-                <a href="/kora-docs/en/guides/getting-started/">Guides</a>
+                <a href="{{ 'guides/getting-started/' | url }}">Guides</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
             </div>
             <div class="nav-actions">
@@ -3238,7 +3238,7 @@
                     <button class="is-active" type="button" data-lang="en">EN</button>
                     <button type="button" data-lang="ru">RU</button>
                 </div>
-                <a class="button" href="/kora-docs/en/documentation/general/">Docs</a>
+                <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
             </div>
         </nav>
     </header>
@@ -3253,7 +3253,7 @@
                         Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services exceptionally fast and familiar production JVM stack from day one.
                     </p>
                     <div class="hero-actions" id="start">
-                        <a class="button primary" href="/kora-docs/en/guides/getting-started/">Get started</a>
+                        <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
                         <div class="command" aria-label="Gradle dependency example"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC1</code></div>
                     </div>
@@ -3572,9 +3572,9 @@
                         </span>
                     </div>
                     <div class="docs-actions">
-                        <a class="button primary" href="/kora-docs/en/guides/getting-started/">Guides</a>
+                        <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Guides</a>
                         <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
-                        <a class="button" href="/kora-docs/en/documentation/general/">Docs</a>
+                        <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
                         <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
                     </div>
                 </summary>
@@ -3976,7 +3976,7 @@
                     <p>Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.</p>
                 </div>
                 <div class="hero-actions">
-                    <a class="button primary" href="/kora-docs/en/guides/getting-started/">Read the guide</a>
+                    <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Read the guide</a>
                     <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
                 </div>
             </div>
@@ -3987,7 +3987,7 @@
         <div class="footer-inner">
             <span>Kora Framework documentation.</span>
             <div class="footer-links">
-                <a href="/kora-docs/en/documentation/general/">Docs</a>
+                <a href="{{ 'documentation/general/' | url }}">Docs</a>
                 <a href="https://github.com/kora-projects/kora-examples">Examples</a>
                 <a href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
@@ -4302,10 +4302,33 @@
             });
         };
 
+        // Which docs version (v1/v2) the visitor last read, persisted as a cookie
+        // by the docs pages (see overrides/main.html). Defaults to v2.
+        const readDocsVersion = () => {
+            try {
+                const match = document.cookie.match(/(?:^|;\s*)kora_docs_version=(v\d+)/);
+                if (match) return match[1];
+            } catch (e) { /* cookies disabled */ }
+            return "v2";
+        };
+        const docsVersion = readDocsVersion();
+
         const localizeHref = (href, lang) => {
-            if (!href || href.startsWith("#") || href.startsWith("https://") || href.startsWith("http://")) return href;
-            if (lang === "ru") return href.replace("/kora-docs/en/", "/kora-docs/ru/");
-            return href.replace("/kora-docs/ru/", "/kora-docs/en/");
+            if (!href || href.startsWith("#") || href.startsWith("https://") || href.startsWith("http://") || href.startsWith("mailto:")) return href;
+            // Links are relative to the current build (e.g. /kora-docs/v2/en/). Resolve to an
+            // absolute path, then swap the version segment to whichever version the visitor last
+            // read and the language segment to the toggled language.
+            let url;
+            try {
+                url = new URL(href, window.location.href);
+            } catch (e) {
+                return href;
+            }
+            if (!/\/(en|ru)\//.test(url.pathname)) return href;
+            url.pathname = url.pathname
+                .replace(/\/v\d+\//, "/" + docsVersion + "/")
+                .replace(/\/(en|ru)\//, lang === "ru" ? "/ru/" : "/en/");
+            return url.pathname + url.search + url.hash;
         };
 
         const applyLanguage = (lang) => {
