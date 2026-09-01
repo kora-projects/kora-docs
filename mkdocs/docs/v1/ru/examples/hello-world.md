@@ -48,7 +48,6 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
         api.extendsFrom(koraBom)
     }

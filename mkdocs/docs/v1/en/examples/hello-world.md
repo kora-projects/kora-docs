@@ -48,7 +48,6 @@ Basic concepts and description of the framework can be read on the [main page](.
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
         api.extendsFrom(koraBom)
     }

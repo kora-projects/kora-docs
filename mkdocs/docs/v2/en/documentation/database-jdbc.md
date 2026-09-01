@@ -1330,8 +1330,8 @@ A nested `inTx` inside an already open transaction reuses it and ignores the arg
 ### Multi-repository Transactions
 
 When your application uses multiple repositories, you can combine their operations in a single transaction.
-All repositories that `extend JdbcRepository` share the same `JdbcConnectionFactory` (unless a separate `@Tag` for a different database is specified).
-`JdbcConnectionFactory` stores the connection in the `Context` of the current thread.
+All repositories that `extend JdbcRepository` share the same `JdbcExecutor` (unless a separate `@Tag` for a different database is specified).
+`JdbcExecutor` stores the connection in the `Context` of the current thread.
 When entering `inTx`, the connection is saved to the context.
 Any `@Query` method of any repository called inside `inTx` checks the context and uses the existing connection instead of creating a new one.
 Thus, all operations in the lambda execute on the same connection and in the same transaction.
@@ -1367,7 +1367,7 @@ If any of the calls throws an exception — all changes are rolled back.
         }
 
         public void placeOrder(long customerId, long productId, long total, long quantity) {
-            orderRepo.getJdbcConnectionFactory().inTx(() -> {
+            orderRepo.getJdbcExecutor().inTx(() -> {
                 stockRepo.reserve(productId, quantity);
                 orderRepo.create(customerId, total);
             });
@@ -1399,7 +1399,7 @@ If any of the calls throws an exception — all changes are rolled back.
     ) {
 
         fun placeOrder(customerId: Long, productId: Long, total: Long, quantity: Long) {
-            orderRepo.jdbcConnectionFactory.inTx {
+            orderRepo.JdbcExecutor.inTx {
                 stockRepo.reserve(productId, quantity)
                 orderRepo.create(customerId, total)
             }
@@ -1407,7 +1407,7 @@ If any of the calls throws an exception — all changes are rolled back.
     }
     ```
 
-**Limitation:** If repositories are connected to different databases (via `@Tag(OtherDatabase.class)`), they use different `JdbcConnectionFactory` instances — the transaction does NOT propagate between them.
+**Limitation:** If repositories are connected to different databases (via `@Tag(OtherDatabase.class)`), they use different `JdbcExecutor` instances — the transaction does NOT propagate between them.
 
 ### Manual Connection Management { #connection }
 

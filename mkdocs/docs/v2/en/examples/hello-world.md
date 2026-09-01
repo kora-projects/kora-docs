@@ -57,10 +57,8 @@ Kora dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, s
     configurations {
         koraBom //(2)!
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
         api.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 

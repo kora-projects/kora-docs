@@ -6,6 +6,7 @@ on:
     branches:
       - 'master'
       - 'feature/homepage'
+      - 'feature/kora-2.0'
     paths:
       - 'mkdocs/**'
       - '.github/workflows/**'
@@ -39,9 +40,8 @@ jobs:
           mkdir public
           mv mkdocs/generated/v1 public/v1
           mv mkdocs/generated/v2 public/v2
-          cp -r public/v1/ru public/ru
-          cp -r public/v1/en public/en
           mv mkdocs/index.html public
+          cp -r mkdocs/redirects/. public   # /changelog /docs /guides shortcuts
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:

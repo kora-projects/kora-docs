@@ -57,10 +57,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip
     configurations {
         koraBom //(2)!
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
         api.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 

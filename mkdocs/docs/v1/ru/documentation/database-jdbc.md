@@ -978,6 +978,88 @@ agent:
 connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 ```
 
+### Меж-репозиторные транзакции
+
+Когда в приложении используется несколько репозиториев, вы можете объединить их операции в одной транзакции.
+Все репозитории, которые `extend JdbcRepository`, используют один и тот же `JdbcConnectionFactory` (если не указан отдельный `@Tag` для другой базы данных).
+`JdbcConnectionFactory` хранит соединение в `Context` текущего потока.
+При входе в `inTx` соединение сохраняется в контекст.
+Любой `@Query` метод любого репозитория, вызванный внутри `inTx`, проверяет контекст и использует существующее соединение вместо создания нового.
+Таким образом, все операции в лямбде выполняются на одном соединении и в одной транзакции.
+
+Если любой из вызовов бросает исключение — все изменения откатываются.
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Repository
+    public interface OrderRepository extends JdbcRepository {
+
+        @Query("INSERT INTO orders(customer_id, total) VALUES (:customerId, :total)")
+        UpdateCount create(long customerId, long total);
+    }
+
+    @Repository
+    public interface StockRepository extends JdbcRepository {
+
+        @Query("UPDATE stock SET quantity = quantity - :quantity WHERE product_id = :productId")
+        UpdateCount reserve(long productId, long quantity);
+    }
+
+    @Component
+    public class OrderService {
+
+        private final OrderRepository orderRepo;
+        private final StockRepository stockRepo;
+
+        public OrderService(OrderRepository orderRepo, StockRepository stockRepo) {
+            this.orderRepo = orderRepo;
+            this.stockRepo = stockRepo;
+        }
+
+        public void placeOrder(long customerId, long productId, long total, long quantity) {
+            orderRepo.getJdbcConnectionFactory().inTx(() -> {
+                stockRepo.reserve(productId, quantity);
+                orderRepo.create(customerId, total);
+            });
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Repository
+    interface OrderRepository : JdbcRepository {
+
+        @Query("INSERT INTO orders(customer_id, total) VALUES (:customerId, :total)")
+        fun create(customerId: Long, total: Long): UpdateCount
+    }
+
+    @Repository
+    interface StockRepository : JdbcRepository {
+
+        @Query("UPDATE stock SET quantity = quantity - :quantity WHERE product_id = :productId")
+        fun reserve(productId: Long, quantity: Long): UpdateCount
+    }
+
+    @Component
+    class OrderService(
+        private val orderRepo: OrderRepository,
+        private val stockRepo: StockRepository
+    ) {
+
+        fun placeOrder(customerId: Long, productId: Long, total: Long, quantity: Long) {
+            orderRepo.jdbcConnectionFactory.inTx {
+                stockRepo.reserve(productId, quantity)
+                orderRepo.create(customerId, total)
+            }
+        }
+    }
+    ```
+
+**Ограничение:** Если репозитории подключены к разным базам данных (через `@Tag(OtherDatabase.class)`), они используют разные экземпляры `JdbcConnectionFactory` — транзакция НЕ распространяется между ними.
+
 ### Ручное управление соединением { #connection }
 
 Если для запроса нужна более сложная логика или запросы вне репозитория, вы можете использовать `java.sql.Connection`.

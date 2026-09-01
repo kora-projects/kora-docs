@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirect</title>
+    <meta http-equiv="refresh" content="0; url=/kora-docs/v2/ru/" />
+    <style>
+        .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
+    </style>
+    <script>
+        (function () {
+            // Backward compatibility for the old language-only URL /kora-docs/ru/
+            // (previously the v1 Russian landing). Keep the language fixed by the
+            // path and pick the version from the reader's cookie, defaulting to
+            // the current version (v2).
+            var verMatch = document.cookie.match(/(?:^|; )kora_docs_version=(v\d+)(?:;|$)/);
+            var version = verMatch ? verMatch[1] : "v2";
+            location.replace("/kora-docs/" + version + "/ru/");
+        })();
+    </script>
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=/kora-docs/v2/ru/">
+    </noscript>
+</head>
+<body>
+<div class="centralizedContainer">
+    <div><a href="/kora-docs/v2/ru/">Redirect</a> to documentation.</div>
+</div>
+</body>
+</html>

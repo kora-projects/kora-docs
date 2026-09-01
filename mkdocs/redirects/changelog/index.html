@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirect</title>
+    <meta http-equiv="refresh" content="0; url=/kora-docs/v2/en/changelog/changelog/" />
+    <style>
+        .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
+    </style>
+    <script>
+        (function () {
+            // Universal, version/language-agnostic shortcut. Resolves to the
+            // reader's remembered language (kora_lang) and docs version
+            // (kora_docs_version) - both cookies are set by every docs page -
+            // so docs can link to a stable /kora-docs/changelog/ path. Defaults
+            // to the current version (v2) and browser language.
+            var section = "changelog/changelog/";
+
+            var langMatch = document.cookie.match(/(?:^|; )kora_lang=(ru|en)(?:;|$)/);
+            var lang = langMatch ? langMatch[1] : null;
+            if (!lang) {
+                var nav = ((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase();
+                lang = nav.indexOf("ru") === 0 ? "ru" : "en";
+            }
+
+            var verMatch = document.cookie.match(/(?:^|; )kora_docs_version=(v\d+)(?:;|$)/);
+            var version = verMatch ? verMatch[1] : "v2";
+
+            location.replace("/kora-docs/" + version + "/" + lang + "/" + section);
+        })();
+    </script>
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=/kora-docs/v2/en/changelog/changelog/">
+    </noscript>
+</head>
+<body>
+<div class="centralizedContainer">
+    <div><a href="/kora-docs/v2/en/changelog/changelog/">Redirect</a> to documentation.</div>
+</div>
+</body>
+</html>

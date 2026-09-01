@@ -1333,8 +1333,8 @@ agent:
 ### Меж-репозиторные транзакции
 
 Когда в приложении используется несколько репозиториев, вы можете объединить их операции в одной транзакции.
-Все репозитории, которые `extend JdbcRepository`, используют один и тот же `JdbcConnectionFactory` (если не указан отдельный `@Tag` для другой базы данных).
-`JdbcConnectionFactory` хранит соединение в `Context` текущего потока.
+Все репозитории, которые `extend JdbcRepository`, используют один и тот же `JdbcExecutor` (если не указан отдельный `@Tag` для другой базы данных).
+`JdbcExecutor` хранит соединение в `Context` текущего потока.
 При входе в `inTx` соединение сохраняется в контекст.
 Любой `@Query` метод любого репозитория, вызванный внутри `inTx`, проверяет контекст и использует существующее соединение вместо создания нового.
 Таким образом, все операции в лямбде выполняются на одном соединении и в одной транзакции.
@@ -1370,7 +1370,7 @@ agent:
         }
 
         public void placeOrder(long customerId, long productId, long total, long quantity) {
-            orderRepo.getJdbcConnectionFactory().inTx(() -> {
+            orderRepo.getJdbcExecutor().inTx(() -> {
                 stockRepo.reserve(productId, quantity);
                 orderRepo.create(customerId, total);
             });
@@ -1402,7 +1402,7 @@ agent:
     ) {
 
         fun placeOrder(customerId: Long, productId: Long, total: Long, quantity: Long) {
-            orderRepo.jdbcConnectionFactory.inTx {
+            orderRepo.JdbcExecutor.inTx {
                 stockRepo.reserve(productId, quantity)
                 orderRepo.create(customerId, total)
             }
@@ -1410,7 +1410,7 @@ agent:
     }
     ```
 
-**Ограничение:** Если репозитории подключены к разным базам данных (через `@Tag(OtherDatabase.class)`), они используют разные экземпляры `JdbcConnectionFactory` — транзакция НЕ распространяется между ними.
+**Ограничение:** Если репозитории подключены к разным базам данных (через `@Tag(OtherDatabase.class)`), они используют разные экземпляры `JdbcExecutor` — транзакция НЕ распространяется между ними.
 
 ### Ручное управление соединением { #connection }
 

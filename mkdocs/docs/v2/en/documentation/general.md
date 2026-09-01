@@ -205,9 +205,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     configurations {
         koraBom //(1)!
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 
@@ -295,9 +293,7 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 
