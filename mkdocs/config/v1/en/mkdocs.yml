@@ -48,9 +48,10 @@ nav:
           - Integration Testing: guides/testing-integration.md
           - Black-Box Testing: guides/testing-black-box.md
   - Documentation:
-      - General: documentation/general.md
-      - Dependency injection: documentation/container.md
-      - Configuration: documentation/config.md
+      - General:
+        - Project and build: documentation/general.md
+        - Dependency injection: documentation/container.md
+        - Configuration: documentation/config.md
       - Mapping:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md

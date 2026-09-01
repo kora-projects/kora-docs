@@ -494,9 +494,7 @@ Kora состоит из нескольких модулей. Чтобы не у
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
     ```

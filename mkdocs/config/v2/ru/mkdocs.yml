@@ -49,9 +49,10 @@ nav:
           - Интеграционное тестирование: guides/testing-integration.md
           - Тестирование черным ящиком: guides/testing-black-box.md
   - Документация:
-      - Основное: documentation/general.md
-      - Контейнер: documentation/container.md
-      - Конфигурация: documentation/config.md
+      - Основы:
+        - Проект и сборка: documentation/general.md
+        - Контейнер: documentation/container.md
+        - Конфигурация: documentation/config.md
       - Конвертация:
         - Json: documentation/json.md
         - MapStruct: documentation/mapstruct.md

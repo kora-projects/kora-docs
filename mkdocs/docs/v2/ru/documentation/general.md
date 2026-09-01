@@ -205,9 +205,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     configurations {
         koraBom //(1)!
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 
@@ -295,9 +293,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 

@@ -126,9 +126,7 @@ junitVersion=6.1.3
     configurations {
         koraBom
         annotationProcessor.extendsFrom(koraBom)
-        compileOnly.extendsFrom(koraBom)
         implementation.extendsFrom(koraBom)
-        testImplementation.extendsFrom(koraBom)
         testAnnotationProcessor.extendsFrom(koraBom)
     }
 
