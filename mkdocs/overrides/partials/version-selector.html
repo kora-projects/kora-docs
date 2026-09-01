@@ -14,30 +14,53 @@
           link: /kora-docs/v2/en/
 
   `link` is already language-scoped in every config, so switching version keeps
-  the reader in their current language. Styling lives in
+  the reader in their current language. Rendered as a two-state pill toggle
+  (not a <select>) so it matches the language toggle and behaves predictably -
+  a <select> gets its value restored from the browser's bfcache on back/forward
+  navigation, which made it show the wrong version. Styling lives in
   overrides/assets/css/extra.css under `.kora-version-switcher`.
 -#}
 {% if config.extra.versions %}
   {% set current = (config.extra.docs_version | default('', true)) | lower %}
-  <div class="kora-version-switcher">
-    <label class="md-visually-hidden" for="kora-version-select">
-      {{ lang.t("select.version") | default("Select version", true) }}
-    </label>
-    <select id="kora-version-select"
-            name="kora-version-select"
-            aria-label="{{ lang.t('select.version') | default('Select version', true) }}"
-            onchange="if (this.value) { window.location.href = this.value; }">
-      {% for version in config.extra.versions %}
-        <option value="{{ version.link }}"{% if (version.name | lower) == current %} selected{% endif %}>
-          {{ version.name }}
-        </option>
-      {% endfor %}
-    </select>
-    {#- A <select> needs JS to navigate; keep the versions reachable without it. -#}
-    <noscript>
-      {% for version in config.extra.versions %}
-        <a href="{{ version.link }}">{{ version.name }}</a>{% if not loop.last %} · {% endif %}
-      {% endfor %}
-    </noscript>
+  <div class="kora-version-switcher" role="group"
+       aria-label="{{ lang.t('select.version') | default('Select version', true) }}"
+       data-kora-version-switcher>
+    {% for version in config.extra.versions %}
+      {% set slug = version.name | lower %}
+      {% if slug == current %}
+        <span class="kora-version-option is-active" aria-current="true">{{ version.name }}</span>
+      {% else %}
+        {#- href is the version home as a no-JS fallback; the script below rewrites
+            it to the equivalent page in the other version. -#}
+        <a class="kora-version-option" data-kora-version="{{ slug }}" href="{{ version.link }}">{{ version.name }}</a>
+      {% endif %}
+    {% endfor %}
   </div>
+  <script>
+    (() => {
+      const switcher = document.querySelector("[data-kora-version-switcher]");
+      if (!switcher) return;
+
+      /* Keep the reader on the SAME page when switching version: swap the
+         /vN/ segment of the current path instead of jumping to the version
+         home. Falls back to the server-rendered home link if the current
+         path has no version segment. */
+      const path = window.location.pathname;
+      switcher.querySelectorAll("a.kora-version-option[data-kora-version]").forEach((link) => {
+        const version = link.getAttribute("data-kora-version");
+        const target = path.replace(/\/v\d+\//, "/" + version + "/");
+        if (target !== path) {
+          link.setAttribute("href", target + window.location.search + window.location.hash);
+        }
+      });
+
+      /* Move the toggle into the header's option row, right before the language
+         selector, so the two controls sit together. Idempotent. */
+      const header = document.querySelector(".md-header__inner");
+      if (header && switcher.parentElement !== header) {
+        const lang = header.querySelector(".md-header__option");
+        header.insertBefore(switcher, lang || header.querySelector("label[for='__search']"));
+      }
+    })();
+  </script>
 {% endif %}

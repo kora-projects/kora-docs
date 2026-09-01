@@ -55,6 +55,12 @@
        entry point (mkdocs/index.html) can send returning visitors straight
        back to it instead of always defaulting to one language. */
     document.cookie = "kora_lang={{ config.theme.language }}; path=/; max-age=31536000; SameSite=Lax";
+    /* Remember which docs version the visitor is actually reading, so the
+       landing page can send them back into the same version (v1/v2) when they
+       click through. Defaults to v2 on the landing when nothing is stored. */
+    {% if config.extra.docs_version %}
+    document.cookie = "kora_docs_version={{ config.extra.docs_version }}; path=/; max-age=31536000; SameSite=Lax";
+    {% endif %}
 </script>
 <div class="grid-signals" aria-hidden="true" id="grid-signals">
     <span class="signal signal-x"></span>

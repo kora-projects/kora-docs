@@ -7,7 +7,8 @@ hide:
     - toc
 description: "Explains Index in Kora documentation. Use when working with Index."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Index."
+    use_when: "Use this file for Kora docs or implementation questions about Index."
+template: landing.html
 ---
 
 Kora - это Java фреймворк общего назначения для написания серверных Java или Kotlin приложений с упором на Простоту, Производительность, Эффективность, Прозрачность.
@@ -91,4 +92,5 @@ Kora предоставляет все необходимые для совре�
 
 ## Начните с руководства
 
-Продолжите с руководства [Создание первого приложения на Kora](guides/getting-started.md), чтобы собрать минимальный HTTP-сервис и увидеть, как `@KoraApp`, `@Component`, `@HttpController` и `@HttpRoute` работают вместе в реальном проекте.
+Продолжите с руководства [Создание первого приложения на Kora](guides/getting-started.md), чтобы собрать минимальный HTTP-сервис и увидеть, как `@KoraApp`, `@Component`, `@HttpController` и
+`@HttpRoute` работают вместе в реальном проекте.

@@ -1,12 +1,13 @@
 ---
 search:
-  exclude: true
+    exclude: true
 hide:
-- navigation
-- toc
+    - navigation
+    - toc
 description: "Explains Index in Kora documentation. Use when working with Index."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Index."
+    use_when: "Use this file for Kora docs or implementation questions about Index."
+template: landing.html
 ---
 
 Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Simplicity, Performance, Efficiency, Transparency.
@@ -15,8 +16,8 @@ which at compile time are translated into hardware-performant and human-readable
 Both programming languages are first-level citizen languages for framework.
 
 Kora is completely original framework written from scratch in Java and has its own custom-written dependency container with inversion of control that works at compile time.
-Kora is cloud-oriented server framework and offers many modules for quickly building applications such as 
-[HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers, 
+Kora is cloud-oriented server framework and offers many modules for quickly building applications such as
+[HTTP server](documentation/http-server.md), [Kafka](documentation/kafka.md) consumers,
 database abstraction in the form of [repositories](documentation/database-common.md), telemetry, resilient module and much more.
 
 Kora also places great emphasis on:
@@ -49,20 +50,20 @@ in the event of sudden peak loads and improves user requests latency.
   <figcaption>Kora startup benchmark of PetClinic</figcaption>
 </figure>
 
-`Transparency` - Kora generates human-readable source code at compile time 
+`Transparency` - Kora generates human-readable source code at compile time
 with fine-grained abstractions and free aspects, which leads to high readability of code
 and a developer's understanding of the underlying mechanisms of the framework if required with no black box effect.
-High readability, one most effective solution per problem, familiar high-level abstractions, 
-all this gives transparency in the understanding of the code base on the part of the whole development team 
+High readability, one most effective solution per problem, familiar high-level abstractions,
+all this gives transparency in the understanding of the code base on the part of the whole development team
 and makes it easy to immerse new developers, especially interns. Developers are given the opportunity to understand and control
 how to work with the development tool, which allows them to use it effectively and not waste unnecessary time studying/learning
 and memorizing tricky techniques for working with the framework.
-Source code creation approach allows for dependency container checking at compile time 
+Source code creation approach allows for dependency container checking at compile time
 and compatibility with [GraalVM out of the box](documentation/graalvm-native.md).
 gent
 `Simplicity` - code transparency that Kora provides, coupled with simple and straightforward abstractions,
 makes it easy to learn framework without the need for developers to spend years memorizing the "guts of the framework".
-Kora aims to do all framework optimizations in-house, 
+Kora aims to do all framework optimizations in-house,
 provide for you the most optimal implementations of integrations whether it is HTTP server or client,
 take the work off you as a developer and provide only productive and efficient solutions out of the box.
 Kora does not involve complex designs or abstractions,
@@ -92,4 +93,5 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 
 ## Start with a guide
 
-Continue with [Creating Your First Kora Application](guides/getting-started.md) to build a minimal HTTP service and see how `@KoraApp`, `@Component`, `@HttpController`, and `@HttpRoute` work together in a real project.
+Continue with [Creating Your First Kora Application](guides/getting-started.md) to build a minimal HTTP service and see how `@KoraApp`, `@Component`, `@HttpController`, and `@HttpRoute` work together
+in a real project.

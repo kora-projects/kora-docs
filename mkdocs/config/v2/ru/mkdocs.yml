@@ -3,7 +3,7 @@ site_dir: "../../../generated/v2/ru"
 
 
 # Project information
-site_name: Kora фреймворк 2.x
+site_name: Kora фреймворк 2.0.0.RC1
 site_url: https://kora-projects.github.io/kora-docs/v2/ru/
 nav:
   - Руководства:

@@ -3,7 +3,7 @@ site_dir: "../../../generated/v2/en"
 
 
 # Project information
-site_name: Kora Framework 2.x
+site_name: Kora Framework 2.0.0.RC1
 site_url: https://kora-projects.github.io/kora-docs/v2/en/
 nav:
   - Guides:
