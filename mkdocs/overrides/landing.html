@@ -2421,6 +2421,18 @@
             min-height: 520px;
         }
 
+        /* The console is a grid item that stretches to the taller (left) column,
+           so let the code area grow and keep the mode-switch buttons pinned to
+           the bottom instead of floating in the middle. */
+        .module-detail-console pre {
+            flex: 1 1 auto;
+            margin: 0;
+        }
+
+        .module-detail-console .build-strip {
+            margin-top: auto;
+        }
+
         .module-detail[hidden] {
             display: none;
         }
@@ -3285,6 +3297,7 @@
                     <pre><code class="console-code" id="snippet-code"></code></pre>
                     <div class="snippet-dots" aria-label="Code example progress">
                         <button class="snippet-dot is-active" type="button" aria-label="Show controller example"></button>
+                        <button class="snippet-dot" type="button" aria-label="Show dependency injection example"></button>
                         <button class="snippet-dot" type="button" aria-label="Show repository example"></button>
                         <button class="snippet-dot" type="button" aria-label="Show HTTP client example"></button>
                         <button class="snippet-dot" type="button" aria-label="Show Kafka consumer example"></button>
@@ -3450,7 +3463,7 @@
                     <p>It is all about scale. Take that one service and multiply it out: a couple of instances for redundancy, then across two data centers, then every service the team owns, then every team in the department, then every department in the business line, then every business line in the company — and on top of all that, the spare CPU and RAM reserved for peak events like Black Friday, sitting idle most of the year. And operating infrastructure at this scale is nothing like buying a CPU or a PC for local use: every reserved core and gigabyte also carries its share of on-site operations staff, electricity, cooling, networking, and data-center overhead, billed every single month. The per-instance difference that looked negligible is now multiplied by tens of thousands. A lighter runtime like Kora turns performance you never needed into reserved memory and CPU you simply stop paying for — the same reliability, on far fewer cores.</p>
                     <div class="scale-anim" id="scale-anim" aria-label="How reserved resources scale across a large organization">
                         <div class="scale-anim-head">
-                            <span class="scale-anim-title">Watch it scale across an organization</span>
+                            <span class="scale-anim-title">Watch it may scale across an organization</span>
                             <button class="scale-replay" type="button" hidden>&#8635; Replay</button>
                         </div>
                         <div class="scale-stages">
@@ -3461,7 +3474,7 @@
                             <div class="scale-stage"><span class="scale-stage-mult">&times;8</span><span class="scale-stage-label">teams in the department</span></div>
                             <div class="scale-stage"><span class="scale-stage-mult">&times;6</span><span class="scale-stage-label">departments in a business line</span></div>
                             <div class="scale-stage"><span class="scale-stage-mult">&times;4</span><span class="scale-stage-label">business lines in the company</span></div>
-                            <div class="scale-stage"><span class="scale-stage-mult">&times;1.5</span><span class="scale-stage-label">peak headroom for spikes (Black Friday)</span></div>
+                            <div class="scale-stage"><span class="scale-stage-mult">&times;1.4</span><span class="scale-stage-label">headroom for spikes and redundancy and scaling</span></div>
                         </div>
                         <div class="scale-bars">
                             <div class="scale-bar-group">
@@ -3497,7 +3510,7 @@
                                 <strong><span class="scale-num" data-track="inst">0</span></strong>
                             </div>
                             <div class="scale-summary-item is-delta">
-                                <span class="scale-summary-label">How much more the Other framework needs than Kora</span>
+                                <span class="scale-summary-label">How much more other framework may need than Kora</span>
                                 <strong><span class="scale-num" data-track="delta-ram">0</span> <span class="scale-unit">GB</span> &middot; <span class="scale-num" data-track="delta-cpu">0</span> <span class="scale-unit">vCPU</span> &middot; &asymp; $<span class="scale-num" data-track="cost">0</span> <span class="scale-unit">/ yr</span></strong>
                             </div>
                         </div>
@@ -3551,7 +3564,7 @@
                     <div>
                         <small>Learn by example</small>
                         <h2>Docs without the bloat.</h2>
-                        <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples&mdash;no 40-tab detective work required. There is also <a href="https://github.com/kora-projects/kora-skills">kora-skills</a>, an official AI skill that makes working with Kora even easier.</p>
+                        <p>95%+ of Kora's functionality is covered by documentation&mdash;step-by-step guides, module references, and runnable examples&mdash;no 40-tab detective work and no digging through scattered Stack Overflow threads. There is also <a href="https://github.com/kora-projects/kora-skills">kora-skills</a>, an official AI skill that makes working with Kora even easier.</p>
                         <div class="hero-note docs-stats">
                             <div class="metric">
                                 <strong>95%+</strong>
@@ -3864,6 +3877,7 @@
                         <div class="fast-why-card" style="--i:3"><strong>Low-utilization services</strong><span>Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.</span></div>
                         <div class="fast-why-card" style="--i:4"><strong>Development and CI feedback</strong><span>Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.</span></div>
                         <div class="fast-why-card" style="--i:5"><strong>Lower SLA impact</strong><span>Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.</span></div>
+                        <div class="fast-why-card" style="--i:6"><strong>Compile-time cost, runtime payoff</strong><span>Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.</span></div>
                     </div>
                     <p class="perf-why-foot">Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.</p>
                 </div>
@@ -4089,7 +4103,7 @@
             "Because nothing runs as a single instance. A production service is redundant by default: at least two instances per data center, so a rolling deploy or a lost node never takes it down, and usually a second data center for regional failover — another two instances. That is four or more running copies of every service before a single real user arrives.": "Потому что ничто не работает в единственном экземпляре. Боевой сервис по умолчанию резервируется: минимум два инстанса на дата-центр, чтобы плавный деплой или потеря узла никогда не роняли сервис, и обычно второй дата-центр для отказоустойчивости между регионами — ещё два инстанса. Это четыре и более работающих копии каждого сервиса ещё до того, как придёт хотя бы один реальный пользователь.",
             "This is where per-instance footprint stops being about speed and becomes about cost. A heavier runtime reserves more memory and CPU just to start and stay healthy within an acceptable time — headroom you pay for on every redundant copy, whether or not it is doing meaningful work.": "Именно здесь потребление на экземпляр перестаёт быть про скорость и становится про деньги. Более тяжёлый рантайм резервирует больше памяти и CPU только для того, чтобы стартовать и оставаться здоровым за разумное время, — это запас, за который вы платите на каждой резервной копии, независимо от того, делает она полезную работу или нет.",
             "It is all about scale. Take that one service and multiply it out: a couple of instances for redundancy, then across two data centers, then every service the team owns, then every team in the department, then every department in the business line, then every business line in the company — and on top of all that, the spare CPU and RAM reserved for peak events like Black Friday, sitting idle most of the year. And operating infrastructure at this scale is nothing like buying a CPU or a PC for local use: every reserved core and gigabyte also carries its share of on-site operations staff, electricity, cooling, networking, and data-center overhead, billed every single month. The per-instance difference that looked negligible is now multiplied by tens of thousands. A lighter runtime like Kora turns performance you never needed into reserved memory and CPU you simply stop paying for — the same reliability, on far fewer cores.": "Всё дело в масштабе. Возьмите этот один сервис и размножьте его: пара инстансов для резервирования, затем на два дата-центра, затем каждый сервис команды, затем каждая команда в департаменте, затем каждый департамент в бизнес-линии, затем каждая бизнес-линия в компании — и вдобавок ко всему запас CPU и RAM, зарезервированный под пиковые события вроде «чёрной пятницы». А эксплуатация инфраструктуры такого масштаба — это совсем не то же самое, что купить процессор или ПК для локальной работы: каждое зарезервированное ядро и гигабайт несёт свою долю расходов на инженеров эксплуатации на местах, серверные стойки, электричество, охлаждение, сеть и прочие накладные расходы дата-центра, оплачиваемые каждый месяц. Разница на один инстанс, казавшаяся незначительной, теперь умножена на десятки тысяч. Более лёгкий рантайм вроде Kora превращает производительность, которая вам была не нужна, в зарезервированные память и CPU, за которые вы просто перестаёте платить, — та же надёжность, но на значительно меньшем числе ядер.",
-            "Watch it scale across an organization": "Посмотрите, как это масштабируется на всю организацию",
+            "Watch it may scale across an organization": "Посмотрите, как это может масштабироваться на всю организацию",
             "↻ Replay": "↻ Повтор",
             "service instance": "экземпляр сервиса",
             "instances for redundancy": "инстанса для резервирования",
@@ -4098,12 +4112,12 @@
             "teams in the department": "команд в департаменте",
             "departments in a business line": "департаментов в бизнес-линии",
             "business lines in the company": "бизнес-линий в компании",
-            "peak headroom for spikes (Black Friday)": "запас под пиковые нагрузки",
+            "headroom for spikes and redundancy and scaling": "запас под пики, резервирование и масштабирование",
             "Reserved RAM": "Зарезервировано RAM",
             "Reserved CPU": "Зарезервировано CPU",
             "Other framework": "Другой фреймворк",
             "Provisioned instances (incl. peak reserve)": "Выделено инстансов (с учётом пикового резерва)",
-            "How much more the Other framework needs than Kora": "Насколько больше может потребоваться по сравнению с Kora",
+            "How much more other framework may need than Kora": "Насколько больше может потребоваться другому фреймворку по сравнению с Kora",
             "GB": "ГБ",
             "/ yr": "/ год",
             "Watch the services multiply": "Смотрите, как множатся сервисы",
@@ -4183,6 +4197,8 @@
             "Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.": "У админок, внутренних инструментов и задач по расписанию расход определяется базовыми накладными расходами рантайма, а не нагрузкой запросами; тонкий рантайм снижает нижний порог памяти и CPU на экземпляр — сервис на Kora может работать всего на 0.1 vCPU, потенциально на 0.05 — высвобождая мощности по всему большому низконагруженному парку.",
             "Development and CI feedback": "Обратная связь разработки и CI",
             "Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.": "Интеграционные и black-box наборы запускают всё приложение на каждом прогоне; меньшее время старта сокращает реальное время на итерацию и на стадию пайплайна, укорачивая цикл обратной связи — дефицитный ресурс здесь — время инженеров.",
+            "Compile-time cost, runtime payoff": "Цена на компиляции — выгода в рантайме",
+            "Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.": "Да, генерация графа немного удлиняет сборку. Эта цена платится один раз за сборку — а взамен на старте сервиса ничего не сканируется, не рефлексируется и не связывается. Именно эта работа и покупает быстрый параллельный старт, на который вы рассчитываете на каждом экземпляре, при каждом перезапуске, по всему парку.",
             "Lower SLA impact": "Меньше влияние на SLA",
             "Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.": "Связывание во время компиляции, тонкие абстракции и отсутствие рефлексии в рантайме делают прогрев в разы меньше — не нулевым — поэтому новый экземпляр близок к установившейся пропускной способности с первых запросов, удерживая хвост p95–p98 при деплоях и масштабировании значительно ниже, чем у рантайма, зависящего от прогрева.",
             "Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.": "Секунды на экземпляр × весь парк × каждый перезапуск → меньше машин, меньший счёт и более быстрый цикл. Kora строит граф во время компиляции, а на старте всё инициализируется максимально параллельно, насколько возможно, и имеет значительно меньший след прогрева.",
@@ -4230,7 +4246,7 @@
             "in production.": "в эксплуатации.",
             "Learn by example": "Учитесь на примерах",
             "Docs without the bloat.": "Документация без воды.",
-            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work required. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам. А официальный нейро-навык",
+            "95%+ of Kora's functionality is covered by documentation—step-by-step guides, module references, and runnable examples—no 40-tab detective work and no digging through scattered Stack Overflow threads. There is also": "95%+ функциональности Kora покрыто документацией — пошаговыми Руководствами, справочниками по модулям и рабочими примерами — никакой детективной работы по 40 вкладкам и рытья по разрозненным темам на Stack Overflow. А официальный нейро-навык",
             ", an official AI skill that makes working with Kora even easier.": ", делает работу с Kora еще проще.",
             "▾ See how an AI agent teaches you Kora": "▾ Посмотрите, как нейро-агент учит вас Kora",
             "▴ Hide the walkthrough": "▴ Скрыть демонстрацию",
@@ -4613,7 +4629,7 @@
             extend: {
                 kicker: "Modules",
                 title: "Built to be extended",
-                copy: "Kora is not a closed box. Pull in only the modules a service actually needs, replace any component with your own implementation, or write a first-class Kora module for a library that is not covered yet—all through the same explicit application model instead of fighting the framework's internals.",
+                copy: "One clear way is the default, not a cage. Kora is not a closed box: pull in only the modules a service actually needs, replace any component with your own implementation, or write a first-class Kora module for a library that is not covered yet—all through the same explicit application model instead of fighting the framework's internals.",
                 tags: ["Explicit graph", "Swap any component", "Custom modules", "No lock-in", "SPI"],
                 sourceCaption: "Your module",
                 sourceHeadline: "Written like any other Kora module",
@@ -4648,12 +4664,12 @@
             compiler: {
                 kicker: "Compiler",
                 title: "Transparent, no runtime magic",
-                copy: "Every wiring decision is checked and generated at compile time, so mistakes surface as a readable compiler error instead of a 2 a.m. stack trace. There is no reflection, no dynamic proxies, and no hidden code generation—just explicit, typed source that is as easy for a new engineer to read as it is for an AI tool to reason about.",
+                copy: "Every wiring decision is checked and generated at compile time, so mistakes surface as a readable compiler error instead of a 2 a.m. stack trace. There is no reflection, no dynamic proxies, and no hidden code generation—just explicit, typed source that is as easy for a new engineer to read as it is for an AI tool to reason about. The annotation processor doesn't make debugging harder, it makes it earlier: broken wiring fails the build with a precise message, and every generated file is ordinary source you can open and step through.",
                 tags: ["Compile-time checks", "No reflection", "Readable errors", "Fast test loop", "AI-friendly source"],
                 sourceCaption: "Your code",
-                sourceHeadline: "Nothing unusual—just a missing binding",
-                generatedCaption: "Compiler feedback",
-                generatedHeadline: "Readable error, not a runtime surprise",
+                sourceHeadline: "DI you declare by hand, in plain code",
+                generatedCaption: "Compile-time output",
+                generatedHeadline: "Readable generated source—and readable errors",
                 points: [
                     "You control the graph, not the other way around: every module and component in the final application is one you explicitly declared on your @KoraApp interface—nothing is auto-scanned, auto-wired, or silently pulled in behind your back.",
                     "Dependency wiring, configuration, and aspect generation are resolved during compilation, so broken wiring fails the build instead of production.",
@@ -4756,7 +4772,7 @@
             extend: {
                 kicker: "Модули",
                 title: "Создана, чтобы расширяться",
-                copy: "Kora — не закрытая коробка. Подключайте только те модули, которые реально нужны сервису, заменяйте любой компонент собственной реализацией или пишите полноценный модуль Kora для библиотеки, которой еще нет в экосистеме — все через ту же явную модель приложения, без борьбы с внутренностями фреймворка.",
+                copy: "Один понятный путь — это выбор по умолчанию, а не клетка. Kora — не закрытая коробка: подключайте только те модули, которые реально нужны сервису, заменяйте любой компонент собственной реализацией или пишите полноценный модуль Kora для библиотеки, которой еще нет в экосистеме — все через ту же явную модель приложения, без борьбы с внутренностями фреймворка.",
                 tags: ["Явный граф", "Замена компонента", "Свои модули", "Без lock-in", "SPI"],
                 sourceCaption: "Ваш модуль",
                 sourceHeadline: "Написан как любой другой модуль Kora",
@@ -4791,12 +4807,12 @@
             compiler: {
                 kicker: "Компилятор",
                 title: "Прозрачность, никакой магии во время выполнения",
-                copy: "Каждое решение о связывании зависимостей проверяется и генерируется во время компиляции, поэтому ошибки становятся понятным сообщением компилятора, а не трассировкой стека в два часа ночи. Никакой рефлексии, никаких динамических прокси и скрытой генерации кода — только явный типизированный код, который одинаково легко читать и новому инженеру, и нейросети.",
+                copy: "Каждое решение о связывании зависимостей проверяется и генерируется во время компиляции, поэтому ошибки становятся понятным сообщением компилятора, а не трассировкой стека в два часа ночи. Никакой рефлексии, никаких динамических прокси и скрытой генерации кода — только явный типизированный код, который одинаково легко читать и новому инженеру, и нейросети. Аннотационный процессор не усложняет отладку, а делает её раньше: сломанное связывание валит сборку с точным сообщением, а каждый сгенерированный файл — это обычный код, который можно открыть и пройти отладчиком.",
                 tags: ["Проверки при компиляции", "Без рефлексии", "Понятные ошибки", "Быстрый цикл тестов", "Понятно нейросетям"],
                 sourceCaption: "Ваш код",
-                sourceHeadline: "Ничего необычного — просто нет реализации",
-                generatedCaption: "Ответ компилятора",
-                generatedHeadline: "Понятная ошибка, а не сюрприз во время выполнения",
+                sourceHeadline: "DI, который вы объявляете сами, обычным кодом",
+                generatedCaption: "Результат компиляции",
+                generatedHeadline: "Читаемый сгенерированный код — и понятные ошибки",
                 points: [
                     "Графом управляете вы, а не наоборот: каждый модуль и компонент в итоговом приложении явно объявлен на вашем интерфейсе @KoraApp — ничего не сканируется автоматически, не связывается само и не подключается незаметно за вашей спиной.",
                     "Связывание зависимостей, конфигурация и генерация аспектов разрешаются во время компиляции, поэтому сломанное связывание валит сборку, а не работающий сервис.",
@@ -5360,33 +5376,88 @@ public final class $GreetingController_Route implements HttpServerRequestHandler
                 }]
             },
             compiler: {
-                examples: [{
-                    sourceTitle: "PaymentService.java",
-                    sourceCode: `@Component
-public final class PaymentService {
-    private final FraudDetector fraudDetector;
+                examples: [
+                    {
+                        label: "Declare DI",
+                        sourceTitle: "Application.java",
+                        sourceCode: `@Component
+public final class Recorder {
+    public void record(String user) { /* ... */ }
+}
 
-    public PaymentService(FraudDetector fraudDetector) {
-        this.fraudDetector = fraudDetector;
+@Module
+public interface NotifierModule {
+    default Notifier smsNotifier() {
+        return (user) -> System.out.println(user.name());
     }
 }
 
-// FraudDetector has no @Component implementation
-// and no @Module binding anywhere in the graph.`,
-                    generatedTitle: "Build output",
-                    generatedCode: `error: Kora dependency graph is unsatisfied
+@Component
+public final class ActivityService {
+    // injected from a @Component and a @Module-provided component
+    public ActivityService(Recorder r, Notifier n) {
+        this.recorder = r;
+        this.notifier = n;
+    }
+}`,
+                        generatedTitle: "ApplicationGraph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+public final class ApplicationGraph {
+    // no reflection, no proxies - just explicit wiring you can read
+    private final Node<Recorder> recorder = graphDraw.addNode0(
+            g -> new Recorder());
 
-  Component required: FraudDetector
-  Requested by:        PaymentService(FraudDetector fraudDetector)
+    private final Node<Notifier> notifier = graphDraw.addNode0(
+            g -> impl.notifierModule.smsNotifier());
+
+    private final Node<ActivityService> activityService = graphDraw.addNode0(
+            g -> new ActivityService(g.valueOf(recorder), g.valueOf(notifier)));
+}`
+                    },
+                    {
+                        label: "Compose the app",
+                        sourceTitle: "Application.java",
+                        sourceCode: `@KoraApp
+public interface Application extends
+        HoconConfigModule, LogbackModule, NotifierModule {
+
+    static void main(String[] args) {
+        KoraApplication.run(ApplicationGraph::graph);
+    }
+}`,
+                        generatedTitle: "$ApplicationImpl.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+public final class $ApplicationImpl implements Application {
+    // every module you declared, instantiated at compile time
+    public final NotifierModule module0 = new NotifierModule(){};
+    public final HoconConfigModule module1 = new HoconConfigModule(){};
+    public final LogbackModule module2 = new LogbackModule(){};
+}`
+                    },
+                    {
+                        label: "Catch mistakes",
+                        sourceTitle: "ActivityService.java",
+                        sourceCode: `@Component
+public final class ActivityService {
+    public ActivityService(Recorder recorder, AuditLog auditLog) {
+        // AuditLog has no @Component and no @Module binding
+    }
+}`,
+                        generatedTitle: "Build output",
+                        generatedCode: `error: Kora dependency graph is unsatisfied
+
+  Component required: AuditLog
+  Requested by:        ActivityService(Recorder, AuditLog)
 
   No @Component, @Module method, or explicit binding
-  produces FraudDetector.
+  produces AuditLog.
 
   help: annotate an implementation with @Component,
         or add a producing method to a @Module interface.
 
 BUILD FAILED in 1s`
-                }]
+                    }
+                ]
             }
         };
 
@@ -5683,12 +5754,12 @@ BUILD FAILED in 1s`
         /* per-stage multiplier: instance, +redundant instances, +2nd DC,
            services/team, teams/dept, depts/business-line, business-lines/company,
            peak headroom */
-        const mults = [1, 2, 2, 20, 8, 6, 4, 1.5];
-        const P = { koraRam: 0.5, otherRam: 1.0, koraCpu: 1.0, otherCpu: 3.0 }; /* reserved / instance */
+        const mults = [1, 2, 2, 20, 8, 6, 4, 1.4];
+        const P = { koraRam: 0.5, otherRam: 1.0, koraCpu: 1.0, otherCpu: 2.2 }; /* reserved / instance */
         const ramPerYear = 48;   /* illustrative $/GB-year */
         const cpuPerYear = 300;  /* illustrative $/vCPU-year */
 
-        /* cumulative instance-equivalents: [1, 2, 4, 80, 640, 3840, 15360, 23040] */
+        /* cumulative instance-equivalents: [1, 2, 4, 80, 640, 3840, 15360, 21504] */
         const cumInst = [];
         mults.reduce((acc, m, i) => { const v = acc * m; cumInst[i] = v; return v; }, 1);
         const finalInst = cumInst[cumInst.length - 1];
@@ -5786,7 +5857,7 @@ BUILD FAILED in 1s`
             { inst: 640,   services: 160 },
             { inst: 3840,  services: 960 },
             { inst: 15360, services: 3840 },
-            { inst: 23040, services: 3840 }
+            { inst: 21504, services: 3840 }
         ];
         const TRANSITION = 500;  /* ms to move between two steps */
         const HOLD = 1000;       /* ms to rest on each step so it is readable */
@@ -6110,6 +6181,29 @@ public final class HelloController {
 }`
             },
             {
+                title: "Application.java",
+                code: `@Component
+public final class Recorder {
+    public void record(String user) { /* ... */ }
+}
+
+@Module
+public interface NotifierModule {
+    default Notifier smsNotifier() {
+        return (user) -> System.out.println(user.name());
+    }
+}
+
+@Component
+public final class ActivityService {
+    public ActivityService(Recorder r, Notifier n) { /* ... */ }
+}
+
+@KoraApp
+public interface Application extends
+        HoconConfigModule, LogbackModule, NotifierModule { }`
+            },
+            {
                 title: "UserRepository.java",
                 code: `@Repository
 public interface UserRepository extends JdbcRepository {
@@ -6214,6 +6308,24 @@ public final class $HelloController_Route
             return _responseMapper.apply(_ctx, _request, _result);
         });
     }
+}`
+            },
+            {
+                title: "ApplicationGraph.java",
+                code: `@Generated("KoraAppProcessor")
+public final class ApplicationGraph {
+    // @KoraApp modules are instantiated at compile time
+    private final $ApplicationImpl impl = new $ApplicationImpl();
+
+    // components become typed nodes, wired to each other explicitly
+    private final Node<Recorder> recorder = graphDraw.addNode0(
+            g -> new Recorder());
+
+    private final Node<Notifier> notifier = graphDraw.addNode0(
+            g -> impl.notifierModule.smsNotifier());
+
+    private final Node<ActivityService> activityService = graphDraw.addNode0(
+            g -> new ActivityService(g.valueOf(recorder), g.valueOf(notifier)));
 }`
             },
             {
@@ -6361,6 +6473,29 @@ class HelloController {
 }`
             },
             {
+                title: "Application.kt",
+                code: `@Component
+class Recorder {
+    fun record(user: String) { /* ... */ }
+}
+
+@Module
+interface NotifierModule {
+    fun smsNotifier(): Notifier =
+        Notifier { user -> println(user.name()) }
+}
+
+@Component
+class ActivityService(
+    // wired from a @Component and a @Module-provided component
+    private val recorder: Recorder,
+    private val notifier: Notifier
+)
+
+@KoraApp
+interface Application : HoconConfigModule, LogbackModule, NotifierModule`
+            },
+            {
                 title: "UserRepository.kt",
                 code: `@Repository
 interface UserRepository : JdbcRepository {
@@ -6468,6 +6603,27 @@ class HelloController_Route(
             val result = controller.hello(name)
             responseMapper.apply(ctx, request, result)
         }
+    }
+}`
+            },
+            {
+                title: "ApplicationGraph.kt",
+                code: `@Generated("KoraAppProcessor")
+class ApplicationGraph {
+    // @KoraApp modules are instantiated at compile time
+    private val impl = ApplicationImpl()
+
+    // components become typed nodes, wired to each other explicitly
+    private val recorder: Node<Recorder> = graphDraw.addNode0 {
+        Recorder()
+    }
+
+    private val notifier: Node<Notifier> = graphDraw.addNode0 {
+        impl.notifierModule.smsNotifier()
+    }
+
+    private val activityService: Node<ActivityService> = graphDraw.addNode0 {
+        ActivityService(it.valueOf(recorder), it.valueOf(notifier))
     }
 }`
             },
@@ -6661,7 +6817,7 @@ class ResilientService_AopProxy(
                 .replace(/@\w+/g, stash("token-anno"))
                 .replace(/"[^"\n]*"/g, stash("token-string"))
                 .replace(/\b(public|protected|private|final|static|class|interface|record|extends|implements|return|void|if|try|catch|throw|new|var|long|instanceof|fun|val|override|open|when|is|else|null|in|data)\b/g, '<span class="token-key">$1</span>')
-                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V|FraudDetector|PaymentService|OrderService|OrderRequest|OrderResult|InventoryRepository|VirtualThreadExecutor|CompletionStage|S3Client|S3StorageConfig|S3StorageModule|FileStorage|S3FileStorage|Region|Node|PrometheusMeterRegistry|PrometheusConfig|SpanExporter|OtlpGrpcSpanExporter|TelemetryConfig|PrivateApiHandler|ReadinessProbe|ReadinessHttpHandler|GreetingController|GreetingConfig|Validator|ViolationException|JdbcDatabase|JdbcDatabaseConfig|JdbcDatabaseModule|DataBaseTelemetryFactory|ConfigValueExtractor|ConfigValueMapper|TracingConfig|JedisClientConfig|JedisConfig|Jedis|URI|Config|Executor|OtherDatabase|Application)\b/g, '<span class="token-type">$1</span>');
+                .replace(/\b(String|Long|UUID|OffsetDateTime|UpdateCount|Exception|System|HttpMethod|Payment|PaymentClient|PaymentRequest|PaymentResponse|PaymentFindResponse|HelloController|UserRepository|JdbcRepository|KafkaConsumer|EventsConsumer|ResilientService|Optional|PetWithCategory|QueryContext|Context|ApplicationGraph|ApplicationGraphDraw|Supplier|ComponentHolder0|Pet|ResultSet|SQLException|JdbcRowMapper|JdbcConnectionFactory|JdbcParameterColumnMapper|HttpServerRequest|HttpServerResponse|HttpServerRequestHandler|HttpServerResponseMapper|BlockingRequestExecutor|HttpClient|HttpClientRequest|HttpClientRequestMapper|HttpClientResponseMapper|HttpHeaders|HttpClientEncoderException|HttpClientResponseException|HttpClientUnknownException|ConsumerRecord|ByteArray|KafkaRecordHandler|KafkaConsumerTelemetry|RecordKeyDeserializationException|RecordValueDeserializationException|KafkaRecordKeyDeserializer|KafkaRecordValueDeserializer|Timeout|Retry|CircuitBreaker|Throwable|V|FraudDetector|PaymentService|OrderService|OrderRequest|OrderResult|InventoryRepository|VirtualThreadExecutor|CompletionStage|S3Client|S3StorageConfig|S3StorageModule|FileStorage|S3FileStorage|Region|Node|PrometheusMeterRegistry|PrometheusConfig|SpanExporter|OtlpGrpcSpanExporter|TelemetryConfig|PrivateApiHandler|ReadinessProbe|ReadinessHttpHandler|GreetingController|GreetingConfig|Validator|ViolationException|JdbcDatabase|JdbcDatabaseConfig|JdbcDatabaseModule|DataBaseTelemetryFactory|ConfigValueExtractor|ConfigValueMapper|TracingConfig|JedisClientConfig|JedisConfig|Jedis|URI|Config|Executor|OtherDatabase|Application|StorageModule|Storage|ActivityService|Recorder|Notifier|NotifierModule|TempFileStorage|Function|ByteArray|HoconConfigModule|LogbackModule|KoraApplication|AuditLog|FraudDetector|PaymentService)\b/g, '<span class="token-type">$1</span>');
 
             return html.replace(/\u0000(\d+)\u0000/g, (_, id) => tokens[Number(id)]);
         };
