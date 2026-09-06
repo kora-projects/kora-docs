@@ -59,11 +59,7 @@
         body {
             min-width: 320px;
             margin: 0;
-            background:
-                linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 72px 72px,
-                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 72px 72px,
-                radial-gradient(ellipse at 52% -20%, rgba(255, 176, 46, 0.24), transparent 46%),
-                var(--bg);
+            background: #090a09;
             color: var(--text);
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             line-height: 1.5;
@@ -86,43 +82,70 @@
 
         .page-shell {
             position: relative;
+            isolation: isolate;
             overflow: hidden;
         }
 
-        .grid-signals {
+        /* Etched signal field: an abstract, resolved dependency graph.
+           Isolated behind the page; never participates in layout or input. */
+        .compile-field {
             position: absolute;
             inset: 0;
             z-index: -1;
-            overflow: hidden;
             pointer-events: none;
+            overflow: hidden;
+            background: #090a09;
         }
 
-        .signal {
+        .compile-field::after {
+            content: "";
             position: absolute;
-            opacity: 0;
-            filter: drop-shadow(0 0 3px rgba(255, 176, 46, 0.75));
+            inset: 0;
+            /* Keep the reading column calm while preserving the edge detail. */
+            background: linear-gradient(90deg,
+                transparent 0%, rgba(9, 10, 9, 0.48) 22%,
+                rgba(9, 10, 9, 0.86) 42%, rgba(9, 10, 9, 0.65) 65%,
+                rgba(9, 10, 9, 0.12) 100%);
         }
 
-        .signal-x {
-            top: 0;
-            height: 2px;
-            width: 120px;
-            background: linear-gradient(90deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        .compile-field svg {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
-        .signal-x.is-rev {
-            background: linear-gradient(270deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        .compile-field .copper-trace {
+            fill: none;
+            stroke: url(#copper-ink);
+            stroke-width: 0.8;
+            vector-effect: non-scaling-stroke;
         }
 
-        .signal-y {
-            left: 0;
-            width: 2px;
-            height: 120px;
-            background: linear-gradient(180deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        .compile-field .copper-trace.is-major {
+            stroke-width: 1.4;
         }
 
-        .signal-y.is-rev {
-            background: linear-gradient(0deg, transparent, rgba(255, 176, 46, 0.9) 60%, #fff2d2 100%);
+        .compile-field .graph-junction {
+            fill: #12120e;
+            stroke: #a77d40;
+            stroke-width: 1;
+        }
+
+        .compile-field .compile-pulse {
+            fill: none;
+            stroke: #c39b60;
+            stroke-width: 1;
+            stroke-linecap: round;
+            vector-effect: non-scaling-stroke;
+            opacity: 0.55;
+        }
+
+        @media (max-width: 780px) {
+            .compile-field svg { opacity: 0.6; }
+            .compile-field::after {
+                background: linear-gradient(90deg, rgba(9, 10, 9, 0.3),
+                    rgba(9, 10, 9, 0.82) 48%, rgba(9, 10, 9, 0.3));
+            }
         }
 
         .topbar {
@@ -1187,8 +1210,9 @@
             border: 1px solid var(--line);
             border-radius: var(--radius);
             background:
-                linear-gradient(135deg, rgba(255, 176, 46, 0.08), transparent 36%),
-                rgba(255, 255, 255, 0.035);
+                linear-gradient(135deg, rgba(255, 176, 46, 0.09), transparent 36%),
+                rgba(8, 8, 8, 0.84);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
@@ -1304,8 +1328,9 @@
             border: 1px solid var(--line);
             border-radius: var(--radius);
             background:
-                linear-gradient(135deg, rgba(255, 176, 46, 0.06), transparent 42%),
-                rgba(255, 255, 255, 0.028);
+                linear-gradient(135deg, rgba(255, 176, 46, 0.07), transparent 42%),
+                rgba(8, 8, 8, 0.84);
+            box-shadow: 0 18px 56px rgba(0, 0, 0, 0.26);
             overflow: hidden;
         }
 
@@ -1906,7 +1931,7 @@
             border-radius: var(--radius);
             background:
                 linear-gradient(135deg, rgba(80, 216, 144, 0.08), transparent 38%),
-                rgba(255, 255, 255, 0.035);
+                rgba(8, 8, 8, 0.84);
             overflow: hidden;
         }
 
@@ -1920,7 +1945,7 @@
             padding: 50px 34px 34px;
             background:
                 linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 42px / 100% 72px,
-                rgba(10, 10, 10, 0.6);
+                rgba(10, 10, 10, 0.08);
         }
 
         .startup-bar {
@@ -2144,7 +2169,7 @@
             border-radius: var(--radius);
             background:
                 linear-gradient(135deg, rgba(255, 176, 46, 0.06), transparent 42%),
-                rgba(255, 255, 255, 0.035);
+                rgba(10, 10, 10, 0.84);
         }
 
         .pillar-index {
@@ -2303,7 +2328,9 @@
             padding: 24px;
             border: 1px solid var(--line);
             border-radius: var(--radius);
-            background: rgba(255, 255, 255, 0.035);
+            background:
+                linear-gradient(145deg, rgba(255, 176, 46, 0.035), transparent 42%),
+                rgba(10, 10, 10, 0.84);
             cursor: pointer;
             overflow: hidden;
             transition:
@@ -2350,7 +2377,7 @@
             border-color: rgba(255, 176, 46, 0.34);
             background:
                 radial-gradient(circle at var(--mx, 78%) var(--my, 22%), rgba(255, 176, 46, 0.13), transparent 34%),
-                rgba(255, 255, 255, 0.05);
+                rgba(10, 10, 10, 0.88);
             box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
             outline: 0;
         }
@@ -3230,9 +3257,28 @@
 </head>
 <body>
 <div class="page-shell">
-    <div class="grid-signals" aria-hidden="true" id="grid-signals">
-        <span class="signal signal-x"></span>
-        <span class="signal signal-y"></span>
+    <div class="compile-field" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="none" focusable="false">
+            <defs>
+                <linearGradient id="copper-ink" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1600" y2="0">
+                    <stop offset="0" stop-color="#63513a" stop-opacity="0.16"/>
+                    <stop offset="0.38" stop-color="#b28a54" stop-opacity="0.56"/>
+                    <stop offset="0.72" stop-color="#d3a25d" stop-opacity="0.74"/>
+                    <stop offset="1" stop-color="#544633" stop-opacity="0.2"/>
+                </linearGradient>
+                <radialGradient id="graphite-light" cx="85%" cy="35%" r="80%">
+                    <stop stop-color="#26231b" stop-opacity="0.55"/>
+                    <stop offset="1" stop-color="#090a09" stop-opacity="0"/>
+                </radialGradient>
+                <pattern id="engraving-grain" width="7" height="7" patternUnits="userSpaceOnUse">
+                    <path d="M1 1h.5M5 4h.5" stroke="#e0ceab" stroke-opacity="0.035"/>
+                </pattern>
+            </defs>
+            <path class="graphite-light" fill="url(#graphite-light)" d="M0 0h1600v1000H0z"/>
+            <g class="growing-traces"></g>
+            <g class="travelling-signals"></g>
+            <path class="graphite-grain" fill="url(#engraving-grain)" d="M0 0h1600v1000H0z"/>
+        </svg>
     </div>
     <header class="topbar">
         <nav class="nav" aria-label="Primary navigation">
@@ -3858,7 +3904,7 @@
                             <line class="lat-sla" x1="50" y1="74" x2="602" y2="74"></line>
                             <line class="lat-deploy" x1="210" y1="24" x2="210" y2="172"></line>
                             <path class="lat-line is-other" d="M50,160 L205,160 C214,160 218,34 235,32 C270,32 300,60 350,96 C405,128 475,153 545,159 L602,160"></path>
-                            <path class="lat-line is-kora" d="M50,160 L205,160 C215,160 221,141 236,139 C251,141 259,160 276,160 L602,160"></path>
+                            <path class="lat-line is-kora" d="M50,160 L194,160 C207,160 214,137 228,125 C243,112 261,112 278,121 C298,132 309,148 330,155 C352,162 381,160 414,160 L602,160"></path>
                             <text class="lat-label" x="50" y="14">p95 latency</text>
                             <text class="lat-label" x="210" y="14" text-anchor="middle">deploy</text>
                             <text class="lat-label lat-sla-label" x="598" y="70" text-anchor="end">SLA</text>
@@ -4198,7 +4244,7 @@
             "Development and CI feedback": "Обратная связь разработки и CI",
             "Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.": "Интеграционные и black-box наборы запускают всё приложение на каждом прогоне; меньшее время старта сокращает реальное время на итерацию и на стадию пайплайна, укорачивая цикл обратной связи — дефицитный ресурс здесь — время инженеров.",
             "Compile-time cost, runtime payoff": "Цена на компиляции — выгода в рантайме",
-            "Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.": "Да, генерация графа немного удлиняет сборку. Эта цена платится один раз за сборку — а взамен на старте сервиса ничего не сканируется, не рефлексируется и не связывается. Именно эта работа и покупает быстрый параллельный старт, на который вы рассчитываете на каждом экземпляре, при каждом перезапуске, по всему парку.",
+            "Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.": "Да, генерация графа немного увеличивает время сборки. Но эта цена платится один раз при сборке — зато на старте сервиса не нужны ни сканирование, ни рефлексия, ни связывание зависимостей. Именно эта работа и обеспечивает быстрый параллельный старт, на который вы рассчитываете на каждом экземпляре, при каждом перезапуске и по всему парку сервисов.",
             "Lower SLA impact": "Меньше влияние на SLA",
             "Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.": "Связывание во время компиляции, тонкие абстракции и отсутствие рефлексии в рантайме делают прогрев в разы меньше — не нулевым — поэтому новый экземпляр близок к установившейся пропускной способности с первых запросов, удерживая хвост p95–p98 при деплоях и масштабировании значительно ниже, чем у рантайма, зависящего от прогрева.",
             "Seconds per instance × the whole fleet × every restart → fewer machines, a smaller bill, and a faster loop. Kora builds its graph at compile time and starts up as parallel as possible, with a far smaller warm-up footprint.": "Секунды на экземпляр × весь парк × каждый перезапуск → меньше машин, меньший счёт и более быстрый цикл. Kora строит граф во время компиляции, а на старте всё инициализируется максимально параллельно, насколько возможно, и имеет значительно меньший след прогрева.",
@@ -6903,65 +6949,6 @@ class ResilientService_AopProxy(
     })();
 </script>
 <script>
-    (() => {
-        const container = document.getElementById("grid-signals");
-        if (!container) return;
-
-        const CELL = 72;
-        const TRAIL = 120;
-        const signals = Array.from(container.querySelectorAll(".signal"));
-
-        const randomBetween = (min, max) => min + Math.random() * (max - min);
-
-        const gridLine = (span) => {
-            const lines = Math.max(1, Math.floor(span / CELL));
-            return Math.floor(Math.random() * lines) * CELL;
-        };
-
-        const launch = (el) => {
-            const isX = el.classList.contains("signal-x");
-            const docWidth = container.offsetWidth || window.innerWidth;
-            const docHeight = container.offsetHeight || document.documentElement.scrollHeight;
-            const reverse = Math.random() < 0.5;
-            const duration = randomBetween(9000, 16000);
-            const delay = randomBetween(0, 4000);
-
-            el.classList.toggle("is-rev", reverse);
-
-            let axisProp, from, to, crossProp, crossValue;
-            if (isX) {
-                axisProp = "left";
-                crossProp = "top";
-                crossValue = gridLine(docHeight);
-                from = reverse ? docWidth + TRAIL : -TRAIL;
-                to = reverse ? -TRAIL : docWidth + TRAIL;
-            } else {
-                axisProp = "top";
-                crossProp = "left";
-                crossValue = gridLine(docWidth);
-                from = reverse ? docHeight + TRAIL : -TRAIL;
-                to = reverse ? -TRAIL : docHeight + TRAIL;
-            }
-
-            el.style[crossProp] = crossValue + "px";
-
-            const anim = el.animate(
-                [
-                    { [axisProp]: from + "px", opacity: 0 },
-                    { opacity: 0.6, offset: 0.08 },
-                    { opacity: 0.6, offset: 0.88 },
-                    { [axisProp]: to + "px", opacity: 0 }
-                ],
-                { duration, delay, easing: "linear", fill: "forwards" }
-            );
-
-            anim.onfinish = () => launch(el);
-        };
-
-        signals.forEach((el) => launch(el));
-    })();
-</script>
-<script>
     /* Claude Code (Opus) session emulator inside the AI-agents reveal.
        Plays a realistic build/fix/iterate loop against real Kora diagnostics
        the first time the <details> opens; replayable via the header button.
@@ -7439,6 +7426,136 @@ public final class HelloController {
 
         createKoraDemo("ai-demo", BUILD_SCRIPT);
         createKoraDemo("docs-demo", () => (window.koraLanguage === "ru" ? LEARN_SCRIPT_RU : LEARN_SCRIPT_EN));
+    })();
+</script>
+<script>
+    (() => {
+        const field = document.querySelector(".compile-field");
+        if (!field) return;
+        const svg = field.querySelector("svg");
+        const traces = field.querySelector(".growing-traces");
+        const signals = field.querySelector(".travelling-signals");
+        const NS = "http://www.w3.org/2000/svg";
+        let frame = 0, lastTime = 0, dirty = true;
+        const make = (tag, attrs, parent) => {
+            const el = document.createElementNS(NS, tag);
+            Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+            parent.appendChild(el);
+            return el;
+        };
+        // Original copper engraving: dense parallel runs and precise angled folds.
+        const geometry = [];
+        for (let i = 0; i < 38; i++) {
+            const x = 800 + i * 12, y = 690 - i * 5;
+            geometry.push(`M ${x-190} 1120 L ${x-190} ${y+180} Q ${x-190} ${y+105} ${x-130} ${y+60} L ${x+380} ${y-370} Q ${x+420} ${y-405} ${x+420} ${y-465} L ${x+420} -180`);
+        }
+        for (let i = 0; i < 27; i++) {
+            const x = 900 + i * 13, y = 640 - i * 4;
+            geometry.push(`M ${x+600} 1170 L ${x+600} ${y+390} Q ${x+600} ${y+320} ${x+535} ${y+270} L ${x+40} ${y-100} Q ${x-20} ${y-145} ${x-20} ${y-220} L ${x-20} -160`);
+        }
+        for (let i = 0; i < 19; i++) {
+            const x = -310 + i * 14;
+            geometry.push(`M ${x} -100 L ${x} 120 Q ${x} 240 ${x+90} 325 L ${x+285} 510 Q ${x+355} 580 ${x+355} 680 L ${x+355} 1150`);
+        }
+        const paths = geometry.map((d, key) => ({
+            el: make("path", {d, class: `copper-trace${(key + 1) % 5 === 0 ? " is-major" : ""}`}, traces), d, key,
+            top: -180, bottom: 1200
+        }));
+        const bands = new Map();
+        let camera = 0;
+        // Continue the exact bottom endpoints of the original three bundles.
+        const ends = geometry.map((_, i) => i < 38
+            ? {x: 610 + i * 12, y: 1120, bundle: 0, strand: i}
+            : i < 65 ? {x: 1500 + (i - 38) * 13, y: 1170, bundle: 1, strand: i - 38}
+            : {x: 45 + (i - 65) * 14, y: 1150, bundle: 2, strand: i - 65});
+        const shifts = [[0, 400, -200, 300], [0, -680, -270, -780], [0, 210, -160, 100]];
+        function extend(band) {
+            const group = make("g", {"data-copper-band": band}, traces);
+            const routes = ends.map((end, index) => {
+                const y = 1200 + band * 1200;
+                const x1 = end.x + shifts[end.bundle][band % 4];
+                const x2 = end.x + shifts[end.bundle][(band + 1) % 4];
+                const direction = Math.sign(x2 - x1);
+                // Reserve a straight exit: wide diagonals must never overshoot
+                // the join and reverse direction before the next segment.
+                const bend = y + Math.min(200 + end.strand * 7, 1040 - Math.abs(x2 - x1));
+                // Long straight diagonals with tight rounded elbows, as in the hero.
+                const d = `M ${x1} ${band === 0 ? end.y : y} L ${x1} ${bend} `
+                    + `Q ${x1} ${bend+50} ${x1+direction*40} ${bend+90} `
+                    + `L ${x2-direction*40} ${bend+90+Math.abs(x2-x1)-80} `
+                    + `Q ${x2} ${bend+90+Math.abs(x2-x1)-40} ${x2} ${bend+90+Math.abs(x2-x1)+10} `
+                    + `L ${x2} ${y+1200}`;
+                return {el: make("path", {d, class: `copper-trace${(index + 1) % 5 === 0 ? " is-major" : ""}`}, group), d,
+                    key: `band-${band}-${index}`, top: band === 0 ? end.y : y, bottom: y+1200};
+            });
+            bands.set(band, {group, routes});
+        }
+        let scale = 1;
+        function updateCamera() {
+            camera = window.scrollY / scale;
+        }
+        function layout() {
+            // The SVG occupies the full document. Scrolling therefore reveals the
+            // next part naturally, without repainting or moving a fixed viewport.
+            scale = window.innerWidth / 1600;
+            const worldHeight = Math.max(1000, field.offsetHeight / scale);
+            svg.setAttribute("viewBox", `0 0 1600 ${worldHeight}`);
+            svg.setAttribute("preserveAspectRatio", "none");
+            svg.querySelector(".graphite-light").setAttribute("d", `M0 0h1600v${worldHeight}H0z`);
+            svg.querySelector(".graphite-grain").setAttribute("d", `M0 0h1600v${worldHeight}H0z`);
+            const last = Math.ceil(worldHeight / 1200);
+            for (let band = 0; band <= last; band++) if (!bands.has(band)) extend(band);
+            updateCamera();
+        }
+        const longPulse = Math.floor(Math.random() * 4);
+        const pulses = Array.from({ length: 4 }, (_, index) => ({
+            el: make("path", { class: "compile-pulse", opacity: 0 }, signals),
+            route: null, progress: 1, duration: 4000, previous: null,
+            lengthFactor: index === longPulse ? 2.15 : 1
+        }));
+        function choose(pulse) {
+            const occupied = pulses.filter(p => p !== pulse).map(p => p.route?.key);
+            const candidates = [...paths, ...Array.from(bands.values()).flatMap(b => b.routes)].filter(p =>
+                p.bottom > camera && p.top < camera + 1000 &&
+                p.key !== pulse.previous && !occupied.includes(p.key));
+            if (!candidates.length) { pulse.route = null; pulse.el.style.opacity = 0; return; }
+            pulse.route = candidates[Math.floor(Math.random() * candidates.length)];
+            pulse.previous = pulse.route.key;
+            pulse.el.setAttribute("d", pulse.route.d);
+            pulse.length = pulse.route.el.getTotalLength();
+            // Short, single-pixel glint. No bloom and no bright long trail.
+            const glintLength = 7 * pulse.lengthFactor;
+            pulse.el.setAttribute("stroke-dasharray", `${glintLength} ${pulse.length + glintLength}`);
+            pulse.duration = 3500 + Math.random() * 2500;
+            pulse.progress = 0;
+        }
+        function tick(now) {
+            frame = 0;
+            if (document.hidden) { lastTime = 0; return; }
+            const delta = lastTime ? Math.min(64, now - lastTime) : 0;
+            lastTime = now;
+            if (dirty) { layout(); dirty = false; }
+            pulses.forEach(pulse => {
+                if (!pulse.route || pulse.progress >= 1 || pulse.route.bottom < camera ||
+                    pulse.route.top > camera + 1000) choose(pulse);
+                if (!pulse.route) return;
+                pulse.progress += delta / pulse.duration;
+                pulse.el.setAttribute("stroke-dashoffset", -pulse.progress * pulse.length);
+                pulse.el.style.opacity = String(Math.min(1, pulse.progress * 8,
+                    Math.max(0, (1 - pulse.progress) * 8)) * 0.55);
+            });
+            frame = requestAnimationFrame(tick);
+        }
+        function schedule() {
+            dirty = true;
+            if (!frame) frame = requestAnimationFrame(tick);
+        }
+        window.addEventListener("scroll", updateCamera, { passive: true });
+        window.addEventListener("resize", schedule, { passive: true });
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) schedule();
+        });
+        schedule();
     })();
 </script>
 </body>
