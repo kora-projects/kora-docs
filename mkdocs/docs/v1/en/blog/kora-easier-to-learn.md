@@ -1,0 +1,1 @@
+--8<-- "en/kora-easier-to-learn.md"

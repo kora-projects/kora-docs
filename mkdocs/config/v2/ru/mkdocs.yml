@@ -92,6 +92,8 @@ nav:
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md
+  - Тех-журнал:
+      - Все статьи: blog/index.md
   - Сообщество:
       - Разработки: community/development.md
   - Журнал изменений: changelog/changelog.md
@@ -206,7 +208,11 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - !relative $docs_dir
+        - !relative $config_dir/../../../blog
+      check_paths: true
   - pymdownx.betterem
   - pymdownx.tabbed:        # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
       alternate_style: true

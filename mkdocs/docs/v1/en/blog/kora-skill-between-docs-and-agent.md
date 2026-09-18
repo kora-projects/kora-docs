@@ -1,0 +1,1 @@
+--8<-- "en/kora-skill-between-docs-and-agent.md"

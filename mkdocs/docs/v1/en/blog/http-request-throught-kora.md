@@ -1,0 +1,1 @@
+--8<-- "en/http-request-throught-kora.md"
