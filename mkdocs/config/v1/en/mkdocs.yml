@@ -93,6 +93,57 @@ nav:
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md
+  - Blog:
+      - All articles: blog/index.md
+      - "A Compile-Time Framework Does Not Mean Compile-Time-Only Libraries — Kora Framework": blog/compile-time-not-libraries.md
+      - "A Strong Default Is Not Lock-In — The Kora Framework Is Built to Be Extended": blog/kora-strong-default-not-lock-in.md
+      - "Compile-Time AOP Without Dynamic Proxies — Kora Framework": blog/kora-aop.md
+      - "Compile-Time Dependency Injection — How Kora Builds an Application": blog/compile-time-dependency-injection.md
+      - "Compile-Time DI at Scale — How the Kora Framework Keeps Large Projects Fast": blog/compile-time-di-at-scale-kora.md
+      - "Component vs Integration vs Black-Box Tests in Kora": blog/kora-testing-different-approaches.md
+      - "Do Production Services Really Need a Dynamic Application Graph? — Kora Framework": blog/kora-dynamic-runtime-refresh.md
+      - "Documentation in the AI Era — Kora Framework Docs Are No Longer Just Docs": blog/kora-documentation-in-the-ai-era.md
+      - "Documentation Maturity Is About Coverage, Structure, and Signal": blog/kora-documentation-maturity.md
+      - "Does Compile-Time Code Generation Really Make Development Slower?": blog/kora-compile-time-and-development-speed.md
+      - "Enterprise-Ready Without a Framework Universe": blog/kora-enterprise-ready-without-universe.md
+      - "Fast Startup Is Not Just Developer Convenience — Kora Framework": blog/fast-startup-not-convenience.md
+      - "Focused Engineering Is Not NIH — Why Kora Builds Only What It Can Own Well": blog/kora-focused-engineering-is-not-nih.md
+      - "Generated Code Makes Debugging More Transparent in the Kora Framework": blog/generated-code-transparent-debugging.md
+      - "How an HTTP Request Travels Through Kora on Virtual Threads": blog/http-request-throught-kora.md
+      - "How to Build Your Own First-Class Kora Framework Module": blog/kora-build-your-module.md
+      - "In the AI Era, Framework Expertise Matters More Than Community Size": blog/neuro-era-framework-matters-more-community.md
+      - "Kora Framework — Accidentally AI-Native": blog/neuro-native-framework-kora-became.md
+      - "Kora Skill — the Missing Layer Between Documentation and AI Agents": blog/kora-skill-between-docs-and-agent.md
+      - "Learning a Framework in the AI Era — and Why the Kora Framework Fits": blog/neuro-era-learning-framework.md
+      - "No Runtime Magic — What Kora Actually Generates": blog/no-runtime-magic.md
+      - "Observability by Design — One Request Across the Entire Kora Stack": blog/kora-observability.md
+      - "One Problem, One Solution — Why Kora Has Fewer Abstractions": blog/one-problem-one-solution.md
+      - "One STEP at a Time — Why Kora Works So Well for AI Agents": blog/neuro-agents-kora-step.md
+      - "OpenAPI-First Development with the Kora Framework": blog/kora-openapi-development.md
+      - "Performance You Don't Need Still Saves Money and Time": blog/kora-save-money-and-time.md
+      - "Policy-Driven Infrastructure in the Kora Framework — Resilience, Caching, Validation, Scheduling": blog/kora-infra-and-funcs.md
+      - "Production Knowledge Is Built Into Kora, Not Collected Around It": blog/kora-production-knowledge-built-in.md
+      - "Startup vs Build Time — Why Kora Moves Work Left": blog/kora-startup-vs-build-time.md
+      - "STEP — Simple, Transparent, Efficient, Predictable": blog/kora-step.md
+      - "Structured Concurrency in Kora Applications": blog/structured-concurrency-in-kora.md
+      - "Testing the Same Graph You Run in Production": blog/kora-test-graph.md
+      - "The Application Graph as Architecture in the Kora Framework": blog/application-graph-as-architecture.md
+      - "The Best Framework for AI Agents Might Be the One With the Least Magic": blog/neuro-agent-best-native-kora-framework.md
+      - "The Cost of the First Missing Integration — Why the Kora Framework Does Not Need a Starter for Everything": blog/cost-of-missing-integration.md
+      - "The Ecosystem You Can Build — Why Extending the Kora Framework Is Deliberately Simple": blog/kora-extending-framework-ecosystem.md
+      - "The Kora Framework Is Easier to Learn Because It Uses the JVM You Already Know": blog/kora-easier-to-learn.md
+      - "The Myth of the \"Large Ecosystem\"": blog/myth-of-large-community.md
+      - "Thin Abstractions — Why Kora Stays Close to JDBC, Kafka, gRPC and HTTP": blog/kora-abstractions.md
+      - "Virtual Threads First — Why the Kora Framework Is Synchronous Again": blog/virtual-thread-first.md
+      - "Virtual Threads in Production — Pinning, Carriers, and Load Spikes in the Kora Framework": blog/virtual-thread-in-production.md
+      - "Virtual Threads vs Reactive — What Changes in Kora Framework Backend Architecture": blog/virtual-thread-vs-reactive.md
+      - "Where Kora Performance Comes From": blog/kora-performance.md
+      - "Why Compile-Time Diagnostics Are a Kora Framework Feature (In Depth)": blog/compile-time-diagnostics.md
+      - "Why Compile-Time Frameworks Like the Kora Framework Work Well With AI Coding Agents": blog/neuro-agent-and-kora.md
+      - "Why Kora Doesn't Need an ORM for Most Services": blog/kora-dont-need-orm.md
+      - "Why Kora — a Compile-Time Framework for the Modern JVM": blog/why-kora-compile-time-framework.md
+      - "You Don't Need Kora Developers — Framework Skills vs Vendor Lock-In": blog/you-dont-need-kora-developers.md
+      - "You Don't Need Kora Developers — You Need Good JVM Engineers": blog/you-need-good-jvm-engineers.md
   - Community:
       - Development: community/development.md
   - Changelog: changelog/changelog.md
@@ -206,7 +257,11 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - !relative $docs_dir
+        - !relative $config_dir/../../../blog
+      check_paths: true
   - pymdownx.betterem
   - pymdownx.tabbed:        # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
       alternate_style: true
