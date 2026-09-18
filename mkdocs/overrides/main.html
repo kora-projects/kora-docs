@@ -7,8 +7,14 @@
 
 {% block extrahead %}
 {% set title = config.site_name %}
-{% set titleConfig = config.site_name %}
-{% set copyright = config.copyright %}
+{% set current_lang = config.theme.language | default('en') %}
+{% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
+{% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
+{% set social_image_url = config.site_url ~ 'assets/img/' ~ social_image_name %}
+{% set social_square_url = config.site_url ~ 'assets/img/' ~ social_square_name %}
+{% set social_image_alt = 'Kora — комплексный серверный фреймворк для Java и Kotlin' if current_lang == 'ru' else 'Kora comprehensive backend framework for Java and Kotlin' %}
+{% set og_locale = 'ru_RU' if current_lang == 'ru' else 'en_US' %}
+{% set og_alt_locale = 'en_US' if current_lang == 'ru' else 'ru_RU' %}
 {% if page and page.meta and page.meta.title %}
 {% set title = title ~ " - " ~ page.meta.title %}
 {% elif page and page.title and not page.is_homepage %}
@@ -18,23 +24,31 @@
 {% if page and page.meta and page.meta.description %}
 {% set description = page.meta.description %}
 {% endif %}
-<meta property="description" content="{{ titleConfig }} {{ description }} | {{ copyright }} | Тинькофф">
 <meta property="og:site_name" content="Kora Framework">
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="{{ title }}"/>
-<meta property="og:description" content="Kora Framework {{ description }}"/>
+<meta property="og:description" content="{{ description }}"/>
 <meta property="og:url" content="{{ page.canonical_url }}"/>
-<meta property="og:image" content="{{ config.site_url }}assets/img/kora-long.png"/>
-<meta property="og:image:type" content="image/png"/>
-<meta property="og:image:width" content="450"/>
-<meta property="og:image:height" content="150"/>
+<meta property="og:locale" content="{{ og_locale }}"/>
+<meta property="og:locale:alternate" content="{{ og_alt_locale }}"/>
+<meta property="og:image" content="{{ social_image_url }}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="{{ social_image_alt }}"/>
+<meta property="og:image" content="{{ social_square_url }}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="1200"/>
+<meta property="og:image:alt" content="{{ social_image_alt }}"/>
 
 <meta name="twitter:title" content="{{ title }}"/>
 <meta name="twitter:creator" content="@KoraFramework"/>
-<meta name="twitter:card" content="{{ config.site_url }}assets/img/kora-long.png"/>
-<meta name="twitter:site" content="{{ config.site_url }}"/>
-<meta name="twitter:description" content="{{ titleConfig }} {{ description }}"/>
-<meta name="twitter:image" content="{{ config.site_url }}assets/img/kora-long.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:site" content="@KoraFramework"/>
+<meta name="twitter:description" content="{{ description }}"/>
+<meta name="twitter:image" content="{{ social_image_url }}"/>
+<meta name="twitter:image:alt" content="{{ social_image_alt }}"/>
 {% endblock %}
 
 {% block htmltitle %}
@@ -243,6 +257,87 @@
         window.addEventListener("mousedown", cancelWheelScroll, { passive: true, capture: true });
         window.addEventListener("touchstart", cancelWheelScroll, { passive: true });
         window.addEventListener("keydown", cancelWheelScroll);
+    })();
+</script>
+<script>
+    /* MkDocs Material stores its palette on data-md-color-scheme, while Tluma's
+       auto theme watches html[data-theme]. Bridge the two and keep them synced. */
+    (() => {
+        const syncTlumaTheme = () => {
+            const scheme = document.body.getAttribute("data-md-color-scheme")
+                || document.documentElement.getAttribute("data-md-color-scheme");
+            document.documentElement.setAttribute("data-theme", scheme === "slate" ? "dark" : "light");
+        };
+
+        syncTlumaTheme();
+        new MutationObserver(syncTlumaTheme).observe(document.body, {
+            attributes: true,
+            attributeFilter: ["data-md-color-scheme"]
+        });
+    })();
+
+    window.tlumaConfig = {
+        source: "kora-projects/kora-docs",
+        theme: "auto",
+        /* Tluma supports only fixed presets inside its cross-origin iframe.
+           Keep that UI neutral; the local shell below uses Kora's exact color. */
+        brandColor: "slate",
+        button: "bottom-right",
+        welcomePulse: true,
+        edgePadding: "1rem",
+        autoOpen: false,
+        desktopFullscreenByDefault: false
+    };
+</script>
+<script src="https://tluma.ai/widget.js" async></script>
+<script>
+    (() => {
+        const launcherLabel = {% if config.theme.language == "ru" %}"Нейро-чат"{% else %}null{% endif %};
+        const customizeTlumaShell = () => {
+            const host = document.querySelector("[data-tluma-ask-ai-host]");
+            const shadow = host && host.shadowRoot;
+            const button = shadow && shadow.querySelector(".tluma-button");
+            const label = button && button.querySelector("span");
+            if (!button || !label) return false;
+
+            if (launcherLabel) {
+                label.textContent = launcherLabel;
+                button.setAttribute("aria-label", launcherLabel);
+                const panel = shadow.querySelector(".tluma-panel");
+                if (panel) panel.setAttribute("aria-label", launcherLabel);
+            }
+
+            if (!shadow.querySelector("[data-kora-tluma-style]")) {
+                const style = document.createElement("style");
+                style.setAttribute("data-kora-tluma-style", "");
+                style.textContent = `
+                    .tluma-root {
+                        --tluma-brand-main: var(--md-primary-fg-color, #ffb02e) !important;
+                        --tluma-brand-soft: var(--md-accent-fg-color, #ffb02e) !important;
+                        --tluma-brand-contrast: #1a1509 !important;
+                        --tluma-brand-main-rgb: 255, 176, 46 !important;
+                        font-family: "JetBrains Mono", ui-monospace, monospace !important;
+                    }
+                    .tluma-button {
+                        border-radius: 0.45rem !important;
+                        box-shadow: 0 0.35rem 1.2rem rgba(26, 21, 9, 0.22) !important;
+                    }
+                    .tluma-panel {
+                        border-radius: 0.55rem !important;
+                        border-color: color-mix(in srgb, var(--md-primary-fg-color, #ffb02e) 28%, transparent) !important;
+                    }
+                `;
+                shadow.appendChild(style);
+            }
+            return true;
+        };
+
+        if (customizeTlumaShell()) return;
+        const observer = new MutationObserver(() => {
+            if (!customizeTlumaShell()) return;
+            observer.disconnect();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     })();
 </script>
 {% endblock %}

@@ -1,15 +1,127 @@
+{% set current_lang = config.theme.language | default('en') %}
+{% set current_site_url = config.site_url | replace('/v1/', '/v2/') %}
+{% set canonical_url = current_site_url %}
+{% set en_url = current_site_url | replace('/ru/', '/en/') %}
+{% set ru_url = current_site_url | replace('/en/', '/ru/') %}
+{% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
+{% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
+{% set social_image_url = canonical_url ~ 'assets/img/' ~ social_image_name %}
+{% set social_square_url = canonical_url ~ 'assets/img/' ~ social_square_name %}
+{% set logo_url = en_url ~ 'assets/img/kora-big.png' %}
+{% set seo_title_en = 'Kora Framework - Compile-Time Java and Kotlin Backend' %}
+{% set seo_title_ru = 'Kora - Java- и Kotlin-фреймворк с генерацией кода' %}
+{% set seo_description_en = 'Kora is a compile-time Java and Kotlin backend framework with generated, reflection-free code, fast startup, and production-ready cloud modules.' %}
+{% set seo_description_ru = 'Kora — серверный Java- и Kotlin-фреймворк с генерацией кода при компиляции, без runtime-рефлексии, с быстрым запуском и готовыми облачными модулями.' %}
+{% set seo_title = seo_title_ru if current_lang == 'ru' else seo_title_en %}
+{% set seo_description = seo_description_ru if current_lang == 'ru' else seo_description_en %}
+{% set seo_locale = 'ru_RU' if current_lang == 'ru' else 'en_US' %}
+{% set seo_alt_locale = 'en_US' if current_lang == 'ru' else 'ru_RU' %}
+{% set social_image_alt = 'Kora — Java- и Kotlin-фреймворк с генерацией кода' if current_lang == 'ru' else 'Kora compile-time Java and Kotlin backend framework' %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Kora is a compile-time Java and Kotlin framework for cloud-native services with fast startup, transparent generated code, and production-ready modules.">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_description }}">
+    <meta name="author" content="Kora Projects">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <link rel="alternate" hreflang="en" href="{{ en_url }}">
+    <link rel="alternate" hreflang="ru" href="{{ ru_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ en_url }}">
+
     <meta property="og:site_name" content="Kora Framework">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Kora Framework">
-    <meta property="og:description" content="A compile-time Java and Kotlin framework for fast, transparent, cloud-native services.">
-    <meta property="og:image" content="{{ 'assets/img/kora-long.png' | url }}">
-    <title>Kora Framework - Compile-time Java and Kotlin services</title>
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:locale" content="{{ seo_locale }}">
+    <meta property="og:locale:alternate" content="{{ seo_alt_locale }}">
+    <meta property="og:image" content="{{ social_image_url }}">
+    <meta property="og:image:secure_url" content="{{ social_image_url }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ social_image_alt }}">
+    <meta property="og:image" content="{{ social_square_url }}">
+    <meta property="og:image:secure_url" content="{{ social_square_url }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="1200">
+    <meta property="og:image:alt" content="{{ social_image_alt }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@KoraFramework">
+    <meta name="twitter:creator" content="@KoraFramework">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_description }}">
+    <meta name="twitter:image" content="{{ social_image_url }}">
+    <meta name="twitter:image:alt" content="{{ social_image_alt }}">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://kora-projects.github.io/kora-docs/#website",
+          "url": "https://kora-projects.github.io/kora-docs/",
+          "name": "Kora Framework",
+          "alternateName": "Kora",
+          "inLanguage": ["en", "ru"],
+          "publisher": { "@id": "https://github.com/kora-projects#organization" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://github.com/kora-projects#organization",
+          "name": "Kora Projects",
+          "url": "https://github.com/kora-projects",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "{{ logo_url }}"
+          },
+          "sameAs": [
+            "https://github.com/kora-projects",
+            "https://t.me/kora_users"
+          ]
+        },
+        {
+          "@type": "ImageObject",
+          "@id": "{{ canonical_url }}#primaryimage",
+          "url": "{{ social_image_url }}",
+          "contentUrl": "{{ social_image_url }}",
+          "width": 1200,
+          "height": 630,
+          "caption": "{{ social_image_alt }}"
+        },
+        {
+          "@type": "WebPage",
+          "@id": "{{ canonical_url }}#webpage",
+          "url": "{{ canonical_url }}",
+          "name": "{{ seo_title }}",
+          "description": "{{ seo_description }}",
+          "inLanguage": "{{ current_lang }}",
+          "isPartOf": { "@id": "https://kora-projects.github.io/kora-docs/#website" },
+          "about": { "@id": "https://github.com/kora-projects/kora#software" },
+          "primaryImageOfPage": { "@id": "{{ canonical_url }}#primaryimage" }
+        },
+        {
+          "@type": "SoftwareSourceCode",
+          "@id": "https://github.com/kora-projects/kora#software",
+          "name": "Kora Framework",
+          "alternateName": "Kora",
+          "description": "Compile-time JVM framework for Java and Kotlin backend applications with generated, transparent source code and no runtime reflection.",
+          "codeRepository": "https://github.com/kora-projects/kora",
+          "programmingLanguage": ["Java", "Kotlin"],
+          "runtimePlatform": "Java Virtual Machine (JVM)",
+          "license": "https://www.apache.org/licenses/LICENSE-2.0",
+          "isAccessibleForFree": true,
+          "creator": { "@id": "https://github.com/kora-projects#organization" }
+        }
+      ]
+    }
+    </script>
     <link rel="icon" type="image/x-icon" href="{{ 'assets/img/kora.ico' | url }}?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -213,7 +325,7 @@
         }
 
         .nav-links a:hover,
-        .lang button:hover {
+        .lang a:hover {
             color: var(--text);
         }
 
@@ -235,16 +347,15 @@
             font-weight: 700;
         }
 
-        .lang button {
+        .lang a {
+            display: block;
             padding: 7px 10px;
-            border: 0;
             background: transparent;
             color: inherit;
-            cursor: pointer;
             font: inherit;
         }
 
-        .lang button.is-active {
+        .lang a.is-active {
             background: rgba(255, 255, 255, 0.08);
             color: var(--text);
         }
@@ -810,6 +921,17 @@
 
         .command span {
             color: var(--brand-strong);
+        }
+
+        .command a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .command a:hover,
+        .command a:focus-visible {
+            text-decoration: underline;
+            text-underline-offset: 3px;
         }
 
         .hero-note {
@@ -1853,6 +1975,53 @@
             font-style: normal;
         }
 
+        .philosophy-main .philosophy-motto {
+            margin: 24px 0 0;
+            color: var(--brand-strong);
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: clamp(18px, 2vw, 25px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .philosophy-step {
+            margin: 14px 0 20px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .philosophy-step-label {
+            color: var(--brand-strong);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+        }
+
+        .philosophy-step dl {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+            gap: 16px;
+            margin: 12px 0 0;
+        }
+
+        .philosophy-step dt {
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .philosophy-step dt::first-letter {
+            color: var(--brand-strong);
+        }
+
+        .philosophy-step dd {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
         .philosophy-subline {
             display: block;
             white-space: nowrap;
@@ -1905,21 +2074,13 @@
             margin-top: 16px;
         }
 
-        .philosophy-scope {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin: 20px 0 22px;
+        .philosophy-main p.philosophy-tagline {
+            margin-top: 6px;
+            color: var(--brand-strong);
         }
 
-        .philosophy-scope span {
-            padding: 6px 9px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.045);
-            color: #d9d2c8;
-            font-size: 12px;
-            font-weight: 800;
+        .philosophy-main p.philosophy-tagline + p {
+            margin-top: 20px;
         }
 
         .philosophy-main strong {
@@ -3293,8 +3454,8 @@
             </div>
             <div class="nav-actions">
                 <div class="lang" aria-label="Documentation language">
-                    <button class="is-active" type="button" data-lang="en">EN</button>
-                    <button type="button" data-lang="ru">RU</button>
+                    <a{% if current_lang == 'en' %} class="is-active" aria-current="page"{% endif %} href="{{ en_url }}" hreflang="en" lang="en" data-lang="en">EN</a>
+                    <a{% if current_lang == 'ru' %} class="is-active" aria-current="page"{% endif %} href="{{ ru_url }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
                 </div>
                 <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
             </div>
@@ -3306,14 +3467,14 @@
             <div class="hero-grid">
                 <div>
                     <p class="eyebrow">Java and Kotlin comprehensive backend framework</p>
-                    <h1>Ship <span class="speed-word">fast</span> services without <span class="magic-word" data-final="workarounds, dirty hacks and kludges"><span class="magic-label">magic</span><span class="magic-final" aria-hidden="true"><span>workarounds,</span><span>dirty hacks</span><span>and kludges.</span></span><span class="magic-dot">.</span></span></h1>
+                    <h1><span class="speed-word">Kora</span> just works without <span class="magic-word" data-final="workarounds, dirty hacks and kludges"><span class="magic-label">magic</span><span class="magic-final" aria-hidden="true"><span>workarounds,</span><span>dirty hacks</span><span>and kludges.</span></span><span class="magic-dot">.</span></span></h1>
                     <p class="hero-copy">
-                        Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services exceptionally fast and familiar production JVM stack from day one.
+                        Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services easy, simple, blazing fast and already familiar production JVM stack from day one.
                     </p>
                     <div class="hero-actions" id="start">
                         <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
-                        <div class="command" aria-label="Gradle dependency example"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC1</code></div>
+                        <div class="command" aria-label="Gradle dependency example"><a href="https://central.sonatype.com/artifact/io.koraframework/kora-bom"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC1</code></a></div>
                     </div>
                     <div class="hero-note" aria-label="Framework highlights">
                         <div class="metric">
@@ -3337,8 +3498,8 @@
                         <span class="console-title" id="snippet-title">Application.java</span>
                     </div>
                     <div class="snippet-language-strip" aria-label="Code example language">
-                        <button class="snippet-language is-active" type="button" data-snippet-language="java" aria-label="Show Java examples">Java</button>
-                        <button class="snippet-language" type="button" data-snippet-language="kotlin" aria-label="Show Kotlin examples">Kotlin</button>
+                        <button class="snippet-language is-active" type="button" data-code-language="java" aria-label="Show Java examples">Java</button>
+                        <button class="snippet-language" type="button" data-code-language="kotlin" aria-label="Show Kotlin examples">Kotlin</button>
                     </div>
                     <pre><code class="console-code" id="snippet-code"></code></pre>
                     <div class="snippet-dots" aria-label="Code example progress">
@@ -3365,7 +3526,7 @@
 
         <section class="section" id="principles">
             <div class="section-header">
-                <h2>Built for teams that want speed, control and clarity.</h2>
+                <h2>Built for teams that want simplicity, control and efficiency.</h2>
                 <p class="section-lead">Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.</p>
             </div>
             <div class="feature-grid">
@@ -3577,28 +3738,29 @@
                     <aside class="philosophy-aside">
                         <div>
                             <span class="philosophy-kicker">Philosophy</span>
-                            <h3>Not a tool for every situation.<br><span class="philosophy-subline">But a <em>great tool</em> for the job.</span></h3>
+                            <h3>Not a tool for every situation.<br><span class="philosophy-subline">But a tool that <em>simply works predictably</em>.</span></h3>
                         </div>
                     </aside>
                     <div class="philosophy-main">
                         <p class="philosophy-lead">Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks. <span class="muted">It takes proven, widely used backend practices and pushes them further:</span> less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.</p>
                         <figure class="philosophy-quote">
+                            <p>A Swiss Army knife offers a tool for almost any situation, but rarely does everything equally well. Kora focuses on a targeted set of tools, each purpose-built for its specific task.</p>
                             <p>Use only the modules you need, replace or customize their components, and add your own modules and integrations through the same explicit application model.</p>
                         </figure>
                         <p>Kora focuses on essentials of production backend development and aims to make that path <strong>exceptionally direct, transparent, and as efficient as possible</strong>.</p>
+                        <p class="philosophy-motto">Kora just works.</p>
+                        <p class="philosophy-tagline">{% if current_lang == 'ru' %}Просто. Прозрачно. Предсказуемо. Эффективно.{% else %}Simple. Transparent. Efficient. Predictable.{% endif %}</p>
                         <p>That same discipline is what makes Kora <strong>easier for engineers to develop, debug, and maintain</strong>: components are wired explicitly, mistakes are caught by the compiler as readable errors instead of runtime surprises, and every generated class reads like code an engineer would write by hand. That same clarity is why it also fits naturally into AI-assisted development&mdash;nothing hides behind reflection or dynamic proxies, so a model can open the generated sources, trace a request end to end, and trust what it sees just as easily as a person can.</p>
-                        <div class="philosophy-scope">
-                            <span>HTTP</span>
-                            <span>Data access</span>
-                            <span>Messaging</span>
-                            <span>Configuration</span>
-                            <span>Resilience</span>
-                            <span>Telemetry</span>
-                            <span>Integrations</span>
+                        <div class="philosophy-step">
+                            <span class="philosophy-step-label">STEP principle</span>
+                            <dl>
+                                <div><dt>Simple</dt><dd>Less complexity.</dd></div>
+                                <div><dt>Transparent</dt><dd>Explicit, readable code.</dd></div>
+                                <div><dt>Efficient</dt><dd>Less runtime overhead.</dd></div>
+                                <div><dt>Predictable</dt><dd>No hidden magic.</dd></div>
+                            </dl>
                         </div>
-                        <figure class="philosophy-quote">
-                            <p>A Swiss Army knife offers a tool for almost any situation, but rarely does everything equally well. Kora focuses on a targeted set of tools, each purpose-built for its specific task.</p>
-                        </figure>
+                        <p><strong>One STEP at a time</strong>&mdash;for engineers and AI agents alike.</p>
                     </div>
                 </div>
             </div>
@@ -3654,14 +3816,14 @@
 
         <section class="section" id="modules">
             <div class="section-header">
-                <h2>A controlled stack,<br>one module at a time.</h2>
+                <h2>A controlled stack,<br>one component at a time.</h2>
                 <p class="section-lead">Start small, add only integrations your service needs, and keep every dependency in controll.</p>
             </div>
             <div class="module-grid">
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="runtime">
-                    <small>Concurrency</small>
+                    <small>Core</small>
                     <h3>Simple, easy, familiar</h3>
-                    <p>Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up&mdash;so blocking code stays simple at high concurrency.</p>
+                    <p>Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="compiler">
                     <small>Compiler</small>
@@ -3696,7 +3858,7 @@
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="extend">
                     <small>Modules</small>
                     <h3>Built to be extended</h3>
-                    <p>Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.</p>
+                    <p>Replace, decorate, or complement nearly any component and adapt framework behavior through an explicit, compile-time application graph.</p>
                 </article>
             </div>
             <div class="module-detail" id="module-detail" hidden>
@@ -3713,6 +3875,10 @@
                     <div class="console-header">
                         <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
                         <span class="console-title" id="module-detail-code-title">Example.java</span>
+                    </div>
+                    <div class="snippet-language-strip" aria-label="Code example language">
+                        <button class="snippet-language is-active" type="button" data-code-language="java" aria-label="Show Java examples">Java</button>
+                        <button class="snippet-language" type="button" data-code-language="kotlin" aria-label="Show Kotlin examples">Kotlin</button>
                     </div>
                     <pre><code class="console-code" id="module-detail-code"></code></pre>
                     <div class="snippet-dots" id="module-detail-dots" aria-label="Code example variants" hidden></div>
@@ -3892,7 +4058,7 @@
             </div>
             <details class="perf-why">
                 <summary>
-                    <span>Why fast startup and readiness save real money</span>
+                    <span>Why fast startup and readiness really save time and money</span>
                     <span class="perf-why-chevron" aria-hidden="true">&#9662;</span>
                 </summary>
                 <div class="perf-why-body">
@@ -3921,7 +4087,7 @@
                         <div class="fast-why-card" style="--i:1"><strong>Shorter deploy windows</strong><span>Each rolling replacement reaches readiness sooner, narrowing the interval of reduced capacity and the associated error-budget and SLA risk across the fleet.</span></div>
                         <div class="fast-why-card" style="--i:2"><strong>Scale-to-zero &amp; spot</strong><span>Fast cold start makes scale-to-zero and preemptible/spot instances viable: capacity is released when idle and restored on demand in seconds, shifting reserved cost to usage-based.</span></div>
                         <div class="fast-why-card" style="--i:3"><strong>Low-utilization services</strong><span>Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.</span></div>
-                        <div class="fast-why-card" style="--i:4"><strong>Development and CI feedback</strong><span>Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.</span></div>
+                        <div class="fast-why-card" style="--i:4"><strong>Development and CI feedback</strong><span>Black-box and integration tests start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — engineer time is not only scarce, but also the most expensive resource.</span></div>
                         <div class="fast-why-card" style="--i:5"><strong>Lower SLA impact</strong><span>Compile-time wiring, thin abstractions and no runtime reflection make warm-up far smaller — not zero — so a new instance is close to steady-state throughput from the first requests, keeping the p95–p98 tail during deploys and scaling well below a warm-up-bound runtime.</span></div>
                         <div class="fast-why-card" style="--i:6"><strong>Compile-time cost, runtime payoff</strong><span>Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.</span></div>
                     </div>
@@ -4066,10 +4232,17 @@
             "Modules": "Модули",
             "Guides": "Руководства",
             "Philosophy": "Философия",
+            "Kora just works.": "Kora просто работает.",
+            "STEP principle": "Принцип STEP",
+            "Less complexity.": "Просто: меньше сложности.",
+            "Explicit, readable code.": "Прозрачно: явный, читаемый код.",
+            "Less runtime overhead.": "Эффективно: меньше накладных расходов.",
+            "No hidden magic.": "Предсказуемо: без скрытой магии.",
+            "One STEP at a time": "Разработка Шаг за Шагом",
+            "—for engineers and AI agents alike.": " — для инженеров и нейро-инструментов.",
             "Not a tool for every situation.": "Не инструмент на все случаи.",
-            "But a": "Но",
-            "great tool": "отличный инструмент",
-            "for the job.": "для конкретной задачи.",
+            "But a tool that": "Но инструмент, который",
+            "simply works predictably": "просто предсказуемо работает",
             "Kora does not pursue breadth for its own sake, wrap every possible technology behind a framework-specific abstraction, or replace every functionality of other frameworks.": "Kora не стремится к охвату ради охвата, не оборачивает каждую технологию в собственную абстракцию и не заменяет собой всю функциональность других фреймворков.",
             "It takes proven, widely used backend practices and pushes them further:": "Она берет проверенные, широко используемые практики серверной разработки и доводит их до предела:",
             "less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead.": "меньше механики во время выполнения, меньше конкурирующих стилей, понятнее контракты и ниже когнитивная нагрузка.",
@@ -4089,15 +4262,13 @@
             "GitHub": "GitHub",
             "Docs": "Документация",
             "Java and Kotlin comprehensive backend framework": "Комплексный серверный фреймворк для Java и Kotlin",
-            "Ship": "Создавай",
-            "fast": "быстрые",
-            "services without": "сервисы без",
+            "just works without": "просто работает без",
             "magic": "магии",
             ".": ".",
             "workarounds,": "костылей,",
             "dirty hacks": "грязных хаков",
             "and kludges.": "и обходных путей.",
-            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services exceptionally fast and familiar production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высокопроизводительный исходный код и сразу готова к использованию в облачно-ориентированной среде как предельно производительный и уже знакомый стек на JVM.",
+            "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services easy, simple, blazing fast and already familiar production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высокопроизводительный исходный код и сразу готова к использованию в облачно-ориентированной среде как простой, понятный, эффективный и уже знакомый стек на JVM.",
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
             "runtime reflections": "рефлексии во время выполнения",
@@ -4107,7 +4278,7 @@
             "Familiar top-level abstractions": "Знакомые верхнеуровневые абстракции",
             "Generated sources": "Сгенерированные исходники",
             "Generated human-readable source code": "Сгенерированный читаемый исходный код",
-            "Built for teams that want speed, control and clarity.": "Для команд, которым нужна эффективность, контроль и простота.",
+            "Built for teams that want simplicity, control and efficiency.": "Для команд, которым нужна простота, контроль и эффективность.",
             "Kora keeps familiar JVM development, but moves framework work into the compiler where it can be checked, generated, and understood. Magic non-sence no more.": "Kora сохраняет привычную разработку на JVM, но переносит работу фреймворка в компилятор: там ее можно проверить, сгенерировать и понять. Больше никакой магической недосказанности.",
             "Compile-Time Certainty, No Runtime Magic": "Уверенность во время компиляции, без магии во время выполнения",
             "Kora checks the application graph, contracts, and generated code at compile time. Diagnostics and readable source with no runtime surprises.": "Kora проверяет граф приложения, контракты и сгенерированный код во время компиляции. Диагностика и читаемые исходники — без неожиданностей во время выполнения.",
@@ -4170,7 +4341,7 @@
             "services company-wide": "сервисов по всей компании",
             "Figures are illustrative, not measured — real numbers depend on your services, JVM settings, SLAs, peak headroom, and cloud pricing. The shape is what matters: footprint × redundancy × services × teams × departments × business lines × peak reserve.": "Цифры приведены для иллюстрации, а не измерены — реальные значения зависят от ваших сервисов, настроек JVM, SLA, пикового запаса и цен облака. Важна форма: потребление × резервирование × сервисы × команды × департаменты × бизнес-линии × пиковый резерв.",
             "A controlled stack,": "Контролируемый стек,",
-            "one module at a time.": "по одному модулю за раз.",
+            "one component at a time.": "по компоненту за раз.",
             "Start small, add only integrations your service needs, and keep every dependency in controll.": "Начинайте с малого, добавляйте только те интеграции, которые нужны сервису, и держите каждую зависимость под контролем.",
             "Servers, clients, OpenAPI": "Серверы, клиенты, OpenAPI",
             "HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.": "HTTP-серверы, декларативные клиенты, request mapping, interceptors, служебные эндпоинты и строго типизированная генерация OpenAPI.",
@@ -4187,10 +4358,10 @@
             "Production essentials": "Всё необходимое для промышленной разработки",
             "Validation, caching, resilience, transactions, scheduling, security, and logging generated at compile time without runtime proxies.": "Проверка данных, кэширование, отказоустойчивость, транзакции, планирование, безопасность и логирование генерируются во время компиляции без прокси-объектов времени выполнения.",
             "Built to be extended": "Создана, чтобы расширяться",
-            "Use only the modules you need, replace individual components, or build first-class Kora modules for any library without fighting the framework.": "Используйте только нужные модули, заменяйте отдельные компоненты или пишите полноценные модули Kora для любой библиотеки — без борьбы с фреймворком.",
-            "Concurrency": "Конкурентность",
+            "Replace, decorate, or complement nearly any component and adapt framework behavior through an explicit, compile-time application graph.": "Почти любой компонент можно заменить, обернуть или дополнить и адаптировать поведение фреймворка через явный граф приложения, создаваемый во время компиляции.",
+            "Core": "Основы",
             "Simple, easy, familiar": "Просто, легко, знакомо",
-            "Familiar Java and Kotlin idioms, compile-time dependency injection, one clear solution per problem, and virtual threads built in from the ground up—so blocking code stays simple at high concurrency.": "Знакомые идиомы Java и Kotlin, внедрение зависимостей во время компиляции, один понятный способ решить задачу и виртуальные потоки, встроенные с нуля — поэтому блокирующий код остается простым даже при высокой конкурентности.",
+            "Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin.": "Компоненты, внедрение через конструктор, модули, типизированная конфигурация и запуск приложения на привычных Java и Kotlin.",
             "What this gets you": "Что вы получаете",
             "Compiler": "Компилятор",
             "Transparent, no runtime magic": "Прозрачность, никакой магии во время выполнения",
@@ -4227,7 +4398,7 @@
             "10x PetClinic services with full production integrations in a Docker container, 1 CPU and 1 GB memory, startup and readiness.": "10x PetClinic-сервисы с полным набором боевых интеграций в Docker-контейнере: 1 CPU, 1 GB памяти, запуск и готовность к обслуживанию.",
             "Average across 5 runs on MacBook Pro 2019 Intel i7-9750H": "Среднее по 5 запускам на MacBook Pro 2019 Intel i7-9750H",
             "(Similar to EPYC 7763 according to GeekBench 5 Single-Core Benchmark).": "(схож с EPYC 7763 согласно GeekBench 5 Single-Core Benchmark).",
-            "Why fast startup and readiness save real money": "Почему быстрый старт и готовность реально экономят деньги",
+            "Why fast startup and readiness really save time and money": "Почему быстрый старт и готовность реально экономят время и деньги",
             "Startup and time-to-readiness read as local developer ergonomics. Across a service fleet they are an operational cost driver — in provisioned infrastructure and in engineer time.": "Время старта и выхода в готовность воспринимается как локальная эргономика разработчика. В масштабах парка сервисов это операционный драйвер затрат — и в выделяемой инфраструктуре, и во времени инженеров.",
             "p95 latency during a rolling deploy. A fresh Kora instance reaches steady-state latency almost immediately; a heavier runtime holds an elevated tail above the SLA threshold for longer while the JIT warms up.": "Задержка p95 во время плавного деплоя. Свежий экземпляр Kora выходит на установившуюся задержку почти сразу; более тяжёлый рантайм дольше удерживает повышенный хвост выше порога SLA, пока прогревается JIT.",
             "p95 latency": "задержка p95",
@@ -4242,7 +4413,7 @@
             "Low-utilization services": "Низконагруженные сервисы",
             "Admin panels, internal tools and scheduled jobs are dominated by baseline runtime overhead rather than request load; a thin runtime lowers the per-instance memory and CPU floor — a Kora service can run on as little as 0.1 vCPU, potentially 0.05 — reclaiming capacity across a large low-traffic fleet.": "У админок, внутренних инструментов и задач по расписанию расход определяется базовыми накладными расходами рантайма, а не нагрузкой запросами; тонкий рантайм снижает нижний порог памяти и CPU на экземпляр — сервис на Kora может работать всего на 0.1 vCPU, потенциально на 0.05 — высвобождая мощности по всему большому низконагруженному парку.",
             "Development and CI feedback": "Обратная связь разработки и CI",
-            "Integration and black-box suites start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — the scarce resource being engineer time.": "Интеграционные и black-box наборы запускают всё приложение на каждом прогоне; меньшее время старта сокращает реальное время на итерацию и на стадию пайплайна, укорачивая цикл обратной связи — дефицитный ресурс здесь — время инженеров.",
+            "Black-box and integration tests start the full application on each run; lower startup time cuts wall-clock per iteration and per pipeline stage, shortening the feedback loop — engineer time is not only scarce, but also the most expensive resource.": "Black-box и интеграционные тесты запускают всё приложение на каждом прогоне; меньшее время старта сокращает реальное время на итерацию и на стадию пайплайна, укорачивая цикл обратной связи — время инженеров здесь не просто дефицитный, но и самый дорогой ресурс.",
             "Compile-time cost, runtime payoff": "Цена на компиляции — выгода в рантайме",
             "Yes, generating the graph adds a little build time. It is paid once per build — and in return nothing is scanned, reflected, or wired while the service boots. That is exactly the work that buys the fast, parallel startup you bank on every instance, every restart, across the whole fleet.": "Да, генерация графа немного увеличивает время сборки. Но эта цена платится один раз при сборке — зато на старте сервиса не нужны ни сканирование, ни рефлексия, ни связывание зависимостей. Именно эта работа и обеспечивает быстрый параллельный старт, на который вы рассчитываете на каждом экземпляре, при каждом перезапуске и по всему парку сервисов.",
             "Lower SLA impact": "Меньше влияние на SLA",
@@ -4396,8 +4567,8 @@
         const applyLanguage = (lang) => {
             document.documentElement.lang = lang;
             document.title = lang === "ru"
-                ? "Kora Framework - сервисы Java и Kotlin с проверкой во время компиляции"
-                : "Kora Framework - Compile-time Java and Kotlin services";
+                ? "{{ seo_title_ru }}"
+                : "{{ seo_title_en }}";
             document.querySelectorAll("[data-lang]").forEach((button) => {
                 button.classList.toggle("is-active", button.dataset.lang === lang);
             });
@@ -4437,14 +4608,8 @@
         collectTextNodes();
         collectAttrNodes();
 
-        document.querySelectorAll("[data-lang]").forEach((button) => {
-            button.addEventListener("click", () => applyLanguage(button.dataset.lang));
-        });
-
         window.setKoraLanguage = applyLanguage;
-        let storedLang = null;
-        try { storedLang = window.localStorage.getItem("kora-home-language"); } catch (e) { /* storage disabled */ }
-        window.koraLanguage = storedLang === "ru" ? "ru" : "en";
+        window.koraLanguage = "{{ current_lang }}";
         applyLanguage(window.koraLanguage);
     })();
 
@@ -4584,6 +4749,34 @@
     })();
 
     (() => {
+        let storedLanguage = null;
+        try { storedLanguage = window.localStorage.getItem("kora-code-language"); } catch (e) { /* storage disabled */ }
+        window.koraCodeLanguage = storedLanguage === "kotlin" ? "kotlin" : "java";
+
+        const syncButtons = () => {
+            document.querySelectorAll("[data-code-language]").forEach((button) => {
+                const active = button.dataset.codeLanguage === window.koraCodeLanguage;
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+        };
+
+        window.setKoraCodeLanguage = (language) => {
+            if (language !== "java" && language !== "kotlin") return;
+            window.koraCodeLanguage = language;
+            try { window.localStorage.setItem("kora-code-language", language); } catch (e) { /* storage disabled */ }
+            syncButtons();
+            window.dispatchEvent(new CustomEvent("kora:codelanguagechange", { detail: { language } }));
+        };
+
+        document.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-code-language]");
+            if (button) window.setKoraCodeLanguage(button.dataset.codeLanguage);
+        });
+        syncButtons();
+    })();
+
+    (() => {
         const modules = {
             http: {
                 kicker: "HTTP",
@@ -4633,6 +4826,8 @@
                     "Micrometer registers a PrometheusMeterRegistry and exposes metrics through the private HTTP server.",
                     "OpenTelemetry traces can be exported through OTLP over gRPC or HTTP with endpoint, batching, retry, and resource attributes configured.",
                     "HTTP, HTTP client, database, Kafka, and other modules can create telemetry contexts around real operations.",
+                    "The complete HTTP server telemetry can be replaced by providing a custom HttpServerTelemetryFactory component.",
+                    "Default database telemetry can stay intact while only DefaultDatabaseMetricsFactory is overridden to customize JDBC metrics.",
                     "Readiness and liveness endpoints are first-class private API routes for Kubernetes and container platforms.",
                     "Sensitive headers and query values can be masked in logs, keeping observability useful without leaking secrets."
                 ]
@@ -4675,7 +4870,7 @@
             extend: {
                 kicker: "Modules",
                 title: "Built to be extended",
-                copy: "One clear way is the default, not a cage. Kora is not a closed box: pull in only the modules a service actually needs, replace any component with your own implementation, or write a first-class Kora module for a library that is not covered yet—all through the same explicit application model instead of fighting the framework's internals.",
+                copy: "One clear way is the default, not a cage. Nearly any default component can be replaced, decorated, or complemented through the same explicit application graph, so a service can change and extend framework behavior whenever required. Unlike behavior nailed into runtime-generated bytecode or dynamic proxies, these extension points are typed, visible, and controlled by the application.",
                 tags: ["Explicit graph", "Swap any component", "Custom modules", "No lock-in", "SPI"],
                 sourceCaption: "Your module",
                 sourceHeadline: "Written like any other Kora module",
@@ -4683,21 +4878,22 @@
                 generatedHeadline: "Joins the same graph as built-ins",
                 points: [
                     "Every module is opt-in: nothing is pulled in transitively that the service does not declare and configure.",
-                    "Any generated component can be replaced by providing your own bean of the same contract—no framework fork required.",
+                    "Nearly any default or generated component can be replaced by providing your own component with the same contract—no framework fork required.",
+                    "Components can also be decorated or complemented, letting an application change only the behavior it needs while retaining the rest of the defaults.",
                     "Writing a new Kora module follows the same annotation-processor pattern the built-in modules use, so it feels native, not bolted on.",
                     "The dependency graph stays a single explicit structure, so custom and built-in modules are indistinguishable at compile time.",
                     "Teams can start with a handful of modules and grow the stack module by module as real requirements appear."
                 ]
             },
             runtime: {
-                kicker: "Concurrency",
+                kicker: "Core",
                 title: "Simple, easy, familiar",
-                copy: "Kora keeps the programming model close to plain Java and Kotlin: compile-time dependency injection instead of a runtime container, and one clear, supported way to solve each problem instead of five competing patterns. Concurrency is built around virtual threads from the ground up, not retrofitted later, so services can stay simple.",
-                tags: ["Virtual threads", "Compile-time DI", "One way to do it", "Blocking code", "Predictable resources"],
+                copy: "Kora keeps everyday framework work close to plain Java and Kotlin. Mark classes as components, use ordinary constructor injection, group factories in modules, bind typed HOCON configuration, and declare the application root with @KoraApp. Everything is checked at compile time, while virtual threads keep blocking business code simple under high concurrency.",
+                tags: ["Components", "Constructor DI", "Typed config", "Modules", "Virtual threads"],
                 sourceCaption: "Your code",
-                sourceHeadline: "A controller that reads like plain Java",
-                generatedCaption: "Generated sources",
-                generatedHeadline: "Validation and config wired automatically",
+                sourceHeadline: "Everyday framework building blocks",
+                generatedCaption: "What Kora wires",
+                generatedHeadline: "An explicit graph checked at compile time",
                 points: [
                     "The application graph is built and validated at compile time, so there is no runtime container, no classpath scanning, and no proxy magic to learn.",
                     "Where other frameworks offer several competing ways to solve the same problem, Kora ships one clear, well-supported path.",
@@ -4776,6 +4972,8 @@
                     "Micrometer регистрирует PrometheusMeterRegistry и отдает метрики через служебный HTTP-сервер.",
                     "Трассы OpenTelemetry можно экспортировать через OTLP поверх gRPC или HTTP с настройками адреса, пакетной отправки, повторных попыток и атрибутов ресурса.",
                     "HTTP, HTTP-клиент, база данных, Kafka и другие модули создают контексты телеметрии вокруг реальных операций.",
+                    "Телеметрию HTTP-сервера можно заменить целиком, предоставив собственный компонент HttpServerTelemetryFactory.",
+                    "Телеметрию базы данных по умолчанию можно сохранить, переопределив только DefaultDatabaseMetricsFactory для настройки JDBC-метрик.",
                     "Readiness и liveness endpoints являются полноценными служебными маршрутами для Kubernetes и контейнерных платформ.",
                     "Чувствительные заголовки и значения query-параметров можно маскировать в логах, сохраняя наблюдаемость полезной без утечки секретов."
                 ]
@@ -4818,7 +5016,7 @@
             extend: {
                 kicker: "Модули",
                 title: "Создана, чтобы расширяться",
-                copy: "Один понятный путь — это выбор по умолчанию, а не клетка. Kora — не закрытая коробка: подключайте только те модули, которые реально нужны сервису, заменяйте любой компонент собственной реализацией или пишите полноценный модуль Kora для библиотеки, которой еще нет в экосистеме — все через ту же явную модель приложения, без борьбы с внутренностями фреймворка.",
+                copy: "Один понятный путь — это выбор по умолчанию, а не клетка. Почти любой компонент по умолчанию можно заменить, обернуть или дополнить через тот же явный граф приложения, поэтому при необходимости поведение фреймворка можно менять и расширять. В отличие от логики, прибитой к сгенерированному в рантайме байт-коду или динамическим прокси, эти точки расширения типизированы, видимы и остаются под контролем приложения.",
                 tags: ["Явный граф", "Замена компонента", "Свои модули", "Без lock-in", "SPI"],
                 sourceCaption: "Ваш модуль",
                 sourceHeadline: "Написан как любой другой модуль Kora",
@@ -4826,21 +5024,22 @@
                 generatedHeadline: "Встраивается в тот же граф, что и встроенные модули",
                 points: [
                     "Каждый модуль подключается по желанию: ничего не тянется транзитивно, если сервис это явно не объявил и не сконфигурировал.",
-                    "Любой сгенерированный компонент можно заменить, предоставив свой бин с тем же контрактом — без форка фреймворка.",
+                    "Почти любой компонент по умолчанию или сгенерированный компонент можно заменить собственной реализацией того же контракта — без форка фреймворка.",
+                    "Компоненты также можно оборачивать и дополнять, меняя только необходимое поведение и сохраняя остальные реализации по умолчанию.",
                     "Новый модуль Kora пишется по тому же принципу через обработчик аннотаций, что и встроенные модули, поэтому ощущается органично, а не как надстройка.",
                     "Граф зависимостей остается единой явной структурой, поэтому свои и встроенные модули неотличимы друг от друга во время компиляции.",
                     "Команда может начать с горстки модулей и наращивать стек модуль за модулем по мере появления реальных потребностей."
                 ]
             },
             runtime: {
-                kicker: "Конкурентность",
+                kicker: "Основы",
                 title: "Просто, легко, знакомо",
-                copy: "Kora держит модель программирования близкой к обычному Java и Kotlin: внедрение зависимостей во время компиляции вместо контейнера во время выполнения и один понятный, поддерживаемый способ решить задачу вместо пяти конкурирующих подходов. Конкурентность изначально построена на виртуальных потоках, а не прикручена позже, поэтому сервисы остаются простыми.",
-                tags: ["Виртуальные потоки", "Внедрение при компиляции", "Один способ", "Блокирующий код", "Предсказуемые ресурсы"],
+                copy: "Повседневная работа с Kora остается обычным Java- или Kotlin-кодом. Пометьте классы как компоненты, используйте привычное внедрение через конструктор, объединяйте фабрики в модули, привязывайте типизированную HOCON-конфигурацию и объявляйте корень приложения через @KoraApp. Всё проверяется при компиляции, а виртуальные потоки сохраняют простоту блокирующего бизнес-кода при высокой конкурентности.",
+                tags: ["Компоненты", "Constructor DI", "Типизированный config", "Модули", "Виртуальные потоки"],
                 sourceCaption: "Ваш код",
-                sourceHeadline: "Контроллер, который читается как обычный Java-код",
-                generatedCaption: "Сгенерированный код",
-                generatedHeadline: "Валидация и конфигурация подключаются автоматически",
+                sourceHeadline: "Базовые строительные блоки фреймворка",
+                generatedCaption: "Что связывает Kora",
+                generatedHeadline: "Явный граф, проверенный при компиляции",
                 points: [
                     "Граф приложения строится и проверяется во время компиляции — не нужно изучать контейнер во время выполнения, сканирование пути классов или магию прокси.",
                     "Там, где другие фреймворки предлагают несколько конкурирующих способов решить одну задачу, Kora дает один понятный и поддерживаемый путь.",
@@ -4968,6 +5167,9 @@ public interface UserRepository extends JdbcRepository {
     @Nullable
     User findById(UUID id);
 
+    @Query("SELECT id, email, created_at FROM users")
+    List<User> findAll();
+
     @Query("INSERT INTO %{user#inserts}")
     UpdateCount insert(User user);
 }`,
@@ -5000,9 +5202,11 @@ public final class $UserRepository_Impl implements UserRepository {
                 }]
             },
             ops: {
-                examples: [{
-                    sourceTitle: "application.conf",
-                    sourceCode: `httpServer {
+                examples: [
+                    {
+                        label: "Configuration",
+                        sourceTitle: "application.conf",
+                        sourceCode: `httpServer {
   privateApiHttpPort = 8085
   privateApiHttpMetricsPath = "/metrics"
   privateApiHttpReadinessPath = "/system/readiness"
@@ -5052,7 +5256,79 @@ tracing {
                 });
     }
 }`
-                }]
+                    },
+                    {
+                        label: "Custom HTTP telemetry",
+                        sourceTitle: "CustomHttpServerTelemetryFactory.java",
+                        sourceCode: `@Component
+public final class CustomHttpServerTelemetryFactory
+        implements HttpServerTelemetryFactory {
+    private final CustomTelemetry telemetry;
+
+    public CustomHttpServerTelemetryFactory(CustomTelemetry telemetry) {
+        this.telemetry = telemetry;
+    }
+
+    @Override
+    public HttpServerTelemetry get(
+            String name, int port, HttpServerTelemetryConfig config) {
+        return telemetry::observe;
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+    // User component wins over @DefaultComponent.
+    final Node<HttpServerTelemetryFactory> httpServerTelemetryFactory =
+        graph.registerNode(g -> new CustomHttpServerTelemetryFactory(
+            g.valueOf(customTelemetry)));
+
+    final Node<HttpServerTelemetry> publicHttpServerTelemetry =
+        graph.registerNode(g -> g.valueOf(httpServerTelemetryFactory)
+            .get("public", g.valueOf(httpServerConfig).port(),
+                g.valueOf(httpServerConfig).telemetry()));
+}`
+                    },
+                    {
+                        label: "Custom JDBC metrics",
+                        sourceTitle: "JdbcMetricsFactory.java",
+                        sourceCode: `@Component
+public final class JdbcMetricsFactory extends DefaultDatabaseMetricsFactory {
+
+    @Override
+    public DefaultDatabaseMetrics create(
+            DefaultDatabaseTelemetry.TelemetryContext context) {
+        return new JdbcMetrics(context);
+    }
+
+    private static final class JdbcMetrics extends DefaultDatabaseMetrics {
+        private JdbcMetrics(DefaultDatabaseTelemetry.TelemetryContext context) {
+            super(context);
+        }
+
+        @Override
+        protected Timer.Builder createMetricOperationDuration(DurationKey key) {
+            return super.createMetricOperationDuration(key)
+                .publishPercentileHistogram()
+                .tag("team", "payments");
+        }
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+    final Node<DefaultDatabaseMetricsFactory> databaseMetricsFactory =
+        graph.registerNode(g -> new JdbcMetricsFactory());
+
+    // Default database telemetry stays intact; only its metrics change.
+    final Node<DatabaseTelemetryFactory> databaseTelemetryFactory =
+        graph.registerNode(g -> databaseModule.defaultDatabaseTelemetryFactory(
+            g.valueOf(tracer), g.valueOf(meterRegistry),
+            g.valueOf(databaseLoggerFactory),
+            g.valueOf(databaseMetricsFactory)));
+}`
+                    }
+                ]
             },
             integration: {
                 examples: [{
@@ -5067,16 +5343,11 @@ public final class EventsConsumer {
                     @Nullable Exception ex) {
         if (ex instanceof RecordKeyDeserializationException) {
             System.out.println("Invalid key!");
-            return;
         } else if (ex instanceof RecordValueDeserializationException) {
             System.out.println("Invalid value!");
-            return;
-        } else if (ex != null) {
-            System.out.println("Failed!");
-            return;
+        } else {
+            handleEvent(key, value);
         }
-
-        handleEvent(key, value);
     }
 }`,
                     generatedTitle: "$KafkaConsumer_Handler.java",
@@ -5266,9 +5537,11 @@ interface ElasticsearchModule {
         return mapper.mapOrThrow(config.get("elasticsearch"));
     }
 
-    default ElasticsearchClient elasticsearchClient(ElasticsearchConfig elasticsearchConfig) {
-        var restClient = RestClient.builder(HttpHost.create(elasticsearchConfig.uri())).build();
-        var transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+    default ElasticsearchClient eClient(ElasticsearchConfig eConfig) {
+        var host = HttpHost.create(eConfig.uri());
+        var restClient = RestClient.builder(host).build();
+        var mapper = new JacksonJsonpMapper();
+        var transport = new RestClientTransport(restClient, mapper);
         return new ElasticsearchClient(transport);
     }
 }`,
@@ -5342,7 +5615,7 @@ interface VaultModule {
         return mapper.mapOrThrow(config.get("vault"));
     }
 
-    default Vault vault(VaultClientConfig vaultClientConfig) throws VaultException {
+    default Vault vault(VaultClientConfig vaultClientConfig) {
         var config = new VaultConfig()
             .address(vaultClientConfig.address())
             .token(vaultClientConfig.token())
@@ -5367,7 +5640,120 @@ final class $Application_Graph {
                 ]
             },
             runtime: {
-                examples: [{
+                examples: [
+                    {
+                        label: "Component & DI",
+                        sourceTitle: "NotificationService.java",
+                        sourceCode: `@Component
+public final class MessageFormatter {
+    public String format(String message) {
+        return "[app] " + message;
+    }
+}
+
+@Root
+@Component
+public final class NotificationService {
+    private final MessageFormatter formatter;
+
+    // Ordinary constructor injection: no field magic.
+    public NotificationService(MessageFormatter formatter) {
+        this.formatter = formatter;
+    }
+
+    public void notifyUser(String message) {
+        System.out.println(formatter.format(message));
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+    final Node<MessageFormatter> messageFormatter =
+        graph.registerNode(g -> new MessageFormatter());
+
+    final Node<NotificationService> notificationService =
+        graph.registerNode(g -> new NotificationService(
+            g.valueOf(messageFormatter)));
+}`
+                    },
+                    {
+                        label: "Module & override",
+                        sourceTitle: "Application.java",
+                        sourceCode: `@FunctionalInterface
+public interface MessageFormatter {
+    String format(String message);
+}
+
+@Module
+public interface NotificationModule {
+    @DefaultComponent
+    default MessageFormatter messageFormatter() {
+        return message -> "[default] " + message;
+    }
+}
+
+@KoraApp
+public interface Application extends NotificationModule {
+    // Replaces the module default for this application.
+    default MessageFormatter messageFormatter() {
+        return message -> "[app] " + message;
+    }
+
+    static void main(String[] args) {
+        KoraApplication.run(ApplicationGraph::graph);
+    }
+}`,
+                        generatedTitle: "$Application_Graph.java",
+                        generatedCode: `@Generated("KoraAppProcessor")
+final class $Application_Graph {
+    // Application method wins over @DefaultComponent.
+    final Node<MessageFormatter> messageFormatter =
+        graph.registerNode(g -> application.messageFormatter());
+}`
+                    },
+                    {
+                        label: "Typed config",
+                        sourceTitle: "application.conf + AppConfig.java",
+                        sourceCode: `app {
+  name = "Task Management App"
+  maxRetries = 3
+  requestTimeout = 5s
+  mode = "PRODUCTION"
+}
+
+public enum AppMode {
+    DEVELOPMENT, PRODUCTION
+}
+
+@ConfigSource("app")
+public interface AppConfig {
+    String name();
+    int maxRetries();
+    Duration requestTimeout();
+    AppMode mode();
+    @Nullable URI supportUrl();
+
+    default boolean auditEnabled() {
+        return false;
+    }
+}`,
+                        generatedTitle: "AppConfig_ConfigValueExtractor.java",
+                        generatedCode: `@Generated("ConfigParserAnnotationProcessor")
+public final class AppConfig_ConfigValueExtractor
+        implements ConfigValueExtractor<AppConfig> {
+    public AppConfig extract(ConfigValue value) {
+        var object = value.asObject();
+        return new AppConfig_Impl(
+            stringMapper.apply(object.get("name")),
+            intMapper.apply(object.get("maxRetries")),
+            durationMapper.apply(object.get("requestTimeout")),
+            modeMapper.apply(object.get("mode")),
+            nullableUriMapper.apply(object.get("supportUrl")));
+    }
+}`
+                    },
+                    {
+                        label: "HTTP endpoint",
                     sourceTitle: "GreetingController.java",
                     sourceCode: `// greeting.name = "Kora"
 @ConfigSource("greeting")
@@ -5419,7 +5805,8 @@ public final class $GreetingController_Route implements HttpServerRequestHandler
         });
     }
 }`
-                }]
+                    }
+                ]
             },
             compiler: {
                 examples: [
@@ -5507,6 +5894,513 @@ BUILD FAILED in 1s`
             }
         };
 
+        const kotlinModuleCode = {
+            ops: {
+                examples: [
+                    {
+                        sourceTitle: "application.conf",
+                        sourceCode: moduleCode.ops.examples[0].sourceCode,
+                        generatedTitle: "TelemetryInterceptor.kt",
+                        generatedCode: `class TelemetryInterceptor(
+    private val telemetry: HttpClientTelemetry
+) : HttpClientInterceptor {
+
+    override fun processRequest(
+        chain: InterceptChain,
+        request: HttpClientRequest
+    ): HttpClientResponse {
+        val observation = telemetry.observe(request)
+        val context = Context.current().with(observation.span())
+        return ScopedValue.where(OpentelemetryContext.VALUE, context)
+            .where(Observation.VALUE, observation)
+            .call {
+                try {
+                    val observedRequest = observation.observeRequest(request)
+                    observation.observeResponse(chain.process(observedRequest))
+                } catch (t: Throwable) {
+                    observation.observeError(t)
+                    throw t
+                } finally {
+                    observation.end()
+                }
+            }
+    }
+}`
+                    },
+                    {
+                        sourceTitle: "CustomHttpServerTelemetryFactory.kt",
+                        sourceCode: `@Component
+class CustomHttpServerTelemetryFactory(
+    private val telemetry: CustomTelemetry
+) : HttpServerTelemetryFactory {
+    override fun get(
+        name: String,
+        port: Int,
+        config: HttpServerTelemetryConfig
+    ): HttpServerTelemetry = HttpServerTelemetry { request -> telemetry.observe(request) }
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    // User component wins over @DefaultComponent.
+    val httpServerTelemetryFactory: Node<HttpServerTelemetryFactory> =
+        graph.registerNode {
+            CustomHttpServerTelemetryFactory(it.valueOf(customTelemetry))
+        }
+
+    val publicHttpServerTelemetry: Node<HttpServerTelemetry> =
+        graph.registerNode {
+            it.valueOf(httpServerTelemetryFactory).get(
+                "public", it.valueOf(httpServerConfig).port(),
+                it.valueOf(httpServerConfig).telemetry())
+        }
+}`
+                    },
+                    {
+                        sourceTitle: "JdbcMetricsFactory.kt",
+                        sourceCode: `@Component
+class JdbcMetricsFactory : DefaultDatabaseMetricsFactory() {
+
+    override fun create(
+        context: DefaultDatabaseTelemetry.TelemetryContext
+    ): DefaultDatabaseMetrics = JdbcMetrics(context)
+
+    private class JdbcMetrics(
+        context: DefaultDatabaseTelemetry.TelemetryContext
+    ) : DefaultDatabaseMetrics(context) {
+
+        override fun createMetricOperationDuration(
+            key: DurationKey
+        ): Timer.Builder = super.createMetricOperationDuration(key)
+            .publishPercentileHistogram()
+            .tag("team", "payments")
+    }
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val databaseMetricsFactory: Node<DefaultDatabaseMetricsFactory> =
+        graph.registerNode { JdbcMetricsFactory() }
+
+    // Default database telemetry stays intact; only its metrics change.
+    val databaseTelemetryFactory: Node<DatabaseTelemetryFactory> =
+        graph.registerNode {
+            databaseModule.defaultDatabaseTelemetryFactory(
+                it.valueOf(tracer), it.valueOf(meterRegistry),
+                it.valueOf(databaseLoggerFactory),
+                it.valueOf(databaseMetricsFactory))
+        }
+}`
+                    }
+                ]
+            },
+            extend: {
+                examples: [
+                    {
+                        sourceTitle: "Application.kt",
+                        sourceCode: `@KoraApp
+interface Application : JdbcDatabaseModule {
+
+    class OtherDatabase
+
+    @Tag(OtherDatabase::class)
+    fun otherJdbcDataBaseConfig(
+        config: Config,
+        extractor: ConfigValueExtractor<JdbcDatabaseConfig>
+    ): JdbcDatabaseConfig = extractor.extract(config.get("db.other"))
+
+    @Tag(OtherDatabase::class)
+    fun otherJdbcDataBase(
+        @Tag(OtherDatabase::class) config: JdbcDatabaseConfig,
+        telemetryFactory: DataBaseTelemetryFactory,
+        @Tag(OtherDatabase::class) executor: Executor?
+    ): JdbcDatabase = JdbcDatabase(config, telemetryFactory, executor)
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val jdbcDatabase: Node<JdbcDatabase> = graph.registerNode(
+        JdbcDatabaseModule::jdbcDatabase, defaultConfig, telemetryFactory)
+
+    @Tag(Application.OtherDatabase::class)
+    val otherJdbcDataBase: Node<JdbcDatabase> = graph.registerNode(
+        Application::otherJdbcDataBase, otherConfig, telemetryFactory)
+}`
+                    },
+                    {
+                        sourceTitle: "JedisModule.kt",
+                        sourceCode: `@Module
+interface JedisModule {
+
+    @ConfigMapper
+    interface JedisConfig : JedisClientConfig {
+        fun uri(): URI
+    }
+
+    fun jedisConfig(
+        config: Config,
+        mapper: ConfigValueMapper<JedisConfig>
+    ): JedisConfig = mapper.mapOrThrow(config.get("jedis"))
+
+    fun jedis(config: JedisConfig): Jedis =
+        Jedis(config.uri(), config)
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val jedisConfig: Node<JedisModule.JedisConfig> = graph.registerNode(
+        JedisModule::jedisConfig, config, configValueMapper)
+
+    val jedis: Node<Jedis> = graph.registerNode(
+        JedisModule::jedis, jedisConfig)
+}`
+                    },
+                    {
+                        sourceTitle: "ElasticsearchModule.kt",
+                        sourceCode: `@Module
+interface ElasticsearchModule {
+
+    @ConfigMapper
+    interface ElasticsearchConfig {
+        fun uri(): String
+    }
+
+    fun elasticsearchConfig(
+        config: Config,
+        mapper: ConfigValueMapper<ElasticsearchConfig>
+    ): ElasticsearchConfig = mapper.mapOrThrow(config.get("elasticsearch"))
+
+    fun elasticsearchClient(config: ElasticsearchConfig): ElasticsearchClient {
+        val restClient = RestClient.builder(HttpHost.create(config.uri())).build()
+        val transport = RestClientTransport(restClient, JacksonJsonpMapper())
+        return ElasticsearchClient(transport)
+    }
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val elasticsearchConfig: Node<ElasticsearchModule.ElasticsearchConfig> = graph.registerNode(
+        ElasticsearchModule::elasticsearchConfig, config, configValueMapper)
+
+    val elasticsearchClient: Node<ElasticsearchClient> = graph.registerNode(
+        ElasticsearchModule::elasticsearchClient, elasticsearchConfig)
+}`
+                    },
+                    {
+                        sourceTitle: "MongoModule.kt",
+                        sourceCode: `@Module
+interface MongoModule {
+
+    @ConfigMapper
+    interface MongoConfig {
+        fun connectionString(): String
+    }
+
+    fun mongoConfig(
+        config: Config,
+        mapper: ConfigValueMapper<MongoConfig>
+    ): MongoConfig = mapper.mapOrThrow(config.get("mongo"))
+
+    fun mongoClient(config: MongoConfig): MongoClient =
+        MongoClients.create(config.connectionString())
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val mongoConfig: Node<MongoModule.MongoConfig> = graph.registerNode(
+        MongoModule::mongoConfig, config, configValueMapper)
+
+    val mongoClient: Node<MongoClient> = graph.registerNode(
+        MongoModule::mongoClient, mongoConfig)
+}`
+                    },
+                    {
+                        sourceTitle: "VaultModule.kt",
+                        sourceCode: `@Module
+interface VaultModule {
+
+    @ConfigMapper
+    interface VaultClientConfig {
+        fun address(): String
+        fun token(): String
+    }
+
+    fun vaultClientConfig(
+        config: Config,
+        mapper: ConfigValueMapper<VaultClientConfig>
+    ): VaultClientConfig = mapper.mapOrThrow(config.get("vault"))
+
+    fun vault(config: VaultClientConfig): Vault = Vault(
+        VaultConfig().address(config.address()).token(config.token()).build()
+    )
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val vaultClientConfig: Node<VaultModule.VaultClientConfig> = graph.registerNode(
+        VaultModule::vaultClientConfig, config, configValueMapper)
+
+    val vault: Node<Vault> = graph.registerNode(
+        VaultModule::vault, vaultClientConfig)
+}`
+                    }
+                ]
+            },
+            runtime: {
+                examples: [
+                    {
+                        sourceTitle: "NotificationService.kt",
+                        sourceCode: `@Component
+class MessageFormatter {
+    fun format(message: String): String = "[app] $message"
+}
+
+@Root
+@Component
+class NotificationService(
+    private val formatter: MessageFormatter
+) {
+    fun notifyUser(message: String) {
+        println(formatter.format(message))
+    }
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    val messageFormatter: Node<MessageFormatter> =
+        graph.registerNode { MessageFormatter() }
+
+    val notificationService: Node<NotificationService> =
+        graph.registerNode {
+            NotificationService(it.valueOf(messageFormatter))
+        }
+}`
+                    },
+                    {
+                        sourceTitle: "Application.kt",
+                        sourceCode: `fun interface MessageFormatter {
+    fun format(message: String): String
+}
+
+@Module
+interface NotificationModule {
+    @DefaultComponent
+    fun messageFormatter(): MessageFormatter =
+        MessageFormatter { message -> "[default] $message" }
+}
+
+@KoraApp
+interface Application : NotificationModule {
+    // Replaces the module default for this application.
+    override fun messageFormatter(): MessageFormatter =
+        MessageFormatter { message -> "[app] $message" }
+
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            KoraApplication.run { ApplicationGraph.graph() }
+        }
+    }
+}`,
+                        generatedTitle: "Application_Graph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class Application_Graph {
+    // Application method wins over @DefaultComponent.
+    val messageFormatter: Node<MessageFormatter> =
+        graph.registerNode { application.messageFormatter() }
+}`
+                    },
+                    {
+                        sourceTitle: "application.conf + AppConfig.kt",
+                        sourceCode: `app {
+  name = "Task Management App"
+  maxRetries = 3
+  requestTimeout = 5s
+  mode = "PRODUCTION"
+}
+
+enum class AppMode {
+    DEVELOPMENT, PRODUCTION
+}
+
+@ConfigSource("app")
+interface AppConfig {
+    fun name(): String
+    fun maxRetries(): Int
+    fun requestTimeout(): Duration
+    fun mode(): AppMode
+    fun supportUrl(): URI?
+    fun auditEnabled(): Boolean = false
+}`,
+                        generatedTitle: "AppConfig_ConfigValueExtractor.kt",
+                        generatedCode: `@Generated("ConfigParserSymbolProcessor")
+class AppConfig_ConfigValueExtractor : ConfigValueExtractor<AppConfig> {
+    override fun extract(value: ConfigValue): AppConfig {
+        val objectValue = value.asObject()
+        return AppConfig_Impl(
+            stringMapper.apply(objectValue["name"]),
+            intMapper.apply(objectValue["maxRetries"]),
+            durationMapper.apply(objectValue["requestTimeout"]),
+            modeMapper.apply(objectValue["mode"]),
+            nullableUriMapper.apply(objectValue["supportUrl"]))
+    }
+}`
+                    },
+                    {
+                    sourceTitle: "GreetingController.kt",
+                    sourceCode: `// greeting.name = "Kora"
+@ConfigSource("greeting")
+interface GreetingConfig {
+    fun name(): String
+}
+
+@Component
+@HttpController
+class GreetingController(private val config: GreetingConfig) {
+
+    @Validate
+    @HttpRoute(method = HttpMethod.GET, path = "/hello/{visitor}")
+    fun hello(@Path @Pattern("[A-Za-z ]{1,40}") visitor: String): String =
+        "Hello, " + config.name() + "! Nice to meet you, " + visitor + "."
+}`,
+                    generatedTitle: "GreetingController_Route.kt",
+                    generatedCode: `@Generated("ValidationSymbolProcessor")
+class GreetingController_AopProxy(
+    private val visitorValidator: Validator<String>
+) : GreetingController {
+    override fun hello(visitor: String): String {
+        val violations = visitorValidator.validate(visitor)
+        if (violations.isNotEmpty()) throw ViolationException(violations)
+        return super.hello(visitor)
+    }
+}
+
+@Generated("HttpServerSymbolProcessor")
+class GreetingController_Route(
+    private val controller: GreetingController_AopProxy,
+    private val executor: BlockingRequestExecutor
+) : HttpServerRequestHandler {
+    override fun handle(ctx: Context, request: HttpServerRequest) =
+        executor.execute(ctx) {
+            val visitor = request.pathParams()["visitor"]
+            responseMapper.apply(ctx, request, controller.hello(visitor))
+        }
+}`
+                    }
+                ]
+            },
+            compiler: {
+                examples: [
+                    {
+                        sourceTitle: "Application.kt",
+                        sourceCode: `@Component
+class Recorder {
+    fun record(user: String) { /* ... */ }
+}
+
+@Module
+interface NotifierModule {
+    fun smsNotifier(): Notifier =
+        Notifier { user -> println(user.name()) }
+}
+
+@Component
+class ActivityService(
+    private val recorder: Recorder,
+    private val notifier: Notifier
+)`,
+                        generatedTitle: "ApplicationGraph.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class ApplicationGraph {
+    private val recorder: Node<Recorder> = graphDraw.addNode0 {
+        Recorder()
+    }
+    private val notifier: Node<Notifier> = graphDraw.addNode0 {
+        impl.notifierModule.smsNotifier()
+    }
+    private val activityService: Node<ActivityService> = graphDraw.addNode0 {
+        ActivityService(it.valueOf(recorder), it.valueOf(notifier))
+    }
+}`
+                    },
+                    {
+                        sourceTitle: "Application.kt",
+                        sourceCode: `@KoraApp
+interface Application :
+    HoconConfigModule,
+    LogbackModule,
+    NotifierModule {
+
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            KoraApplication.run(ApplicationGraph::graph)
+        }
+    }
+}`,
+                        generatedTitle: "ApplicationImpl.kt",
+                        generatedCode: `@Generated("KoraAppProcessor")
+class ApplicationImpl : Application {
+    val module0: NotifierModule = object : NotifierModule {}
+    val module1: HoconConfigModule = object : HoconConfigModule {}
+    val module2: LogbackModule = object : LogbackModule {}
+}`
+                    },
+                    {
+                        sourceTitle: "ActivityService.kt",
+                        sourceCode: `@Component
+class ActivityService(
+    recorder: Recorder,
+    auditLog: AuditLog
+) {
+    // AuditLog has no @Component and no @Module binding
+}`,
+                        generatedTitle: "Build output",
+                        generatedCode: `error: Kora dependency graph is unsatisfied
+
+  Component required: AuditLog
+  Requested by:        ActivityService(Recorder, AuditLog)
+
+  No @Component, @Module method, or explicit binding
+  produces AuditLog.
+
+  help: annotate an implementation with @Component,
+        or add a producing method to a @Module interface.
+
+BUILD FAILED in 1s`
+                    }
+                ]
+            }
+        };
+
+        const sharedSnippetIndexes = {
+            http: [3, 0],
+            data: [2],
+            integration: [4],
+            aop: [5]
+        };
+
+        const getCodeExample = (moduleKey, index, language) => {
+            const javaExample = moduleCode[moduleKey]?.examples[index];
+            if (language !== "kotlin") return javaExample;
+
+            const kotlinExample = kotlinModuleCode[moduleKey]?.examples[index];
+            if (kotlinExample) return kotlinExample;
+
+            const snippetIndex = sharedSnippetIndexes[moduleKey]?.[index];
+            const snippetSets = window.koraSnippetSets;
+            if (snippetIndex != null && snippetSets?.kotlin) {
+                return {
+                    ...javaExample,
+                    sourceTitle: snippetSets.kotlin.source[snippetIndex].title,
+                    sourceCode: snippetSets.kotlin.source[snippetIndex].code,
+                    generatedTitle: snippetSets.kotlin.generated[snippetIndex].title,
+                    generatedCode: snippetSets.kotlin.generated[snippetIndex].code
+                };
+            }
+            return javaExample;
+        };
+
         const cards = Array.from(document.querySelectorAll(".module[data-module]"));
         const detail = document.getElementById("module-detail");
         if (!detail || cards.length === 0) {
@@ -5547,7 +6441,7 @@ BUILD FAILED in 1s`
             }
             const examples = codeData.examples;
             exampleIndex = Math.min(exampleIndex, examples.length - 1);
-            const example = examples[exampleIndex];
+            const example = getCodeExample(currentModuleKey, exampleIndex, window.koraCodeLanguage || "java");
             const activeData = (window.koraLanguage === "ru" ? modulesRu : modules)[currentModuleKey];
             if (detailMode === "generated") {
                 codeTitle.textContent = example.generatedTitle;
@@ -5651,6 +6545,9 @@ BUILD FAILED in 1s`
             if (active) {
                 openDetail(active);
             }
+        });
+        window.addEventListener("kora:codelanguagechange", () => {
+            if (currentModuleKey) renderCode();
         });
     })();
 
@@ -6267,6 +7164,9 @@ public interface UserRepository extends JdbcRepository {
     @Nullable
     User findById(UUID id);
 
+    @Query("SELECT id, email, created_at FROM users")
+    List<User> findAll();
+
     @Query("INSERT INTO %{user#inserts}")
     UpdateCount insert(User user);
 }`
@@ -6296,16 +7196,11 @@ public final class EventsConsumer {
                     @Nullable Exception ex) {
         if (ex instanceof RecordKeyDeserializationException) {
             System.out.println("Invalid key!");
-            return;
         } else if (ex instanceof RecordValueDeserializationException) {
             System.out.println("Invalid value!");
-            return;
-        } else if (ex != null) {
-            System.out.println("Failed!");
-            return;
+        } else {
+            handleEvent(key, value);
         }
-
-        handleEvent(key, value);
     }
 }`
             },
@@ -6561,6 +7456,9 @@ interface UserRepository : JdbcRepository {
     """)
     fun findById(id: UUID): User?
 
+    @Query("SELECT id, email, created_at FROM users")
+    fun findAll(): List<User>
+
     @Query("INSERT INTO %{user#inserts}")
     fun insert(user: User): UpdateCount
 }`
@@ -6590,22 +7488,10 @@ class EventsConsumer {
         exception: Exception?
     ) {
         when (exception) {
-            is RecordKeyDeserializationException -> {
-                println("Invalid key!")
-                return
-            }
-            is RecordValueDeserializationException -> {
-                println("Invalid value!")
-                return
-            }
-            null -> Unit
-            else -> {
-                println("Failed!")
-                return
-            }
+            is RecordKeyDeserializationException -> println("Invalid key!")
+            is RecordValueDeserializationException -> println("Invalid value!")
+            else -> handleEvent(key, value)
         }
-
-        handleEvent(key, value)
     }
 }`
             },
@@ -6828,11 +7714,12 @@ class ResilientService_AopProxy(
                 generated: kotlinGeneratedSnippets
             }
         };
+        window.koraSnippetSets = snippetSets;
 
         const title = document.getElementById("snippet-title");
         const code = document.getElementById("snippet-code");
         const dots = Array.from(document.querySelectorAll(".snippet-dot"));
-        const languageButtons = Array.from(document.querySelectorAll("[data-snippet-language]"));
+        const languageButtons = Array.from(document.querySelectorAll("[data-code-language]"));
         const modeButtons = Array.from(document.querySelectorAll("[data-snippet-mode]"));
         const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
         const typeDuration = 3000;
@@ -6840,7 +7727,7 @@ class ResilientService_AopProxy(
         let index = 0;
         let sequence = 0;
         let restartTimer = 0;
-        let language = "java";
+        let language = window.koraCodeLanguage || "java";
         let mode = "source";
         let snippets = snippetSets[language][mode];
 
@@ -6879,7 +7766,7 @@ class ResilientService_AopProxy(
         const selectSnippets = () => {
             snippets = snippetSets[language][mode];
             index = Math.min(index, snippets.length - 1);
-            languageButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.snippetLanguage === language));
+            languageButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.codeLanguage === language));
             modeButtons.forEach((item) => item.classList.toggle("is-active", item.dataset.snippetMode === mode));
             dots.forEach((dot, dotIndex) => {
                 dot.hidden = dotIndex >= snippets.length;
@@ -6929,12 +7816,10 @@ class ResilientService_AopProxy(
             });
         });
 
-        languageButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-                language = button.dataset.snippetLanguage;
-                selectSnippets();
-                restart();
-            });
+        window.addEventListener("kora:codelanguagechange", (event) => {
+            language = event.detail.language;
+            selectSnippets();
+            restart();
         });
 
         modeButtons.forEach((button) => {
@@ -6945,6 +7830,7 @@ class ResilientService_AopProxy(
             });
         });
 
+        selectSnippets();
         run();
     })();
 </script>
