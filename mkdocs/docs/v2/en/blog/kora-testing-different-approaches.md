@@ -1,0 +1,1 @@
+--8<-- "en/kora-testing-different-approaches.md"
