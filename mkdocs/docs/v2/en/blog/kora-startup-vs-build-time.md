@@ -1,0 +1,1 @@
+--8<-- "en/kora-startup-vs-build-time.md"

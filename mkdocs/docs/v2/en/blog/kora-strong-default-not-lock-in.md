@@ -1,0 +1,1 @@
+--8<-- "en/kora-strong-default-not-lock-in.md"

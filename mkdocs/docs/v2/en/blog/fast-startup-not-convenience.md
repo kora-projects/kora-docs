@@ -1,0 +1,1 @@
+--8<-- "en/fast-startup-not-convenience.md"

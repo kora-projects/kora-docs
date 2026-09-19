@@ -1,0 +1,1 @@
+--8<-- "en/kora-extending-framework-ecosystem.md"
