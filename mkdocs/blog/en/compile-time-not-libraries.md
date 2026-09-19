@@ -5,6 +5,7 @@ description: Why the Kora Framework's compile-time model does not forbid ordinar
 search:
   exclude: true
 ---
+
 # Compile-Time Framework Does Not Mean Compile-Time-Only Libraries { #compile-time-framework }
 
 **August 1, 2026**
@@ -47,8 +48,6 @@ The correct model is much simpler:
 proxies or runtime metadata. Kora is still a normal JVM framework running normal JVM bytecode.**
 
 Once that distinction is clear, several other myths disappear with it.
-
----
 
 ## Framework Implementation Strategy Is Not an Application-Wide Restriction { #framework-implementation-strategy }
 
@@ -95,8 +94,6 @@ The framework is making a decision about **how Kora implements Kora**.
 It is not legislating how every other library implements itself.
 
 That difference is fundamental.
-
----
 
 ## "Kora Avoids Reflection" Is Not the Same as "Reflection Is Disabled" { #kora-avoids-reflection }
 
@@ -338,7 +335,7 @@ It is **local optimization**.
 
 When evaluating a library for a Kora service, ask three separate questions.
 
-## 1. Does the library work on the JVM? { #does-library-work-on-jvm }
+### 1. Does the library work on the JVM? { #does-library-work-on-jvm }
 
 This is the ordinary compatibility question.
 
@@ -354,7 +351,7 @@ Does it conflict with other dependencies?
 
 This is the same kind of question any Java application asks.
 
-## 2. Does the library integrate cleanly into Kora's application graph? { #library-integrate-into-graph }
+### 2. Does the library integrate cleanly into Kora's application graph? { #library-integrate-into-graph }
 
 This is a much smaller question.
 
@@ -382,7 +379,7 @@ native client
 application graph
 ```
 
-## 3. Does the library work in GraalVM Native Image? { #library-graalvm-native-image }
+### 3. Does the library work in GraalVM Native Image? { #library-graalvm-native-image }
 
 This is a separate deployment question.
 
