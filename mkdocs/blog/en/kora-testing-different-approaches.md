@@ -1,11 +1,14 @@
 ---
 title: Component vs Integration vs Black-Box Tests in the Kora Framework
+date: 2026-08-06
 description: How the Kora Framework separates component, integration, and black-box tests — what each layer proves, and how to place each test at the cheapest boundary that can prove it.
 search:
   exclude: true
 ---
 
-# Component vs Integration vs Black-Box Tests in Kora
+# Component vs Integration vs Black-Box Tests in Kora { #testing-layers }
+
+**August 6, 2026**
 
 Testing strategy is often reduced to labels. One team calls a test “unit” because it runs in JUnit. Another calls the same test “integration” because a dependency-injection container starts. A third
 calls every HTTP test “end-to-end,” even when the application is running in the same process with half its dependencies mocked. Those labels do not tell us what the test proves.
@@ -40,7 +43,7 @@ That last point matters in Kora. The framework documentation recommends black-bo
 with hundreds of containerized scenarios. “Primary source of truth” describes confidence: when a component test and the packaged application disagree, the packaged application wins. The pyramid
 describes economics: use the broadest boundary only for scenarios that need it.
 
-## One Application Architecture, Three Observation Boundaries
+## One Application Architecture, Three Observation Boundaries { #observation-boundaries }
 
 Kora builds and validates its application graph at compile time. Components, modules, factory methods, tags, generated repositories, configuration mappers, controllers, clients, and lifecycle
 relationships become one explicit structure. Production starts that generated graph. Kora's JUnit extension can also use it as the source for a smaller test graph.
@@ -70,7 +73,7 @@ behavior, service logic, repository code, database access, response mapping, and
 Moving upward through the pyramid increases the amount of reality included in the test. It also increases the number of possible failure causes. That is why the layers complement rather than replace
 each other. A broad test is authoritative but can be slower to diagnose. A narrow test is precise but can only establish facts inside its boundary.
 
-## Component Tests: Fast Feedback Through a Graph Slice
+## Component Tests: Fast Feedback Through a Graph Slice { #component-tests }
 
 A Kora component test is not necessarily a classic isolated unit test. It sits between a hand-constructed class test and a full application context. The test asks Kora to build a selected slice of the
 production graph, initialize its components, and inject the component under test.
@@ -154,7 +157,7 @@ environment correctly. Component tests give fast confidence in graph-managed beh
 Use a component test when the answer would remain meaningful if external infrastructure were perfectly simulated. If the bug could exist only in SQL, wire protocol, serialization, process startup, or
 packaging, the test belongs higher in the pyramid.
 
-## Integration Tests: Real Infrastructure, Direct Component Access
+## Integration Tests: Real Infrastructure, Direct Component Access { #integration-tests }
 
 An integration test keeps application code and one or more infrastructure boundaries real. In the Kora guides, the canonical example runs a PostgreSQL container, builds a Kora test graph containing
 the real JDBC pool, Flyway migrations, generated repository, and `UserService`, then invokes those graph-managed components directly from JUnit.
@@ -274,7 +277,7 @@ JVM arguments, container user, exposed ports, environment variables, and startup
 Use an integration test when the central question contains the phrase “with the real database,” “over the real protocol,” “using actual migrations,” or “through the actual generated client or
 repository,” but does not require the packaged service's public entry point.
 
-## Black-Box Tests: The Packaged Application from the Outside
+## Black-Box Tests: The Packaged Application from the Outside { #black-box-tests }
 
 A black-box test removes privileged access. It does not inject `UserService`, query `KoraAppGraph`, replace a dependency, or call a controller method. It starts the complete packaged application and
 communicates over the public HTTP API.
@@ -408,7 +411,7 @@ request timeouts, container logs, liveness, readiness, and metrics make failures
 Use a black-box test when the question begins with “Can a real client…?”, “Will the packaged service…?”, or “Does the deployed contract…?”. If answering requires direct access to an application
 object, it is not a black-box question.
 
-## Following One Behavior Up the Pyramid
+## Following One Behavior Up the Pyramid { #one-behavior }
 
 The cleanest way to understand the division is to follow one requirement through all three layers. Suppose duplicate email addresses must be rejected with HTTP status `409`.
 
@@ -427,7 +430,7 @@ permutations.
 The three tests are not duplicates. They fail for different reasons and establish different claims. Removing the component cases loses cheap behavioral coverage. Removing the integration case replaces
 database truth with a simulation. Removing the black-box case leaves the client contract inferred rather than observed.
 
-## Choosing the Layer by the Failure You Want to Detect
+## Choosing the Layer by the Failure You Want to Detect { #choosing-the-layer }
 
 The best test boundary is the narrowest one that contains the possible defect.
 
@@ -445,7 +448,7 @@ image, only black-box covers the whole claim.
 This decision rule prevents two symmetrical mistakes. Testing too low produces false confidence because the relevant failure surface was mocked or bypassed. Testing too high produces slow, opaque
 suites because every small rule is forced through infrastructure and HTTP.
 
-## How Many Tests Belong at Each Level
+## How Many Tests Belong at Each Level { #test-quantity }
 
 No fixed percentage fits every Kora service. A calculation-heavy service with little infrastructure naturally has a wide component base. A thin database API may need proportionally more integration
 coverage. A public gateway with complex routing and compatibility obligations may justify more black-box contracts. The pyramid is a pressure toward economical placement, not a quota.
@@ -463,7 +466,7 @@ high-information scenarios, not from lowering expectations.
 Kora's fast startup can make black-box tests more practical than in frameworks with expensive runtime graph discovery. That is an opportunity to improve release confidence, but not a reason to move
 all logic testing upward. Fast full startup reduces one cost; containers, networks, databases, image builds, data cleanup, and broad failure diagnosis still remain.
 
-## Configuration and Lifecycle Change Across the Layers
+## Configuration and Lifecycle Change Across the Layers { #configuration-lifecycle }
 
 All three layers need configuration, but they should receive it at their natural boundary.
 
@@ -480,7 +483,7 @@ Lifecycle follows the same progression. A component graph usually starts per met
 components, or use `PER_CLASS` when pool and migration startup dominate. A black-box class often shares application and database containers across scenarios, waits for readiness once, and enforces
 data isolation inside that shared environment. Higher layers save more time through reuse, but they also accumulate more mutable state, so cleanup becomes more important.
 
-## Common Ways to Distort the Pyramid
+## Common Ways to Distort the Pyramid { #pyramid-distortions }
 
 A component test becomes misleading when every dependency is mocked even though cheap real components would strengthen the graph slice. Mock external boundaries and nondeterministic collaborators, not
 every constructor parameter by reflex.
@@ -499,7 +502,7 @@ Flaky high-level tests are not an unavoidable price of realism. Fixed sleeps, ha
 instability. Testcontainers-managed lifecycle, random mapped ports, unique test data, explicit HTTP timeouts, and readiness-based waits make the environment deterministic without reaching into
 application internals.
 
-## A Balanced Kora Testing Strategy
+## A Balanced Kora Testing Strategy { #balanced-strategy }
 
 For each feature, begin by identifying the public promise and the risky boundaries. Put business permutations into component tests using real graph-managed services and controlled replacements. Add
 integration tests where generated code or external system semantics could invalidate the simulation. Add one or more black-box scenarios for the public journey and its most important externally

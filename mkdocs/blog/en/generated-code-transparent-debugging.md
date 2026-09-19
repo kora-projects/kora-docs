@@ -1,11 +1,14 @@
 ---
 title: Generated Code Makes Debugging More Transparent in the Kora Framework
+date: 2026-08-14
 description: Why the Kora Framework's generated Java and Kotlin sources are an inspectable escape hatch that makes framework behavior easier to debug, not harder.
 search:
   exclude: true
 ---
 
-# Generated Code Makes Debugging More Transparent, Not Harder
+# Generated Code Makes Debugging More Transparent, Not Harder { #generated-code-transparent-debugging }
+
+**August 14, 2026**
 
 Generated code is often treated as a debugging smell.
 
@@ -52,7 +55,7 @@ Or, stated more strongly:
 
 ---
 
-## Debugging Does Not Mean Stepping Through Every Method
+## Debugging Does Not Mean Stepping Through Every Method { #debugging-step-over }
 
 A large part of the fear around generated code comes from an imprecise mental model of how developers use a debugger.
 
@@ -116,7 +119,7 @@ Generated code should be treated the same way.
 
 ---
 
-## Application Source Remains the Primary Development Surface
+## Application Source Remains the Primary Development Surface { #application-source-primary }
 
 Kora's generated source is useful precisely because it is optional most of the time.
 
@@ -173,7 +176,7 @@ That is a significant difference from a framework whose machinery is equally com
 
 ---
 
-## Kora Generates Source, Not an Opaque Runtime Model
+## Kora Generates Source, Not an Opaque Runtime Model { #kora-generates-source }
 
 Not all framework abstraction is equally inspectable.
 
@@ -231,7 +234,7 @@ The answer does not have to remain conceptual. It can be represented in code.
 
 ---
 
-## Generated Source Is an Escape Hatch
+## Generated Source Is an Escape Hatch { #generated-source-escape-hatch }
 
 The most useful way to understand generated code in Kora is as an escape hatch from abstraction.
 
@@ -280,7 +283,7 @@ That is a strong debugging property.
 
 ---
 
-## Go to Implementation Should Sometimes Show Generated Code
+## Go to Implementation Should Sometimes Show Generated Code { #go-to-implementation }
 
 IDE navigation into generated code is sometimes described as though the IDE has failed to understand the framework.
 
@@ -333,7 +336,7 @@ The stronger way to frame it is:
 
 ---
 
-## IDE Tooling Improves Convenience, Not Comprehensibility
+## IDE Tooling Improves Convenience, Not Comprehensibility { #ide-tooling }
 
 Framework-aware IDE tooling is valuable because it can optimize navigation for common intentions. A Kora-specific plugin can help developers jump between declarations and generated components,
 understand configuration, or surface framework-specific relationships more conveniently.
@@ -371,7 +374,7 @@ The IDE plugin can make an already-inspectable system nicer to use. It does not 
 
 ---
 
-## Generated Repositories Turn an Interface Into a Concrete Debugging Target
+## Generated Repositories Turn an Interface Into a Concrete Debugging Target { #generated-repositories }
 
 Repositories are one of the clearest examples of why generated code can improve transparency.
 
@@ -416,7 +419,7 @@ The generated repository is therefore not simply compiler output. It is a debugg
 
 ---
 
-## Generated HTTP Handlers Expose the Real Request Path
+## Generated HTTP Handlers Expose the Real Request Path { #generated-http-handlers }
 
 HTTP handling follows the same principle.
 
@@ -463,7 +466,7 @@ is visible.
 
 ---
 
-## Generated AOP Is One of the Strongest Debugging Arguments
+## Generated AOP Is One of the Strongest Debugging Arguments { #generated-aop }
 
 AOP is where compile-time generation produces one of the clearest transparency benefits.
 
@@ -511,7 +514,7 @@ That is why a readable generated wrapper can be easier to debug than an intercep
 
 ---
 
-## Validation Becomes Explicit Code
+## Validation Becomes Explicit Code { #validation-explicit-code }
 
 Validation illustrates the same point at a smaller scale.
 
@@ -530,7 +533,7 @@ It is also an excellent artifact for AI-assisted debugging because a model can i
 
 ---
 
-## Generated Resilience Code Makes Policy Composition Visible
+## Generated Resilience Code Makes Policy Composition Visible { #generated-resilience }
 
 Resilience policies are especially sensitive to ordering.
 
@@ -572,7 +575,7 @@ This is a strong example of why code generation can improve rather than reduce d
 
 ---
 
-## Generated Code Is Valuable Because It Is Readable
+## Generated Code Is Valuable Because It Is Readable { #generated-code-readable }
 
 There is an important qualification to everything above: not all generated code is equally useful.
 
@@ -599,7 +602,7 @@ Generated code is valuable when it acts as a human-readable intermediate represe
 
 ---
 
-## The Generated Graph Is the Application Wiring Made Concrete
+## The Generated Graph Is the Application Wiring Made Concrete { #generated-graph }
 
 Dependency injection is another area where compile-time generation can turn an abstract container model into inspectable application code.
 
@@ -638,7 +641,7 @@ This is exactly the kind of escape hatch that makes an abstraction easier to tru
 
 ---
 
-## Compile-Time Generation Removes Entire Categories of Runtime Debugging
+## Compile-Time Generation Removes Entire Categories of Runtime Debugging { #compile-time-generation }
 
 Generated source helps when debugging is necessary, but the larger benefit is that many structural problems never reach runtime debugging at all.
 
@@ -690,7 +693,7 @@ concerns. But reducing the number of framework-structural failures that reach ru
 
 ---
 
-## Compiler Errors Are Part of the Debugging Story
+## Compiler Errors Are Part of the Debugging Story { #compiler-errors }
 
 It is useful to broaden the definition of debugging beyond the interactive debugger.
 
@@ -711,7 +714,7 @@ The compile-time architecture therefore influences debugging long before the JVM
 
 ---
 
-## Stack Traces May Be More Explicit Without Being Prettier
+## Stack Traces May Be More Explicit Without Being Prettier { #stack-traces }
 
 There is one point where generated code can legitimately add noise: stack traces.
 
@@ -744,7 +747,7 @@ For diagnosis, explicitness can be more valuable than aesthetic cleanliness.
 
 ---
 
-## Debugging a Framework Boundary Is Different From Debugging Business Logic
+## Debugging a Framework Boundary Is Different From Debugging Business Logic { #framework-boundary }
 
 A recurring mistake in discussions about debuggability is to treat all debugging as one activity.
 
@@ -791,7 +794,7 @@ This prevents generated source from becoming part of every debugging session whi
 
 ---
 
-## Breakpoints in Generated Code Are Sometimes the Best Breakpoints
+## Breakpoints in Generated Code Are Sometimes the Best Breakpoints { #breakpoints-generated-code }
 
 Because generated source is ordinary source, developers can place breakpoints in it when that is useful.
 
@@ -809,7 +812,7 @@ A framework that exposes more concrete observation points gives engineers more d
 
 ---
 
-## Navigation Into Generated Code Can Be More Precise Than Runtime Proxy Navigation
+## Navigation Into Generated Code Can Be More Precise Than Runtime Proxy Navigation { #navigation-generated-code }
 
 Dynamic proxy systems can also be debugged, but navigation may be less application-specific. The proxy class may be created at runtime, the interceptor chain may be assembled from metadata, and the
 user-visible source declaration may not map directly to a single concrete source file representing the full behavior.
@@ -830,7 +833,7 @@ The value is not that generated code is inherently superior to every runtime mec
 
 ---
 
-## Source Generation Gives Reviewers a Second View
+## Source Generation Gives Reviewers a Second View { #reviewers-second-view }
 
 Generated source is also useful outside interactive debugging.
 
@@ -855,7 +858,7 @@ This is a useful property because it keeps application code concise without forc
 
 ---
 
-## Generated Code Also Improves Incident Analysis
+## Generated Code Also Improves Incident Analysis { #incident-analysis }
 
 The same transparency matters in production incident work.
 
@@ -872,7 +875,7 @@ into framework behavior.
 
 ---
 
-## Generated Code Is a Better Ground Truth Than Memory
+## Generated Code Is a Better Ground Truth Than Memory { #ground-truth-memory }
 
 Framework expertise often contains a large amount of memorized behavior: aspect ordering rules, proxy rules, injection conventions, lifecycle assumptions, mapping conventions, and special cases.
 Experienced developers become productive partly because they know these rules without looking them up.
@@ -892,7 +895,7 @@ generated from the current codebase.
 
 ---
 
-## AI Makes Generated Source More Valuable Than Before
+## AI Makes Generated Source More Valuable Than Before { #ai-generated-source }
 
 AI coding agents change the economics of inspectable code.
 
@@ -936,7 +939,7 @@ That makes transparency more valuable in the AI era, not less.
 
 ---
 
-## AI Can Follow the Exact Application Instead of Guessing the Framework
+## AI Can Follow the Exact Application Instead of Guessing the Framework { #ai-follow-application }
 
 This is particularly important for framework debugging because AI models are prone to plausible generalization.
 
@@ -965,7 +968,7 @@ Kora's generated artifacts therefore reduce the amount of framework behavior tha
 
 ---
 
-## The Compiler, Debugger, Tests, and AI Form One Diagnostic Stack
+## The Compiler, Debugger, Tests, and AI Form One Diagnostic Stack { #diagnostic-stack }
 
 The strongest debugging story is not any one tool in isolation. It is the interaction between several tools.
 
@@ -1002,7 +1005,7 @@ This layered approach is more useful than arguing about whether one debugging te
 
 ---
 
-## The Easiest Bug to Debug Is the One That Never Reaches Runtime
+## The Easiest Bug to Debug Is the One That Never Reaches Runtime { #easiest-bug }
 
 One of the strongest consequences of Kora's architecture deserves to be stated directly.
 
@@ -1029,7 +1032,7 @@ That is a better place to spend debugging time.
 
 ---
 
-## There Is Still a Cost to Generated Code
+## There Is Still a Cost to Generated Code { #cost-generated-code }
 
 A credible argument should acknowledge the trade-offs.
 
@@ -1064,7 +1067,7 @@ Once the comparison is framed correctly, the debugging trade-off looks different
 
 ---
 
-## Generated Classes Should Not Be Confused With Handwritten Ownership
+## Generated Classes Should Not Be Confused With Handwritten Ownership { #generated-ownership }
 
 Another concern is maintenance responsibility.
 
@@ -1090,7 +1093,7 @@ Debugging may inspect both. Maintenance should normally modify the first.
 
 ---
 
-## Readable Generation Strengthens Abstraction Rather Than Weakening It
+## Readable Generation Strengthens Abstraction Rather Than Weakening It { #readable-generation }
 
 There is a common misconception that if developers ever need to inspect an abstraction's implementation, then the abstraction has failed.
 
@@ -1117,7 +1120,7 @@ For debugging, this is often the ideal balance.
 
 ---
 
-## Framework Transparency Is More Important Than Framework Minimalism
+## Framework Transparency Is More Important Than Framework Minimalism { #transparency-vs-minimalism }
 
 A framework can be small and still be difficult to debug if its behavior is implicit.
 
@@ -1140,7 +1143,7 @@ Kora performs well on these dimensions because code generation is part of its tr
 
 ---
 
-## Generated Code Can Improve Onboarding
+## Generated Code Can Improve Onboarding { #improve-onboarding }
 
 The same property that helps debugging also helps new engineers.
 
@@ -1166,7 +1169,7 @@ The framework becomes easier to learn because the abstraction has a visible impl
 
 ---
 
-## Generated Code Helps Separate Framework Bugs From Application Bugs
+## Generated Code Helps Separate Framework Bugs From Application Bugs { #separate-framework-bugs }
 
 Another practical debugging benefit is fault localization.
 
@@ -1186,7 +1189,7 @@ This ability to inspect the framework boundary can dramatically narrow debugging
 
 ---
 
-## Ground Truth Matters Most in Difficult Bugs
+## Ground Truth Matters Most in Difficult Bugs { #ground-truth-difficult-bugs }
 
 Simple bugs rarely need framework internals.
 
@@ -1205,7 +1208,7 @@ This is why code generation should not be judged only as a developer-experience 
 
 ---
 
-## A More Accurate Debugging Model
+## A More Accurate Debugging Model { #accurate-debugging-model }
 
 The debugging story can therefore be summarized as a layered decision process rather than as “developers debug generated code.”
 
@@ -1253,7 +1256,7 @@ This is a much more realistic description of Kora development than the idea that
 
 ---
 
-## The Real Comparison Is Inspectable Mechanism vs Hidden Mechanism
+## The Real Comparison Is Inspectable Mechanism vs Hidden Mechanism { #inspectable-vs-hidden }
 
 The debate around generated code often starts from the wrong baseline.
 
@@ -1311,7 +1314,7 @@ Complexity represented explicitly can be easier to debug than complexity represe
 
 ---
 
-## Transparency Is Not the Same as Simplicity
+## Transparency Is Not the Same as Simplicity { #transparency-vs-simplicity }
 
 It is also useful to distinguish transparency from simplicity.
 
@@ -1332,7 +1335,7 @@ That is a much stronger and more technically precise argument.
 
 ---
 
-## Generated Source Works With the Existing JVM Toolchain
+## Generated Source Works With the Existing JVM Toolchain { #jvm-toolchain }
 
 Another benefit of generating ordinary Java and Kotlin source is tool compatibility.
 
@@ -1360,7 +1363,7 @@ That keeps the debugging model familiar even when the generated implementation i
 
 ---
 
-## Why the Distinction Matters for Kora's Broader Design
+## Why the Distinction Matters for Kora's Broader Design { #broader-design }
 
 Generated code is not an isolated implementation trick in Kora. It is connected to several broader framework principles.
 
@@ -1385,7 +1388,7 @@ artifacts.
 
 ---
 
-## What Generated Code Does Not Solve
+## What Generated Code Does Not Solve { #what-codegen-does-not-solve }
 
 A balanced view should also be clear about the limits.
 
@@ -1411,7 +1414,7 @@ The correct argument is therefore not “generated code solves debugging.” It 
 
 ---
 
-## A Generated Wrapper Is Often Easier to Explain Than a Runtime Chain
+## A Generated Wrapper Is Often Easier to Explain Than a Runtime Chain { #generated-wrapper-easier }
 
 This distinction becomes particularly visible when teaching or reviewing cross-cutting behavior.
 
@@ -1441,7 +1444,7 @@ That allows reviewers, debuggers, and AI agents to reason from the actual execut
 
 ---
 
-## The Generated Implementation Can Be Better Documentation Than a Generic Diagram
+## The Generated Implementation Can Be Better Documentation Than a Generic Diagram { #better-documentation }
 
 Documentation must remain generic because it describes a framework feature across many possible applications.
 
@@ -1463,7 +1466,7 @@ That is a powerful way to think about it.
 
 ---
 
-## AI Turns Application-Specific Documentation Into a Conversation
+## AI Turns Application-Specific Documentation Into a Conversation { #ai-documentation-conversation }
 
 Once an AI agent can read those generated artifacts, the developer can interact with that application-specific documentation conversationally.
 
@@ -1489,7 +1492,7 @@ That is the ideal relationship between AI and framework transparency.
 
 ---
 
-## Generated Source Reduces Dependence on Tribal Knowledge
+## Generated Source Reduces Dependence on Tribal Knowledge { #tribal-knowledge }
 
 Framework debugging often becomes difficult when correct behavior depends on rules that experienced developers know but the codebase does not expose directly.
 
@@ -1511,7 +1514,7 @@ This is useful for onboarding, code review, incident response, and AI-assisted d
 
 ---
 
-## An Explicit Extra Frame Can Be Better Than an Invisible Decision
+## An Explicit Extra Frame Can Be Better Than an Invisible Decision { #explicit-extra-frame }
 
 One of the strongest objections to generated code is aesthetic: stack traces and navigation feel less clean because there are extra generated classes.
 
@@ -1529,7 +1532,7 @@ Kora's generated code is designed around the latter.
 
 ---
 
-## Code Generation Moves Complexity Earlier
+## Code Generation Moves Complexity Earlier { #moves-complexity-earlier }
 
 Another way to describe Kora's model is that it shifts framework complexity from runtime to build time.
 
@@ -1549,7 +1552,7 @@ That is especially useful for difficult framework interactions.
 
 ---
 
-## The Best Debugging Surface Is the One You Can Ignore Until You Need It
+## The Best Debugging Surface Is the One You Can Ignore Until You Need It { #best-debugging-surface }
 
 A good diagnostic mechanism should not impose itself on every task.
 
@@ -1569,7 +1572,7 @@ That is a strong ergonomics model because it combines abstraction with inspectab
 
 ---
 
-## A Practical Example: Debugging a Repository
+## A Practical Example: Debugging a Repository { #example-repository }
 
 Imagine that a repository method unexpectedly returns an object with one field missing.
 
@@ -1591,7 +1594,7 @@ That is the pattern Kora enables.
 
 ---
 
-## A Practical Example: Debugging Resilience
+## A Practical Example: Debugging Resilience { #example-resilience }
 
 Imagine that a service method is annotated with timeout, retry, circuit breaker, and fallback, and production traces show longer latency than expected.
 
@@ -1606,7 +1609,7 @@ This is much faster than debating from memory about annotation order.
 
 ---
 
-## A Practical Example: Debugging DI
+## A Practical Example: Debugging DI { #example-di }
 
 Suppose a developer expects one implementation of an interface but compilation reports ambiguity.
 
@@ -1620,7 +1623,7 @@ This demonstrates why the full debugging story must include compile-time validat
 
 ---
 
-## A Practical Example: Debugging an HTTP Mapping
+## A Practical Example: Debugging an HTTP Mapping { #example-http-mapping }
 
 Suppose a controller receives an unexpected parameter value even though the route declaration appears correct.
 
@@ -1634,7 +1637,7 @@ The generated handler therefore functions as a precise boundary between HTTP dec
 
 ---
 
-## A Better Vocabulary for Generated Code
+## A Better Vocabulary for Generated Code { #better-vocabulary }
 
 The phrase “generated code” covers too many different things.
 
@@ -1659,7 +1662,7 @@ This distinction prevents unproductive arguments where all code generation is tr
 
 ---
 
-## Kora's Model Is Closer to Generated Glue Than a Generated Runtime
+## Kora's Model Is Closer to Generated Glue Than a Generated Runtime { #generated-glue }
 
 The phrase “generated runtime” can also be misleading.
 
@@ -1685,7 +1688,7 @@ The engineer can see how one part connects to another.
 
 ---
 
-## Transparency Scales Better Than Memorized Framework Rules
+## Transparency Scales Better Than Memorized Framework Rules { #transparency-scales }
 
 As a framework grows, developers inevitably encounter features they use infrequently.
 
@@ -1704,7 +1707,7 @@ This allows a broader group of engineers to diagnose framework interactions with
 
 ---
 
-## Transparency Also Helps Framework Maintainers
+## Transparency Also Helps Framework Maintainers { #framework-maintainers }
 
 Generated source is useful not only to application developers.
 
@@ -1717,7 +1720,7 @@ The generated artifact becomes a shared debugging language.
 
 ---
 
-## The Right Trade-Off Is Explicitness for Build-Time Complexity
+## The Right Trade-Off Is Explicitness for Build-Time Complexity { #explicitness-tradeoff }
 
 Kora pays for some of this transparency during compilation.
 
@@ -1741,7 +1744,7 @@ From a debugging perspective, this is a reasonable trade: more work happens wher
 
 ---
 
-## Generated Code Does Not Eliminate Abstraction Leaks
+## Generated Code Does Not Eliminate Abstraction Leaks { #abstraction-leaks }
 
 No framework can completely prevent abstractions from leaking.
 
@@ -1756,7 +1759,7 @@ Generated source contributes directly to that property.
 
 ---
 
-## What Good Debugging Looks Like in Kora
+## What Good Debugging Looks Like in Kora { #good-debugging-kora }
 
 A productive Kora debugging workflow is therefore ordinary most of the time.
 
@@ -1780,7 +1783,7 @@ This is very different from a workflow where developers are required to understa
 
 ---
 
-## A Simple Diagnostic Hierarchy
+## A Simple Diagnostic Hierarchy { #diagnostic-hierarchy }
 
 The overall strategy can be summarized compactly:
 
@@ -1818,7 +1821,7 @@ Generated source exists to make the deeper stages possible without making them m
 
 ---
 
-## The Debugger Story Is Better When the Execution Path Has a Source File
+## The Debugger Story Is Better When the Execution Path Has a Source File { #debugger-source-file }
 
 One of the most practical benefits of source generation is simply that the relevant execution path can be associated with a source file.
 
@@ -1836,7 +1839,7 @@ That is the essence of transparency.
 
 ---
 
-## Generated Code Is Especially Valuable for Rare Problems
+## Generated Code Is Especially Valuable for Rare Problems { #rare-problems }
 
 Routine development does not justify studying internals constantly.
 
@@ -1853,7 +1856,7 @@ A crash dump is rarely inspected during normal development, but it is invaluable
 
 ---
 
-## The AI Era Changes the Cost of Deep Inspection
+## The AI Era Changes the Cost of Deep Inspection { #ai-deep-inspection }
 
 Before coding agents, the cost of deep inspection was mostly human attention. If the answer required tracing a long generated class, a developer had to decide whether the time investment was
 justified.
@@ -1872,7 +1875,7 @@ That is an increasingly important difference.
 
 ---
 
-## Inspectable Behavior Is Becoming an Architectural Asset
+## Inspectable Behavior Is Becoming an Architectural Asset { #architectural-asset }
 
 The broader implication extends beyond debugging.
 
@@ -1889,7 +1892,7 @@ That makes the system easier to reason about after the compiler has done its wor
 
 ---
 
-## The Strongest Comparison Is Not “Codegen vs No Codegen”
+## The Strongest Comparison Is Not “Codegen vs No Codegen” { #strongest-comparison }
 
 The strongest comparison is:
 
@@ -1913,7 +1916,7 @@ That is the core of the debugging argument.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Generated code does not automatically make debugging harder.
 

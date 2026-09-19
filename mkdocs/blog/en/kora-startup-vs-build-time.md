@@ -1,11 +1,14 @@
 ---
 title: Startup vs Build Time — Why the Kora Framework Moves Work Left
+date: 2026-08-29
 description: Why the Kora Framework shifts framework work from every startup into the build, and what that trade means for deployments, tests, and autoscaling.
 search:
   exclude: true
 ---
 
-# Startup vs Build Time: Why Kora Moves Work Left
+# Startup vs Build Time: Why Kora Moves Work Left { #startup-vs-build }
+
+**August 29, 2026**
 
 Framework performance is usually discussed at runtime. How quickly does the application start? How many requests per second can it process? How much memory does it consume? How much latency does the
 framework add to a request?
@@ -65,7 +68,7 @@ That is what “moving work left” actually means.
 
 ---
 
-## The Runtime-Heavy Model
+## The Runtime-Heavy Model { #the-runtime-heavy }
 
 To understand the trade-off, consider what a framework needs to know before it can execute an ordinary request.
 
@@ -122,7 +125,7 @@ It is paid every time a new process starts.
 
 ---
 
-## Kora's Model: Calculate the Structure Before Runtime
+## Kora's Model: Calculate the Structure Before Runtime { #kora-s-model }
 
 Kora moves much of that structural work into the compiler pipeline.
 
@@ -183,7 +186,7 @@ That architecture does not need to be rediscovered every time the process starts
 
 ---
 
-## Build Time and Startup Time Are Not Symmetric
+## Build Time and Startup Time Are Not Symmetric { #build-time-and }
 
 At first glance, moving one second from startup into compilation can look like a zero-sum trade:
 
@@ -264,7 +267,7 @@ Cloud-native systems create instances frequently.
 
 ---
 
-## The General Equation
+## The General Equation { #the-general-equation }
 
 The trade can be described with a simple model.
 
@@ -325,7 +328,7 @@ It is **how often each cost repeats**.
 
 ---
 
-## Annotation Processing Is the Mechanism, Not the Goal
+## Annotation Processing Is the Mechanism, Not the Goal { #annotation-processing-is }
 
 For Java applications, Kora uses annotation processing.
 
@@ -364,7 +367,7 @@ Second, invalid architecture can fail the build.
 
 ---
 
-## Compile-Time Dependency Injection Is More Than Code Generation
+## Compile-Time Dependency Injection Is More Than Code Generation { #compile-time-dependency }
 
 Dependency injection is the clearest example.
 
@@ -410,7 +413,7 @@ Kora treats that as build-time knowledge.
 
 ---
 
-## Generated Source Is the Materialized Result of Analysis
+## Generated Source Is the Materialized Result of Analysis { #generated-source-is }
 
 The output of Kora's compile-time model is not only hidden metadata.
 
@@ -455,7 +458,7 @@ The build does more because it is **materializing future runtime decisions**.
 
 ---
 
-## Generated Code Is a Form of Precomputation
+## Generated Code Is a Form of Precomputation { #generated-code-is }
 
 Another useful way to think about Kora is as precomputation.
 
@@ -493,7 +496,7 @@ The difference is that the cache is type-checked code.
 
 ---
 
-## Runtime Reflection Is Flexible but Has a Cost Model
+## Runtime Reflection Is Flexible but Has a Cost Model { #runtime-reflection-is }
 
 Reflection and dynamic discovery are powerful because they postpone decisions.
 
@@ -535,7 +538,7 @@ A statically packaged cloud service usually has much less need for it.
 
 ---
 
-## Build Time Is Not One Number
+## Build Time Is Not One Number { #build-time-is }
 
 When discussing the cost of annotation processing, people often say:
 
@@ -573,7 +576,7 @@ Treating all of them as one "build time" hides the path developers actually expe
 
 ---
 
-## Clean Build: The Worst-Case Compiler Path
+## Clean Build: The Worst-Case Compiler Path { #clean-build-the }
 
 A clean build is the easiest scenario to reason about.
 
@@ -612,7 +615,7 @@ Nor should they.
 
 ---
 
-## Why `clean` Is Often an Artificial Development Benchmark
+## Why `clean` Is Often an Artificial Development Benchmark { #why-clean-is }
 
 Running `clean` deliberately destroys information the build system could have reused.
 
@@ -661,7 +664,7 @@ That is a much better developer-experience metric.
 
 ---
 
-## Incremental Compilation Is What Makes the Trade Practical
+## Incremental Compilation Is What Makes the Trade Practical { #incremental-compilation-is }
 
 Compile-time generation would be much less attractive if every tiny source edit forced regeneration of the whole application.
 
@@ -707,7 +710,7 @@ But that is conceptually appropriate: a structural change should cost more than 
 
 ---
 
-## Incremental Compilation Rewards Stable Architecture
+## Incremental Compilation Rewards Stable Architecture { #incremental-compilation-rewards }
 
 There is an interesting secondary effect.
 
@@ -715,7 +718,7 @@ Compile-time frameworks make architectural boundaries visible to the build syste
 
 Consider two changes.
 
-### Change A
+### Change A { #change-a }
 
 A developer modifies internal business logic:
 
@@ -743,7 +746,7 @@ The HTTP API has not changed.
 
 A well-behaved incremental toolchain should be able to keep most generated infrastructure untouched.
 
-### Change B
+### Change B { #change-b }
 
 A developer changes:
 
@@ -770,7 +773,7 @@ A local edit should remain comparatively local.
 
 ---
 
-## KSP Makes the Same Trade for Kotlin
+## KSP Makes the Same Trade for Kotlin { #ksp-makes-the }
 
 Kotlin cannot simply reuse Java annotation processing as its ideal symbol-processing model.
 
@@ -806,7 +809,7 @@ The architectural principle does not.
 
 ---
 
-## Generated Source Has a Build Cost and a Debugging Dividend
+## Generated Source Has a Build Cost and a Debugging Dividend { #generated-source-has }
 
 Generated source takes time to create and compile.
 
@@ -843,7 +846,7 @@ It is documentation of what the framework decided.
 
 ---
 
-## Build-Time Errors Are Also Runtime Work Removed
+## Build-Time Errors Are Also Runtime Work Removed { #build-time-errors }
 
 Moving work left does more than move CPU cycles.
 
@@ -902,7 +905,7 @@ The earlier the failure, the smaller its computational radius.
 
 ---
 
-## The Build Is a Better Place for Deterministic Failure
+## The Build Is a Better Place for Deterministic Failure { #the-build-is }
 
 There is a broader engineering principle here:
 
@@ -938,7 +941,7 @@ Kora spends compiler effort to reduce operational ambiguity.
 
 ---
 
-## Cached Builds Change the Economics Again
+## Cached Builds Change the Economics Again { #cached-builds-change }
 
 Build caches add another asymmetry.
 
@@ -976,7 +979,7 @@ This is another reason build-time work can be economically attractive.
 
 ---
 
-## Configuration Cache Is Different From Build Cache
+## Configuration Cache Is Different From Build Cache { #configuration-cache-is }
 
 It is useful to separate two often-confused Gradle concepts.
 
@@ -1019,7 +1022,7 @@ They answer different questions.
 
 ---
 
-## Clean Build Answers "What Does the Compiler Cost From Zero?"
+## Clean Build Answers "What Does the Compiler Cost From Zero?" { #clean-build-answers }
 
 A controlled clean-build benchmark answers:
 
@@ -1043,7 +1046,7 @@ The relevant question is whether the extra work is proportional and whether the 
 
 ---
 
-## Cached Build Answers "What Does Development Feel Like?"
+## Cached Build Answers "What Does Development Feel Like?" { #cached-build-answers }
 
 A cached or incremental build answers a different question:
 
@@ -1073,7 +1076,7 @@ Moving work left is much more attractive when build tooling can avoid repeating 
 
 ---
 
-## Local Development Is a Frequency Problem Too
+## Local Development Is a Frequency Problem Too { #local-development-is }
 
 Consider a developer working for one day.
 
@@ -1117,7 +1120,7 @@ This is the unit developers actually experience.
 
 ---
 
-## Build Time Can Be Paid Once While Startup Is Paid Per Replica
+## Build Time Can Be Paid Once While Startup Is Paid Per Replica { #build-time-can }
 
 Now consider production.
 
@@ -1161,7 +1164,7 @@ The larger the deployment, the more favorable this asymmetry becomes.
 
 ---
 
-## Rolling Deployments Multiply Startup Savings
+## Rolling Deployments Multiply Startup Savings { #rolling-deployments-multiply }
 
 Suppose an application runs 50 replicas.
 
@@ -1201,7 +1204,7 @@ The multiplier grows.
 
 ---
 
-## Horizontal Scaling Multiplies It Again
+## Horizontal Scaling Multiplies It Again { #horizontal-scaling-multiplies }
 
 A production artifact may live for days while replicas come and go.
 
@@ -1244,7 +1247,7 @@ Anything paid once per artifact is amortized.
 
 ---
 
-## Restarts and Rescheduling Are Hidden Multipliers
+## Restarts and Rescheduling Are Hidden Multipliers { #restarts-and-rescheduling }
 
 Not all starts are planned.
 
@@ -1271,7 +1274,7 @@ This is especially valuable in unstable or highly elastic environments.
 
 ---
 
-## CI Can Contain More Starts Than Production
+## CI Can Contain More Starts Than Production { #ci-can-contain }
 
 A surprising multiplier appears in testing.
 
@@ -1311,7 +1314,7 @@ Compile-time generation is particularly attractive when the generated artifact o
 
 ---
 
-## Full-Context Tests Benefit Disproportionately
+## Full-Context Tests Benefit Disproportionately { #full-context-tests }
 
 Unit tests do not care much about application startup.
 
@@ -1355,7 +1358,7 @@ The build may have done more work, but that work enables many cheap runtime veri
 
 ---
 
-## Build Once, Test Many Is a Powerful Pattern
+## Build Once, Test Many Is a Powerful Pattern { #build-once-test }
 
 A particularly favorable pipeline structure is:
 
@@ -1388,7 +1391,7 @@ The more post-build stages reuse the same compiled architecture, the more valuab
 
 ---
 
-## Build-Time Processing Can Improve Runtime Memory Too
+## Build-Time Processing Can Improve Runtime Memory Too { #build-time-processing }
 
 The startup benefit is obvious, but moving work left can also change runtime footprint.
 
@@ -1411,7 +1414,7 @@ That means compile-time work can pay back over the entire process lifetime, not 
 
 ---
 
-## Generated Direct Calls Can Help the Hot Path Too
+## Generated Direct Calls Can Help the Hot Path Too { #generated-direct-calls }
 
 Moving decisions to compilation can also eliminate layers from request processing.
 
@@ -1449,7 +1452,7 @@ The build cost is paying for more than one runtime property.
 
 ---
 
-## Compile-Time AOP Shows the Trade Clearly
+## Compile-Time AOP Shows the Trade Clearly { #compile-time-aop }
 
 Cross-cutting behavior is another example.
 
@@ -1490,7 +1493,7 @@ The payoff is repeated every time that artifact starts and every time the method
 
 ---
 
-## Repository Generation Is Another Example
+## Repository Generation Is Another Example { #repository-generation-is }
 
 A repository abstraction has enough static information to generate substantial implementation code.
 
@@ -1522,7 +1525,7 @@ This is the recurring architectural theme.
 
 ---
 
-## HTTP Routing Can Be Precomputed Too
+## HTTP Routing Can Be Precomputed Too { #http-routing-can }
 
 Routes are typically static for a built service.
 
@@ -1554,7 +1557,7 @@ compile-time analysis
 
 ---
 
-## Moving Work Left Is Not the Same as Native Image Compilation
+## Moving Work Left Is Not the Same as Native Image Compilation { #moving-work-left }
 
 Compile-time framework generation is sometimes confused with ahead-of-time native compilation.
 
@@ -1590,7 +1593,7 @@ executable.
 
 ---
 
-## The Compiler Becomes Part of the Framework Runtime Architecture
+## The Compiler Becomes Part of the Framework Runtime Architecture { #the-compiler-becomes }
 
 In a runtime-heavy framework, the framework engine is primarily a runtime component.
 
@@ -1623,7 +1626,7 @@ That is the architectural exchange.
 
 ---
 
-## Build-Time Complexity Must Be Engineered Carefully
+## Build-Time Complexity Must Be Engineered Carefully { #build-time-complexity }
 
 Moving work left is not automatically good.
 
@@ -1655,7 +1658,7 @@ A compile-time framework should be judged not only by how quickly the resulting 
 
 ---
 
-## Incremental Processing Is Not Optional for a Mature Compile-Time Framework
+## Incremental Processing Is Not Optional for a Mature Compile-Time Framework { #incremental-processing-is }
 
 Once code generation becomes broad—DI, repositories, HTTP, JSON, AOP, configuration, and more—incremental processing becomes strategically important.
 
@@ -1687,7 +1690,7 @@ They are what make moving work left scalable for large codebases.
 
 ---
 
-## Multi-Module Builds Make Boundaries More Important
+## Multi-Module Builds Make Boundaries More Important { #multi-module-builds }
 
 Large services are often split into Gradle modules.
 
@@ -1731,7 +1734,7 @@ Kora does not remove that reality.
 
 ---
 
-## ABI Changes Are More Expensive Than Implementation Changes
+## ABI Changes Are More Expensive Than Implementation Changes { #abi-changes-are }
 
 A build system can often isolate changes that do not alter a module's public binary interface.
 
@@ -1761,7 +1764,7 @@ Structural changes genuinely affect more of the program.
 
 ---
 
-## Generated Source Size Is a Real Cost
+## Generated Source Size Is a Real Cost { #generated-source-size }
 
 Another trade-off is source and bytecode volume.
 
@@ -1789,7 +1792,7 @@ The best balance depends on processor quality and application scale.
 
 ---
 
-## Clean CI Runners Expose the Full Cost
+## Clean CI Runners Expose the Full Cost { #clean-ci-runners }
 
 Some CI systems use disposable workers with empty local caches.
 
@@ -1821,7 +1824,7 @@ The question is which one scales better for the organization.
 
 ---
 
-## Remote Build Caches Strengthen the Compile-Time Model
+## Remote Build Caches Strengthen the Compile-Time Model { #remote-build-caches }
 
 A remote build cache allows one machine's build outputs to be reused by another machine when inputs match.
 
@@ -1841,7 +1844,7 @@ This is a strong systems argument for build-time computation.
 
 ---
 
-## Artifact Promotion Makes the Trade Even Better
+## Artifact Promotion Makes the Trade Even Better { #artifact-promotion-makes }
 
 Good deployment pipelines build an artifact once and promote the same artifact through environments.
 
@@ -1883,7 +1886,7 @@ Immutable artifact promotion and compile-time frameworks fit naturally together.
 
 ---
 
-## "N Times Every Deployment" Is the Core Production Argument
+## "N Times Every Deployment" Is the Core Production Argument { #n-times-every }
 
 Suppose one application artifact is deployed to:
 
@@ -1947,7 +1950,7 @@ is often the dominant insight.
 
 ---
 
-## Autoscaling Adds Starts Without Adding Builds
+## Autoscaling Adds Starts Without Adding Builds { #autoscaling-adds-starts }
 
 Autoscaling makes the asymmetry even sharper.
 
@@ -1973,7 +1976,7 @@ Elastic services have a larger one.
 
 ---
 
-## Spot and Node Churn Add More Runtime Reuse
+## Spot and Node Churn Add More Runtime Reuse { #spot-and-node }
 
 Spot nodes and aggressive cluster autoscaling create additional process churn.
 
@@ -1997,7 +2000,7 @@ Framework architecture should reflect that.
 
 ---
 
-## Scale-to-Zero Is the Extreme Case
+## Scale-to-Zero Is the Extreme Case { #scale-to-zero }
 
 Scale-to-zero takes the concept to its logical endpoint.
 
@@ -2019,7 +2022,7 @@ Moving deterministic initialization work into compilation therefore directly inc
 
 ---
 
-## The Developer Loop Has a Different Break-Even Point
+## The Developer Loop Has a Different Break-Even Point { #the-developer-loop }
 
 Production strongly favors one build feeding many starts.
 
@@ -2054,7 +2057,7 @@ The quality of the build pipeline determines the local break-even point.
 
 ---
 
-## The Correct Developer Metric Is Time-to-Verified-Change
+## The Correct Developer Metric Is Time-to-Verified-Change { #the-correct-developer }
 
 Instead of separately optimizing:
 
@@ -2096,7 +2099,7 @@ Kora's philosophy is strongest when annotation/KSP processing remains incrementa
 
 ---
 
-## Build Time Also Buys Better Diagnostics
+## Build Time Also Buys Better Diagnostics { #build-time-also }
 
 There is another reason not to compare seconds mechanically.
 
@@ -2132,7 +2135,7 @@ But moving structural checks into compilation creates the opportunity for precis
 
 ---
 
-## AI Agents Benefit From the Same Shift
+## AI Agents Benefit From the Same Shift { #ai-agents-benefit }
 
 AI-assisted development makes this trade even more interesting.
 
@@ -2166,7 +2169,7 @@ The cost moves into a deterministic machine-checkable stage.
 
 ---
 
-## Moving Work Left Is a Risk-Reduction Strategy
+## Moving Work Left Is a Risk-Reduction Strategy { #moving-work-left-2 }
 
 The performance argument is only half the story.
 
@@ -2196,7 +2199,7 @@ That is a meaningful reliability property.
 
 ---
 
-## A Useful Analogy: Link Time
+## A Useful Analogy: Link Time { #a-useful-analogy }
 
 Traditional compiled systems already accept similar trade-offs.
 
@@ -2214,7 +2217,7 @@ They are part of producing the executable architecture.
 
 ---
 
-## Another Analogy: Database Query Planning
+## Another Analogy: Database Query Planning { #another-analogy-database }
 
 Databases distinguish between planning work and execution work.
 
@@ -2237,7 +2240,7 @@ That makes it a good candidate.
 
 ---
 
-## Build Cost Is Visible; Runtime Cost Is Diffuse
+## Build Cost Is Visible; Runtime Cost Is Diffuse { #build-cost-is }
 
 One psychological reason teams resist compile-time processing is that build cost is painfully visible.
 
@@ -2271,7 +2274,7 @@ Fleet-scale thinking corrects for it.
 
 ---
 
-## One Extra Second in the Build Is Not Equal to One Extra Second in Startup
+## One Extra Second in the Build Is Not Equal to One Extra Second in Startup { #one-extra-second }
 
 Even when frequency is equal, the context differs.
 
@@ -2300,7 +2303,7 @@ The seconds are not economically interchangeable.
 
 ---
 
-## But Build Time Still Matters
+## But Build Time Still Matters { #but-build-time }
 
 This does not mean build performance can be ignored.
 
@@ -2331,7 +2334,7 @@ The trade should always be measured.
 
 ---
 
-## What Should Be Moved Left?
+## What Should Be Moved Left? { #what-should-be }
 
 Good candidates have several properties.
 
@@ -2370,7 +2373,7 @@ It compiles the static architecture that interacts with that world.
 
 ---
 
-## The Boundary Between Static and Dynamic Is the Architecture
+## The Boundary Between Static and Dynamic Is the Architecture { #the-boundary-between }
 
 A well-designed compile-time framework needs a clear boundary:
 
@@ -2422,7 +2425,7 @@ This separation is what allows Kora to move substantial work left without turnin
 
 ---
 
-## Build-Time Generation Improves Architecture Visibility
+## Build-Time Generation Improves Architecture Visibility { #build-time-generation }
 
 Another side effect is that architecture becomes inspectable before runtime.
 
@@ -2447,7 +2450,7 @@ That transparency is difficult to express as a benchmark number, but it reduces 
 
 ---
 
-## Clean Build vs Cached Build Should Always Be Reported Separately
+## Clean Build vs Cached Build Should Always Be Reported Separately { #clean-build-vs }
 
 Framework performance discussions often publish a single build number.
 
@@ -2484,7 +2487,7 @@ Kora's landing explicitly presenting startup/readiness, clean build, and cached 
 
 ---
 
-## CI Should Measure Cache-Hit and Cache-Miss Paths Too
+## CI Should Measure Cache-Hit and Cache-Miss Paths Too { #ci-should-measure }
 
 Large engineering organizations should go further.
 
@@ -2510,7 +2513,7 @@ The platform needs to evaluate the combination.
 
 ---
 
-## Build Caches Turn Compute Into Storage
+## Build Caches Turn Compute Into Storage { #build-caches-turn }
 
 There is another systems trade.
 
@@ -2542,7 +2545,7 @@ Kora's architecture creates reusable static outputs, but the build platform stil
 
 ---
 
-## Generated Source Should Be Deterministic
+## Generated Source Should Be Deterministic { #generated-source-should }
 
 Caching works best when the same inputs produce the same outputs.
 
@@ -2568,7 +2571,7 @@ Its output quality matters.
 
 ---
 
-## Parallelism Exists on Both Sides of the Trade
+## Parallelism Exists on Both Sides of the Trade { #parallelism-exists-on }
 
 The comparison is not simply sequential build versus sequential startup.
 
@@ -2603,7 +2606,7 @@ The actual wall-clock effect depends on graph parallelism.
 
 ---
 
-## Critical Path Matters More Than Total CPU Work
+## Critical Path Matters More Than Total CPU Work { #critical-path-matters }
 
 Suppose annotation processing performs two seconds of CPU work but runs partly in parallel with other build activity.
 
@@ -2629,7 +2632,7 @@ For infrastructure efficiency, total CPU can matter too.
 
 ---
 
-## Startup Saved N× Is About Critical Capacity, Not Just CPU
+## Startup Saved N× Is About Critical Capacity, Not Just CPU { #startup-saved-n }
 
 When a new replica starts during HPA scale-out, the relevant outcome is not how much CPU startup consumed.
 
@@ -2657,7 +2660,7 @@ It is saved response time of the infrastructure itself.
 
 ---
 
-## Build-Time Work Has Better Failure Locality
+## Build-Time Work Has Better Failure Locality { #build-time-work }
 
 A processor failure happens close to the source change that caused it.
 
@@ -2684,7 +2687,7 @@ This is an engineering productivity benefit.
 
 ---
 
-## Compile-Time Generation Fits Immutable Infrastructure
+## Compile-Time Generation Fits Immutable Infrastructure { #compile-time-generation }
 
 Immutable infrastructure assumes:
 
@@ -2706,7 +2709,7 @@ For modern container platforms, this is often exactly what the deployment model 
 
 ---
 
-## Dynamic Runtime Extensibility Is the Counter-Trade
+## Dynamic Runtime Extensibility Is the Counter-Trade { #dynamic-runtime-extensibility }
 
 There are situations where moving work left is less attractive.
 
@@ -2735,7 +2738,7 @@ This is why no architectural trade is universally optimal.
 
 ---
 
-## Microservices Strengthen Kora's Choice
+## Microservices Strengthen Kora's Choice { #microservices-strengthen-kora }
 
 Microservice architecture tends to produce:
 
@@ -2764,11 +2767,11 @@ The infrastructure model amplifies the runtime savings.
 
 ---
 
-## Deployment Frequency Changes the Equation
+## Deployment Frequency Changes the Equation { #deployment-frequency-changes }
 
 Consider two organizations.
 
-### Organization A
+### Organization A { #organization-a }
 
 ```text
 deploy each service once per month
@@ -2778,7 +2781,7 @@ little autoscaling
 
 Startup speed matters, but the multiplier is modest.
 
-### Organization B
+### Organization B { #organization-b }
 
 ```text
 continuous delivery
@@ -2799,7 +2802,7 @@ Kora's trade is most compelling in high-churn environments.
 
 ---
 
-## Developer Count Changes the Build Side
+## Developer Count Changes the Build Side { #developer-count-changes }
 
 The other side of the equation also has multipliers.
 
@@ -2833,7 +2836,7 @@ This is why cached/incremental behavior is critical.
 
 ---
 
-## A More Complete Economic Formula
+## A More Complete Economic Formula { #a-more-complete }
 
 For one service:
 
@@ -2871,7 +2874,7 @@ The break-even calculation becomes more realistic.
 
 ---
 
-## Example: One Service
+## Example: One Service { #example-one-service }
 
 Suppose:
 
@@ -2920,7 +2923,7 @@ But it shows why a visibly slower clean compile can coexist with a substantially
 
 ---
 
-## Example: Production Fleet
+## Example: Production Fleet { #example-production-fleet }
 
 Suppose a service has:
 
@@ -2975,7 +2978,7 @@ The runtime multiplier is already large.
 
 ---
 
-## Example: Company Scale
+## Example: Company Scale { #example-company-scale }
 
 Now imagine:
 
@@ -3008,7 +3011,7 @@ This is the same fleet-economics logic applied to time.
 
 ---
 
-## Startup Cost Has a Reserve-Capacity Consequence
+## Startup Cost Has a Reserve-Capacity Consequence { #startup-cost-has }
 
 If new instances take longer to become ready, existing instances must carry load longer.
 
@@ -3032,7 +3035,7 @@ That is a radically asymmetric exchange.
 
 ---
 
-## Build-Time Work Is Easier to Centralize
+## Build-Time Work Is Easier to Centralize { #build-time-work-2 }
 
 Build optimization can be addressed once at platform level:
 
@@ -3053,7 +3056,7 @@ A platform team can invest in one high-quality build pipeline and amortize the c
 
 ---
 
-## Processor Upgrades Can Improve Every Service
+## Processor Upgrades Can Improve Every Service { #processor-upgrades-can }
 
 Because compile-time generation is centralized inside the framework, performance improvements in processors can reduce build cost fleet-wide.
 
@@ -3070,7 +3073,7 @@ Kora's compiler architecture therefore gives the framework maintainers a place t
 
 ---
 
-## A Build Regression Is Easier to Observe Than a Startup Regression
+## A Build Regression Is Easier to Observe Than a Startup Regression { #a-build-regression }
 
 Another advantage of the compile-time boundary is measurability.
 
@@ -3103,7 +3106,7 @@ It makes it more controllable.
 
 ---
 
-## The Right Dashboard Has Both Build and Startup
+## The Right Dashboard Has Both Build and Startup { #the-right-dashboard }
 
 Platform teams evaluating Kora should track at least:
 
@@ -3130,11 +3133,11 @@ Without frequency, the raw times cannot be valued correctly.
 
 ---
 
-## Don't Optimize One Side Blindly
+## Don't Optimize One Side Blindly { #don-t-optimize }
 
 There are two failure modes.
 
-### Failure mode one
+### Failure mode one { #failure-mode-one }
 
 Optimize runtime at any build cost.
 
@@ -3145,7 +3148,7 @@ fast service
 slow engineering organization
 ```
 
-### Failure mode two
+### Failure mode two { #failure-mode-two }
 
 Optimize build at any runtime cost.
 
@@ -3164,7 +3167,7 @@ The trade is successful only if incremental builds remain sufficiently cheap.
 
 ---
 
-## Performance Work Should Follow Multiplicity
+## Performance Work Should Follow Multiplicity { #performance-work-should }
 
 This suggests a general optimization rule:
 
@@ -3204,7 +3207,7 @@ Kora's architecture is based on the observation that many framework decisions ar
 
 ---
 
-## "Move Left" Also Means Move Understanding Left
+## "Move Left" Also Means Move Understanding Left { #move-left-also }
 
 The phrase “shift left” is often used for security and testing.
 
@@ -3240,7 +3243,7 @@ The build becomes a place where the framework explains itself.
 
 ---
 
-## Build Artifacts Become More Complete
+## Build Artifacts Become More Complete { #build-artifacts-become }
 
 A runtime-heavy artifact can be thought of as containing:
 
@@ -3268,7 +3271,7 @@ The process is executing a more complete product.
 
 ---
 
-## Why Kora's Approach Fits Modern CPUs Better
+## Why Kora's Approach Fits Modern CPUs Better { #why-kora-s }
 
 Generated direct code also gives the JVM compiler a conventional optimization target.
 
@@ -3293,7 +3296,7 @@ The benefit may persist through the entire process lifetime.
 
 ---
 
-## The Build Pipeline Becomes Part of Runtime Performance Engineering
+## The Build Pipeline Becomes Part of Runtime Performance Engineering { #the-build-pipeline }
 
 This is perhaps the most important conceptual shift.
 
@@ -3319,7 +3322,7 @@ This is a more compiler-oriented way to build a backend framework.
 
 ---
 
-## What CTOs Should Ask
+## What CTOs Should Ask { #what-ctos-should }
 
 A CTO or platform team evaluating this trade should ask more than:
 
@@ -3348,7 +3351,7 @@ The right answer depends on the multiplication factors.
 
 ---
 
-## What Developers Should Ask
+## What Developers Should Ask { #what-developers-should }
 
 At the project level, measure:
 
@@ -3388,7 +3391,7 @@ The last number is usually the most important developer metric.
 
 ---
 
-## The Best Result Is Not Minimum Build Time
+## The Best Result Is Not Minimum Build Time { #the-best-result }
 
 A framework whose build finishes in one second but requires ten seconds of startup may be worse for a workflow that starts the application 20 times.
 
@@ -3428,7 +3431,7 @@ That is the actual optimization problem.
 
 ---
 
-## The Trade Is Strongest When Generated Knowledge Is Reused
+## The Trade Is Strongest When Generated Knowledge Is Reused { #the-trade-is }
 
 The more times the same architectural knowledge is reused, the better compile-time generation looks.
 
@@ -3452,7 +3455,7 @@ This is Kora's central bet.
 
 ---
 
-## When the Trade Becomes Weak
+## When the Trade Becomes Weak { #when-the-trade }
 
 The model is less compelling when:
 
@@ -3478,7 +3481,7 @@ Architecture must be judged with real measurements.
 
 ---
 
-## External Startup Work Still Dominates Some Applications
+## External Startup Work Still Dominates Some Applications { #external-startup-work }
 
 A Kora process can still start slowly if application components perform expensive work.
 
@@ -3502,7 +3505,7 @@ If the framework overhead is small, profiling points more directly to actual app
 
 ---
 
-## Move Migrations Left Too—But Usually Into Deployment
+## Move Migrations Left Too—But Usually Into Deployment { #move-migrations-left }
 
 The same reasoning often applies to database migration.
 
@@ -3534,7 +3537,7 @@ Kora's compile-time architecture fits the same systems principle.
 
 ---
 
-## The Broader Rule: Don't Make Every Replica Solve the Same Problem
+## The Broader Rule: Don't Make Every Replica Solve the Same Problem { #the-broader-rule }
 
 If every replica independently performs work that could have been resolved earlier, the fleet repeats effort.
 
@@ -3562,7 +3565,7 @@ Kora applies this aggressively to framework structure.
 
 ---
 
-## Clean Build Is an Investment
+## Clean Build Is an Investment { #clean-build-is }
 
 A clean Kora build can be viewed as constructing a more specialized artifact.
 
@@ -3585,7 +3588,7 @@ In modern backend fleets, reuse is usually high.
 
 ---
 
-## Cached Build Is the Amortized Cost
+## Cached Build Is the Amortized Cost { #cached-build-is }
 
 If clean build is the up-front investment, incremental and cached builds represent the amortized development cost.
 
@@ -3609,7 +3612,7 @@ It is part of the framework's economic model.
 
 ---
 
-## Startup Is a Per-Instance Tax
+## Startup Is a Per-Instance Tax { #startup-is-a }
 
 Conversely, runtime discovery behaves like a tax on every process.
 
@@ -3631,7 +3634,7 @@ Kora chooses to prepay many of them.
 
 ---
 
-## The Same Logic Applies to Warm-Up
+## The Same Logic Applies to Warm-Up { #the-same-logic }
 
 Generated direct code can also reduce the amount of framework-specific machinery the JVM must encounter before reaching stable performance.
 
@@ -3659,7 +3662,7 @@ This increases the runtime payoff.
 
 ---
 
-## The Same Logic Applies to Memory
+## The Same Logic Applies to Memory { #the-same-logic-2 }
 
 If runtime metadata is unnecessary because behavior is encoded in generated classes, the process may keep less framework state alive.
 
@@ -3677,7 +3680,7 @@ That can make the trade even more favorable.
 
 ---
 
-## The Same Logic Applies to Debugging
+## The Same Logic Applies to Debugging { #the-same-logic-3 }
 
 Generated source also amortizes debugging knowledge.
 
@@ -3694,7 +3697,7 @@ That is difficult to quantify but valuable at scale.
 
 ---
 
-## A Useful Mental Model
+## A Useful Mental Model { #a-useful-mental }
 
 Think of a Kora build as partially executing the framework ahead of time.
 
@@ -3722,11 +3725,11 @@ This is the essence of the model.
 
 ---
 
-## Runtime Work Should Be About Runtime Facts
+## Runtime Work Should Be About Runtime Facts { #runtime-work-should }
 
 A clean separation is:
 
-### Compile time
+### Compile time { #compile-time }
 
 ```text
 types
@@ -3739,7 +3742,7 @@ aspects
 static architecture
 ```
 
-### Runtime
+### Runtime { #runtime }
 
 ```text
 requests
@@ -3758,7 +3761,7 @@ That is a useful design principle beyond Kora.
 
 ---
 
-## Why This Matters for Platform Teams
+## Why This Matters for Platform Teams { #why-this-matters }
 
 Platform teams optimize repeated patterns.
 
@@ -3778,7 +3781,7 @@ This is a strong centralization advantage.
 
 ---
 
-## Why This Matters for Application Teams
+## Why This Matters for Application Teams { #why-this-matters-2 }
 
 Application teams receive:
 
@@ -3803,7 +3806,7 @@ The framework and build toolchain do the rest.
 
 ---
 
-## Why This Matters for Operations
+## Why This Matters for Operations { #why-this-matters-3 }
 
 Operations teams receive artifacts that have already resolved more of their structure.
 
@@ -3824,7 +3827,7 @@ This is a useful separation of concerns.
 
 ---
 
-## Why This Matters for CI
+## Why This Matters for CI { #why-this-matters-4 }
 
 CI is where both sides meet.
 
@@ -3850,7 +3853,7 @@ The more the pipeline reuses the generated artifact, the more favorable Kora's a
 
 ---
 
-## The Ideal Pipeline Shape
+## The Ideal Pipeline Shape { #the-ideal-pipeline }
 
 A Kora-friendly CI pipeline might conceptually look like:
 
@@ -3878,7 +3881,7 @@ This maximizes reuse.
 
 ---
 
-## Don't Recompile Per Environment
+## Don't Recompile Per Environment { #don-t-recompile }
 
 An anti-pattern would be:
 
@@ -3905,7 +3908,7 @@ preserves the compile-time payoff.
 
 ---
 
-## Startup Saved Per Deployment Is Repeated Forever
+## Startup Saved Per Deployment Is Repeated Forever { #startup-saved-per }
 
 One of the strongest arguments for moving work left is temporal.
 
@@ -3931,7 +3934,7 @@ The organization keeps reusing it.
 
 ---
 
-## The Compounding Effect Across Versions
+## The Compounding Effect Across Versions { #the-compounding-effect }
 
 Now multiply over releases.
 
@@ -3976,7 +3979,7 @@ The frequency ratio is the story.
 
 ---
 
-## Build-Time Cost Is Front-Loaded
+## Build-Time Cost Is Front-Loaded { #build-time-cost }
 
 The entire architecture can be summarized economically as:
 
@@ -4004,7 +4007,7 @@ Kora chooses front-loading because it targets statically packaged production ser
 
 ---
 
-## This Is a Compiler Philosophy
+## This Is a Compiler Philosophy { #this-is-a }
 
 Kora is often described as a backend framework, but this trade makes it partly a compiler project.
 
@@ -4038,7 +4041,7 @@ They are consequences of the same compiler-oriented architecture.
 
 ---
 
-## The Trade Is Architectural, Not a Benchmark Trick
+## The Trade Is Architectural, Not a Benchmark Trick { #the-trade-is-2 }
 
 It would be easy to frame the strategy narrowly:
 
@@ -4067,11 +4070,11 @@ The deeper benefit is lifecycle efficiency.
 
 ---
 
-## Practical Guidance: How to Measure the Trade
+## Practical Guidance: How to Measure the Trade { #practical-guidance-how }
 
 For a real service, collect four measurements.
 
-### 1. Clean artifact build
+### 1. Clean artifact build { #1-clean-artifact }
 
 Measure from zero:
 
@@ -4088,7 +4091,7 @@ Record:
 - processor/KSP time;
 - generated output size.
 
-### 2. Incremental local build
+### 2. Incremental local build { #2-incremental-local }
 
 Make representative changes:
 
@@ -4101,7 +4104,7 @@ controller signature change
 
 Measure each separately.
 
-### 3. Cached CI build
+### 3. Cached CI build { #3-cached-ci }
 
 Measure realistic cache behavior:
 
@@ -4112,7 +4115,7 @@ configuration cache
 remote cache
 ```
 
-### 4. Startup/readiness
+### 4. Startup/readiness { #4-startup-readiness }
 
 Measure:
 
@@ -4128,7 +4131,7 @@ Without frequencies, the comparison is incomplete.
 
 ---
 
-## Include Failure Feedback in the Measurement
+## Include Failure Feedback in the Measurement { #include-failure-feedback }
 
 Also measure how quickly invalid changes fail.
 
@@ -4154,7 +4157,7 @@ A framework that catches invalid architecture during compile may save entire run
 
 ---
 
-## Include Full Developer Loop
+## Include Full Developer Loop { #include-full-developer }
 
 Finally measure:
 
@@ -4177,7 +4180,7 @@ If not, that is a build-performance problem worth fixing.
 
 ---
 
-## Do Not Use `clean` in Normal Development
+## Do Not Use `clean` in Normal Development { #do-not-use }
 
 One practical conclusion follows directly from this architecture.
 
@@ -4207,7 +4210,7 @@ Use clean builds deliberately, not habitually.
 
 ---
 
-## Preserve the Gradle Daemon
+## Preserve the Gradle Daemon { #preserve-the-gradle }
 
 Similarly, a warm Gradle daemon avoids repeatedly paying JVM and build-tool initialization overhead.
 
@@ -4221,7 +4224,7 @@ The goal is the fastest correct feedback loop.
 
 ---
 
-## Use Build Cache Where It Fits
+## Use Build Cache Where It Fits { #use-build-cache }
 
 If a large organization uses Kora across many repositories or modules, build caching can be strategically valuable.
 
@@ -4233,7 +4236,7 @@ Poor cache keys or unstable inputs can erase the benefit.
 
 ---
 
-## Avoid Accidental Processor Invalidation
+## Avoid Accidental Processor Invalidation { #avoid-accidental-processor }
 
 Build performance can also be damaged by source structure.
 
@@ -4253,7 +4256,7 @@ Compile-time generation simply makes the cost of broad coupling more visible.
 
 ---
 
-## Keep Generated Source Inspectable but Ephemeral
+## Keep Generated Source Inspectable but Ephemeral { #keep-generated-source }
 
 Generated source should usually remain a build product, not hand-maintained application code.
 
@@ -4272,7 +4275,7 @@ This preserves reproducibility and prevents divergence.
 
 ---
 
-## Treat Processor Performance as a Framework Regression Metric
+## Treat Processor Performance as a Framework Regression Metric { #treat-processor-performance }
 
 If Kora is a platform standard, processor timing should be monitored across upgrades.
 
@@ -4286,7 +4289,7 @@ Compile-time architecture makes compiler performance part of framework quality.
 
 ---
 
-## The Trade Changes With Team Scale
+## The Trade Changes With Team Scale { #the-trade-changes }
 
 For a small team with one service:
 
@@ -4320,7 +4323,7 @@ This is why platform teams need measurements rather than ideology.
 
 ---
 
-## The Best Kora Outcome Is Both Fast Build and Fast Runtime
+## The Best Kora Outcome Is Both Fast Build and Fast Runtime { #the-best-kora }
 
 It is important not to turn the trade-off into a false choice.
 
@@ -4351,7 +4354,7 @@ The trade explains *where the work belongs*, not why the work should be slow.
 
 ---
 
-## Moving Work Left Is About Paying at the Cheapest Time
+## Moving Work Left Is About Paying at the Cheapest Time { #moving-work-left-3 }
 
 The deepest way to describe Kora's choice is:
 
@@ -4377,7 +4380,7 @@ That boundary is both a performance decision and a software-design decision.
 
 ---
 
-## The Result: Runtime Does Less Framework Work
+## The Result: Runtime Does Less Framework Work { #the-result-runtime }
 
 After the artifact is built, Kora's runtime can focus more directly on:
 
@@ -4401,7 +4404,7 @@ That is why startup is fast.
 
 ---
 
-## The Result: Builds Become More Semantically Valuable
+## The Result: Builds Become More Semantically Valuable { #the-result-builds }
 
 Conversely, the build does more than turn `.java` or `.kt` files into bytecode.
 
@@ -4418,7 +4421,7 @@ This makes build time more valuable work, not merely more work.
 
 ---
 
-## The Result: One Artifact Can Serve Many Runtime Events
+## The Result: One Artifact Can Serve Many Runtime Events { #the-result-one }
 
 The generated artifact can be reused across:
 
@@ -4439,7 +4442,7 @@ This reuse is where the architecture pays off.
 
 ---
 
-## The Core Equation Revisited
+## The Core Equation Revisited { #the-core-equation }
 
 The whole article can be reduced to:
 
@@ -4481,7 +4484,7 @@ That is why Kora chooses to move work left.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Startup time and build time should not be evaluated as isolated benchmark categories.
 

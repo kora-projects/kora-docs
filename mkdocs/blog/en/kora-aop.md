@@ -1,10 +1,13 @@
 ---
 title: Compile-Time AOP Without Dynamic Proxies — Kora Framework
+date: 2026-08-03
 description: How the Kora Framework implements aspect-oriented programming with generated compile-time subclasses instead of runtime dynamic proxies.
 search:
   exclude: true
 ---
-# Compile-Time AOP Without Dynamic Proxies
+# Compile-Time AOP Without Dynamic Proxies { #compile-time-aop }
+
+**August 3, 2026**
 
 Aspect-oriented programming has a reputation problem in the Java ecosystem. The underlying idea is useful: some behavior genuinely belongs around a method call rather than inside the business method
 itself. Transactions, validation, retries, circuit breakers, caching, tracing, authorization, metrics, and logging all fit that description. The problem is not the idea of interception. The problem is
@@ -44,7 +47,7 @@ in very different parts of the system. Kora deliberately pays more of that compl
 
 ---
 
-## AOP Is Really About Transforming a Call Path
+## AOP Is Really About Transforming a Call Path { #call-path }
 
 Before comparing implementations, it helps to remove some historical terminology and look at the mechanical problem. Suppose an application contains a service:
 
@@ -113,7 +116,7 @@ That choice is the foundation for everything else in this article.
 
 ---
 
-## The Traditional Runtime Proxy Model
+## The Traditional Runtime Proxy Model { #runtime-proxy-model }
 
 A runtime proxy is an object created while the application is starting or running. The framework usually inspects some combination of class metadata, annotations, interfaces, bean definitions, and
 configuration, then decides that calls to a component must be intercepted.
@@ -176,7 +179,7 @@ Kora asks whether that machinery needs to remain dynamic when the relevant struc
 
 ---
 
-## Kora's Compile-Time AOP Model
+## Kora's Compile-Time AOP Model { #compile-time-aop-model }
 
 Kora moves the interception decision into its annotation-processing pipeline. The compiler sees the component, sees the AOP annotations, validates whether the method can be intercepted, resolves the
 required aspect support, and generates a concrete class around the original component.
@@ -272,7 +275,7 @@ The runtime is executing pre-generated code, not interpreting an AOP model.
 
 ---
 
-## Runtime Proxy vs Generated Subclass
+## Runtime Proxy vs Generated Subclass { #runtime-vs-generated }
 
 The architectural contrast can be summarized as follows:
 
@@ -298,7 +301,7 @@ isolated optimization. It is one expression of the framework's general architect
 
 ---
 
-## Method Interception as Generated Code
+## Method Interception as Generated Code { #interception-generated-code }
 
 Method interception is the core mechanism behind AOP. If we understand that mechanism in Kora, most other differences follow naturally.
 
@@ -561,7 +564,7 @@ proxy metadata. Compile-time generation cannot eliminate semantic complexity, bu
 
 ---
 
-## Compile-Time Validation Changes the Failure Model
+## Compile-Time Validation Changes the Failure Model { #compile-time-validation }
 
 The strongest advantage of compile-time AOP is not raw speed. It is moving an entire class of failures earlier in the development lifecycle.
 
@@ -682,7 +685,7 @@ That gives the framework a powerful property: generated AOP code is type-checked
 
 ---
 
-## The Application Graph and AOP Are Connected
+## The Application Graph and AOP Are Connected { #application-graph }
 
 AOP does not exist outside dependency injection. Generated proxies need dependencies. A validation aspect may require validator objects. A retry aspect needs resilience infrastructure. A transaction
 aspect needs transaction or database components. A cache aspect needs cache components. Logging and telemetry aspects require their own collaborators.
@@ -820,7 +823,7 @@ model.
 
 ---
 
-## Self Invocation: The Classic Runtime Proxy Problem
+## Self Invocation: The Classic Runtime Proxy Problem { #self-invocation }
 
 Self invocation is one of the most famous traps in proxy-based AOP. Consider this service:
 
@@ -914,7 +917,7 @@ exist because the proxy is not actually the object whose internal `this` calls a
 
 ---
 
-## Why Generated Subclass Interception Changes Self Invocation
+## Why Generated Subclass Interception Changes Self Invocation { #subclass-self-invocation }
 
 Subclass-based interception has different dispatch semantics. Consider an original class:
 
@@ -1014,7 +1017,7 @@ invocation" is therefore too broad. It describes a common external-proxy archite
 
 ---
 
-## The Limits of Self Invocation
+## The Limits of Self Invocation { #limits-self-invocation }
 
 Compile-time subclass generation does not make every internal call interceptable. Normal Java and Kotlin dispatch rules still apply.
 
@@ -1216,7 +1219,7 @@ does exactly that. It intentionally bypasses the current override so the method 
 
 The two relevant paths are therefore:
 
-### External call
+### External call { #external-call }
 
 ```text
 proxy.load
@@ -1226,7 +1229,7 @@ aspect
 super.load
 ```
 
-### Internal virtual call from original code to another intercepted method
+### Internal virtual call from original code to another intercepted method { #internal-virtual-call }
 
 ```text
 original method executing on proxy instance
@@ -1244,7 +1247,7 @@ These are normal inheritance semantics. No special self-proxy lookup is required
 
 ---
 
-## Performance Is a Whole-System Question
+## Performance Is a Whole-System Question { #performance }
 
 AOP performance discussions often collapse into microbenchmarks of one proxy call. That is too narrow. The relevant performance budget includes at least four stages:
 
@@ -1289,7 +1292,7 @@ depends on the workload, but the architectural direction is straightforward: rem
 
 ---
 
-## Concrete Bytecode Is Friendly to the JIT
+## Concrete Bytecode Is Friendly to the JIT { #concrete-bytecode }
 
 HotSpot optimizes concrete code extremely well. Consider a generated method:
 
@@ -1406,7 +1409,7 @@ This is why Kora's AOP design should be understood as part of a performance budg
 
 ---
 
-## Debuggability: Open the Generated Class
+## Debuggability: Open the Generated Class { #debuggability }
 
 One of the strongest practical properties of Kora's AOP design is that developers can inspect the generated source. Kora's documentation explicitly encourages looking at generated AOP proxy classes
 for features such as validation, caching, and resilience. That recommendation reveals an important framework philosophy: generated code is not treated as an embarrassing implementation detail that
@@ -1450,7 +1453,7 @@ That is a significant shift. The first requires reconstructing dynamic behavior.
 
 ---
 
-## Generated Code Narrows the Semantic Gap
+## Generated Code Narrows the Semantic Gap { #semantic-gap }
 
 The semantic gap is the distance between what source code appears to mean and what the runtime actually does. A plain Java call has a relatively small semantic gap:
 
@@ -1563,7 +1566,7 @@ reason about than behavior that exists only after application startup.
 
 ---
 
-## Runtime Magic vs Compile-Time Machinery
+## Runtime Magic vs Compile-Time Machinery { #runtime-magic }
 
 It is tempting to summarize compile-time code generation as "no magic." That captures the developer experience but is technically imprecise. Annotation processing is machinery. KSP is machinery.
 Aspect resolution is machinery. Source generation is machinery. Graph generation is machinery.
@@ -1594,7 +1597,7 @@ application execution.
 
 ---
 
-## Compile-Time AOP vs Bytecode Weaving
+## Compile-Time AOP vs Bytecode Weaving { #bytecode-weaving }
 
 Generated subclasses are also different from compile-time bytecode weaving. A bytecode weaver can modify the original class itself. Conceptually:
 
@@ -1660,7 +1663,7 @@ The recurring question is simple:
 
 ---
 
-## The Cost of Giving Up Runtime Dynamism
+## The Cost of Giving Up Runtime Dynamism { #runtime-dynamism }
 
 Compile-time AOP has trade-offs. A runtime proxy framework can make decisions using information that does not exist during compilation. It can attach interceptors based on runtime plugin discovery,
 dynamic registration, deployment environment, or components that are loaded after the main application artifact has been built.
@@ -1779,7 +1782,7 @@ This is a recurring Kora pattern: keep familiar Java abstractions while avoiding
 
 ---
 
-## Example: Validation
+## Example: Validation { #example-validation }
 
 Validation is a useful example because the semantics are straightforward.
 
@@ -1841,7 +1844,7 @@ That cleanly separates structural framework errors from actual business-input er
 
 ---
 
-## Example: Caching
+## Example: Caching { #example-caching }
 
 Caching demonstrates how compile-time AOP can encode branching logic.
 
@@ -1934,7 +1937,7 @@ code rather than hidden in generic interceptor state.
 
 ---
 
-## Example: Retry and Circuit Breaker
+## Example: Retry and Circuit Breaker { #example-retry }
 
 Resilience aspects are more complex because the control flow is more complex. A retry may involve attempt counters, backoff, exception classification, delays, cancellation, and metrics. A circuit
 breaker has state transitions, permissions, success/failure recording, half-open behavior, and possibly fallback.
@@ -2024,7 +2027,7 @@ Kora is not "compile-time everything." It is compile time for things that can ac
 
 ---
 
-## Example: Transactions
+## Example: Transactions { #example-transactions }
 
 Transactions are an archetypal AOP concern because they surround a business operation.
 
@@ -2099,7 +2102,7 @@ proxy metadata.
 
 ---
 
-## Aspect Ordering Becomes Architecture
+## Aspect Ordering Becomes Architecture { #aspect-ordering }
 
 As soon as multiple aspects are applied, ordering is no longer a framework implementation detail. It is application architecture.
 
@@ -2198,7 +2201,7 @@ The important point is that the final interception structure exists as text that
 
 ---
 
-## Testing the Raw Class vs Testing the Generated Component
+## Testing the Raw Class vs Testing the Generated Component { #testing }
 
 AOP complicates testing whenever a unit test directly constructs a service:
 
@@ -2272,7 +2275,7 @@ AOP is one of the places where that feedback is particularly valuable because pr
 
 ---
 
-## Build-Time Cost Is Real
+## Build-Time Cost Is Real { #build-time-cost }
 
 Moving work to compile time does not make work disappear. Annotation processors consume CPU. KSP processing consumes CPU. Generated source must be compiled. Large applications can generate many files.
 Processor design can affect incremental builds.
@@ -2397,7 +2400,7 @@ The application graph can then validate and wire those dependencies like any oth
 
 ---
 
-## What the Developer Should Inspect
+## What the Developer Should Inspect { #developer-inspect }
 
 When debugging Kora AOP, four layers are especially useful.
 
@@ -2528,7 +2531,7 @@ Kora's emphasis on human-readable generated source is therefore not cosmetic. Re
 
 ---
 
-## Compile-Time AOP and Native Images
+## Compile-Time AOP and Native Images { #native-images }
 
 Static, reflection-light infrastructure generally fits ahead-of-time compilation better than highly dynamic runtime machinery. Native-image systems need to understand which classes, methods,
 constructors, resources, and reflective accesses remain reachable. Dynamic proxies and reflection can require extra metadata so the image builder does not remove code needed later.
@@ -2717,7 +2720,7 @@ For unit tests, manual construction can be intentional. For production code, com
 
 ---
 
-## AOP Belongs at Clear Component Boundaries
+## AOP Belongs at Clear Component Boundaries { #component-boundaries }
 
 Compile-time subclass semantics make internal interception more coherent than classic external proxies, but that does not mean every helper method should become an AOP join point. Cross-cutting
 concerns are easiest to reason about at meaningful component boundaries.
@@ -3378,11 +3381,11 @@ proxy engine.
 
 ---
 
-## A Practical Side-by-Side Comparison
+## A Practical Side-by-Side Comparison { #side-by-side }
 
 Consider the same service under two conceptual implementations.
 
-### Runtime proxy
+### Runtime proxy { #runtime-proxy }
 
 Handwritten class:
 
@@ -3439,7 +3442,7 @@ Am I calling the proxy or the target?
 Does self invocation bypass it?
 ```
 
-### Kora compile-time proxy
+### Kora compile-time proxy { #kora-compile-time-proxy }
 
 Handwritten class:
 
@@ -3524,7 +3527,7 @@ reconstruct at runtime.
 
 ---
 
-## Compile-Time AOP Fits Kora's Broader Philosophy
+## Compile-Time AOP Fits Kora's Broader Philosophy { #broader-philosophy }
 
 Kora's overall engineering pattern can be summarized as:
 
@@ -3757,7 +3760,7 @@ The generated proxy records the framework's interpretation of annotations for th
 
 ---
 
-## Method Interception: Final Assessment
+## Method Interception: Final Assessment { #interception-assessment }
 
 For method interception, the generated-subclass model has a clear engineering profile. The intercepted method keeps its original typed signature. Aspect dependencies can become normal fields. The
 original implementation is reached through a normal `super` call. Multiple aspects can become nested control flow. The runtime does not need to represent every invocation as a generic
@@ -3770,7 +3773,7 @@ That is a reasonable trade for backend services where application structure is k
 
 ---
 
-## Compile-Time Validation: Final Assessment
+## Compile-Time Validation: Final Assessment { #validation-assessment }
 
 Compile-time validation changes AOP from something the container tries to make work after startup begins into something the build proves structurally possible before packaging.
 
@@ -3783,7 +3786,7 @@ For a large service fleet, that reliability benefit is often more important than
 
 ---
 
-## Self Invocation: Final Assessment
+## Self Invocation: Final Assessment { #self-invocation-assessment }
 
 Self invocation is where generated subclass AOP most clearly differs from the classic external proxy mental model.
 
@@ -3798,7 +3801,7 @@ The result is not magical universal interception. It is something better: interc
 
 ---
 
-## Performance: Final Assessment
+## Performance: Final Assessment { #performance-assessment }
 
 Compile-time AOP improves performance primarily by reducing unnecessary framework runtime work. It can remove or reduce runtime annotation discovery, generic invocation contexts, metadata lookups,
 proxy construction, reflective dispatch, temporary invocation objects, and generic interceptor traversal.
@@ -3812,7 +3815,7 @@ The magnitude depends on the workload, but the architectural direction is clear.
 
 ---
 
-## Debuggability: Final Assessment
+## Debuggability: Final Assessment { #debuggability-assessment }
 
 Debuggability may be the most tangible advantage for everyday engineering work. A generated proxy can be opened. Its override can be read. Its constructor reveals dependencies. Its nesting reveals
 aspect order. Its class and method names can appear in production diagnostics. Its source can be compared between framework versions.
@@ -3877,7 +3880,7 @@ The developer does not maintain repetitive wrappers. The JVM does not need a gen
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Aspect-oriented programming is often criticized for making control flow invisible. That criticism is justified when a small annotation activates a large runtime mechanism that developers cannot easily
 inspect. The problem is not cross-cutting behavior itself. Transactions, validation, retries, caching, security, tracing, and logging genuinely belong around business operations. The problem is

@@ -1,11 +1,14 @@
 ---
 title: The Best Framework for AI Agents Might Be the One With the Least Magic
+date: 2026-09-03
 description: Why the least-magic, most-explicit framework wins for AI agents — and how the Kora Framework's compile-time design fits that model.
 search:
   exclude: true
 ---
 
-# The Best Framework for AI Agents Might Be the One With the Least Magic
+# The Best Framework for AI Agents Might Be the One With the Least Magic { #least-magic }
+
+**September 3, 2026**
 
 Frameworks were designed for humans long before autonomous coding agents became a serious part of software development. That history matters. Many modern backend frameworks optimize for an attractive
 source-level experience. The developer writes a few annotations, follows a convention, and a large amount of runtime machinery fills in the rest. Dependency injection happens. Transactions appear.
@@ -94,7 +97,7 @@ Executable application
 
 The framework still automates a great deal. But more of the automation leaves inspectable artifacts behind. That difference turns out to matter a lot for AI agents.
 
-## The Real Problem Is Not Magic. It Is Hidden Causality
+## The Real Problem Is Not Magic. It Is Hidden Causality { #hidden-causality }
 
 "Magic" is an imprecise word. Framework authors often use it rhetorically. Developers use it when something happens automatically that they do not immediately understand. But automatic behavior is not
 automatically bad. A compiler is automatic. A garbage collector is automatic. Code generation is automatic. Dependency injection is automatic. The important question is:
@@ -121,7 +124,7 @@ from artifacts in the repository? Or does it need to know that at startup the fr
 auto-configuration, wrapped another bean through a post-processor, and activated a profile-specific repository implementation? Both architectures can work. But the second requires more hidden context.
 The AI problem is therefore not automation. It is **invisible causality**.
 
-## Humans Can Compensate With Experience
+## Humans Can Compensate With Experience { #human-experience }
 
 A human engineer joins a project and gradually builds a mental model. After enough incidents and code reviews, they know things that may never be written down explicitly:
 
@@ -138,7 +141,7 @@ This knowledge becomes tribal context. Experienced engineers can operate effecti
 makes framework upgrades risky. It makes unusual failures dependent on a few experts. AI agents expose the same weakness more dramatically because they do not automatically share the team's
 accumulated private memory.
 
-## An Agent Sees the Repository, Not the Team's Collective Memory
+## An Agent Sees the Repository, Not the Team's Collective Memory { #agent-repository }
 
 An autonomous coding agent usually works with some combination of:
 
@@ -159,7 +162,7 @@ inspectable artifacts, the less the agent has to guess. This leads to a useful p
 
 That is good architecture for humans too.
 
-## The Source-Level Illusion Problem
+## The Source-Level Illusion Problem { #source-level-illusion }
 
 Annotations are a perfect example. Consider again:
 
@@ -211,7 +214,7 @@ execution model
 
 The larger this gap becomes, the more context an agent needs.
 
-## Runtime Proxies Are Not Bad, but They Add an Invisible Object
+## Runtime Proxies Are Not Bad, but They Add an Invisible Object { #runtime-proxies }
 
 A classic runtime AOP model can be:
 
@@ -232,7 +235,7 @@ supports dynamic composition and mature interception models. The AI concern is n
 
 It must either know the framework rules or query runtime state. That is additional uncertainty.
 
-## Bean Post-Processing Adds Another Transformation Phase
+## Bean Post-Processing Adds Another Transformation Phase { #bean-post-processing }
 
 A runtime container may first create a component and then pass it through post-processors. One processor adds transactions. Another adds metrics. Another replaces a dependency. Another registers
 lifecycle behavior. The final object may differ significantly from the original construction. For humans, this is manageable when framework conventions are stable.
@@ -245,7 +248,7 @@ How many framework transformations occur between source declaration and executab
 
 The fewer hidden stages, the easier automated reasoning becomes.
 
-## Classpath-Dependent Behavior Is Especially Difficult for Agents
+## Classpath-Dependent Behavior Is Especially Difficult for Agents { #classpath-behavior }
 
 Many frameworks intentionally use classpath presence as configuration. If library X exists, enable integration X. If library Y is absent, fall back to implementation Z. This can create excellent
 developer ergonomics. But it also means behavior depends on build dependency state that may not be obvious in the file being edited. An agent debugging one service method may need to inspect:
@@ -260,7 +263,7 @@ environment
 
 before it knows which implementation exists at runtime. That is a large reasoning surface.
 
-## Hidden Defaults Are Efficient Until They Are Not
+## Hidden Defaults Are Efficient Until They Are Not { #hidden-defaults }
 
 Defaults reduce boilerplate. They are necessary. But every hidden default is another piece of state the agent may have to know. Examples include:
 
@@ -286,7 +289,7 @@ easy to override explicitly
 
 The problem is not that a default exists. The problem is that important behavior changes without a visible clue.
 
-## Environment-Dependent Behavior Creates a Moving Target
+## Environment-Dependent Behavior Creates a Moving Target { #environment-behavior }
 
 A service may behave differently under:
 
@@ -319,7 +322,7 @@ PaymentClient = ResilientPaymentClient
 through conditional configuration. There is nothing wrong with this architecture. But it means the agent needs an environment-specific graph, not just source code. AI-friendly frameworks should make
 such variation explicit and inspectable.
 
-## Reflection Hides the Relationship Between Declaration and Execution
+## Reflection Hides the Relationship Between Declaration and Execution { #reflection }
 
 Reflection is powerful precisely because it lets runtime code inspect structures without generated static code. That flexibility is useful. The trade-off is that the compiler may not see the whole
 framework contract. A mapping error, missing constructor, invalid annotation, or unsupported combination can survive longer. For an AI agent, reflection-heavy systems shift feedback later. Instead of:
@@ -346,20 +349,20 @@ reflection error
 
 The extra steps make autonomous correction slower.
 
-## Framework Lifecycle Is Another Hidden Dimension
+## Framework Lifecycle Is Another Hidden Dimension { #framework-lifecycle }
 
 Many problems are lifecycle problems rather than type problems. A component may be valid but initialized too late. A dependency may exist but not be ready. A proxy may be created before another
 post-processor runs. A listener may register during startup. A shutdown callback may flush state. These behaviors are often difficult to understand from one source file. An agent needs either
 lifecycle documentation or runtime observation. A framework that models lifecycle explicitly in the dependency graph gives the agent more static evidence.
 
-## What Would an AI-Agent-Friendly Framework Look Like?
+## What Would an AI-Agent-Friendly Framework Look Like? { #agent-friendly-framework }
 
 If we design from the perspective of an autonomous coding system, several criteria emerge. A useful list is: 1. **Low ambiguity** 2. **Compile-time feedback** 3. **Explicit dependency graph** 4. *
 *Readable generated code** 5. **Strong contracts** 6. **Small semantic gap** 7. **Deterministic behavior** 8. **Short feedback loop**
 
 These are not AI gimmicks. They are classic software-engineering qualities. What changes is how strongly they affect autonomous work.
 
-## Criterion 1: Low Ambiguity
+## Criterion 1: Low Ambiguity { #criterion-1 }
 
 For one problem, an agent benefits from one canonical approach. That does not mean a framework must prohibit expert customization. It means the default path should be obvious. Suppose the task is:
 
@@ -395,7 +398,7 @@ This is the recommended repository model.
 
 Now the search space is smaller.
 
-## Low Ambiguity Is Not the Same as Low Capability
+## Low Ambiguity Is Not the Same as Low Capability { #low-ambiguity-capability }
 
 A framework can provide powerful extension points while still maintaining one clear default. The difference is between:
 
@@ -413,7 +416,7 @@ with unclear local preference
 
 Humans often tolerate the second through conventions. Agents need those conventions explicitly. If the framework itself narrows the default, less project-specific instruction is required.
 
-## Canonical APIs Improve Retrieval
+## Canonical APIs Improve Retrieval { #canonical-apis }
 
 Coding agents often learn by searching nearby code. If every repository follows one pattern, search results reinforce each other. If five styles coexist, retrieval becomes noisy. The model may copy a
 deprecated example simply because it is closest. Low ambiguity therefore improves:
@@ -428,7 +431,7 @@ review
 
 This is one reason "one recommended way" becomes more valuable in an AI-heavy workflow.
 
-## Criterion 2: Compile-Time Feedback
+## Criterion 2: Compile-Time Feedback { #criterion-2 }
 
 The best error is the earliest error that can be precise. If a framework knows during compilation that a dependency is missing, it should not wait until startup. If a mapper cannot be generated, fail
 the build. If an AOP target cannot be intercepted, fail the build. If an OpenAPI contract and implementation disagree, fail the build where possible. An AI agent thrives on this. The loop becomes:
@@ -445,7 +448,7 @@ agent fixes
 
 The compiler acts as a deterministic external evaluator.
 
-## Compiler Feedback Converts Hallucination Into Data
+## Compiler Feedback Converts Hallucination Into Data { #compiler-feedback }
 
 LLMs sometimes invent:
 
@@ -460,7 +463,7 @@ framework APIs
 Strong compile-time contracts transform these hallucinations into concrete failures. This is a very healthy interaction model. The model is allowed to guess. The compiler prevents the guess from
 becoming production behavior. That is much more robust than expecting the agent to be perfectly correct from memory.
 
-## Error Locality Is Critical
+## Error Locality Is Critical { #error-locality }
 
 A framework can fail at compile time and still produce terrible diagnostics. For AI agents, the ideal error contains:
 
@@ -482,7 +485,7 @@ of OrderService.
 
 This gives the model a narrow repair target. Compare that with a generic processor crash. Compile-time architecture only becomes an AI advantage when diagnostics are engineered well.
 
-## Criterion 3: Explicit Dependency Graph
+## Criterion 3: Explicit Dependency Graph { #criterion-3 }
 
 The agent should be able to answer:
 
@@ -495,7 +498,7 @@ What depends on it?
 by reading source. Constructor injection is excellent for this. Module factory methods are excellent for this. An explicit application root is excellent for this. Hidden service locators are not.
 Global registries are not. Deep runtime lookup is not. The more the dependency graph resembles normal language relationships, the more effectively an LLM can traverse it.
 
-## Explicit Graphs Improve Impact Analysis
+## Explicit Graphs Improve Impact Analysis { #impact-analysis }
 
 Suppose an agent changes:
 
@@ -524,7 +527,7 @@ migration
 
 AI agents will increasingly perform exactly these large-scale operations.
 
-## Explicit Graphs Improve Testing Too
+## Explicit Graphs Improve Testing Too { #explicit-graphs-testing }
 
 If dependencies are explicit, tests can replace them deliberately. A component test may use:
 
@@ -537,7 +540,7 @@ real generated DI
 
 That gives the agent a controlled environment. It can test framework integration without requiring every external dependency. This makes experimentation cheaper and safer.
 
-## Criterion 4: Readable Generated Code
+## Criterion 4: Readable Generated Code { #criterion-4 }
 
 Code generation is often described as magic. That is too simplistic. Generated code can actually be one of the least magical framework techniques if the output is readable and available. The key
 distinction is:
@@ -554,7 +557,7 @@ inspectable build-time generation
 
 If an annotation produces a class that the agent can open, the transformation becomes explicit after compilation. That is an enormous advantage.
 
-## Generated Code Makes Framework Decisions Concrete
+## Generated Code Makes Framework Decisions Concrete { #generated-code-concrete }
 
 Suppose the framework generates:
 
@@ -581,7 +584,7 @@ What code did this annotation produce here?
 
 That is a better question because it is application-specific. Generated source becomes executable documentation.
 
-## Readability Matters More Than Mere Availability
+## Readability Matters More Than Mere Availability { #readability }
 
 Generated code that is technically visible but unreadable is not much help. Good generated source should use:
 
@@ -595,7 +598,7 @@ minimal unnecessary indirection
 
 The output should look like something a competent engineer could have written manually. That lets both humans and agents reason about it.
 
-## Generated Source Shrinks Framework Folklore
+## Generated Source Shrinks Framework Folklore { #framework-folklore }
 
 Runtime frameworks often require knowledge such as:
 
@@ -609,7 +612,7 @@ which handler adapter
 Readable generated source can encode these decisions directly. Instead of memorizing framework folklore, the agent can inspect artifacts. This is one of the strongest arguments for compile-time
 transparency.
 
-## Criterion 5: Strong Contracts
+## Criterion 5: Strong Contracts { #criterion-5 }
 
 AI agents perform better when the solution space is constrained by types. Strong contracts include:
 
@@ -626,7 +629,7 @@ typed errors
 
 These contracts convert incorrect assumptions into tool-checkable failures. A map of strings is flexible. A typed DTO is restrictive. For autonomous development, restriction is often helpful.
 
-## End-to-End Typing Is More Valuable Than Isolated Typing
+## End-to-End Typing Is More Valuable Than Isolated Typing { #end-to-end-typing }
 
 The biggest benefit appears when types cross framework boundaries. For example:
 
@@ -646,7 +649,7 @@ typed response
 
 An agent working in this system has fewer places where it must infer shape from strings. That reduces protocol mistakes.
 
-## Schemas Are Especially Agent-Friendly
+## Schemas Are Especially Agent-Friendly { #schemas }
 
 A schema is machine-readable intent. OpenAPI, protobuf, database migration definitions, and typed configuration all provide explicit contracts. Agents can inspect them directly. Generated code can
 then enforce them. This creates a pipeline:
@@ -661,14 +664,14 @@ compiler validation
 
 which is highly compatible with autonomous tooling.
 
-## Criterion 6: Small Semantic Gap
+## Criterion 6: Small Semantic Gap { #criterion-6 }
 
 A framework is easier for an agent when familiar technologies remain recognizable. JDBC should still feel like JDBC. Kafka should still feel like Kafka. gRPC should still feel like gRPC. HTTP should
 still feel like HTTP. SQL should still be SQL. The framework can automate wiring and repetitive glue.
 
 It should be cautious about replacing every technology with a proprietary conceptual universe. Why? Because LLMs already know mainstream technologies extremely well.
 
-## Thin Abstractions Reuse Pretrained Knowledge
+## Thin Abstractions Reuse Pretrained Knowledge { #thin-abstractions }
 
 A model has enormous training exposure to:
 
@@ -687,7 +690,7 @@ Kotlin
 If a framework stays near those concepts, the model can reuse that knowledge. If the framework introduces a unique DSL for everything, the model needs more framework-specific context. This does not
 mean custom abstractions are always bad. It means abstraction should provide enough value to justify the semantic distance it creates.
 
-## The Semantic Gap Is a Context Budget
+## The Semantic Gap Is a Context Budget { #semantic-gap }
 
 Every proprietary abstraction consumes explanation. If the agent needs to understand:
 
@@ -701,7 +704,7 @@ FrameworkHTTPDSL
 before solving the actual business task, more context is spent on framework translation. Thin abstractions preserve context for the domain problem. As repositories grow larger, this becomes
 increasingly important.
 
-## Criterion 7: Deterministic Behavior
+## Criterion 7: Deterministic Behavior { #criterion-7 }
 
 Given the same source and configuration, the framework should build the same architecture predictably. Determinism is important because agents learn from repeated tool feedback. If behavior depends on
 subtle discovery order or accidental classpath conditions, automated reasoning becomes brittle. The ideal graph is:
@@ -716,7 +719,7 @@ known application structure
 
 This does not prohibit environment-specific configuration. It means the rules that map environment to structure should be explicit and reproducible.
 
-## Determinism Makes Generated Diffs Useful
+## Determinism Makes Generated Diffs Useful { #determinism-diffs }
 
 If generated source is deterministic, an agent can compare:
 
@@ -736,7 +739,7 @@ migration
 
 Nondeterministic generation would destroy that value.
 
-## Reproducible Graphs Improve CI Confidence
+## Reproducible Graphs Improve CI Confidence { #reproducible-graphs }
 
 An autonomous agent often works in CI or an ephemeral environment. If the same build inputs produce the same graph, local validation is meaningful. The agent can trust that:
 
@@ -752,7 +755,7 @@ what production artifact will contain
 
 This reduces environment-specific surprises.
 
-## Criterion 8: Short Feedback Loop
+## Criterion 8: Short Feedback Loop { #criterion-8 }
 
 Even perfect diagnostics are frustrating if each attempt takes a minute. Agent effectiveness depends on how quickly it can repeat:
 
@@ -775,7 +778,7 @@ targeted test support
 
 Framework startup is only one factor. But it is an important one.
 
-## Agentic Development Multiplies Feedback Cycles
+## Agentic Development Multiplies Feedback Cycles { #agentic-development }
 
 An autonomous agent may make many small corrections. For one task it can:
 
@@ -795,7 +798,7 @@ run integration test
 If every application startup is slow, this compounds. Fast startup therefore becomes a development-automation feature. Not because AI cares about milliseconds emotionally. Because shorter loops permit
 more evidence-gathering iterations in the same wall-clock budget.
 
-## Fast Tests Encourage Verification Over Guessing
+## Fast Tests Encourage Verification Over Guessing { #fast-tests }
 
 LLMs are probabilistic systems. The correct engineering strategy is:
 
@@ -815,7 +818,7 @@ trust
 
 When component tests are cheap, the agent can verify aggressively. When tests are expensive, it is tempted to reason statically and move on. A fast framework encourages the safer workflow.
 
-## These Criteria Form an Agent-Friendly Framework Checklist
+## These Criteria Form an Agent-Friendly Framework Checklist { #checklist }
 
 We can summarize the design:
 
@@ -855,7 +858,7 @@ agents can verify and self-correct frequently
 
 A framework does not need to maximize every category. But the checklist gives us a more precise language than "AI native."
 
-## The Least Magic Framework Is Not the Framework With the Least Automation
+## The Least Magic Framework Is Not the Framework With the Least Automation { #least-automation }
 
 This distinction deserves emphasis. Consider two systems. System A requires developers to write everything manually:
 
@@ -887,11 +890,11 @@ opaque runtime interpretation
 
 That is a much more useful framework design principle.
 
-## Code Generation Can Be Less Magical Than Reflection
+## Code Generation Can Be Less Magical Than Reflection { #codegen-vs-reflection }
 
 This sounds counterintuitive because generated code is often associated with metaprogramming. But imagine two mapping systems.
 
-### Reflective mapping
+### Reflective mapping { #reflective-mapping }
 
 ```text
 DTO
@@ -903,7 +906,7 @@ field lookup
 conversion rules
 ```
 
-### Generated mapping
+### Generated mapping { #generated-mapping }
 
 ```text
 DTO
@@ -915,7 +918,7 @@ ordinary assignments
 
 In the second case, the agent can inspect the exact mapping. The compiler can validate field types. The runtime behavior is ordinary code. That can be significantly less mysterious.
 
-## Compile-Time AOP Can Be Less Magical Than Runtime AOP
+## Compile-Time AOP Can Be Less Magical Than Runtime AOP { #compile-time-aop }
 
 The same applies to interception. Runtime model:
 
@@ -946,7 +949,7 @@ method
 If the wrapper is readable, the agent can inspect ordering and control flow. The abstraction remains declarative. The implementation becomes visible. That is exactly the kind of automation an AI agent
 can use effectively.
 
-## Compile-Time DI Can Be Less Magical Than Runtime DI
+## Compile-Time DI Can Be Less Magical Than Runtime DI { #compile-time-di }
 
 Runtime DI often relies on scanning and container state. Compile-time DI can turn graph resolution into build artifacts. An agent can inspect:
 
@@ -958,7 +961,7 @@ generated graph
 
 and know where components come from. Again, the framework still automates construction. It simply moves important decisions into a phase that produces inspectable evidence.
 
-## Where Kora Fits
+## Where Kora Fits { #where-kora-fits }
 
 Kora is an interesting case because it satisfies a surprisingly large number of these criteria. Not because it was created to chase an AI trend. Its core design predates the current wave of autonomous
 coding agents. The overlap exists because the qualities that help AI agents are mostly the same qualities that reduce cognitive overhead for humans. Kora's model can be summarized as:
@@ -976,7 +979,7 @@ Executable application
 The framework moves dependency graph construction, mapping, repositories, HTTP infrastructure, and AOP behavior toward compile-time generation. That makes it a useful case study for agent-friendly
 framework design.
 
-## Kora and Low Ambiguity
+## Kora and Low Ambiguity { #kora-low-ambiguity }
 
 Kora deliberately favors a smaller set of direct abstractions. The framework presents familiar concepts:
 
@@ -1000,13 +1003,13 @@ alternative DI pattern
 
 into one incoherent result. Low ambiguity reduces solution branching.
 
-## Kora and Compile-Time Feedback
+## Kora and Compile-Time Feedback { #kora-compile-time }
 
 Kora validates the application graph during compilation. It checks dependencies, injections, cycles, and generated structures. Missing or ambiguous dependencies fail before the service starts.
 Generated repository and mapping code must compile. AOP targets are processed before runtime. This pushes many framework mistakes into the build. For an autonomous agent, this is ideal. The compiler
 becomes a framework-aware reviewer.
 
-## Kora and Explicit Dependency Graphs
+## Kora and Explicit Dependency Graphs { #kora-dependency-graphs }
 
 Kora applications use constructs such as:
 
@@ -1021,7 +1024,7 @@ interfaces
 to describe architecture. A model can follow dependencies through ordinary Java/Kotlin relationships. The application root provides an obvious starting point. Modules show construction. Constructors
 show dependencies. Generated graph code shows final resolution. There is much less need to reconstruct a runtime container from indirect behavior.
 
-## Kora and Readable Generated Code
+## Kora and Readable Generated Code { #kora-readable-code }
 
 This is perhaps the most unusual advantage. Kora deliberately generates human-readable source. That includes framework mechanics such as:
 
@@ -1036,24 +1039,24 @@ AOP wrappers
 For humans, this improves debugging. For AI agents, it creates application-specific framework documentation. The model can inspect what Kora actually built rather than rely entirely on generic
 knowledge.
 
-## Kora and Strong Contracts
+## Kora and Strong Contracts { #kora-strong-contracts }
 
 Java and Kotlin already provide strong local typing. Kora extends strong contracts through framework boundaries. Repository signatures are typed. Configuration is typed. HTTP contracts can be typed.
 OpenAPI generation can produce typed clients, servers, models, and responses. Compile-time graph wiring is typed. Wrong assumptions become more likely to produce build errors. That is precisely what
 an autonomous agent wants.
 
-## Kora and a Small Semantic Gap
+## Kora and a Small Semantic Gap { #kora-semantic-gap }
 
 Kora tries to remain close to real backend technologies. JDBC remains JDBC. Kafka remains Kafka. gRPC remains gRPC. HTTP remains HTTP. OpenTelemetry remains OpenTelemetry. The framework supplies thin
 integration and generated glue. This means an agent can reuse broad knowledge of standard technologies instead of learning a separate Kora-specific universe for every subsystem. That is an enormous
 advantage, especially for private code and newer framework versions where pretraining data is limited.
 
-## Kora and Deterministic Architecture
+## Kora and Deterministic Architecture { #kora-deterministic }
 
 A compile-time graph gives Kora a strong deterministic model. Given source, configuration contracts, and module selection, the framework resolves architecture during the build. The final wiring is not
 primarily the result of accidental runtime discovery. That makes builds easier to reason about. It also makes generated-code diffs useful during upgrades or refactoring.
 
-## Kora and the Short Feedback Loop
+## Kora and the Short Feedback Loop { #kora-feedback-loop }
 
 Kora explicitly treats fast startup and testing as part of the development experience. The graph is prebuilt. Startup work is reduced. Component and integration tests can start application contexts
 cheaply. The resulting loop is:
@@ -1074,7 +1077,7 @@ fix
 
 That is almost an ideal agent workflow.
 
-## Kora's AI Advantage Is an Emergent Property
+## Kora's AI Advantage Is an Emergent Property { #kora-ai-advantage }
 
 This is the key point. Kora did not need to invent a special AI programming language. It did not need to hide complexity behind a natural-language DSL. Its agent compatibility emerges from traditional
 engineering priorities:
@@ -1090,7 +1093,7 @@ fast startup
 
 These were useful before AI coding agents. Agents simply amplify their value.
 
-## Why "No Runtime Magic" Is So Important for Agents
+## Why "No Runtime Magic" Is So Important for Agents { #no-runtime-magic }
 
 A human can sometimes accept a black box because they trust the framework. An agent needs evidence. If the repository says:
 
@@ -1107,7 +1110,7 @@ transactionManager.inTx(...)
 the model can reason directly. If a repository annotation becomes generated SQL-binding code, the model can inspect it. If DI becomes generated constructor wiring, the model can follow it. Every
 visible transformation removes one guess.
 
-## Kora's Generated Code Becomes a Debugging API for AI
+## Kora's Generated Code Becomes a Debugging API for AI { #kora-debugging-api }
 
 Traditional debugging APIs include:
 
@@ -1130,7 +1133,7 @@ What handler maps this route?
 
 Those are answerable questions. The framework turns internal behavior into files.
 
-## This Helps More With Private Code Than Public Examples
+## This Helps More With Private Code Than Public Examples { #private-code }
 
 A popular runtime framework may have a huge advantage in training data. The model has seen millions of examples. Kora is smaller. But generated-source transparency can compensate in a different way.
 The agent does not need to have seen your internal module during pretraining. It can inspect it now. This matters in enterprise systems where much of the architecture is private:
@@ -1145,7 +1148,7 @@ internal workflow
 
 No public training corpus can contain those implementations. Explicit local structure is therefore more valuable than generic framework popularity.
 
-## Private Platform Modules Become Learnable
+## Private Platform Modules Become Learnable { #private-modules }
 
 Suppose a company creates:
 
@@ -1168,13 +1171,13 @@ telemetry
 and learn how to use them. The compiler catches wrong usage. Generated graph code reveals final wiring. Tests demonstrate intended behavior. The platform does not depend on the model having prior
 knowledge. The repository itself becomes the teaching system.
 
-## This Is Also Why Kora's Thin Abstractions Matter
+## This Is Also Why Kora's Thin Abstractions Matter { #thin-abstractions-matter }
 
 If an internal module wraps Kafka with a giant proprietary event DSL, the agent must learn that DSL. If the module stays close to Kafka concepts and adds Kora wiring, the model can reuse known Kafka
 semantics. This is another place where framework and platform design interact. Kora provides the ability to build thin first-class modules. Teams still need to preserve that discipline in their own
 extensions.
 
-## The Agent Loop in Kora Can Be Extremely Concrete
+## The Agent Loop in Kora Can Be Extremely Concrete { #agent-loop-kora }
 
 Imagine a task:
 
@@ -1206,7 +1209,7 @@ Ambiguous PricingClient
 The agent inspects tags or module providers. Next compilation succeeds. The agent runs a component test. The endpoint returns 404. The agent inspects the generated handler or a nearby route
 declaration. It fixes the route. The test passes. The agent never needed perfect Kora knowledge at the beginning. The framework taught it through evidence.
 
-## A Framework Can Be Partially Self-Teaching
+## A Framework Can Be Partially Self-Teaching { #self-teaching }
 
 This is a powerful concept. An AI-friendly framework does not require the agent to know every rule before acting. It allows the agent to learn through:
 
@@ -1218,7 +1221,7 @@ tests
 
 The environment becomes interactive documentation. This reduces dependence on prompt engineering. It also reduces dependence on enormous context windows.
 
-## Large Context Windows Are Not a Substitute for Architectural Clarity
+## Large Context Windows Are Not a Substitute for Architectural Clarity { #context-windows }
 
 One response to framework complexity is:
 
@@ -1239,7 +1242,7 @@ hidden runtime conditions
 
 Architecture that rejects invalid assumptions is more robust than architecture that merely explains them in more text.
 
-## Machine-Readable Constraints Beat Prompt Rules
+## Machine-Readable Constraints Beat Prompt Rules { #machine-readable-constraints }
 
 Suppose the prompt says:
 
@@ -1255,7 +1258,7 @@ Use constructor injection.
 
 That helps. But an explicit graph with constructor dependencies reinforces the rule mechanically. For autonomous agents, executable constraints are stronger than natural-language instructions.
 
-## The Best Agent Framework Shrinks the Space of Valid Mistakes
+## The Best Agent Framework Shrinks the Space of Valid Mistakes { #valid-mistakes }
 
 This is a useful way to think about framework design. A coding agent will make mistakes. The goal is not to eliminate all mistakes. The goal is to make mistakes:
 
@@ -1270,12 +1273,12 @@ A strong type makes an invalid call obvious. Compile-time DI makes a missing com
 discover. One recommended way reduces the number of wrong-but-valid implementations. The best AI frameworks are not those where agents never err. They are those where the system helps the agent
 recover quickly.
 
-## Deterministic Feedback Is More Valuable Than Probabilistic Memory
+## Deterministic Feedback Is More Valuable Than Probabilistic Memory { #deterministic-feedback }
 
 An LLM may "remember" that an annotation behaves a certain way. The compiler knows whether this code is valid in this repository. Generated source shows how this build resolved it. Tests show what
 this runtime does. For serious automation, local deterministic evidence should outrank model memory. A framework designed around compile-time artifacts naturally supports that hierarchy.
 
-## A Useful Hierarchy of Truth
+## A Useful Hierarchy of Truth { #hierarchy-of-truth }
 
 An AI agent working in a transparent framework can use:
 
@@ -1326,7 +1329,7 @@ What actually happens under production conditions?
 
 This hierarchy is extremely powerful for autonomous reasoning.
 
-## Framework Magic Is Most Dangerous When It Defeats This Hierarchy
+## Framework Magic Is Most Dangerous When It Defeats This Hierarchy { #defeats-hierarchy }
 
 The problem with opaque runtime behavior is that it can insert another layer:
 
@@ -1337,7 +1340,7 @@ hidden container state
 between source and execution. Now the agent must query or infer that state. This does not make the framework bad. It does make automation harder. The more of the execution model is represented in
 inspectable build artifacts, the easier it is to preserve a clean hierarchy of truth.
 
-## Dynamic Frameworks Can Still Be Excellent for AI
+## Dynamic Frameworks Can Still Be Excellent for AI { #dynamic-frameworks }
 
 A fair article must acknowledge the other side. Large runtime frameworks often have enormous advantages:
 
@@ -1354,13 +1357,13 @@ large communities
 An LLM may know Spring extremely well. It may generate correct Spring code immediately because the patterns are ubiquitous. A smaller compile-time framework does not automatically win. The argument is
 more subtle. Popularity provides **prior knowledge**. Transparency provides **local evidence**. Both help AI.
 
-## Prior Knowledge Versus Local Evidence
+## Prior Knowledge Versus Local Evidence { #prior-knowledge }
 
 For public, mainstream patterns, prior knowledge is powerful. For private codebases, new versions, custom modules, and unusual combinations, local evidence becomes more important. A transparent
 framework can remain understandable even when the model has never seen the exact code before. This may become increasingly important as agents work inside enterprise systems dominated by proprietary
 libraries.
 
-## Agent-Friendly Does Not Mean "No Runtime Behavior"
+## Agent-Friendly Does Not Mean "No Runtime Behavior" { #runtime-behavior }
 
 Real applications are dynamic. The following must remain runtime concerns:
 
@@ -1382,7 +1385,7 @@ Compile-time frameworks cannot and should not remove this dynamism. The goal is 
 
 This leaves runtime for genuinely runtime facts. That separation is healthy.
 
-## Compile-Time Validation Does Not Prove Business Correctness
+## Compile-Time Validation Does Not Prove Business Correctness { #compile-time-validation }
 
 An agent can write code that compiles and is still wrong. For example:
 
@@ -1419,17 +1422,17 @@ observability
 
 especially for high-risk changes.
 
-## Strong Types Do Not Replace Semantics
+## Strong Types Do Not Replace Semantics { #strong-types }
 
 A typed `Money` value does not tell the agent which currency conversion policy is correct. A typed repository does not tell it whether an index is missing. A generated client does not tell it whether
 retry is safe for a non-idempotent operation. Framework transparency improves evidence. It does not automate engineering judgment.
 
-## Fast Feedback Can Accelerate Bad Goals
+## Fast Feedback Can Accelerate Bad Goals { #fast-feedback }
 
 An autonomous agent can quickly make all tests pass by weakening the tests. A short loop is only useful when the evaluation criteria are good. This is why AI governance still matters. The framework
 can provide guardrails. The project must provide meaningful acceptance criteria.
 
-## Human Review Becomes More Semantic
+## Human Review Becomes More Semantic { #human-review }
 
 One benefit of strong framework validation is that reviewers can spend less time on mechanical framework correctness. If the compiler already checked graph completeness and generated code compiles,
 humans can focus more on:
@@ -1445,7 +1448,7 @@ operational risk
 
 The same applies to AI review agents. Mechanics become more machine-verifiable. Review can move upward.
 
-## "Least Magic" Is Really "Most Inspectable Causality"
+## "Least Magic" Is Really "Most Inspectable Causality" { #inspectable-causality }
 
 This phrase captures the real idea better. The best framework for AI agents may not be the smallest framework. It may not be the least automated. It may not be the one with the fewest annotations. It
 may be the one where the path from declaration to execution is easiest to inspect. That means:
@@ -1472,7 +1475,7 @@ execution
 
 The first is easier for tools.
 
-## This Suggests a New Framework Benchmark
+## This Suggests a New Framework Benchmark { #framework-benchmark }
 
 Traditional framework benchmarks measure:
 
@@ -1504,7 +1507,7 @@ Can an agent trace a request path without starting the application?
 
 These are difficult to reduce to one score. But they may matter more than another microbenchmark for AI-heavy teams.
 
-## We May Need an "Agent Cognitive Load" Metric
+## We May Need an "Agent Cognitive Load" Metric { #agent-cognitive-load }
 
 Human cognitive load is familiar. Agent cognitive load could be approximated by:
 
@@ -1518,7 +1521,7 @@ number of tool steps before error detection
 
 A framework with fewer such requirements is easier to automate. This is speculative, but useful. It gives teams a language for evaluating development environments beyond benchmark performance.
 
-## The Best Agent Stack May Be Boring
+## The Best Agent Stack May Be Boring { #boring-stack }
 
 Boring technology is often a compliment. An AI agent benefits from predictable code:
 
@@ -1534,12 +1537,12 @@ normal exceptions
 The more framework-specific interpretation sits around those constructs, the more context the agent needs. Kora's interesting quality is that it tries to keep high-level developer ergonomics while
 generating relatively boring runtime code. That combination is powerful.
 
-## Generated Code Can Be More Boring Than Runtime Magic
+## Generated Code Can Be More Boring Than Runtime Magic { #boring-generated-code }
 
 A generated repository implementation may be repetitive. Good. A generated AOP wrapper may look like ordinary `try/catch` and method calls. Good. A generated application graph may look like explicit
 constructor wiring. Good. Boring generated code is easy to reason about. The framework can be sophisticated internally while emitting simple artifacts.
 
-## This Is Why Readable Generation Is a Strategic Feature
+## This Is Why Readable Generation Is a Strategic Feature { #readable-generation }
 
 Code generators are often optimized only for correctness and performance. In an AI-assisted world, readability becomes strategically important. Readable output supports:
 
@@ -1554,7 +1557,7 @@ education
 
 Generated code becomes part of the framework's user interface. Kora's emphasis on human-readable generation happens to align strongly with this future.
 
-## One Recommended Way Also Makes Training Internal Agents Easier
+## One Recommended Way Also Makes Training Internal Agents Easier { #training-internal-agents }
 
 Suppose a company wants to train or configure an internal coding agent. If the framework ecosystem has one standard:
 
@@ -1567,7 +1570,7 @@ testing style
 
 the instruction set remains small. If teams use many competing approaches, internal AI guidance becomes a large policy document. Consistency reduces both human and machine governance cost.
 
-## Platform Teams Should Care About This
+## Platform Teams Should Care About This { #platform-teams }
 
 A platform team choosing internal standards should ask:
 
@@ -1580,7 +1583,7 @@ Will local examples be consistent?
 
 These questions may influence framework and library design. The platform that is easiest to automate may become the platform with the highest organizational leverage.
 
-## Private Modules Should Follow the Same Principles
+## Private Modules Should Follow the Same Principles { #private-modules-principles }
 
 Even in Kora, teams can destroy agent friendliness by building opaque internal modules. For example:
 
@@ -1604,7 +1607,7 @@ predictable lifecycle
 
 in internal code too.
 
-## Framework Architecture and Coding-Agent Architecture Converge
+## Framework Architecture and Coding-Agent Architecture Converge { #architecture-converge }
 
 A coding agent needs:
 
@@ -1619,7 +1622,7 @@ inspectable effects
 A well-designed backend framework needs nearly the same qualities. That is why this topic is more interesting than "Does framework X have an AI plugin?" The deeper convergence is architectural.
 Frameworks that were designed for clarity may become unusually effective agent environments without adding any AI-specific runtime feature.
 
-## Kora Is a Case Study, Not the Universal Answer
+## Kora Is a Case Study, Not the Universal Answer { #kora-case-study }
 
 Kora happens to satisfy many of the criteria discussed here. That does not mean it is automatically the best framework for every team or every AI workload. Ecosystem maturity matters. Team experience
 matters. Third-party integration availability matters. Hiring matters. Operational constraints matter.
@@ -1627,7 +1630,7 @@ matters. Third-party integration availability matters. Hiring matters. Operation
 A framework with more runtime dynamism may be the right choice for a plugin platform. A framework with a huge ecosystem may outperform a smaller transparent one because agents and humans already know
 it deeply. The point is not to declare a universal winner. The point is to recognize a new design dimension.
 
-## The New Dimension Is Machine Legibility
+## The New Dimension Is Machine Legibility { #machine-legibility }
 
 We already evaluate code for human readability. AI coding agents create pressure for **machine legibility**. Machine-legible systems expose:
 
@@ -1641,7 +1644,7 @@ fast executable checks
 
 This is not the same as writing code for machines instead of humans. The best part is that human readability and machine legibility often align. That is exactly what makes the idea compelling.
 
-## Frameworks May Need to Expose More Build Artifacts Intentionally
+## Frameworks May Need to Expose More Build Artifacts Intentionally { #build-artifacts }
 
 In the future, frameworks may treat generated graphs, route tables, mapper code, and dependency metadata as first-class tooling surfaces. Not only for IDEs. For agents. An agent might ask:
 
@@ -1653,7 +1656,7 @@ show me aspect order for PaymentService.charge
 
 Compile-time frameworks are naturally positioned to support this. They already produce many of these artifacts.
 
-## Runtime Frameworks Can Move in This Direction Too
+## Runtime Frameworks Can Move in This Direction Too { #runtime-frameworks }
 
 This is not exclusive to compile-time systems. A runtime framework can expose:
 
@@ -1671,13 +1674,13 @@ These are essentially attempts to externalize hidden runtime state. They can mak
 
 Compile-time generation is one route. Rich runtime introspection is another.
 
-## The Difference Is When the Truth Becomes Available
+## The Difference Is When the Truth Becomes Available { #truth-availability }
 
 Compile-time systems can reveal much of the architecture before startup. Runtime systems often reveal final structure after container initialization. That timing matters. An agent working in a
 restricted environment may be able to compile but not start every external dependency. Early architectural truth is therefore useful. The earlier a framework can expose correct structure, the cheaper
 autonomous verification becomes.
 
-## The Ideal Agent Workflow
+## The Ideal Agent Workflow { #ideal-agent-workflow }
 
 A highly agent-friendly framework enables something like:
 
@@ -1703,7 +1706,7 @@ runtime telemetry confirms production behavior
 
 This workflow does not require the agent to be omniscient. It requires the environment to be informative. That is a much more realistic model of autonomous software development.
 
-## The Framework as a Verification Partner
+## The Framework as a Verification Partner { #verification-partner }
 
 Traditionally we think of the framework as infrastructure used by application code. For AI agents, it can also become a verification partner. The framework says:
 
@@ -1717,7 +1720,7 @@ this AOP wrapper is concrete
 
 The agent proposes structure. The framework constrains it. This relationship is powerful.
 
-## AI-Friendly Framework Design Is Good Human Design With Stricter Consequences
+## AI-Friendly Framework Design Is Good Human Design With Stricter Consequences { #ai-friendly-design }
 
 A human engineer can work around ambiguity through experience. An agent makes ambiguity visible because it must reconstruct context repeatedly. That does not create a new category of design problem.
 It magnifies an old one. Frameworks that require:
@@ -1731,7 +1734,7 @@ many competing patterns
 
 were already expensive for humans. AI agents simply make the cost measurable in failed iterations.
 
-## Onboarding and Agent Performance Are Closely Related
+## Onboarding and Agent Performance Are Closely Related { #onboarding }
 
 A new human and an AI agent share an important trait:
 
@@ -1752,7 +1755,7 @@ readable generated code
 
 A framework that is easy to onboard may therefore also be easy to automate. This may become a practical proxy for AI suitability.
 
-## Senior Engineers Still Benefit
+## Senior Engineers Still Benefit { #senior-engineers }
 
 Experts may already know the framework rules. They benefit from agent-friendly architecture because it supports:
 
@@ -1766,7 +1769,7 @@ less framework archaeology
 
 The design is not a concession to weaker developers. It increases leverage for strong ones.
 
-## The Most Important AI Feature May Be Predictability
+## The Most Important AI Feature May Be Predictability { #predictability }
 
 Framework vendors may be tempted to add:
 
@@ -1785,12 +1788,12 @@ predictable behavior
 
 An agent can learn predictable systems. It can validate them. It can automate them. Hidden conditional behavior is much harder.
 
-## Predictability Is What Turns Autonomy Into Trust
+## Predictability Is What Turns Autonomy Into Trust { #autonomy-trust }
 
 Teams will not allow coding agents to make larger changes unless verification is reliable. A framework with strong compile-time checks and fast tests makes it easier to build confidence. The agent
 does not need unrestricted trust. Its changes can be constrained by deterministic tooling. This is likely to matter more as agents move from autocomplete toward repository-scale tasks.
 
-## Why Kora's Approach Is Especially Interesting
+## Why Kora's Approach Is Especially Interesting { #kora-approach }
 
 Kora is a useful example because its AI compatibility appears accidental in the best possible way. The framework emphasizes:
 
@@ -1808,7 +1811,7 @@ fast testing
 Those choices were motivated by performance, maintainability, transparency, and developer experience. Now they also form a strong environment for autonomous coding. That is a more durable story than
 adding an AI-specific DSL after the fact.
 
-## The Better Phrase May Be "Agent-Compatible Architecture"
+## The Better Phrase May Be "Agent-Compatible Architecture" { #agent-compatible }
 
 "AI-native framework" is catchy. "Agent-compatible architecture" may be more accurate. The framework does not need to speak natural language. It needs to expose enough structure that an agent can:
 
@@ -1821,7 +1824,7 @@ correct
 
 using ordinary development tools. Kora happens to align with that model very well.
 
-## The Best Framework for AI Agents Might Be the One With the Least Magic
+## The Best Framework for AI Agents Might Be the One With the Least Magic { #least-magic-2 }
 
 We can now return to the title. "Least magic" should not mean:
 
@@ -1854,47 +1857,47 @@ fast tests
 
 Kora is interesting because it already behaves this way. Not because it chased AI. Because good framework design for humans and good execution environments for agents overlap heavily.
 
-## A Practical Checklist for Teams
+## A Practical Checklist for Teams { #practical-checklist }
 
 When evaluating a backend framework for AI-heavy development, ask:
 
-### Architecture
+### Architecture { #architecture }
 
 Can an agent find the application root? Can it see where dependencies come from? Is the dependency graph inspectable?
 
-### APIs
+### APIs { #apis }
 
 Is there one recommended way to solve common problems? Are old and new programming models clearly separated?
 
-### Contracts
+### Contracts { #contracts }
 
 Are requests, responses, repositories, configuration, and clients strongly typed?
 
-### Framework behavior
+### Framework behavior { #framework-behavior }
 
 Can generated or runtime-resolved behavior be inspected directly?
 
-### Feedback
+### Feedback { #feedback }
 
 Do wiring and contract mistakes fail at compile time? Are diagnostics actionable?
 
-### Technology boundaries
+### Technology boundaries { #technology-boundaries }
 
 Does the framework stay close to standard technologies? Can the agent reuse general JDBC/Kafka/HTTP/gRPC knowledge?
 
-### Determinism
+### Determinism { #determinism }
 
 Do the same inputs produce predictable application structure? Can architectural changes be diffed?
 
-### Testing
+### Testing { #testing }
 
 How quickly can a component or black-box test start? Can dependencies be replaced cleanly?
 
-### Operations
+### Operations { #operations }
 
 Can runtime telemetry verify what actually happened after deployment? The more positive answers, the more suitable the environment is for autonomous development.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 AI coding agents change what "developer experience" means. A framework no longer serves only the person writing code. It also serves automated systems that read the repository, form hypotheses, make
 changes, invoke tools, interpret failures, and iterate toward a correct solution. That makes hidden framework behavior more expensive. A human can internalize runtime proxy rules, bean

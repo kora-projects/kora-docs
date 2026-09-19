@@ -1,11 +1,14 @@
 ---
 title: One Problem, One Solution — Why the Kora Framework Has Fewer Abstractions
+date: 2026-08-23
 description: Why the Kora Framework deliberately keeps a small solution space — one canonical path per problem — and what that means for maintainability, onboarding, upgrades, and AI agents.
 search:
   exclude: true
 ---
 
-# One Problem, One Solution: Why Kora Deliberately Has Fewer Abstractions
+# One Problem, One Solution: Why Kora Deliberately Has Fewer Abstractions { #one-problem-one-solution }
+
+**August 23, 2026**
 
 Modern backend frameworks are often evaluated by asking how much they can do. How many databases can they abstract? How many programming models can they support? How many ways can a controller be
 declared, a dependency injected, a query expressed, or a remote service called?
@@ -48,7 +51,7 @@ second equally prominent application programming model.
 
 That difference has consequences far beyond aesthetics.
 
-## Abstraction Has a Cognitive Cost
+## Abstraction Has a Cognitive Cost { #cognitive-cost }
 
 An abstraction usually enters a framework for a good reason. It can hide boilerplate, preserve compatibility, make several implementations interchangeable, support a different programming style, or
 provide a more convenient API for a particular class of applications. Considered locally, each abstraction can be perfectly rational.
@@ -77,7 +80,7 @@ framework abstractions in an attempt to hide the differences.
 
 Kora's answer is to reduce those branches before application development begins.
 
-## A Canonical Path, Not an Artificially Closed Framework
+## A Canonical Path, Not an Artificially Closed Framework { #canonical-path }
 
 "One problem, one solution" is easy to interpret too literally. Real systems contain edge cases, and a framework that allows only one physical mechanism for every task would quickly become
 restrictive.
@@ -99,7 +102,7 @@ separate model with them.
 
 This distinction is central to understanding Kora. The framework is opinionated about **how application code should look**, not closed about **what application code is allowed to integrate with**.
 
-## Concurrency: One Synchronous Model
+## Concurrency: One Synchronous Model { #concurrency }
 
 Concurrency is probably the clearest example of the philosophy in Kora 2.
 
@@ -120,7 +123,7 @@ Kora simply turns that evaluation into a framework-level decision for its own mo
 
 That has an organizational consequence: teams do not repeatedly reopen the concurrency-model debate service by service.
 
-## Dependency Injection: One Graph You Can Inspect
+## Dependency Injection: One Graph You Can Inspect { #dependency-injection }
 
 Dependency injection often looks simple in application code while hiding a surprising amount of runtime machinery underneath. Kora moves most of that machinery into compilation.
 
@@ -142,7 +145,7 @@ missing edge. Architectural mistakes are pulled toward the edit that introduced 
 
 This changes the economics of complexity: errors become cheaper because they are discovered closer to their cause.
 
-## HTTP: Prefer the Contract Over Framework-Specific Ceremony
+## HTTP: Prefer the Contract Over Framework-Specific Ceremony { #http }
 
 Kora's HTTP modules make another strong recommendation: for server and client APIs, use an OpenAPI document as the primary contract and generate the framework code from it.
 
@@ -163,7 +166,7 @@ other languages, and engineers who have never used the framework.
 
 A thin abstraction preserves knowledge.
 
-## Data Access: SQL Is Already the Query Language
+## Data Access: SQL Is Already the Query Language { #data-access }
 
 The database layer makes the philosophy even more explicit. Kora's documentation says that the preferred way to communicate with a SQL database is through its native SQL language.
 
@@ -181,7 +184,7 @@ does not mean pretending different databases are identical. It means keeping one
 
 The framework is reducing accidental variety, not essential differences.
 
-## Configuration: Make It a Typed Dependency
+## Configuration: Make It a Typed Dependency { #configuration }
 
 Configuration is another area where mature ecosystems often offer many legitimate access paths. Spring Boot, for example, can inject individual values with `@Value`, expose the `Environment`, or bind
 structured `@ConfigurationProperties` objects, in addition to a rich external property-source model.
@@ -198,7 +201,7 @@ loop as the rest of the framework.
 
 Most importantly, configuration stops being a global string-addressable side channel and becomes part of the component's declared dependency surface.
 
-## Fewer Choices Become Team Conventions for Free
+## Fewer Choices Become Team Conventions for Free { #team-conventions }
 
 Framework flexibility and team autonomy are often treated as synonyms, but in a production codebase they are not the same thing.
 
@@ -228,7 +231,7 @@ OpenAPI-first HTTP where appropriate—the cost of moving between repositories f
 
 The framework becomes part of the organization's standardization mechanism.
 
-## Maintainability Is Mostly About Predictability
+## Maintainability Is Mostly About Predictability { #maintainability }
 
 Code is read much more often than it is initially written. That makes predictability more important than the convenience of having many elegant ways to express the same thing.
 
@@ -248,7 +251,7 @@ behavior that would otherwise live inside a reflective container, dynamic proxy,
 
 Fewer abstractions reduce the number of concepts. Generated code reduces the amount of invisible behavior. Together they make the system easier to reason about.
 
-## Onboarding: Learn the System Once
+## Onboarding: Learn the System Once { #onboarding }
 
 Framework onboarding is usually described as learning an API. In practice, joining a mature project means learning two things: the framework and the team's chosen subset of the framework.
 
@@ -265,7 +268,7 @@ about documentation volume. It is also about the number of mutually valid concep
 
 A small decision tree can be more valuable than a large answer database.
 
-## Upgrade Cost: Every Supported Style Is a Migration Surface
+## Upgrade Cost: Every Supported Style Is a Migration Surface { #upgrade-cost }
 
 Framework upgrades are usually discussed in terms of binary compatibility and breaking API changes. There is another dimension: the number of programming models that an application has accumulated.
 
@@ -288,7 +291,7 @@ This does not make upgrades free. It makes them more mechanical.
 That is an underrated framework property. The best upgrade is not necessarily the one with zero source changes; it is often the one where required source changes are explicit, searchable,
 type-checked, and repetitive enough to automate.
 
-## Why This Matters Even More for AI Agents
+## Why This Matters Even More for AI Agents { #ai-agents }
 
 The same characteristics that reduce cognitive load for engineers also reduce uncertainty for AI coding agents.
 
@@ -320,7 +323,7 @@ For agents, it is search-space reduction.
 
 They are the same design advantage viewed from two sides.
 
-## The Trade-Off: Breadth Is Valuable Too
+## The Trade-Off: Breadth Is Valuable Too { #trade-off }
 
 A philosophy of fewer abstractions has real costs, and pretending otherwise would make the comparison unhelpful.
 
@@ -339,7 +342,7 @@ The argument is that **for the class of backend services Kora targets, the cost 
 
 That is a narrower claim, and a much more interesting one.
 
-## Fewer Abstractions Does Not Mean Lower Level
+## Fewer Abstractions Does Not Mean Lower Level { #lower-level }
 
 There is another misconception worth addressing. Reducing abstractions can sound like pushing boilerplate back onto application developers.
 
@@ -359,7 +362,7 @@ This is why Kora can simultaneously argue for high-level productivity and thin a
 
 The framework is doing work for you. It is simply trying not to make you imagine that the work does not exist.
 
-## One Solution as an Architectural Budget
+## One Solution as an Architectural Budget { #architectural-budget }
 
 A useful way to think about Kora's philosophy is as an **architectural budget**.
 
@@ -387,7 +390,7 @@ It means the framework should not make ordinary development a repeated architect
 
 For the common path, the answer should already be clear.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Framework design is often measured by capability: what can I build with it?
 

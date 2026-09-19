@@ -1,11 +1,14 @@
 ---
 title: Does Compile-Time Code Generation Really Make Development Slower? — Kora Framework
+date: 2026-08-10
 description: Whether compile-time DI, repository, and mapper generation actually slow development in the Kora Framework, and how incremental builds and submodules keep feedback fast.
 search:
   exclude: true
 ---
 
-# Does Compile-Time Code Generation Really Make Development Slower?
+# Does Compile-Time Code Generation Really Make Development Slower? { #does-compile-time-code }
+
+**August 10, 2026**
 
 There is a persistent intuition in JVM backend development that sounds reasonable enough to become a rule of thumb: if a framework performs dependency injection, repository generation, HTTP routing, mapping, validation, AOP, or other infrastructure work during compilation, then compilation must become slower. From there, the conclusion is often extended one step further: a framework that relies heavily on annotation processing or compiler plugins must also produce a slower development experience than a framework that defers more work until application startup.
 
@@ -51,7 +54,7 @@ That is a much more useful way to evaluate a compile-time framework.
 
 ---
 
-## Where the “Annotation Processing Is Slow” Reputation Came From
+## Where the “Annotation Processing Is Slow” Reputation Came From { #where-the-annotation-processing }
 
 The reputation did not appear from nowhere. Java annotation processing has been associated with slow builds for legitimate reasons, especially in large codebases and in earlier generations of build tooling.
 
@@ -73,7 +76,7 @@ Compile-time frameworks deserve the same level of analysis.
 
 ---
 
-## Code Generation Is Not One Thing
+## Code Generation Is Not One Thing { #code-generation-is-not }
 
 When developers discuss code generation, they often imagine a compiler performing some mysterious and potentially enormous second build behind the real build. That mental model is frequently inaccurate.
 
@@ -118,7 +121,7 @@ The compiler cost is real, but the generated code is not inherently expensive me
 
 ---
 
-## Compile Time Is a Budget, Not a Moral Category
+## Compile Time Is a Budget, Not a Moral Category { #compile-time-is-a }
 
 Framework discussions sometimes treat compile-time and runtime work almost ideologically. Compile-time work is described as either obviously superior because it removes runtime magic, or obviously inferior because developers compile more often than production processes start.
 
@@ -144,7 +147,7 @@ Any serious comparison has to count both.
 
 ---
 
-## What Kora Actually Pays for During Compilation
+## What Kora Actually Pays for During Compilation { #what-kora-actually-pays }
 
 To understand the trade, it helps to be concrete about what Kora asks the compiler to do.
 
@@ -172,7 +175,7 @@ This is why measuring a clean compilation alone cannot tell us what everyday Kor
 
 ---
 
-## The First Benchmarking Mistake: Measuring Only Clean Builds
+## The First Benchmarking Mistake: Measuring Only Clean Builds { #the-first-benchmarking-mistake }
 
 Clean builds are useful. They are also unusually easy to misuse.
 
@@ -202,7 +205,7 @@ If a framework is condemned because its worst-case clean compilation performs ad
 
 ---
 
-## Clean Artifact Build and Developer Iteration Are Different Products
+## Clean Artifact Build and Developer Iteration Are Different Products { #clean-artifact-build-and }
 
 There is another subtle problem with treating clean builds as development speed: an artifact build often does more than the developer needs during a local edit-test cycle.
 
@@ -233,7 +236,7 @@ The developer experience is determined mostly by the ones that happen frequently
 
 ---
 
-## The Second Benchmarking Mistake: Treating Every Source Change as Equal
+## The Second Benchmarking Mistake: Treating Every Source Change as Equal { #the-second-benchmarking-mistake }
 
 Incremental build performance depends on what changed.
 
@@ -243,19 +246,19 @@ This matters because compile-time generation is usually sensitive to structure.
 
 Imagine four edits.
 
-### Edit A: change business logic inside an existing method
+### Edit A: change business logic inside an existing method { #edit-a-change-business }
 
 The dependency graph has not changed. HTTP declarations have not changed. Repository interfaces have not changed. Most generated infrastructure may remain valid.
 
-### Edit B: add a constructor dependency
+### Edit B: add a constructor dependency { #edit-b-add-a }
 
 Now the graph may need to change. The compiler should validate the new dependency and regenerate relevant wiring. That additional work is exactly what the developer wants because an invalid graph should fail immediately.
 
-### Edit C: change a repository signature
+### Edit C: change a repository signature { #edit-c-change-a }
 
 The repository implementation or mapping code may need regeneration. Again, this is useful work because the contract itself changed.
 
-### Edit D: add a new controller route
+### Edit D: add a new controller route { #edit-d-add-a }
 
 HTTP generation must update. The changed routing contract justifies the work.
 
@@ -269,7 +272,7 @@ That produces a distribution rather than a single number.
 
 ---
 
-## Gradle Changes the Economics of Compile-Time Generation
+## Gradle Changes the Economics of Compile-Time Generation { #gradle-changes-the-economics }
 
 Modern Gradle is explicitly designed to avoid repeating work when its inputs have not changed. That makes build-system behavior central to any discussion about annotation processors.
 
@@ -299,7 +302,7 @@ This is why the Kora landing page’s decision to show both clean and cached bui
 
 ---
 
-## The Gradle Daemon Is Not a Benchmark Cheat
+## The Gradle Daemon Is Not a Benchmark Cheat { #the-gradle-daemon-is }
 
 Framework comparisons sometimes disable the Gradle daemon in the name of fairness. That is reasonable when the objective is to measure completely cold build execution. It becomes misleading when the result is presented as ordinary developer experience.
 
@@ -317,7 +320,7 @@ A compile-time framework should be judged in that environment.
 
 ---
 
-## Build Cache and Configuration Cache Solve Different Problems
+## Build Cache and Configuration Cache Solve Different Problems { #build-cache-and-configuration }
 
 It is also important not to treat “cache” as one vague acceleration mechanism.
 
@@ -335,7 +338,7 @@ Optimization work should follow the critical path, not the most visible framewor
 
 ---
 
-## Incremental Compilation Is the Real Battlefield
+## Incremental Compilation Is the Real Battlefield { #incremental-compilation-is-the }
 
 The strongest version of the criticism against compile-time generation is not that processors consume time during a clean build. That is obvious.
 
@@ -357,7 +360,7 @@ This cannot be inferred from the phrase “compile-time DI.” It has to be benc
 
 ---
 
-## Kotlin Makes the Question More Complicated
+## Kotlin Makes the Question More Complicated { #kotlin-makes-the-question }
 
 Kotlin projects add another dimension because source processing can interact with Kotlin compiler infrastructure differently from plain Java annotation processing.
 
@@ -373,7 +376,7 @@ This does not weaken the broader argument. It reinforces it: compile-time genera
 
 ---
 
-## Why Simple Generated Code Matters
+## Why Simple Generated Code Matters { #why-simple-generated-code }
 
 Generated source has a downstream cost because the compiler must compile it. That creates a straightforward design pressure: generated code should be simple.
 
@@ -391,7 +394,7 @@ The framework does not need to be defended abstractly. The work can be measured.
 
 ---
 
-## The Work That Disappears at Runtime
+## The Work That Disappears at Runtime { #the-work-that-disappears }
 
 The central mistake in the “compile-time generation is slower” argument is often that it counts added compile work without counting removed runtime work.
 
@@ -421,7 +424,7 @@ This is why startup belongs in the feedback-loop equation.
 
 ---
 
-## Application Startup Is Development Time Too
+## Application Startup Is Development Time Too { #application-startup-is-development }
 
 Developers often talk about build time and startup time as if they belong to separate domains.
 
@@ -459,7 +462,7 @@ Compile-time work and startup work are connected.
 
 ---
 
-## The Landing Page’s Three Charts Should Be Read Together
+## The Landing Page’s Three Charts Should Be Read Together { #the-landing-page-s }
 
 The Kora landing page presents startup/readiness, clean build, and cached build as separate views of the same broader engineering trade.
 
@@ -493,7 +496,7 @@ The useful conclusion is methodological: compile-time generation cannot be evalu
 
 ---
 
-## Artifact Build Performance Can Be Competitive Even With Generation
+## Artifact Build Performance Can Be Competitive Even With Generation { #artifact-build-performance-can }
 
 There is an intuitive model in which Spring-like runtime frameworks “just compile the code” while compile-time frameworks “compile the code plus run a framework compiler,” making the latter inevitably slower.
 
@@ -515,7 +518,7 @@ A team evaluating Kora should repeat the comparison with its own application sha
 
 ---
 
-## Why “Annotation Processor Time” Is the Wrong Primary Metric
+## Why “Annotation Processor Time” Is the Wrong Primary Metric { #why-annotation-processor-time }
 
 Profiling annotation processors is useful engineering work. It can reveal regressions, expensive analysis, excessive generation, or non-incremental behavior.
 
@@ -560,7 +563,7 @@ That makes wall-clock feedback latency the primary metric and processor time a d
 
 ---
 
-## Compile-Time Errors Can Shorten the Loop Even When Compilation Takes Longer
+## Compile-Time Errors Can Shorten the Loop Even When Compilation Takes Longer { #compile-time-errors-can }
 
 There is another dimension that ordinary stopwatch benchmarks often miss: not all feedback has equal value.
 
@@ -608,7 +611,7 @@ This is especially relevant in automated coding loops, but it is equally relevan
 
 ---
 
-## Fast Failure Is Part of Build Performance
+## Fast Failure Is Part of Build Performance { #fast-failure-is-part }
 
 Traditional benchmark discussions separate correctness diagnostics from performance, but developers experience them together.
 
@@ -628,7 +631,7 @@ That is difficult to summarize in one build-time bar, but it is real developer t
 
 ---
 
-## Component and Integration Tests Change the Equation
+## Component and Integration Tests Change the Equation { #component-and-integration-tests }
 
 Unit tests that instantiate plain classes are largely framework-independent. The interesting differences appear when tests need framework context.
 
@@ -650,7 +653,7 @@ The feedback loop improves because validation becomes both faster and more compr
 
 ---
 
-## CI Feedback Is Also a Development Loop
+## CI Feedback Is Also a Development Loop { #ci-feedback-is-also }
 
 The same argument extends beyond the laptop.
 
@@ -690,7 +693,7 @@ But when evaluating compile-time code generation as an architecture, cacheabilit
 
 ---
 
-## The Hidden Advantage of Deterministic Generation
+## The Hidden Advantage of Deterministic Generation { #the-hidden-advantage-of }
 
 Compile-time generation has another property that can improve build systems: deterministic work is easier to cache.
 
@@ -706,7 +709,7 @@ Kora starts much farther toward the compile-time end of that continuum.
 
 ---
 
-## Clean Builds Still Matter
+## Clean Builds Still Matter { #clean-builds-still-matter }
 
 Arguing for end-to-end feedback metrics should not become an excuse to ignore clean-build regressions.
 
@@ -728,7 +731,7 @@ The myth-busting argument succeeds only if it remains willing to admit where com
 
 ---
 
-## When Compile-Time Generation Really Can Make Development Slower
+## When Compile-Time Generation Really Can Make Development Slower { #when-compile-time-generation }
 
 There are conditions under which the criticism becomes correct.
 
@@ -760,7 +763,7 @@ A compile-time framework has to earn its design by keeping the compile-time port
 
 ---
 
-## Framework Authors Should Treat Build Latency as a First-Class Performance Metric
+## Framework Authors Should Treat Build Latency as a First-Class Performance Metric { #framework-authors-should-treat }
 
 Runtime throughput has mature performance culture. Teams publish requests per second, latency percentiles, allocation rates, startup time, memory footprint, and CPU profiles.
 
@@ -801,7 +804,7 @@ That is exactly how it should be approached.
 
 ---
 
-## Teams Should Benchmark the Workflow They Actually Use
+## Teams Should Benchmark the Workflow They Actually Use { #teams-should-benchmark-the }
 
 A team deciding between frameworks should resist generic claims from both sides.
 
@@ -860,7 +863,7 @@ That methodology will reveal whether compile-time generation is actually a probl
 
 ---
 
-## Why Multi-Module Architecture Matters
+## Why Multi-Module Architecture Matters { #why-multi-module-architecture }
 
 Large JVM services are often divided into modules for architecture, ownership, dependency control, and build performance.
 
@@ -880,7 +883,7 @@ Good architecture and good build behavior often reinforce each other.
 
 ---
 
-## “More Work at Compile Time” Can Mean Less Work Everywhere Else
+## “More Work at Compile Time” Can Mean Less Work Everywhere Else { #more-work-at-compile }
 
 The trade becomes easier to see if we draw it as a pipeline.
 
@@ -938,7 +941,7 @@ But calling the second approach “slow development” merely because the compil
 
 ---
 
-## This Is Similar to Database Query Planning
+## This Is Similar to Database Query Planning { #this-is-similar-to }
 
 A useful analogy comes from databases.
 
@@ -960,7 +963,7 @@ Incremental compilation and build caching improve the economics because they mak
 
 ---
 
-## The Feedback Loop Is the Product
+## The Feedback Loop Is the Product { #the-feedback-loop-is }
 
 For a developer, a framework is not experienced as a set of internal implementation techniques. It is experienced as a loop.
 
@@ -997,7 +1000,7 @@ Anything less is incomplete.
 
 ---
 
-## Why Fast Startup Becomes More Valuable as Tests Become More Realistic
+## Why Fast Startup Becomes More Valuable as Tests Become More Realistic { #why-fast-startup-becomes }
 
 Modern backend tests increasingly blur the line between unit and integration tests. Testcontainers makes it practical to run real databases, Kafka brokers, Redis, or other infrastructure. HTTP-level tests can exercise almost the complete application stack. Contract tests may start real server components rather than mocks.
 
@@ -1013,7 +1016,7 @@ This is the point that compile-only comparisons miss most often.
 
 ---
 
-## Runtime Failures Have a Debugging Tax Beyond Their Timestamp
+## Runtime Failures Have a Debugging Tax Beyond Their Timestamp { #runtime-failures-have-a }
 
 There is also a qualitative difference between compiler errors and startup errors.
 
@@ -1035,7 +1038,7 @@ That is part of feedback quality.
 
 ---
 
-## The Same Argument Matters Even More for AI Coding Agents
+## The Same Argument Matters Even More for AI Coding Agents { #the-same-argument-matters }
 
 Although the development-speed question applies directly to humans, AI coding agents make the loop especially visible.
 
@@ -1065,7 +1068,7 @@ Human developers have always depended on the same cycle.
 
 ---
 
-## Build Optimization Should Focus on Work Avoidance
+## Build Optimization Should Focus on Work Avoidance { #build-optimization-should-focus }
 
 The most important idea in modern build performance is not “make every individual operation faster.”
 
@@ -1093,7 +1096,7 @@ When those properties hold, the fact that generation exists becomes much less im
 
 ---
 
-## The Real Cost Model Is Frequency × Latency
+## The Real Cost Model Is Frequency × Latency { #the-real-cost-model }
 
 A useful way to think about framework build performance is:
 
@@ -1129,7 +1132,7 @@ There is only a universal need to measure the correct workload.
 
 ---
 
-## Clean Build Numbers Are Still Valuable for Framework Engineering
+## Clean Build Numbers Are Still Valuable for Framework Engineering { #clean-build-numbers-are }
 
 Although developer iteration should dominate the UX discussion, clean builds remain useful diagnostics for framework authors.
 
@@ -1145,7 +1148,7 @@ This is another reason the Kora landing page’s chart structure is sensible: it
 
 ---
 
-## Startup Should Be Included in Framework Build Benchmarks More Often
+## Startup Should Be Included in Framework Build Benchmarks More Often { #startup-should-be-included }
 
 One provocative implication follows from this argument: framework build benchmarks that claim to represent development experience should often include startup.
 
@@ -1180,7 +1183,7 @@ That is a much healthier comparison.
 
 ---
 
-## A Better Benchmark Matrix
+## A Better Benchmark Matrix { #a-better-benchmark-matrix }
 
 For Kora and any competing framework, a useful matrix might look like this:
 
@@ -1211,7 +1214,7 @@ Those are useful conclusions.
 
 ---
 
-## What the Kora Benchmark Does and Does Not Prove
+## What the Kora Benchmark Does and Does Not Prove { #what-the-kora-benchmark }
 
 The landing-page results should not be treated as universal evidence that every Kora project will build faster than every Spring project.
 
@@ -1229,7 +1232,7 @@ The next step is to measure your workload.
 
 ---
 
-## The Right Question for Kora Is Not “Does It Generate Code?”
+## The Right Question for Kora Is Not “Does It Generate Code?” { #the-right-question-for }
 
 It obviously does.
 
@@ -1265,7 +1268,7 @@ Those questions produce engineering answers.
 
 ---
 
-## Compile-Time DI Should Be Judged by Total Graph Lifecycle Cost
+## Compile-Time DI Should Be Judged by Total Graph Lifecycle Cost { #compile-time-di-should }
 
 Dependency injection is a particularly useful case study because every framework has to solve the same conceptual problem: construct objects in a valid dependency order and manage their lifecycle.
 
@@ -1287,7 +1290,7 @@ Again, the right unit is lifecycle cost rather than isolated phase cost.
 
 ---
 
-## Production Economics Reinforce the Same Trade
+## Production Economics Reinforce the Same Trade { #production-economics-reinforce-the }
 
 Although this article focuses on development, the same relocation of work affects production.
 
@@ -1305,7 +1308,7 @@ The relevant optimization target is the lifecycle of the artifact, not one invoc
 
 ---
 
-## Compilation Is Also Easier to Provision Than Runtime Warm-Up
+## Compilation Is Also Easier to Provision Than Runtime Warm-Up { #compilation-is-also-easier }
 
 There is another operational asymmetry.
 
@@ -1321,7 +1324,7 @@ Framework design has to price them differently.
 
 ---
 
-## Why This Matters for Small Services
+## Why This Matters for Small Services { #why-this-matters-for }
 
 Microservices strengthen both sides of the trade.
 
@@ -1339,7 +1342,7 @@ The compile-time cost should therefore be judged against the workload the framew
 
 ---
 
-## What Developers Should Watch in a Real Kora Project
+## What Developers Should Watch in a Real Kora Project { #what-developers-should-watch }
 
 If a Kora project begins feeling slow to build, do not start from the assumption that “annotation processing is the price of Kora.”
 
@@ -1379,7 +1382,7 @@ Performance work becomes effective when the bottleneck is measured rather than a
 
 ---
 
-## Avoid Benchmark Theater
+## Avoid Benchmark Theater { #avoid-benchmark-theater }
 
 Framework performance discussions are especially vulnerable to benchmark theater because small configuration choices can produce dramatic results.
 
@@ -1409,7 +1412,7 @@ The Kora question is interesting enough without manipulating it.
 
 ---
 
-## A Framework Can Shift Cost Without Increasing Total Cost
+## A Framework Can Shift Cost Without Increasing Total Cost { #a-framework-can-shift }
 
 This is the key conceptual point.
 
@@ -1443,7 +1446,7 @@ And if incremental compilation prevents that cost from being paid after every ed
 
 ---
 
-## The Myth Is Not That Compile-Time Generation Has No Cost
+## The Myth Is Not That Compile-Time Generation Has No Cost { #the-myth-is-not }
 
 A useful myth-busting article should not replace one oversimplification with another.
 
@@ -1465,7 +1468,7 @@ Its architecture forces us to use the right accounting model.
 
 ---
 
-## The Metric That Actually Matters
+## The Metric That Actually Matters { #the-metric-that-actually }
 
 For everyday development, the primary metric should be something like:
 
@@ -1514,7 +1517,7 @@ No single annotation-processor timer answers all of them.
 
 ---
 
-## What “Fast Compilation” Should Mean in 2026
+## What “Fast Compilation” Should Mean in 2026 { #what-fast-compilation-should }
 
 Historically, fast compilation often meant how quickly a compiler could turn source files into class files.
 
@@ -1532,7 +1535,7 @@ In that sense, some of the “extra compilation” is actually test work perform
 
 ---
 
-## Compile-Time Validation Is a Form of Testing
+## Compile-Time Validation Is a Form of Testing { #compile-time-validation-is }
 
 This point deserves emphasis.
 
@@ -1568,7 +1571,7 @@ That is a developer-experience feature even if javac’s stopwatch becomes large
 
 ---
 
-## Why Kora’s Generated Sources Help Diagnose Build Behavior
+## Why Kora’s Generated Sources Help Diagnose Build Behavior { #why-kora-s-generated }
 
 One practical advantage of source generation rather than hidden runtime transformation is observability.
 
@@ -1588,7 +1591,7 @@ The same philosophy that makes Kora runtime behavior understandable also helps m
 
 ---
 
-## What Would Falsify the Argument?
+## What Would Falsify the Argument? { #what-would-falsify-the }
 
 A serious engineering thesis should be falsifiable.
 
@@ -1608,7 +1611,7 @@ Myth-busting should defend measurement, not a predetermined winner.
 
 ---
 
-## A Better Claim
+## A Better Claim { #a-better-claim }
 
 The strongest defensible claim is therefore modest but important:
 
@@ -1636,7 +1639,7 @@ Only then can you say whether compile-time generation helps or hurts.
 
 ---
 
-## The Kora Trade in One Diagram
+## The Kora Trade in One Diagram { #the-kora-trade-in }
 
 Kora’s design can be summarized as a movement of framework work:
 
@@ -1666,7 +1669,7 @@ That last sentence is the one most simplistic discussions leave out.
 
 ---
 
-## From Compiler Cost to Feedback-Loop Engineering
+## From Compiler Cost to Feedback-Loop Engineering { #from-compiler-cost-to }
 
 Once the problem is framed correctly, framework optimization becomes feedback-loop engineering.
 
@@ -1692,7 +1695,7 @@ A framework that performs it well can use the compiler as part of a fast develop
 
 ---
 
-## The Broader JVM Trend Is Moving in This Direction Anyway
+## The Broader JVM Trend Is Moving in This Direction Anyway { #the-broader-jvm-trend }
 
 Kora is not alone in recognizing the value of moving deterministic work earlier.
 
@@ -1708,7 +1711,7 @@ The meaningful comparison is how effectively each one manages the full lifecycle
 
 ---
 
-## Build Performance Is a System Property
+## Build Performance Is a System Property { #build-performance-is-a }
 
 This leads to a final general lesson.
 
@@ -1747,7 +1750,7 @@ The correct response is:
 
 ---
 
-## Conclusion: Measure Time to Knowledge
+## Conclusion: Measure Time to Knowledge { #conclusion-measure-time-to }
 
 Compile-time generation undeniably performs work. Kora builds and validates its dependency graph, generates repositories and handlers, creates aspects and mappings, and turns declarative framework contracts into ordinary source code before the application starts. That work consumes build time and should be profiled, benchmarked, and optimized just like runtime performance.
 

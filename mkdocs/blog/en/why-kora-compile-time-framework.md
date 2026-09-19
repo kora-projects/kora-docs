@@ -1,11 +1,14 @@
 ---
 title: Why the Kora Framework — a Compile-Time Framework for the Modern JVM
+date: 2026-09-16
 description: Why the Kora Framework moves dependency injection, HTTP adapters, repositories, and AOP into compilation, and what compile-time certainty means for startup, overhead, and debugging.
 search:
   exclude: true
 ---
 
-# Why Kora: Compile-Time Framework for the Modern JVM
+# Why Kora: Compile-Time Framework for the Modern JVM { #why-kora }
+
+**September 16, 2026**
 
 Modern JVM frameworks are remarkably productive. With a few annotations, you can create an HTTP endpoint, inject dependencies, start a transaction, call a database, add retries, expose metrics, validate input, and secure a method.
 
@@ -23,7 +26,7 @@ Kora describes this as compile-time certainty: application structure is checked 
 
 ---
 
-## The Runtime Framework Model
+## The Runtime Framework Model { #runtime-framework-model }
 
 A traditional runtime-oriented framework usually starts with intentionally incomplete application code.
 
@@ -95,7 +98,7 @@ Kora makes a different trade-off.
 
 ---
 
-## Move the Work Left
+## Move the Work Left { #move-the-work-left }
 
 Kora shifts framework work toward the compiler:
 
@@ -137,7 +140,7 @@ That changes the relationship between application code and framework code in a f
 
 ---
 
-## Compile Time Becomes Part of the Architecture
+## Compile Time Becomes Part of the Architecture { #compile-time-architecture }
 
 Java developers already rely heavily on compile-time guarantees. If a method expects a `Payment`, you cannot accidentally pass a `Customer`. If a type disappears or a class no longer implements a required method, compilation fails.
 
@@ -200,7 +203,7 @@ As applications become larger, the distinction becomes increasingly valuable. Th
 
 ---
 
-## Dependency Injection Is Generated
+## Dependency Injection Is Generated { #dependency-injection }
 
 Dependency injection is one of the clearest examples of Kora's approach.
 
@@ -270,7 +273,7 @@ The real graph naturally handles more than this simplified example: lifecycle, d
 
 ---
 
-## Controllers Become Request Handlers
+## Controllers Become Request Handlers { #controllers-request-handlers }
 
 The same principle applies at the HTTP boundary.
 
@@ -321,7 +324,7 @@ This is an important distinction. `@HttpRoute` is not merely runtime metadata th
 
 ---
 
-## Repositories Become Implementations
+## Repositories Become Implementations { #repositories-implementations }
 
 Database access follows the same model.
 
@@ -377,7 +380,7 @@ This is substantially different from treating repository interfaces primarily as
 
 ---
 
-## AOP Becomes Code Too
+## AOP Becomes Code Too { #aop-becomes-code }
 
 Cross-cutting behavior is one of the places where runtime framework machinery can become particularly difficult to see.
 
@@ -446,7 +449,7 @@ This also has a practical debugging benefit. If you need to understand what surr
 
 ---
 
-## Reflection Is Not the Enemy
+## Reflection Is Not the Enemy { #reflection }
 
 It would be tempting to summarize Kora as "a framework that is fast because it does not use reflection." That description is too shallow.
 
@@ -478,7 +481,7 @@ This shifts the discussion away from microbenchmarks about the cost of reflectiv
 
 ---
 
-## Startup Is an Architectural Property
+## Startup Is an Architectural Property { #startup-architectural-property }
 
 Startup time is sometimes treated as a cosmetic benchmark metric, but for backend infrastructure it is much more than that.
 
@@ -510,7 +513,7 @@ For long-running backend systems, that can be a very attractive trade.
 
 ---
 
-## Runtime Overhead Is More Than CPU Cycles
+## Runtime Overhead Is More Than CPU Cycles { #runtime-overhead }
 
 Framework overhead is often reduced to benchmark numbers, but runtime overhead has several dimensions: CPU, memory, allocation pressure, startup work, metadata, proxy layers, generated runtime state, and additional call paths.
 
@@ -538,7 +541,7 @@ Kora's compile-time model attacks both categories at once. Generated code can re
 
 ---
 
-## Predictability Over Magic
+## Predictability Over Magic { #predictability-over-magic }
 
 Framework magic is attractive while everything works. The difficult part begins when it does not.
 
@@ -614,7 +617,7 @@ There is less runtime interpretation between declaration and execution, which ma
 
 ---
 
-## Generated Code Should Be Boring
+## Generated Code Should Be Boring { #generated-code-boring }
 
 Code generation sometimes has a poor reputation because developers associate it with enormous, unreadable files filled with cryptic implementation details.
 
@@ -662,7 +665,7 @@ There is a significant difference between saying, "the framework probably wraps 
 
 ---
 
-## Framework Code Should Eventually Become JVM Code
+## Framework Code Should Eventually Become JVM Code { #framework-becomes-jvm-code }
 
 This leads to one of the simplest ways to describe Kora's philosophy.
 
@@ -734,7 +737,7 @@ That is a subtle but important shift.
 
 ---
 
-## Not Less Abstraction — Earlier Abstraction
+## Not Less Abstraction — Earlier Abstraction { #earlier-abstraction }
 
 Compile-time frameworks are sometimes misunderstood as attempts to remove abstraction and force developers closer to low-level infrastructure code.
 
@@ -800,7 +803,7 @@ In other words, Kora does not try to remove abstraction. It tries to **move much
 
 ---
 
-## Thin Abstractions Matter
+## Thin Abstractions Matter { #thin-abstractions }
 
 Compile-time generation alone is not sufficient. A framework could generate enormous abstraction stacks just as easily as it could construct them dynamically.
 
@@ -812,7 +815,7 @@ Thin abstractions try to keep that mapping small. The result is not zero abstrac
 
 ---
 
-## Why This Matters for Large Systems
+## Why This Matters for Large Systems { #large-systems }
 
 For a single small service, many of these differences can look academic. Modern hardware can comfortably run applications built with many different JVM architectures.
 
@@ -826,7 +829,7 @@ Kora therefore treats efficiency and transparency as related concerns. Less fram
 
 ---
 
-## Compile-Time Errors Are a Feature
+## Compile-Time Errors Are a Feature { #compile-time-errors }
 
 One consequence of this architecture is that Kora can be stricter during compilation.
 
@@ -875,7 +878,7 @@ A strict compiler can therefore act as another architecture test rather than mer
 
 ---
 
-## Build-Time Cost Is Not Free
+## Build-Time Cost Is Not Free { #build-time-cost }
 
 Compile-time generation naturally has a cost. Annotation processors and KSP processors need to run, generated source needs to be compiled, and graph analysis takes time.
 
@@ -889,7 +892,7 @@ The relevant trade is therefore not "work versus no work." It is **where that wo
 
 ---
 
-## Why Not Generate Everything?
+## Why Not Generate Everything? { #why-not-generate-everything }
 
 There is also an important boundary to compile-time generation.
 
@@ -923,7 +926,7 @@ The goal is not to make everything static. The goal is to avoid repeatedly disco
 
 ---
 
-## A Framework You Can Reason About
+## A Framework You Can Reason About { #framework-you-can-reason-about }
 
 The practical result is not simply a framework that can start quickly or consume fewer resources. It is a framework whose behavior is intended to remain understandable.
 
@@ -953,7 +956,7 @@ There is also a useful side effect for modern development tooling. AI-assisted c
 
 ---
 
-## The Broader Philosophy
+## The Broader Philosophy { #broader-philosophy }
 
 Compile-time generation is ultimately one expression of a broader Kora principle: move knowledge out of hidden framework runtime state and into things that can be inspected directly—types, source code, generated source, compiler diagnostics, and explicit configuration.
 
@@ -973,7 +976,7 @@ The resulting framework is deliberately less dynamic in some places than traditi
 
 ---
 
-## The Framework Should Disappear
+## The Framework Should Disappear { #framework-should-disappear }
 
 A useful way to think about the end goal is that a framework should help developers express intent and then get out of the way.
 
@@ -1029,7 +1032,7 @@ The framework no longer needs to remain a permanent interpreter between business
 
 ---
 
-## Compile-Time Certainty
+## Compile-Time Certainty { #compile-time-certainty }
 
 Kora is sometimes introduced through performance numbers. Those numbers matter: fast startup, low memory consumption, and low runtime overhead are all desirable properties.
 

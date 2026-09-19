@@ -1,11 +1,14 @@
 ---
 title: Documentation Maturity Is About Coverage, Structure, and Signal — Kora Framework
+date: 2026-08-09
 description: Why Kora Framework documentation quality depends on coverage, structure, and signal — not framework age or page count.
 search:
   exclude: true
 ---
 
-# Documentation Maturity Is About Coverage, Structure, and Signal — Not Framework Age or Page Count
+# Documentation Maturity Is About Coverage, Structure, and Signal — Not Framework Age or Page Count { #documentation-maturity }
+
+**August 9, 2026**
 
 Documentation quality is surprisingly easy to measure badly.
 
@@ -56,7 +59,7 @@ quality of the path from a quick factual lookup to a complete working example.**
 Kora is a useful case study because its documentation model is closely connected to the framework's broader philosophy: fewer overlapping abstractions, one recommended path for common problems,
 transparent generated code, and runnable examples that show real application composition.
 
-## Framework Age and Documentation Maturity Are Different Variables
+## Framework Age and Documentation Maturity Are Different Variables { #framework-age }
 
 The most common documentation argument begins with age.
 
@@ -107,7 +110,7 @@ freshness, and signal-to-noise ratio.
 
 Neither advantage should be confused with the other.
 
-## The Better Metric Is Documentation-to-Functionality Ratio
+## The Better Metric Is Documentation-to-Functionality Ratio { #documentation-to-functionality-ratio }
 
 Absolute page count is a weak metric because frameworks do not have equal functional surfaces.
 
@@ -171,7 +174,7 @@ This is not merely a benefit of having less functionality.
 
 It is a benefit of having fewer overlapping abstractions.
 
-## One Problem — One Recommended Solution Makes Documentation More Complete
+## One Problem — One Recommended Solution Makes Documentation More Complete { #one-problem-one-solution }
 
 Framework API breadth grows documentation complexity faster than linearly.
 
@@ -243,7 +246,7 @@ Every legacy API retained indefinitely creates another opportunity for readers t
 
 A smaller and more coherent surface makes documentation easier to keep current.
 
-## More Documentation Is Not Automatically Better Documentation
+## More Documentation Is Not Automatically Better Documentation { #more-documentation }
 
 Documentation can be extremely large and still be poor.
 
@@ -276,7 +279,7 @@ Sometimes the developer needs a working service they can run and modify.
 
 Trying to satisfy all three needs with one document usually creates a poor compromise.
 
-## Reference, Guides, and Examples Solve Different Problems
+## Reference, Guides, and Examples Solve Different Problems { #reference-guides-examples }
 
 A mature documentation system should separate at least three kinds of developer question.
 
@@ -337,7 +340,7 @@ implements the same workflow. This means the developer can move from explanation
 
 That is a much healthier documentation architecture than trying to make every reference page also serve as a tutorial.
 
-## Kora's Documentation Is Better Understood as a Layered System
+## Kora's Documentation Is Better Understood as a Layered System { #layered-system }
 
 The Kora documentation system can be viewed as a sequence of increasing depth:
 
@@ -370,7 +373,7 @@ The documentation is therefore not a wall between the developer and implementati
 
 It is the first layer in a progressively deeper path.
 
-## Runnable Examples Are Documentation, Not Marketing Samples
+## Runnable Examples Are Documentation, Not Marketing Samples { #runnable-examples }
 
 Many framework examples are optimized for visual simplicity.
 
@@ -425,7 +428,7 @@ The developer can compare their service with a known-good project rather than in
 
 That is especially valuable for framework composition, where individual APIs may be simple but the interaction between them is the real task.
 
-## Complete Services Explain Composition Better Than More Prose
+## Complete Services Explain Composition Better Than More Prose { #complete-services }
 
 Framework documentation often becomes verbose because it tries to describe composition textually.
 
@@ -456,7 +459,7 @@ example becomes a reference architecture at the scale of one feature.
 
 This is particularly valuable for AI-assisted development because an agent can inspect a complete working codebase rather than infer project structure from prose alone.
 
-## Documentation Should Explain Kora, Not Re-Teach Kafka
+## Documentation Should Explain Kora, Not Re-Teach Kafka { #explain-kora }
 
 A common documentation anti-pattern is scope inflation.
 
@@ -493,7 +496,7 @@ A thin framework should also have thin integration documentation.
 
 Explain the boundary. Link the concepts through real examples. Let upstream technologies remain upstream authorities.
 
-## Large Community Knowledge Bases Can Hide Documentation Problems
+## Large Community Knowledge Bases Can Hide Documentation Problems { #community-knowledge-bases }
 
 A large external knowledge base is useful.
 
@@ -536,7 +539,7 @@ These interpretations are not mutually exclusive.
 
 The important thing is not to automatically treat volume as quality.
 
-## Primary Documentation and Secondary Content Should Be Evaluated Separately
+## Primary Documentation and Secondary Content Should Be Evaluated Separately { #primary-secondary-content }
 
 Kora does have less secondary content than older frameworks.
 
@@ -578,7 +581,7 @@ A framework can be strong in the first category and still developing in the seco
 
 That is a much more precise description than calling the documentation incomplete.
 
-## Generated Source Is Part of the Documentation Story
+## Generated Source Is Part of the Documentation Story { #generated-source }
 
 Kora has an unusual advantage when documentation is not enough: the framework generates readable code.
 
@@ -614,7 +617,7 @@ It also gives the developer an authoritative artifact produced specifically for 
 
 That is stronger than a generic guide in some debugging scenarios because it reflects the exact generated implementation in the current build.
 
-## Inspectable Implementation Reduces Documentation Dependency
+## Inspectable Implementation Reduces Documentation Dependency { #inspectable-implementation }
 
 Good documentation should make a framework easy to use.
 
@@ -639,7 +642,7 @@ Documentation tells you the model. Generated code tells you what happened in thi
 
 These layers complement one another.
 
-## Information Density Is an Engineering Property
+## Information Density Is an Engineering Property { #information-density }
 
 Information density is often treated as a writing-style preference.
 
@@ -670,7 +673,7 @@ The point is that reference material should remain reference material.
 
 Kora's separation between documentation pages, guides, and runnable examples allows these different writing modes to coexist without forcing each page to do every job.
 
-## Documentation Structure Matters More Than Documentation Volume
+## Documentation Structure Matters More Than Documentation Volume { #documentation-structure }
 
 A thousand well-organized pages can be excellent.
 
@@ -709,7 +712,7 @@ That is one reason a smaller documentation surface can feel more complete than a
 
 The reader spends less time navigating historical layers.
 
-## Searchability Is Part of Documentation Quality
+## Searchability Is Part of Documentation Quality { #searchability }
 
 Documentation maturity is often discussed as a content problem.
 
@@ -726,7 +729,7 @@ property controls a timeout, the property should be easy to locate directly.
 
 This is another advantage of keeping framework abstractions relatively small and stable: the vocabulary itself remains manageable.
 
-## Runnable Examples Improve Discoverability Through Code Search
+## Runnable Examples Improve Discoverability Through Code Search { #code-search }
 
 Examples provide another retrieval mechanism.
 
@@ -743,7 +746,7 @@ This is one reason executable examples are more than educational extras.
 
 They improve documentation discoverability.
 
-## Examples Also Prevent Documentation Drift
+## Examples Also Prevent Documentation Drift { #documentation-drift }
 
 Runnable examples have another important property: they can be compiled and tested.
 
@@ -773,7 +776,7 @@ Executable examples can.
 
 This is one reason a documentation system supported by runnable projects can be more reliable than a much larger prose-only system.
 
-## Guides Can Be Opinionated Because the Framework Is Opinionated
+## Guides Can Be Opinionated Because the Framework Is Opinionated { #opinionated-guides }
 
 A guide becomes difficult to write when the framework has many equally valid paths.
 
@@ -792,7 +795,7 @@ That makes educational material more useful.
 
 The reader learns the framework's preferred architecture, not merely one example among many.
 
-## Documentation Freshness Is Easier With Fewer Historical Layers
+## Documentation Freshness Is Easier With Fewer Historical Layers { #documentation-freshness }
 
 Long-lived frameworks accumulate compatibility obligations.
 
@@ -809,7 +812,7 @@ That will change as the framework ages, but the current focused design gives it 
 
 The important discipline is to keep current documentation clearly centered on current APIs and move historical migration material into deliberately scoped places.
 
-## Documentation Maturity Should Include Maintenance Cost
+## Documentation Maturity Should Include Maintenance Cost { #maintenance-cost }
 
 Documentation is software maintenance.
 
@@ -843,7 +846,7 @@ This is not an argument for making frameworks artificially tiny.
 
 It is an argument for requiring every abstraction to justify the permanent documentation cost it creates.
 
-## The "95%" Claim Should Be Understood Correctly
+## The "95%" Claim Should Be Understood Correctly { #the-95-claim }
 
 When the Kora project describes roughly ninety-five percent of its functionality as covered through documentation, guides, and examples, the most useful interpretation is not a mathematically precise
 coverage score comparable across frameworks.
@@ -863,7 +866,7 @@ That system includes reference material, guides, and runnable services.
 
 That is the important property.
 
-## The Better Question Is "What Is Missing?"
+## The Better Question Is "What Is Missing?" { #what-is-missing }
 
 A practical framework evaluation should sample the documentation.
 
@@ -896,7 +899,7 @@ The goal should not be to claim completeness in the abstract.
 
 The goal should be to measure where developers still have to guess.
 
-## Documentation Quality Can Be Modeled as a Product
+## Documentation Quality Can Be Modeled as a Product { #documentation-as-product }
 
 Instead of `number of pages`, consider a more useful conceptual model:
 
@@ -922,7 +925,7 @@ The factors reinforce each other.
 
 Kora's documentation strategy is strongest when all of these layers remain connected.
 
-## AI-Assisted Development Changes What Good Documentation Looks Like
+## AI-Assisted Development Changes What Good Documentation Looks Like { #ai-assisted-development }
 
 Documentation structure matters even more in an era of AI-assisted development.
 
@@ -966,7 +969,7 @@ AI agents are especially good at using executable examples because they can comp
 
 A precise examples repository is therefore becoming part of framework tooling, not merely learning material.
 
-## High Information Density Helps AI for the Same Reason It Helps Humans
+## High Information Density Helps AI for the Same Reason It Helps Humans { #information-density-ai }
 
 A long page containing many unrelated concepts creates retrieval ambiguity.
 
@@ -982,7 +985,7 @@ A framework's documentation is increasingly consumed not only by developers dire
 
 Information architecture therefore affects generated code quality.
 
-## Kora's Transparency Complements Documentation
+## Kora's Transparency Complements Documentation { #transparency }
 
 There is an important limit to documentation.
 
@@ -1003,7 +1006,7 @@ The application build provides the exact implementation.
 
 That can be more useful than another hundred pages of generalized explanation.
 
-## Good Documentation Does Not Need to Explain Every Internal Detail
+## Good Documentation Does Not Need to Explain Every Internal Detail { #internal-details }
 
 Another common misconception is that completeness means documenting every internal class.
 
@@ -1021,7 +1024,7 @@ The generated code itself is the exact detailed artifact.
 
 That is an efficient division of responsibility.
 
-## Documentation Maturity Is Also About Confidence
+## Documentation Maturity Is Also About Confidence { #confidence }
 
 Developers use documentation not merely to learn.
 
@@ -1036,7 +1039,7 @@ This is where framework scope matters again.
 
 Every extra abstraction dilutes maintenance attention.
 
-## What Kora Still Needs to Improve Over Time
+## What Kora Still Needs to Improve Over Time { #what-kora-needs }
 
 A balanced evaluation should acknowledge that a younger documentation ecosystem still has room to grow.
 
@@ -1054,7 +1057,7 @@ The question is whether the foundation scales.
 
 Kora's separation of reference, guides, runnable examples, generated source, and source code is a good foundation.
 
-## Smaller Documentation Can Be More Complete
+## Smaller Documentation Can Be More Complete { #smaller-documentation }
 
 This is perhaps the most counterintuitive conclusion.
 
@@ -1076,7 +1079,7 @@ This is why absolute page count should be discarded as a serious quality metric.
 
 The meaningful unit is useful coverage per supported concept.
 
-## Signal-to-Noise Ratio Is a First-Class Metric
+## Signal-to-Noise Ratio Is a First-Class Metric { #signal-to-noise }
 
 Developers rarely complain that documentation contains too little prose.
 
@@ -1116,7 +1119,7 @@ Sometimes it is a runnable service.
 
 A mature system supports all three.
 
-## Kora's Documentation Model Mirrors Its Framework Model
+## Kora's Documentation Model Mirrors Its Framework Model { #mirrors-framework-model }
 
 There is a deeper consistency here.
 
@@ -1133,7 +1136,7 @@ A framework that stays close to Kafka can document only its integration boundary
 
 Documentation quality is therefore partly a consequence of framework architecture.
 
-## The Best Documentation Makes Itself Less Necessary
+## The Best Documentation Makes Itself Less Necessary { #less-necessary }
 
 This sounds paradoxical, but it is true.
 
@@ -1153,7 +1156,7 @@ This is another reason one recommended solution per problem matters.
 
 Consistency compounds learning.
 
-## A Practical Documentation Journey in Kora
+## A Practical Documentation Journey in Kora { #practical-journey }
 
 Consider a developer who needs to add Kafka messaging.
 
@@ -1209,7 +1212,7 @@ The developer does not have to assemble understanding from unrelated sources.
 
 That is what documentation maturity looks like in practice.
 
-## Community Content Should Add Perspective, Not Repair the Docs
+## Community Content Should Add Perspective, Not Repair the Docs { #community-content }
 
 The ideal role of secondary content is not to compensate for missing official documentation.
 
@@ -1224,7 +1227,7 @@ If developers need a third-party blog post to discover a basic configuration pro
 
 If they read a third-party article to understand how one company used Kora with a complex platform architecture, the ecosystem is working as intended.
 
-## Documentation Should Not Be Measured by the Amount of Folklore Required
+## Documentation Should Not Be Measured by the Amount of Folklore Required { #folklore }
 
 Frameworks sometimes appear mature because the community knows many unwritten rules.
 
@@ -1240,7 +1243,7 @@ recommended. Good examples can eliminate guesswork about composition.
 
 The documentation system should encode knowledge, not depend on oral tradition.
 
-## Documentation Efficiency Is the Better Benchmark
+## Documentation Efficiency Is the Better Benchmark { #documentation-efficiency }
 
 A useful final model is:
 
@@ -1267,7 +1270,7 @@ These questions directly relate to engineering productivity.
 
 Page count does not.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora should not be judged by how many pages of documentation it has compared with frameworks that accumulated decades of APIs, compatibility layers, alternative programming models, historical
 configuration systems, and community folklore.

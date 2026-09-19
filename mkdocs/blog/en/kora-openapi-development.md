@@ -1,11 +1,14 @@
 ---
 title: OpenAPI-First Development with the Kora Framework
+date: 2026-08-25
 description: Why contract-first OpenAPI development in the Kora Framework generates typed servers, clients, and errors from one source of truth.
 search:
   exclude: true
 ---
 
-# OpenAPI-First Development with Kora
+# OpenAPI-First Development with Kora { #openapi-first }
+
+**August 25, 2026**
 
 OpenAPI is often introduced as documentation. A team writes controllers, request DTOs, response DTOs, validation annotations, security annotations, and exception mappings, and only after the
 application already exists does a plugin inspect that code and emit an `openapi.json` file. Swagger UI renders it, client generators may consume it, and the file is called an API contract.
@@ -38,7 +41,7 @@ validate it with the compiler, and keep runtime machinery small. OpenAPI-first d
 
 ---
 
-## The Important Question Is Direction of Authority
+## The Important Question Is Direction of Authority { #direction-of-authority }
 
 The same OpenAPI document can exist in two very different architectures.
 
@@ -104,7 +107,7 @@ The protocol becomes an independent architectural artifact rather than an accide
 
 ---
 
-## Why OpenAPI Should Be a Contract, Not Generated JSON
+## Why OpenAPI Should Be a Contract, Not Generated JSON { #contract-not-json }
 
 Generating OpenAPI from annotations is useful. It can produce documentation, Swagger UI, API catalogs, and client generation inputs. For many small applications that may be entirely sufficient.
 
@@ -124,7 +127,7 @@ Internal classes should be replaceable without changing external behavior.
 
 ---
 
-## One Contract, Two Typed Boundaries
+## One Contract, Two Typed Boundaries { #two-typed-boundaries }
 
 Kora's OpenAPI generator can create both declarative HTTP server infrastructure and declarative HTTP clients from an OpenAPI description. It also generates models and the mapping infrastructure
 required to move data through that boundary.
@@ -166,7 +169,7 @@ Generation changes the model from duplication to derivation.
 
 ---
 
-## The Server Implements the Contract Instead of Re-Declaring It
+## The Server Implements the Contract Instead of Re-Declaring It { #server-implements-contract }
 
 In a contract-first Kora server, application code should not have to restate HTTP mechanics that are already present in the specification.
 
@@ -223,7 +226,7 @@ That keeps controllers from becoming a second hand-maintained API specification.
 
 ---
 
-## Business Code Should Not Describe HTTP Twice
+## Business Code Should Not Describe HTTP Twice { #no-http-twice }
 
 Code-first APIs often contain several overlapping descriptions of the same endpoint. The controller defines the path and method. DTO annotations influence the schema. validation annotations describe
 field constraints. security annotations describe authentication. Swagger annotations add examples and response metadata. Exception handlers determine errors.
@@ -247,7 +250,7 @@ The Java/Kotlin representation should be generated.
 
 ---
 
-## Generated Models Eliminate DTO Drift
+## Generated Models Eliminate DTO Drift { #dto-drift }
 
 One of the most common integration problems is a mismatch between producer and consumer models.
 
@@ -287,7 +290,7 @@ This preserves service autonomy while reducing protocol drift.
 
 ---
 
-## Transport Models Are Not Necessarily Domain Models
+## Transport Models Are Not Necessarily Domain Models { #transport-vs-domain }
 
 Generated OpenAPI models describe the wire. They should not automatically become the entire business domain.
 
@@ -337,7 +340,7 @@ Kora's compile-time approach to mapping makes such boundaries relatively cheap t
 
 ---
 
-## Generated Source Should Be Replaceable
+## Generated Source Should Be Replaceable { #generated-source-replaceable }
 
 The OpenAPI file is authoritative only if generated code remains disposable.
 
@@ -372,7 +375,7 @@ Generated source should be inspectable, but not hand-owned.
 
 ---
 
-## Compile-Time Types Turn Contract Changes into Build Failures
+## Compile-Time Types Turn Contract Changes into Build Failures { #compile-time-types }
 
 The most important benefit of Kora's approach is not reduced boilerplate. It is that contract changes become compiler-visible.
 
@@ -404,7 +407,7 @@ HTTP normally weakens static guarantees because producer and consumer are separa
 
 ---
 
-## A Breaking Contract Change Should Be Painful Early
+## A Breaking Contract Change Should Be Painful Early { #breaking-change-early }
 
 Imagine changing:
 
@@ -426,7 +429,7 @@ Contract-first development makes breaking API changes visible where they are che
 
 ---
 
-## Generated Clients Are About Authority, Not Convenience
+## Generated Clients Are About Authority, Not Convenience { #generated-clients-authority }
 
 A generated HTTP client is often presented as a productivity tool because developers do not have to write URLs, serialize JSON, or switch on status codes.
 
@@ -472,7 +475,7 @@ It is fewer independently maintained truths.
 
 ---
 
-## Typed Errors Are Part of a Real Contract
+## Typed Errors Are Part of a Real Contract { #typed-errors }
 
 Many API stacks remain strongly typed only on the happy path.
 
@@ -559,7 +562,7 @@ success cases.
 
 ---
 
-## Status Codes Are Part of the Type System
+## Status Codes Are Part of the Type System { #status-codes-type-system }
 
 HTTP already contains a response discriminator: the status code.
 
@@ -605,7 +608,7 @@ A generic `2xx body / everything else exception` model loses valuable informatio
 
 ---
 
-## Declared Errors Improve Resilience Decisions
+## Declared Errors Improve Resilience Decisions { #declared-errors-resilience }
 
 Typed failure semantics are also important for retries and circuit breakers.
 
@@ -625,7 +628,7 @@ OpenAPI therefore influences reliability architecture, not just documentation.
 
 ---
 
-## Expected Failure and Unexpected Failure Must Stay Different
+## Expected Failure and Unexpected Failure Must Stay Different { #expected-vs-unexpected }
 
 A client still needs a generic failure path.
 
@@ -665,7 +668,7 @@ Unexpected responses should remain visible because they may indicate deployment 
 
 ---
 
-## Security Belongs in the Contract
+## Security Belongs in the Contract { #security-in-contract }
 
 Security is another area where implementation-first systems often maintain several independent sources of truth.
 
@@ -704,7 +707,7 @@ The contract does not replace business authorization logic, but it should descri
 
 ---
 
-## Contract Security Is Not Domain Authorization
+## Contract Security Is Not Domain Authorization { #security-vs-authorization }
 
 An OpenAPI document can say:
 
@@ -734,7 +737,7 @@ This prevents the specification from becoming a substitute for business architec
 
 ---
 
-## Validation Should Be Split the Same Way
+## Validation Should Be Split the Same Way { #validation-split }
 
 OpenAPI can express transport validation:
 
@@ -782,7 +785,7 @@ OpenAPI validation
 
 ---
 
-## Required, Optional, and Nullable Are Different Contracts
+## Required, Optional, and Nullable Are Different Contracts { #required-optional-nullable }
 
 One of the easiest ways to produce bad generated APIs is to treat all absent/null states as equivalent.
 
@@ -831,7 +834,7 @@ Kora's generator exposes configuration around nullable and optional representati
 
 ---
 
-## Error Schemas Need Real Design
+## Error Schemas Need Real Design { #error-schemas }
 
 Teams often carefully design successful models while treating errors as an afterthought:
 
@@ -867,7 +870,7 @@ Typed client errors are only as good as the contract that defines them.
 
 ---
 
-## Machine-Readable Errors Beat Message Parsing
+## Machine-Readable Errors Beat Message Parsing { #machine-readable-errors }
 
 Consumers should never need logic such as:
 
@@ -887,7 +890,7 @@ That is exactly where they belong.
 
 ---
 
-## OpenAPI-First Enables Real Compatibility Checking
+## OpenAPI-First Enables Real Compatibility Checking { #compatibility-checking }
 
 Once the OpenAPI file is the primary contract, CI can compare:
 
@@ -915,7 +918,7 @@ This is much stronger than reviewing generated Swagger output after a controller
 
 ---
 
-## Compatibility Should Be a Build Gate
+## Compatibility Should Be a Build Gate { #compatibility-build-gate }
 
 A strong API pipeline looks like:
 
@@ -945,7 +948,7 @@ This is a very powerful feedback loop.
 
 ---
 
-## API Review Happens Before Implementation Becomes Expensive
+## API Review Happens Before Implementation Becomes Expensive { #api-review-early }
 
 Suppose a proposed endpoint:
 
@@ -980,7 +983,7 @@ The cheapest time to repair an API is before consumers exist.
 
 ---
 
-## Contract Diffs Are Better API Review Surfaces
+## Contract Diffs Are Better API Review Surfaces { #contract-diffs }
 
 A contract pull request can show something as direct as:
 
@@ -1006,7 +1009,7 @@ It is an architectural diff.
 
 ---
 
-## Contract-First Enables Parallel Team Development
+## Contract-First Enables Parallel Team Development { #parallel-team-development }
 
 This is one of the largest organizational benefits.
 
@@ -1043,7 +1046,7 @@ The calendar-time saving can be much larger than the code-generation saving.
 
 ---
 
-## OpenAPI Is a Better Cross-Language Boundary Than Annotations
+## OpenAPI Is a Better Cross-Language Boundary Than Annotations { #cross-language-boundary }
 
 Kora may implement the server in Java or Kotlin, but consumers may be:
 
@@ -1068,7 +1071,7 @@ That is an excellent property for service architecture.
 
 ---
 
-## Do Not Share Server DTO JARs as the Contract
+## Do Not Share Server DTO JARs as the Contract { #no-dto-jars }
 
 Java organizations sometimes avoid client generation by publishing a shared DTO dependency.
 
@@ -1096,7 +1099,7 @@ The distinction matters for service independence.
 
 ---
 
-## Contract Artifacts Can Be Versioned Independently
+## Contract Artifacts Can Be Versioned Independently { #versioned-contract-artifacts }
 
 In a mature platform, the OpenAPI contract can be published as a versioned artifact:
 
@@ -1128,7 +1131,7 @@ Versioning the contract directly makes that explicit.
 
 ---
 
-## Multiple Contracts Can Be Healthier Than One Giant Specification
+## Multiple Contracts Can Be Healthier Than One Giant Specification { #multiple-contracts }
 
 As a service grows, one massive OpenAPI file may become an organizational monolith.
 
@@ -1150,7 +1153,7 @@ Tags are useful for grouping operations, but a tag is not necessarily an indepen
 
 ---
 
-## Generated Clients Should Be Configured at Runtime
+## Generated Clients Should Be Configured at Runtime { #clients-configured-runtime }
 
 The contract defines:
 
@@ -1187,7 +1190,7 @@ This is the same static/dynamic split that appears throughout Kora.
 
 ---
 
-## Credentials Are Runtime State Too
+## Credentials Are Runtime State Too { #credentials-runtime-state }
 
 OpenAPI can declare:
 
@@ -1213,7 +1216,7 @@ keep live state dynamic
 
 ---
 
-## Generator Configuration Is Part of Reproducibility
+## Generator Configuration Is Part of Reproducibility { #generator-reproducibility }
 
 The generated API depends on more than the YAML document.
 
@@ -1243,7 +1246,7 @@ A generator upgrade should be treated more like a compiler upgrade than a casual
 
 ---
 
-## Generated Source Is a Build Artifact and a Debugging Tool
+## Generated Source Is a Build Artifact and a Debugging Tool { #generated-source-debugging }
 
 Kora's broader philosophy emphasizes readable generated source.
 
@@ -1274,7 +1277,7 @@ That is a feature.
 
 ---
 
-## Serving the Same Contract Prevents Documentation Drift
+## Serving the Same Contract Prevents Documentation Drift { #documentation-drift }
 
 Kora's OpenAPI management support can serve ready-made OpenAPI files and expose documentation UIs.
 
@@ -1302,7 +1305,7 @@ Documentation cannot drift independently because it is the source.
 
 ---
 
-## Documentation Is Only One Consumer of the Contract
+## Documentation Is Only One Consumer of the Contract { #documentation-consumer }
 
 Once OpenAPI is primary, many systems can use it:
 
@@ -1328,7 +1331,7 @@ Documentation is just one projection.
 
 ---
 
-## Black-Box Tests Can Use the Generated Client
+## Black-Box Tests Can Use the Generated Client { #black-box-tests }
 
 A particularly strong pattern is:
 
@@ -1360,7 +1363,7 @@ The server and client share contract origin but remain separate runtime componen
 
 ---
 
-## Still Test the Raw Protocol Where It Matters
+## Still Test the Raw Protocol Where It Matters { #raw-protocol-tests }
 
 There is one caveat.
 
@@ -1379,7 +1382,7 @@ It does not remove the need to verify the actual wire.
 
 ---
 
-## The Contract Can Drive Negative Testing
+## The Contract Can Drive Negative Testing { #negative-testing }
 
 OpenAPI schemas contain useful test information.
 
@@ -1400,7 +1403,7 @@ The richer the contract, the more it becomes an executable test specification.
 
 ---
 
-## Operation IDs and Schema Names Are Source APIs
+## Operation IDs and Schema Names Are Source APIs { #operation-ids-schema-names }
 
 Because Kora generates source code, naming in OpenAPI matters.
 
@@ -1430,7 +1433,7 @@ OpenAPI design is library design.
 
 ---
 
-## Do Not Use Weak Schemas When the Shape Is Known
+## Do Not Use Weak Schemas When the Shape Is Known { #no-weak-schemas }
 
 A schema such as:
 
@@ -1451,7 +1454,7 @@ The stronger the contract, the stronger the generated source.
 
 ---
 
-## But Do Not Leak Internal Implementation Details
+## But Do Not Leak Internal Implementation Details { #no-internal-leaks }
 
 Strong typing does not mean exposing database design.
 
@@ -1463,7 +1466,7 @@ The contract is a boundary, not a dump of internal models.
 
 ---
 
-## Request and Response Types Often Deserve Separation
+## Request and Response Types Often Deserve Separation { #request-response-separation }
 
 A common shortcut is using one schema:
 
@@ -1498,7 +1501,7 @@ The generated type system then prevents some invalid combinations automatically.
 
 ---
 
-## Pagination, Idempotency, and Errors Are Contract-Level Decisions
+## Pagination, Idempotency, and Errors Are Contract-Level Decisions { #contract-level-decisions }
 
 Cross-team API conventions should be expressed where consumers can see them.
 
@@ -1522,7 +1525,7 @@ Contract-first review helps platform teams standardize them.
 
 ---
 
-## OpenAPI-First Does Not Mean OpenAPI for Everything
+## OpenAPI-First Does Not Mean OpenAPI for Everything { #not-everything }
 
 Kora also supports handwritten declarative HTTP servers and clients.
 
@@ -1542,7 +1545,7 @@ A framework should provide a strong default without forcing the abstraction wher
 
 ---
 
-## OpenAPI Is Not a Domain Modeling Language
+## OpenAPI Is Not a Domain Modeling Language { #not-domain-modeling }
 
 The specification describes what crosses the HTTP boundary.
 
@@ -1570,7 +1573,7 @@ This prevents contract-first development from becoming specification-driven bure
 
 ---
 
-## The Generator Is a Compiler Front End
+## The Generator Is a Compiler Front End { #generator-compiler-frontend }
 
 The most useful mental model is to treat OpenAPI as a transport DSL.
 
@@ -1602,7 +1605,7 @@ The same principle appears in dependency injection, repository generation, mappi
 
 ---
 
-## Runtime Becomes Deliberately Boring
+## Runtime Becomes Deliberately Boring { #boring-runtime }
 
 After generation, the request path is straightforward:
 
@@ -1652,7 +1655,7 @@ Boring runtime is good runtime.
 
 ---
 
-## A Practical Kora Workflow
+## A Practical Kora Workflow { #practical-workflow }
 
 A strong Kora OpenAPI-first project can use a simple lifecycle.
 
@@ -1680,7 +1683,7 @@ The important point is that every downstream artifact remains anchored on the sa
 
 ---
 
-## The Pull Request Should Start with the Contract Diff
+## The Pull Request Should Start with the Contract Diff { #pr-contract-diff }
 
 For an API change, review order should usually be:
 
@@ -1703,7 +1706,7 @@ This is much cleaner than reconstructing API behavior from implementation change
 
 ---
 
-## A Platform Team Can Turn This into a Paved Road
+## A Platform Team Can Turn This into a Paved Road { #paved-road }
 
 At organizational scale, the best result is not a wiki telling teams to be contract-first.
 
@@ -1730,7 +1733,7 @@ This turns architectural discipline into a default path rather than a repeated l
 
 ---
 
-## Why This Matters for CTOs and Platform Teams
+## Why This Matters for CTOs and Platform Teams { #ctos-platform-teams }
 
 The cost of an HTTP API is not the time required to write the first controller.
 
@@ -1756,7 +1759,7 @@ This matters increasingly as the number of services and teams grows.
 
 ---
 
-## Why This Matters for AI-Assisted Development
+## Why This Matters for AI-Assisted Development { #ai-assisted-development }
 
 AI coding agents also benefit from explicit generated contracts.
 
@@ -1792,7 +1795,7 @@ That smaller search space makes generated APIs useful not only for humans but al
 
 ---
 
-## The Most Important Rule
+## The Most Important Rule { #most-important-rule }
 
 The entire approach can be summarized in one rule:
 
@@ -1836,7 +1839,7 @@ For a Kora HTTP system, OpenAPI is a natural contract language.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 OpenAPI becomes much more valuable when it stops being documentation generated after implementation and becomes the input from which implementation boundaries are generated.
 
