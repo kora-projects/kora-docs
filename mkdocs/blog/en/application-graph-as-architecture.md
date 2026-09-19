@@ -1,11 +1,14 @@
 ---
 title: The Application Graph as Architecture in the Kora Framework
+date: 2026-09-02
 description: Why the Kora Framework's compile-time application graph is not just DI wiring but an inspectable, validated map of the system's architecture.
 search:
   exclude: true
 ---
 
-# The Application Graph as Architecture
+# The Application Graph as Architecture { #application-graph-as-architecture }
+
+**September 2, 2026**
 
 Dependency injection is usually introduced as a convenience mechanism: instead of constructing objects manually, a framework constructs them and supplies their dependencies. That description is
 correct, but in the Kora Framework it stops far too early.
@@ -39,7 +42,7 @@ explicit, typed, generated, and validated before the process starts.
 
 ---
 
-## A Service Is Already a Graph
+## A Service Is Already a Graph { #service-is-a-graph }
 
 Any non-trivial backend service is naturally a directed graph whether the framework acknowledges it or not.
 
@@ -77,7 +80,7 @@ Kora's answer is to move as much of that work as possible into compilation.
 
 ---
 
-## From Dependency Injection to an Executable Architecture Model
+## From Dependency Injection to an Executable Architecture Model { #from-di-to-executable-architecture }
 
 A Kora application starts from an interface annotated with `@KoraApp`.
 
@@ -193,7 +196,7 @@ That keeps architectural declarations close to executable code. When the depende
 
 ---
 
-## The Graph Is the Dependency Architecture
+## The Graph Is the Dependency Architecture { #graph-is-dependency-architecture }
 
 Dependency architecture answers a simple question:
 
@@ -285,7 +288,7 @@ This is one reason compile-time DI has value beyond startup performance. It turn
 
 ---
 
-## The Graph Is Also the Lifecycle
+## The Graph Is Also the Lifecycle { #graph-is-also-lifecycle }
 
 Object graphs are often discussed as if they were static diagrams. Production applications are not static. They start, acquire resources, accept traffic, reload selected state, stop accepting work,
 flush or release resources, and terminate.
@@ -353,7 +356,7 @@ A runtime does not have to guess which initialization steps are independent. The
 
 ---
 
-## Dependency Edges Have Lifecycle Semantics
+## Dependency Edges Have Lifecycle Semantics { #dependency-edges-lifecycle }
 
 Kora makes the architectural meaning of edges even clearer through direct and indirect dependencies.
 
@@ -401,7 +404,7 @@ That gives architects a concrete mechanism for expressing which changes should p
 
 ---
 
-## The Graph Defines Initialization Order Without a Separate Startup Script
+## The Graph Defines Initialization Order Without a Separate Startup Script { #graph-defines-init-order }
 
 Traditional services often accumulate startup code over time:
 
@@ -440,7 +443,7 @@ When dependency and lifecycle topology share the same graph, the amount of dupli
 
 ---
 
-## Module Boundaries Become Visible in the Graph
+## Module Boundaries Become Visible in the Graph { #module-boundaries-visible }
 
 The graph also describes where application capabilities come from.
 
@@ -525,7 +528,7 @@ appeared in a build file.
 
 ---
 
-## The Graph Includes Infrastructure, Not Only Business Services
+## The Graph Includes Infrastructure, Not Only Business Services { #graph-includes-infrastructure }
 
 A common mistake when drawing architecture diagrams is to show only business components:
 
@@ -585,7 +588,7 @@ graph nodes makes those relationships easier to reason about.
 
 ---
 
-## Observability Wiring Is Architectural Wiring
+## Observability Wiring Is Architectural Wiring { #observability-wiring }
 
 Kora's observability model demonstrates why the application graph is a better abstraction than “a bag of beans.”
 
@@ -633,7 +636,7 @@ That also makes customization more local. Replacing a default telemetry factory 
 
 ---
 
-## Compile-Time Graph Validation Becomes Architecture Validation
+## Compile-Time Graph Validation Becomes Architecture Validation { #compile-time-graph-validation }
 
 The strongest architectural consequence of Kora's approach is that some design errors become compilation errors.
 
@@ -642,7 +645,7 @@ dependency is conceptually justified.
 
 What it can do is validate structural invariants that are often prerequisites for a sound architecture.
 
-### Missing dependencies
+### Missing dependencies { #missing-dependencies }
 
 If a controller ultimately requires a repository that is not provided, the graph cannot be completed.
 
@@ -658,7 +661,7 @@ Repository [missing]
 
 This is detected before deployment.
 
-### Ambiguous dependencies
+### Ambiguous dependencies { #ambiguous-dependencies }
 
 If two components implement the same contract and the injection point does not say which one it needs, the graph is ambiguous.
 
@@ -670,7 +673,7 @@ CheckoutService ─┤
 
 Tags or another explicit choice resolve the architecture.
 
-### Invalid or accidental cycles
+### Invalid or accidental cycles { #invalid-cycles }
 
 Cycles often indicate tight coupling:
 
@@ -681,11 +684,11 @@ ServiceA → ServiceB → ServiceC → ServiceA
 Kora can detect graph cycles during compilation. Some interface-based cycles can be handled using generated promised proxies, and developers can deliberately weaken lifecycle coupling through
 `ValueOf` or `PromiseOf`. The important part architecturally is that the cycle is visible as a graph property rather than surfacing as a mysterious runtime initialization failure.
 
-### Missing roots
+### Missing roots { #missing-roots }
 
 A graph with no root components effectively has no executable application surface. Kora can reject that shape rather than quietly constructing nothing useful.
 
-### Tag mismatches
+### Tag mismatches { #tag-mismatches }
 
 Tags are typed architectural qualifiers. If the graph contains the correct contract under a different tag than the one requested, the mismatch is visible to the compiler and diagnostics can point at
 nearby candidates.
@@ -719,7 +722,7 @@ edit-compile loop.
 
 ---
 
-## Diagnostics Become Paths Through Architecture
+## Diagnostics Become Paths Through Architecture { #diagnostics-as-paths }
 
 A useful graph diagnostic should not merely say:
 
@@ -765,7 +768,7 @@ source code.
 
 ---
 
-## Generated Wiring Is an Architectural Debugging Surface
+## Generated Wiring Is an Architectural Debugging Surface { #generated-wiring-debugging }
 
 Kora generates ordinary source code rather than hiding graph construction behind reflection or runtime bytecode generation.
 
@@ -801,7 +804,7 @@ That is especially useful during framework upgrades. If generation changes, deve
 
 ---
 
-## The Graph Is a Natural Basis for Visualization
+## The Graph Is a Natural Basis for Visualization { #graph-visualization }
 
 Once an application has a statically known graph, visualization becomes a data-projection problem rather than an exercise in runtime archaeology.
 
@@ -870,7 +873,7 @@ The important caveat is that not all of those are claims about features currentl
 
 ---
 
-## Architectural Validation Can Go Beyond “Can the Graph Build?”
+## Architectural Validation Can Go Beyond “Can the Graph Build?” { #architectural-validation-beyond-build }
 
 Once architecture is represented as nodes and edges, validation can become richer than standard dependency resolution.
 
@@ -927,11 +930,11 @@ This is one of the most interesting long-term consequences of compile-time DI: t
 
 ---
 
-## The Graph Can Reveal Architectural Smells
+## The Graph Can Reveal Architectural Smells { #graph-reveals-smells }
 
 Even without sophisticated policy tooling, graph shape itself can expose problems.
 
-### Excessive fan-in
+### Excessive fan-in { #excessive-fan-in }
 
 ```text
 A ─┐
@@ -945,7 +948,7 @@ G ─┘
 
 A component with an enormous number of dependencies may be doing too much or coordinating too many concerns.
 
-### Excessive fan-out
+### Excessive fan-out { #excessive-fan-out }
 
 ```text
                 ┌→ A
@@ -958,7 +961,7 @@ Controller ─────┼→ C
 
 This may indicate that orchestration belongs in an application service rather than directly in an adapter.
 
-### Cross-domain edges
+### Cross-domain edges { #cross-domain-edges }
 
 ```text
 OrdersService ─────────→ InternalBillingRepository
@@ -966,7 +969,7 @@ OrdersService ─────────→ InternalBillingRepository
 
 If the intended architecture says Orders should talk to Billing through a public contract, the graph can expose an accidental shortcut.
 
-### Infrastructure leakage
+### Infrastructure leakage { #infrastructure-leakage }
 
 ```text
 DomainService → Undertow-specific type
@@ -974,7 +977,7 @@ DomainService → Undertow-specific type
 
 A graph can make framework leakage into domain code visible.
 
-### Lifecycle hotspots
+### Lifecycle hotspots { #lifecycle-hotspots }
 
 If a frequently refreshed configuration node causes a very large direct-dependency subtree to rebuild, the graph reveals that a few `ValueOf` boundaries might isolate long-lived infrastructure from
 volatile configuration.
@@ -983,7 +986,7 @@ These are architectural smells rather than universal errors. A framework should 
 
 ---
 
-## Graph Slices Improve Testing
+## Graph Slices Improve Testing { #graph-slices-testing }
 
 The application graph also changes how component tests can be understood.
 
@@ -1028,7 +1031,7 @@ The test setup cannot silently drift as far from production wiring.
 
 ---
 
-## Runtime Refresh Shows That the Graph Is Not Merely Static Metadata
+## Runtime Refresh Shows That the Graph Is Not Merely Static Metadata { #runtime-refresh-not-static }
 
 Compile-time graph does not mean an application can never change after startup.
 
@@ -1074,7 +1077,7 @@ The graph therefore models not only architecture-at-rest but architecture-under-
 
 ---
 
-## Why This Matters for Debugging
+## Why This Matters for Debugging { #why-matters-debugging }
 
 Production debugging often begins with symptoms rather than structure:
 
@@ -1136,7 +1139,7 @@ This is much more actionable than thinking of DI as a lookup mechanism. Debuggin
 
 ---
 
-## Why This Matters for AI-Assisted Development
+## Why This Matters for AI-Assisted Development { #why-matters-ai-development }
 
 The same properties that help engineers reason about the graph help coding agents.
 
@@ -1177,7 +1180,7 @@ In that sense, the graph becomes both an architecture model and a machine-readab
 
 ---
 
-## A Useful Mental Model: The Graph Is the Service Skeleton
+## A Useful Mental Model: The Graph Is the Service Skeleton { #graph-is-service-skeleton }
 
 A concise way to think about Kora is this:
 
@@ -1207,7 +1210,7 @@ That is far more architectural responsibility than the phrase “dependency inje
 
 ---
 
-## Kora's Compile-Time Graph Changes the Role of DI
+## Kora's Compile-Time Graph Changes the Role of DI { #compile-time-graph-changes-di }
 
 Traditional dependency injection often feels like infrastructure that sits beside the application architecture.
 
@@ -1246,7 +1249,7 @@ Finally, the graph can become input to tools that validate, visualize, compare, 
 
 ---
 
-## What a Graph-Oriented Architecture Workflow Could Look Like
+## What a Graph-Oriented Architecture Workflow Could Look Like { #graph-oriented-workflow }
 
 Once teams begin treating the application graph as architecture, the development workflow can evolve beyond “does DI compile?”
 
@@ -1284,7 +1287,7 @@ structured form.
 
 ---
 
-## The Difference Between an Architecture Diagram and an Executable Graph
+## The Difference Between an Architecture Diagram and an Executable Graph { #diagram-vs-executable-graph }
 
 A conventional architecture diagram is useful but passive.
 
@@ -1328,7 +1331,7 @@ That is the larger architectural opportunity behind compile-time dependency grap
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora's application graph should not be viewed only as the mechanism that replaces a runtime dependency-injection container.
 

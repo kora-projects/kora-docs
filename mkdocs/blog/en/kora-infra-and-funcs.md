@@ -1,10 +1,12 @@
 ---
-title: Policy-Driven Infrastructure in the Kora Framework — Resilience, Caching, Validation, Scheduling
+date: 2026-08-27
 description: How the Kora Framework attaches resilience, caching, validation, and scheduling policy declaratively through compile-time generation.
 search:
   exclude: true
 ---
-# Policy-Driven Infrastructure in Kora: Resilience, Caching, Validation, and Scheduling
+# Policy-Driven Infrastructure in Kora: Resilience, Caching, Validation, and Scheduling { #policy-driven-infrastructure }
+
+**August 27, 2026**
 
 Modern backend frameworks are often evaluated by the number of features they expose: circuit breakers, retries, caches, validators, schedulers, metrics, and so on. That comparison is useful, but it
 misses a more important architectural question: **where does the policy live, and how visible is it to the application?** The same retry primitive can be either a clear part of the service contract or
@@ -28,7 +30,7 @@ model.
 
 ---
 
-## Resilience Is a Policy, Not a Library Call
+## Resilience Is a Policy, Not a Library Call { #resilience-policy }
 
 A resilient system is not created by calling `retry()` around a block of code. Resilience is a set of decisions about failure semantics: which failures are temporary, which are terminal, how long the
 caller is willing to wait, whether repeated failures should stop reaching the dependency, what result should be produced when the primary path is unavailable, and how those decisions interact with the
@@ -88,7 +90,7 @@ The important part is not the annotation syntax. The important part is that the 
 bounded execution time, some failures are retryable, repeated failures influence a circuit state, and exhausted failure can degrade to a fallback." The concrete timing thresholds and predicates can
 then live in configuration rather than being compiled into arbitrary loops.
 
-### Why declarative resilience is architecturally useful
+### Why declarative resilience is architecturally useful { #declarative-resilience }
 
 Resilience usually cuts across application code. It is not part of the business algorithm for fetching a catalog item, but it is part of the production behavior of that operation. Putting it directly
 inside the method mixes concerns: the method becomes responsible for domain logic, remote invocation, exception classification, waiting, retry bookkeeping, breaker state, timeout measurement, and
@@ -104,7 +106,7 @@ intentionally reject calls that might have succeeded. Those are behavior changes
 Kora's compile-time AOP model also makes the mechanism less mysterious. The framework generates the wrapper that applies the policy. There is no need to imagine an invisible runtime interceptor
 registry or dynamic proxy graph. The generated subclass can be inspected, which is valuable when debugging ordering, exception propagation, or why a fallback did or did not execute.
 
-### Ordering policies is part of the design
+### Ordering policies is part of the design { #ordering-policies }
 
 Once multiple resilience mechanisms are used together, ordering becomes as important as the individual mechanisms. `Timeout(Retry(call))` is not equivalent to `Retry(Timeout(call))`. A circuit breaker
 around the entire retry process observes a different failure stream from a circuit breaker around every attempt. A fallback outside a breaker behaves differently from a fallback inside it.
@@ -136,7 +138,7 @@ inside retry, each failed attempt can affect breaker state. The second design ca
 
 The key principle is that policy order should be designed, not accumulated. Adding another annotation to a method is not harmless. It changes a state machine.
 
-### Retry amplification: the failure mechanism that looks like reliability
+### Retry amplification: the failure mechanism that looks like reliability { #retry-amplification }
 
 Retry is the easiest resilience mechanism to understand and one of the easiest to misuse. Its local logic sounds safe: if a call fails because of a transient problem, try again. The problem appears
 when many callers make that same decision simultaneously.
@@ -169,7 +171,7 @@ actually succeeded remotely.
 Declarative resilience helps here because the presence of retry is obvious. It becomes possible to establish code-review rules such as: any retry on a mutating operation must document idempotency
 semantics; retries must use a named predicate; and retry attempts must fit inside the operation's deadline budget.
 
-### Circuit breaker windows are statistical policy
+### Circuit breaker windows are statistical policy { #circuit-breaker-windows }
 
 A circuit breaker is often explained as a three-state machine: closed, open, half-open. That is correct but incomplete. In production, the difficult part is not understanding the states. The difficult
 part is deciding what evidence is sufficient to conclude that a dependency is unhealthy.
@@ -189,7 +191,7 @@ should normally not poison infrastructure health statistics. Circuit breakers wo
 That distinction is another reason policy belongs near architectural boundaries. The team should be able to answer: what does a circuit-breaker failure actually mean for this operation? If the
 predicate is "every thrown exception," the breaker may become a crude error-rate limiter rather than a health mechanism.
 
-### A timeout is a budget, not a stopwatch
+### A timeout is a budget, not a stopwatch { #timeout-budget }
 
 Timeouts are often configured independently: HTTP client timeout, database query timeout, service-method timeout, ingress timeout, load balancer timeout. When those numbers are chosen separately, the
 resulting system has contradictory latency semantics. A service may be willing to wait longer than the caller is. A retry may begin after the upstream request has already been abandoned. A database
@@ -221,7 +223,7 @@ Virtual threads make blocking code inexpensive from a thread-management perspect
 compared with a platform thread, yet the downstream connection, database connection, socket, memory, and upstream request are still real resources. Concurrency that is cheap to represent can still be
 expensive to serve.
 
-### Fallback is a business decision disguised as infrastructure
+### Fallback is a business decision disguised as infrastructure { #fallback-business-decision }
 
 Fallback is frequently grouped with circuit breaker and retry, but it is qualitatively different. Circuit breaker, retry, and timeout mainly change how an operation fails or how long it is attempted.
 Fallback changes *what the application returns*.
@@ -235,7 +237,7 @@ stale, how stale they may be, whether the response is marked as degraded, and wh
 Fallback should also be observable. A system that successfully returns fallback responses while the primary dependency is broken may look healthy if dashboards only count HTTP 200 responses.
 Operationally, that is dangerous. Degradation must be measurable as degradation.
 
-### Observability is part of resilience correctness
+### Observability is part of resilience correctness { #observability-resilience }
 
 A resilience policy that cannot be observed cannot be tuned safely. At minimum, teams need to understand attempt counts, retry exhaustion, timeout frequency, breaker transitions, calls rejected by an
 open breaker, fallback invocation, and operation latency.
@@ -255,7 +257,7 @@ The broader point is that observability is not an attachment to resilience. It i
 
 ---
 
-## Caching Without Hiding the Application
+## Caching Without Hiding the Application { #caching }
 
 Caching is another feature that looks trivial in API form and difficult in production semantics. The API seems to be `get`, `put`, and `invalidate`. The actual design problem involves key identity,
 staleness, ownership, multi-instance consistency, warm-up, invalidation ordering, failure modes, stampedes, memory limits, serialization, and telemetry.
@@ -286,7 +288,7 @@ A typical contract can describe both key and value types:
 That type is part of the application graph. The key type is visible. The value type is visible. Tests can inject or replace the cache. Service code can explicitly warm or invalidate it. The cache is
 infrastructure, but it has not disappeared behind a generic framework dictionary.
 
-### Generated cache aspects keep the method readable
+### Generated cache aspects keep the method readable { #generated-cache-aspects }
 
 For a classic read-through case, the service method can remain about the real source of data:
 
@@ -346,7 +348,7 @@ generated implementation can be inspected, which matters when debugging key deri
 
 The goal is not to remove caching from architecture diagrams. The goal is to remove repetitive cache plumbing from methods while keeping the caching model explicit.
 
-### Cache keys are part of the data model
+### Cache keys are part of the data model { #cache-keys }
 
 Many cache incidents are key-design incidents. If key identity is wrong, no eviction policy can fix the semantic bug.
 
@@ -417,7 +419,7 @@ controlled way. Telemetry can attach selected dimensions without parsing ad-hoc 
 The same principle applies when one method argument should not participate in identity. A tracing context, request object, or authentication wrapper may be necessary for execution but irrelevant to
 the cached value. Declarative key mapping lets the cache policy state exactly which information defines the result.
 
-### Multi-level caching is not "more cache"
+### Multi-level caching is not "more cache" { #multi-level-caching }
 
 A common production topology combines a very fast local cache with a shared remote cache:
 
@@ -450,7 +452,7 @@ This is why multi-level caching should be designed in terms of authority and sta
 
 The abstraction should help implement those decisions, not make them disappear.
 
-### Invalidation is where cache architecture becomes visible
+### Invalidation is where cache architecture becomes visible { #invalidation }
 
 The familiar statement that "cache invalidation is hard" is correct because invalidation crosses ownership boundaries. The code performing the write may not be the code performing the reads. The same
 entity may be cached under several keys. A write may affect aggregate queries, lists, counts, or search results in addition to the direct entity key.
@@ -476,7 +478,7 @@ There are several legitimate strategies:
 The important architectural rule is that invalidation should be specified alongside cache creation. A cache whose invalidation policy is "we will decide later" is usually a future consistency
 incident.
 
-### Cache stampede is a concurrency problem
+### Cache stampede is a concurrency problem { #cache-stampede }
 
 A cache can reduce load during normal operation and increase load catastrophically during synchronized expiration. This is the cache stampede problem.
 
@@ -500,7 +502,7 @@ These mechanisms belong in cache policy or loadable-cache design rather than bei
 Virtual threads again change the cost of waiting but not the capacity of the source. Allowing 10,000 virtual threads to load the same missing database record is not a meaningful cache strategy. The
 database connection pool may still contain 50 connections. A correct cache design controls duplicate work, not merely thread allocation.
 
-### Telemetry should explain cache effectiveness, not just activity
+### Telemetry should explain cache effectiveness, not just activity { #cache-telemetry }
 
 A cache is useful only if it improves the system. Counting `get()` calls is not enough. Teams need to know hit ratio, miss rate, load latency, eviction frequency, cache size, remote-cache latency,
 serialization errors, stale-serving rate when applicable, and the source load generated by misses.
@@ -517,7 +519,7 @@ maximum size, hit ratio, and eviction reason must be read together.
 Finally, telemetry should include cache failures. A distributed cache is a dependency. If it becomes slow, the service needs a defined policy: fail the request, bypass the cache, fall back to local
 data, or degrade in another controlled way. That decision connects caching back to resilience. A cache is not outside the dependency graph just because it is called a cache.
 
-## Declarative Validation at Compile Time
+## Declarative Validation at Compile Time { #declarative-validation }
 
 Validation is frequently treated as input hygiene: add annotations to a DTO, let the framework reject bad values, and move on. In architecture terms, validation is more important. It defines the
 transition from untrusted external representation to data that the application is willing to reason about.
@@ -543,7 +545,7 @@ Kora's validation model uses declarative constraints together with generated val
 `@Validate` enables method-level argument and return-value validation around the method call. This keeps validation visible in source while moving repetitive checking code into compile-time
 generation.
 
-### Validation is a boundary concern, but not all validation belongs at the boundary
+### Validation is a boundary concern, but not all validation belongs at the boundary { #validation-boundary }
 
 The phrase "validate at the boundary" is useful only if we distinguish categories of validation.
 
@@ -562,7 +564,7 @@ another writer bypasses the API.
 A robust service uses these layers together. DTO validation should not attempt to replace database constraints, and database constraints should not be used as the primary user-facing validation
 experience.
 
-### Generated validators shift errors left
+### Generated validators shift errors left { #generated-validators }
 
 A reflection-driven validation framework can discover constraints at runtime and invoke validators dynamically. Kora instead generates validation code. That difference is consistent with the rest of
 the framework: do work during compilation when the relevant types and annotations are already known.
@@ -628,7 +630,7 @@ UserService
 This detail matters. Validation is not hidden inside JSON parsing. Parsing answers whether bytes can become a Java or Kotlin object. Validation answers whether that object is acceptable input to the
 application.
 
-### Parse errors and validation errors are different contracts
+### Parse errors and validation errors are different contracts { #parse-vs-validation-errors }
 
 Suppose an API expects:
 
@@ -683,7 +685,7 @@ A stable validation error contract can include a machine-readable code, a field 
 The exact format is an API design choice. What matters is that it is intentional and stable. Kora can map validation violations through HTTP response mapping/interception so the public contract does
 not depend on an accidental exception string.
 
-### Validation should strengthen internal assumptions
+### Validation should strengthen internal assumptions { #validation-assumptions }
 
 A useful way to evaluate boundary validation is to ask what code becomes unnecessary below it.
 
@@ -716,7 +718,7 @@ should have an explicit transition into validated application data.
 This is especially relevant when services accept inputs from multiple transports. HTTP may not be the only boundary. Kafka messages, scheduled job payloads, CLI inputs, or gRPC requests can each
 require validation. Generated validators are reusable beyond HTTP; the HTTP integration is one place where they are invoked.
 
-### Nested validation and object graphs
+### Nested validation and object graphs { #nested-validation }
 
 Real DTOs contain nested structures:
 
@@ -755,7 +757,7 @@ lines[3].quantity
 
 is much more useful than "order invalid." Good validation is not only about rejection; it is about returning enough structure for clients and operators to understand the rejection.
 
-### Validation errors are data, not log emergencies
+### Validation errors are data, not log emergencies { #validation-errors-data }
 
 A malformed user request is normally not a server incident. If validation failures are logged at error level with stack traces, normal client behavior can flood logs and obscure real failures.
 Validation telemetry should distinguish expected rejection from framework or application malfunction.
@@ -769,7 +771,7 @@ architectural boundaries: the trace should make it obvious that the database or 
 A sudden increase in validation failures can still be operationally important. It might indicate a broken client release, contract drift, an OpenAPI mismatch, or abuse traffic. The difference is that
 the application should observe the aggregate pattern without treating every individual invalid request as an exception requiring investigation.
 
-### Compile-time validation fits Kora's transparency goal
+### Compile-time validation fits Kora's transparency goal { #compile-time-validation }
 
 The main value of Kora's generated validation is not that developers can write fewer `if` statements. It is that the framework can enforce a declarative boundary while preserving an inspectable
 execution model. The application declares constraints, Kora generates validators, `@Validate` generates the wrapper, and a mapper/interceptor turns violations into the HTTP contract.
@@ -792,7 +794,7 @@ There is little incentive to hide validation deeper than necessary. The boundary
 
 ---
 
-## Scheduling in Production: From `@Schedule` to Distributed Jobs
+## Scheduling in Production: From `@Schedule` to Distributed Jobs { #scheduling }
 
 Scheduling is perhaps the clearest example of a feature whose surface syntax can hide radically different guarantees. A method that runs every minute is easy to implement. A job that must run once
 across ten replicas, survive restarts, recover after node failure, avoid duplicate side effects, handle missed executions, support retries, and expose operational state is a distributed-systems
@@ -806,7 +808,7 @@ the declarative API consistent with the framework's broader generation model.
 
 That is an excellent fit for many jobs. It is also important to know when the problem has outgrown an in-process scheduler.
 
-### Local scheduling means one scheduler per process
+### Local scheduling means one scheduler per process { #local-scheduling }
 
 Consider:
 
@@ -858,7 +860,7 @@ jobs include business processes where one logical execution should be owned by o
 
 The annotation does not answer that question. Architecture must answer it.
 
-### Fixed rate and fixed delay express different load models
+### Fixed rate and fixed delay express different load models { #fixed-rate-fixed-delay }
 
 Even before distribution, the choice between fixed rate and fixed delay matters.
 
@@ -874,7 +876,7 @@ system is already slow. Fixed delay naturally applies backpressure to that one j
 Quartz adds additional controls such as non-concurrent execution and cron semantics, but the same architectural question remains: what should happen when execution duration exceeds the schedule
 interval?
 
-### Misfires are decisions about lost time
+### Misfires are decisions about lost time { #misfires }
 
 Production processes stop. Pods restart. Nodes disappear. Deployments roll. A scheduler may be unavailable at the exact time a cron expression says a job should run. When the process comes back, what
 should happen to executions that were missed?
@@ -894,7 +896,7 @@ Misfire behavior is therefore business semantics, not merely scheduler configura
 In-memory scheduling cannot provide strong recovery after complete process loss because the process itself was holding the schedule state. A persistent scheduler stores enough information outside the
 process to determine that work was due and still needs execution.
 
-### Persistent DB scheduling changes the ownership model
+### Persistent DB scheduling changes the ownership model { #persistent-db-scheduling }
 
 A database-backed scheduler stores task instances and execution metadata in shared persistence. Multiple service replicas can then compete for work while the database coordinates which worker owns a
 particular execution.
@@ -928,7 +930,7 @@ coordination matter.
 Where the database-backed scheduling module is not part of the Kora version being deployed, the same distinction still applies architecturally: local JDK/Quartz scheduling and persistent distributed
 job execution solve different problems and should not be treated as interchangeable.
 
-### Leases and locks answer "who owns the job now?"
+### Leases and locks answer "who owns the job now?" { #leases-locks }
 
 In a distributed scheduler, selecting a job is not enough. Two workers can discover the same due row concurrently. The scheduler needs an atomic claim mechanism, usually based on database locking,
 compare-and-set state transition, or a lease with expiration.
@@ -944,7 +946,7 @@ a healthy worker is delayed long enough for the lease to expire.
 Long-running jobs complicate the issue further. If the scheduler assumes a fixed lock duration while a job can run for hours, the worker may need heartbeat-based extension. Operational metrics should
 reveal jobs approaching lease expiry, repeated recoveries, and ownership contention.
 
-### Retries belong to jobs too, but their semantics are different
+### Retries belong to jobs too, but their semantics are different { #job-retries }
 
 A scheduled job can fail for the same reasons as an HTTP request: network errors, database contention, temporary remote failures. Retry is therefore natural, but distributed job retries differ from
 in-request retries.
@@ -973,7 +975,7 @@ This leads to the central rule of distributed scheduling:
 
 > At-least-once execution is easy to achieve. Exactly-once business effect requires application design.
 
-### Idempotency is the real exactly-once mechanism
+### Idempotency is the real exactly-once mechanism { #idempotency }
 
 Suppose a job sends a payment request and then records completion:
 
@@ -1007,7 +1009,7 @@ deduplication table, or state machine.
 This is why a scheduled method should not be judged only by whether it "runs once" in testing. Production correctness depends on what happens when the process dies at every point between claiming,
 executing, and acknowledging the job.
 
-### Multiple replicas require bounded execution, even with virtual threads
+### Multiple replicas require bounded execution, even with virtual threads { #bounded-execution }
 
 Database-backed schedulers often become highly efficient at finding work. That creates another problem: a replica can fetch more jobs than its downstream dependencies can execute safely.
 
@@ -1034,7 +1036,7 @@ resource pools
 
 The scheduler should not move more work into a process than the process can realistically make progress on.
 
-### Scheduling telemetry should describe the job lifecycle
+### Scheduling telemetry should describe the job lifecycle { #scheduling-telemetry }
 
 Basic scheduler metrics often report execution duration and count. Distributed jobs need a richer lifecycle model:
 
@@ -1072,7 +1074,7 @@ scheduled workflow as diagnosable as an HTTP request.
 Logging should include stable job identifiers but avoid dumping arbitrary payloads, especially when payloads can contain personal or secret data. A persistent scheduler often stores serialized job
 payloads, so schema evolution and payload compatibility also become operational concerns.
 
-### Choosing the right scheduling level
+### Choosing the right scheduling level { #choosing-scheduling-level }
 
 A useful decision table is:
 
@@ -1094,7 +1096,7 @@ A cache cleanup task does not need a distributed lease. A financial reconciliati
 
 ---
 
-## One Pattern Across Four Features
+## One Pattern Across Four Features { #one-pattern }
 
 Resilience, caching, validation, and scheduling look like different framework modules, but they demonstrate the same Kora design idea: application code should stay close to the operation being
 performed, while infrastructure policy is attached declaratively and implemented through generated code or explicit components.
@@ -1131,7 +1133,7 @@ leases, and duplicate execution.
 
 Frameworks become dangerous when convenience erases those distinctions. Kora's stronger approach is to make common policy concise without pretending the policy is simple.
 
-## Composition Is Where Production Bugs Hide
+## Composition Is Where Production Bugs Hide { #composition }
 
 Another shared lesson is that infrastructure policies compose, and composition changes semantics.
 
@@ -1161,7 +1163,7 @@ Validation
 Then ask what each layer observes as success or failure. Does cache see fallback as a successful value? Does breaker see individual attempts or only retry exhaustion? Does validation run before an
 expensive cache key mapper? The diagram is simple, but it prevents a surprising number of production mistakes.
 
-## Configuration Is Executable Architecture
+## Configuration Is Executable Architecture { #configuration }
 
 Kora makes many policy parameters configurable, and that should be treated with the same seriousness as source code. A change from two retry attempts to five can triple downstream pressure. A breaker
 threshold change can alter outage behavior. A cache TTL change can shift source load. A scheduler concurrency increase can saturate the database.
@@ -1179,7 +1181,7 @@ For example:
 
 This turns configuration from "ops tuning" into architecture that can be reasoned about quantitatively.
 
-## Operational Simplicity Comes From Explicit Semantics
+## Operational Simplicity Comes From Explicit Semantics { #operational-simplicity }
 
 The purpose of these policies is not to maximize the number of infrastructure features used by a service. It is to reduce the number of uncontrolled failure modes.
 

@@ -1,11 +1,14 @@
 ---
 title: You Don't Need Kora Developers — You Need Good JVM Engineers
+date: 2026-09-18
 description: Why "there are no Kora developers" is the wrong objection — the Kora Framework builds on the JDBC, SQL, HTTP, and Java/Kotlin skills that strong JVM engineers already have.
 search:
   exclude: true
 ---
 
-# You Don’t Need Kora Developers — You Need Good JVM Engineers
+# You Don’t Need Kora Developers — You Need Good JVM Engineers { #good-jvm-engineers }
+
+**September 18, 2026**
 
 When companies evaluate a framework that is smaller than Spring, one objection appears almost immediately:
 
@@ -80,7 +83,7 @@ And Kora is specifically designed so that this knowledge remains useful.
 
 ---
 
-## Familiarity and Expertise Are Not the Same Asset
+## Familiarity and Expertise Are Not the Same Asset { #familiarity-vs-expertise }
 
 Framework familiarity has real value.
 
@@ -177,7 +180,7 @@ That is the distinction hiring should optimize for.
 
 ---
 
-## What Kora Actually Adds
+## What Kora Actually Adds { #what-kora-adds }
 
 Saying that Kora-specific knowledge is thin does not mean Kora adds nothing.
 
@@ -226,7 +229,7 @@ Kora intentionally tries to keep that distance small.
 
 ---
 
-## Java and Kotlin Stay Java and Kotlin
+## Java and Kotlin Stay Java and Kotlin { #java-kotlin-stay }
 
 One of the easiest ways for a framework to increase onboarding cost is to make ordinary language knowledge less useful.
 
@@ -261,7 +264,7 @@ That lowers the distance between "good JVM engineer" and "productive Kora engine
 
 ---
 
-## JDBC Remains JDBC
+## JDBC Remains JDBC { #jdbc-remains-jdbc }
 
 Database access is an excellent test of whether a framework preserves transferable knowledge.
 
@@ -317,7 +320,7 @@ The expensive knowledge survives.
 
 ---
 
-## SQL Knowledge Remains More Valuable Than Repository Trivia
+## SQL Knowledge Remains More Valuable Than Repository Trivia { #sql-knowledge }
 
 A useful hiring thought experiment is to compare two candidates.
 
@@ -345,7 +348,7 @@ A new developer can transfer database knowledge directly instead of first transl
 
 ---
 
-## Kafka Remains Kafka
+## Kafka Remains Kafka { #kafka-remains-kafka }
 
 Messaging systems have a similar property.
 
@@ -373,7 +376,7 @@ That is precisely the kind of knowledge companies should value in hiring.
 
 ---
 
-## gRPC Remains gRPC
+## gRPC Remains gRPC { #grpc-remains-grpc }
 
 The same pattern holds for RPC.
 
@@ -396,7 +399,7 @@ This is exactly what high transferability looks like: the framework helps with c
 
 ---
 
-## HTTP Remains HTTP
+## HTTP Remains HTTP { #http-remains-http }
 
 HTTP frameworks can create the illusion that web development is primarily about annotations.
 
@@ -438,7 +441,7 @@ Again, the harder skill is the transferable one.
 
 ---
 
-## OpenAPI Remains a Contract, Not a Framework-Specific Language
+## OpenAPI Remains a Contract, Not a Framework-Specific Language { #openapi-contract }
 
 Kora's OpenAPI support strengthens the same argument.
 
@@ -454,7 +457,7 @@ This is exactly the sort of boundary that reduces organizational lock-in around 
 
 ---
 
-## OpenTelemetry Remains OpenTelemetry
+## OpenTelemetry Remains OpenTelemetry { #opentelemetry }
 
 Observability is another domain where framework-specific wrappers can become a knowledge trap.
 
@@ -491,7 +494,7 @@ Again, the framework-specific layer is integration knowledge, not a replacement 
 
 ---
 
-## PostgreSQL Knowledge Remains PostgreSQL Knowledge
+## PostgreSQL Knowledge Remains PostgreSQL Knowledge { #postgresql-knowledge }
 
 It is worth stating this explicitly because hiring conversations often over-index on framework labels.
 
@@ -522,7 +525,7 @@ That is a feature.
 
 ---
 
-## Transactions Remain Transactions
+## Transactions Remain Transactions { #transactions }
 
 Transactions are another place where framework familiarity can create false confidence.
 
@@ -551,7 +554,7 @@ But the engineer who already understands transactions has the difficult conceptu
 
 ---
 
-## Resilience Remains Distributed-Systems Engineering
+## Resilience Remains Distributed-Systems Engineering { #resilience-distributed-systems }
 
 Retry, timeout, fallback, and circuit breaker APIs are easy to demonstrate.
 
@@ -579,7 +582,7 @@ That knowledge transfers perfectly.
 
 ---
 
-## Concurrency Remains Concurrency
+## Concurrency Remains Concurrency { #concurrency }
 
 Kora 2's synchronous, virtual-thread-oriented model is a particularly good example of transferable JVM knowledge.
 
@@ -611,7 +614,7 @@ eventually create operational problems. A developer who understands concurrency 
 
 ---
 
-## Testing Remains Testing
+## Testing Remains Testing { #testing-remains-testing }
 
 Frameworks provide test harnesses, dependency replacement, application startup helpers, and integration utilities.
 
@@ -640,7 +643,7 @@ Again, the framework helps execute the discipline rather than inventing a replac
 
 ---
 
-## The Transferability Map
+## The Transferability Map { #transferability-map }
 
 A useful way to visualize Kora onboarding is to separate expensive, durable knowledge from comparatively cheap framework conventions.
 
@@ -690,7 +693,7 @@ The hiring argument is that it is much smaller than everything above it.
 
 ---
 
-## The Wrong Hiring Model
+## The Wrong Hiring Model { #wrong-hiring-model }
 
 Organizations sometimes reason about frameworks as if each one defines an independent engineering profession.
 
@@ -730,7 +733,7 @@ Kora is deliberately optimized for this kind of transfer.
 
 ---
 
-## “There Are Few Kora Developers” Is Literally True and Practically Incomplete
+## “There Are Few Kora Developers” Is Literally True and Practically Incomplete { #few-kora-developers }
 
 A hiring manager searching LinkedIn for "Kora" will obviously find fewer candidates than for "Spring."
 
@@ -762,7 +765,7 @@ This is a much better organizational lens.
 
 ---
 
-## Measure Time to Productivity, Not Keyword Supply
+## Measure Time to Productivity, Not Keyword Supply { #time-to-productivity }
 
 If a company is seriously evaluating Kora, it should measure onboarding empirically.
 
@@ -803,7 +806,7 @@ Either result is more actionable than an abstract popularity argument.
 
 ---
 
-## What Should Be Learned First
+## What Should Be Learned First { #learned-first }
 
 For an experienced JVM engineer, the Kora-specific onboarding curriculum can be compact.
 
@@ -857,7 +860,7 @@ Kora's modularity supports this progression because teams can enable only the ca
 
 ---
 
-## The Application Graph Is the Main New Mental Model
+## The Application Graph Is the Main New Mental Model { #application-graph }
 
 For most experienced Java engineers, the largest Kora-specific concept is not HTTP, JDBC, Kafka, or gRPC.
 
@@ -892,7 +895,7 @@ That is exactly what good onboarding should aim for: teach a small number of hig
 
 ---
 
-## One Problem, One Recommended Solution Reduces Onboarding Cost
+## One Problem, One Recommended Solution Reduces Onboarding Cost { #one-problem-one-recommended-solution }
 
 Frameworks accumulate complexity over time.
 
@@ -956,7 +959,7 @@ Kora intentionally spends less of that budget.
 
 ---
 
-## Small Conceptual Surface Matters More Than Small API Count
+## Small Conceptual Surface Matters More Than Small API Count { #conceptual-surface }
 
 It is important not to reduce this argument to the number of classes or annotations.
 
@@ -982,7 +985,7 @@ That is exactly what a good JVM engineer needs from a new framework.
 
 ---
 
-## Generated Code Is a Hiring Advantage
+## Generated Code Is a Hiring Advantage { #generated-code }
 
 Generated code is often discussed in performance or debugging terms.
 
@@ -1026,35 +1029,35 @@ It directly reduces the cost of hiring engineers who have never used Kora before
 
 ---
 
-## What a New Engineer Can Inspect
+## What a New Engineer Can Inspect { #what-engineer-inspects }
 
 Consider several common questions.
 
-### “Where did this dependency come from?”
+### “Where did this dependency come from?” { #where-dependency }
 
 The engineer can inspect component declarations, module factories, and generated graph wiring.
 
-### “What actually handles this HTTP route?”
+### “What actually handles this HTTP route?” { #handles-http-route }
 
 They can inspect the generated request handler.
 
-### “How does this repository execute the SQL?”
+### “How does this repository execute the SQL?” { #repository-sql }
 
 They can inspect the generated repository implementation.
 
-### “What does this annotation do around my method?”
+### “What does this annotation do around my method?” { #annotation-method }
 
 They can inspect the generated AOP subclass.
 
-### “Why did validation happen before retry?”
+### “Why did validation happen before retry?” { #validation-before-retry }
 
 They can inspect the generated wrapper order.
 
-### “Which mapper converts this object?”
+### “Which mapper converts this object?” { #mapper-converts }
 
 They can follow the generated dependency.
 
-### “Why will the application not build?”
+### “Why will the application not build?” { #application-not-build }
 
 They can read the compile-time graph diagnostic.
 
@@ -1064,7 +1067,7 @@ And a good Java developer already knows how to read Java.
 
 ---
 
-## Ordinary Debugging Skills Continue to Work
+## Ordinary Debugging Skills Continue to Work { #debugging-skills }
 
 Framework abstraction becomes dangerous when ordinary debugging techniques stop being useful.
 
@@ -1092,7 +1095,7 @@ That is valuable for experienced engineers because their instincts remain applic
 
 ---
 
-## Compiler Diagnostics Teach the Framework
+## Compiler Diagnostics Teach the Framework { #compiler-diagnostics }
 
 A new framework inevitably produces mistakes.
 
@@ -1134,7 +1137,7 @@ For an organization, that means framework familiarity is acquired through normal
 
 ---
 
-## Strong Typing Narrows the Space of Wrong Solutions
+## Strong Typing Narrows the Space of Wrong Solutions { #strong-typing }
 
 Kora's type-driven design also lowers onboarding risk.
 
@@ -1156,7 +1159,7 @@ Instead of keeping the rule in a senior engineer's head, the codebase and compil
 
 ---
 
-## Documentation Coverage Changes the Hiring Risk
+## Documentation Coverage Changes the Hiring Risk { #documentation-coverage }
 
 A smaller community is much more dangerous when the framework's own documentation is sparse.
 
@@ -1176,7 +1179,7 @@ Good documentation increases that reliability.
 
 ---
 
-## AI Lowers Kora-Specific Onboarding Cost Further
+## AI Lowers Kora-Specific Onboarding Cost Further { #ai-lowers-onboarding-cost }
 
 The emergence of coding agents strengthens the argument substantially.
 
@@ -1230,7 +1233,7 @@ It does reduce the number of routine questions that require one.
 
 ---
 
-## AI Is Especially Effective Because Kora Is Inspectable
+## AI Is Especially Effective Because Kora Is Inspectable { #ai-inspectable }
 
 AI assistance would be less valuable if important Kora behavior were hidden entirely inside runtime state.
 
@@ -1268,7 +1271,7 @@ The difference is that it can do so immediately and summarize only the relevant 
 
 ---
 
-## Kora Skill Turns Generic AI Into Framework-Aware Assistance
+## Kora Skill Turns Generic AI Into Framework-Aware Assistance { #kora-skill-ai }
 
 General AI models know Java, Kotlin, JDBC, Kafka, gRPC, HTTP, testing, and many other standard technologies.
 
@@ -1295,7 +1298,7 @@ The scarce human knowledge moves upward.
 
 ---
 
-## AI Does Not Replace Senior Engineers
+## AI Does Not Replace Senior Engineers { #ai-senior-engineers }
 
 There is an important boundary.
 
@@ -1325,7 +1328,7 @@ Again, the conclusion points toward hiring fundamentals rather than framework fa
 
 ---
 
-## The Real Onboarding Hierarchy
+## The Real Onboarding Hierarchy { #onboarding-hierarchy }
 
 A useful way to think about onboarding is to separate three levels.
 
@@ -1373,7 +1376,7 @@ This is worth emphasizing because companies often attribute onboarding cost to t
 
 ---
 
-## Internal Platforms Often Matter More Than the Framework
+## Internal Platforms Often Matter More Than the Framework { #internal-platforms }
 
 Imagine two Spring companies.
 
@@ -1410,7 +1413,7 @@ An engineer with excellent fundamentals and strong learning ability may adapt fa
 
 ---
 
-## Where Spring-Specific Hiring Really Does Have an Advantage
+## Where Spring-Specific Hiring Really Does Have an Advantage { #spring-advantage }
 
 A fair comparison must acknowledge cases where framework-specific experience is materially valuable.
 
@@ -1448,41 +1451,41 @@ The distinction should be explicit.
 
 ---
 
-## Kora Reduces Framework-Specific Surface by Design
+## Kora Reduces Framework-Specific Surface by Design { #reduces-surface }
 
 Kora's architectural principles directly affect this balance.
 
 Several design choices reduce the amount of knowledge that belongs exclusively to the framework.
 
-### One problem, one recommended solution
+### One problem, one recommended solution { #one-problem-one-solution }
 
 New engineers do not need to learn many overlapping styles before becoming productive.
 
-### Small conceptual surface
+### Small conceptual surface { #small-conceptual-surface }
 
 The application graph and compile-time generation explain a large portion of the framework.
 
-### Modern Java and Kotlin
+### Modern Java and Kotlin { #modern-java-kotlin }
 
 Application code uses normal language constructs rather than a separate programming paradigm.
 
-### Thin abstractions
+### Thin abstractions { #thin-abstractions }
 
 JDBC, Kafka, gRPC, HTTP, and other underlying technologies remain recognizable.
 
-### Compile-time diagnostics
+### Compile-time diagnostics { #compile-time-diagnostics }
 
 Many framework mistakes become compiler errors rather than runtime folklore.
 
-### Readable generated sources
+### Readable generated sources { #readable-generated-sources }
 
 Developers can inspect what the framework produced using ordinary JVM skills.
 
-### High documentation coverage
+### High documentation coverage { #high-documentation-coverage }
 
 Canonical answers are easier to find without relying on tribal knowledge.
 
-### Kora Skill and AI assistance
+### Kora Skill and AI assistance { #kora-skill-ai-assistance }
 
 Low-frequency framework details can be explained on demand.
 
@@ -1494,7 +1497,7 @@ They affect how expensive it is to turn a general JVM engineer into a Kora engin
 
 ---
 
-## Hiring Should Optimize for the Expensive Knowledge
+## Hiring Should Optimize for the Expensive Knowledge { #expensive-knowledge }
 
 Consider the relative cost of acquiring different skills.
 
@@ -1531,7 +1534,7 @@ Backend fundamentals belong in the first.
 
 ---
 
-## A Better Kora Interview
+## A Better Kora Interview { #better-interview }
 
 If hiring for a Kora team, an interview should not over-focus on Kora trivia.
 
@@ -1543,39 +1546,39 @@ are easy to look up and provide little signal about engineering quality.
 
 More useful questions probe underlying systems knowledge:
 
-### Java and concurrency
+### Java and concurrency { #java-concurrency }
 
 Can the engineer reason about virtual threads, synchronization, resource pools, cancellation, and CPU-bound versus I/O-bound work?
 
-### Databases
+### Databases { #databases }
 
 Can they explain transaction boundaries, isolation, locking, indexes, query plans, pool saturation, and schema trade-offs?
 
-### HTTP
+### HTTP { #http }
 
 Do they understand idempotency, status codes, timeouts, headers, caching, proxy behavior, and failure propagation?
 
-### Messaging
+### Messaging { #messaging }
 
 Can they reason about partitions, consumer groups, ordering, retries, duplicate delivery, and idempotency?
 
-### gRPC
+### gRPC { #grpc }
 
 Do they understand contracts, deadlines, status codes, streaming, compatibility, and load behavior?
 
-### Observability
+### Observability { #observability }
 
 Can they design meaningful metrics, traces, logs, and alerts rather than simply enable instrumentation?
 
-### Resilience
+### Resilience { #resilience }
 
 Can they explain when retry, timeout, circuit breaker, and fallback patterns are useful or dangerous?
 
-### Testing
+### Testing { #testing }
 
 Can they choose appropriate boundaries for unit, component, integration, and black-box tests?
 
-### JVM
+### JVM { #jvm }
 
 Can they reason about memory, CPU, profiling, GC, thread behavior, and production diagnostics?
 
@@ -1585,7 +1588,7 @@ That is the direction hiring should take.
 
 ---
 
-## Framework Trivia Has a Short Half-Life
+## Framework Trivia Has a Short Half-Life { #framework-trivia }
 
 There is another reason to avoid optimizing hiring around framework-specific details: they change.
 
@@ -1617,7 +1620,7 @@ A framework that preserves these fundamentals gives organizations more resilient
 
 ---
 
-## Framework-Specific Knowledge Should Be Documented, Not Hoarded
+## Framework-Specific Knowledge Should Be Documented, Not Hoarded { #documented-not-hoarded }
 
 A healthy engineering organization should avoid depending on a few people who remember undocumented framework details.
 
@@ -1643,7 +1646,7 @@ That further weakens the need to recruit people with prior Kora history.
 
 ---
 
-## Onboarding Should Teach the Mental Model, Not the Catalog
+## Onboarding Should Teach the Mental Model, Not the Catalog { #mental-model }
 
 A bad onboarding plan tries to cover every module.
 
@@ -1670,7 +1673,7 @@ Learning compounds.
 
 ---
 
-## A Good JVM Engineer Can Use Generated Code as a Bridge
+## A Good JVM Engineer Can Use Generated Code as a Bridge { #generated-code-bridge }
 
 Generated code deserves to be emphasized again because it changes the learning curve.
 
@@ -1718,7 +1721,7 @@ That makes expertise acquisition much faster.
 
 ---
 
-## Breakpoints Matter More Than Marketing Vocabulary
+## Breakpoints Matter More Than Marketing Vocabulary { #breakpoints }
 
 One of the strongest practical indicators of framework transparency is whether a new engineer can answer a question by putting a breakpoint in ordinary code.
 
@@ -1738,7 +1741,7 @@ It also makes the framework less dependent on specialist knowledge because evide
 
 ---
 
-## The Same Property Helps Code Review
+## The Same Property Helps Code Review { #helps-code-review }
 
 Transferability is not only about writing code.
 
@@ -1768,7 +1771,7 @@ The engineer can contribute useful review immediately.
 
 ---
 
-## The Same Property Helps Production Support
+## The Same Property Helps Production Support { #helps-production-support }
 
 Production incidents are where shallow framework familiarity stops being enough.
 
@@ -1794,7 +1797,7 @@ This is another reason the labor market should be evaluated by underlying compet
 
 ---
 
-## A Hiring Risk Model
+## A Hiring Risk Model { #hiring-risk-model }
 
 A more realistic hiring risk model might look like this:
 
@@ -1836,7 +1839,7 @@ The second profile may look better in a keyword search while carrying much great
 
 ---
 
-## Kora Expertise Still Exists
+## Kora Expertise Still Exists { #kora-expertise }
 
 None of this means there is no such thing as a Kora expert.
 
@@ -1868,7 +1871,7 @@ It needs enough deep expertise at the platform boundary and strong backend engin
 
 ---
 
-## Ten Kora Experts Are Not Required for Ten Teams
+## Ten Kora Experts Are Not Required for Ten Teams { #ten-kora-experts }
 
 This leads to an organizational model.
 
@@ -1901,7 +1904,7 @@ It is also how many companies already operate with more mainstream frameworks, e
 
 ---
 
-## AI Makes This Organizational Model Stronger
+## AI Makes This Organizational Model Stronger { #ai-org-model }
 
 AI makes the central expertise model more viable because routine questions do not always need to escalate to the platform team.
 
@@ -1927,7 +1930,7 @@ It also helps keep framework knowledge encoded in reusable artifacts rather than
 
 ---
 
-## A Smaller Framework Can Actually Clarify Hiring Priorities
+## A Smaller Framework Can Actually Clarify Hiring Priorities { #smaller-framework }
 
 Large ecosystems can tempt organizations to outsource engineering judgment to labor-market availability.
 
@@ -1963,7 +1966,7 @@ Kora's design largely does.
 
 ---
 
-## The Spring Developer Still Has an Advantage
+## The Spring Developer Still Has an Advantage { #spring-developer-advantage }
 
 A strong Spring developer joining Kora does have an advantage over someone with no backend framework experience.
 
@@ -2001,7 +2004,7 @@ They are mapping familiar concepts to a smaller, compile-time implementation mod
 
 ---
 
-## Some Spring Knowledge Will Not Transfer—and That Is Fine
+## Some Spring Knowledge Will Not Transfer—and That Is Fine { #spring-knowledge-wont-transfer }
 
 Certain knowledge is genuinely Spring-specific:
 
@@ -2033,7 +2036,7 @@ It is still much smaller than learning backend engineering from scratch.
 
 ---
 
-## The Best Candidate Is Often the One Who Can Explain What the Framework Is Hiding
+## The Best Candidate Is Often the One Who Can Explain What the Framework Is Hiding { #best-candidate }
 
 A useful interview heuristic is this:
 
@@ -2061,7 +2064,7 @@ That engineer will learn Kora quickly because they already understand the machin
 
 ---
 
-## Kora-Specific Knowledge Is Comparatively Thin
+## Kora-Specific Knowledge Is Comparatively Thin { #kora-knowledge-thin }
 
 This is the central claim.
 
@@ -2110,7 +2113,7 @@ The thin upper layer can be taught.
 
 ---
 
-## Framework Familiarity Can Be Acquired During Real Work
+## Framework Familiarity Can Be Acquired During Real Work { #familiarity-during-work }
 
 Another organizational mistake is assuming that framework learning must happen before production work begins.
 
@@ -2136,41 +2139,41 @@ That is the metric companies should care about.
 
 ---
 
-## The Most Useful Onboarding Metrics
+## The Most Useful Onboarding Metrics { #onboarding-metrics }
 
 Instead of counting Kora resumes, measure concrete outcomes.
 
 For each new JVM engineer, observe:
 
-### Time to first successful build
+### Time to first successful build { #time-to-first-build }
 
 Does the developer understand project structure and tooling?
 
-### Time to first safe HTTP change
+### Time to first safe HTTP change { #time-to-first-http-change }
 
 Can they navigate controller, service, mapping, and tests?
 
-### Time to first repository change
+### Time to first repository change { #time-to-first-repository-change }
 
 Can they work with explicit SQL and generated repository behavior?
 
-### Time to first graph diagnostic fix
+### Time to first graph diagnostic fix { #time-to-first-graph-fix }
 
 Do they understand Kora's DI model?
 
-### Time to first configuration change
+### Time to first configuration change { #time-to-first-config-change }
 
 Can they connect typed configuration to graph components?
 
-### Time to first integration test
+### Time to first integration test { #time-to-first-integration-test }
 
 Can they use Kora's test model and real infrastructure?
 
-### Time to first independent production task
+### Time to first independent production task { #time-to-first-production-task }
 
 Can they make a complete change without framework-specific hand-holding?
 
-### Time to diagnose generated behavior
+### Time to diagnose generated behavior { #time-to-diagnose-generated }
 
 Can they inspect generated code when the abstraction is unfamiliar?
 
@@ -2180,7 +2183,7 @@ These metrics describe actual organizational risk.
 
 ---
 
-## The Honest Limit: Domain and Platform Complexity Can Dominate
+## The Honest Limit: Domain and Platform Complexity Can Dominate { #honest-limit }
 
 A framework can reduce onboarding cost without making onboarding trivial.
 
@@ -2205,7 +2208,7 @@ The person who knows Kora but does not know payments, risk systems, logistics, t
 
 ---
 
-## Hiring for Fundamentals Also Improves Framework Optionality
+## Hiring for Fundamentals Also Improves Framework Optionality { #framework-optionality }
 
 There is a strategic benefit beyond Kora.
 
@@ -2229,7 +2232,7 @@ That is a healthier long-term talent strategy.
 
 ---
 
-## Frameworks Should Compete on Knowledge Preservation
+## Frameworks Should Compete on Knowledge Preservation { #knowledge-preservation }
 
 This suggests a broader framework design criterion:
 
@@ -2251,7 +2254,7 @@ That makes the framework easier to adopt with an existing JVM team.
 
 ---
 
-## Knowledge Transfer Is an Economic Property
+## Knowledge Transfer Is an Economic Property { #knowledge-transfer }
 
 This is not merely developer ergonomics.
 
@@ -2295,7 +2298,7 @@ The value compounds across the organization.
 
 ---
 
-## Kora Does Not Need to Win the Keyword Market
+## Kora Does Not Need to Win the Keyword Market { #keyword-market }
 
 Kora is unlikely to have more resumes than Spring.
 
@@ -2333,7 +2336,7 @@ This is a much more credible hiring strategy than hoping a niche framework someh
 
 ---
 
-## A Practical Team Composition
+## A Practical Team Composition { #team-composition }
 
 A Kora organization might reasonably optimize for three kinds of knowledge.
 
@@ -2358,7 +2361,7 @@ This is a much more attainable hiring model than requiring every candidate to ar
 
 ---
 
-## What Hiring Managers Should Ask Instead
+## What Hiring Managers Should Ask Instead { #hiring-managers-ask }
 
 Replace:
 
@@ -2386,7 +2389,7 @@ Those questions reveal the actual staffing risk.
 
 ---
 
-## What Engineers Should Ask Before Joining a Kora Team
+## What Engineers Should Ask Before Joining a Kora Team { #engineers-ask }
 
 The same logic helps candidates.
 
@@ -2409,7 +2412,7 @@ That makes Kora experience more transferable than the ecosystem's size might ini
 
 ---
 
-## A Note on Junior Developers
+## A Note on Junior Developers { #junior-developers }
 
 The argument is strongest for experienced JVM engineers because they arrive with a large base of transferable knowledge.
 
@@ -2429,7 +2432,7 @@ A junior needs time because they are acquiring the fundamentals that a senior al
 
 ---
 
-## Kora Can Make Junior Growth More Grounded
+## Kora Can Make Junior Growth More Grounded { #junior-growth }
 
 There is even an argument that Kora's transparency can help juniors build better fundamentals.
 
@@ -2451,7 +2454,7 @@ But that is a learning advantage, not a replacement for mentorship.
 
 ---
 
-## A Note on Specialists
+## A Note on Specialists { #specialists }
 
 Some roles genuinely need deep framework knowledge.
 
@@ -2473,7 +2476,7 @@ They should not define the hiring requirements for every application developer.
 
 ---
 
-## The Better Mental Model: Framework as Leverage
+## The Better Mental Model: Framework as Leverage { #framework-as-leverage }
 
 A framework should be treated as leverage on top of engineering knowledge.
 
@@ -2505,7 +2508,7 @@ This is why the labor-market objection needs to be evaluated carefully.
 
 ---
 
-## The Cost of Learning Kora Should Be Compared With the Cost of Learning the System
+## The Cost of Learning Kora Should Be Compared With the Cost of Learning the System { #cost-of-learning }
 
 A developer joining any backend team must learn the system.
 
@@ -2533,7 +2536,7 @@ It does not define it.
 
 ---
 
-## AI Makes the Difference More Important, Not Less
+## AI Makes the Difference More Important, Not Less { #ai-difference }
 
 As AI handles more boilerplate, the value of knowing exact framework syntax decreases further.
 
@@ -2568,7 +2571,7 @@ Let the framework, compiler, documentation, generated code, tests, and AI tools 
 
 ---
 
-## From Framework Specialists to Systems Engineers
+## From Framework Specialists to Systems Engineers { #systems-engineers }
 
 The broader industry may gradually move toward a healthier distinction.
 
@@ -2592,7 +2595,7 @@ That rewards systems engineers rather than framework memorization.
 
 ---
 
-## The Final Hiring Argument
+## The Final Hiring Argument { #final-hiring-argument }
 
 The strongest case is not that Kora requires no learning.
 
@@ -2624,7 +2627,7 @@ The foundations take years.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 “There are not many Kora developers” is an accurate observation and an incomplete hiring argument.
 

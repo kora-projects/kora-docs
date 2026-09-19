@@ -1,11 +1,14 @@
 ---
 title: Performance You Don't Need Still Saves Money and Time — Kora Framework
+date: 2026-08-26
 description: Why Kora Framework efficiency matters even when you don't need maximum throughput — lower CPU, faster startup, smaller fleets, and cheaper operation.
 search:
   exclude: true
 ---
 
-# Performance You Don't Need Still Saves Money And Time
+# Performance You Don't Need Still Saves Money And Time { #performance }
+
+**August 26, 2026**
 
 Backend performance discussions are often framed around an obvious question: *Do we actually need this much throughput?*
 
@@ -73,7 +76,7 @@ The multiplier is not.
 
 ---
 
-## The Single-Service View Is Usually Misleading
+## The Single-Service View Is Usually Misleading { #single-service-view }
 
 Imagine two frameworks running the same ordinary business service.
 
@@ -173,7 +176,7 @@ That is what makes framework efficiency a platform concern rather than merely an
 
 ---
 
-## Fleet Economics Starts With Multiplication
+## Fleet Economics Starts With Multiplication { #fleet-economics }
 
 The simplest useful fleet model is:
 
@@ -231,7 +234,7 @@ That amplification is why small per-instance costs deserve attention.
 
 ---
 
-## Nothing in Production Runs Only Once
+## Nothing in Production Runs Only Once { #production-runs-once }
 
 Local development encourages a misleading mental model:
 
@@ -305,7 +308,7 @@ The company still pays for the footprint.
 
 ---
 
-## CPU Efficiency Matters Even When CPU Usage Looks Low
+## CPU Efficiency Matters Even When CPU Usage Looks Low { #cpu-efficiency }
 
 CPU economics are less intuitive than memory because a JVM can sit mostly idle.
 
@@ -373,7 +376,7 @@ much productive work can be extracted from reserved CPU before another core is n
 
 ---
 
-## Memory Is Often the More Important Fleet Metric
+## Memory Is Often the More Important Fleet Metric { #memory-fleet-metric }
 
 CPU can be oversubscribed more aggressively than memory.
 
@@ -435,7 +438,7 @@ The benefit is that the framework attempts to keep its contribution small.
 
 ---
 
-## Baseline Footprint Is More Important Than Peak Throughput for Many Services
+## Baseline Footprint Is More Important Than Peak Throughput for Many Services { #baseline-footprint }
 
 Consider two types of services.
 
@@ -516,7 +519,7 @@ The platform bill does.
 
 ---
 
-## Reserve Capacity Multiplies Everything Again
+## Reserve Capacity Multiplies Everything Again { #reserve-capacity }
 
 Production infrastructure is not normally planned for average demand.
 
@@ -574,7 +577,7 @@ But because reserve scales with baseline requirements, a lighter baseline makes 
 
 ---
 
-## Redundancy Turns Efficiency Into Reliability Economics
+## Redundancy Turns Efficiency Into Reliability Economics { #redundancy-reliability }
 
 Every serious production system pays a reliability tax.
 
@@ -644,7 +647,7 @@ That is exactly the kind of optimization a platform organization should prefer: 
 
 ---
 
-## Multi-Region Architecture Magnifies Framework Choices
+## Multi-Region Architecture Magnifies Framework Choices { #multi-region }
 
 A framework decision becomes more expensive as the infrastructure footprint expands geographically.
 
@@ -687,7 +690,7 @@ Global scale is mostly multiplication.
 
 ---
 
-## The Framework Tax Is Paid Before Business Logic Runs
+## The Framework Tax Is Paid Before Business Logic Runs { #framework-tax }
 
 A useful way to reason about application resource consumption is to divide it into layers:
 
@@ -727,7 +730,7 @@ From a fleet perspective, this design matters because the framework tax is paid 
 
 ---
 
-## Compile-Time Work Has a Different Economic Shape
+## Compile-Time Work Has a Different Economic Shape { #compile-time-work }
 
 A common response to compile-time frameworks is:
 
@@ -805,7 +808,7 @@ The economic structure of cloud infrastructure favors moving deterministic work 
 
 ---
 
-## Performance Saves Machines Even When Throughput Is Not a Requirement
+## Performance Saves Machines Even When Throughput Is Not a Requirement { #performance-saves-machines }
 
 Suppose a service needs only:
 
@@ -869,7 +872,7 @@ For platform economics, the second interpretation is much more useful.
 
 ---
 
-## Throughput Per Core Is Really Cost Efficiency
+## Throughput Per Core Is Really Cost Efficiency { #throughput-per-core }
 
 Responses per second is often presented as a competitive benchmark metric.
 
@@ -903,7 +906,7 @@ At fleet scale, that is capacity.
 
 ---
 
-## Tail Latency Also Has a Cost Model
+## Tail Latency Also Has a Cost Model { #tail-latency }
 
 Efficiency is not only about average throughput.
 
@@ -947,7 +950,7 @@ That is a direct infrastructure benefit even if traffic never approaches benchma
 
 ---
 
-## Garbage Collection Is Part of Fleet Economics
+## Garbage Collection Is Part of Fleet Economics { #garbage-collection }
 
 Allocation behavior also affects cost indirectly.
 
@@ -991,7 +994,7 @@ they become CPU cycles, GC activity, and memory bandwidth.
 
 ---
 
-## Thin Abstractions Reduce More Than Runtime Overhead
+## Thin Abstractions Reduce More Than Runtime Overhead { #thin-abstractions }
 
 The value of thin abstractions is not only performance.
 
@@ -1049,7 +1052,7 @@ For a CTO, that is another form of efficiency.
 
 ---
 
-## Developer Time Is Part of the Same Equation
+## Developer Time Is Part of the Same Equation { #developer-time }
 
 Infrastructure costs are easy to graph because they appear on cloud bills.
 
@@ -1112,7 +1115,7 @@ Fleet economics should therefore include both machine fleets and developer fleet
 
 ---
 
-## Fast Startup Has a Human Cost Multiplier
+## Fast Startup Has a Human Cost Multiplier { #fast-startup }
 
 Startup performance is a clear example.
 
@@ -1177,7 +1180,7 @@ Both are repeated many times.
 
 ---
 
-## Feedback Latency Changes Engineering Behavior
+## Feedback Latency Changes Engineering Behavior { #feedback-latency }
 
 There is another consequence that simple time multiplication misses.
 
@@ -1239,7 +1242,7 @@ They change workflow quality.
 
 ---
 
-## Black-Box Testing Becomes Economically Different
+## Black-Box Testing Becomes Economically Different { #black-box-testing }
 
 Kora's architecture makes full-application testing relatively inexpensive because the application graph is already generated and runtime assembly work is small.
 
@@ -1286,7 +1289,7 @@ Performance has now purchased reliability.
 
 ---
 
-## CI Cost Is a Fleet Cost
+## CI Cost Is a Fleet Cost { #ci-cost }
 
 CI systems are effectively temporary compute fleets.
 
@@ -1347,7 +1350,7 @@ This is where machine efficiency and human efficiency intersect.
 
 ---
 
-## Deployment Time Also Multiplies
+## Deployment Time Also Multiplies { #deployment-time }
 
 Rolling deployments repeatedly create replacement instances.
 
@@ -1385,7 +1388,7 @@ It increases delivery throughput.
 
 ---
 
-## Deployment Windows Consume Reserve Capacity
+## Deployment Windows Consume Reserve Capacity { #deployment-windows }
 
 During a rolling deployment, old and new replicas overlap.
 
@@ -1423,7 +1426,7 @@ It is reduced time spent holding temporary resources.
 
 ---
 
-## Autoscaling Economics Depend on Startup Speed
+## Autoscaling Economics Depend on Startup Speed { #autoscaling-economics }
 
 An autoscaler can only save money if capacity can be created fast enough.
 
@@ -1456,7 +1459,7 @@ That is how runtime performance enables cost reduction without changing business
 
 ---
 
-## Performance Can Reduce Required Headroom
+## Performance Can Reduce Required Headroom { #reduce-headroom }
 
 Consider a simple capacity model.
 
@@ -1508,7 +1511,7 @@ That savings may be much larger than the raw per-instance memory difference.
 
 ---
 
-## Scale-to-Zero Turns Efficiency Into Architecture
+## Scale-to-Zero Turns Efficiency Into Architecture { #scale-to-zero }
 
 Some workloads barely run.
 
@@ -1555,7 +1558,7 @@ Architecture options have financial value.
 
 ---
 
-## Spot Capacity Rewards Cheap Restart
+## Spot Capacity Rewards Cheap Restart { #spot-capacity }
 
 Spot and preemptible instances are cheaper because they are less reliable.
 
@@ -1587,7 +1590,7 @@ Efficient software enables cheaper infrastructure strategies.
 
 ---
 
-## Private Data Centers Have the Same Economics
+## Private Data Centers Have the Same Economics { #private-data-centers }
 
 Fleet economics is not only a cloud concern.
 
@@ -1628,7 +1631,7 @@ It consumes part of the data-center envelope.
 
 ---
 
-## Infrastructure Cost Is More Than Compute Price
+## Infrastructure Cost Is More Than Compute Price { #infrastructure-cost }
 
 Public-cloud estimates often reduce everything to:
 
@@ -1678,7 +1681,7 @@ The infrastructure saving can therefore exceed the direct CPU/RAM difference.
 
 ---
 
-## Sidecars Make Small Savings More Valuable, Not Less
+## Sidecars Make Small Savings More Valuable, Not Less { #sidecars }
 
 A common argument says framework memory does not matter because a Pod already contains:
 
@@ -1717,7 +1720,7 @@ Efficiency tends to become more visible, not less.
 
 ---
 
-## Framework Standardization Is a Capital Allocation Decision
+## Framework Standardization Is a Capital Allocation Decision { #framework-standardization }
 
 A framework selected as an organizational default is not just a developer library.
 
@@ -1756,7 +1759,7 @@ Only the first captures platform economics.
 
 ---
 
-## Platform Templates Multiply Good Decisions and Bad Decisions
+## Platform Templates Multiply Good Decisions and Bad Decisions { #platform-templates }
 
 Modern engineering organizations often create service templates.
 
@@ -1806,7 +1809,7 @@ It improves the organization's ability to optimize fleet-wide.
 
 ---
 
-## One Recommended Path Reduces Optimization Work
+## One Recommended Path Reduces Optimization Work { #recommended-path }
 
 Frameworks that offer many interchangeable programming models create flexibility.
 
@@ -1853,7 +1856,7 @@ senior engineering time
 
 ---
 
-## Performance Engineering Has an Opportunity Cost
+## Performance Engineering Has an Opportunity Cost { #opportunity-cost }
 
 Organizations sometimes assume framework performance is free because developers can optimize later.
 
@@ -1901,7 +1904,7 @@ That is another form of ROI.
 
 ---
 
-## The Best Optimization Is Often Centralized
+## The Best Optimization Is Often Centralized { #centralized-optimization }
 
 If 100 teams independently optimize their services by 5%, the organization spends engineering time 100 times.
 
@@ -1943,7 +1946,7 @@ every service
 
 ---
 
-## Complexity Is Also a Resource
+## Complexity Is Also a Resource { #complexity-resource }
 
 CPU and RAM are measurable resources.
 
@@ -1986,7 +1989,7 @@ That has economic value because debugging becomes more local.
 
 ---
 
-## Debugging Time Has a Huge Multiplier
+## Debugging Time Has a Huge Multiplier { #debugging-time }
 
 Suppose a subtle framework issue costs:
 
@@ -2031,7 +2034,7 @@ The strongest platform tools optimize both machine and human cost.
 
 ---
 
-## AI-Assisted Development Changes the Human Multiplier
+## AI-Assisted Development Changes the Human Multiplier { #ai-assisted-development }
 
 AI coding agents make explicit architecture even more valuable.
 
@@ -2071,7 +2074,7 @@ The "developer fleet" may soon include machines writing code continuously.
 
 ---
 
-## Cost Models Should Include Developer and Agent Compute Together
+## Cost Models Should Include Developer and Agent Compute Together { #developer-agent-compute }
 
 A future platform economics formula may look like:
 
@@ -2101,7 +2104,7 @@ The traditional benchmark discussion captures only one corner of the equation.
 
 ---
 
-## Regions and Data Centers Create Hidden Duplication
+## Regions and Data Centers Create Hidden Duplication { #hidden-duplication }
 
 Many organizations mentally account for production services as:
 
@@ -2172,7 +2175,7 @@ observations.
 
 ---
 
-## Organizational Hierarchy Is a Technical Multiplier
+## Organizational Hierarchy Is a Technical Multiplier { #organizational-hierarchy }
 
 The landing-page fleet model can be generalized into an organizational tree:
 
@@ -2240,7 +2243,7 @@ Its purpose is to show why platform-level multiplication dominates local intuiti
 
 ---
 
-## A More Complete Fleet Formula
+## A More Complete Fleet Formula { #complete-fleet-formula }
 
 A useful internal model is:
 
@@ -2299,7 +2302,7 @@ But having any model is better than arguing about isolated benchmark numbers.
 
 ---
 
-## Do Not Convert Benchmarks Directly Into Cloud Savings
+## Do Not Convert Benchmarks Directly Into Cloud Savings { #benchmarks-cloud-savings }
 
 There is an important warning.
 
@@ -2342,7 +2345,7 @@ The fleet argument is about multiplication of **measured per-service differences
 
 ---
 
-## Right-Sizing Is Required to Realize the Savings
+## Right-Sizing Is Required to Realize the Savings { #right-sizing }
 
 An efficient application does not automatically reduce infrastructure cost.
 
@@ -2386,7 +2389,7 @@ Platform teams need measurement and policy to convert technical efficiency into 
 
 ---
 
-## Requests Matter More Than Limits for Packing
+## Requests Matter More Than Limits for Packing { #requests-vs-limits }
 
 In Kubernetes, teams often focus on limits.
 
@@ -2429,7 +2432,7 @@ The economic value of performance comes from safely reducing reserved resources,
 
 ---
 
-## Lower Requests Improve Bin Packing
+## Lower Requests Improve Bin Packing { #bin-packing }
 
 Node allocation is a bin-packing problem.
 
@@ -2483,7 +2486,7 @@ Efficiency can therefore reduce fragmentation.
 
 ---
 
-## Performance Headroom Can Delay Hardware Expansion
+## Performance Headroom Can Delay Hardware Expansion { #hardware-expansion }
 
 Sometimes an organization does not reduce current infrastructure after an optimization.
 
@@ -2525,7 +2528,7 @@ The value depends on business strategy, but it remains value.
 
 ---
 
-## Efficiency Can Buy Reliability Instead of Savings
+## Efficiency Can Buy Reliability Instead of Savings { #buy-reliability }
 
 Not every organization should convert performance gains directly into fewer machines.
 
@@ -2565,7 +2568,7 @@ A good platform investment can be justified either by reducing spend or by incre
 
 ---
 
-## Efficiency Can Buy Growth
+## Efficiency Can Buy Growth { #buy-growth }
 
 Similarly, the company may keep current infrastructure and support more customers.
 
@@ -2601,7 +2604,7 @@ Kora's performance characteristics should be evaluated in that framework.
 
 ---
 
-## Low-Traffic Fleets Are a Hidden Cost Center
+## Low-Traffic Fleets Are a Hidden Cost Center { #low-traffic-fleets }
 
 Platform teams should pay particular attention to services with:
 
@@ -2645,7 +2648,7 @@ Sometimes they are found in the thousands of processes doing almost nothing.
 
 ---
 
-## Internal Services Are Ideal Candidates
+## Internal Services Are Ideal Candidates { #internal-services }
 
 Internal systems often have predictable characteristics:
 
@@ -2681,7 +2684,7 @@ Performance becomes a fleet-management tool.
 
 ---
 
-## Memory Savings Can Be More Predictable Than CPU Savings
+## Memory Savings Can Be More Predictable Than CPU Savings { #memory-savings }
 
 CPU utilization varies with traffic.
 
@@ -2731,7 +2734,7 @@ The physical footprint is what affects node density.
 
 ---
 
-## Virtual Threads Change the Thread Memory Equation
+## Virtual Threads Change the Thread Memory Equation { #virtual-threads }
 
 Kora 2's use of virtual threads is relevant to fleet economics because traditional thread-per-request architectures required large numbers of platform threads for high blocking concurrency.
 
@@ -2759,7 +2762,7 @@ That combination matters at organizational scale.
 
 ---
 
-## Reactive Complexity Has a Human Price
+## Reactive Complexity Has a Human Price { #reactive-complexity }
 
 Reactive architectures can be excellent when their semantics are genuinely needed.
 
@@ -2789,7 +2792,7 @@ If yes, the saved training, debugging, and maintenance effort is part of platfor
 
 ---
 
-## Smaller Cognitive Load Improves Team Interchangeability
+## Smaller Cognitive Load Improves Team Interchangeability { #cognitive-load }
 
 A platform is easier to scale organizationally when engineers can move between services without relearning infrastructure patterns.
 
@@ -2825,7 +2828,7 @@ Consistency reduces those transition costs.
 
 ---
 
-## Faster Compiler Feedback Reduces Expensive Runtime Discovery
+## Faster Compiler Feedback Reduces Expensive Runtime Discovery { #compiler-feedback }
 
 A dependency graph error caught at runtime costs more than one caught during compilation.
 
@@ -2863,7 +2866,7 @@ Earlier failures consume fewer pipeline stages and less engineer attention.
 
 ---
 
-## Failed Deployments Have a Fleet Cost
+## Failed Deployments Have a Fleet Cost { #failed-deployments }
 
 Suppose a structural application issue survives compilation and is detected only when a Pod starts.
 
@@ -2890,7 +2893,7 @@ This is another example where "performance" and "correctness" reinforce each oth
 
 ---
 
-## Generated Code Can Reduce Incident Resolution Time
+## Generated Code Can Reduce Incident Resolution Time { #incident-resolution }
 
 Runtime magic often creates a diagnostic problem:
 
@@ -2929,7 +2932,7 @@ Framework transparency therefore belongs in the total-cost model.
 
 ---
 
-## Platform Teams Should Measure Total Cost of Ownership
+## Platform Teams Should Measure Total Cost of Ownership { #total-cost-ownership }
 
 Framework evaluation often produces a feature matrix:
 
@@ -2982,7 +2985,7 @@ The relevant metric is total cost of ownership.
 
 ---
 
-## A CTO Should Ask for Unit Economics
+## A CTO Should Ask for Unit Economics { #unit-economics }
 
 Infrastructure teams already reason in unit economics.
 
@@ -3032,7 +3035,7 @@ Measure the unit that matters.
 
 ---
 
-## The Resource Difference Is Often Nonlinear
+## The Resource Difference Is Often Nonlinear { #nonlinear-resources }
 
 One subtlety is that infrastructure savings do not always scale smoothly.
 
@@ -3078,7 +3081,7 @@ in addition to aggregate CPU/RAM.
 
 ---
 
-## Small Improvements Compound Across Several Dimensions
+## Small Improvements Compound Across Several Dimensions { #small-improvements }
 
 Suppose a framework gives modest improvements:
 
@@ -3113,7 +3116,7 @@ Fleet scale compounds them.
 
 ---
 
-## Performance and Simplicity Reinforce Each Other in Kora
+## Performance and Simplicity Reinforce Each Other in Kora { #performance-simplicity }
 
 Kora's interesting property is that several of its design choices target both machine efficiency and human efficiency.
 
@@ -3167,7 +3170,7 @@ Kora attempts to avoid that trade by moving complexity into framework compilatio
 
 ---
 
-## The Developer Is Also an Expensive Runtime
+## The Developer Is Also an Expensive Runtime { #developer-runtime }
 
 There is a useful analogy.
 
@@ -3216,7 +3219,7 @@ Kora's architecture is interesting because it is designed around both interpreta
 
 ---
 
-## Developer Waiting Time Is Not Fully Recoverable
+## Developer Waiting Time Is Not Fully Recoverable { #waiting-time }
 
 One might argue that developers do something else while waiting for tests.
 
@@ -3246,7 +3249,7 @@ A framework that keeps compile-test-run loops short can therefore improve produc
 
 ---
 
-## The Same Applies to AI Agents
+## The Same Applies to AI Agents { #ai-agents }
 
 Autonomous coding agents also pay latency costs.
 
@@ -3282,7 +3285,7 @@ As AI-generated code becomes common, frameworks that provide strong machine-read
 
 ---
 
-## The Correct Comparison Is Not "Can It Handle My Load?"
+## The Correct Comparison Is Not "Can It Handle My Load?" { #correct-comparison }
 
 A platform team choosing a framework should not stop at:
 
@@ -3316,7 +3319,7 @@ The economically interesting differences appear in how they do it.
 
 ---
 
-## Performance You Do Not Use Is Still Safety Margin
+## Performance You Do Not Use Is Still Safety Margin { #safety-margin }
 
 Suppose two services both receive:
 
@@ -3364,7 +3367,7 @@ Unused performance can be insurance.
 
 ---
 
-## Headroom Can Be Converted Into Lower Replica Counts
+## Headroom Can Be Converted Into Lower Replica Counts { #lower-replica-counts }
 
 The platform has a choice.
 
@@ -3396,7 +3399,7 @@ It is whether the ratio changes deployment topology.
 
 ---
 
-## Cost Savings Should Be Evaluated After Reliability Constraints
+## Cost Savings Should Be Evaluated After Reliability Constraints { #reliability-constraints }
 
 A dangerous cost-optimization strategy is to reduce resources until the system barely works.
 
@@ -3444,7 +3447,7 @@ Then measure the footprint.
 
 ---
 
-## Reserve for Black Friday Is Still Real Capacity
+## Reserve for Black Friday Is Still Real Capacity { #black-friday }
 
 Many organizations carry large seasonal reserve.
 
@@ -3480,7 +3483,7 @@ It should not be dismissed as idle waste.
 
 ---
 
-## Faster Recovery Reduces the Amount of Reserve Needed
+## Faster Recovery Reduces the Amount of Reserve Needed { #faster-recovery }
 
 Infrastructure reserve partly compensates for recovery time.
 
@@ -3505,7 +3508,7 @@ This is the kind of second-order relationship that simple benchmark discussions 
 
 ---
 
-## Framework Efficiency Affects Cloud Commitment Strategy
+## Framework Efficiency Affects Cloud Commitment Strategy { #cloud-commitment }
 
 Large companies often purchase:
 
@@ -3534,7 +3537,7 @@ A framework that becomes standardized across services influences future committe
 
 ---
 
-## Migration Cost Must Still Be Counted
+## Migration Cost Must Still Be Counted { #migration-cost }
 
 None of this means an organization should rewrite healthy services solely to reduce framework overhead.
 
@@ -3568,7 +3571,7 @@ That is why framework economics often matter most at the platform-standardizatio
 
 ---
 
-## Incremental Adoption Changes the Calculation
+## Incremental Adoption Changes the Calculation { #incremental-adoption }
 
 Kora does not have to replace an entire estate at once for the economics to matter.
 
@@ -3611,7 +3614,7 @@ These are the places where per-instance differences compound fastest.
 
 ---
 
-## The Best Candidate May Be the Boring Service
+## The Best Candidate May Be the Boring Service { #boring-service }
 
 Performance projects usually start with the busiest system.
 
@@ -3655,7 +3658,7 @@ Platform engineering is largely about optimizing the common case.
 
 ---
 
-## A Practical Fleet Audit
+## A Practical Fleet Audit { #fleet-audit }
 
 A platform team evaluating framework economics can begin with a straightforward inventory.
 
@@ -3709,7 +3712,7 @@ This approach avoids both benchmark hype and intuition-driven dismissal.
 
 ---
 
-## Measure the Cost Floor, Not Only Peak Load
+## Measure the Cost Floor, Not Only Peak Load { #cost-floor }
 
 For low-volume services, benchmark them at near-zero traffic.
 
@@ -3733,7 +3736,7 @@ That is exactly where Kora's lean runtime model should be tested.
 
 ---
 
-## Measure Normal Production Utilization
+## Measure Normal Production Utilization { #production-utilization }
 
 Then test representative steady load.
 
@@ -3762,7 +3765,7 @@ Fleet economics requires production-shaped measurement.
 
 ---
 
-## Measure the Cold Path
+## Measure the Cold Path { #cold-path }
 
 For elastic systems, benchmark:
 
@@ -3794,7 +3797,7 @@ It deserves its own budget.
 
 ---
 
-## Measure CI Separately
+## Measure CI Separately { #measure-ci }
 
 A framework can be extremely efficient at runtime but expensive during compilation.
 
@@ -3828,7 +3831,7 @@ The correct comparison therefore covers both sides.
 
 ---
 
-## Avoid False Precision in CTO Models
+## Avoid False Precision in CTO Models { #false-precision }
 
 Fleet models are useful, but they can create an illusion of accuracy.
 
@@ -3876,7 +3879,7 @@ not to predict the invoice to the euro.
 
 ---
 
-## A Better Formula for Platform Decisions
+## A Better Formula for Platform Decisions { #platform-decisions }
 
 The landing-page multiplier can be expanded into a more complete decision model:
 
@@ -3921,7 +3924,7 @@ That is the real economic insight.
 
 ---
 
-## The Fleet Multiplier
+## The Fleet Multiplier { #fleet-multiplier }
 
 The core idea can be written as:
 
@@ -3974,7 +3977,7 @@ It becomes an organizational scaling factor.
 
 ---
 
-## Why Kora's Architecture Fits Fleet Economics
+## Why Kora's Architecture Fits Fleet Economics { #kora-fleet-economics }
 
 Kora's design lines up with this model unusually well because many of its optimizations are structural rather than optional tuning modes.
 
@@ -4014,7 +4017,7 @@ The value is cumulative.
 
 ---
 
-## The Point Is Not That Kora Is Free
+## The Point Is Not That Kora Is Free { #kora-not-free }
 
 Kora still has costs.
 
@@ -4046,7 +4049,7 @@ That is the meaningful economic proposition.
 
 ---
 
-## Performance Is Valuable Before You Need It
+## Performance Is Valuable Before You Need It { #performance-valuable }
 
 Teams often wait until capacity becomes a problem before caring about performance.
 
@@ -4076,7 +4079,7 @@ You only need repetition.
 
 ---
 
-## The CTO View: Optimize the Multipliers
+## The CTO View: Optimize the Multipliers { #cto-view }
 
 An application engineer naturally sees:
 
@@ -4132,7 +4135,7 @@ That is fleet economics.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 "Do we need this performance?" is the wrong question for a platform organization.
 

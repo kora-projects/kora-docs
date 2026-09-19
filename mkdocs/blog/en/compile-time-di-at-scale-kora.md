@@ -1,10 +1,13 @@
 ---
 title: Compile-Time DI at Scale — How the Kora Framework Keeps Large Projects Fast
+date: 2026-08-05
 description: How the Kora Framework uses @KoraSubmodule and Gradle modularization to keep compile-time dependency injection fast in large codebases.
 search:
   exclude: true
 ---
-# Compile-Time DI at Scale: How Kora Keeps Large Projects Fast
+# Compile-Time DI at Scale: How Kora Keeps Large Projects Fast { #compile-time-di-at-scale }
+
+**August 5, 2026**
 
 Compile-time dependency injection has an obvious attraction: move dependency discovery, graph validation, and wiring out of application startup and into the compiler, then start the service with an
 already known graph. The runtime becomes simpler, startup becomes more deterministic, and many errors that would otherwise appear only when a container is created become ordinary compilation failures.
@@ -82,7 +85,7 @@ The same module boundaries that reduce coupling, make ownership clearer, and con
 
 Kora's approach is therefore not only "do DI at compile time." The more interesting idea is that compile-time DI can participate in the normal incremental build model of a modular JVM application.
 
-## The Cost Model of Compile-Time Dependency Injection
+## The Cost Model of Compile-Time Dependency Injection { #cost-model }
 
 To understand why modularization matters, it helps to separate several kinds of work that are often collapsed into the phrase "compile time."
 
@@ -123,7 +126,7 @@ changes, caches, and parallel execution.
 
 The dependency graph inside the running application may still be large. The source graph that must be reconsidered after one edit does not have to be.
 
-## `@KoraApp`: The Final Composition Root
+## `@KoraApp`: The Final Composition Root { #koraapp }
 
 Kora's dependency container starts with `@KoraApp`. The annotated interface is the assembly point for the complete application graph.
 
@@ -165,7 +168,7 @@ Kora's model does not require that trade to grow without bound. The application 
 
 That is what `@KoraSubmodule` is for.
 
-## `@KoraSubmodule`: Preserving DI Across Compilation Boundaries
+## `@KoraSubmodule`: Preserving DI Across Compilation Boundaries { #korasubmodule }
 
 `@KoraSubmodule` marks a module boundary that participates in Kora's compile-time dependency-injection model.
 
@@ -247,7 +250,7 @@ The runtime still receives one coherent dependency graph. The build does not nee
 
 This is the central scaling property.
 
-## Architectural Modularity Becomes Build Modularity
+## Architectural Modularity Becomes Build Modularity { #architectural-modularity }
 
 Large systems are usually modularized for architectural reasons long before build performance becomes the dominant concern.
 
@@ -265,7 +268,7 @@ Compile-time DI adds another benefit: those same boundaries can constrain framew
 
 Consider two designs.
 
-### One Giant Module
+### One Giant Module { #one-giant-module }
 
 ```text
 src/main/java
@@ -279,7 +282,7 @@ src/main/java
 
 Everything belongs to the same Gradle `compileJava` or KSP compilation. A change inside `catalog` belongs to the same compiler task that owns `orders`, `billing`, and everything else.
 
-### Domain Modules
+### Domain Modules { #domain-modules }
 
 ```text
 :application
@@ -311,7 +314,7 @@ build system must reconsider.**
 
 That is a much healthier scaling strategy than attempting to optimize a single ever-growing global compilation phase.
 
-## What Happens After a Local Change?
+## What Happens After a Local Change? { #after-local-change }
 
 Suppose a developer changes an internal implementation inside the `catalog` module.
 
@@ -363,7 +366,7 @@ Fifth, independent project tasks can execute in parallel when the task graph all
 
 The result is not magic. It is ordinary Gradle engineering applied to a framework whose compile-time work respects explicit module boundaries.
 
-## The Kora Build Charts Need the Right Interpretation
+## The Kora Build Charts Need the Right Interpretation { #build-charts }
 
 Kora's landing page separates build behavior into two categories: a clean artifact build and a cached or incremental artifact build. That distinction is more important than any single number on the
 chart.
@@ -419,7 +422,7 @@ productivity, both should be measured under the same realistic edit-build-test w
 
 A framework that moves work into compilation can still have an excellent feedback loop when that work is incremental, partitioned, cacheable, and parallelizable.
 
-## Gradle's Task Graph Is Part of the Architecture
+## Gradle's Task Graph Is Part of the Architecture { #task-graph }
 
 Once a service becomes multi-project, the Gradle task graph becomes a concrete representation of architectural dependency direction.
 
@@ -489,7 +492,7 @@ A healthier structure often has wider independent areas and a thin composition l
 
 The goal is not maximum fan-out for its own sake. The goal is a dependency graph that represents the actual architecture and avoids unnecessary transitive coupling.
 
-## Dependency Direction Matters More Than Module Count
+## Dependency Direction Matters More Than Module Count { #dependency-direction }
 
 Multi-module builds are not fast merely because they contain many modules.
 
@@ -521,7 +524,7 @@ The central rule is:
 That is not a Kora-specific constraint. It is how compile avoidance works in any large JVM build. Kora simply makes the relationship especially relevant because framework graph discovery itself
 happens at compilation time.
 
-## Where the Root Composition Should Live
+## Where the Root Composition Should Live { #root-composition }
 
 A large Kora service benefits from a deliberately boring root `application` module.
 
@@ -586,7 +589,7 @@ one source compilation unit
 
 Kora can have the former without requiring the latter.
 
-## A Practical Large-Service Layout
+## A Practical Large-Service Layout { #large-service-layout }
 
 A genuinely large service should normally be split around coherent capabilities rather than framework layers.
 
@@ -687,7 +690,7 @@ This arrangement produces several useful effects at once:
 
 The build improvement is not a trick added after architecture. It is a consequence of architecture.
 
-## Implementation Changes Versus API Changes
+## Implementation Changes Versus API Changes { #implementation-vs-api }
 
 One of the most important details in any incremental build discussion is the difference between changing implementation and changing a module's externally visible contract.
 
@@ -760,7 +763,7 @@ That is a much more defensible promise.
 Compile-time safety and incremental compilation are not enemies. A well-designed build lets the compiler aggressively re-check code when contracts change while avoiding irrelevant work when they do
 not.
 
-## Generated Code Does Not Eliminate Incrementality
+## Generated Code Does Not Eliminate Incrementality { #generated-code }
 
 Another common misconception is that source generation inherently defeats incremental builds.
 
@@ -792,7 +795,7 @@ The generated source is not hidden runtime state. It is a build product.
 This has a practical debugging benefit too. If a developer wants to know what a module contributes to the final application, the generated source provides something concrete to inspect. Build
 performance and transparency reinforce one another: the framework creates an explicit artifact at the same boundary Gradle already understands.
 
-## Build Cache: Reusing Compile-Time Framework Work
+## Build Cache: Reusing Compile-Time Framework Work { #build-cache }
 
 Compile-time generation becomes even more attractive when task outputs can be cached.
 
@@ -843,7 +846,7 @@ A single enormous compile task gives the cache one enormous key. Change any rele
 
 Ten coherent compile tasks give the build ten independent opportunities for hits.
 
-## Configuration Cache and the Non-Compilation Part of Feedback
+## Configuration Cache and the Non-Compilation Part of Feedback { #configuration-cache }
 
 Developers often attribute all build latency to compilation even when project configuration consumes a noticeable part of every invocation.
 
@@ -871,7 +874,7 @@ That is why Kora's own cached-build scenario is notable for including the whole 
 
 Compile-time DI lives inside a build system. Its practical performance should be judged there.
 
-## Parallel Compilation Helps, But Dependency Shape Decides How Much
+## Parallel Compilation Helps, But Dependency Shape Decides How Much { #parallel-compilation }
 
 Gradle can execute tasks from independent projects concurrently. A multi-module Kora application can therefore use available CPU cores more effectively than a single monolithic compilation task in
 some workloads.
@@ -897,7 +900,7 @@ This leads to a broader engineering lesson:
 
 A good module graph creates opportunities for parallel execution. Gradle then exploits them.
 
-## Why a "Shared" Module Can Become a Build Hotspot
+## Why a "Shared" Module Can Become a Build Hotspot { #shared-module-hotspot }
 
 Many large repositories eventually create a module named something like:
 
@@ -943,7 +946,7 @@ The principle is simple: dependencies near the bottom of the project graph shoul
 
 If everything depends on a module, treat its API as infrastructure.
 
-## How Far Should You Modularize?
+## How Far Should You Modularize? { #how-far-modularize }
 
 If modules can improve incremental compilation, why not create hundreds of them?
 
@@ -998,7 +1001,7 @@ If a module would contain three classes that always change together with another
 
 If a module contains a complete domain area owned by a team and depended on through a small set of contracts, it probably is.
 
-## A Sensible Migration Path for a Growing Kora Service
+## A Sensible Migration Path for a Growing Kora Service { #migration-path }
 
 A service does not need to begin life with an elaborate multi-project build.
 
@@ -1040,7 +1043,7 @@ That means architectural decomposition does not require retreating to runtime sc
 
 The application remains statically composed.
 
-## Clean Build Performance Still Matters
+## Clean Build Performance Still Matters { #clean-build }
 
 Incremental compilation should not become an excuse to ignore clean builds.
 
@@ -1069,7 +1072,7 @@ The second mistake is saying, "Annotation processing adds work to a clean build,
 
 A good large-project design addresses both.
 
-## The Runtime Payoff Is Still the Point
+## The Runtime Payoff Is Still the Point { #runtime-payoff }
 
 Why accept compile-time work at all?
 
@@ -1114,7 +1117,7 @@ build latency." The objective is to make compile-time work **bounded and increme
 
 `@KoraSubmodule` is important because it supports exactly that balance.
 
-## Compile-Time Boundaries Can Be Architectural Boundaries
+## Compile-Time Boundaries Can Be Architectural Boundaries { #compile-time-boundaries }
 
 There is a deeper idea here than build optimization.
 
@@ -1153,13 +1156,13 @@ When those boundaries align, developers get a system that is easier to reason ab
 
 The build does not merely become faster. The architecture becomes more legible.
 
-## What to Measure in a Real Repository
+## What to Measure in a Real Repository { #what-to-measure }
 
 Teams evaluating compile-time DI should avoid measuring only one number.
 
 A useful benchmark suite for a large Kora repository should include at least several scenarios.
 
-### 1. Cold clean build
+### 1. Cold clean build { #cold-clean-build }
 
 ```bash
 ./gradlew clean build --no-build-cache
@@ -1167,37 +1170,37 @@ A useful benchmark suite for a large Kora repository should include at least sev
 
 This shows the total cost when nothing can be reused.
 
-### 2. Warm no-change build
+### 2. Warm no-change build { #warm-no-change-build }
 
 Run the same build twice and measure how much Gradle avoids when no inputs changed.
 
 This catches configuration or task-model problems.
 
-### 3. Leaf implementation edit
+### 3. Leaf implementation edit { #leaf-implementation-edit }
 
 Change a private implementation detail in a low-level domain module and rebuild.
 
 This approximates a common local development iteration.
 
-### 4. Leaf public API edit
+### 4. Leaf public API edit { #leaf-public-api-edit }
 
 Change a public signature and measure how far recompilation propagates.
 
 This reveals the real dependency fan-out of the architecture.
 
-### 5. Shared foundational edit
+### 5. Shared foundational edit { #shared-foundational-edit }
 
 Change a heavily depended-on module.
 
 This gives the worst realistic incremental case and often exposes architecture hotspots.
 
-### 6. Remote-cache CI build
+### 6. Remote-cache CI build { #remote-cache-ci-build }
 
 Build a change on a fresh worker with a populated remote cache.
 
 This measures what contributors actually experience in an optimized pipeline.
 
-### 7. Parallel versus non-parallel build
+### 7. Parallel versus non-parallel build { #parallel-vs-nonparallel }
 
 Compare the critical path and CPU utilization. If `--parallel` barely helps, inspect the project dependency graph rather than assuming Gradle is at fault.
 
@@ -1219,7 +1222,7 @@ Parallel build               Available task-level concurrency
 
 The most important number for developer experience is often the leaf implementation edit, not the clean build.
 
-## When Build Performance Starts Degrading
+## When Build Performance Starts Degrading { #when-build-degrades }
 
 If a large Kora service becomes slow to compile, the response should not immediately be "compile-time DI does not scale."
 
@@ -1254,7 +1257,7 @@ configuration.
 
 The profiler should decide where optimization effort goes.
 
-## When a Kora Module Is Too Large
+## When a Kora Module Is Too Large { #module-too-large }
 
 A Gradle module is probably becoming too large when several symptoms appear together:
 
@@ -1289,7 +1292,7 @@ if those areas already have distinct concepts and ownership.
 
 Each can then expose a Kora submodule boundary and be composed by the application.
 
-## When a Repository Has Too Many Modules
+## When a Repository Has Too Many Modules { #too-many-modules }
 
 The opposite failure mode is also visible.
 
@@ -1309,7 +1312,7 @@ If two modules always change together, are owned together, are deployed together
 
 The objective is a stable middle ground where modules are large enough to be coherent and small enough to bound change.
 
-## Kora's Scaling Strategy Is Deliberately Ordinary
+## Kora's Scaling Strategy Is Deliberately Ordinary { #scaling-strategy }
 
 Perhaps the most interesting aspect of this design is that Kora does not need a proprietary distributed compiler or a special incremental DI daemon to make the model work.
 
@@ -1340,7 +1343,7 @@ It is:
 
 That is a more sustainable answer.
 
-## The Most Important Mental Model
+## The Most Important Mental Model { #mental-model }
 
 For small applications, this is sufficient:
 
@@ -1380,7 +1383,7 @@ The final Kora application validates and composes the complete graph.
 
 This is the key to understanding the phrase **compile-time DI at scale**. The compile-time nature of the framework does not require the compile-time unit to be the entire codebase.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Compile-time dependency injection creates a straightforward concern: as the application grows, the framework has more declarations and a larger dependency graph to process. If the entire codebase
 remains one monolithic compilation unit, build latency can grow along with it.

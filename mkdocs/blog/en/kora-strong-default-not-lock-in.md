@@ -1,10 +1,13 @@
 ---
 title: A Strong Default Is Not Lock-In — The Kora Framework Is Built to Be Extended
+date: 2026-08-02
 description: Why the Kora Framework's opinionated defaults are extensible — replace generated components and add integrations through the same application graph.
 search:
   exclude: true
 ---
-# A Strong Default Is Not Lock-In: Kora Is Built to Be Extended
+# A Strong Default Is Not Lock-In: Kora Is Built to Be Extended { #strong-default-not-lock-in }
+
+**August 2, 2026**
 
 Opinionated frameworks are often judged through a false binary.
 
@@ -69,7 +72,7 @@ shipped by Kora itself.
 
 That is a much stronger form of extensibility than a large catalog of special hooks.
 
-## Opinionated Does Not Mean Closed
+## Opinionated Does Not Mean Closed { #opinionated-not-closed }
 
 There are two different ideas that are frequently confused:
 
@@ -143,7 +146,7 @@ few possible integrations
 
 This is the key to understanding Kora's extensibility model.
 
-## The Application Graph Is the Extension Surface
+## The Application Graph Is the Extension Surface { #application-graph }
 
 Kora's dependency graph is not only a mechanism for wiring framework components.
 
@@ -199,7 +202,7 @@ This symmetry is the heart of extensibility.
 
 A custom component is not tolerated as an exception. It becomes part of the normal dependency model.
 
-## Opt-In Modules Change the Meaning of "Framework"
+## Opt-In Modules Change the Meaning of "Framework" { #opt-in-modules }
 
 Large frameworks often acquire gravitational pull.
 
@@ -282,7 +285,7 @@ compose final graph
 
 That is an important form of extensibility because the easiest component to replace is often the component that was never forced into the application in the first place.
 
-## Minimal Core, Incremental Stack
+## Minimal Core, Incremental Stack { #minimal-core }
 
 A good framework should let the service architecture grow according to actual requirements.
 
@@ -335,7 +338,7 @@ First, the dependency surface remains intentional. A technology enters the appli
 
 Second, extensibility does not require replacing a monolithic runtime. The application is already composed from modules, so a custom module naturally fits the same shape.
 
-## Built-In Modules Are Examples of the Same Model
+## Built-In Modules Are Examples of the Same Model { #built-in-modules }
 
 The strongest extension model is one in which framework authors use essentially the same public composition mechanisms they expect application developers to use.
 
@@ -382,7 +385,7 @@ custom bootstrap API
 
 That absence makes the architecture easier to reason about.
 
-## `@Module` Is More Powerful Than a Plugin API
+## `@Module` Is More Powerful Than a Plugin API { #module-plugin-api }
 
 A traditional plugin system often provides a framework-specific interface:
 
@@ -480,7 +483,7 @@ It is dependency injection.
 
 That simplicity is what makes the mechanism powerful.
 
-## Custom and Built-In Components Share the Same Status
+## Custom and Built-In Components Share the Same Status { #custom-builtin-status }
 
 This is one of the most important properties of a truly extensible framework.
 
@@ -533,7 +536,7 @@ First-class does not mean there is an annotation called `@Extension`.
 
 It means custom code does not have to leave the normal application model.
 
-## Strong Defaults Should Be Replaceable at the Contract Boundary
+## Strong Defaults Should Be Replaceable at the Contract Boundary { #contract-boundary }
 
 The most useful default implementation is one selected behind a stable contract.
 
@@ -575,7 +578,7 @@ The framework has a default.
 
 The default is not the only possible implementation.
 
-## Why `@DefaultComponent` Is an Important Design Signal
+## Why `@DefaultComponent` Is an Important Design Signal { #defaultcomponent-signal }
 
 The value of `@DefaultComponent` is larger than the annotation itself.
 
@@ -605,7 +608,7 @@ The same pattern is applicable wherever a framework can cleanly separate policy 
 
 This reduces the risk that framework defaults become organizational constraints.
 
-## Generated Code Should Not Mean Generated Lock-In
+## Generated Code Should Not Mean Generated Lock-In { #generated-code }
 
 Compile-time code generation can create a different kind of lock-in if generated implementations are treated as untouchable internals.
 
@@ -655,7 +658,7 @@ Generation is therefore a convenience and optimization, not necessarily a cage.
 This distinction is important because code generation is sometimes described as making frameworks rigid. In practice, generated code can actually increase flexibility if it creates ordinary typed
 implementations rather than hidden runtime objects.
 
-## Replace the Implementation, Keep the Graph
+## Replace the Implementation, Keep the Graph { #replace-implementation }
 
 A powerful extensibility pattern is replacing one part of an application without changing the rest of its architecture.
 
@@ -699,7 +702,7 @@ This is the essence of inversion of control.
 
 The framework should not own the concrete object merely because it supplied the first one.
 
-## Extensibility Is Strongest When Validation Still Works
+## Extensibility Is Strongest When Validation Still Works { #validation-works }
 
 A hidden escape hatch usually weakens guarantees.
 
@@ -731,7 +734,7 @@ This is much better than a plugin system that says:
 
 > You can extend anything, but once you do, you are on your own.
 
-## Extensibility Should Preserve Lifecycle
+## Extensibility Should Preserve Lifecycle { #preserve-lifecycle }
 
 Dependency construction is only one part of a production framework.
 
@@ -781,7 +784,7 @@ Testing uses another model.
 
 True extensibility includes operational behavior.
 
-## Extensibility Should Preserve Observability
+## Extensibility Should Preserve Observability { #preserve-observability }
 
 A custom component is only truly first-class in production if it can be observed.
 
@@ -819,7 +822,7 @@ custom integration
 
 That symmetry matters more than the number of explicit extension APIs.
 
-## The Difference Between Extensibility and Escape Hatches
+## The Difference Between Extensibility and Escape Hatches { #escape-hatches }
 
 Framework documentation often lists "extension points" as evidence of flexibility.
 
@@ -859,7 +862,7 @@ They are ordinary components.
 
 That drastically reduces the amount of special framework knowledge required.
 
-## Custom Modules Are Architecture, Not Framework Plumbing
+## Custom Modules Are Architecture, Not Framework Plumbing { #custom-modules }
 
 Suppose a company has an internal feature flag service.
 
@@ -921,7 +924,7 @@ The right framework does not need to know those systems in advance.
 
 It needs to make integrating them ordinary.
 
-## Extension Through Composition Is More Stable Than Extension Through Internals
+## Extension Through Composition Is More Stable Than Extension Through Internals { #composition-stability }
 
 Framework internals change.
 
@@ -954,7 +957,7 @@ Dependencies are visible at the type level.
 
 The extension is coupled to what it actually uses.
 
-## One Problem — One Solution Is an Organizational Optimization
+## One Problem — One Solution Is an Organizational Optimization { #one-problem-one-solution }
 
 The phrase "one problem — one solution" can sound dogmatic if interpreted literally.
 
@@ -1012,7 +1015,7 @@ extension boundary
 
 This is arguably a better definition of an opinionated framework than simply providing fewer APIs.
 
-## Lock-In Is About Exit Cost
+## Lock-In Is About Exit Cost { #exit-cost }
 
 A useful way to evaluate lock-in is to ask:
 
@@ -1074,7 +1077,7 @@ The meaningful claim is narrower:
 
 That is a more defensible and useful definition.
 
-## NIH Is Not About Whether the Framework Implements Something
+## NIH Is Not About Whether the Framework Implements Something { #nih }
 
 The "Not Invented Here" criticism is often applied too broadly.
 
@@ -1116,7 +1119,7 @@ The risk appears when that implementation becomes mandatory, opaque, or expensiv
 
 Kora's module and graph design explicitly tries to avoid that trap.
 
-## Native Libraries Remain an Option
+## Native Libraries Remain an Option { #native-libraries }
 
 This becomes particularly important when integrating third-party technologies.
 
@@ -1144,11 +1147,11 @@ This is another way strong defaults avoid becoming lock-in.
 
 The framework can provide preferred integrations for common technologies while leaving the rest of the JVM ecosystem accessible.
 
-## You Can Extend Vertically or Horizontally
+## You Can Extend Vertically or Horizontally { #extend-vertically-horizontally }
 
 Kora's composition model supports two broad kinds of extension.
 
-### Vertical extension
+### Vertical extension { #vertical-extension }
 
 Replace or customize a piece of an existing integration.
 
@@ -1175,7 +1178,7 @@ existing module
    └── replace B
 ```
 
-### Horizontal extension
+### Horizontal extension { #horizontal-extension }
 
 Add an entirely new capability.
 
@@ -1205,7 +1208,7 @@ Vertical extension prevents default behavior from becoming rigid.
 
 Horizontal extension prevents the official module catalog from becoming the boundary of the ecosystem.
 
-## Explicit Graphs Make Replacement Understandable
+## Explicit Graphs Make Replacement Understandable { #explicit-graphs }
 
 Runtime auto-discovery can make replacement surprisingly difficult.
 
@@ -1236,7 +1239,7 @@ The question:
 
 should ideally be answerable from type relationships and graph rules rather than from hidden runtime state.
 
-## Compile-Time Validation Makes Extensibility Safer
+## Compile-Time Validation Makes Extensibility Safer { #compile-time-validation }
 
 Extensibility often increases risk because more combinations become possible.
 
@@ -1276,7 +1279,7 @@ Extensibility remains explicit and typed.
 
 That is a much better model than dynamically loading arbitrary plugins and discovering incompatibilities at startup.
 
-## A Single Graph Prevents "Extension Islands"
+## A Single Graph Prevents "Extension Islands" { #extension-islands }
 
 Some frameworks accumulate subsystems that effectively behave like separate containers.
 
@@ -1312,7 +1315,7 @@ This is the practical meaning of:
 
 > **Custom and built-in components participate in the same model.**
 
-## Testing Reveals Whether Extensibility Is Real
+## Testing Reveals Whether Extensibility Is Real { #testing-extensibility }
 
 A framework's test support is a good place to inspect whether custom components are truly first-class.
 
@@ -1338,7 +1341,7 @@ Testing demonstrates that graph components are replaceable units rather than har
 
 A framework that makes components easy to replace in tests often has a healthier inversion-of-control model in production too.
 
-## Replacement Is Different from Mutation
+## Replacement Is Different from Mutation { #replacement-mutation }
 
 There is another subtle but important design distinction.
 
@@ -1370,7 +1373,7 @@ There is less hidden state and fewer ordering assumptions.
 
 Kora's component model naturally supports replacement-oriented design.
 
-## Extensibility Without Multiple Programming Models
+## Extensibility Without Multiple Programming Models { #no-multiple-models }
 
 Another way frameworks pursue flexibility is by supporting several programming paradigms simultaneously.
 
@@ -1407,7 +1410,7 @@ The framework does not need three ways to express every service method in order 
 
 It needs a public composition model that accepts different implementations.
 
-## Extensibility Should Reduce Fork Pressure
+## Extensibility Should Reduce Fork Pressure { #fork-pressure }
 
 One of the strongest indicators of a closed framework is how often serious users need to fork it.
 
@@ -1447,7 +1450,7 @@ A small custom module is dramatically cheaper.
 
 That is why replaceability is not an academic property. It directly affects maintenance economics.
 
-## The Best Extension Point Is Often a Normal Interface
+## The Best Extension Point Is Often a Normal Interface { #normal-interface }
 
 Frameworks sometimes create elaborate SPIs for capabilities that Java interfaces could already express.
 
@@ -1487,7 +1490,7 @@ This is a useful design principle:
 
 Kora's graph-oriented architecture benefits from this principle.
 
-## Extending Kora With a Custom Integration
+## Extending Kora With a Custom Integration { #custom-integration }
 
 Consider a service that needs an internal document store unavailable as an official Kora integration.
 
@@ -1604,7 +1607,7 @@ At no point does the integration need to bypass Kora.
 
 That is the practical test of extensibility.
 
-## The Custom Module Can Become Part of Your Platform
+## The Custom Module Can Become Part of Your Platform { #custom-module-platform }
 
 This becomes particularly valuable for large organizations.
 
@@ -1641,7 +1644,7 @@ The organization's platform becomes an extension of Kora without requiring a pri
 
 This is one of the strongest real-world advantages of a simple module model.
 
-## Strong Defaults Improve Extension Quality
+## Strong Defaults Improve Extension Quality { #defaults-extension-quality }
 
 There is an interesting paradox here.
 
@@ -1679,7 +1682,7 @@ Which Kora programming model should I support?
 
 Strong defaults reduce the dimensionality of extension.
 
-## The Cost of Extensibility Is Often Combinatorial
+## The Cost of Extensibility Is Often Combinatorial { #combinatorial-cost }
 
 Suppose a framework offers:
 
@@ -1704,7 +1707,7 @@ This is one reason "many extension points" is not automatically a sign of superi
 
 Sometimes it is a sign that the framework has many internal dimensions that require extension points.
 
-## A Good Default Reduces Decision Cost
+## A Good Default Reduces Decision Cost { #reduces-decision-cost }
 
 For most teams, the default path matters much more often than the extension path.
 
@@ -1730,7 +1733,7 @@ The framework wants to be opinionated where repeated choices create little value
 
 It wants to remain composable where real requirements differ.
 
-## The Application Owns the Final Composition
+## The Application Owns the Final Composition { #final-composition }
 
 One of the most important consequences of an explicit `@KoraApp` composition root is that the application—not the framework—describes the final graph.
 
@@ -1779,7 +1782,7 @@ This is much clearer than a system where the classpath implicitly determines app
 
 Explicit composition is therefore both an extensibility mechanism and a governance mechanism.
 
-## There Is Still Such a Thing as Bad Extension Design
+## There Is Still Such a Thing as Bad Extension Design { #bad-extension-design }
 
 Kora's open graph does not automatically make every customization wise.
 
@@ -1806,7 +1809,7 @@ Defaults exist because they encode useful decisions.
 
 Replacing them should be driven by a clear need, not by a reflex to customize.
 
-## When the Default Should Usually Win
+## When the Default Should Usually Win { #default-should-win }
 
 The built-in implementation is normally the right choice when:
 
@@ -1831,7 +1834,7 @@ Extensibility is valuable because it gives an option.
 
 It does not mean every option should be exercised.
 
-## When Replacement Is Justified
+## When Replacement Is Justified { #replacement-justified }
 
 A custom implementation becomes reasonable when there is a clear mismatch.
 
@@ -1852,7 +1855,7 @@ The important point is that Kora does not require those requirements to become f
 
 They can remain application or platform code.
 
-## The Graph Is a Better Extension Boundary Than Global Configuration
+## The Graph Is a Better Extension Boundary Than Global Configuration { #graph-extension-boundary }
 
 Another common customization technique is global configuration.
 
@@ -1884,7 +1887,7 @@ The second is more open-ended.
 
 Kora uses configuration heavily where configuration is appropriate, but the graph provides a stronger escape from predefined options.
 
-## Explicit Composition Helps Migration
+## Explicit Composition Helps Migration { #composition-migration }
 
 Replaceability becomes especially valuable during migrations.
 
@@ -1930,7 +1933,7 @@ This is a practical form of extensibility: the architecture can represent transi
 
 Real systems need those states frequently.
 
-## Explicit Tags Help Multiple Implementations Coexist
+## Explicit Tags Help Multiple Implementations Coexist { #explicit-tags }
 
 Kora's tags provide another mechanism for controlled customization.
 
@@ -1965,7 +1968,7 @@ The broader lesson is that strong defaults do not require pretending there can o
 
 They require the common case to be simple while advanced cases remain representable.
 
-## Compile-Time Extensibility Is Different From Runtime Plugin Loading
+## Compile-Time Extensibility Is Different From Runtime Plugin Loading { #compile-time-vs-runtime }
 
 Kora is not primarily a runtime plugin platform.
 
@@ -1990,7 +1993,7 @@ Compile-time composition is extremely well suited to this class of extension bec
 
 A framework should not be criticized for lacking dynamic plugin loading when the use case does not require it.
 
-## Extensibility Should Be Evaluated Against Real Change Scenarios
+## Extensibility Should Be Evaluated Against Real Change Scenarios { #real-change-scenarios }
 
 The best way to test a framework's extensibility is not to count SPIs.
 
@@ -2018,7 +2021,7 @@ Can we extract our custom integration into a reusable library?
 
 If the answer is yes through ordinary composition, the framework is meaningfully extensible.
 
-## Strong Defaults and Extensibility Reinforce Each Other
+## Strong Defaults and Extensibility Reinforce Each Other { #defaults-extensibility-reinforce }
 
 It may seem that opinionated defaults and extensibility pull in opposite directions.
 
@@ -2071,7 +2074,7 @@ The default reduces everyday decision cost.
 
 The public contract protects the application from lock-in.
 
-## Why This Matters More as a Framework Ages
+## Why This Matters More as a Framework Ages { #framework-ages }
 
 A young framework can often make large design changes.
 
@@ -2093,7 +2096,7 @@ An extensible graph is therefore not only a feature for users.
 
 It is a sustainability mechanism for the framework itself.
 
-## The Real Measure of Extensibility
+## The Real Measure of Extensibility { #real-measure }
 
 A useful equation is:
 
@@ -2134,7 +2137,7 @@ Lifecycle and telemetry remain available.
 
 The application remains one system.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 A strong default is not lock-in.
 

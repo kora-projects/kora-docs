@@ -1,11 +1,14 @@
 ---
 title: Where Kora Framework Performance Comes From
+date: 2026-09-12
 description: The Kora Framework's performance as a budget across compile time, startup, and runtime — generated wiring, thin abstractions, virtual threads, and the costs it cannot remove.
 search:
   exclude: true
 ---
 
-# Where Kora Performance Comes From
+# Where Kora Performance Comes From { #performance }
+
+**September 12, 2026**
 
 Performance discussions around backend frameworks often collapse too quickly into benchmark tables. One framework produces more requests per second than another, a chart is published, and the number
 becomes the explanation. That is useful as an external measurement, but it does not explain *why* a framework behaves the way it does, which costs it removes, which costs remain unavoidable, or
@@ -50,7 +53,7 @@ throughput, latency, memory pressure, and operational efficiency.
 
 ---
 
-## Performance Is an Architecture, Not a Benchmark Mode
+## Performance Is an Architecture, Not a Benchmark Mode { #architecture }
 
 Kora's documentation describes performance as a consequence of compile-time decisions, generated code, thin abstractions, and selected high-performance integrations. That wording is important because
 it shifts the discussion away from a special "performance mode." There is no separate philosophy in which a normal Kora application uses a highly dynamic runtime and then production users have to
@@ -71,7 +74,7 @@ None of these decisions alone guarantees high throughput. Together, however, the
 
 ---
 
-## The First Part of the Budget Is Paid at Compile Time
+## The First Part of the Budget Is Paid at Compile Time { #compile-time }
 
 The central architectural choice in Kora is to make the compiler perform work that many dependency-injection and annotation-heavy frameworks traditionally perform at runtime. Kora's annotation
 processors for Java and KSP processors for Kotlin read application declarations, validate them, and generate source code that is compiled together with the application. The documentation explicitly
@@ -92,7 +95,7 @@ of those events. Compile-time work is not.
 
 ---
 
-## Compile-Time Dependency Injection Removes Runtime Graph Discovery
+## Compile-Time Dependency Injection Removes Runtime Graph Discovery { #compile-time-di }
 
 Dependency injection is the most fundamental example of this design. The Kora container is divided explicitly into compile-time and runtime responsibilities. During compilation, Kora discovers
 components in the declared application and submodule scopes, resolves dependencies, detects errors, validates graph relationships, and generates regular Java code for application startup. Runtime
@@ -115,7 +118,7 @@ initializing framework functionality the application never asked to use.
 
 ---
 
-## Startup Performance Comes From Knowing the Graph in Advance
+## Startup Performance Comes From Knowing the Graph in Advance { #startup }
 
 Fast startup is often discussed as a separate metric from throughput, but in cloud systems it belongs to the same efficiency story. An application instance that spends less time scanning, reflecting,
 synthesizing runtime metadata, and constructing unused infrastructure can reach readiness sooner. That improves local feedback loops, integration-test duration, rolling-deployment behavior, and
@@ -143,7 +146,7 @@ dynamic bootstrapping phase on top of the JVM's own startup behavior.
 
 ---
 
-## Generated Wiring Turns Framework Decisions Into Ordinary Code
+## Generated Wiring Turns Framework Decisions Into Ordinary Code { #generated-wiring }
 
 "Generated code" can sound like a vague optimization until it is translated into execution mechanics. The practical benefit is that a decision made from application metadata can become a statically
 compiled branch, constructor call, field access, or method invocation rather than remaining an abstract description that must be interpreted later.
@@ -161,7 +164,7 @@ compiler performs architectural reasoning; the runtime executes the result.
 
 ---
 
-## Routes Are Prepared Before Requests Arrive
+## Routes Are Prepared Before Requests Arrive { #routing }
 
 HTTP routing is another place where frameworks can either retain metadata for runtime interpretation or generate request-handling code ahead of time. Kora's HTTP infrastructure is based on explicit
 controller and route declarations, with generated controller modules and adapters connecting request parameters, mappings, interceptors, and controller methods.
@@ -177,7 +180,7 @@ This is an important pattern throughout Kora: necessary runtime work remains run
 
 ---
 
-## Mapping Is a Major Part of Real Backend Cost
+## Mapping Is a Major Part of Real Backend Cost { #mapping }
 
 Synthetic plaintext benchmarks are useful for understanding the lower bound of framework overhead, but real services spend significant time converting data between representations. JSON bytes become
 DTOs, database rows become domain objects, method arguments become SQL parameters, configuration text becomes typed settings, and application objects become network payloads. Mapping is therefore a
@@ -195,7 +198,7 @@ every integration abandon the ecosystem. The framework allows generated and Jack
 
 ---
 
-## JDBC Repositories Move Query Plumbing Out of the Hot Path
+## JDBC Repositories Move Query Plumbing Out of the Hot Path { #jdbc-repositories }
 
 Database access demonstrates the same principle even more concretely. A Kora JDBC repository describes a query declaratively, but the implementation is generated. The documentation states that
 parameter binding is emitted as typed JDBC calls. A `String name` parameter, for example, can become generated code equivalent to `statement.setString(index, name)`.
@@ -236,7 +239,7 @@ operation instead of constructing an entirely separate persistence runtime with 
 
 ---
 
-## Compile-Time AOP Avoids a Generic Runtime Proxy Layer
+## Compile-Time AOP Avoids a Generic Runtime Proxy Layer { #compile-time-aop }
 
 Annotations for validation, caching, resilience, transactions, scheduling, security, and logging are convenient, but annotation-driven frameworks often pay for that convenience by introducing runtime
 proxying. Kora's approach is different: aspects are processed and source code is generated at compile time. The landing documentation explicitly describes production aspects as generated without
@@ -255,7 +258,7 @@ to win a benchmark would not demonstrate useful framework performance. The goal 
 
 ---
 
-## Direct Method Calls Are More Important Than They Sound
+## Direct Method Calls Are More Important Than They Sound { #direct-method-calls }
 
 "Direct method calls" can sound too trivial to deserve a section. On the JVM, however, architecture influences what the JIT compiler can see and optimize. A normal Java call through a stable, often
 monomorphic call site is a pattern HotSpot has spent decades optimizing. It can profile it, devirtualize it in many situations, inline it when profitable, and optimize code across the resulting
@@ -273,7 +276,7 @@ should be.
 
 ---
 
-## Thin Abstractions Reduce the Semantic and Runtime Distance
+## Thin Abstractions Reduce the Semantic and Runtime Distance { #thin-abstractions }
 
 Kora deliberately stays close to JDBC, Kafka, gRPC, HTTP, and other underlying technologies. This is usually presented as a transparency and maintainability advantage, but it also has a performance
 dimension. Every framework abstraction potentially introduces extra objects, conversion layers, state machines, queues, schedulers, or semantic translation. None of those things are automatically bad;
@@ -290,7 +293,7 @@ framework-internal adapters whose relationship to the underlying operation is un
 
 ---
 
-## Selected Libraries Are Part of the Performance Story
+## Selected Libraries Are Part of the Performance Story { #selected-libraries }
 
 Compile-time generation cannot compensate for a poor transport or database client. Kora therefore treats library selection as part of framework design. Its HTTP server implementation is based on
 Undertow, a lightweight asynchronous NIO server, while Kora dispatches request handling to virtual threads rather than a bounded blocking worker pool. The documentation explicitly notes that there are
@@ -309,7 +312,7 @@ rediscover.
 
 ---
 
-## Virtual Threads Change Concurrency Overhead, Not Resource Limits
+## Virtual Threads Change Concurrency Overhead, Not Resource Limits { #virtual-threads }
 
 Kora 2 executes application code synchronously on virtual threads. Controllers, clients, repositories, and scheduled tasks use ordinary blocking signatures, and HTTP request handling is dispatched
 onto virtual threads. This is central to runtime performance because it allows Kora to preserve straightforward thread-per-operation code without requiring a large platform-thread pool for every
@@ -330,7 +333,7 @@ Kora's virtual-thread model should therefore be understood as the removal of one
 
 ---
 
-## "Minimal Allocations" Needs a Precise Definition
+## "Minimal Allocations" Needs a Precise Definition { #minimal-allocations }
 
 It is tempting to summarize Kora runtime performance as "minimal allocations," but that phrase needs care. A normal request necessarily allocates in many circumstances. HTTP request state exists. JSON
 may create DTOs, strings, collections, and byte buffers. Database drivers allocate protocol and result objects. OpenTelemetry can create observation state. Application business logic constructs its
@@ -347,7 +350,7 @@ The important engineering principle is therefore not "Kora allocates almost noth
 
 ---
 
-## Fewer Runtime Abstractions Can Improve JIT Warm-Up
+## Fewer Runtime Abstractions Can Improve JIT Warm-Up { #jit-warm-up }
 
 Steady-state throughput is only one dimension of JVM performance. Services also pass through an early period in which HotSpot collects profiling information and compiles frequently executed methods. A
 framework with a smaller and more direct runtime path gives the JIT less framework machinery to warm up before request execution resembles steady state.
@@ -361,7 +364,7 @@ real production behavior should still be verified under load.
 
 ---
 
-## Performance Budget: What Kora Removes and What It Cannot Remove
+## Performance Budget: What Kora Removes and What It Cannot Remove { #performance-budget }
 
 A useful way to reason about Kora is to separate avoidable framework overhead from unavoidable application work.
 
@@ -380,7 +383,7 @@ Framework efficiency is most valuable precisely because application teams cannot
 
 ---
 
-## A Request Path Through the Performance Budget
+## A Request Path Through the Performance Budget { #request-path }
 
 Consider a representative Kora endpoint that receives JSON, validates it, calls a service protected by a circuit breaker, executes a JDBC repository query, and returns JSON. The runtime path contains
 real work at every layer, but much of the framework configuration has already been transformed into code:
@@ -423,7 +426,7 @@ A high-level declarative programming model and a low-overhead runtime are theref
 
 ---
 
-## Why Benchmark Results Can Reflect the Architecture
+## Why Benchmark Results Can Reflect the Architecture { #benchmark-results }
 
 Kora's landing page currently cites an external TechEmpower "Single query" snapshot in which Kora JDBC Repository is among the highest-throughput JVM entries shown. That is useful evidence that the
 architecture can translate into high throughput under a controlled workload. It is not proof that every production Kora application will have the same relative advantage.
@@ -441,7 +444,7 @@ executes per request, and then use benchmarks to verify the consequences."
 
 ---
 
-## Throughput Is Only One Output of Efficiency
+## Throughput Is Only One Output of Efficiency { #throughput }
 
 A framework can be efficient even when an application does not need maximum throughput. Lower per-request CPU means more headroom for traffic spikes or fewer cores for the same workload. Lower startup
 overhead means faster integration tests and faster horizontal scaling. A smaller baseline object graph means less memory retained before the application even processes a request. A shorter warm-up
@@ -455,7 +458,7 @@ that has to be provisioned, started, warmed, and paid for on every instance.
 
 ---
 
-## Compile-Time Work Has a Cost, and That Cost Should Be Visible
+## Compile-Time Work Has a Cost, and That Cost Should Be Visible { #compile-time-cost }
 
 A balanced discussion has to include the cost Kora chooses to pay. Annotation processing and KSP generation add build work. Generated source increases the amount of code the compiler must compile.
 Large application graphs require processor analysis. Kotlin projects pay additional KSP overhead, and the Kora documentation explicitly notes that Kotlin processing is usually slower than Java
@@ -472,7 +475,7 @@ Performance engineering is always about where the cost is paid, not whether cost
 
 ---
 
-## Thin Runtime Does Not Mean Featureless Runtime
+## Thin Runtime Does Not Mean Featureless Runtime { #thin-runtime }
 
 A common way to make a benchmark fast is to remove production features. Disable tracing, skip metrics, bypass validation, avoid resilience, use a hand-written router, and compare the resulting minimal
 loop with a full application stack. That tells little about production engineering.
@@ -488,7 +491,7 @@ A performant production framework should not merely be fast when nothing is enab
 
 ---
 
-## Performance Predictability May Matter More Than Peak Numbers
+## Performance Predictability May Matter More Than Peak Numbers { #predictability }
 
 There is another advantage to compile-time generation that is harder to express in benchmark charts: predictability. Dynamic framework behavior can introduce costs that appear only for particular
 classes, annotations, proxy shapes, classloader conditions, or rarely used paths. Compile-time validation and generation reduce the number of runtime decisions that can surprise the application.
@@ -504,7 +507,7 @@ That is a meaningful form of performance.
 
 ---
 
-## Where the Real Bottleneck Moves
+## Where the Real Bottleneck Moves { #bottleneck }
 
 Once framework overhead becomes small, bottlenecks move toward the application and its dependencies. This is a good outcome, but it changes what engineers should optimize.
 
@@ -520,7 +523,7 @@ backpressure, pool sizing, tail-latency analysis, and downstream protection stil
 
 ---
 
-## How to Measure Whether Kora's Architecture Helps Your Service
+## How to Measure Whether Kora's Architecture Helps Your Service { #measurement }
 
 The correct way to evaluate a performance-oriented framework is not to trust either marketing claims or one public benchmark. Build a workload that resembles the service you care about and decompose
 the result.
@@ -537,7 +540,7 @@ question explains whether the result will generalize to a different workload.
 
 ---
 
-## The Performance Budget in One View
+## The Performance Budget in One View { #budget-overview }
 
 The complete Kora performance model can be summarized without reducing it to a slogan.
 
@@ -558,7 +561,7 @@ That is a much more useful explanation than "Kora is fast because it has no refl
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora performance comes primarily from deciding *when* framework work should happen and *how much* framework machinery should remain after that work is done. The framework pushes structural reasoning
 into compilation: dependency wiring, generated mappings, repository implementations, routes, and aspects become source code before the application starts. Startup operates on a graph that already

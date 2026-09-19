@@ -1,11 +1,14 @@
 ---
 title: Structured Concurrency in Kora Framework Applications
+date: 2026-08-31
 description: How Java structured concurrency (StructuredTaskScope) fits the Kora Framework's synchronous virtual-thread model — fan-out, failure domains, deadlines, cancellation, and keeping parallelism local.
 search:
   exclude: true
 ---
 
-# Structured Concurrency in Kora Applications
+# Structured Concurrency in Kora Applications { #structured-concurrency }
+
+**August 31, 2026**
 
 Modern backend services are rarely sequential. A single HTTP request may need to load a user profile, retrieve recent orders, calculate permissions, call one or more external services, and fetch
 recommendations before it can construct the final response. When those operations are independent, executing them one after another creates avoidable latency. A profile request taking 40 milliseconds,
@@ -28,7 +31,7 @@ operations concurrently. The caller still gets a simple completion contract: whe
 
 ---
 
-## Kora 2 and the Return to Synchronous Application Code
+## Kora 2 and the Return to Synchronous Application Code { #kora-2-synchronous }
 
 Kora 2 is designed around direct synchronous application code. HTTP controllers, repositories, clients, scheduled operations, and other framework contracts use ordinary Java and Kotlin method
 signatures, while virtual threads provide the execution model underneath them. This allows application code to perform blocking JDBC, HTTP, gRPC, filesystem, or other I/O without requiring every layer
@@ -145,7 +148,7 @@ relationship between the parent operation and its children, and that relationshi
 
 ---
 
-## Structured Concurrency Is Primarily About Ownership
+## Structured Concurrency Is Primarily About Ownership { #ownership }
 
 It is easy to mistake structured concurrency for a more convenient syntax for submitting tasks. Its main advantage, however, is not shorter code but explicit ownership.
 
@@ -199,7 +202,7 @@ belongs and when it must be closed. Structured concurrency applies the same prin
 
 ---
 
-## Fan-Out as a Local Orchestration Pattern
+## Fan-Out as a Local Orchestration Pattern { #fan-out }
 
 The most obvious use case for `StructuredTaskScope` is fan-out. An incoming request reaches an orchestration layer where several independent dependencies can be queried simultaneously, and their
 results are combined before returning the response. Typical examples include API aggregation endpoints, dashboards, search enrichment, pricing aggregation, permission loading, or retrieving
@@ -260,7 +263,7 @@ should describe genuine independence between operations.
 
 ---
 
-## Failure Propagation as Part of the Operation
+## Failure Propagation as Part of the Operation { #failure-propagation }
 
 Concurrent execution becomes much more interesting when one branch fails. Suppose profile loading succeeds, order loading fails, and recommendations are still running. If all three results are
 required to construct the response, continuing the recommendations request no longer provides value. The overall logical operation has already become impossible to complete successfully.
@@ -316,7 +319,7 @@ to decide whether one failing child invalidates the whole result.
 
 ---
 
-## Cancellation and Cooperative Termination
+## Cancellation and Cooperative Termination { #cancellation }
 
 Cancellation is one of the strongest reasons to prefer structured concurrency over casual executor usage. When the parent no longer needs a child task, the child can be cancelled as part of the same
 structured operation. This prevents requests from leaving behind unnecessary work after failure or timeout.
@@ -382,7 +385,7 @@ The structured scope can provide a clean cancellation model only when the code u
 
 ---
 
-## Deadlines and Request Budgets
+## Deadlines and Request Budgets { #deadlines }
 
 Timeouts and deadlines are closely related but conceptually different. A timeout answers how long an individual operation may wait. A deadline answers how much time the parent request has left before
 it is no longer useful.
@@ -449,7 +452,7 @@ that mirrors the task hierarchy: parent operations own the deadline, and child o
 
 ---
 
-## Request Scope as an Execution Tree
+## Request Scope as an Execution Tree { #request-scope }
 
 Structured concurrency becomes particularly intuitive when the task scope is viewed as part of the HTTP request itself. Kora already executes synchronous request handling on a virtual thread. When a
 service needs internal parallelism, that root virtual thread can create a structured subtree of child virtual threads and wait for them before continuing.
@@ -495,7 +498,7 @@ parent cannot casually abandon that child without explicitly ending or cancellin
 
 ---
 
-## Scoped Context and Observability
+## Scoped Context and Observability { #observability }
 
 Concurrent execution becomes much harder to use safely when child tasks lose request context. Backend requests often carry tracing information, authentication data, tenant identifiers, request
 metadata, locale, or logging correlation values. Historically, executor-based concurrency required frameworks and libraries to capture and restore this context manually because an arbitrary executor
@@ -514,7 +517,7 @@ fan-out actually improved latency rather than merely increasing downstream load.
 
 ---
 
-## The Critical Path Matters More Than the Number of Tasks
+## The Critical Path Matters More Than the Number of Tasks { #critical-path }
 
 Parallel execution reduces avoidable serialization, but it does not remove the concept of a critical path. If profile loading takes 40 milliseconds, orders take 60 milliseconds, and recommendations
 take 90 milliseconds, parallel execution can reduce the combined waiting time from roughly 190 milliseconds to around 90 milliseconds. If recommendations suddenly take 900 milliseconds, however, the
@@ -531,7 +534,7 @@ dominate the critical path, and where optimization work will actually affect use
 
 ---
 
-## Fail-Fast, Wait-for-All, and First-Success Policies
+## Fail-Fast, Wait-for-All, and First-Success Policies { #policies }
 
 Not every concurrent operation has the same completion semantics. Some operations require all children to succeed, while others may need only the first successful result.
 
@@ -576,7 +579,7 @@ whether partial failure is acceptable, and then use the concurrency model that m
 
 ---
 
-## Keep Parallelism at the Orchestration Layer
+## Keep Parallelism at the Orchestration Layer { #orchestration-layer }
 
 One of the most useful architectural properties of structured concurrency is that it allows concurrency to remain local. A repository does not need to return a future simply because one caller may
 eventually want to run it in parallel with another repository. An HTTP client does not need an asynchronous return type merely because some orchestration layer wants to issue several independent
@@ -636,7 +639,7 @@ controller, and test layers to become asynchronous end to end.
 
 ---
 
-## Structured Scope Is Not Application Scope
+## Structured Scope Is Not Application Scope { #scope-vs-app }
 
 A `StructuredTaskScope` should normally be short-lived and tied to a specific operation. It is not a replacement for an application-wide executor or worker pool.
 
@@ -660,7 +663,7 @@ completion boundary.
 
 ---
 
-## Cheap Threads Do Not Mean Unlimited Concurrency
+## Cheap Threads Do Not Mean Unlimited Concurrency { #cheap-threads }
 
 Virtual threads make blocked threads inexpensive compared with platform threads, but they do not remove downstream bottlenecks. A service may be able to create thousands of virtual threads, while its
 database still has a 50-connection pool and its remote dependency still accepts only a few hundred requests per second.
@@ -680,7 +683,7 @@ For that reason, introducing fan-out should be treated as an architectural capac
 
 ---
 
-## Database Work Requires Additional Care
+## Database Work Requires Additional Care { #database-work }
 
 JDBC works naturally with virtual threads because blocking on a JDBC operation no longer implies dedicating one expensive platform thread per request. However, this does not mean every database
 operation should be parallelized.
@@ -696,7 +699,7 @@ whether the resources underneath them can safely and efficiently support the add
 
 ---
 
-## CPU-Bound Work Has a Different Cost Model
+## CPU-Bound Work Has a Different Cost Model { #cpu-bound }
 
 Structured concurrency is particularly attractive for I/O-heavy backend workloads because virtual threads can cheaply block while waiting for network, database, or filesystem operations. CPU-bound
 work behaves differently.
@@ -711,7 +714,7 @@ This distinction is fundamental: virtual threads primarily improve the economics
 
 ---
 
-## Nested Structured Concurrency
+## Nested Structured Concurrency { #nested }
 
 Real request graphs are often hierarchical rather than flat. A request may load a profile, commerce information, and personalization data in parallel. The commerce branch may itself load orders and
 refunds concurrently, while personalization may concurrently retrieve recommendations and experiment assignments.
@@ -776,7 +779,7 @@ operation should not receive a fresh 500 milliseconds. It has approximately 420 
 
 ---
 
-## Partial Results and Graceful Degradation
+## Partial Results and Graceful Degradation { #partial-results }
 
 Some endpoints should return useful data even when optional dependencies fail. Structured concurrency does not require every branch to share the same error policy.
 
@@ -820,7 +823,7 @@ Structured concurrency provides the lifecycle and coordination mechanism. The bu
 
 ---
 
-## Structured Concurrency and Kora Resilience
+## Structured Concurrency and Kora Resilience { #resilience }
 
 Kora already provides resilience mechanisms such as timeout, retry, circuit breaker, and fallback. Structured concurrency complements these mechanisms rather than replacing them.
 
@@ -856,7 +859,7 @@ A child operation should not keep retrying for two seconds when the request that
 
 ---
 
-## Cancellation Does Not Mean Rollback
+## Cancellation Does Not Mean Rollback { #cancellation-rollback }
 
 Structured concurrency is easiest to reason about for read operations because cancelling a read usually means abandoning unnecessary work. Side-effecting operations are more complicated.
 
@@ -871,7 +874,7 @@ happened outside the JVM.
 
 ---
 
-## Structured Concurrency and `CompletableFuture`
+## Structured Concurrency and `CompletableFuture` { #completablefuture }
 
 It is tempting to treat `StructuredTaskScope` as a nicer syntax for `CompletableFuture`, but the two abstractions have different semantics.
 
@@ -889,7 +892,7 @@ rather than detached from the request as an untracked virtual thread.
 
 ---
 
-## Structured Concurrency Is Not `parallelStream()`
+## Structured Concurrency Is Not `parallelStream()` { #parallelstream }
 
 Parallel streams also execute work concurrently, but they solve a different class of problem. A parallel stream primarily represents data parallelism: apply the same transformation to many elements of
 a collection.
@@ -902,7 +905,7 @@ operation uniformly across a collection.
 
 ---
 
-## Choosing What to Parallelize
+## Choosing What to Parallelize { #choosing }
 
 Good candidates for structured fan-out usually share several characteristics. The operations are genuinely independent, their latency is large enough that overlapping it matters, the downstream
 systems can absorb the extra concurrency, and the operations share a coherent parent lifecycle.
@@ -918,7 +921,7 @@ shape of the entire application.
 
 ---
 
-## A Production-Oriented Kora Pattern
+## A Production-Oriented Kora Pattern { #production-pattern }
 
 A typical Kora aggregation endpoint can therefore use a structure like this:
 
@@ -961,7 +964,7 @@ Most importantly, no asynchronous return type has to escape the service merely b
 
 ---
 
-## Java 25 and Preview API Considerations
+## Java 25 and Preview API Considerations { #java-25-preview }
 
 Kora 2.0 targets modern Java, and the structured concurrency API available in Java 25 is still a preview API. That has practical consequences for build and deployment configuration because preview
 features must be enabled both during compilation and when running the JVM.
@@ -995,7 +998,7 @@ and scope configuration. When writing Kora 2 code, examples should therefore be 
 
 ---
 
-## Kotlin Applications
+## Kotlin Applications { #kotlin }
 
 The same architectural model applies to Kotlin applications running on Kora 2. The framework-level API does not need to become coroutine-based merely because I/O is involved. A service can expose an
 ordinary synchronous function such as:
@@ -1011,7 +1014,7 @@ known.
 
 ---
 
-## Common Mistakes
+## Common Mistakes { #common-mistakes }
 
 Several mistakes are worth avoiding when structured concurrency is introduced into an existing Kora application.
 
@@ -1032,7 +1035,7 @@ request's structured scope.
 
 ---
 
-## A Practical Design Checklist
+## A Practical Design Checklist { #design-checklist }
 
 Before converting sequential code into a structured fan-out, it is useful to answer a small set of architectural questions. Are the operations genuinely independent? Is enough latency involved for
 overlap to matter? Are all results mandatory, or can some dependencies degrade gracefully? What should happen when one branch fails? Can other branches be safely cancelled? Do the underlying libraries
@@ -1043,7 +1046,7 @@ If those questions have clear answers, `StructuredTaskScope` is probably being i
 
 ---
 
-## From Thread-per-Request to Structured Task Trees
+## From Thread-per-Request to Structured Task Trees { #thread-per-request }
 
 The most interesting consequence of virtual threads is not simply that Java can return to the old thread-per-request model. The newer model is richer than that because one request can become a
 structured tree of related virtual threads.
@@ -1074,7 +1077,7 @@ bound to that request.
 
 ---
 
-## Why Structured Concurrency Fits Kora
+## Why Structured Concurrency Fits Kora { #why-kora }
 
 This model matches Kora's broader design philosophy particularly well. Kora tries to keep framework abstractions thin and to stay close to standard Java and the underlying technologies it integrates
 with. Dependency injection is generated at compile time, repositories expose direct typed methods, HTTP controllers and clients use ordinary signatures, and virtual threads allow blocking APIs to
@@ -1100,7 +1103,7 @@ and the runtime behavior underneath it.
 
 ---
 
-## The Architectural Shift: Synchronous Does Not Mean Sequential
+## The Architectural Shift: Synchronous Does Not Mean Sequential { #architectural-shift }
 
 For a long time, backend development often treated synchronous and concurrent programming as opposites. Synchronous usually implied blocking and sequential execution, while asynchronous APIs were the
 primary way to express large amounts of concurrency.
@@ -1130,7 +1133,7 @@ This is one of the most important architectural consequences of structured concu
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Structured concurrency is a natural continuation of Kora 2's virtual-thread-first execution model. Virtual threads solve the scalability problem of blocking I/O by making waiting threads inexpensive.
 Structured concurrency solves the lifecycle problem that appears when one logical operation needs several concurrent children.

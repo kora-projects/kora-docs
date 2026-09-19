@@ -1,11 +1,14 @@
 ---
 title: Kora Skill — the Missing Layer Between Documentation and AI Agents
+date: 2026-08-19
 description: How a Kora Framework "skill" bridges human documentation and AI coding agents, giving agents an authoritative, executable view of the framework.
 search:
   exclude: true
 ---
 
-# Kora Skill as the Missing Layer Between Documentation and AI Agents
+# Kora Skill as the Missing Layer Between Documentation and AI Agents { #kora-skill-as-missing }
+
+**August 19, 2026**
 
 Framework documentation was written for people.
 
@@ -41,7 +44,7 @@ Kora-aware agent
 
 That model has implications far beyond Kora. It suggests that frameworks may no longer need to wait for future generations of large language models to absorb their APIs indirectly from public code and forum archives. They can ship their own current expertise as a versioned artifact.
 
-## The Problem: General AI Knowledge Is Broad but Not Canonical
+## The Problem: General AI Knowledge Is Broad but Not Canonical { #problem-general-ai-knowledge }
 
 A modern coding model already knows a great deal about backend engineering. It can reason about constructors, interfaces, generics, HTTP, JDBC, SQL, Kafka, gRPC, retries, transactions, OpenTelemetry, and build systems. It may also understand the general idea of compile-time dependency injection and code generation. That broad knowledge is enormously useful to Kora because the framework intentionally stays close to those concepts.
 
@@ -71,7 +74,7 @@ and may infer behavior from Micronaut. It sees an annotation-driven HTTP control
 
 A framework-specific skill can reduce this ambiguity before the first edit.
 
-## Hallucinated Framework APIs Are Often Plausible
+## Hallucinated Framework APIs Are Often Plausible { #hallucinated-framework-apis-often }
 
 One of the most frustrating AI errors is not obviously absurd code. It is code that looks exactly like something that *should* exist.
 
@@ -109,7 +112,7 @@ The output looks reasonable. That is precisely why it is dangerous. The model is
 
 An official skill gives the agent a stronger source of framework identity than statistical familiarity.
 
-## The Skill Changes the Source-of-Truth Hierarchy
+## The Skill Changes the Source-of-Truth Hierarchy { #skill-changes-source-truth }
 
 Without framework-specific guidance, an agent may implicitly rank information like this:
 
@@ -143,7 +146,7 @@ model prior knowledge as background
 
 The model still uses what it knows about Java, SQL, HTTP, Kafka, and distributed systems. But framework-specific assumptions are now anchored in official current context. This is a profound improvement in reliability.
 
-## An Official Skill Can Partially Replace Corpus Size With Authoritative Context
+## An Official Skill Can Partially Replace Corpus Size With Authoritative Context { #official-skill-partially-replace }
 
 Older frameworks have a historical advantage in AI systems. They have decades of public code, books, tutorials, Stack Overflow answers, blog posts, conference materials, and GitHub examples. Language models have seen them everywhere.
 
@@ -169,7 +172,7 @@ This leads to a strong general principle:
 
 It does not eliminate the value of a large ecosystem. Production experience, third-party integrations, independent bug reports, and public knowledge still matter. But for the narrow question “can the AI agent use the framework correctly today?”, current authoritative context can matter more than how many 2018 blog posts the model absorbed during pretraining.
 
-## Documentation and Skills Solve Different Problems
+## Documentation and Skills Solve Different Problems { #documentation-skills-solve-different }
 
 The Skill should not replace documentation. That distinction is essential.
 
@@ -203,7 +206,7 @@ Treat generated code as inspectable output, not handwritten source.
 
 Those are not merely facts. They are instructions for reasoning.
 
-## Documentation Tells What Exists; Skill Tells the Agent How to Reason About It
+## Documentation Tells What Exists; Skill Tells the Agent How to Reason About It { #documentation-tells-what-exists }
 
 A useful separation is:
 
@@ -227,7 +230,7 @@ This is important because an AI agent does not merely retrieve information. It d
 
 The Skill can shape those decisions.
 
-## Kora Skill Is a Navigation Layer Over Existing Truth
+## Kora Skill Is a Navigation Layer Over Existing Truth { #kora-skill-navigation-layer }
 
 The best skill should not duplicate all documentation into one enormous prompt. That would create another stale knowledge store.
 
@@ -258,7 +261,7 @@ rather than modifying framework internals.
 
 Now the Skill remains relatively small while the real source of facts stays in docs, examples, source, and generated code. This is a better architecture than copying the framework manual into an agent prompt.
 
-## A Skill Can Encode Canonical Preference, Not Just Capability
+## A Skill Can Encode Canonical Preference, Not Just Capability { #skill-encode-canonical-preference }
 
 Reference docs often need to describe multiple capabilities neutrally. An agent needs more. It needs to know which solution the project should generate by default.
 
@@ -276,7 +279,7 @@ generated API
 
 The documentation may describe all of them. The Skill can explain which path is canonical for normal application development and which paths are escape hatches. This reduces the chance that an agent generates technically legal but stylistically alien code.
 
-## Low Ambiguity Matters More for Agents Than Humans
+## Low Ambiguity Matters More for Agents Than Humans { #low-ambiguity-matters-agents }
 
 A senior engineer can tolerate several valid alternatives because they understand the trade-offs. An autonomous agent has to choose one without that accumulated project history.
 
@@ -294,7 +297,7 @@ low ambiguity
 
 That affects more than initial code generation. It improves consistency, review cost, maintenance, onboarding, automated refactoring, and migration. A codebase generated by agents becomes much easier to trust when the framework itself gives them a narrow canonical target.
 
-## The Skill Can Encode Knowledge That Does Not Fit Javadoc
+## The Skill Can Encode Knowledge That Does Not Fit Javadoc { #skill-encode-knowledge-fit }
 
 Some of the most important framework knowledge is difficult to express in API reference.
 
@@ -313,7 +316,7 @@ These statements are not method documentation. They are **operational knowledge*
 
 Historically, operational knowledge lived in senior engineers, team wikis, code reviews, conference talks, Slack threads, and unwritten conventions. A Skill creates a machine-readable place for that knowledge.
 
-## The Skill Can Encode Expert Expectations
+## The Skill Can Encode Expert Expectations { #skill-encode-expert-expectations }
 
 This leads to one of the strongest formulations:
 
@@ -325,7 +328,7 @@ A framework is more than its available methods and annotations. It has architect
 
 The Skill can transmit intent.
 
-## Operational Knowledge Used to Be Tribal Knowledge
+## Operational Knowledge Used to Be Tribal Knowledge { #operational-knowledge-used-be }
 
 Consider a typical experienced-team workflow.
 
@@ -346,7 +349,7 @@ An AI agent needs the same correction loop, but we can move part of it earlier. 
 
 That is organizational leverage.
 
-## The Skill Turns Passive Knowledge Into Action
+## The Skill Turns Passive Knowledge Into Action { #skill-turns-passive-knowledge }
 
 Documentation is passive. A human or agent reads it and decides what to do.
 
@@ -376,7 +379,7 @@ This is why:
 
 > **Documentation explains Kora. Kora Skill operationalizes that knowledge for an agent.**
 
-## “Executable Framework Knowledge” Is a Useful Mental Model
+## “Executable Framework Knowledge” Is a Useful Mental Model { #executable-framework-knowledge-useful }
 
 The Skill is not executable code in the traditional sense, but it is executable *guidance*.
 
@@ -400,7 +403,7 @@ tests
 
 That makes the Skill part of the development system. It is not merely educational material.
 
-## Kora’s Generated Code Makes the Skill More Powerful
+## Kora’s Generated Code Makes the Skill More Powerful { #kora-s-generated-code }
 
 Many frameworks could publish skills. Kora has a particularly strong combination because the Skill can direct the agent toward concrete generated artifacts.
 
@@ -420,7 +423,7 @@ explains / fixes exact project
 
 This is a major difference from a skill that can only repeat generic documentation. Kora can tell the agent where the truth becomes executable source.
 
-## The Skill Can Teach the Debugging Model
+## The Skill Can Teach the Debugging Model { #skill-teach-debugging-model }
 
 For example, an official Skill can encode a diagnostic procedure for dependency injection:
 
@@ -453,7 +456,7 @@ For repositories:
 
 This is framework expertise encoded as procedure.
 
-## Generated Source Becomes a Real AI Debugging Mechanism
+## Generated Source Becomes a Real AI Debugging Mechanism { #generated-source-becomes-real }
 
 Kora’s transparency has always benefited human debugging. The Skill makes that transparency operational for agents.
 
@@ -461,7 +464,7 @@ Without guidance, a model may not know that generated source is the right place 
 
 With the Skill, generated code becomes an intentional part of the investigation path. This converts a passive framework property into an active AI capability.
 
-## The Skill Can Prevent Editing Generated Output
+## The Skill Can Prevent Editing Generated Output { #skill-prevent-editing-generated }
 
 This sounds trivial but matters in automated workflows.
 
@@ -478,7 +481,7 @@ change the declaration / module / processor input instead
 
 That prevents a class of brittle fixes. Again, this is operational knowledge rather than API documentation.
 
-## Kora’s Compiler Feedback Fits Naturally Into the Skill
+## Kora’s Compiler Feedback Fits Naturally Into the Skill { #kora-s-compiler-feedback }
 
 The current Kora architecture already treats compiler diagnostics as a primary feedback surface. A Skill can teach the agent to trust that surface.
 
@@ -498,7 +501,7 @@ This is especially effective for AI because language models are probabilistic wh
 
 The Skill can tell the model when to stop guessing and ask the compiler.
 
-## Skill + Compiler Is Stronger Than Skill Alone
+## Skill + Compiler Is Stronger Than Skill Alone { #skill-compiler-stronger-than }
 
 This is a crucial distinction.
 
@@ -522,7 +525,7 @@ The Skill guides. The compiler and tests adjudicate.
 
 This is a robust system.
 
-## The Skill Can Reduce Springisms
+## The Skill Can Reduce Springisms { #skill-reduce-springisms }
 
 One of the most practical values of framework-specific guidance is preventing foreign conventions.
 
@@ -547,7 +550,7 @@ Use Kora's own component, module, repository, AOP, and configuration model.
 
 This kind of guidance can dramatically improve first-pass code quality.
 
-## The Skill Can Reduce Version Mixing
+## The Skill Can Reduce Version Mixing { #skill-reduce-version-mixing }
 
 Version mixing is an even harder problem.
 
@@ -564,7 +567,7 @@ The current official `kora-skills` repository illustrates why versioned skills m
 
 That is not a minor packaging detail. It demonstrates the architecture of machine-facing version knowledge.
 
-## Versioned Skills Can Make Framework Evolution Safer
+## Versioned Skills Can Make Framework Evolution Safer { #versioned-skills-make-framework }
 
 Imagine:
 
@@ -585,7 +588,7 @@ The model no longer has to infer version boundaries from statistical memory.
 
 This reduces accidental API mixing.
 
-## A Framework No Longer Has to Wait for the Next Model Training Cycle
+## A Framework No Longer Has to Wait for the Next Model Training Cycle { #framework-longer-has-wait }
 
 This is one of the most important AI-era implications.
 
@@ -613,7 +616,7 @@ This supports a strong general principle:
 
 That is a significant shift in developer tooling.
 
-## Framework Releases May Eventually Include Agent Knowledge as a Normal Artifact
+## Framework Releases May Eventually Include Agent Knowledge as a Normal Artifact { #framework-releases-eventually-include }
 
 A mature release process could treat agent guidance the same way it treats documentation and examples.
 
@@ -631,7 +634,7 @@ all evolve together.
 
 The Skill can encode new canonical APIs, removed patterns, migration warnings, debugging changes, new generated-code locations, and new recommended modules. This turns AI compatibility into a maintained product surface instead of a byproduct of public internet coverage.
 
-## Skills Create a New Kind of Compatibility Surface
+## Skills Create a New Kind of Compatibility Surface { #skills-create-new-kind }
 
 Once a framework ships official AI guidance, maintainers need to treat it seriously.
 
@@ -643,7 +646,7 @@ Therefore Skill maintenance should be versioned and reviewed alongside docs.
 
 The skill is not “just prompt text.” It becomes part of framework compatibility.
 
-## This Suggests Documentation CI for Agent Guidance
+## This Suggests Documentation CI for Agent Guidance { #suggests-documentation-ci-agent }
 
 Framework teams already test code, examples, documentation snippets, and generated artifacts.
 
@@ -664,7 +667,7 @@ and evaluate whether supported agents consistently follow current conventions.
 
 The goal is not deterministic natural-language output. The goal is detecting major guidance regressions.
 
-## A Skill Can Encode Migration Knowledge
+## A Skill Can Encode Migration Knowledge { #skill-encode-migration-knowledge }
 
 Major migrations are where general LLM knowledge becomes particularly risky.
 
@@ -683,7 +686,7 @@ Now migration knowledge becomes machine-consumable.
 
 This can dramatically improve large automated refactors.
 
-## Skills Can Turn Migration Guides Into Procedures
+## Skills Can Turn Migration Guides Into Procedures { #skills-turn-migration-guides }
 
 A migration guide explains:
 
@@ -707,7 +710,7 @@ repeat
 
 This is the difference between reference knowledge and operational knowledge again.
 
-## Examples Become Training Material at Execution Time
+## Examples Become Training Material at Execution Time { #examples-become-training-material }
 
 Official examples are especially powerful when combined with a Skill.
 
@@ -725,7 +728,7 @@ The examples become in-context demonstrations.
 
 This is effectively **retrieval-time framework training**.
 
-## Runnable Examples Are Better Than Random Snippets
+## Runnable Examples Are Better Than Random Snippets { #runnable-examples-better-than }
 
 Public internet snippets may be incomplete or stale.
 
@@ -737,7 +740,7 @@ The Skill can tell the agent to prioritize official examples over random GitHub 
 
 This is a form of documentation quality control.
 
-## The Skill Can Reduce Internet Folklore
+## The Skill Can Reduce Internet Folklore { #skill-reduce-internet-folklore }
 
 Without official guidance, an agent may combine an old Stack Overflow answer, a random GitHub repository, a Kora 1.x sample, a third-party blog, and a Spring convention into one plausible but incorrect implementation.
 
@@ -754,7 +757,7 @@ This reduces stale patterns and contradictory advice.
 
 The goal is not to eliminate community knowledge. It is to distinguish canonical framework behavior from historical folklore.
 
-## Official Skills Change the Value of Framework Age
+## Official Skills Change the Value of Framework Age { #official-skills-change-value }
 
 For twenty years, framework age created an enormous documentation moat.
 
@@ -779,7 +782,7 @@ A smaller framework can provide concentrated authoritative context directly to t
 
 The gap does not disappear, but it becomes less absolute.
 
-## Framework Age Matters Less When Current Knowledge Is Injectable
+## Framework Age Matters Less When Current Knowledge Is Injectable { #framework-age-matters-less }
 
 A useful formulation is:
 
@@ -793,7 +796,7 @@ This is especially important for fast-evolving projects.
 
 A two-year-old API can be better represented to an agent through a precise Skill than through thousands of mixed-version public examples.
 
-## This May Reduce the Historical Ecosystem Moat
+## This May Reduce the Historical Ecosystem Moat { #reduce-historical-ecosystem-moat }
 
 The competitive landscape changes subtly.
 
@@ -833,7 +836,7 @@ The historical advantage remains, but it is partially substitutable.
 
 That is strategically important for new frameworks.
 
-## The Skill Does Not Eliminate the Need for Good Documentation
+## The Skill Does Not Eliminate the Need for Good Documentation { #skill-eliminate-need-good }
 
 This point must remain explicit.
 
@@ -857,7 +860,7 @@ The Skill is a multiplier.
 
 It cannot replace missing truth.
 
-## The Skill Should Avoid Becoming a Shadow Documentation Set
+## The Skill Should Avoid Becoming a Shadow Documentation Set { #skill-avoid-becoming-shadow }
 
 If every fact is copied into the Skill, two problems emerge.
 
@@ -882,7 +885,7 @@ Domain skills then guide the agent toward the relevant official resources.
 
 This is closer to a knowledge router than a duplicated manual.
 
-## The Current Kora Skills Repository Already Suggests This Structure
+## The Current Kora Skills Repository Already Suggests This Structure { #current-kora-skills-repository }
 
 The official repository is organized into multiple domain skills rather than one monolithic file.
 
@@ -909,7 +912,7 @@ That structure reflects an important design principle: framework knowledge shoul
 
 An HTTP task does not need the entire scheduling manual in context.
 
-## Progressive Disclosure Matters for Agent Context
+## Progressive Disclosure Matters for Agent Context { #progressive-disclosure-matters-agent }
 
 LLM context is finite.
 
@@ -931,7 +934,7 @@ acts on project
 
 This is much more scalable than one giant system prompt.
 
-## The Skill Can Teach Source Prioritization
+## The Skill Can Teach Source Prioritization { #skill-teach-source-prioritization }
 
 One of the most valuable instructions may be surprisingly simple:
 
@@ -952,7 +955,7 @@ Framework teams have never had a direct way to control that hierarchy before.
 
 Skills create one.
 
-## The Skill Can Teach the Agent What Kora Does Not Do
+## The Skill Can Teach the Agent What Kora Does Not Do { #skill-teach-agent-what }
 
 Negative knowledge is extremely valuable.
 
@@ -973,7 +976,7 @@ Documentation often focuses on supported features.
 
 A Skill can explicitly guard against common incorrect transfers from other frameworks.
 
-## This Is Framework Identity in Machine-Readable Form
+## This Is Framework Identity in Machine-Readable Form { #framework-identity-machine-readable }
 
 Humans recognize Kora code culturally.
 
@@ -987,7 +990,7 @@ That gives the model a framework-specific style prior.
 
 It is the machine-readable equivalent of joining an experienced Kora team.
 
-## The Skill Can Improve Code Review Before Human Review
+## The Skill Can Improve Code Review Before Human Review { #skill-improve-code-review }
 
 If the agent uses canonical framework patterns on the first attempt, reviewers spend less time correcting framework style.
 
@@ -1004,7 +1007,7 @@ This lowers review cost.
 
 For AI-heavy teams, that is a substantial productivity benefit.
 
-## Consistency Compounds Across the Codebase
+## Consistency Compounds Across the Codebase { #consistency-compounds-across-codebase }
 
 A Skill-guided agent repeatedly generates code according to the same conventions.
 
@@ -1028,7 +1031,7 @@ better future agent decisions
 
 This is one of the most practical reasons to formalize framework guidance.
 
-## The Skill Can Shorten Human Onboarding Too
+## The Skill Can Shorten Human Onboarding Too { #skill-shorten-human-onboarding }
 
 Although the artifact is machine-facing, humans benefit indirectly.
 
@@ -1047,7 +1050,7 @@ The framework effectively gains an interactive tutor.
 
 This is especially useful for smaller frameworks where not every team has an experienced Kora engineer available.
 
-## The Agent Can Become a Framework Teacher
+## The Agent Can Become a Framework Teacher { #agent-become-framework-teacher }
 
 The current Kora v2 landing already demonstrates this idea directly: install the official skill, ask the agent about Kora, and let it teach from the official guides and examples.
 
@@ -1081,7 +1084,7 @@ The source remains official.
 
 The interface becomes conversational and contextual.
 
-## This Does Not Make Documentation Obsolete
+## This Does Not Make Documentation Obsolete { #make-documentation-obsolete }
 
 The agent needs stable material to ground its answer.
 
@@ -1097,7 +1100,7 @@ The agent provides the interactive interface.
 
 Each layer has a distinct job.
 
-## The Skill Can Encode “When to Inspect Generated Source”
+## The Skill Can Encode “When to Inspect Generated Source” { #skill-encode-when-inspect }
 
 This is a particularly Kora-specific advantage.
 
@@ -1126,7 +1129,7 @@ This avoids both extremes: never looking at generated code and looking at genera
 
 The Skill becomes an expertise router.
 
-## It Can Also Teach “When Not to Blame Kora”
+## It Can Also Teach “When Not to Blame Kora” { #teach-when-blame-kora }
 
 Thin abstractions mean many failures belong to the underlying technology.
 
@@ -1150,7 +1153,7 @@ This is powerful because it tells the agent when to stop searching framework doc
 
 That is exactly aligned with Kora’s thin-abstraction philosophy.
 
-## The Skill Can Encode the Framework’s Philosophy
+## The Skill Can Encode the Framework’s Philosophy { #skill-encode-framework-s }
 
 API documentation rarely says enough about architectural restraint.
 
@@ -1172,7 +1175,7 @@ Without them, an agent may generate code that compiles but does not feel like Ko
 
 With them, it can produce architecture aligned with framework intent.
 
-## The Skill Can Carry “Why,” Not Just “What”
+## The Skill Can Carry “Why,” Not Just “What” { #skill-carry-why-just }
 
 An agent is more reliable when it understands the reason behind a convention.
 
@@ -1196,7 +1199,7 @@ This prevents blind rule application.
 
 The Skill can encode these rationales compactly.
 
-## That Makes the Agent More Adaptable
+## That Makes the Agent More Adaptable { #makes-agent-adaptable }
 
 Pure rules break at edge cases.
 
@@ -1220,7 +1223,7 @@ it can debug a new processor output it has never seen before.
 
 Good Skills teach models, not just commands.
 
-## A Skill Is Not a Replacement for Compiler Verification
+## A Skill Is Not a Replacement for Compiler Verification { #skill-replacement-compiler-verification }
 
 Even official guidance should remain subordinate to actual project truth.
 
@@ -1246,7 +1249,7 @@ The framework does not ask the model to trust instructions blindly.
 
 It gives the model tools to verify them.
 
-## This Is Why Kora Is an Especially Good Skill Target
+## This Is Why Kora Is an Especially Good Skill Target { #why-kora-especially-good }
 
 A framework skill is most valuable when the framework provides inspectable evidence after the instruction.
 
@@ -1278,7 +1281,7 @@ Here is what the application actually does.
 
 That creates a closed feedback loop.
 
-## The Skill Can Reduce Dependence on Stack Overflow
+## The Skill Can Reduce Dependence on Stack Overflow { #skill-reduce-dependence-on }
 
 A smaller framework often faces the criticism that there are fewer Q&A answers.
 
@@ -1307,7 +1310,7 @@ Community Q&A remains valuable for unusual production cases.
 
 It becomes less necessary for routine canonical usage.
 
-## This Is Documentation Quality Control at Runtime
+## This Is Documentation Quality Control at Runtime { #documentation-quality-control-at }
 
 The Skill effectively gives the framework a way to say:
 
@@ -1324,7 +1327,7 @@ Historically, maintainers had little control over which blog post or Stack Overf
 
 Now they can provide authoritative retrieval-time context.
 
-## Skills Could Become a New Framework Distribution Artifact
+## Skills Could Become a New Framework Distribution Artifact { #skills-become-new-framework }
 
 The larger implication is that framework distribution may evolve.
 
@@ -1352,7 +1355,7 @@ It is the framework’s machine-facing interface.
 
 That is a new category of developer experience.
 
-## Framework APIs Have Human and Machine Consumers Now
+## Framework APIs Have Human and Machine Consumers Now { #framework-apis-have-human }
 
 Historically, API design optimized for:
 
@@ -1375,7 +1378,7 @@ It needs canonical source hierarchy, explicit versioning, preferred patterns, ne
 
 A Skill can supply exactly those missing semantics without distorting the actual programming API.
 
-## This Is Better Than Designing Weird “AI-First” APIs
+## This Is Better Than Designing Weird “AI-First” APIs { #better-than-designing-weird }
 
 There is a temptation to make frameworks artificially verbose or machine-oriented so models can understand them.
 
@@ -1398,7 +1401,7 @@ Skill
 
 That is a better architecture than forcing one artifact to serve every audience.
 
-## Skills Can Make Framework Evolution Faster
+## Skills Can Make Framework Evolution Faster { #skills-make-framework-evolution }
 
 If maintainers know that current agent guidance can ship with the release, they may feel less pressure to preserve old APIs merely because AI tools know them better.
 
@@ -1413,7 +1416,7 @@ The model does not need years of new corpus accumulation before it can work with
 
 This could reduce one subtle source of legacy pressure.
 
-## But Skills Increase Maintainer Responsibility
+## But Skills Increase Maintainer Responsibility { #skills-increase-maintainer-responsibility }
 
 The benefit comes with cost.
 
@@ -1425,7 +1428,7 @@ A misleading official Skill can scale mistakes very quickly because agents autom
 
 That means Skill changes deserve review.
 
-## The Skill Should Be Treated Like Code
+## The Skill Should Be Treated Like Code { #skill-be-treated-like }
 
 Not necessarily because it needs unit tests in the same form, but because it has production impact.
 
@@ -1435,7 +1438,7 @@ If a Skill tells agents to use an obsolete pattern, that is effectively a develo
 
 The artifact deserves engineering discipline.
 
-## Version Labels Matter
+## Version Labels Matter { #version-labels-matter }
 
 The current `kora-v1` naming in the official skills repository is a good example of this discipline.
 
@@ -1447,7 +1450,7 @@ A future `kora-v2` package can be opinionated about Kora 2 without breaking agen
 
 That is exactly what version-aware machine guidance should do.
 
-## Project Detection Can Become Part of the Skill
+## Project Detection Can Become Part of the Skill { #project-detection-become-part }
 
 A mature future Skill could inspect:
 
@@ -1472,7 +1475,7 @@ the agent could determine it from the repository and load the appropriate knowle
 
 This is an obvious direction for framework tooling.
 
-## Skills Can Be Composable
+## Skills Can Be Composable { #skills-be-composable }
 
 A Kora project may use JDBC, Kafka, gRPC, OpenAPI, and resilience.
 
@@ -1494,7 +1497,7 @@ to be loaded for the current task.
 
 This mirrors the modularity of the framework itself.
 
-## The Skill Architecture Can Mirror the Framework Architecture
+## The Skill Architecture Can Mirror the Framework Architecture { #skill-architecture-mirror-framework }
 
 That symmetry is attractive.
 
@@ -1514,7 +1517,7 @@ Framework modularity and knowledge modularity align.
 
 This reduces both runtime dependencies and context dependencies.
 
-## A Meta-Skill Can Route the Agent
+## A Meta-Skill Can Route the Agent { #meta-skill-route-agent }
 
 The current skill repository already includes a meta-skill concept.
 
@@ -1533,7 +1536,7 @@ This is much more powerful than a flat collection of prompts.
 
 It turns the framework’s AI layer into a routing system.
 
-## Skill Quality Becomes Part of Framework DX
+## Skill Quality Becomes Part of Framework DX { #skill-quality-becomes-part }
 
 Developer experience used to mean API ergonomics, docs, IDE support, build speed, and debugging.
 
@@ -1547,7 +1550,7 @@ If two frameworks are technically comparable but one can teach an agent its curr
 
 Kora is early to treat that as a first-class concern.
 
-## The Skill Can Help Small Teams Scale Expertise
+## The Skill Can Help Small Teams Scale Expertise { #skill-help-small-teams }
 
 A small organization may have only one experienced Kora engineer.
 
@@ -1559,7 +1562,7 @@ The agent becomes a first-line framework assistant.
 
 This does not eliminate experts. It frees them to focus on genuinely difficult architecture.
 
-## It Also Reduces Onboarding Asymmetry
+## It Also Reduces Onboarding Asymmetry { #reduces-onboarding-asymmetry }
 
 Experienced Kora developers have internal context that newcomers lack.
 
@@ -1571,7 +1574,7 @@ That is more useful than generic search because the agent can connect framework 
 
 This is interactive onboarding.
 
-## Skills Can Preserve Institutional Memory
+## Skills Can Preserve Institutional Memory { #skills-preserve-institutional-memory }
 
 Framework knowledge often disappears when maintainers or senior engineers leave.
 
@@ -1581,7 +1584,7 @@ A Skill can capture canonical choices, common mistakes, debugging sequences, ext
 
 This makes institutional knowledge portable across teams and agent platforms.
 
-## The Skill Can Be Vendor-Neutral at the Agent Layer
+## The Skill Can Be Vendor-Neutral at the Agent Layer { #skill-be-vendor-neutral }
 
 The current official repository supports multiple agent environments rather than one proprietary assistant.
 
@@ -1607,7 +1610,7 @@ one proprietary chat UI
 
 This mirrors Kora’s broader preference for open and inspectable technology.
 
-## Agent Portability Matters
+## Agent Portability Matters { #agent-portability-matters }
 
 Organizations will change AI tools.
 
@@ -1621,7 +1624,7 @@ If the framework’s knowledge is packaged in a portable skill format, the organ
 
 That is an understated but important ecosystem advantage.
 
-## Skill Portability Prevents Another Lock-In Layer
+## Skill Portability Prevents Another Lock-In Layer { #skill-portability-prevents-another }
 
 It would be ironic for a framework focused on transparent architecture to solve AI integration through a vendor-locked prompt system.
 
@@ -1633,7 +1636,7 @@ Agents become interchangeable consumers.
 
 This is the right long-term direction.
 
-## The Skill Can Teach Agents to Use Kora’s Thin Abstractions Properly
+## The Skill Can Teach Agents to Use Kora’s Thin Abstractions Properly { #skill-teach-agents-use }
 
 Kora’s philosophy is subtle enough that generic models can easily over-abstract.
 
@@ -1647,7 +1650,7 @@ Prefer the native technology model unless there is a concrete application reason
 
 This protects Kora’s semantic simplicity.
 
-## Framework Philosophy Is Hard to Infer From Types Alone
+## Framework Philosophy Is Hard to Infer From Types Alone { #framework-philosophy-hard-infer }
 
 Types tell the agent what is possible.
 
@@ -1659,7 +1662,7 @@ The Skill can provide the philosophy that helps choose among them.
 
 This is why machine-facing guidance adds something genuinely new even in a strongly typed framework.
 
-## Kora Skill Can Encode “What Not to Abstract”
+## Kora Skill Can Encode “What Not to Abstract” { #kora-skill-encode-what }
 
 This may become one of its most valuable roles.
 
@@ -1678,7 +1681,7 @@ They are difficult to encode in the compiler.
 
 They fit naturally in a Skill.
 
-## Skills Fill the Gap Between Type Safety and Architectural Judgment
+## Skills Fill the Gap Between Type Safety and Architectural Judgment { #skills-fill-gap-between }
 
 The compiler can reject:
 
@@ -1702,7 +1705,7 @@ A Skill gives the agent some of that architectural guidance before review.
 
 This is the real “missing layer.”
 
-## The Complete Kora Agent Stack Becomes Multi-Layered
+## The Complete Kora Agent Stack Becomes Multi-Layered { #complete-kora-agent-stack }
 
 A useful model is:
 
@@ -1739,7 +1742,7 @@ The Skill does not replace any of the lower layers.
 
 It tells the agent how to use them.
 
-## This Is More Powerful Than a Giant Prompt
+## This Is More Powerful Than a Giant Prompt { #powerful-than-giant-prompt }
 
 A giant static prompt would try to contain every framework fact.
 
@@ -1751,7 +1754,7 @@ The Skill contributes strategy, not an encyclopedia.
 
 That makes it smaller, more maintainable, and more robust.
 
-## Skills Can Improve Framework Support Economics
+## Skills Can Improve Framework Support Economics { #skills-improve-framework-support }
 
 Support teams repeatedly answer the same questions:
 
@@ -1768,7 +1771,7 @@ Maintainers can then focus on new bugs, feature design, and complex edge cases.
 
 That improves support scalability.
 
-## It Can Improve Bug Reports Too
+## It Can Improve Bug Reports Too { #improve-bug-reports-too }
 
 A Skill-guided agent can help the developer produce better issue reports.
 
@@ -1792,7 +1795,7 @@ This makes maintainer work easier.
 
 The AI layer can improve both sides of the support interaction.
 
-## Skills Could Become Framework Self-Diagnostics
+## Skills Could Become Framework Self-Diagnostics { #skills-become-framework-self }
 
 A future skill could go even further.
 
@@ -1802,7 +1805,7 @@ This would turn the framework Skill into a lightweight self-diagnostic layer.
 
 The key is that the logic remains grounded in official framework knowledge.
 
-## The Skill Can Become a Migration Assistant
+## The Skill Can Become a Migration Assistant { #skill-become-migration-assistant }
 
 When Kora 2 adoption grows, a version-specific Skill could encode migration patterns from 1.x.
 
@@ -1826,7 +1829,7 @@ This is exactly the kind of repetitive but context-sensitive work agents are goo
 
 Framework maintainers can distribute migration expertise directly.
 
-## This Can Reduce the Cost of Breaking Changes
+## This Can Reduce the Cost of Breaking Changes { #reduce-cost-breaking-changes }
 
 Breaking changes are expensive partly because every team must rediscover the migration process.
 
@@ -1846,7 +1849,7 @@ It changes the support economics.
 
 Frameworks may be able to evolve more cleanly without leaving users entirely on their own.
 
-## The Skill Gives Kora a Machine-Facing Canonical Voice
+## The Skill Gives Kora a Machine-Facing Canonical Voice { #skill-gives-kora-machine }
 
 Human documentation already gives the framework a canonical voice for developers.
 
@@ -1862,7 +1865,7 @@ This is how Kora expects to be understood.
 
 That is a new form of framework governance.
 
-## Canonical Voice Reduces Contradictory AI Advice
+## Canonical Voice Reduces Contradictory AI Advice { #canonical-voice-reduces-contradictory }
 
 Without official guidance, two agents may answer the same Kora question differently because they retrieved different sources.
 
@@ -1872,7 +1875,7 @@ They may still produce different code, but the architectural constraints and pre
 
 This makes multi-agent organizations easier to govern.
 
-## The Skill Can Be Reviewed by Framework Maintainers
+## The Skill Can Be Reviewed by Framework Maintainers { #skill-be-reviewed-by }
 
 Another advantage is accountability.
 
@@ -1884,7 +1887,7 @@ The correction is distributed immediately to compatible agents.
 
 That creates a feedback loop between framework maintainers and AI behavior.
 
-## This Is a New Kind of Developer-Experience Control Surface
+## This Is a New Kind of Developer-Experience Control Surface { #new-kind-developer-experience }
 
 Framework teams already control API design, docs, compiler diagnostics, and examples.
 
@@ -1900,7 +1903,7 @@ That can become strategically important as more code is written by agents.
 
 A framework that ignores this layer may remain technically excellent while agents continue using it poorly.
 
-## The Risk: Skills Can Become Dogmatic
+## The Risk: Skills Can Become Dogmatic { #risk-skills-become-dogmatic }
 
 Official guidance has authority, and authority can become rigid.
 
@@ -1929,7 +1932,7 @@ If the project explicitly uses jOOQ for a valid reason, work with that architect
 
 Machine guidance should support framework philosophy, not turn it into blind rule enforcement.
 
-## The Risk: Skills Can Lag Behind Reality
+## The Risk: Skills Can Lag Behind Reality { #risk-skills-lag-behind }
 
 A stale Skill can recommend APIs removed from the current release.
 
@@ -1941,7 +1944,7 @@ Major Kora lines should have clearly separated guidance.
 
 The framework should avoid one generic “Kora” Skill that silently mixes generations.
 
-## The Risk: Skills Can Hide Documentation Problems
+## The Risk: Skills Can Hide Documentation Problems { #risk-skills-hide-documentation }
 
 A framework should not use AI guidance to compensate for missing public documentation.
 
@@ -1956,7 +1959,7 @@ Skill encodes how agents should interpret and apply them
 
 This keeps the knowledge system healthy.
 
-## The Risk: Agent-Specific Instructions Can Fragment
+## The Risk: Agent-Specific Instructions Can Fragment { #risk-agent-specific-instructions }
 
 If every agent platform requires an entirely different Kora prompt, maintenance becomes expensive.
 
@@ -1966,7 +1969,7 @@ The current multi-agent packaging direction is therefore important.
 
 The framework should maintain one conceptual expertise layer and adapt only the installation surface.
 
-## The Skill Should Remain Inspectable
+## The Skill Should Remain Inspectable { #skill-remain-inspectable }
 
 Just like Kora’s generated code, the agent guidance itself should be readable.
 
@@ -1976,7 +1979,7 @@ This is important for trust.
 
 A hidden vendor-managed prompt would undermine the transparency story.
 
-## Kora’s AI Layer Should Follow Kora’s Own Philosophy
+## Kora’s AI Layer Should Follow Kora’s Own Philosophy { #kora-s-ai-layer }
 
 There is an elegant symmetry available here.
 
@@ -2002,7 +2005,7 @@ modular loading
 
 That consistency strengthens the product.
 
-## Skills Can Make “One Problem — One Solution” Operational
+## Skills Can Make “One Problem — One Solution” Operational { #skills-make-one-problem }
 
 The framework already reduces ambiguity by choosing a recommended path.
 
@@ -2026,7 +2029,7 @@ Need parallel blocking work?
 
 This turns philosophy into agent behavior.
 
-## The Result Is More Kora-Like Code
+## The Result Is More Kora-Like Code { #result-kora-like-code }
 
 That sounds subjective, but it matters.
 
@@ -2040,7 +2043,7 @@ Generated code becomes more consistent with human-written Kora services.
 
 That improves maintainability.
 
-## Framework Expertise Becomes Distributable
+## Framework Expertise Becomes Distributable { #framework-expertise-becomes-distributable }
 
 Historically, expertise was embodied in people.
 
@@ -2062,7 +2065,7 @@ many developers / repositories
 
 That is a powerful multiplier for a smaller framework team.
 
-## This Is Especially Important for Kora’s Scale
+## This Is Especially Important for Kora’s Scale { #especially-important-kora-s }
 
 Kora does not have Spring’s enormous public corpus.
 
@@ -2072,7 +2075,7 @@ A strong official Skill can help ensure that AI assistance is based on current K
 
 This can materially reduce one of the adoption disadvantages of a smaller ecosystem.
 
-## A Skill Can Make the Framework Feel Better Documented Than Its Raw Corpus Size Suggests
+## A Skill Can Make the Framework Feel Better Documented Than Its Raw Corpus Size Suggests { #skill-make-framework-feel }
 
 A developer does not care how many pages exist if they can get the correct answer quickly.
 
@@ -2092,7 +2095,7 @@ This increases the effective accessibility of existing documentation without inf
 
 It is leverage, not replacement.
 
-## The Skill Is a Knowledge Compiler
+## The Skill Is a Knowledge Compiler { #skill-knowledge-compiler }
 
 A useful metaphor is that the Skill compiles framework knowledge into agent behavior.
 
@@ -2118,7 +2121,7 @@ Kora already moves runtime framework work into compilation.
 
 The Skill moves human framework expertise into machine-executable guidance.
 
-## Kora Skill Completes the Framework’s Transparency Story
+## Kora Skill Completes the Framework’s Transparency Story { #kora-skill-completes-framework }
 
 Kora’s existing architecture answers:
 
@@ -2140,7 +2143,7 @@ Guidance without generated source is useful but still abstract.
 
 Together they form a practical AI debugging system.
 
-## It Also Completes the Documentation Story
+## It Also Completes the Documentation Story { #completes-documentation-story }
 
 Documentation answers:
 
@@ -2162,7 +2165,7 @@ and how should I verify the result?
 
 That is exactly the missing machine-facing layer.
 
-## A Future Kora Release Could Ship Four Synchronized Surfaces
+## A Future Kora Release Could Ship Four Synchronized Surfaces { #future-kora-release-ship }
 
 The most compelling product model is:
 
@@ -2185,7 +2188,7 @@ The Skill serves agents.
 
 Maintaining them together creates a coherent release.
 
-## The Skill Could Even Reference Release-Specific Migration Notes
+## The Skill Could Even Reference Release-Specific Migration Notes { #skill-even-reference-release }
 
 For a new release, the Skill can contain high-priority warnings:
 
@@ -2200,7 +2203,7 @@ Agents editing existing projects get the information exactly when they need it.
 
 This is much more precise than relying on generic model memory.
 
-## This Changes the Meaning of Framework Documentation Coverage
+## This Changes the Meaning of Framework Documentation Coverage { #changes-meaning-framework-documentation }
 
 Traditionally, documentation coverage meant:
 
@@ -2218,7 +2221,7 @@ A Skill provides the bridge.
 
 It turns human-oriented coverage into machine-usable coverage.
 
-## It Also Changes the Meaning of Ecosystem Size
+## It Also Changes the Meaning of Ecosystem Size { #changes-meaning-ecosystem-size }
 
 If official knowledge is highly accessible to agents, a framework may need fewer redundant tutorials for routine usage.
 
@@ -2228,7 +2231,7 @@ But the baseline support burden can shift toward canonical sources.
 
 This reduces dependence on sheer corpus quantity.
 
-## The Competitive Advantage Moves Toward Knowledge Quality
+## The Competitive Advantage Moves Toward Knowledge Quality { #competitive-advantage-moves-toward }
 
 A framework with millions of low-quality or outdated examples may be less AI-friendly than a smaller framework with:
 
@@ -2244,7 +2247,7 @@ The bottleneck becomes authority and freshness.
 
 That is good news for newer frameworks willing to invest in knowledge quality.
 
-## In the Past, Developers Had to Learn the Framework
+## In the Past, Developers Had to Learn the Framework { #past-developers-had-learn }
 
 That remains true.
 
@@ -2260,7 +2263,7 @@ A developer can learn through the agent, while the agent learns through the Skil
 
 That creates a layered educational system.
 
-## The Skill Can Become a Shared Language Between Maintainers and Agents
+## The Skill Can Become a Shared Language Between Maintainers and Agents { #skill-become-shared-language }
 
 When maintainers write:
 
@@ -2277,7 +2280,7 @@ That is an unusual and powerful concept.
 
 The Skill becomes a shared language for framework intent.
 
-## The Framework Is No Longer Passive in AI Development
+## The Framework Is No Longer Passive in AI Development { #framework-longer-passive-ai }
 
 Without an official Skill, the framework is passive.
 
@@ -2296,7 +2299,7 @@ how to verify
 
 This is a major shift in the relationship between frameworks and AI tooling.
 
-## The Next Generation of Frameworks May Ship Expertise
+## The Next Generation of Frameworks May Ship Expertise { #next-generation-frameworks-ship }
 
 The deepest implication extends beyond Kora.
 
@@ -2306,7 +2309,7 @@ These artifacts can capture canonical architecture, version-specific conventions
 
 That will change how new frameworks compete.
 
-## New Frameworks Can Bootstrap AI Competence Faster
+## New Frameworks Can Bootstrap AI Competence Faster { #new-frameworks-bootstrap-ai }
 
 A new framework historically needed years of public usage before models became good at it.
 
@@ -2318,7 +2321,7 @@ That lowers one barrier to framework adoption.
 
 It also increases the importance of disciplined documentation from the beginning.
 
-## Skills Can Become Part of API Stability Strategy
+## Skills Can Become Part of API Stability Strategy { #skills-become-part-api }
 
 When maintainers change an API, they can update docs, examples, and Skill together.
 
@@ -2328,7 +2331,7 @@ This may reduce the tail of obsolete generated code in the ecosystem.
 
 That is a subtle but meaningful maintainability benefit.
 
-## Kora Is Well Positioned for This Model
+## Kora Is Well Positioned for This Model { #kora-well-positioned-model }
 
 Kora already has the ingredients:
 
@@ -2349,7 +2352,7 @@ It can orchestrate a transparent one.
 
 That is why the idea is stronger for Kora than it would be for a framework where actual behavior exists primarily in hidden runtime state.
 
-## The Current State Is Already a Proof of Direction
+## The Current State Is Already a Proof of Direction { #current-state-already-proof }
 
 The current Kora v2 landing explicitly presents the official Kora Skills repository as part of the learning and AI story. The official skills repository currently publishes a `kora-v1` package for the 1.x generation and intentionally leaves room for a separate v2 package rather than pretending one set of instructions fits every major version.
 
@@ -2359,7 +2362,7 @@ It shows that machine-facing framework expertise can be treated as a versioned p
 
 The conceptual model is already visible even before the full Kora 2 skill layer matures.
 
-## The Long-Term Opportunity Is Larger Than a Single Skill
+## The Long-Term Opportunity Is Larger Than a Single Skill { #long-term-opportunity-larger }
 
 A mature Kora AI layer could eventually include:
 
@@ -2379,7 +2382,7 @@ The Skill becomes a gateway into the framework’s whole knowledge system.
 
 That is far more valuable than a prompt cheat sheet.
 
-## The Final Architecture
+## The Final Architecture { #final-architecture }
 
 The complete development loop could look like:
 
@@ -2413,7 +2416,7 @@ The developer gets a project-specific result.
 
 This is a remarkably strong architecture for AI-assisted development.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Documentation was designed primarily to answer human questions. Source code was designed to express the program to compilers and engineers. Examples were designed to demonstrate usage. Compiler diagnostics were designed to reject invalid structures. Generated source was designed to materialize Kora’s compile-time decisions.
 

@@ -1,11 +1,14 @@
 ---
 title: Why Compile-Time Diagnostics Are a Kora Framework Feature (In Depth)
+date: 2026-09-13
 description: An in-depth case for why the Kora Framework's compile-time diagnostics — validated graph, generated code, precise errors — are a feature, not added build complexity.
 search:
   exclude: true
 ---
 
-# Compile-Time Diagnostics Are a Feature, Not Extra Build Complexity
+# Compile-Time Diagnostics Are a Feature, Not Extra Build Complexity { #compile-time-diagnostics }
+
+**September 13, 2026**
 
 Compile-time frameworks are often criticized for moving too much work into the build. The criticism usually sounds reasonable at first: annotation processors run, Kotlin Symbol Processing runs,
 generated source appears under build directories, IDEs need to understand those outputs, Gradle gains more tasks, and compilation does more than simply turn handwritten Java or Kotlin into bytecode.
@@ -71,7 +74,7 @@ of postponing the same structural decisions until startup or runtime.**
 
 ---
 
-## Compile-Time Processing Is Part of the Toolchain, Not a Second Runtime
+## Compile-Time Processing Is Part of the Toolchain, Not a Second Runtime { #toolchain-not-runtime }
 
 The phrase *annotation processor* can make the mechanism sound more exotic than it is. Java annotation processing is part of the standard compiler toolchain. A processor receives a structured
 representation of source declarations, validates them, and may generate additional source or resources. Java developers have relied on this mechanism for years through dependency-injection generators,
@@ -117,7 +120,7 @@ mistake into what feels like an operational failure. Kora's compile-time model d
 
 ---
 
-## Earlier Failure Is Usually Cheaper Failure
+## Earlier Failure Is Usually Cheaper Failure { #earlier-failure }
 
 A missing dependency is the simplest example. If the framework discovers it during compilation, the developer is already in the edit-build loop. The build fails, the diagnostic points to the missing
 type or unresolved component, and the developer fixes the declaration. If the same problem is discovered during startup, the developer has already paid for compilation, packaging, JVM launch,
@@ -144,7 +147,7 @@ A compile-time framework is therefore not trying to turn every possible problem 
 
 ---
 
-## Static and Dynamic Validation Should Complement Each Other
+## Static and Dynamic Validation Should Complement Each Other { #static-dynamic-validation }
 
 Compile-time validation is strongest when it is understood as one layer in a larger validation stack rather than as a replacement for testing or runtime observability. A successful build can prove
 that the application is structurally coherent according to the information available during compilation. It cannot prove that PostgreSQL is reachable, a Kafka topic exists, credentials are valid, a
@@ -182,7 +185,7 @@ easier to classify. The team is not simultaneously wondering whether the depende
 
 ---
 
-## CI Becomes a Stronger Gate
+## CI Becomes a Stronger Gate { #ci-gate }
 
 Moving framework validation into compilation has a particularly important effect on CI. A pull request pipeline already compiles code, runs tests, and packages artifacts. If DI graph construction,
 mappings, repository contracts, AOP structure, and HTTP handler generation participate in compilation, then CI can reject structurally invalid applications before a container image is built or a
@@ -224,7 +227,7 @@ the agent a short repair loop: generate code, compile, read the diagnostic, corr
 
 ---
 
-## Deterministic Failures Are Easier to Reproduce
+## Deterministic Failures Are Easier to Reproduce { #deterministic-failures }
 
 Compile-time diagnostics also tend to reduce the number of environmental variables involved in structural failures. Given the same source, classpath, processor version, and compiler inputs, the result
 should be the same. A missing component fails consistently. A mapping that cannot be generated fails consistently. Invalid generated source is reproducible from build inputs.
@@ -255,7 +258,7 @@ runtime framework never fails.” The meaningful comparison is where defects occ
 
 ---
 
-## Generated Source Is Ground Truth, Not a Second Codebase
+## Generated Source Is Ground Truth, Not a Second Codebase { #generated-source }
 
 One of the most misunderstood aspects of Kora is the role of generated source. Developers sometimes see `build/generated` and assume that the framework has created another codebase they now need to
 understand and maintain. That is not the intended model.
@@ -289,7 +292,7 @@ That is why generated source should be thought of as an **escape hatch from abst
 
 ---
 
-## Readable Generation Converts Framework Semantics Into Language Semantics
+## Readable Generation Converts Framework Semantics Into Language Semantics { #readable-generation }
 
 Generated code becomes particularly valuable when it reduces specialized framework behavior to ordinary Java or Kotlin control flow.
 
@@ -345,7 +348,7 @@ rather than taking a performance claim entirely on trust. This makes source gene
 
 ---
 
-## Compiler Diagnostics Become Part of Developer Experience
+## Compiler Diagnostics Become Part of Developer Experience { #developer-experience }
 
 In a compile-time framework, compiler diagnostics are not incidental. They are one of the primary ways the framework communicates with developers, which means their quality becomes part of the
 framework's user experience.
@@ -390,7 +393,7 @@ inspection APIs. Compile-time frameworks do not invent an additional layer of co
 
 ---
 
-## IDEs, Gradle, CI, and AI Can Share the Same Feedback Surface
+## IDEs, Gradle, CI, and AI Can Share the Same Feedback Surface { #shared-feedback-surface }
 
 Another benefit of compiler diagnostics is that they are already understood by the surrounding development ecosystem. IDEs understand files, lines, columns, symbols, and messages. Gradle understands
 failed compilation tasks. CI understands build failures. AI coding agents can parse the same diagnostics and use them as repair signals.
@@ -425,7 +428,7 @@ That means Kora's compile-time transparency is not only a human debugging featur
 
 ---
 
-## Build Cost Is Real, but It Must Be Evaluated End to End
+## Build Cost Is Real, but It Must Be Evaluated End to End { #build-cost }
 
 A fair discussion of compile-time diagnostics has to acknowledge the cost. Annotation processing and KSP consume build time. Generated source increases compiler work. Large application graphs can make
 processing more expensive. Incremental processing quality matters. Gradle configuration matters. IDE indexing can become heavier. Generated-code volume can affect disk usage, compilation, artifact
@@ -463,7 +466,7 @@ is completed before runtime.
 
 ---
 
-## Runtime Complexity Is Not Free Just Because It Is Less Visible
+## Runtime Complexity Is Not Free Just Because It Is Less Visible { #runtime-complexity }
 
 One reason compile-time systems can feel more complicated is that build-time machinery is visible. Developers can see processor dependencies, KSP plugins, generated directories, and Gradle tasks.
 Runtime machinery is often less visible because it happens inside framework startup, container initialization, reflection, proxy factories, metadata registries, or classpath scanning.
@@ -480,7 +483,7 @@ Kora deliberately makes more of that work visible and deterministic during compi
 
 ---
 
-## Startup Becomes More About Starting Than Discovering Architecture
+## Startup Becomes More About Starting Than Discovering Architecture { #startup }
 
 The compile-time diagnostic model is closely related to startup behavior.
 
@@ -509,7 +512,7 @@ servers, and processing traffic.
 
 ---
 
-## Compile-Time Architecture Is Best Understood as Architecture Compilation
+## Compile-Time Architecture Is Best Understood as Architecture Compilation { #architecture-compilation }
 
 A useful mental model is that Kora compiles more than language syntax. It compiles part of the application architecture.
 
@@ -543,7 +546,7 @@ The build becomes more sophisticated so that runtime execution can become more c
 
 ---
 
-## The Best Failure Is the One That Prevents an Invalid Artifact
+## The Best Failure Is the One That Prevents an Invalid Artifact { #best-failure }
 
 There is a qualitative difference between producing an application artifact that cannot start and refusing to produce the artifact at all.
 
@@ -561,7 +564,7 @@ The closer detection is to the edit that introduced the mistake, the cheaper the
 
 ---
 
-## Compile-Time Validation Improves Onboarding
+## Compile-Time Validation Improves Onboarding { #onboarding }
 
 Early diagnostics also make the framework easier to learn.
 
@@ -598,7 +601,7 @@ The alternative to compile-time complexity is often not less complexity. It is d
 
 ---
 
-## Generated Source and Diagnostics Form a Layered Debugging Model
+## Generated Source and Diagnostics Form a Layered Debugging Model { #layered-debugging }
 
 Kora's compile-time architecture is easiest to understand as a layered debugging model rather than as a demand that developers read processor internals.
 
@@ -624,7 +627,7 @@ when the build succeeds?” Together they make the framework unusually inspectab
 
 ---
 
-## AI Agents Benefit Disproportionately From This Model
+## AI Agents Benefit Disproportionately From This Model { #ai-agents }
 
 Compile-time diagnostics align particularly well with AI coding agents because the natural agent loop already looks like a compiler-driven repair cycle:
 
@@ -657,7 +660,7 @@ That is a powerful architectural property.
 
 ---
 
-## Runtime Flexibility Still Has Legitimate Uses
+## Runtime Flexibility Still Has Legitimate Uses { #runtime-flexibility }
 
 None of this means compile-time composition is universally superior.
 
@@ -672,7 +675,7 @@ often yes.
 
 ---
 
-## The Real Question Is Total-System Complexity
+## The Real Question Is Total-System Complexity { #total-system-complexity }
 
 Framework architecture should not be judged by counting Gradle tasks, generated files, or runtime proxies in isolation. The meaningful comparison is the total system.
 
@@ -712,7 +715,7 @@ exist somewhere, and Kora chooses to materialize more of it in a phase where it 
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Compile-time diagnostics are often framed as the price developers pay for a framework that does too much during the build. That framing misses the architectural payoff.
 

@@ -1,10 +1,13 @@
 ---
 title: Virtual Threads vs Reactive — What Changes in Kora Framework Backend Architecture
+date: 2026-09-11
 description: How the Kora Framework's virtual-thread-first model compares to reactive programming across APIs, drivers, debugging, and backpressure.
 search:
   exclude: true
 ---
-# Virtual Threads vs Reactive: What Actually Changes in Backend Architecture
+# Virtual Threads vs Reactive: What Actually Changes in Backend Architecture { #virtual-threads-vs-reactive }
+
+**September 11, 2026**
 
 For most of the last decade, discussions about reactive programming and thread-per-request architectures were framed as performance arguments. One side would point to event loops, non-blocking I/O,
 and the ability to serve many concurrent connections with a small number of operating-system threads. The other side would point to the simplicity of ordinary imperative code, familiar debugging, and
@@ -28,7 +31,7 @@ number in a particular test. The interesting question is: **what changes in the 
 
 ---
 
-## The historical problem reactive programming was solving
+## The historical problem reactive programming was solving { #historical-problem }
 
 Traditional Java servers were usually built around a thread-per-request model. A request entered the server, a platform thread handled it, and the same thread walked through the controller, service,
 database layer, HTTP clients, and other application code until the response was complete.
@@ -89,7 +92,7 @@ Reactive programming therefore solved a real systems problem, but it did so by m
 
 ---
 
-## What virtual threads change
+## What virtual threads change { #virtual-threads }
 
 A virtual thread is still a Java `Thread`, but it is not permanently tied to an operating-system thread. The JVM schedules many virtual threads onto a much smaller set of platform threads, commonly
 called **carrier threads**. When a virtual thread reaches a supported blocking operation, such as blocking I/O, the JVM can suspend the virtual thread and free its carrier to run another virtual
@@ -165,7 +168,7 @@ Reactive programming avoided expensive thread occupancy by changing the applicat
 
 ---
 
-## The architectural comparison at a glance
+## The architectural comparison at a glance { #comparison-at-a-glance }
 
 The useful comparison is not “blocking vs non-blocking” as a slogan. It is where concurrency semantics appear and who has to manage them.
 
@@ -193,7 +196,7 @@ A concurrency model becomes most coherent when it extends across the stack.
 
 ---
 
-## API shape: concurrency in the type system vs concurrency in the runtime
+## API shape: concurrency in the type system vs concurrency in the runtime { #api-shape }
 
 The most visible difference is the method signature.
 
@@ -257,7 +260,7 @@ to preserve server scalability.
 
 ---
 
-## Call stacks and debugging
+## Call stacks and debugging { #call-stacks }
 
 A synchronous call stack is more than a debugging convenience. It is an architectural representation of causality.
 
@@ -288,7 +291,7 @@ remain real problems. What changes is that the execution representation is close
 
 ---
 
-## Context propagation: the subtle difference
+## Context propagation: the subtle difference { #context-propagation }
 
 Context propagation is often presented too simplistically as “reactive requires explicit context, threads use `ThreadLocal`.” Modern Java makes the situation more nuanced.
 
@@ -310,7 +313,7 @@ concurrency boundaries still deserve explicit treatment.
 
 ---
 
-## Database architecture: reactive drivers vs JDBC
+## Database architecture: reactive drivers vs JDBC { #database-architecture }
 
 Database access is one of the places where the difference becomes concrete.
 
@@ -364,7 +367,7 @@ This is an important shift in thinking: **threads stop being the main concurrenc
 
 ---
 
-## Backpressure: where reactive still has a real structural advantage
+## Backpressure: where reactive still has a real structural advantage { #backpressure }
 
 Backpressure is the strongest area where reactive programming remains conceptually different rather than merely more complicated.
 
@@ -396,7 +399,7 @@ is one of the places where saying “virtual threads replace reactive” would b
 
 ---
 
-## Event loops and the rule that does not change
+## Event loops and the rule that does not change { #event-loops }
 
 Virtual threads do not make blocking safe on an event loop.
 
@@ -436,7 +439,7 @@ This is a cleaner separation of responsibilities than treating the event loop it
 
 ---
 
-## CPU-bound work: neither model creates more cores
+## CPU-bound work: neither model creates more cores { #cpu-bound-work }
 
 Both architectures are sometimes discussed as if their concurrency mechanisms improve all workloads. They do not.
 
@@ -457,7 +460,7 @@ That principle is central to using them correctly.
 
 ---
 
-## Resource pools become more important, not less
+## Resource pools become more important, not less { #resource-pools }
 
 In the old platform-thread model, a 200-thread request pool accidentally acted as a global concurrency limiter. Even if no one designed it as backpressure, only 200 requests could be actively
 represented by those workers at a time. Everything else queued before entering the application.
@@ -494,7 +497,7 @@ Neither approach removes capacity engineering. They make it visible in different
 
 ---
 
-## Failure handling and exceptions
+## Failure handling and exceptions { #failure-handling }
 
 Error handling is another place where source-level simplicity has operational consequences.
 
@@ -534,7 +537,7 @@ enter telemetry, invoke the method, handle exception, close telemetry, return re
 
 ---
 
-## Structured concurrency changes the fan-out story
+## Structured concurrency changes the fan-out story { #structured-concurrency }
 
 One historical advantage of asynchronous composition is convenient fan-out. If a request has to call three independent services, an async API can start all three operations and combine their results
 without allocating three platform threads.
@@ -574,7 +577,7 @@ composition may align better.
 
 ---
 
-## Pinning and carrier threads: what “blocking is cheap” does not mean
+## Pinning and carrier threads: what “blocking is cheap” does not mean { #pinning-carriers }
 
 Virtual threads make many blocking operations cheap, but the phrase should not be interpreted as “every blocking operation is free.”
 
@@ -608,7 +611,7 @@ Understanding that distinction prevents two mistakes: treating virtual threads a
 
 ---
 
-## Memory and concurrency shape
+## Memory and concurrency shape { #memory-and-concurrency }
 
 Reactive systems are often praised for having few threads, while virtual-thread systems may have enormous numbers of threads. Looking only at thread count is misleading because the units are
 fundamentally different.
@@ -637,7 +640,7 @@ Virtual threads make one resource—threads—much cheaper. They do not repeal q
 
 ---
 
-## Cancellation and timeouts
+## Cancellation and timeouts { #cancellation-timeouts }
 
 Reactive libraries tend to treat cancellation as a first-class signal. A subscriber can cancel a subscription, and well-designed operators propagate cancellation upstream. For streaming workloads this
 is a major feature because stopping demand should stop unnecessary production.
@@ -655,7 +658,7 @@ long-lived streams, reactive cancellation semantics are often more natural becau
 
 ---
 
-## Transactions become simpler in direct code
+## Transactions become simpler in direct code { #transactions }
 
 Transactions illustrate how concurrency style leaks into framework design.
 
@@ -694,7 +697,7 @@ Virtual threads restore that equivalence for most ordinary code. This is one rea
 
 ---
 
-## Observability: logical operations vs execution machinery
+## Observability: logical operations vs execution machinery { #observability }
 
 Both models can be fully observable with OpenTelemetry, but they require different instrumentation strategies.
 
@@ -716,11 +719,11 @@ necessarily runtime performance; it is operational vocabulary and cognitive load
 
 ---
 
-## Where reactive programming is still objectively useful
+## Where reactive programming is still objectively useful { #where-reactive-useful }
 
 The arrival of virtual threads does not eliminate the workloads Reactive Streams was designed for. There are several cases where reactive remains an objectively strong architectural fit.
 
-###1 Continuous, demand-driven streams
+###1 Continuous, demand-driven streams { #continuous-streams }
 
 If the application processes an ongoing stream whose size is unknown or effectively infinite, backpressure is not an incidental detail. It is part of the problem domain.
 
@@ -737,7 +740,7 @@ Examples include:
 Reactive Streams gives these systems a standard vocabulary for demand, cancellation, completion, and errors. A virtual thread can certainly read and process a stream, but thread-per-task semantics
 alone do not provide an equivalent demand protocol.
 
-###2 End-to-end reactive ecosystems
+###2 End-to-end reactive ecosystems { #reactive-ecosystems }
 
 If every important dependency already exposes reactive interfaces, forcing the application back into synchronous wrappers may add more complexity rather than remove it.
 
@@ -746,13 +749,13 @@ end to end.
 
 Architecture should minimize semantic adapters. Converting publishers to blocking calls merely to claim a synchronous architecture is not inherently better.
 
-###3 High-throughput stream transformation engines
+###3 High-throughput stream transformation engines { #stream-transformation }
 
 Some applications are closer to dataflow engines than request/response services. Their natural abstraction is not “one thread handles one request”; it is “elements flow through a graph of operators.”
 
 For these systems, operators such as merge, zip, window, buffer, throttle, sample, retry, concat, and switch may express the domain more directly than imperative loops and manually coordinated tasks.
 
-###4 Network gateways and protocol proxies
+###4 Network gateways and protocol proxies { #network-gateways }
 
 A gateway that mostly moves bytes between sockets, performs lightweight routing, and manages huge numbers of long-lived connections can fit naturally on a non-blocking event-driven architecture. There
 may be very little business call stack to preserve in the first place.
@@ -760,12 +763,12 @@ may be very little business call stack to preserve in the first place.
 Virtual threads can also handle large connection counts, so this is not an automatic reactive win. But where the application is fundamentally a network state machine, event-driven programming may map
 cleanly to the workload.
 
-###5 Fine-grained demand propagation across many stages
+###5 Fine-grained demand propagation across many stages { #demand-propagation }
 
 If a downstream stage must dynamically tell multiple upstream stages how much more work it can accept, Reactive Streams already defines the mechanism. Rebuilding equivalent behavior manually with
 semaphores and queues may produce a less composable system.
 
-###6 Existing expertise and mature production systems
+###6 Existing expertise and mature production systems { #existing-expertise }
 
 Architecture has migration cost. A mature reactive service with proven libraries, diagnostics, operational tooling, and a team fluent in the model should not be rewritten merely because virtual
 threads exist.
@@ -774,7 +777,7 @@ Virtual threads change the default choice for new request/response services more
 
 ---
 
-## Where virtual threads are usually the simpler default
+## Where virtual threads are usually the simpler default { #where-virtual-threads-default }
 
 Virtual threads are particularly compelling when the application is a conventional backend service whose work is mostly request/response and I/O-bound:
 
@@ -800,7 +803,7 @@ That coherence matters more than whether any individual API is one line shorter.
 
 ---
 
-## Kora 2 as a concrete virtual-thread-first architecture
+## Kora 2 as a concrete virtual-thread-first architecture { #kora-2 }
 
 Kora 2's architecture can be summarized as a separation between the network runtime and the application runtime.
 
@@ -850,13 +853,13 @@ That distinction is the core of the architecture.
 
 ---
 
-## Reactive and virtual threads can coexist—but boundaries matter
+## Reactive and virtual threads can coexist—but boundaries matter { #coexistence }
 
 Real systems are rarely ideologically pure. A virtual-thread service may consume a reactive library. A reactive application may need a blocking SDK. Both are possible.
 
 The danger is uncontrolled mixing.
 
-### Reactive calling blocking code
+### Reactive calling blocking code { #reactive-calling-blocking }
 
 If reactive code calls blocking code on an event loop, the event loop can stall. The blocking work must be moved to a worker scheduler or another execution mechanism.
 
@@ -869,7 +872,7 @@ event loop
 
 This is a legitimate boundary, but it should be explicit and observable.
 
-### Virtual-thread code calling reactive code
+### Virtual-thread code calling reactive code { #vt-calling-reactive }
 
 A virtual thread can subscribe to an asynchronous source and wait for completion, but doing so merely to convert every reactive API into a blocking one may destroy useful streaming or cancellation
 semantics. If the dependency naturally produces a stream, preserving the stream may be better.
@@ -881,7 +884,7 @@ Kora 2 deliberately avoids that ambiguity at the framework-contract level by mak
 
 ---
 
-## The real trade-off: explicit control flow vs explicit flow control
+## The real trade-off: explicit control flow vs explicit flow control { #real-trade-off }
 
 The deepest comparison can be expressed as a trade between two kinds of explicitness.
 
@@ -941,11 +944,11 @@ That is a better basis for architecture selection than “reactive is faster” 
 
 ---
 
-## A decision framework for backend teams
+## A decision framework for backend teams { #decision-framework }
 
 When choosing between a reactive architecture and a virtual-thread-first architecture, ask questions about the workload rather than the fashion of the stack.
 
-### Choose virtual threads as the default when:
+### Choose virtual threads as the default when: { #choose-virtual-threads }
 
 1. The service is primarily request/response.
 2. Most waits are JDBC, HTTP, RPC, filesystem, or other blocking-style I/O.
@@ -956,7 +959,7 @@ When choosing between a reactive architecture and a virtual-thread-first archite
 7. Debugging, stack traces, and operational simplicity are important.
 8. The team wants concurrency to be explicit only where actual parallelism is required.
 
-### Prefer reactive when:
+### Prefer reactive when: { #prefer-reactive }
 
 1. The domain is an ongoing stream rather than a finite request.
 2. Demand propagation is a first-class requirement.
@@ -966,7 +969,7 @@ When choosing between a reactive architecture and a virtual-thread-first archite
 6. The system is fundamentally an event-processing or network state machine.
 7. The team already operates the reactive model successfully and a rewrite would bring little architectural benefit.
 
-### Be cautious with both models when:
+### Be cautious with both models when: { #be-cautious }
 
 1. The workload is CPU-bound.
 2. Concurrency is unbounded.
@@ -981,7 +984,7 @@ Those are system-design problems, not API-style problems.
 
 ---
 
-## What does not change after Loom
+## What does not change after Loom { #after-loom }
 
 Virtual threads are a major JVM change, but many backend engineering rules remain exactly the same.
 
@@ -1004,7 +1007,7 @@ The concurrency model becomes less global.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Reactive programming was not a mistake. It solved a real limitation of the pre-Loom JVM: large numbers of concurrently waiting operations could not economically be represented by large numbers of
 platform threads. The reactive answer was to encode waiting, continuation, cancellation, and demand into asynchronous APIs and stream composition.

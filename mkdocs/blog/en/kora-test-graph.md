@@ -1,11 +1,14 @@
 ---
 title: Testing the Same Graph You Run in Production — Kora Framework
+date: 2026-09-01
 description: How the Kora Framework's JUnit extension derives a test graph from the production application graph — component slices, in-graph replacements, typed configuration, and lifecycle.
 search:
   exclude: true
 ---
 
-# Testing the Same Graph You Run in Production
+# Testing the Same Graph You Run in Production { #testing-the-same-graph }
+
+**September 1, 2026**
 
 The most dangerous difference between production code and test code is often not the data. It is the wiring.
 
@@ -21,7 +24,7 @@ This makes the production graph the starting point for component and integration
 That is the architectural meaning behind Kora's promise of simple and fast testing. “Simple” does not mean that every test is trivial, and “fast” does not mean replacing every dependency with a mock.
 It means that the framework gives tests a direct way to reuse application structure while paying only for the part of that structure that matters to the current question.
 
-## What “the Same Graph” Actually Means
+## What “the Same Graph” Actually Means { #what-the-same-graph-means }
 
 The phrase needs to be precise. A component test does not necessarily start the complete process, bind every server port, connect every client, and run every background consumer. Nor does it reuse the
 same object instances as a production process. It uses the same generated application graph as its source of truth: the same component definitions, dependency edges, tags, generated implementations,
@@ -52,7 +55,7 @@ relationships still come from the production application definition.
 
 The claim should therefore be read as: test the same graph model that production runs, narrowed and modified deliberately for the test boundary.
 
-## The Production Graph Is the Testable Architecture
+## The Production Graph Is the Testable Architecture { #testable-architecture }
 
 Kora discovers and validates the application dependency container at compile time. An interface annotated with `@KoraApp` defines the application boundary and connects framework or application
 modules. `@Component` classes and factory methods provide nodes. Constructor parameters and factory parameters create edges. `@Root` marks entry points that must exist when the application starts.
@@ -70,7 +73,7 @@ Compile-time validation also changes when failures appear. Missing components, a
 the build instead of waiting for a test context or deployed process to start. The test suite then concentrates on behavior, boundary substitutions, infrastructure compatibility, and lifecycle effects
 rather than repeatedly rediscovering basic wiring errors at runtime.
 
-## A Test Graph Begins with a Question
+## A Test Graph Begins with a Question { #test-graph-begins-with-a-question }
 
 Kora's JUnit support lives in `io.koraframework:test-junit5`. A test selects an application with `@KoraAppTest` and selects components with `@TestComponent`.
 
@@ -130,7 +133,7 @@ If a test needs broad inspection instead of a narrow injected component, it can 
 Direct graph access is valuable for infrastructure assertions and diagnostic tests, but routine behavior tests are clearer when their graph boundary is visible in typed `@TestComponent` fields or
 parameters.
 
-## Replacement Happens Inside the Graph
+## Replacement Happens Inside the Graph { #replacement-inside-the-graph }
 
 Focused tests need controlled boundaries. Kora treats a mock as a replacement graph node, not merely as a field owned by the test class.
 
@@ -260,7 +263,7 @@ Replacement factories have a useful architectural consequence. A replacement sup
 `Function<KoraAppGraph, T>` depends on initialized graph values, so those values must remain. That choice should be intentional: a standalone fake isolates a boundary; a graph-aware decorator
 preserves part of the real boundary and changes behavior around it. A replacement factory must not request the same node it is replacing, or initialization has no valid base case.
 
-## Configuration Is a Dependency, Not Test Scaffolding
+## Configuration Is a Dependency, Not Test Scaffolding { #configuration-as-dependency }
 
 Configuration often causes otherwise realistic tests to drift. Production reads HOCON or YAML, maps sections into typed interfaces, resolves substitutions, and passes resulting objects through the
 graph. A test that bypasses this path by constructing a config object manually may miss wrong paths, missing values, mapping errors, and interactions between configuration and component creation.
@@ -325,7 +328,7 @@ Configuration overrides should remain narrow enough to expose accidental depende
 Prefer a small complete fragment for the retained graph slice, or keep the default application configuration and override only runtime values. If a supposedly focused component test suddenly requires
 unrelated Kafka, HTTP server, or telemetry configuration, that is evidence that the selected graph slice or component boundary deserves inspection.
 
-## A Partial Application Is More Than a Smaller Context
+## A Partial Application Is More Than a Smaller Context { #partial-application }
 
 The phrase “partial application” can sound like an optimization detail. It is more useful to treat it as an explicit testing architecture.
 
@@ -387,7 +390,7 @@ other unreachable graph node.
 An extended `TestApplication` should be used for genuine graph capabilities, not as a dumping ground for arbitrary test helpers. Object mothers, assertion utilities, and random-data builders do not
 need to become application components. Cleanup repositories, embedded protocol adapters, and fixtures whose own dependencies and lifecycle matter are stronger candidates.
 
-## Lifecycle Is Part of the Assertion Surface
+## Lifecycle Is Part of the Assertion Surface { #lifecycle-assertion-surface }
 
 Production resources have beginnings and endings. A database pool opens and closes connections. A server binds and releases a port. A consumer joins and leaves a group. A background worker starts and
 must stop accepting work before its dependencies disappear. Testing a graph without respecting lifecycle would recreate the same mismatch that graph-based testing is intended to prevent.
@@ -411,7 +414,7 @@ Lifecycle testing also benefits from real rather than mocked boundaries. If a co
 removes the behavior under examination. Keep that component real, replace only its external side effects if necessary, and let the graph call its lifecycle methods. Conversely, a focused service test
 should mock a heavy lifecycle boundary when resource startup is irrelevant to the question. Graph slicing makes both choices possible without changing production code.
 
-## From Component Confidence to Production Confidence
+## From Component Confidence to Production Confidence { #production-confidence }
 
 Reusing the graph does not collapse all testing levels into one. It gives them a shared structural foundation.
 
@@ -426,7 +429,7 @@ should carry every combinatorial branch of service logic through expensive infra
 Kora's graph helps the layers agree. The component test uses the production component definition. The integration test keeps that definition and swaps a mocked port for a real container-backed
 implementation. The black-box test runs the assembled artifact built from the same application declaration. Moving outward adds runtime surface rather than replacing one wiring model with another.
 
-## Failure Modes Worth Avoiding
+## Failure Modes Worth Avoiding { #failure-modes }
 
 Graph-based testing is most valuable when the test boundary stays intentional. Several practices weaken it.
 
@@ -451,7 +454,7 @@ application-owned buffers explicitly.
 Finally, treating “same graph” as “production-equivalent environment” overstates what the test proves. A sliced and modified graph validates application structure and selected runtime behavior. Only a
 black-box run of the production-ready image can cover the complete packaging and process boundary.
 
-## A Practical Architecture for a Kora Test Suite
+## A Practical Architecture for a Kora Test Suite { #practical-architecture }
 
 A productive suite starts with many small graph slices around business components. These tests request real services, validators, mappers, and policy objects, while replacing remote systems and
 expensive infrastructure. They run with `PER_METHOD` unless lifecycle cost demonstrates a reason to share the graph.
@@ -466,7 +469,7 @@ endpoints, and deployment assumptions rather than duplicating every service bran
 This architecture keeps feedback fast because most tests initialize only a small transitive closure. It keeps wiring honest because those closures are derived from the generated application graph. It
 keeps integration realistic because selected external boundaries remain real. It keeps production claims bounded because the final image still receives its own independent verification.
 
-## The Deeper Payoff
+## The Deeper Payoff { #deeper-payoff }
 
 Kora's testing model follows from a broader design choice: application structure is explicit enough to be generated, inspected, validated, sliced, modified, initialized, and released as a graph.
 Testing is not a separate subsystem layered over runtime dependency injection. It is another way of executing the same architectural model.

@@ -1,10 +1,13 @@
 ---
 title: How to Build Your Own First-Class Kora Framework Module
+date: 2026-08-16
 description: A step-by-step guide to building a first-class Kora Framework module with typed config, lifecycle, telemetry, and compile-time DI.
 search:
   exclude: true
 ---
-# How to Build Your Own First-Class Kora Module
+# How to Build Your Own First-Class Kora Module { #build-your-own }
+
+**August 16, 2026**
 
 The Kora Framework's claim that it is **built to be extended** is more interesting than the generic statement that developers can register custom components.
 
@@ -48,7 +51,7 @@ Kora supplies configuration, lifecycle, telemetry, and wiring
 
 That is the right way to understand the framework's extensibility model.
 
-## A Module Is More Than a Factory Method
+## A Module Is More Than a Factory Method { #module-factory-method }
 
 Start with a fictional library:
 
@@ -147,7 +150,7 @@ Depending on the technology, a production module may also need:
 Not every library needs every feature. A small stateless formatter may need only a factory. A NATS consumer integration needs significantly more. The module should model the actual operational nature
 of the technology.
 
-## Kora Modules Belong to the Compile-Time Graph
+## Kora Modules Belong to the Compile-Time Graph { #kora-modules-belong }
 
 Kora's dependency graph is validated largely during compilation. A module is therefore not merely a runtime registration hook. It becomes part of the same compile-time architecture as controllers,
 repositories, clients, telemetry components, and other application dependencies.
@@ -182,7 +185,7 @@ The parameters are graph dependencies. If `SearchClient` has no provider, or sev
 
 That matters for extension authors because they do not need to build their own container or runtime registry. They describe components and relationships; Kora compiles the structure.
 
-## External Modules Are Connected Explicitly
+## External Modules Are Connected Explicitly { #external-modules-connected }
 
 For reusable modules shipped in a separate artifact, Kora's model is deliberately explicit. An application enables the external module through its `@KoraApp` interface rather than by classpath
 scanning.
@@ -272,7 +275,7 @@ An engineer can immediately see which infrastructure families are enabled. The c
 
 This is stronger than hidden auto-configuration.
 
-## Start With a Thin Integration Boundary
+## Start With a Thin Integration Boundary { #start-thin-integration }
 
 The first design question is not "What framework abstraction can I invent?"
 
@@ -328,7 +331,7 @@ The second is optional.
 
 A first-class module should not force a large framework-specific API when the native library is already good.
 
-## Step 1: Model Configuration as a Type
+## Step 1: Model Configuration as a Type { #step-1-model }
 
 A production integration should usually begin with typed configuration.
 
@@ -420,7 +423,7 @@ search.analytics
 
 without copying the same configuration model.
 
-## Library Configuration Should Be Path-Agnostic
+## Library Configuration Should Be Path-Agnostic { #library-configuration-path }
 
 There are two separate contracts:
 
@@ -448,7 +451,7 @@ This separation is particularly useful when a shared module is consumed by diffe
 
 It also prevents the reusable integration from hard-coding one organization's configuration hierarchy.
 
-## Avoid Raw Config Deep in the Module
+## Avoid Raw Config Deep in the Module { #avoid-raw-config }
 
 It is possible to inject raw configuration and repeatedly write:
 
@@ -484,7 +487,7 @@ Raw configuration should usually stay at the edge.
 
 Typed configuration becomes the real module contract.
 
-## Configuration Is a Public API
+## Configuration Is a Public API { #configuration-public-api }
 
 Once a module is shared, its configuration is as important as its Java API.
 
@@ -520,7 +523,7 @@ semantic meaning
 
 Configuration is not an implementation detail.
 
-## Defaults Should Be Safe for Production
+## Defaults Should Be Safe for Production { #defaults-safe-production }
 
 Avoid convenient but dangerous defaults such as:
 
@@ -544,7 +547,7 @@ predictable shutdown
 
 A reusable module centralizes production behavior across many services. Bad defaults scale just as efficiently as good ones.
 
-## Step 2: Construct the Client Through DI
+## Step 2: Construct the Client Through DI { #step-2-construct }
 
 Once configuration exists, create the client using normal graph dependencies:
 
@@ -611,7 +614,7 @@ No runtime lookup.
 
 The dependency graph says exactly what the application requires.
 
-## The Graph Should Expose Real Infrastructure Dependencies
+## The Graph Should Expose Real Infrastructure Dependencies { #graph-expose-real }
 
 Suppose the integration also needs:
 
@@ -662,7 +665,7 @@ Generated wiring becomes readable.
 
 Hidden global lookups destroy those advantages.
 
-## Compile-Time DI Is a Module Author's Safety Net
+## Compile-Time DI Is a Module Author's Safety Net { #compile-time-di }
 
 Assume your module requires:
 
@@ -678,7 +681,7 @@ This is one of the strongest reasons to implement infrastructure as real Kora mo
 
 The module author does not need custom startup validation for basic dependency existence and ambiguity. Kora already provides that structural check.
 
-## Step 3: Treat Lifecycle as Part of the API
+## Step 3: Treat Lifecycle as Part of the API { #step-3-treat }
 
 Infrastructure clients often own resources:
 
@@ -732,7 +735,7 @@ For external types that cannot implement Kora interfaces, a factory can attach l
 
 This is exactly what an integration layer is for: preserving the external API while connecting its resource lifecycle to the application graph.
 
-## Use AutoCloseable When It Is Enough
+## Use AutoCloseable When It Is Enough { #use-autocloseable-enough }
 
 If the native client already implements `AutoCloseable`, do not invent a parallel lifecycle abstraction merely for consistency.
 
@@ -742,7 +745,7 @@ Prefer native contracts when they correctly represent ownership.
 
 A good Kora integration stays close to the underlying technology.
 
-## Use Lifecycle When Startup Has Real Meaning
+## Use Lifecycle When Startup Has Real Meaning { #use-lifecycle-startup }
 
 A NATS integration may need to:
 
@@ -771,7 +774,7 @@ application ready
 
 carefully.
 
-## LifecycleWrapper Is Useful for Third-Party Objects
+## LifecycleWrapper Is Useful for Third-Party Objects { #lifecyclewrapper-useful-third }
 
 A factory can conceptually return a wrapped client:
 
@@ -813,7 +816,7 @@ Lifecycle remains an integration concern.
 
 This is a strong pattern for adapting libraries that know nothing about Kora.
 
-## Reverse Dependency Release Is Valuable
+## Reverse Dependency Release Is Valuable { #reverse-dependency-release }
 
 Suppose:
 
@@ -831,7 +834,7 @@ That means correct graph modeling produces sensible resource shutdown naturally.
 
 This is another reason hidden dependencies are harmful: the graph cannot order resources it cannot see.
 
-## Graceful Shutdown Defines Integration Quality
+## Graceful Shutdown Defines Integration Quality { #graceful-shutdown-defines }
 
 Messaging makes this especially obvious.
 
@@ -853,7 +856,7 @@ A client can be perfectly correct during steady state and still be operationally
 
 First-class modules integrate shutdown semantics.
 
-## Avoid Unnecessary Startup Work
+## Avoid Unnecessary Startup Work { #avoid-unnecessary-startup }
 
 Kora initializes independent graph components in parallel where possible.
 
@@ -874,7 +877,7 @@ Do not perform deployment/control-plane work during normal application startup u
 
 Framework startup performance depends on module authors too.
 
-## Step 4: Give the Module a Telemetry Contract
+## Step 4: Give the Module a Telemetry Contract { #step-4-give }
 
 A production module should answer:
 
@@ -930,7 +933,7 @@ close with success or failure
 
 This mirrors Kora's broader telemetry architecture: operation-specific context around real work.
 
-## One Observation Context Is Better Than Three Independent Wrappers
+## One Observation Context Is Better Than Three Independent Wrappers { #one-observation-context }
 
 A weak implementation may manually do:
 
@@ -959,7 +962,7 @@ and one operation context handles start/end symmetry.
 
 This centralizes success/failure semantics and makes no-op telemetry cheap when disabled.
 
-## Telemetry Should Describe the Native Technology
+## Telemetry Should Describe the Native Technology { #telemetry-describe-native }
 
 Useful Elasticsearch-style dimensions may include:
 
@@ -995,7 +998,7 @@ An Elasticsearch index may be bounded in one architecture and unbounded in anoth
 
 Technology knowledge is still required.
 
-## Metrics Need Bounded Dimensions
+## Metrics Need Bounded Dimensions { #metrics-bounded-dimensions }
 
 Metrics are aggregation tools.
 
@@ -1020,7 +1023,7 @@ full exception message
 
 A first-class module should choose safe defaults so consuming services do not have to rediscover cardinality rules independently.
 
-## Traces Can Carry Richer Context
+## Traces Can Carry Richer Context { #traces-carry-richer }
 
 Tracing can usually tolerate richer request-level metadata than metrics.
 
@@ -1041,7 +1044,7 @@ A MinIO upload span can include bucket and size while avoiding sensitive keys.
 
 Telemetry should be useful without becoming a data leak.
 
-## Logs Should Capture Exceptional State, Not Every Success
+## Logs Should Capture Exceptional State, Not Every Success { #logs-capture-exceptional }
 
 Useful module logs include:
 
@@ -1057,7 +1060,7 @@ A module usually does not need an INFO log for every successful request if metri
 
 Structured logging should explain unusual decisions and state transitions.
 
-## Reuse Kora's Existing Observability Stack
+## Reuse Kora's Existing Observability Stack { #reuse-kora-s }
 
 A custom integration should normally depend on the application's existing metrics, tracing, and logging infrastructure rather than inventing another exporter stack.
 
@@ -1073,7 +1076,7 @@ instead of a different monitoring system for every library.
 
 This is what makes a custom module operationally feel like a built-in Kora integration.
 
-## Follow Familiar Telemetry Configuration Conventions
+## Follow Familiar Telemetry Configuration Conventions { #follow-familiar-telemetry }
 
 If built-in Kora modules use concepts such as:
 
@@ -1156,11 +1159,11 @@ Developers already familiar with Kora will immediately understand it.
 
 First-class means coherent with the framework, not merely compatible with it.
 
-## Decide Whether to Expose the Native Client or a Thin Adapter
+## Decide Whether to Expose the Native Client or a Thin Adapter { #decide-whether-expose }
 
 There are two good designs.
 
-### Native client as the component
+### Native client as the component { #native-client-component }
 
 ```text
 business service
@@ -1170,7 +1173,7 @@ SearchClient
 
 This is ideal when the third-party client already exposes useful hooks for transport, telemetry, or lifecycle.
 
-### Thin instrumented adapter
+### Thin instrumented adapter { #thin-instrumented-adapter }
 
 ```text
 business service
@@ -1211,7 +1214,7 @@ routing
 stable internal API
 ```
 
-## Concrete Search Module Architecture
+## Concrete Search Module Architecture { #concrete-search-module }
 
 A reasonable architecture might be:
 
@@ -1335,7 +1338,7 @@ The application graph handles construction.
 
 The business code sees a normal typed client.
 
-## Keep Factory Methods Small
+## Keep Factory Methods Small { #keep-factory-methods }
 
 Avoid a giant factory such as:
 
@@ -1389,7 +1392,7 @@ Compile-time DI is good at assembling components.
 
 Let Kora do that work rather than creating a private mini-container inside one method.
 
-## Design Explicit Override Points
+## Design Explicit Override Points { #design-explicit-override }
 
 A shared module may provide:
 
@@ -1416,7 +1419,7 @@ Expose stable boundaries where customization is genuinely useful.
 
 This prevents forks without freezing implementation details.
 
-## Replaceability Is Part of "Built to Be Extended"
+## Replaceability Is Part of "Built to Be Extended" { #replaceability-part-built }
 
 Extensibility is not only the ability to add new components.
 
@@ -1430,7 +1433,7 @@ The same applies to telemetry, TLS, transport, and selected client construction 
 
 A first-class module is reusable because it provides strong defaults without being rigid.
 
-## Multiple Instances Need Deliberate Design
+## Multiple Instances Need Deliberate Design { #multiple-instances-deliberate }
 
 Applications often outgrow the assumption of one global client.
 
@@ -1453,7 +1456,7 @@ The module author should consciously choose whether multi-instance use is suppor
 
 Do not accidentally make it impossible by hiding all state in one static singleton.
 
-## Factory Modules Help Parameterized Integrations
+## Factory Modules Help Parameterized Integrations { #factory-modules-help }
 
 Sometimes one reusable module implementation needs to be parameterized by configuration path or logical identity.
 
@@ -1478,7 +1481,7 @@ This is a powerful feature because custom infrastructure can use the same graph 
 
 Third-party integrations are not restricted to a weaker extension model.
 
-## Tags Should Express Meaning
+## Tags Should Express Meaning { #tags-express-meaning }
 
 Tags are appropriate when two components have the same type but different semantic roles:
 
@@ -1493,7 +1496,7 @@ Tags are less useful when added arbitrarily to repair poorly designed graph ambi
 
 A tag should tell the reader *why* the components differ.
 
-## Elasticsearch: What a First-Class Module Needs
+## Elasticsearch: What a First-Class Module Needs { #elasticsearch-what-first }
 
 A good Elasticsearch module should probably integrate:
 
@@ -1529,7 +1532,7 @@ Telemetry may be best attached at the transport level if the native client provi
 
 The goal is to use native extension points where possible and add Kora integration around them.
 
-## Do Not Double-Instrument Elasticsearch
+## Do Not Double-Instrument Elasticsearch { #double-instrument-elasticsearch }
 
 Modern clients and transports may already expose OpenTelemetry-compatible instrumentation.
 
@@ -1547,7 +1550,7 @@ Understand the library's observability model before adding another layer.
 
 A first-class module composes with native instrumentation rather than blindly duplicating it.
 
-## NATS: Lifecycle Is the Main Challenge
+## NATS: Lifecycle Is the Main Challenge { #nats-lifecycle-main }
 
 A NATS integration may include:
 
@@ -1584,7 +1587,7 @@ Telemetry should cover publish operations and message processing.
 
 A good integration should expose reconnect and consumer behavior operationally.
 
-## Side-Effect Components May Need to Be Roots
+## Side-Effect Components May Need to Be Roots { #side-effect-components }
 
 A consumer manager may exist only because its lifecycle starts subscriptions.
 
@@ -1607,7 +1610,7 @@ Do not mark everything as root.
 
 Use root status for components whose side effects are intentionally part of the running application.
 
-## MinIO: Keep Object-Storage Semantics Visible
+## MinIO: Keep Object-Storage Semantics Visible { #minio-keep-object }
 
 A MinIO module is usually closer to a client module.
 
@@ -1641,7 +1644,7 @@ Do not automatically create buckets during every application startup unless that
 
 A service using MinIO for data-plane operations should not automatically require bucket-administration privileges.
 
-## Separate Control Plane From Data Plane
+## Separate Control Plane From Data Plane { #separate-control-plane }
 
 This principle applies across technologies.
 
@@ -1671,7 +1674,7 @@ They may not need administrative privileges.
 
 A first-class module should avoid mixing deployment/setup work into every service startup unless the architecture explicitly requires it.
 
-## Internal Library X Uses the Same Pattern
+## Internal Library X Uses the Same Pattern { #internal-library-x }
 
 Suppose a company owns:
 
@@ -1695,7 +1698,7 @@ The pattern is identical.
 
 This is where framework modularity becomes organizationally valuable: company-specific infrastructure can participate in the same application model as built-in integrations.
 
-## Keep the Public Module Surface Small
+## Keep the Public Module Surface Small { #keep-public-module }
 
 Once several services depend on a module, every public type becomes a compatibility promise.
 
@@ -1715,7 +1718,7 @@ Implementation details should remain private.
 
 This makes upgrades easier and keeps the module understandable.
 
-## Separate Core Library From Kora Integration
+## Separate Core Library From Kora Integration { #separate-core-library }
 
 If you own library X, consider:
 
@@ -1739,7 +1742,7 @@ and the Kora module acts as a framework adapter.
 
 This keeps responsibilities clean.
 
-## Fine-Grained Dependencies Matter
+## Fine-Grained Dependencies Matter { #fine-grained-dependencies }
 
 A custom module should depend only on the Kora capabilities it actually uses.
 
@@ -1755,7 +1758,7 @@ enable only what the service needs
 
 A bloated integration can undermine the framework's modular runtime.
 
-## Optional Features Should Be Actually Optional
+## Optional Features Should Be Actually Optional { #optional-features-actually }
 
 Suppose tracing is disabled.
 
@@ -1767,7 +1770,7 @@ The client should not start a background health checker merely because the integ
 
 Optional features should not quietly pull large runtime subgraphs into every application.
 
-## Probes Are a Policy Decision
+## Probes Are a Policy Decision { #probes-policy-decision }
 
 Should an unavailable Elasticsearch cluster make the application unready?
 
@@ -1783,7 +1786,7 @@ A reusable module therefore should usually expose health information without imp
 
 The application decides how dependency health maps to traffic admission.
 
-## Do Not Turn Remote Dependency Failure Into Liveness Failure
+## Do Not Turn Remote Dependency Failure Into Liveness Failure { #turn-remote-dependency }
 
 Restarting an application rarely repairs an unavailable external service.
 
@@ -1793,7 +1796,7 @@ That can turn one infrastructure incident into a fleet-wide restart storm.
 
 Probe design belongs to module architecture, not only framework configuration.
 
-## Health Checks Must Be Cheap
+## Health Checks Must Be Cheap { #health-checks-cheap }
 
 A probe should not run an expensive search or object upload every second from every Pod.
 
@@ -1812,7 +1815,7 @@ depending on the technology.
 
 Observability should not become an attack on the dependency.
 
-## Configuration Refresh Needs a Deliberate Policy
+## Configuration Refresh Needs a Deliberate Policy { #configuration-refresh-deliberate }
 
 Kora can refresh affected graph components when configuration changes.
 
@@ -1831,7 +1834,7 @@ External clients may own sockets, subscriptions, threads, or expensive state.
 
 Configuration reload is powerful and should reflect resource semantics.
 
-## Direct Dependencies and ValueOf Mean Different Lifecycle Coupling
+## Direct Dependencies and ValueOf Mean Different Lifecycle Coupling { #direct-dependencies-valueof }
 
 A direct graph dependency means the consumer is lifecycle-coupled to the dependency.
 
@@ -1843,11 +1846,11 @@ But do not use indirection simply to avoid a correct dependency relationship.
 
 Use it when live replacement is a real architectural requirement.
 
-## Testing Is Part of Module Design
+## Testing Is Part of Module Design { #testing-part-module }
 
 A first-class module should be testable at several levels.
 
-### Module unit tests
+### Module unit tests { #module-unit-tests }
 
 Validate:
 
@@ -1859,7 +1862,7 @@ factory logic
 error mapping
 ```
 
-### Module integration tests
+### Module integration tests { #module-integration-tests }
 
 Use real infrastructure where protocol semantics matter:
 
@@ -1871,13 +1874,13 @@ observe telemetry
 shutdown
 ```
 
-### Consumer application tests
+### Consumer application tests { #consumer-application-tests }
 
 Allow the application to replace the real client with a fake or test implementation.
 
 Each level answers different questions.
 
-## Component Replacement Is a Primary Test Seam
+## Component Replacement Is a Primary Test Seam { #component-replacement-primary }
 
 A service test should be able to replace:
 
@@ -1909,7 +1912,7 @@ DI should make that easy.
 
 If the module makes replacement difficult, its integration boundary is probably too rigid.
 
-## Real Integration Tests Are Still Necessary
+## Real Integration Tests Are Still Necessary { #real-integration-tests }
 
 Mocks cannot prove:
 
@@ -1931,7 +1934,7 @@ Testcontainers or equivalent disposable infrastructure is ideal where available.
 
 Kora's fast graph startup helps make such tests practical.
 
-## Test Lifecycle, Not Only Business Operations
+## Test Lifecycle, Not Only Business Operations { #test-lifecycle-business }
 
 A module test should verify more than:
 
@@ -1954,7 +1957,7 @@ Many integration bugs appear only during rolling deployment or partial failure.
 
 First-class modules need lifecycle tests.
 
-## Test Telemetry Semantics
+## Test Telemetry Semantics { #test-telemetry-semantics }
 
 Verify:
 
@@ -1970,7 +1973,7 @@ Dashboards and alerts may depend on these contracts.
 
 Telemetry is part of the module API.
 
-## Failure Injection Matters
+## Failure Injection Matters { #failure-injection-matters }
 
 Infrastructure modules should test:
 
@@ -1995,7 +1998,7 @@ probe behavior
 
 A module's production quality is defined heavily by its failure path.
 
-## Startup Errors Should Be Actionable
+## Startup Errors Should Be Actionable { #startup-errors-actionable }
 
 If initialization fails, the error should tell the developer:
 
@@ -2014,7 +2017,7 @@ RuntimeException: init failed
 
 Kora can show graph initialization failure, but the module should preserve enough detail to make the graph error useful.
 
-## Partial Initialization Needs Cleanup
+## Partial Initialization Needs Cleanup { #partial-initialization-cleanup }
 
 Consider:
 
@@ -2032,7 +2035,7 @@ Simple clients can use simple wrappers.
 
 Complex subscription systems may deserve a dedicated manager with explicit state.
 
-## Separate Managers When Responsibilities Differ
+## Separate Managers When Responsibilities Differ { #separate-managers-responsibilities }
 
 A NATS architecture may benefit from:
 
@@ -2057,7 +2060,7 @@ The graph naturally represents this ordering.
 
 Do not overload one component with unrelated responsibilities merely to minimize class count.
 
-## Resource Ownership Must Be Explicit
+## Resource Ownership Must Be Explicit { #resource-ownership-explicit }
 
 For every resource answer:
 
@@ -2086,7 +2089,7 @@ A component should never close a shared dependency it does not own.
 
 Ownership is part of lifecycle design.
 
-## Avoid Hidden Thread Pools
+## Avoid Hidden Thread Pools { #avoid-hidden-thread }
 
 Third-party clients may create their own workers or event loops.
 
@@ -2098,7 +2101,7 @@ Where safe and supported, allow shared executors or transports to be injected.
 
 Do not hide expensive background resources behind a tiny-looking client factory.
 
-## Threading Should Respect the Native Library
+## Threading Should Respect the Native Library { #threading-respect-native }
 
 Some clients are synchronous.
 
@@ -2112,7 +2115,7 @@ Do not automatically add executors or asynchronous adapters for aesthetic consis
 
 Thin integration means respecting the native execution model.
 
-## Resilience Should Be Composable, Not Secretly Hard-Coded
+## Resilience Should Be Composable, Not Secretly Hard-Coded { #resilience-composable-secretly }
 
 Should every search retry three times?
 
@@ -2134,7 +2137,7 @@ rather than hiding aggressive behavior inside client construction.
 
 A module should document native retry semantics so application-level retry does not accidentally multiply attempts.
 
-## Retry Amplification Is Easy to Create
+## Retry Amplification Is Easy to Create { #retry-amplification-easy }
 
 Suppose:
 
@@ -2153,7 +2156,7 @@ Documentation should explain native behavior.
 
 Framework integration should reduce surprises, not create them.
 
-## Timeout Layers Need the Same Care
+## Timeout Layers Need the Same Care { #timeout-layers-same }
 
 A native request timeout and an outer Kora timeout are not necessarily the same.
 
@@ -2170,7 +2173,7 @@ A first-class module should document cancellation and timeout behavior of the un
 
 Operational correctness depends on it.
 
-## Security Configuration Should Be Explicit
+## Security Configuration Should Be Explicit { #security-configuration-explicit }
 
 Credentials should not be fetched from random environment variables inside deep implementation code.
 
@@ -2195,7 +2198,7 @@ without changing business code.
 
 Separating credential acquisition from client construction is an excellent extension seam.
 
-## TLS Is Part of the Integration Contract
+## TLS Is Part of the Integration Contract { #tls-part-integration }
 
 Serious modules need to consider:
 
@@ -2214,7 +2217,7 @@ Otherwise expose clear typed options.
 
 Security is not an afterthought to client construction.
 
-## Never Leak Secrets Through Telemetry
+## Never Leak Secrets Through Telemetry { #never-leak-secrets }
 
 The module sees credentials and potentially sensitive request data.
 
@@ -2233,7 +2236,7 @@ Masking belongs in the shared integration so each service does not reinvent it.
 
 Centralized module code is a force multiplier for both good and bad security.
 
-## Start With DI Before Building Code Generation
+## Start With DI Before Building Code Generation { #start-di-building }
 
 Kora uses annotation processors extensively, but a custom module does not automatically need one.
 
@@ -2260,7 +2263,7 @@ Do not build a processor merely because Kora itself has processors.
 
 Use code generation when there is genuine compile-time structure worth generating.
 
-## A First-Class Module Can Have Almost No Kora API at the Use Site
+## A First-Class Module Can Have Almost No Kora API at the Use Site { #first-class-module }
 
 This is often the ideal result.
 
@@ -2294,7 +2297,7 @@ That means framework integration succeeded without contaminating normal technolo
 
 Kora is rich at the assembly boundary and thin in the runtime programming model.
 
-## Compare Thin Integration With a Wrapper Stack
+## Compare Thin Integration With a Wrapper Stack { #compare-thin-integration }
 
 An over-engineered integration may become:
 
@@ -2326,7 +2329,7 @@ Add higher-level APIs only when they solve a real recurring problem.
 
 Every additional abstraction creates upgrade and learning cost.
 
-## Thin Modules Upgrade More Easily
+## Thin Modules Upgrade More Easily { #thin-modules-upgrade }
 
 When the native client changes, a thin module mostly updates:
 
@@ -2343,7 +2346,7 @@ Keeping semantic distance low reduces maintenance.
 
 This is especially important for infrastructure libraries that evolve quickly.
 
-## Versioning Policy Matters
+## Versioning Policy Matters { #versioning-policy-matters }
 
 A shared module should document:
 
@@ -2362,7 +2365,7 @@ Too much flexibility can produce incompatible dependency combinations.
 
 Too much pinning can block security updates.
 
-## Dependency Conflicts Are Module Engineering
+## Dependency Conflicts Are Module Engineering { #dependency-conflicts-module }
 
 Infrastructure clients frequently depend on:
 
@@ -2382,7 +2385,7 @@ Align through dependency management where practical.
 
 A first-class integration is not only API glue; it is also dependency hygiene.
 
-## The Module's Telemetry Schema Is an API
+## The Module's Telemetry Schema Is an API { #module-s-telemetry }
 
 Changing a metric from:
 
@@ -2406,7 +2409,7 @@ Telemetry compatibility matters once a module is widely deployed.
 
 Version it deliberately.
 
-## A Module Becomes an Organizational Platform Primitive
+## A Module Becomes an Organizational Platform Primitive { #module-becomes-organizational }
 
 The first service can integrate library X locally.
 
@@ -2429,7 +2432,7 @@ Every service receives the accumulated infrastructure knowledge.
 
 This is where modularity becomes an organizational scaling mechanism.
 
-## Do Not Extract Shared Modules Too Early
+## Do Not Extract Shared Modules Too Early { #extract-shared-modules }
 
 One service with one factory does not necessarily justify a platform artifact.
 
@@ -2449,7 +2452,7 @@ Premature infrastructure abstractions often freeze the wrong API.
 
 Let real usage reveal the stable integration boundary.
 
-## First-Class Does Not Mean Official
+## First-Class Does Not Mean Official { #first-class-mean }
 
 A company module can be just as first-class as a Kora-maintained integration if it participates correctly in:
 
@@ -2466,7 +2469,7 @@ That is the practical test of extensibility.
 
 Users should not need modifications to Kora core to build production-grade integrations.
 
-## The Compiler Is Part of the Extension Surface
+## The Compiler Is Part of the Extension Surface { #compiler-part-extension }
 
 By declaring module factories and typed dependencies, custom integrations automatically benefit from Kora's compiler:
 
@@ -2483,7 +2486,7 @@ This is a powerful property.
 
 The framework's compiler becomes infrastructure shared by the ecosystem.
 
-## Generated Wiring Helps Debug Custom Modules
+## Generated Wiring Helps Debug Custom Modules { #generated-wiring-helps }
 
 If an integration behaves strangely, developers can inspect generated application wiring and see:
 
@@ -2499,7 +2502,7 @@ Consumers are not forced to trust invisible auto-configuration.
 
 They can inspect what Kora built.
 
-## AI Agents Benefit From Explicit Modules
+## AI Agents Benefit From Explicit Modules { #ai-agents-benefit }
 
 An AI agent can follow:
 
@@ -2534,7 +2537,7 @@ There is little classpath magic to infer.
 
 This is exactly the kind of architecture that works well with agent-assisted infrastructure development.
 
-## Strong Types Improve Both DI and AI
+## Strong Types Improve Both DI and AI { #strong-types-improve }
 
 Avoid module APIs dominated by:
 
@@ -2559,7 +2562,7 @@ Strong contracts improve graph validation, IDE navigation, documentation, and AI
 
 Type quality directly affects infrastructure quality.
 
-## Avoid Service-Locator APIs
+## Avoid Service-Locator APIs { #avoid-service-locator }
 
 Kora supports advanced graph access for cases that genuinely need it.
 
@@ -2611,7 +2614,7 @@ Typed dependency parameters preserve compile-time validation.
 
 Use graph lookup only when dynamic graph behavior is truly part of the problem.
 
-## Avoid Building a Second Container Inside a Factory
+## Avoid Building a Second Container Inside a Factory { #avoid-building-second }
 
 If one module method contains complex conditional lookups, manual singleton caching, and dynamic construction, the module is recreating a DI container inside Kora.
 
@@ -2621,7 +2624,7 @@ Let Kora resolve dependencies.
 
 Factory methods should create values, not implement a hidden application framework.
 
-## Optional Features Should Not Pull Unused Infrastructure
+## Optional Features Should Not Pull Unused Infrastructure { #optional-features-pull }
 
 If the module supports:
 
@@ -2643,7 +2646,7 @@ use only what you need
 
 A custom module should not become a monolith inside a modular framework.
 
-## Split Large Integrations When Boundaries Become Real
+## Split Large Integrations When Boundaries Become Real { #split-large-integrations }
 
 A mature integration ecosystem may eventually have:
 
@@ -2667,7 +2670,7 @@ More Gradle modules are not automatically better modularity.
 
 The split should correspond to meaningful capability boundaries.
 
-## Testing Utilities Can Live Separately
+## Testing Utilities Can Live Separately { #testing-utilities-live }
 
 A production artifact should not need to depend on Testcontainers or large fake infrastructure.
 
@@ -2682,7 +2685,7 @@ FakeSearchClient
 
 This preserves a clean production dependency graph while standardizing test setup for consumers.
 
-## The Ideal Developer Experience
+## The Ideal Developer Experience { #ideal-developer-experience }
 
 A consumer of a finished module should be able to do something close to:
 
@@ -2767,7 +2770,7 @@ easy default
 explicit mechanism
 ```
 
-## The Ideal Operator Experience
+## The Ideal Operator Experience { #ideal-operator-experience }
 
 The operator should see the custom integration through the same tools as built-in Kora modules:
 
@@ -2783,7 +2786,7 @@ There should not be a separate observability ecosystem simply because the client
 
 First-class means operationally native too.
 
-## The Ideal Platform-Team Experience
+## The Ideal Platform-Team Experience { #ideal-platform-team }
 
 A platform team should be able to publish:
 
@@ -2809,7 +2812,7 @@ That is where the "Built to be extended" claim becomes strategically important.
 
 Kora does not need every possible integration in its own repository if teams can create integrations that reach the same quality level using public framework primitives.
 
-## Modularity Lets a Focused Framework Stay Focused
+## Modularity Lets a Focused Framework Stay Focused { #modularity-lets-focused }
 
 Kora deliberately avoids trying to wrap every technology behind one enormous framework abstraction.
 
@@ -2832,7 +2835,7 @@ chooses module explicitly
 
 The framework can remain focused while the ecosystem grows.
 
-## Extension Quality Matters More Than Extension Count
+## Extension Quality Matters More Than Extension Count { #extension-quality-matters }
 
 A framework with hundreds of integrations is not necessarily more extensible.
 
@@ -2857,7 +2860,7 @@ component replacement
 
 If those are enough to build a production-quality integration, the extension model is healthy.
 
-## A Good Module Should Become Boring
+## A Good Module Should Become Boring { #good-module-become }
 
 Once the module is finished, application developers should rarely think about its infrastructure mechanics.
 
@@ -2873,7 +2876,7 @@ Configuration should behave predictably.
 
 Boring infrastructure is success.
 
-## "Built to Be Extended" Means the Application Model Remains Open
+## "Built to Be Extended" Means the Application Model Remains Open { #built-extended-means }
 
 The deepest point is that Kora's own application model is available to extension authors.
 
@@ -2897,7 +2900,7 @@ You are not confined to a weak plugin API while framework-owned modules use priv
 
 That is what makes an integration capable of becoming first-class.
 
-## A Practical Development Sequence
+## A Practical Development Sequence { #practical-development-sequence }
 
 When integrating a new library, a good progression is:
 
@@ -2918,7 +2921,7 @@ This keeps the module grounded in actual requirements.
 
 Do not begin by designing the universal abstraction you hope to need someday.
 
-## Measure the Module Under Real Load
+## Measure the Module Under Real Load { #measure-module-real }
 
 A custom integration can affect:
 
@@ -2944,7 +2947,7 @@ Check shutdown under load.
 
 A module becomes first-class through production behavior, not through the presence of `@Module`.
 
-## A Bad Module Can Erase Framework Advantages
+## A Bad Module Can Erase Framework Advantages { #bad-module-erase }
 
 If Kora reaches readiness quickly but your custom client spends fifteen seconds performing sequential cluster discovery, warming caches, and opening hundreds of connections, the application is still
 slow.
@@ -2955,7 +2958,7 @@ Fast framework internals do not compensate for slow extension code.
 
 Module authors need the same performance discipline as framework authors.
 
-## Lifecycle and Telemetry Separate "Works" From "Operates"
+## Lifecycle and Telemetry Separate "Works" From "Operates" { #lifecycle-telemetry-separate }
 
 A factory method makes a library work.
 
@@ -2979,7 +2982,7 @@ The better question is:
 
 > What does this technology need in order to behave like a native production component of a Kora application?
 
-## The Core Pattern
+## The Core Pattern { #core-pattern }
 
 For most integrations, the architecture converges on:
 
@@ -3013,7 +3016,7 @@ The exact implementation changes with the technology.
 
 The principles remain stable.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora's **Built to be extended** philosophy is not valuable because the framework allows one more annotation or one more factory method. It is valuable because the framework's own application model is
 open enough for external integrations to become genuine peers of built-in modules.

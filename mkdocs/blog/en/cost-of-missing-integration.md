@@ -1,10 +1,13 @@
 ---
 title: The Cost of the First Missing Integration — Why the Kora Framework Does Not Need a Starter for Everything
+date: 2026-09-04
 description: How the Kora Framework keeps unsupported-library integration cheap using typed config, module factories, lifecycle, and probes.
 search:
   exclude: true
 ---
-# The Cost of the First Missing Integration: Why Kora Does Not Need a Starter for Everything
+# The Cost of the First Missing Integration: Why Kora Does Not Need a Starter for Everything { #cost-of-missing-integration }
+
+**September 4, 2026**
 
 Framework ecosystems are often compared by counting integrations.
 
@@ -62,7 +65,7 @@ How expensive is the first starter that does not exist?
 For Kora, that question leads directly into its broader philosophy: it is not trying to become a framework-specific universe around every technology a backend engineer might use. It is trying to make
 the common production path first-class while keeping the path to an uncommon technology short, explicit, and ordinary.
 
-## The Hidden Cost Behind a Huge Starter Catalog
+## The Hidden Cost Behind a Huge Starter Catalog { #hidden-cost }
 
 A large integration catalog is a real advantage. It would be wrong to pretend otherwise.
 
@@ -154,7 +157,7 @@ that exist mainly because the framework has decided to mediate every relationshi
 
 Kora takes a more selective approach.
 
-## Kora Does Not Need to Own the Library to Use It
+## Kora Does Not Need to Own the Library to Use It { #own-the-library }
 
 One of the most important properties of Kora's dependency-injection model is that a component does not have to be implemented by Kora.
 
@@ -244,7 +247,7 @@ The important word is **small**.
 
 A custom module may eventually become sophisticated, but it can begin with almost no framework ceremony. The integration only needs to add the concerns that the application actually requires.
 
-## `@Module` Is the Essential Extension Mechanism
+## `@Module` Is the Essential Extension Mechanism { #module-extension }
 
 In Kora, an `@Module` is an interface containing component factory methods. Those factory methods can depend on other graph components and return new components to the container.
 
@@ -335,7 +338,7 @@ Kora's model does not require that split.
 
 The same graph that holds framework components can hold an arbitrary third-party client.
 
-## Configuration Is Not a Separate Side Channel
+## Configuration Is Not a Separate Side Channel { #configuration }
 
 A third-party integration needs configuration, but that does not require inventing a new configuration system.
 
@@ -439,7 +442,7 @@ the application developer does not first need to discover what a framework wrapp
 
 Thin integration keeps the semantic gap small.
 
-## Why Native Documentation Remaining Applicable Is a Major Advantage
+## Why Native Documentation Remaining Applicable Is a Major Advantage { #native-documentation }
 
 One of the hidden costs of deep framework wrappers is documentation substitution.
 
@@ -494,7 +497,7 @@ This creates a valuable organizational property: teams can hire or move develope
 
 A developer who already understands the native client is most of the way to understanding the Kora integration.
 
-## Lifecycle Is Explicit Instead of Hidden in a Starter
+## Lifecycle Is Explicit Instead of Hidden in a Starter { #lifecycle }
 
 Construction is only part of production integration.
 
@@ -575,7 +578,7 @@ understand startup order, graceful shutdown, or why a resource remains alive.
 
 Kora's approach encourages the integration author to make ownership visible.
 
-## Telemetry Can Be Added Without Replacing the Client
+## Telemetry Can Be Added Without Replacing the Client { #telemetry }
 
 Observability is another reason official integrations can be valuable.
 
@@ -646,7 +649,7 @@ The important architectural principle is that instrumentation should be added at
 
 This is part of what thin abstractions mean in practice: add framework integration where there is actual framework value, not everywhere simply because a technology entered the application.
 
-## Health and Readiness Are Ordinary Graph Components
+## Health and Readiness Are Ordinary Graph Components { #health-readiness }
 
 Operational integration often needs more than telemetry.
 
@@ -714,13 +717,13 @@ This is the recurring pattern throughout Kora's model.
 
 A third-party library does not need to be transformed into a Kora-specific universe. It needs a few explicit bridges into the application graph.
 
-## An Integration Can Grow in Layers
+## An Integration Can Grow in Layers { #integration-layers }
 
 One useful way to understand this approach is to imagine an integration maturing over time.
 
 At first, the application only needs the client.
 
-### Stage 1: Construction
+### Stage 1: Construction { #stage-1 }
 
 ```text
 configuration
@@ -732,7 +735,7 @@ native client
 
 Then the application goes to production and needs graceful shutdown.
 
-### Stage 2: Lifecycle
+### Stage 2: Lifecycle { #stage-2 }
 
 ```text
 configuration
@@ -746,7 +749,7 @@ Lifecycle / AutoCloseable
 
 Then operations wants metrics and traces.
 
-### Stage 3: Observability
+### Stage 3: Observability { #stage-3 }
 
 ```text
 configuration
@@ -760,7 +763,7 @@ native client
 
 Then the deployment platform needs readiness.
 
-### Stage 4: Operational Integration
+### Stage 4: Operational Integration { #stage-4 }
 
 ```text
 configuration
@@ -774,7 +777,7 @@ telemetry  readiness probe
 
 Then three other services need the same integration.
 
-### Stage 5: Reusable Module
+### Stage 5: Reusable Module { #stage-5 }
 
 ```text
 company-vendor-kora-module
@@ -794,7 +797,7 @@ Kora allows a much more incremental path.
 
 Build only the integration surface the application actually needs.
 
-## From Local Adapter to Reusable Ecosystem Module
+## From Local Adapter to Reusable Ecosystem Module { #reusable-module }
 
 If a custom integration becomes broadly useful, it can be extracted into its own module.
 
@@ -861,7 +864,7 @@ There is no migration from "manual integration mode" to "framework integration m
 
 That continuity lowers the cost of experimentation.
 
-## The Right Comparison Is the Cost of the First Missing Integration
+## The Right Comparison Is the Cost of the First Missing Integration { #right-comparison }
 
 Imagine two frameworks.
 
@@ -921,7 +924,7 @@ Kora's strategy is particularly interesting because it tries to keep the unsuppo
 
 That does not eliminate the advantage of having an official module. It changes how damaging the absence of one is.
 
-## Not Every Library Deserves a Framework Abstraction
+## Not Every Library Deserves a Framework Abstraction { #not-every-library }
 
 There is a tendency in framework design to assume that integration equals abstraction.
 
@@ -982,7 +985,7 @@ If it does not, using the native library directly can be the cleaner architectur
 This distinction helps explain why Kora's philosophy of thin abstractions matters. The framework should intervene where it can make the system materially better, not simply because it can place
 another interface in front of a library.
 
-## Why Fewer Wrappers Can Mean Less Semantic Drift
+## Why Fewer Wrappers Can Mean Less Semantic Drift { #semantic-drift }
 
 Every wrapper creates the possibility that the abstraction and the underlying technology evolve at different speeds.
 
@@ -1024,7 +1027,7 @@ If the Kora module mostly constructs the native client, the application can ofte
 
 That can be particularly valuable for vendor SDKs and fast-moving infrastructure libraries.
 
-## Built-In Modules Still Matter
+## Built-In Modules Still Matter { #built-in-modules }
 
 It would be easy to take the previous argument too far.
 
@@ -1057,11 +1060,11 @@ The point is:
 
 This leads naturally to a more nuanced distinction between integrations that benefit strongly from first-class framework support and integrations where a thin local adapter is perfectly adequate.
 
-## Where a Ready-Made Module Is Especially Valuable
+## Where a Ready-Made Module Is Especially Valuable { #ready-made-module }
 
 There are categories where "just use the native client" can underestimate the complexity.
 
-### Security
+### Security { #security }
 
 Security integration is rarely only object construction.
 
@@ -1083,7 +1086,7 @@ A well-designed framework security module can prevent subtle and dangerous incon
 
 This is a strong case for first-class support.
 
-### Distributed Configuration
+### Distributed Configuration { #distributed-configuration }
 
 A distributed configuration client may look simple at first, but production behavior can involve:
 
@@ -1098,7 +1101,7 @@ A distributed configuration client may look simple at first, but production beha
 
 An official integration can coordinate these concerns with the framework's own configuration and component lifecycle.
 
-### Service Discovery
+### Service Discovery { #service-discovery }
 
 Service discovery is not merely a client.
 
@@ -1115,7 +1118,7 @@ It affects:
 
 A mature framework integration can provide real value by making these layers coherent.
 
-### Distributed Tracing Semantics
+### Distributed Tracing Semantics { #distributed-tracing }
 
 Adding a span is easy.
 
@@ -1123,7 +1126,7 @@ Getting trace propagation, parent/child relationships, semantic attributes, erro
 
 An official telemetry integration can provide consistency that a small application adapter may miss.
 
-### Vendor SDKs with Complex Runtime Behavior
+### Vendor SDKs with Complex Runtime Behavior { #vendor-sdks }
 
 Some vendor SDKs hide:
 
@@ -1143,7 +1146,7 @@ The framework should have strong modules where the integration problem is genuin
 
 It simply does not follow that every usable Java library needs a Kora-specific wrapper before it belongs in a Kora application.
 
-# Not a Framework for Everything — the Right Framework for Production Backends
+## Not a Framework for Everything — the Right Framework for Production Backends { #not-a-framework-for-everything }
 
 This extension model reveals something larger about Kora's positioning.
 
@@ -1175,7 +1178,7 @@ This is narrower than "everything developers might ever build with Java."
 
 That narrowness can be a strength.
 
-## What a Production Backend Usually Needs
+## What a Production Backend Usually Needs { #production-backend }
 
 A typical service needs some combination of:
 
@@ -1227,7 +1230,7 @@ Instead of relying on an arbitrary percentage, a stronger argument is observable
 
 That claim can be inspected directly.
 
-## Focus Is Different from Incompleteness
+## Focus Is Different from Incompleteness { #focus }
 
 There is an important difference between a framework being incomplete and a framework being focused.
 
@@ -1261,7 +1264,7 @@ If virtually any ordinary JVM library can be made a graph component with a few l
 
 The important question is how much impedance exists at the boundary.
 
-## The Java Ecosystem Is Already an Ecosystem
+## The Java Ecosystem Is Already an Ecosystem { #java-ecosystem }
 
 Java frameworks do not exist in a vacuum.
 
@@ -1286,7 +1289,7 @@ There are native clients and SDKs for:
 
 A framework can respond to this ecosystem in two broad ways.
 
-### Model A: Framework Mediation
+### Model A: Framework Mediation { #model-a }
 
 ```text
 Java ecosystem
@@ -1302,7 +1305,7 @@ The advantage is uniformity.
 
 The cost is another abstraction and compatibility layer.
 
-### Model B: Framework Composition
+### Model B: Framework Composition { #model-b }
 
 ```text
 Java ecosystem
@@ -1320,7 +1323,7 @@ Kora leans strongly toward composition when a first-class abstraction is not jus
 
 That is a sensible position for a framework that emphasizes transparency.
 
-## One Application Model for Built-In and Custom Components
+## One Application Model for Built-In and Custom Components { #one-application-model }
 
 A particularly important property is that custom integrations do not need to live outside the normal Kora model.
 
@@ -1382,7 +1385,7 @@ They can be replaced in tests.
 
 They are not second-class merely because Kora did not publish them.
 
-## A Framework Should Not Replace Middleware
+## A Framework Should Not Replace Middleware { #middleware }
 
 Another useful boundary in Kora's philosophy is the distinction between framework and infrastructure.
 
@@ -1414,7 +1417,7 @@ A custom library can remain recognizably itself.
 
 This reduces semantic distance between production behavior and the code developers inspect.
 
-## Fewer Programming Models Reduce Integration Surface
+## Fewer Programming Models Reduce Integration Surface { #fewer-programming-models }
 
 Breadth is also expensive when a framework supports several competing ways to solve the same class of problem.
 
@@ -1470,7 +1473,7 @@ It can often just be a normal synchronous component.
 
 Reducing the number of programming models is therefore not only a readability decision. It reduces the combinatorial cost of ecosystem growth.
 
-## The Swiss Army Knife Trade-Off
+## The Swiss Army Knife Trade-Off { #swiss-army-knife }
 
 The classic metaphor is useful.
 
@@ -1513,7 +1516,7 @@ It clarifies the trade.
 
 Kora is making a particular bet: backend teams gain more from an optimized, coherent core plus cheap extensibility than from attempting to wrap every possible technology.
 
-## The Abstraction Budget
+## The Abstraction Budget { #abstraction-budget }
 
 A useful way to discuss this design is with the idea of an **abstraction budget**.
 
@@ -1543,7 +1546,7 @@ The result is a framework whose surface grows according to leverage rather than 
 
 That is a more disciplined ecosystem strategy.
 
-## The Test of a Good Custom Integration
+## The Test of a Good Custom Integration { #test-of-integration }
 
 How do we know whether the custom integration path is genuinely good?
 
@@ -1568,7 +1571,7 @@ harder to extend than its catalog suggests.
 
 The distinction is practical and measurable.
 
-## A Concrete Example: Integrating an Unsupported Client
+## A Concrete Example: Integrating an Unsupported Client { #concrete-example }
 
 Imagine Kora has no official integration for a hypothetical `NimbusClient`.
 
@@ -1758,7 +1761,7 @@ That is already a production-quality integration pattern.
 
 No starter was required.
 
-## What Should Become a Shared Module?
+## What Should Become a Shared Module? { #shared-module }
 
 Not every local integration should be published.
 
@@ -1792,7 +1795,7 @@ The module can then be consumed by every service that needs the technology.
 
 This is how an ecosystem grows organically from production experience rather than from speculative wrappers.
 
-## Internal Ecosystems Matter Too
+## Internal Ecosystems Matter Too { #internal-ecosystems }
 
 Public Maven artifacts are only one kind of ecosystem.
 
@@ -1830,7 +1833,7 @@ It only needs an application model that those integrations can join cleanly.
 
 This may be more important in enterprise environments than the raw count of public starters.
 
-## Explicit Integration Also Improves Ownership
+## Explicit Integration Also Improves Ownership { #ownership }
 
 There is another subtle advantage to local modules: ownership is obvious.
 
@@ -1876,7 +1879,7 @@ Automation is convenient, but explicit local ownership can make unusual producti
 
 Kora's broader emphasis on generated and inspectable code fits naturally with this integration style.
 
-## The Framework Should Make the Escape Hatch Better Than the Happy Path in Other Frameworks
+## The Framework Should Make the Escape Hatch Better Than the Happy Path in Other Frameworks { #escape-hatch }
 
 A mature framework is not judged only by its ideal path.
 
@@ -1916,7 +1919,7 @@ testing
 
 It remains inside the application's architecture rather than bypassing it.
 
-## What Kora Is Optimizing For
+## What Kora Is Optimizing For { #optimizing-for }
 
 Putting all of this together, Kora's apparent target is not maximum theoretical applicability.
 
@@ -1952,7 +1955,7 @@ But those are acceptable costs if the framework keeps the integration boundary s
 
 The payoff is fewer framework-specific concepts between the developer and the technology actually running in production.
 
-## A Better Way to Evaluate Framework Ecosystems
+## A Better Way to Evaluate Framework Ecosystems { #evaluate-ecosystems }
 
 When evaluating a backend framework, count integrations if you want—but do not stop there.
 
@@ -1986,7 +1989,7 @@ How much framework-specific compatibility surface are we creating?
 
 Those questions produce a much more realistic picture than counting starter names.
 
-## The Real Ecosystem Is Framework Plus JVM
+## The Real Ecosystem Is Framework Plus JVM { #real-ecosystem }
 
 Kora's effective ecosystem is not only:
 
@@ -2016,7 +2019,7 @@ If the bridge were expensive, the distinction would be theoretical.
 
 Because `@Module`, typed configuration, component lifecycle, probes, and explicit DI are general-purpose mechanisms, the bridge can often remain only a small amount of code.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 A framework ecosystem should not be judged only by the number of technologies for which somebody has already published a starter.
 

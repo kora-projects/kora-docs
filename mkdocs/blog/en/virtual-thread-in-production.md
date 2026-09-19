@@ -1,10 +1,13 @@
 ---
 title: Virtual Threads in Production — Pinning, Carriers, and Load Spikes in the Kora Framework
+date: 2026-09-10
 description: How virtual threads behave under production load in the Kora Framework — pinning, carrier starvation, connection pools, and overload control.
 search:
   exclude: true
 ---
-# Virtual Threads in Production: Pinning, Carrier Threads and Load Spikes
+# Virtual Threads in Production: Pinning, Carrier Threads and Load Spikes { #virtual-threads-in-production }
+
+**September 10, 2026**
 
 Virtual threads make blocking Java dramatically more scalable, but they do not make concurrency free.
 
@@ -38,7 +41,7 @@ thread can release its carrier, what happens when it cannot, and how a traffic s
 
 Those questions matter far more than the raw number of virtual threads.
 
-## Virtual Threads Do Not Execute by Themselves
+## Virtual Threads Do Not Execute by Themselves { #virtual-threads-execution }
 
 A virtual thread is still a Java `Thread`, but it is not permanently associated with an operating-system thread. When it is executing Java code, the JVM mounts it onto a platform thread known as a *
 *carrier thread**. The carrier is what the operating system actually schedules onto a CPU.
@@ -80,7 +83,7 @@ Virtual threads are therefore intended to improve throughput of applications tha
 This is why synchronous JDBC suddenly becomes architecturally reasonable again in highly concurrent Java services. Blocking the **virtual thread** is usually cheap. Blocking the **carrier** is a
 different matter.
 
-## Blocking a Virtual Thread Is Not the Same as Blocking a Carrier
+## Blocking a Virtual Thread Is Not the Same as Blocking a Carrier { #blocking-vs-carrier }
 
 The easiest mental model is to separate logical concurrency from physical execution capacity.
 
@@ -138,7 +141,7 @@ The logical request lasts perhaps 25 ms, but it occupies a carrier only during t
 
 This distinction is the foundation of the virtual-thread programming model. It also explains why pinning deserves attention.
 
-## What Pinning Actually Means
+## What Pinning Actually Means { #pinning }
 
 A virtual thread is **pinned** when the JVM cannot unmount it from its current carrier even though the virtual thread reaches an operation that blocks.
 
@@ -187,7 +190,7 @@ That is **carrier starvation**: runnable virtual-thread work exists, but insuffi
 The important production observation is therefore not merely "we have many virtual threads." It is whether those virtual threads spend their time either running briefly or being efficiently unmounted
 while waiting.
 
-## The `synchronized` Pinning Advice Has Changed
+## The `synchronized` Pinning Advice Has Changed { #synchronized-pinning-advice }
 
 Many early virtual-thread articles contain a rule similar to:
 
@@ -242,7 +245,7 @@ synchronized + blocking operation
 
 A production review therefore has to consider the JDK version before applying Loom-era recommendations mechanically.
 
-## Native Code Is Still Different
+## Native Code Is Still Different { #native-code }
 
 Native and foreign code remain a more fundamental problem because the JVM cannot always safely detach a continuation from the underlying native call stack.
 
@@ -281,7 +284,7 @@ How long can it last?
 
 A rare 100 μs pin is noise. Thousands of simultaneous 500 ms pins can become an outage.
 
-## Carrier Starvation Is Not the Only Way to Lose
+## Carrier Starvation Is Not the Only Way to Lose { #carrier-starvation-not-only }
 
 It would be a mistake to make pinning the center of every virtual-thread production investigation. On modern JDKs, particularly after JEP 491, ordinary resource saturation is likely to matter more
 often.
@@ -324,7 +327,7 @@ Virtual threads make that waiting cheap from the JVM-thread perspective, which i
 
 The queue has merely moved.
 
-## Virtual Threads Remove a Thread Limit, Not a Concurrency Limit
+## Virtual Threads Remove a Thread Limit, Not a Concurrency Limit { #thread-limit-vs-concurrency }
 
 Before virtual threads, the worker pool often served two purposes at once.
 
@@ -371,7 +374,7 @@ It does not answer:
 
 Those are different problems.
 
-## The Connection Pool Becomes an Explicit Backpressure Boundary
+## The Connection Pool Becomes an Explicit Backpressure Boundary { #connection-pool-backpressure }
 
 A JDBC connection pool is more than an optimization that avoids opening TCP connections repeatedly. It is a concurrency boundary between the application and the database.
 
@@ -421,7 +424,7 @@ Virtual threads make it possible for the JVM to hold that queue longer. They do 
 
 This is why timeouts, bulkheads, rate limits, load shedding, bounded queues, and explicit concurrency controls remain first-class production concerns in a virtual-thread architecture.
 
-## Little's Law Still Wins
+## Little's Law Still Wins { #littles-law }
 
 One of the most useful formulas for reasoning about these systems is Little's Law:
 
@@ -490,7 +493,7 @@ even more work
 
 Virtual threads solve the "we ran out of OS-backed Java threads" step. They cannot solve the queueing system itself.
 
-## Little's Law Applied to the Database Pool
+## Little's Law Applied to the Database Pool { #littles-law-db-pool }
 
 Little's Law becomes even more useful if we apply it specifically to the interval during which a request owns a database connection.
 
@@ -565,7 +568,7 @@ The correct pool size is therefore not "as large as virtual-thread concurrency."
 
 It is a controlled interface to database capacity.
 
-## A Load Spike Through a Kora Service
+## A Load Spike Through a Kora Service { #load-spike-kora-service }
 
 Consider a Kora service receiving a sudden traffic spike.
 
@@ -622,7 +625,7 @@ include resource queues rather than merely thread counts.
 
 The application can be overloaded while the virtual-thread machinery is working perfectly.
 
-## What Carrier Starvation Looks Like During a Spike
+## What Carrier Starvation Looks Like During a Spike { #carrier-starvation-spike }
 
 A different scenario occurs if a request path enters a blocking native operation that pins carriers.
 
@@ -685,7 +688,7 @@ In the latter case, the scheduler is doing exactly what it should. The bottlenec
 
 Distinguishing those two situations is critical during incident response.
 
-## CPU-Bound Work Has the Same Fundamental Limit
+## CPU-Bound Work Has the Same Fundamental Limit { #cpu-bound-work }
 
 Virtual threads are optimized for workloads containing waiting. They do not increase the amount of CPU available.
 
@@ -741,7 +744,7 @@ Virtual threads scale waiting.
 They do not scale silicon.
 ```
 
-## Request Concurrency and Resource Concurrency Should Be Separated
+## Request Concurrency and Resource Concurrency Should Be Separated { #request-vs-resource-concurrency }
 
 A useful virtual-thread architecture separates two questions.
 
@@ -787,7 +790,7 @@ Each boundary can now reflect the capacity of the resource it protects.
 
 That is a significant architectural advantage, but only if those limits are actually designed.
 
-## Connection Pools Are Still Pools for a Reason
+## Connection Pools Are Still Pools for a Reason { #connection-pools-reason }
 
 A common question is whether JDBC connection pools should become much larger now that virtual threads make blocking cheap.
 
@@ -818,7 +821,7 @@ Virtual threads simply make the caller waiting behind that pool much cheaper tha
 
 That is an improvement in implementation efficiency, not permission to ignore capacity planning.
 
-## Timeouts Become More Important, Not Less
+## Timeouts Become More Important, Not Less { #timeouts }
 
 Because virtual threads make it inexpensive to wait, systems can tolerate much larger numbers of waiting operations before JVM thread exhaustion forces the problem into view.
 
@@ -848,7 +851,7 @@ For structured fan-out, child operations should remain bounded by the request de
 
 Timeouts are not just failure handling. They are part of overload control because they determine how quickly obsolete work leaves queues.
 
-## Retries Can Turn Latency Into an Outage
+## Retries Can Turn Latency Into an Outage { #retries-latency-outage }
 
 Virtual threads also make retry loops syntactically harmless:
 
@@ -898,7 +901,7 @@ Resilience policies still need bounded retries, backoff, jitter, deadlines, circ
 
 The broader lesson is that virtual threads improve the mechanics of waiting without changing the economics of the resources being waited on.
 
-## Diagnosing Pinning Instead of Guessing
+## Diagnosing Pinning Instead of Guessing { #diagnosing-pinning }
 
 When a production service shows unexpected virtual-thread scalability behavior, pinning should be measured rather than inferred from code style.
 
@@ -940,7 +943,7 @@ many VTs
 
 The raw virtual-thread count by itself is therefore a weak operational signal.
 
-## What to Monitor in a Kora Service
+## What to Monitor in a Kora Service { #monitoring-kora-service }
 
 A virtual-thread-first Kora service should be observed as a chain of queues and resource boundaries rather than as one giant thread pool.
 
@@ -956,7 +959,7 @@ The important shift is to stop treating "number of threads" as the primary capac
 
 Queue depth and saturation tell a much more useful story.
 
-## Why Unlimited Virtual Threads Must Not Mean Unlimited Admission
+## Why Unlimited Virtual Threads Must Not Mean Unlimited Admission { #unlimited-vt-admission }
 
 One of the best properties of virtual threads is that developers no longer need to conserve threads as if they were database connections.
 
@@ -1017,7 +1020,7 @@ That distinction is exactly what Oracle recommends conceptually: do not pool vir
 
 This produces a cleaner architecture because concurrency limits live next to the resources whose capacity they describe.
 
-## Kora Makes the Resource Boundaries Easier to See
+## Kora Makes the Resource Boundaries Easier to See { #kora-resource-boundaries }
 
 Kora 2's synchronous model is particularly suitable for this style of reasoning because the execution path stays direct.
 
@@ -1071,7 +1074,7 @@ The concurrency model is not hidden. Each operation blocks naturally, while each
 
 That is arguably a more important consequence of virtual threads than simply "Java can create lots of threads."
 
-## A Better Mental Model for Load Spikes
+## A Better Mental Model for Load Spikes { #mental-model-load-spikes }
 
 The wrong model is:
 
@@ -1128,7 +1131,7 @@ or latency grows without bound
 
 There is no fifth outcome in which virtual threads somehow absorb an unlimited overload.
 
-## Production Example: Healthy Virtual-Thread Scaling
+## Production Example: Healthy Virtual-Thread Scaling { #example-healthy-scaling }
 
 Consider a Kora service deployed on eight cores.
 
@@ -1166,7 +1169,7 @@ Representing 240 request threads is trivial for virtual threads. No large platfo
 
 This is the success case.
 
-## Production Example: Database Saturation
+## Production Example: Database Saturation { #example-db-saturation }
 
 Now use the same service but assume the database can sustain only about 3,500 operations per second.
 
@@ -1210,7 +1213,7 @@ scaling application/database topology.
 
 Increasing the number of virtual threads would accomplish nothing because virtual-thread availability was never the bottleneck.
 
-## Production Example: Carrier Starvation
+## Production Example: Carrier Starvation { #example-carrier-starvation }
 
 Finally, consider a native library that occasionally blocks for two seconds.
 
@@ -1236,7 +1239,7 @@ work behind a bounded dedicated executor, redesign the integration, or otherwise
 The important point is that the mitigation should target the actual pinned operation rather than introducing a general fixed worker pool around all application code and thereby discarding the benefits
 of virtual threads.
 
-## Do Not Rebuild the Old Thread-Pool Architecture
+## Do Not Rebuild the Old Thread-Pool Architecture { #no-old-thread-pool }
 
 A common migration mistake looks like this:
 
@@ -1274,7 +1277,7 @@ Virtual threads let us stop using worker-thread scarcity as a universal traffic-
 
 That is a feature worth preserving.
 
-## The Practical Rules
+## The Practical Rules { #practical-rules }
 
 For production Kora applications, a useful operating model is to keep request code synchronous and allow Kora's virtual-thread model to do what it was designed to do, while treating every scarce
 external or physical resource as a separate capacity problem. Blocking JDBC and HTTP calls are not inherently suspicious. Long native blocking deserves investigation. `synchronized` deserves normal
@@ -1284,7 +1287,7 @@ database capacity rather than virtual-thread count, and overload controls should
 Most importantly, observe queueing and saturation instead of counting threads. If latency doubles while arrival rate stays constant, Little's Law says concurrency pressure doubles too. That remains
 true whether the implementation uses platform threads, virtual threads, coroutines, an event loop, or reactive streams.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Virtual threads fundamentally improve the economics of blocking Java.
 

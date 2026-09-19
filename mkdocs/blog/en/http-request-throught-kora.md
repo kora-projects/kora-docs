@@ -1,11 +1,13 @@
 ---
 title: How an HTTP Request Travels Through the Kora Framework on Virtual Threads
-description: The two concurrency domains behind an HTTP request in the Kora Framework (Kora 2) — Undertow I/O threads and virtual threads — why blocking JDBC is fine, and where the carrier thread fits.
+date: 2026-08-15
 search:
   exclude: true
 ---
 
-# How an HTTP Request Travels Through Kora on Virtual Threads
+# How an HTTP Request Travels Through Kora on Virtual Threads { #http-request-kora }
+
+**August 15, 2026**
 
 A typical Kora Framework HTTP endpoint can look almost deceptively simple:
 
@@ -94,7 +96,7 @@ repositories, and scheduled tasks use ordinary blocking signatures, while reacti
 
 ---
 
-## The Request Has More Than One Thread
+## The Request Has More Than One Thread { #request-threads }
 
 The easiest mistake when discussing virtual-thread servers is to say:
 
@@ -132,7 +134,7 @@ This distinction is fundamental.
 
 ---
 
-## Stage 1: The Packet Reaches Undertow
+## Stage 1: The Packet Reaches Undertow { #stage-1 }
 
 Imagine a client sends:
 
@@ -222,7 +224,7 @@ Instead of moving ordinary application work to a large bounded platform-thread p
 
 ---
 
-## Stage 2: Undertow Does the Network Work
+## Stage 2: Undertow Does the Network Work { #stage-2 }
 
 Before your controller executes, Undertow still has transport work to perform.
 
@@ -261,7 +263,7 @@ Kora deliberately prevents the rest of your normal application stack from depend
 
 ---
 
-## Stage 3: Kora Dispatches the Request to a Virtual Thread
+## Stage 3: Kora Dispatches the Request to a Virtual Thread { #stage-3 }
 
 This is the decisive transition.
 
@@ -325,7 +327,7 @@ That separation is the basis of Kora's synchronous programming model.
 
 ---
 
-## Stage 4: The Virtual Thread Needs a Carrier
+## Stage 4: The Virtual Thread Needs a Carrier { #stage-4 }
 
 A virtual thread is still a thread from the programmer's perspective, but it is not permanently mapped to an operating-system thread.
 
@@ -397,7 +399,7 @@ carrier to execute another virtual thread.
 
 ---
 
-## Stage 5: Kora's Generated Handler Executes
+## Stage 5: Kora's Generated Handler Executes { #stage-5 }
 
 After the dispatch, Kora's generated HTTP infrastructure takes over on the virtual thread.
 
@@ -467,7 +469,7 @@ From this point forward, ordinary synchronous Java execution can continue down t
 
 ---
 
-## Stage 6: The Controller Is Just Normal Java
+## Stage 6: The Controller Is Just Normal Java { #stage-6 }
 
 The controller runs on the request virtual thread.
 
@@ -553,7 +555,7 @@ rather than forcing the developer to reconstruct logical execution from asynchro
 
 ---
 
-## Stage 7: The Service Does Not Need to Know About Threads
+## Stage 7: The Service Does Not Need to Know About Threads { #stage-7 }
 
 Consider:
 
@@ -637,7 +639,7 @@ It simply no longer dominates the application's type system.
 
 ---
 
-## Stage 8: The Repository Calls JDBC
+## Stage 8: The Repository Calls JDBC { #stage-8 }
 
 Now the request reaches the database layer.
 
@@ -712,7 +714,7 @@ This is where the virtual-thread model pays off most visibly.
 
 ---
 
-## What Actually Happens When JDBC Blocks?
+## What Actually Happens When JDBC Blocks? { #jdbc-blocks }
 
 Suppose PostgreSQL takes 20 milliseconds to answer.
 
@@ -810,7 +812,7 @@ This is the central scalability property of virtual threads.
 
 ---
 
-## Blocking a Virtual Thread Is Not Blocking Its Carrier
+## Blocking a Virtual Thread Is Not Blocking Its Carrier { #blocking-virtual-thread }
 
 This distinction deserves to be stated precisely because "blocking" became almost synonymous with "bad" during the reactive era.
 
@@ -880,7 +882,7 @@ The method still waits for external systems, but waiting no longer implies reser
 
 ---
 
-## What the Carrier Does During the Request
+## What the Carrier Does During the Request { #carrier-during-request }
 
 A useful mental model is to follow a single request over time.
 
@@ -939,7 +941,7 @@ Virtual threads therefore restore the conceptual thread-per-request model withou
 
 ---
 
-## Java 25 Changes the Old Pinning Story
+## Java 25 Changes the Old Pinning Story { #java-25-pinning }
 
 A lot of virtual-thread material on the internet still describes an important Java 21 limitation: a virtual thread could remain pinned to its carrier when blocking inside a `synchronized` method or
 block.
@@ -982,7 +984,7 @@ The Java runtime has evolved alongside the programming model.
 
 ---
 
-## Blocking Is Fine. Unlimited Concurrency Is Not.
+## Blocking Is Fine. Unlimited Concurrency Is Not. { #blocking-concurrency }
 
 Virtual threads remove thread scarcity.
 
@@ -1055,7 +1057,7 @@ That often means connection-pool limits, rate limiters, semaphores, queue limits
 
 ---
 
-## CPU-Bound Work Is Different
+## CPU-Bound Work Is Different { #cpu-bound }
 
 Virtual threads are especially effective for workloads that spend substantial time waiting:
 
@@ -1112,7 +1114,7 @@ CPU work.
 
 ---
 
-## Why You Must Not Block an Event Loop
+## Why You Must Not Block an Event Loop { #event-loop }
 
 The phrase "blocking is fine with virtual threads" therefore needs a qualifier:
 
@@ -1122,7 +1124,7 @@ Blocking is still wrong on a multiplexed network event loop.
 
 Compare the two architectures.
 
-### Blocking an Undertow I/O thread
+### Blocking an Undertow I/O thread { #blocking-io-thread }
 
 ```text
                 I/O Thread 1
@@ -1140,7 +1142,7 @@ Compare the two architectures.
 
 Several connections may stop making progress.
 
-### Blocking a Kora request virtual thread
+### Blocking a Kora request virtual thread { #blocking-request-vt }
 
 ```text
 connection A → VT-A → waiting on JDBC
@@ -1170,7 +1172,7 @@ Kora 2 makes that dispatch part of the framework's request model.
 
 ---
 
-## Why Kora Does Not Expose the Event Loop to Controllers
+## Why Kora Does Not Expose the Event Loop to Controllers { #event-loop-controllers }
 
 A framework could expose low-level transport semantics directly:
 
@@ -1232,7 +1234,7 @@ That is exactly the kind of concern a framework should own: a cross-cutting runt
 
 ---
 
-## Request Mapping Also Runs in the Application Context
+## Request Mapping Also Runs in the Application Context { #request-mapping }
 
 A real endpoint usually does more than call a controller.
 
@@ -1287,7 +1289,7 @@ They operate at different layers.
 
 ---
 
-## The Response Travels Back
+## The Response Travels Back { #response-travels-back }
 
 Eventually the controller returns:
 
@@ -1373,7 +1375,7 @@ All three can coexist.
 
 ---
 
-## Synchronous API Does Not Mean Synchronous Kernel Architecture
+## Synchronous API Does Not Mean Synchronous Kernel Architecture { #synchronous-api }
 
 This distinction is central to Kora 2.
 
@@ -1439,7 +1441,7 @@ request/response services.
 
 ---
 
-## What Happens with 100,000 Concurrent Requests?
+## What Happens with 100,000 Concurrent Requests? { #concurrent-requests }
 
 Consider a simplified service:
 
@@ -1523,7 +1525,7 @@ How many threads can Java create?
 
 ---
 
-## Little's Law Still Applies
+## Little's Law Still Applies { #littles-law }
 
 Virtual threads do not repeal queueing theory.
 
@@ -1569,7 +1571,7 @@ That is generally desirable, but capacity control should then be implemented del
 
 ---
 
-## Virtual Threads Restore the Meaning of a Stack Trace
+## Virtual Threads Restore the Meaning of a Stack Trace { #stack-trace }
 
 There is also an observability advantage.
 
@@ -1629,7 +1631,7 @@ It is a complexity feature.
 
 ---
 
-## One Request, One Logical Thread
+## One Request, One Logical Thread { #one-logical-thread }
 
 The cleanest model for a Kora 2 HTTP request is therefore:
 
@@ -1697,7 +1699,7 @@ That is the abstraction Loom was built to recover.
 
 ---
 
-## Why This Is Different from the Old Thread-per-Request Model
+## Why This Is Different from the Old Thread-per-Request Model { #thread-per-request }
 
 It is tempting to describe Kora 2 as simply returning to traditional thread-per-request servers.
 
@@ -1779,7 +1781,7 @@ The implementation underneath it changed.
 
 ---
 
-## Where Structured Concurrency Fits
+## Where Structured Concurrency Fits { #structured-concurrency }
 
 Synchronous request handling does not mean that every request must perform all independent operations sequentially.
 
@@ -1853,7 +1855,7 @@ That keeps concurrency local instead of infecting the entire call graph.
 
 ---
 
-## A Complete Request Timeline
+## A Complete Request Timeline { #request-timeline }
 
 Putting everything together, consider:
 
@@ -2043,7 +2045,7 @@ The sophistication has moved underneath the API.
 
 ---
 
-## The Thread Map
+## The Thread Map { #thread-map }
 
 Another useful way to visualize the lifecycle is to separate thread domains explicitly:
 
@@ -2125,7 +2127,7 @@ Keeping these domains separate prevents most misconceptions about Kora's concurr
 
 ---
 
-## What Should Run Where?
+## What Should Run Where? { #run-where }
 
 A practical rule of thumb is:
 
@@ -2150,7 +2152,7 @@ The point is that application code belongs on application threads, while network
 
 ---
 
-## The Architecture Kora 2 Is Choosing
+## The Architecture Kora 2 Is Choosing { #kora-2-architecture }
 
 Kora 2's concurrency model can ultimately be reduced to a fairly strong architectural opinion:
 
@@ -2215,7 +2217,7 @@ Kora 2 deliberately pushes that complexity down into the framework, JVM, and tra
 
 ---
 
-## The Important Boundary
+## The Important Boundary { #important-boundary }
 
 If there is one diagram to keep, it is this:
 
@@ -2263,7 +2265,7 @@ The JVM then multiplexes those logical request threads over carrier platform thr
 
 ---
 
-## Final Perspective
+## Final Perspective { #final-perspective }
 
 Kora 2 does not make the network synchronous.
 

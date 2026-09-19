@@ -1,11 +1,14 @@
 ---
 title: Compile-Time Dependency Injection — How the Kora Framework Builds an Application
+date: 2026-08-04
 description: How the Kora Framework resolves, validates, and generates the application graph at compile time — components, modules, tags, All<T>, ValueOf<T>, lifecycle, and refreshable subgraphs.
 search:
   exclude: true
 ---
 
-# Compile-Time Dependency Injection: How Kora Builds an Application
+# Compile-Time Dependency Injection: How Kora Builds an Application { #compile-time-dependency-injection }
+
+**August 4, 2026**
 
 Dependency injection is often introduced as a convenience mechanism: instead of constructing every object manually, a class declares what it needs and the container provides it. That description is
 useful, but it hides the more interesting architectural question: **when does the container decide what the application actually is?**
@@ -21,7 +24,7 @@ That separation is the key to understanding Kora DI.
 
 ---
 
-## DI as Graph Compilation
+## DI as Graph Compilation { #di-as-graph-compilation }
 
 Consider a small application:
 
@@ -131,7 +134,7 @@ This makes dependency injection less like runtime lookup and more like static gr
 
 ---
 
-## `@KoraApp`: The Root of the Application Graph
+## `@KoraApp`: The Root of the Application Graph { #kora-app }
 
 Every Kora application starts with an interface annotated with `@KoraApp`:
 
@@ -201,7 +204,7 @@ The graph is therefore not a runtime-discovered structure. It is a compiled repr
 
 ---
 
-## `@Component`: Declaring a Constructible Node
+## `@Component`: Declaring a Constructible Node { #component }
 
 The simplest way to make an application class available to DI is `@Component`:
 
@@ -259,7 +262,7 @@ This explicit registration model makes every node traceable to a concrete provid
 
 ---
 
-## Factory Methods: Providers Without `@Component`
+## Factory Methods: Providers Without `@Component` { #factory-methods }
 
 Not every object can or should be annotated.
 
@@ -308,7 +311,7 @@ provider definitions.
 
 ---
 
-## `@Module`: Grouping Related Providers
+## `@Module`: Grouping Related Providers { #module }
 
 As applications grow, putting every factory method directly on `@KoraApp` becomes unwieldy. `@Module` allows related providers to be grouped:
 
@@ -382,7 +385,7 @@ That matters for transparency. Looking at the `@KoraApp` interface tells you a m
 
 ---
 
-## Reachability: Not Every Provider Becomes a Runtime Component
+## Reachability: Not Every Provider Becomes a Runtime Component { #reachability }
 
 Kora's graph is not necessarily a registry of every component declaration it can discover. What ultimately matters is which nodes are reachable from the application's roots.
 
@@ -434,7 +437,7 @@ This gives Kora DI a reachability-oriented model rather than a simple global bea
 
 ---
 
-## Dependency Resolution as Exact Matching
+## Dependency Resolution as Exact Matching { #dependency-resolution }
 
 Once Kora has discovered possible providers, the real resolution work begins.
 
@@ -514,7 +517,7 @@ This is an important design choice. Dependency injection remains deterministic b
 
 ---
 
-## Tags Are Part of Dependency Identity
+## Tags Are Part of Dependency Identity { #tags }
 
 Tags solve cases where several components share the same Java type but serve different roles.
 
@@ -584,7 +587,7 @@ type matches.
 
 ---
 
-## `All<T>`: When More Than One Match Is Correct
+## `All<T>`: When More Than One Match Is Correct { #all-t }
 
 Ambiguity is only an error when a dependency expects a single component.
 
@@ -707,7 +710,7 @@ The DI model therefore has a small but expressive cardinality vocabulary: normal
 
 ---
 
-## Defaults and Application Overrides
+## Defaults and Application Overrides { #defaults-and-overrides }
 
 Libraries often need to provide a default implementation without preventing applications from replacing it.
 
@@ -746,7 +749,7 @@ This avoids turning customization into a runtime bean-replacement mechanism. A m
 
 ---
 
-## Missing Dependencies Become Compile Errors
+## Missing Dependencies Become Compile Errors { #missing-dependencies }
 
 One of the clearest consequences of compile-time DI is the location of failure.
 
@@ -795,7 +798,7 @@ Compile-time DI therefore improves not only when the error happens, but also the
 
 ---
 
-## Cycles Are Detected as Graph Structure
+## Cycles Are Detected as Graph Structure { #cycles }
 
 Cycles are a natural graph problem.
 
@@ -852,7 +855,7 @@ In many cases, the cleaner solution is not to rely on proxying at all, but to ch
 
 ---
 
-## `ValueOf<T>` Changes the Meaning of a Dependency Edge
+## `ValueOf<T>` Changes the Meaning of a Dependency Edge { #value-of-t }
 
 `ValueOf<T>` may initially look like a provider abstraction:
 
@@ -949,7 +952,7 @@ This shows that Kora's graph models more than object references. It also models 
 
 ---
 
-## The Graph Can Be Refreshed at Runtime
+## The Graph Can Be Refreshed at Runtime { #graph-refresh }
 
 Compile-time DI does not mean that every graph value is permanently frozen after compilation.
 
@@ -996,7 +999,7 @@ The graph is therefore static in structure but not necessarily static in value. 
 
 ---
 
-## Lifecycle Follows the Dependency Graph
+## Lifecycle Follows the Dependency Graph { #lifecycle }
 
 The same graph used for injection also tells Kora how the application should start and stop.
 
@@ -1083,7 +1086,7 @@ This makes lifecycle a property of the application graph rather than a completel
 
 ---
 
-## Parallel Initialization Falls Out Naturally
+## Parallel Initialization Falls Out Naturally { #parallel-initialization }
 
 Once the graph is known, Kora also knows which branches are independent.
 
@@ -1105,7 +1108,7 @@ Kora can therefore initialize independent lifecycle nodes on virtual threads whi
 
 ---
 
-## `@KoraSubmodule`: Scaling DI Across Build Modules
+## `@KoraSubmodule`: Scaling DI Across Build Modules { #kora-submodule }
 
 Large applications often span several Gradle modules:
 
@@ -1168,7 +1171,7 @@ not only code organization but also DI compilation scalability.
 
 ---
 
-## Framework Features Use the Same DI Engine
+## Framework Features Use the Same DI Engine { #framework-features }
 
 The container is not limited to handwritten application classes.
 
@@ -1217,7 +1220,7 @@ those nodes are resolved with the same type-and-tag rules as handwritten compone
 
 ---
 
-## Compile-Time DI as Architecture Validation
+## Compile-Time DI as Architecture Validation { #architecture-validation }
 
 Once all of these mechanisms are combined, compilation becomes more than syntax and type checking.
 
@@ -1258,7 +1261,7 @@ Faster startup is valuable, but the deeper benefit is that an invalid applicatio
 
 ---
 
-## What the Runtime Container Still Does
+## What the Runtime Container Still Does { #runtime-container }
 
 Kora does still have a runtime dependency container.
 
@@ -1284,7 +1287,7 @@ This keeps runtime dynamic where runtime state genuinely matters without requiri
 
 ---
 
-## The Application Is the Graph
+## The Application Is the Graph { #application-is-graph }
 
 A small Kora application can look deceptively simple:
 

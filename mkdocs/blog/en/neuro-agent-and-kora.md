@@ -1,10 +1,13 @@
 ---
 title: Why Compile-Time Frameworks Like the Kora Framework Work Well With AI Coding Agents
+date: 2026-09-14
 description: Why the Kora Framework's compile-time graph, strong typing, and generated source make it unusually well matched to AI coding agents.
 search:
   exclude: true
 ---
-# Why Compile-Time Frameworks Work Surprisingly Well With AI Coding Agents
+# Why Compile-Time Frameworks Work Surprisingly Well With AI Coding Agents { #compile-time-frameworks-ai-agents }
+
+**September 14, 2026**
 
 AI coding agents are often discussed as if framework choice barely matters.
 
@@ -70,7 +73,7 @@ repeat
 This article explains why that matters, where the advantage comes from, where it stops, and why compile-time frameworks such as Kora may be unusually well matched to the next generation of coding
 tools.
 
-## Coding Agents Work Through Feedback Loops
+## Coding Agents Work Through Feedback Loops { #feedback-loops }
 
 The simplest useful model of an autonomous coding agent is not:
 
@@ -111,7 +114,7 @@ Agent productivity is therefore strongly related to **feedback latency** and **f
 
 Kora's compile-time model pushes many framework mistakes into a phase where feedback is both early and structured.
 
-## The Compiler Is an External Reasoning System
+## The Compiler Is an External Reasoning System { #compiler-external-reasoning }
 
 For a human developer, the compiler is a tool.
 
@@ -167,7 +170,7 @@ It is validating application architecture.
 
 For an agent, that is extremely valuable.
 
-## Compile-Time Dependency Injection Turns Architecture Into Compiler Input
+## Compile-Time Dependency Injection Turns Architecture Into Compiler Input { #compile-time-di }
 
 Dependency injection is often one of the hardest parts of a framework for an agent to reconstruct.
 
@@ -215,7 +218,7 @@ compiler diagnostics
 
 The application architecture becomes more like ordinary typed program structure and less like runtime container state.
 
-## Explicit Constructors Are Excellent Agent Context
+## Explicit Constructors Are Excellent Agent Context { #explicit-constructors }
 
 Consider:
 
@@ -266,7 +269,7 @@ What matters is that Kora keeps the framework model close to that explicit struc
 
 The less architecture an agent has to infer indirectly, the more reliable its changes become.
 
-## Compile-Time Graph Errors Are Better Than Startup Mysteries
+## Compile-Time Graph Errors Are Better Than Startup Mysteries { #graph-errors }
 
 Imagine an agent adds:
 
@@ -327,7 +330,7 @@ reconstruct runtime state
 
 The fewer unrelated steps between mistake and feedback, the easier the task is for both humans and agents.
 
-## Error Locality Matters
+## Error Locality Matters { #error-locality }
 
 A compiler error is most useful when it points close to the incorrect assumption.
 
@@ -353,7 +356,7 @@ may still be perfectly diagnosable, but the agent has to traverse more framework
 
 Compile-time systems tend to improve **error locality** because the framework is validating source-level structure while it still has direct access to the declarations that created it.
 
-## Strong Types Reduce the Space of Possible Interpretations
+## Strong Types Reduce the Space of Possible Interpretations { #strong-types }
 
 LLMs perform best when the environment constrains the answer.
 
@@ -408,7 +411,7 @@ Strong typing turns uncertainty into tool-checkable contracts.
 
 Kora extends that principle across internal and external boundaries.
 
-## End-to-End Typing Is More Valuable Than Local Typing
+## End-to-End Typing Is More Valuable Than Local Typing { #end-to-end-typing }
 
 Java and Kotlin already provide strong local typing.
 
@@ -438,7 +441,7 @@ Wrong assumptions are more likely to fail during compilation.
 
 This is exactly what an autonomous loop wants.
 
-## Strong Types Turn Hallucination Into Compiler Errors
+## Strong Types Turn Hallucination Into Compiler Errors { #hallucination-compiler-errors }
 
 An LLM may hallucinate a method:
 
@@ -492,7 +495,7 @@ If the framework itself is compile-time validated, more of these framework-level
 
 The framework is effectively converting model uncertainty into structured correction signals.
 
-## Generated Source Is an Unusually Powerful AI Interface
+## Generated Source Is an Unusually Powerful AI Interface { #generated-source-ai-interface }
 
 One of Kora's most distinctive properties is that framework behavior frequently becomes generated Java or Kotlin source.
 
@@ -522,7 +525,7 @@ Kora generates wrappers/subclasses.
 
 Generated source gives the agent something concrete to inspect.
 
-## Generated Code Externalizes Framework Context
+## Generated Code Externalizes Framework Context { #generated-code-context }
 
 Human developers often carry framework knowledge in their heads.
 
@@ -555,7 +558,7 @@ That is a profound difference.
 
 It reduces reliance on model memory and increases reliance on repository evidence.
 
-## Generated Source Shrinks the Guessing Surface
+## Generated Source Shrinks the Guessing Surface { #shrinks-guessing-surface }
 
 Imagine an agent is debugging a retry problem.
 
@@ -594,7 +597,7 @@ The problem changes from framework archaeology to ordinary program analysis.
 
 That is exactly the kind of task LLMs handle well.
 
-## The Generated Code Is Application-Specific Documentation
+## The Generated Code Is Application-Specific Documentation { #application-specific-docs }
 
 Generic documentation says:
 
@@ -631,7 +634,7 @@ For an agent, it is **contextual documentation synthesized for the current appli
 
 That is extremely valuable.
 
-## Agents Can Follow Real Execution Paths
+## Agents Can Follow Real Execution Paths { #real-execution-paths }
 
 Suppose the task is:
 
@@ -659,7 +662,7 @@ The model does not need to reconstruct hidden runtime interception.
 
 This increases confidence in explanations and code changes.
 
-## "No Runtime Magic" Is Really About Reducing Hidden State
+## "No Runtime Magic" Is Really About Reducing Hidden State { #no-runtime-magic }
 
 The phrase "no magic" can sound rhetorical.
 
@@ -685,7 +688,7 @@ The difference is that much of the result becomes explicit code before runtime.
 
 For AI tooling, visible automation is dramatically easier to reason about than invisible automation.
 
-## AI Agents Are Weak at Framework Folklore
+## AI Agents Are Weak at Framework Folklore { #framework-folklore }
 
 A senior engineer may know dozens of unwritten rules:
 
@@ -716,7 +719,7 @@ Kora deliberately reduces the amount of such lore.
 
 That is valuable to agents for the same reason it is valuable to humans.
 
-## One Recommended Way Reduces Search Space
+## One Recommended Way Reduces Search Space { #one-recommended-way }
 
 Framework flexibility is attractive to humans because experts can choose among multiple valid approaches.
 
@@ -751,7 +754,7 @@ For agents, this is not merely aesthetic simplicity.
 
 It is reduced branching in the solution space.
 
-## Fewer Valid Solutions Can Produce Better Autonomous Work
+## Fewer Valid Solutions Can Produce Better Autonomous Work { #fewer-valid-solutions }
 
 Humans often value expressive freedom.
 
@@ -767,7 +770,7 @@ If AOP is generated through one mechanism, the agent does not need to identify w
 
 A narrower framework can be a stronger agent environment.
 
-## One Way Also Improves Retrieval
+## One Way Also Improves Retrieval { #one-way-retrieval }
 
 When an agent searches the repository for examples, consistency matters.
 
@@ -785,7 +788,7 @@ Consistency is therefore not only a human-maintainability property.
 
 It improves example-based machine reasoning.
 
-## Thin Abstractions Preserve Pretrained Knowledge
+## Thin Abstractions Preserve Pretrained Knowledge { #thin-abstractions }
 
 LLMs already know a lot about:
 
@@ -812,7 +815,7 @@ If a repository uses explicit SQL and typed parameters, the agent does not need 
 
 Kora's thin abstractions therefore have an unexpected AI advantage: they preserve the value of general pretrained knowledge.
 
-## Semantic Distance Matters to Agents
+## Semantic Distance Matters to Agents { #semantic-distance }
 
 Consider two stacks.
 
@@ -848,7 +851,7 @@ The lower the semantic distance, the less project-specific context the agent nee
 
 That improves both code generation and debugging.
 
-## Explicit SQL Is a Good Example
+## Explicit SQL Is a Good Example { #explicit-sql }
 
 An agent debugging a database problem can reason directly about:
 
@@ -866,7 +869,7 @@ Kora's explicit repository style makes the persistence boundary easier to inspec
 
 The same property benefits experienced humans.
 
-## Virtual Threads Reduce Concurrency Model Ambiguity
+## Virtual Threads Reduce Concurrency Model Ambiguity { #virtual-threads }
 
 Concurrency is a major source of agent mistakes.
 
@@ -894,7 +897,7 @@ But the programming model is easier to infer from ordinary code.
 
 For an agent, fewer execution models mean fewer opportunities to mix incompatible assumptions.
 
-## Familiar Call Stacks Help Debugging Agents
+## Familiar Call Stacks Help Debugging Agents { #familiar-call-stacks }
 
 Suppose a request does:
 
@@ -924,7 +927,7 @@ When virtual threads allow synchronous code without reverting to platform-thread
 
 That helps humans and agents simultaneously.
 
-## Fast Startup Changes Agent Economics
+## Fast Startup Changes Agent Economics { #fast-startup }
 
 Compile-time validation is only the first half of the loop.
 
@@ -960,7 +963,7 @@ The difference compounds over dozens of iterations.
 
 For agentic workflows, startup latency becomes a productivity metric.
 
-## AI Agents Consume Wall-Clock Time Too
+## AI Agents Consume Wall-Clock Time Too { #wall-clock-time }
 
 It is easy to think of agent compute as cheap compared with engineer time.
 
@@ -978,7 +981,7 @@ An agent that can run thirty realistic component-test iterations in the time ano
 
 Fast startup therefore improves agent quality indirectly by allowing more evidence-gathering cycles.
 
-## Short Loops Encourage Real Tests Instead of Static Guessing
+## Short Loops Encourage Real Tests Instead of Static Guessing { #short-loops-real-tests }
 
 When tests are expensive, both humans and agents are tempted to reason without running them.
 
@@ -1003,7 +1006,7 @@ Kora's fast context startup supports that philosophy.
 
 The agent can afford to run real application-level checks frequently.
 
-## Component Tests Are Particularly Agent-Friendly
+## Component Tests Are Particularly Agent-Friendly { #component-tests }
 
 A component test gives the agent a middle ground between:
 
@@ -1034,7 +1037,7 @@ without requiring a complete production environment.
 
 This is exactly the level where many framework mistakes are caught.
 
-## Test Replacement Makes Experiments Cheap
+## Test Replacement Makes Experiments Cheap { #test-replacement }
 
 Suppose the agent is modifying:
 
@@ -1066,7 +1069,7 @@ fast startup
 
 Agents perform well when they can create such controlled experiments.
 
-## Testcontainers Completes the Loop for Real Infrastructure
+## Testcontainers Completes the Loop for Real Infrastructure { #testcontainers }
 
 Some behavior cannot be faked reliably.
 
@@ -1078,7 +1081,7 @@ Kora's fast application startup still matters because container startup becomes 
 
 The framework does not add unnecessary delay to an already expensive integration test.
 
-## Agents Benefit From Layered Verification
+## Agents Benefit From Layered Verification { #layered-verification }
 
 A useful autonomous workflow is:
 
@@ -1104,7 +1107,7 @@ Black-box tests catch public behavior.
 
 Kora's architecture supports this progression naturally.
 
-## The Compiler Can Teach the Agent the Framework
+## The Compiler Can Teach the Agent the Framework { #compiler-teaches-framework }
 
 This is a surprisingly important property.
 
@@ -1134,7 +1137,7 @@ Compile-time frameworks therefore have an incentive to invest heavily in diagnos
 
 That investment benefits agents disproportionately.
 
-## Error Messages Become an API for Autonomous Tools
+## Error Messages Become an API for Autonomous Tools { #error-messages-api }
 
 Framework authors traditionally optimize error messages for humans.
 
@@ -1161,7 +1164,7 @@ is much easier for an agent to act on than a long generic initialization failure
 
 As agentic development grows, diagnostic quality becomes a framework feature.
 
-## Compiler Feedback Is Deterministic Evidence
+## Compiler Feedback Is Deterministic Evidence { #deterministic-evidence }
 
 LLMs generate probabilistic answers.
 
@@ -1181,7 +1184,7 @@ The framework increases the number of architectural questions the compiler can a
 
 That improves convergence.
 
-## Generated Sources Provide a Second Oracle
+## Generated Sources Provide a Second Oracle { #second-oracle }
 
 The compiler tells the agent that the code is structurally valid.
 
@@ -1211,7 +1214,7 @@ If the application graph selects a different implementation, generated wiring re
 
 This is an unusually transparent environment for automated reasoning.
 
-## Documentation Becomes More Effective When It Matches Generated Reality
+## Documentation Becomes More Effective When It Matches Generated Reality { #docs-match-generated-reality }
 
 Documentation alone is not enough for agents.
 
@@ -1244,7 +1247,7 @@ Kora's official documentation and skills improve the first two.
 
 The framework architecture strengthens the last three.
 
-## Focused Documentation Reduces Retrieval Noise
+## Focused Documentation Reduces Retrieval Noise { #focused-docs-retrieval }
 
 Agent performance depends heavily on retrieval quality.
 
@@ -1267,7 +1270,7 @@ Humans experience the same confusion.
 
 But agents are especially sensitive because they may confidently combine incompatible information unless the environment provides strong correction signals.
 
-## Version Drift Is an Agent Failure Mode
+## Version Drift Is an Agent Failure Mode { #version-drift }
 
 An LLM may know several versions of a framework.
 
@@ -1293,7 +1296,7 @@ If the framework keeps multiple parallel styles forever, the model has more chan
 
 Reducing historical surface area improves agent reliability.
 
-## Kora 2's Narrower Model Helps Here
+## Kora 2's Narrower Model Helps Here { #kora-2-narrower-model }
 
 A framework generation that intentionally removes older competing programming models can be easier for agents than one that preserves every historical approach indefinitely.
 
@@ -1305,7 +1308,7 @@ Once the project is on the current model, the agent has fewer legacy branches to
 
 This is one reason clean framework evolution can matter for AI tooling.
 
-## Explicit Architecture Makes Repository Navigation Easier
+## Explicit Architecture Makes Repository Navigation Easier { #explicit-architecture-navigation }
 
 An agent often begins with a high-level task:
 
@@ -1338,7 +1341,7 @@ and build a map quickly.
 
 If architecture is primarily implicit in runtime conventions, navigation requires more framework-specific reasoning.
 
-## @KoraApp Is a Useful Architectural Anchor
+## @KoraApp Is a Useful Architectural Anchor { #koraapp-anchor }
 
 A Kora application has an explicit root.
 
@@ -1354,7 +1357,7 @@ This provides a clear architectural traversal strategy.
 
 Agents benefit enormously from obvious starting points.
 
-## @Module Exposes Construction Logic
+## @Module Exposes Construction Logic { #module-construction-logic }
 
 Factories inside modules show where infrastructure components come from.
 
@@ -1373,7 +1376,7 @@ There is less need to know hidden container extension APIs.
 
 This makes platform-level modifications more accessible to agents.
 
-## Repositories Expose Data Access Explicitly
+## Repositories Expose Data Access Explicitly { #repositories-data-access }
 
 A generated repository model with explicit queries gives the agent strong signals:
 
@@ -1391,7 +1394,7 @@ It does not need to infer query behavior from entity state or runtime query gene
 
 This is particularly useful for tasks involving performance or correctness.
 
-## OpenAPI Extends Strong Typing to Service Boundaries
+## OpenAPI Extends Strong Typing to Service Boundaries { #openapi-strong-typing }
 
 When server and client APIs are generated from an OpenAPI contract, the agent receives another strong source of truth.
 
@@ -1409,7 +1412,7 @@ A change that violates the contract is more likely to fail compilation.
 
 This is ideal for autonomous changes because external API behavior is harder to infer safely than local implementation detail.
 
-## Generated Clients Reduce Handwritten Protocol Errors
+## Generated Clients Reduce Handwritten Protocol Errors { #generated-clients }
 
 An agent writing raw HTTP code might make subtle mistakes:
 
@@ -1428,7 +1431,7 @@ The same principle applies to generated repositories and mappers.
 
 Code generation removes repetitive protocol glue that is easy for both humans and LLMs to get wrong.
 
-## Compile-Time AOP Reduces Hidden Interception Rules
+## Compile-Time AOP Reduces Hidden Interception Rules { #compile-time-aop }
 
 AOP is a classic source of framework surprises.
 
@@ -1458,7 +1461,7 @@ composition directly.
 
 This is significantly easier than asking the model to remember every runtime proxy rule correctly.
 
-## Self-Invocation Becomes Derivable
+## Self-Invocation Becomes Derivable { #self-invocation }
 
 If Kora generates a subclass override, the agent can reason from normal Java virtual dispatch.
 
@@ -1472,7 +1475,7 @@ LLMs have vast training exposure to Java and Kotlin.
 
 They have less reliable knowledge of every framework's invisible runtime conventions.
 
-## Thin Runtime Means Fewer Hidden State Transitions
+## Thin Runtime Means Fewer Hidden State Transitions { #thin-runtime }
 
 A large runtime container may perform:
 
@@ -1497,7 +1500,7 @@ But the framework's structural decisions are resolved earlier.
 
 That shrinks the gap between "what the repository looks like" and "what the program does."
 
-## Agents Prefer Repositories That Explain Themselves
+## Agents Prefer Repositories That Explain Themselves { #self-explaining-repositories }
 
 A highly agent-friendly codebase has a desirable property:
 
@@ -1511,7 +1514,7 @@ This is valuable even if no AI agent is involved.
 
 It reduces organizational dependency on tribal knowledge.
 
-## "Get Context Out of Your Head" Is Also an AI Principle
+## "Get Context Out of Your Head" Is Also an AI Principle { #context-out-of-head }
 
 Humans compensate for implicit systems with memory.
 
@@ -1541,7 +1544,7 @@ documentation
 
 Kora's architecture naturally does much of this.
 
-## Agents Still Need Documentation
+## Agents Still Need Documentation { #agents-need-documentation }
 
 Compile-time transparency does not eliminate documentation.
 
@@ -1564,7 +1567,7 @@ Documentation tells the agent where to go.
 
 The compiler tells it whether it got there correctly.
 
-## Official Skills Can Improve Retrieval, but They Are Not the Core Advantage
+## Official Skills Can Improve Retrieval, but They Are Not the Core Advantage { #official-skills }
 
 Framework-specific agent skills or documentation bundles can be very useful.
 
@@ -1594,7 +1597,7 @@ Tests prove behavior.
 
 The framework architecture provides the trust layer beneath the retrieval layer.
 
-## Fast, Strict Feedback Is Better Than Large Prompt Context
+## Fast, Strict Feedback Is Better Than Large Prompt Context { #strict-feedback }
 
 One response to framework complexity is to give the agent enormous prompt context:
 
@@ -1615,7 +1618,7 @@ The agent does not need to memorize every possible error if the compiler catches
 
 This is a more scalable form of context.
 
-## Constraints Can Replace Instructions
+## Constraints Can Replace Instructions { #constraints-replace-instructions }
 
 Suppose a project instruction says:
 
@@ -1637,7 +1640,7 @@ A framework version that simply does not expose that competing model removes the
 
 For autonomous development, architectural constraints are often stronger than textual instructions.
 
-## Machine-Readable Failure Beats Human Convention
+## Machine-Readable Failure Beats Human Convention { #machine-readable-failure }
 
 Agents can misunderstand prose conventions.
 
@@ -1655,7 +1658,7 @@ This suggests an important design principle for AI-friendly frameworks:
 
 Compile-time frameworks are naturally good at this.
 
-## Fast Tests Create More Opportunities for Self-Correction
+## Fast Tests Create More Opportunities for Self-Correction { #fast-tests-self-correction }
 
 An agent may need several attempts to implement a feature correctly.
 
@@ -1673,7 +1676,7 @@ Fast framework startup is therefore not merely developer ergonomics.
 
 It increases the feasible number of autonomous correction cycles.
 
-## Feedback Quality and Feedback Frequency Multiply
+## Feedback Quality and Feedback Frequency Multiply { #feedback-multiply }
 
 A useful conceptual model is:
 
@@ -1699,7 +1702,7 @@ These properties compound.
 
 That is why Kora's AI story is architectural rather than a single feature.
 
-## An Example Agent Loop
+## An Example Agent Loop { #example-agent-loop }
 
 Imagine the task:
 
@@ -1752,7 +1755,7 @@ No step required the model to possess complete framework knowledge upfront.
 
 The environment guided it toward correctness.
 
-## The Framework Becomes a Search Space With Pruning
+## The Framework Becomes a Search Space With Pruning { #search-space-pruning }
 
 This can be described algorithmically.
 
@@ -1772,7 +1775,7 @@ One recommended way reduces the number of branches generated in the first place.
 
 That is a very favorable environment for automated search.
 
-## Dynamic Frameworks Can Also Work Well With Agents
+## Dynamic Frameworks Can Also Work Well With Agents { #dynamic-frameworks }
 
 It would be wrong to claim that only compile-time frameworks are AI-friendly.
 
@@ -1803,7 +1806,7 @@ The more precise argument is:
 
 That is a different advantage.
 
-## Training Data and Runtime Transparency Are Different Assets
+## Training Data and Runtime Transparency Are Different Assets { #training-data-transparency }
 
 A popular framework may have huge model familiarity.
 
@@ -1817,7 +1820,7 @@ If it does not know the framework well, generated source and compiler diagnostic
 
 Kora's design is particularly interesting because it reduces dependence on memorized framework lore.
 
-## AI-Friendly Does Not Mean "Easy for Weak Models"
+## AI-Friendly Does Not Mean "Easy for Weak Models" { #ai-friendly-not-easy }
 
 Complex backend engineering remains complex.
 
@@ -1846,7 +1849,7 @@ The framework improves the feedback environment.
 
 It does not replace engineering.
 
-## Compiler Correctness Is Not Business Correctness
+## Compiler Correctness Is Not Business Correctness { #compiler-vs-business }
 
 An agent can produce code that compiles perfectly and is still wrong.
 
@@ -1884,7 +1887,7 @@ Compile-time frameworks catch structural mistakes, not every semantic mistake.
 
 AI agents still need tests, architecture rules, and human review for high-risk changes.
 
-## Generated Source Can Also Mislead If Read Without Semantics
+## Generated Source Can Also Mislead If Read Without Semantics { #generated-source-mislead }
 
 An agent may inspect generated JDBC code and conclude that the mechanism is correct while missing:
 
@@ -1901,7 +1904,7 @@ It does not automatically make interpretation correct.
 
 The advantage is that the agent has better evidence to work from.
 
-## Fast Loops Can Accelerate Bad Decisions Too
+## Fast Loops Can Accelerate Bad Decisions Too { #fast-loops-bad-decisions }
 
 A model that has the wrong high-level objective can iterate very efficiently toward the wrong solution.
 
@@ -1923,7 +1926,7 @@ architecture constraints
 
 The framework provides a better execution environment, not a complete supervisory system.
 
-## AI-Friendly Framework Design Is Mostly Good Framework Design
+## AI-Friendly Framework Design Is Mostly Good Framework Design { #ai-friendly-good-design }
 
 This may be the most important conclusion.
 
@@ -1951,7 +1954,7 @@ An autonomous agent has to reconstruct more of that experience repeatedly.
 
 Therefore transparency and deterministic feedback become disproportionately valuable.
 
-## Explicit Architecture Helps Junior Engineers Too
+## Explicit Architecture Helps Junior Engineers Too { #junior-engineers }
 
 Kora's AI-oriented properties mirror onboarding properties.
 
@@ -1974,7 +1977,7 @@ Both need to build an accurate mental model from evidence.
 
 Frameworks that externalize context reduce onboarding cost for both.
 
-## Senior Engineers Benefit Differently
+## Senior Engineers Benefit Differently { #senior-engineers }
 
 Experts may not need the compiler to explain basic dependency injection.
 
@@ -1992,7 +1995,7 @@ AI compatibility is therefore not a feature that trades away expert control.
 
 In Kora's case, the same properties support deep inspection.
 
-## Generated Code Improves Code Review With AI
+## Generated Code Improves Code Review With AI { #code-review-ai }
 
 Imagine an AI review agent checking a pull request that adds a transaction and retry annotation.
 
@@ -2012,7 +2015,7 @@ An agent reviewing OpenAPI changes can compare generated server/client types.
 
 Generated artifacts make framework behavior reviewable by tools beyond the original coding agent.
 
-## Static Analysis Can Compose With Compile-Time Frameworks
+## Static Analysis Can Compose With Compile-Time Frameworks { #static-analysis }
 
 Because Kora produces ordinary Java/Kotlin source and bytecode, standard tools can continue analyzing it:
 
@@ -2032,7 +2035,7 @@ The framework does not require a completely separate runtime introspection syste
 
 This makes tool composition easier.
 
-## The Application Repository Becomes More Self-Describing
+## The Application Repository Becomes More Self-Describing { #self-describing-repository }
 
 A highly agent-compatible repository should answer:
 
@@ -2063,7 +2066,7 @@ tests
 
 This is effectively executable architecture documentation.
 
-## Generated Sources Reduce the Need for Runtime Introspection Tools
+## Generated Sources Reduce the Need for Runtime Introspection Tools { #runtime-introspection }
 
 In a heavily dynamic framework, an agent might need:
 
@@ -2085,7 +2088,7 @@ The agent can inspect architecture before the service runs.
 
 That is particularly valuable in restricted CI or sandbox environments where running the complete application may be expensive or impossible.
 
-## Compile-Time Knowledge Helps Remote Agents
+## Compile-Time Knowledge Helps Remote Agents { #remote-agents }
 
 Many coding agents run in ephemeral containers with:
 
@@ -2104,7 +2107,7 @@ Then focused integration tests can be run only when needed.
 
 This makes agent workflows more robust in constrained environments.
 
-## Strong Build Artifacts Improve Reproducibility
+## Strong Build Artifacts Improve Reproducibility { #build-artifacts-reproducibility }
 
 An agent operating in CI should see the same graph generation that production artifacts use.
 
@@ -2121,7 +2124,7 @@ due purely to different runtime discovery.
 
 Reproducible structural builds are valuable for autonomous changes.
 
-## The Build Becomes an Architectural Proof Step
+## The Build Becomes an Architectural Proof Step { #architectural-proof }
 
 Not a formal proof, but a useful one.
 
@@ -2139,7 +2142,7 @@ That is much more informative than "javac accepted the handwritten source."
 
 For an agent, the build is a richer validation checkpoint.
 
-## Fast Startup Then Tests the Remaining Dynamic Reality
+## Fast Startup Then Tests the Remaining Dynamic Reality { #fast-startup-dynamic-reality }
 
 Compilation handles static structure.
 
@@ -2161,7 +2164,7 @@ Use tests for what requires execution.
 
 Do not postpone static mistakes until runtime.
 
-## The Loop Can Be Modeled as Progressive Certainty
+## The Loop Can Be Modeled as Progressive Certainty { #progressive-certainty }
 
 An agent starts with uncertain code.
 
@@ -2191,7 +2194,7 @@ Kora increases the amount of useful validation available early in that pipeline.
 
 That reduces the cost of wrong assumptions.
 
-## Short Feedback Loops Are Especially Important for Autonomous Refactoring
+## Short Feedback Loops Are Especially Important for Autonomous Refactoring { #short-loops-refactoring }
 
 Small feature additions are one thing.
 
@@ -2215,7 +2218,7 @@ Fast tests verify each stage.
 
 This makes incremental refactoring safer.
 
-## Explicit Dependencies Help Automated Impact Analysis
+## Explicit Dependencies Help Automated Impact Analysis { #automated-impact-analysis }
 
 If a constructor depends on `FraudClient`, an agent can search references and understand impact.
 
@@ -2235,7 +2238,7 @@ These are common agent tasks.
 
 The architecture is easier to manipulate mechanically.
 
-## One Recommended Way Makes Large-Scale Code Generation Safer
+## One Recommended Way Makes Large-Scale Code Generation Safer { #large-scale-codegen }
 
 Suppose an agent needs to add twenty similar endpoints or migrate fifty services.
 
@@ -2247,7 +2250,7 @@ If every service uses a different abstraction style, bulk automation becomes bri
 
 Framework coherence therefore improves not only local coding but fleet-scale AI automation.
 
-## Agents Can Learn From Nearby Code Reliably
+## Agents Can Learn From Nearby Code Reliably { #nearby-code }
 
 LLMs frequently imitate local examples.
 
@@ -2269,7 +2272,7 @@ A coherent framework amplifies the value of local retrieval.
 
 A highly heterogeneous framework weakens it.
 
-## Fewer Abstractions Mean Smaller Prompt Context
+## Fewer Abstractions Mean Smaller Prompt Context { #smaller-prompt-context }
 
 Every framework abstraction that must be explained consumes context.
 
@@ -2291,7 +2294,7 @@ That leaves more context budget for the actual business problem.
 
 This may become increasingly important as agents operate on larger repositories.
 
-## Generated Code Can Be Read Selectively
+## Generated Code Can Be Read Selectively { #generated-code-selectively }
 
 There is a concern: generated source can be large.
 
@@ -2309,7 +2312,7 @@ This works because generation is predictable and source-level.
 
 The framework provides inspectability without requiring the entire generated tree to be permanent prompt context.
 
-## Compile-Time Frameworks Create Better Tool Hooks
+## Compile-Time Frameworks Create Better Tool Hooks { #tool-hooks }
 
 An agent platform can automate:
 
@@ -2327,7 +2330,7 @@ Runtime-heavy frameworks can expose equivalent tooling, but it often requires fr
 
 Compile-time artifacts are easier to integrate into generic coding-agent pipelines.
 
-## Build Diagnostics Can Be Parsed Programmatically
+## Build Diagnostics Can Be Parsed Programmatically { #build-diagnostics }
 
 Compiler diagnostics are structured enough to support automated workflows:
 
@@ -2355,7 +2358,7 @@ Good runtime diagnostics can still be parsed, but compile-time failures generall
 
 This matters for autonomous correction.
 
-## Kora's Architecture Creates a Useful Hierarchy of Truth
+## Kora's Architecture Creates a Useful Hierarchy of Truth { #hierarchy-of-truth }
 
 When an agent needs to know something, it can consult increasingly concrete evidence:
 
@@ -2378,7 +2381,7 @@ If tests pass but production fails, investigate environment and scale.
 
 Agents benefit from systems that provide multiple independent evidence layers.
 
-## Production Observability Extends the Agent Loop
+## Production Observability Extends the Agent Loop { #production-observability }
 
 The same transparency can continue after deployment.
 
@@ -2409,7 +2412,7 @@ This means Kora's agent-friendly architecture is not limited to code generation.
 
 It also supports automated diagnosis because runtime behavior is observable through standard signals.
 
-## Generated Architecture Plus Telemetry Is a Strong Combination
+## Generated Architecture Plus Telemetry Is a Strong Combination { #architecture-telemetry }
 
 Static source answers:
 
@@ -2437,7 +2440,7 @@ This is much stronger than reasoning from logs alone.
 
 Transparent build artifacts and transparent runtime signals reinforce each other.
 
-## AI-Friendly Architecture Reduces Hallucination Risk
+## AI-Friendly Architecture Reduces Hallucination Risk { #reduces-hallucination }
 
 Hallucination cannot be eliminated.
 
@@ -2457,7 +2460,7 @@ Observability reduces invented production explanations.
 
 The environment progressively replaces guessing with evidence.
 
-## The Best Agent Prompt Is Often a Better Codebase
+## The Best Agent Prompt Is Often a Better Codebase { #better-codebase }
 
 Teams sometimes try to solve agent reliability with giant instruction files.
 
@@ -2480,7 +2483,7 @@ The codebase itself teaches the agent how to behave.
 
 This is a more durable investment because humans benefit too.
 
-## AI Compatibility Can Become a Framework Selection Criterion
+## AI Compatibility Can Become a Framework Selection Criterion { #framework-selection-criterion }
 
 Historically, teams evaluate frameworks on:
 
@@ -2509,7 +2512,7 @@ Can an agent inspect real execution paths?
 
 Compile-time frameworks score unusually well on several of these dimensions.
 
-## This Does Not Mean Frameworks Should Optimize Only for AI
+## This Does Not Mean Frameworks Should Optimize Only for AI { #not-only-for-ai }
 
 A framework that is unpleasant for humans but easy for agents would be a bad design.
 
@@ -2531,7 +2534,7 @@ AI agents benefit from the same design.
 
 There is no need to create an alien "AI-first" programming model.
 
-## The Best AI-Friendly Abstraction Is Often an Ordinary Good Abstraction
+## The Best AI-Friendly Abstraction Is Often an Ordinary Good Abstraction { #ordinary-good-abstraction }
 
 Agents already know mainstream language constructs well.
 
@@ -2553,7 +2556,7 @@ Kora's emphasis on familiar Java/Kotlin idioms therefore has a second-order AI b
 
 The framework does not ask the model to learn a completely different language hidden inside Java annotations.
 
-## Why This Matters More as Agents Become More Autonomous
+## Why This Matters More as Agents Become More Autonomous { #agents-more-autonomous }
 
 Autocomplete tools can rely on the human to catch mistakes immediately.
 
@@ -2567,7 +2570,7 @@ During that time, the compiler, generated source, tests, and static analysis bec
 
 A compile-time framework effectively embeds more review logic into the development loop.
 
-## The Framework Can Act as a Guardrail Without Becoming Restrictive
+## The Framework Can Act as a Guardrail Without Becoming Restrictive { #framework-guardrail }
 
 There is a useful distinction between:
 
@@ -2591,7 +2594,7 @@ These reduce invalid states while still allowing normal application design.
 
 For agents, such guardrails improve autonomy because fewer errors require human rescue.
 
-## The Most Agent-Friendly Systems Make Invalid States Expensive to Express
+## The Most Agent-Friendly Systems Make Invalid States Expensive to Express { #invalid-states-expensive }
 
 This echoes classic type-system design.
 
@@ -2603,11 +2606,11 @@ Kora's compiler-oriented approach increases the set of invalid states that are d
 
 That is a powerful property for machine-generated code.
 
-## A Concrete Comparison
+## A Concrete Comparison { #concrete-comparison }
 
 Consider two hypothetical agent workflows.
 
-### Runtime-heavy framework
+### Runtime-heavy framework { #runtime-heavy-framework }
 
 ```text
 Agent writes component
@@ -2629,7 +2632,7 @@ agent parses nested runtime exception
 agent edits
 ```
 
-### Compile-time Kora-style framework
+### Compile-time Kora-style framework { #compile-time-kora-framework }
 
 ```text
 Agent writes component
@@ -2657,11 +2660,11 @@ It lowers the cost of discovering them.
 
 That is the core advantage.
 
-## Another Comparison: Hidden Behavior
+## Another Comparison: Hidden Behavior { #hidden-behavior }
 
 Suppose an agent needs to understand a repository.
 
-### Hidden runtime mapping
+### Hidden runtime mapping { #hidden-runtime-mapping }
 
 ```text
 annotation
@@ -2675,7 +2678,7 @@ proxy invocation
 database
 ```
 
-### Generated Kora repository
+### Generated Kora repository { #generated-kora-repository }
 
 ```text
 repository declaration
@@ -2691,7 +2694,7 @@ In the second case, the agent can inspect the implementation that actually execu
 
 This is a major reduction in uncertainty.
 
-## Another Comparison: Framework Choice Space
+## Another Comparison: Framework Choice Space { #framework-choice-space }
 
 Suppose a task requires database access.
 
@@ -2720,7 +2723,7 @@ Framework B gives an autonomous agent fewer opportunities to select a technicall
 
 For teams optimizing for consistency and automation, that trade can be very attractive.
 
-## The Cost: Compile-Time Frameworks Move Complexity Into the Build
+## The Cost: Compile-Time Frameworks Move Complexity Into the Build { #cost-build-complexity }
 
 There is no free lunch.
 
@@ -2742,7 +2745,7 @@ The architecture creates the opportunity.
 
 Implementation quality determines whether the opportunity is realized.
 
-## Incremental Build Performance Matters for Agents
+## Incremental Build Performance Matters for Agents { #incremental-build }
 
 Agentic development may involve many small edits.
 
@@ -2760,7 +2763,7 @@ If annotation processing invalidates the entire project on every change, compile
 
 Good incremental processing, Gradle caching, module boundaries, and deterministic generation are important AI-enabling infrastructure.
 
-## Generated Sources Must Be Readable
+## Generated Sources Must Be Readable { #generated-sources-readable }
 
 Generated code that looks like:
 
@@ -2783,7 +2786,7 @@ minimal unnecessary indirection
 
 That benefits both debuggers and LLMs.
 
-## Diagnostics Must Avoid Compiler Archaeology
+## Diagnostics Must Avoid Compiler Archaeology { #avoid-compiler-archaeology }
 
 A framework can move errors to compile time and still produce terrible messages.
 
@@ -2806,7 +2809,7 @@ Compile-time architecture raises the importance of diagnostic engineering.
 
 As coding agents become common, precise diagnostics become even more valuable.
 
-## Agents Also Need Stable Generated Naming
+## Agents Also Need Stable Generated Naming { #stable-generated-naming }
 
 Predictable generated class names help navigation.
 
@@ -2830,7 +2833,7 @@ Stable naming improves IDE navigation, debugging scripts, and automated inspecti
 
 This is a small design detail with large tooling implications.
 
-## Build Artifacts Become Inputs to AI Reasoning
+## Build Artifacts Become Inputs to AI Reasoning { #build-artifacts-ai-reasoning }
 
 Traditionally, generated source is considered an implementation detail.
 
@@ -2851,7 +2854,7 @@ That suggests a future where framework build outputs are designed not only for t
 
 Kora is already structurally close to that model.
 
-## The Agent Does Not Need to Memorize the Framework If It Can Interrogate It
+## The Agent Does Not Need to Memorize the Framework If It Can Interrogate It { #interrogate-framework }
 
 This is perhaps the most unusual implication.
 
@@ -2877,7 +2880,7 @@ The agent asks the system what is valid and what was generated.
 
 This is a more robust interaction model than assuming the LLM's pretrained memory is always correct.
 
-## Framework Transparency Becomes More Valuable Than Framework Popularity in Some Tasks
+## Framework Transparency Becomes More Valuable Than Framework Popularity in Some Tasks { #transparency-vs-popularity }
 
 Popularity remains important.
 
@@ -2901,7 +2904,7 @@ the agent can inspect and understand it anyway.
 
 That is a major advantage for private codebases.
 
-## Private Enterprise Code Is Where This May Matter Most
+## Private Enterprise Code Is Where This May Matter Most { #private-enterprise-code }
 
 Public training data helps models with popular open-source frameworks.
 
@@ -2921,7 +2924,7 @@ An architecture that is explicit and self-describing gives agents a way to reaso
 
 Compile-time framework structure is therefore especially relevant inside private organizations.
 
-## Internal Modules Can Become Agent-Readable Platform Contracts
+## Internal Modules Can Become Agent-Readable Platform Contracts { #internal-modules-platform }
 
 Suppose a company publishes:
 
@@ -2943,7 +2946,7 @@ The platform team does not need every future model to have pretrained knowledge 
 
 The codebase itself provides the contract.
 
-## AI-Friendly Architecture Helps Migration Agents
+## AI-Friendly Architecture Helps Migration Agents { #migration-agents }
 
 Framework migrations are a natural agent workload.
 
@@ -2966,7 +2969,7 @@ Generated source lets it validate how the migrated declarations resolve.
 
 Kora's own version migrations can therefore benefit from the same properties.
 
-## Large-Scale Refactoring Becomes More Mechanically Verifiable
+## Large-Scale Refactoring Becomes More Mechanically Verifiable { #large-scale-refactoring }
 
 Imagine changing a constructor contract used across fifty modules.
 
@@ -2978,7 +2981,7 @@ This is much safer than relying on runtime coverage to discover all affected dyn
 
 Strong compile-time architecture improves automated refactoring confidence.
 
-## Code Review Can Focus More on Semantics
+## Code Review Can Focus More on Semantics { #code-review-semantics }
 
 If the compiler handles:
 
@@ -3002,7 +3005,7 @@ The same applies to AI review agents.
 
 Framework machinery becomes less of a review burden because more of it is generated and mechanically checked.
 
-## Kora's AI Advantage Is Not an AI Feature
+## Kora's AI Advantage Is Not an AI Feature { #not-an-ai-feature }
 
 There is no magical "LLM execution mode" required.
 
@@ -3023,7 +3026,7 @@ Architecture principles age much more slowly.
 
 A framework that is easy for tools to inspect today is likely to remain easy for future tools.
 
-## A Useful Mental Model: Reduce Entropy
+## A Useful Mental Model: Reduce Entropy { #reduce-entropy }
 
 An agent begins a task with uncertainty.
 
@@ -3065,7 +3068,7 @@ Seen this way, AI compatibility is an information-theory problem.
 
 The framework makes the state of the application easier to observe and constrain.
 
-## The Ideal Agent Loop in Kora
+## The Ideal Agent Loop in Kora { #ideal-agent-loop }
 
 A mature workflow can look like:
 
@@ -3101,7 +3104,7 @@ The agent does not need to be omniscient.
 
 It needs to be able to ask the system good questions.
 
-## Where Humans Still Matter
+## Where Humans Still Matter { #where-humans-matter }
 
 Even with excellent feedback, there are decisions agents should not make blindly.
 
@@ -3128,7 +3131,7 @@ Human judgment remains essential, especially for high-impact changes.
 
 AI-friendly framework design should improve execution, not remove governance.
 
-## The Best Outcome Is Human-Agent Symmetry
+## The Best Outcome Is Human-Agent Symmetry { #human-agent-symmetry }
 
 A particularly healthy system is one where humans and agents use the same evidence:
 
@@ -3152,7 +3155,7 @@ If the compiler says a dependency is missing, both human and agent see the same 
 
 This symmetry builds trust.
 
-## Why Kora Is an Interesting Case Study
+## Why Kora Is an Interesting Case Study { #kora-case-study }
 
 Kora is interesting not because it contains an AI API.
 
@@ -3176,7 +3179,7 @@ Each of these choices helps engineers.
 
 Together they create an environment where a coding agent can operate with less hidden context and more machine-verifiable evidence.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 AI coding agents do not need frameworks to become simpler in the sense of becoming less capable.
 

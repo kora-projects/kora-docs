@@ -1,10 +1,13 @@
 ---
 title: A Compile-Time Framework Does Not Mean Compile-Time-Only Libraries — Kora Framework
+date: 2026-08-01
 description: Why the Kora Framework's compile-time model does not forbid ordinary JVM libraries that use reflection, proxies, or runtime metadata.
 search:
   exclude: true
 ---
-# Compile-Time Framework Does Not Mean Compile-Time-Only Libraries
+# Compile-Time Framework Does Not Mean Compile-Time-Only Libraries { #compile-time-framework }
+
+**August 1, 2026**
 
 The phrase *compile-time framework* is easy to misunderstand.
 
@@ -47,7 +50,7 @@ Once that distinction is clear, several other myths disappear with it.
 
 ---
 
-## Framework Implementation Strategy Is Not an Application-Wide Restriction
+## Framework Implementation Strategy Is Not an Application-Wide Restriction { #framework-implementation-strategy }
 
 Kora makes a strong architectural choice: where the framework already knows enough information at build time, it prefers to generate ordinary source code rather than rediscovering the same information
 at runtime.
@@ -95,7 +98,7 @@ That difference is fundamental.
 
 ---
 
-## "Kora Avoids Reflection" Is Not the Same as "Reflection Is Disabled"
+## "Kora Avoids Reflection" Is Not the Same as "Reflection Is Disabled" { #kora-avoids-reflection }
 
 This is probably the most important misconception.
 
@@ -192,7 +195,7 @@ The two implementation strategies coexist in the same process.
 
 ---
 
-## The Real Runtime Picture
+## The Real Runtime Picture { #real-runtime-picture }
 
 A realistic Kora service can easily look like this:
 
@@ -244,7 +247,7 @@ A framework does not need to force a single philosophy onto every dependency in 
 
 ---
 
-## Kora's Own HTTP Stack Is a Good Counterexample to the Purity Myth
+## Kora's Own HTTP Stack Is a Good Counterexample to the Purity Myth { #kora-http-stack }
 
 Kora itself demonstrates that its architecture is selective rather than ideological.
 
@@ -284,7 +287,7 @@ That is a very different philosophy from "everything must be compile-time."
 
 ---
 
-## Compile-Time Framework Does Not Mean Closed JVM
+## Compile-Time Framework Does Not Mean Closed JVM { #compile-time-framework-closed-jvm }
 
 It helps to think in terms of boundaries.
 
@@ -331,11 +334,11 @@ It is **local optimization**.
 
 ---
 
-# Three Questions That Should Never Be Collapsed
+## Three Questions That Should Never Be Collapsed { #three-questions }
 
 When evaluating a library for a Kora service, ask three separate questions.
 
-## 1. Does the library work on the JVM?
+## 1. Does the library work on the JVM? { #does-library-work-on-jvm }
 
 This is the ordinary compatibility question.
 
@@ -351,7 +354,7 @@ Does it conflict with other dependencies?
 
 This is the same kind of question any Java application asks.
 
-## 2. Does the library integrate cleanly into Kora's application graph?
+## 2. Does the library integrate cleanly into Kora's application graph? { #library-integrate-into-graph }
 
 This is a much smaller question.
 
@@ -379,7 +382,7 @@ native client
 application graph
 ```
 
-## 3. Does the library work in GraalVM Native Image?
+## 3. Does the library work in GraalVM Native Image? { #library-graalvm-native-image }
 
 This is a separate deployment question.
 
@@ -413,7 +416,7 @@ There is nothing unusual about that combination.
 
 ---
 
-# HotSpot and Native Image Are Different Deployment Models
+## HotSpot and Native Image Are Different Deployment Models { #hotspot-native-image-deployment }
 
 The distinction becomes clearest when reflection is involved.
 
@@ -463,7 +466,7 @@ Kora merely starts from a framework architecture that already creates less of th
 
 ---
 
-# Kora Compatibility and Native Image Compatibility Are Different Questions
+## Kora Compatibility and Native Image Compatibility Are Different Questions { #kora-native-image-compatibility }
 
 This deserves to be stated directly:
 
@@ -525,7 +528,7 @@ The integration into Kora may still consist of a single factory method.
 
 ---
 
-# Native Image Is an Optimization Target, Not a Framework Law
+## Native Image Is an Optimization Target, Not a Framework Law { #native-image-optimization-target }
 
 A Kora service does not have to run as a Native Image.
 
@@ -580,7 +583,7 @@ The first team does not suddenly inherit those restrictions merely because Kora 
 
 ---
 
-# Why Kora Fits Native Image Well
+## Why Kora Fits Native Image Well { #why-kora-fits-native-image }
 
 Kora does have a real architectural advantage when Native Image is a requirement.
 
@@ -632,7 +635,7 @@ That is a much more precise advantage.
 
 ---
 
-# Third-Party Reflection Exists Even Inside Kora-Supported Modules
+## Third-Party Reflection Exists Even Inside Kora-Supported Modules { #third-party-reflection-kora-modules }
 
 There is an especially useful example in Kora's own Native Image documentation.
 
@@ -665,7 +668,7 @@ The framework optimizes what it controls and integrates what it does not.
 
 ---
 
-# Logback Is Another Good Example
+## Logback Is Another Good Example { #logback-example }
 
 Logging libraries frequently perform runtime discovery, configuration parsing, plugin lookup, or reflective class creation.
 
@@ -693,7 +696,7 @@ That separation is exactly the point.
 
 ---
 
-# Reachability Metadata Is Not a "Kora Bridge"
+## Reachability Metadata Is Not a "Kora Bridge" { #reachability-metadata }
 
 The word *bridge* can make ordinary integration sound more complex than it is.
 
@@ -721,7 +724,7 @@ A team may need to provide or consume that metadata whether Kora is involved or 
 
 ---
 
-# The GraalVM Reachability Metadata Repository Changes the Ecosystem Story
+## The GraalVM Reachability Metadata Repository Changes the Ecosystem Story { #graalvm-reachability-repository }
 
 Native Image compatibility has also become less framework-specific over time.
 
@@ -741,7 +744,7 @@ Kora benefits from that ecosystem rather than trying to replace it.
 
 ---
 
-# The Native Image Tracing Agent Is Another Escape Hatch
+## The Native Image Tracing Agent Is Another Escape Hatch { #native-image-tracing-agent }
 
 If a third-party library's dynamic behavior is not already covered, GraalVM provides a tracing agent that can observe reflective access, resource loading, proxy generation, and related behavior while
 the application runs on a JVM.
@@ -768,7 +771,7 @@ The deployment model determines the compatibility work.
 
 ---
 
-# Dynamic Class Loading Is Where the Difference Becomes More Serious
+## Dynamic Class Loading Is Where the Difference Becomes More Serious { #dynamic-class-loading }
 
 Reflection is not the only Native Image concern.
 
@@ -818,7 +821,7 @@ On a standard JVM, the library may still be perfectly usable with Kora.
 
 ---
 
-# JNI Is Also a Separate Constraint
+## JNI Is Also a Separate Constraint { #jni-constraint }
 
 JNI provides another example of why the three layers must be separated.
 
@@ -845,7 +848,7 @@ Framework DI and deployment format are different concerns.
 
 ---
 
-# Runtime Bytecode Generation Does Not Automatically Break Kora Either
+## Runtime Bytecode Generation Does Not Automatically Break Kora Either { #runtime-bytecode-generation }
 
 Java libraries sometimes use Byte Buddy, ASM, CGLIB, Javassist, or similar tooling.
 
@@ -869,7 +872,7 @@ Kora's compile-time design does not collapse the two.
 
 ---
 
-# One Reflective Dependency Does Not Turn Kora Into a Reflective Framework
+## One Reflective Dependency Does Not Turn Kora Into a Reflective Framework { #reflective-dependency }
 
 Another common overstatement is that a reflection-heavy dependency "destroys Kora's main advantage."
 
@@ -906,7 +909,7 @@ The rest of the stack remains what it was.
 
 ---
 
-# Performance Is Local Before It Is Global
+## Performance Is Local Before It Is Global { #performance-is-local }
 
 Suppose a service handles:
 
@@ -944,7 +947,7 @@ This is the normal way systems performance should be analyzed.
 
 ---
 
-# Startup Performance Is Compositional Too
+## Startup Performance Is Compositional Too { #startup-performance }
 
 The same applies at startup.
 
@@ -970,7 +973,7 @@ That distinction matters because it identifies the correct optimization target.
 
 ---
 
-# Memory Cost Is Also Additive
+## Memory Cost Is Also Additive { #memory-cost-additive }
 
 Suppose Kora uses little runtime metadata for DI and AOP, but a third-party engine keeps a large reflective metadata cache.
 
@@ -984,7 +987,7 @@ This is one reason framework efficiency remains useful even when application lib
 
 ---
 
-# A Framework Can Minimize Its Own Overhead Without Controlling Everything
+## A Framework Can Minimize Its Own Overhead Without Controlling Everything { #framework-minimize-overhead }
 
 This leads to an important principle:
 
@@ -1004,7 +1007,7 @@ These layers should be optimized independently where possible.
 
 ---
 
-# Compile-Time Purity Would Be a Bad Goal
+## Compile-Time Purity Would Be a Bad Goal { #compile-time-purity-bad-goal }
 
 Imagine Kora required every dependency to satisfy:
 
@@ -1030,7 +1033,7 @@ The framework's advantage comes from removing avoidable runtime machinery from t
 
 ---
 
-# Selective Compile-Time Work Is the More Powerful Model
+## Selective Compile-Time Work Is the More Powerful Model { #selective-compile-time }
 
 The real model is:
 
@@ -1069,7 +1072,7 @@ This division produces leverage without demanding ecosystem conformity.
 
 ---
 
-# Mature External Libraries Are Often Better Than Framework Reimplementations
+## Mature External Libraries Are Often Better Than Framework Reimplementations { #mature-external-libraries }
 
 This is closely related to avoiding NIH.
 
@@ -1102,7 +1105,7 @@ The underlying transport remains a mature independent library.
 
 ---
 
-# A Thin Integration Boundary Is Usually Enough
+## A Thin Integration Boundary Is Usually Enough { #thin-integration-boundary }
 
 Consider an unsupported vendor SDK.
 
@@ -1190,7 +1193,7 @@ At no point does the SDK have to become "compile-time Kora code."
 
 ---
 
-# Reflection Inside the SDK Is Its Own Concern
+## Reflection Inside the SDK Is Its Own Concern { #reflection-inside-sdk }
 
 Suppose the vendor SDK internally discovers credential providers through reflection.
 
@@ -1216,7 +1219,7 @@ That is a clean separation of responsibilities.
 
 ---
 
-# Dynamic Proxies Inside a Library Are Similar
+## Dynamic Proxies Inside a Library Are Similar { #dynamic-proxies-inside-library }
 
 Suppose an SDK exposes an interface and creates a runtime proxy internally:
 
@@ -1242,7 +1245,7 @@ Again, this is deployment metadata, not a Kora architectural incompatibility.
 
 ---
 
-# Runtime Annotation Scanning Inside a Library Is Similar Too
+## Runtime Annotation Scanning Inside a Library Is Similar Too { #runtime-annotation-scanning }
 
 A validation engine, serializer, ORM, or SDK may inspect annotations dynamically.
 
@@ -1266,7 +1269,7 @@ They operate at different times for different purposes.
 
 ---
 
-# The Cost Is Only a Problem If It Is Actually a Problem
+## The Cost Is Only a Problem If It Is Actually a Problem { #cost-is-a-problem }
 
 Engineering should resist ideological performance arguments.
 
@@ -1299,7 +1302,7 @@ That does not imply every reflective use in the JVM ecosystem is automatically u
 
 ---
 
-# Compile-Time Generation Is About Repeated Framework Work
+## Compile-Time Generation Is About Repeated Framework Work { #compile-time-repeated-work }
 
 Dependency injection is an excellent example.
 
@@ -1322,7 +1325,7 @@ Not all reflection has the same architectural significance.
 
 ---
 
-# AOP Is Similar
+## AOP Is Similar { #aop-is-similar }
 
 Kora generates AOP subclasses because method interception is a framework-owned mechanism and can be constructed ahead of time.
 
@@ -1346,7 +1349,7 @@ Kora's own aspect behavior remains generated and inspectable.
 
 ---
 
-# Serialization Can Be Mixed Too
+## Serialization Can Be Mixed Too { #serialization-mixed }
 
 An application may use Kora-generated JSON mapping for most HTTP APIs and also depend on a library that uses Jackson reflection internally.
 
@@ -1370,7 +1373,7 @@ Again, framework architecture does not need to impose global uniformity.
 
 ---
 
-# Testing Libraries Are an Obvious Example
+## Testing Libraries Are an Obvious Example { #testing-libraries }
 
 Many test frameworks and mocking libraries use reflection, instrumentation, agents, proxies, or runtime bytecode generation.
 
@@ -1384,7 +1387,7 @@ That is expected.
 
 ---
 
-# Development Tooling Is Another Layer
+## Development Tooling Is Another Layer { #development-tooling }
 
 The same application may use:
 
@@ -1405,7 +1408,7 @@ It describes framework architecture, not the metaphysics of the process.
 
 ---
 
-# The JVM Remains the Platform
+## The JVM Remains the Platform { #jvm-remains-platform }
 
 This is the most important conceptual anchor.
 
@@ -1435,7 +1438,7 @@ Not a compatibility restriction.
 
 ---
 
-# Native Image Changes the Platform Assumptions
+## Native Image Changes the Platform Assumptions { #native-image-platform-assumptions }
 
 When using Native Image, the execution environment changes.
 
@@ -1478,7 +1481,7 @@ That does not change whether the library is usable in a JVM-based Kora service.
 
 ---
 
-# Native Image Compatibility Should Be Dependency-by-Dependency
+## Native Image Compatibility Should Be Dependency-by-Dependency { #native-image-dependency-by-dependency }
 
 If Native Image is required, treat compatibility as a dependency inventory.
 
@@ -1500,7 +1503,7 @@ Kora's advantage is that the framework itself introduces relatively few addition
 
 ---
 
-# A Cleaner Baseline Matters
+## A Cleaner Baseline Matters { #cleaner-baseline }
 
 Consider two applications with the same third-party SDK.
 
@@ -1534,7 +1537,7 @@ That is the fair Native Image claim.
 
 ---
 
-# "No Reflection in Kora" Should Be Read Precisely
+## "No Reflection in Kora" Should Be Read Precisely { #no-reflection-precisely }
 
 A technically precise interpretation is:
 
@@ -1552,7 +1555,7 @@ Kora makes the first claim.
 
 ---
 
-# "No Dynamic Proxies" Should Also Be Read Precisely
+## "No Dynamic Proxies" Should Also Be Read Precisely { #no-dynamic-proxies-precisely }
 
 Similarly:
 
@@ -1574,7 +1577,7 @@ Again, scope matters.
 
 ---
 
-# "No Runtime Bytecode Generation" Is Also Scoped
+## "No Runtime Bytecode Generation" Is Also Scoped { #no-runtime-bytecode-scoped }
 
 Kora avoids runtime bytecode generation for its own framework mechanisms.
 
@@ -1596,7 +1599,7 @@ global process restriction
 
 ---
 
-# What Would Actually Make a Library Hard to Use With Kora?
+## What Would Actually Make a Library Hard to Use With Kora? { #library-hard-to-use }
 
 A library can still be awkward for Kora, but usually for ordinary architectural reasons.
 
@@ -1626,7 +1629,7 @@ Compatibility is architectural, not ideological.
 
 ---
 
-# Threading Model Matters More Than Reflection in Many Cases
+## Threading Model Matters More Than Reflection in Many Cases { #threading-model }
 
 Kora 2 executes ordinary application code synchronously on virtual threads.
 
@@ -1650,7 +1653,7 @@ This is why compatibility must be evaluated in engineering terms rather than by 
 
 ---
 
-# Lifecycle Matters Too
+## Lifecycle Matters Too { #lifecycle-matters }
 
 If a library creates:
 
@@ -1681,7 +1684,7 @@ Reflection inside the library is orthogonal.
 
 ---
 
-# Configuration Is Usually Simple
+## Configuration Is Usually Simple { #configuration-simple }
 
 A third-party SDK can be configured through a Kora config interface and then constructed with its native builder.
 
@@ -1747,7 +1750,7 @@ Kora does not care unless the deployment model or performance requirements make 
 
 ---
 
-# Telemetry Can Be Added Outside the Library
+## Telemetry Can Be Added Outside the Library { #telemetry-outside-library }
 
 A library does not need native Kora support to participate in observability.
 
@@ -1765,7 +1768,7 @@ No architecture bridge is required.
 
 ---
 
-# Probes Can Be Added Independently
+## Probes Can Be Added Independently { #probes-independently }
 
 The same applies to readiness.
 
@@ -1779,7 +1782,7 @@ Operational integration and implementation strategy are separate concerns.
 
 ---
 
-# A Real Integration Is Often Smaller Than People Expect
+## A Real Integration Is Often Smaller Than People Expect { #real-integration-smaller }
 
 The phrase "Kora does not support library X" can sound like a serious compatibility gap.
 
@@ -1802,7 +1805,7 @@ Usability often requires much less.
 
 ---
 
-# Kora Gives a Default Architecture, Not an Ecosystem Purity Test
+## Kora Gives a Default Architecture, Not an Ecosystem Purity Test { #default-architecture }
 
 This is the best way to summarize the extension model:
 
@@ -1829,7 +1832,7 @@ That would undermine the very idea of a JVM ecosystem.
 
 ---
 
-# Framework-Owned Mechanics and External Technology Should Be Treated Differently
+## Framework-Owned Mechanics and External Technology Should Be Treated Differently { #framework-owned-mechanics }
 
 A useful decision rule is:
 
@@ -1851,7 +1854,7 @@ It also keeps the framework small.
 
 ---
 
-# This Is Why Kora Can Be Both Opinionated and Open
+## This Is Why Kora Can Be Both Opinionated and Open { #opinionated-and-open }
 
 At first glance, compile-time frameworks can seem restrictive because they make strong architectural choices.
 
@@ -1867,7 +1870,7 @@ How that object implements itself is largely its own concern.
 
 ---
 
-# The Dependency Graph Does Not Care How an Object Works Internally
+## The Dependency Graph Does Not Care How an Object Works Internally { #dependency-graph-internals }
 
 This point is almost embarrassingly simple, but it clarifies the whole topic.
 
@@ -1900,7 +1903,7 @@ Dependency injection is about object relationships, not philosophical conformity
 
 ---
 
-# Compile-Time DI and Dynamic Internals Coexist Naturally
+## Compile-Time DI and Dynamic Internals Coexist Naturally { #compile-time-di-dynamic }
 
 The complete shape can therefore be:
 
@@ -1932,7 +1935,7 @@ There is no contradiction.
 
 ---
 
-# Native Image Is Where the Boundary Becomes Visible
+## Native Image Is Where the Boundary Becomes Visible { #native-image-boundary }
 
 When the application moves from HotSpot to Native Image, the second half of that diagram matters to the AOT compiler.
 
@@ -1946,7 +1949,7 @@ This is precisely why Kora compatibility and Native Image compatibility must be 
 
 ---
 
-# When a Library Really Is Native-Image Hostile
+## When a Library Really Is Native-Image Hostile { #native-image-hostile }
 
 Some libraries are fundamentally poor fits for Native Image.
 
@@ -1971,7 +1974,7 @@ It is not evidence that Kora cannot use ordinary Java libraries.
 
 ---
 
-# HotSpot Is Still a First-Class Deployment Choice
+## HotSpot Is Still a First-Class Deployment Choice { #hotspot-first-class }
 
 The JVM remains extraordinarily capable.
 
@@ -1999,7 +2002,7 @@ That is an important architectural freedom.
 
 ---
 
-# Kora's Runtime Performance Argument Survives Third-Party Libraries
+## Kora's Runtime Performance Argument Survives Third-Party Libraries { #runtime-performance-argument }
 
 Suppose a service uses ten libraries, two of which are relatively dynamic.
 
@@ -2022,7 +2025,7 @@ That is not how additive costs work.
 
 ---
 
-# Think in Execution Paths
+## Think in Execution Paths { #execution-paths }
 
 A better performance model is:
 
@@ -2058,7 +2061,7 @@ therefore compile-time performance advantage is gone
 
 ---
 
-# Think in Frequency Too
+## Think in Frequency Too { #think-in-frequency }
 
 Even inside path B, frequency matters.
 
@@ -2082,7 +2085,7 @@ Mechanism labels are not performance profiles.
 
 ---
 
-# Native Image Has the Same Principle
+## Native Image Has the Same Principle { #native-image-same-principle }
 
 For Native Image, what matters is not morally whether the dependency uses reflection.
 
@@ -2096,7 +2099,7 @@ The implementation details matter more than the label.
 
 ---
 
-# Reachability Metadata Localizes the Problem
+## Reachability Metadata Localizes the Problem { #reachability-metadata-localizes }
 
 One of the best properties of Native Image metadata is locality.
 
@@ -2126,7 +2129,7 @@ The problem is dependency-specific.
 
 ---
 
-# This Is Better Than Framework-Wide Hint Accumulation
+## This Is Better Than Framework-Wide Hint Accumulation { #framework-wide-hint }
 
 In a runtime-heavy framework, native support may require a large framework-specific layer of hints covering container internals, proxies, reflection, conditions, serializers, and libraries.
 
@@ -2150,7 +2153,7 @@ That is a genuine maintainability benefit.
 
 ---
 
-# The Framework's Native Image Guide Reflects This Philosophy
+## The Framework's Native Image Guide Reflects This Philosophy { #native-image-guide-philosophy }
 
 Kora's Native Image support documents:
 
@@ -2169,7 +2172,7 @@ That is the right level of pragmatism.
 
 ---
 
-# Runtime Metadata Is Not Necessarily Bad Design
+## Runtime Metadata Is Not Necessarily Bad Design { #runtime-metadata-not-bad }
 
 There is another philosophical error worth avoiding.
 
@@ -2193,7 +2196,7 @@ It simply chooses a different trade-off for its own production backend framework
 
 ---
 
-# The Best Architecture Uses Static Knowledge When It Exists
+## The Best Architecture Uses Static Knowledge When It Exists { #static-knowledge }
 
 The stronger principle is:
 
@@ -2215,7 +2218,7 @@ That distinction avoids ideology.
 
 ---
 
-# Compile-Time and Runtime Techniques Can Coexist in One Service
+## Compile-Time and Runtime Techniques Can Coexist in One Service { #compile-time-runtime-coexist }
 
 A modern backend may combine all of these:
 
@@ -2239,7 +2242,7 @@ Each layer solves a different problem.
 
 ---
 
-# JVM Libraries Do Not Need a "Kora Certification"
+## JVM Libraries Do Not Need a "Kora Certification" { #jvm-libraries-no-certification }
 
 There is no general requirement that a library be explicitly designed for Kora before it can be used.
 
@@ -2253,7 +2256,7 @@ They are not the border of the ecosystem.
 
 ---
 
-# Official Module vs Direct Library Use
+## Official Module vs Direct Library Use { #official-module-vs-direct }
 
 An official Kora integration typically adds things such as:
 
@@ -2272,7 +2275,7 @@ It is not necessarily basic compatibility.
 
 ---
 
-# This Matters for Small Ecosystem Criticism
+## This Matters for Small Ecosystem Criticism { #small-ecosystem-criticism }
 
 A common criticism of smaller frameworks is:
 
@@ -2300,7 +2303,7 @@ This is why framework extensibility matters more than raw starter count.
 
 ---
 
-# A Concrete Integration Pattern
+## A Concrete Integration Pattern { #concrete-integration-pattern }
 
 Imagine an analytics SDK that has no official Kora module.
 
@@ -2346,7 +2349,7 @@ The Kora-side architecture remains almost unchanged.
 
 ---
 
-# A "Bridge" Is Only Needed When There Is an Actual Semantic Mismatch
+## A "Bridge" Is Only Needed When There Is an Actual Semantic Mismatch { #bridge-semantic-mismatch }
 
 Sometimes a real adapter is necessary.
 
@@ -2370,7 +2373,7 @@ This is another reason mechanism-based compatibility claims are misleading.
 
 ---
 
-# Native Image Compatibility Can Be Improved Incrementally
+## Native Image Compatibility Can Be Improved Incrementally { #native-image-incremental }
 
 A team does not have to solve every Native Image concern on day one.
 
@@ -2389,7 +2392,7 @@ This prevents native compatibility from constraining library choice prematurely 
 
 ---
 
-# Native Image Should Be an Explicit Non-Functional Requirement
+## Native Image Should Be an Explicit Non-Functional Requirement { #native-image-non-functional }
 
 If the project *must* ship as a native executable, put that requirement next to:
 
@@ -2408,7 +2411,7 @@ This keeps architectural requirements honest.
 
 ---
 
-# Kora Makes the Native Requirement Easier, Not Automatic
+## Kora Makes the Native Requirement Easier, Not Automatic { #native-requirement-easier }
 
 The fair statement is:
 
@@ -2432,7 +2435,7 @@ That is what Kora does.
 
 ---
 
-# The Native Image Boundary Is Also Useful for Debugging
+## The Native Image Boundary Is Also Useful for Debugging { #native-image-boundary-debugging }
 
 Kora's Native Image guide suggests isolating suspect dependencies with minimal probes.
 
@@ -2446,7 +2449,7 @@ Isolation clarifies ownership.
 
 ---
 
-# Normal JVM Execution Remains the Reference Point
+## Normal JVM Execution Remains the Reference Point { #normal-jvm-reference }
 
 When a Kora application works on a normal JVM but fails as a Native Image, that observation already narrows the problem.
 
@@ -2467,7 +2470,7 @@ This makes deployment-specific debugging much more disciplined.
 
 ---
 
-# Reflection Performance Should Be Measured, Not Feared
+## Reflection Performance Should Be Measured, Not Feared { #reflection-performance-measured }
 
 A small reflective library may be completely irrelevant to service performance.
 
@@ -2495,7 +2498,7 @@ That makes the remaining profile more application-shaped.
 
 ---
 
-# This Is a Better Definition of Transparency
+## This Is a Better Definition of Transparency { #definition-of-transparency }
 
 Transparency does not mean every line of every dependency follows one architectural style.
 
@@ -2517,7 +2520,7 @@ The responsibilities are separated.
 
 ---
 
-# Compile-Time Is a Tool, Not an Ideology
+## Compile-Time Is a Tool, Not an Ideology { #compile-time-tool }
 
 This is the larger philosophical conclusion.
 
@@ -2541,7 +2544,7 @@ Kora's value comes from making a disciplined choice, not an absolutist one.
 
 ---
 
-# Kora's Actual Philosophy Is Selective
+## Kora's Actual Philosophy Is Selective { #kora-philosophy-selective }
 
 A concise formulation is:
 
@@ -2560,7 +2563,7 @@ This model is both performant and ecosystem-friendly.
 
 ---
 
-# The Wrong Mental Model
+## The Wrong Mental Model { #wrong-mental-model }
 
 The wrong model is:
 
@@ -2578,7 +2581,7 @@ It is not.
 
 ---
 
-# The Better Mental Model
+## The Better Mental Model { #better-mental-model }
 
 The better model is:
 
@@ -2611,7 +2614,7 @@ This accurately separates concerns.
 
 ---
 
-# A Decision Matrix
+## A Decision Matrix { #decision-matrix }
 
 A practical compatibility matrix looks like this:
 
@@ -2634,7 +2637,7 @@ That is the entire point.
 
 ---
 
-# A Practical Evaluation Workflow
+## A Practical Evaluation Workflow { #evaluation-workflow }
 
 When considering a new library for Kora, use this sequence.
 
@@ -2662,7 +2665,7 @@ This ordering prevents three separate engineering concerns from becoming one vag
 
 ---
 
-# Why the Myth Persists
+## Why the Myth Persists { #why-myth-persists }
 
 The myth is understandable because compile-time frameworks are often marketed together with Native Image.
 
@@ -2696,7 +2699,7 @@ Those restrictions do not flow backward and become rules of the JVM deployment.
 
 ---
 
-# Framework Native-Friendliness Is Different From Application Native-Friendliness
+## Framework Native-Friendliness Is Different From Application Native-Friendliness { #framework-native-friendliness }
 
 A framework can be highly Native Image friendly while an application is not.
 
@@ -2720,7 +2723,7 @@ It simply means application dependencies define the final compatibility envelope
 
 ---
 
-# Application Native-Friendliness Is the Intersection of Dependencies
+## Application Native-Friendliness Is the Intersection of Dependencies { #application-native-friendliness }
 
 A better model is:
 
@@ -2744,7 +2747,7 @@ Its advantage is making its portion relatively strong.
 
 ---
 
-# This Is True of Every Java Framework
+## This Is True of Every Java Framework { #true-of-every-java-framework }
 
 No Java framework can guarantee Native Image compatibility for arbitrary application dependencies.
 
@@ -2763,7 +2766,7 @@ Therefore dependency-level evaluation is unavoidable.
 
 ---
 
-# Kora's Clean Baseline Is Still Valuable
+## Kora's Clean Baseline Is Still Valuable { #kora-clean-baseline }
 
 The fact that Native Image is ecosystem-wide does not reduce Kora's advantage.
 
@@ -2787,7 +2790,7 @@ That is operationally useful.
 
 ---
 
-# A Library Can Even Use Reflection Intentionally for Extensibility
+## A Library Can Even Use Reflection Intentionally for Extensibility { #reflection-for-extensibility }
 
 Consider a library that discovers codecs from annotations at runtime.
 
@@ -2807,7 +2810,7 @@ Kora does not require architectural monoculture.
 
 ---
 
-# Mixed Strategies Are Often the Practical Optimum
+## Mixed Strategies Are Often the Practical Optimum { #mixed-strategies }
 
 Real applications are heterogeneous.
 
@@ -2832,7 +2835,7 @@ Framework design should allow composition.
 
 ---
 
-# This Is Also Why Thin Abstractions Matter
+## This Is Also Why Thin Abstractions Matter { #thin-abstractions }
 
 If Kora wrapped every third-party library behind a thick proprietary model, incompatibilities would be harder to isolate.
 
@@ -2852,7 +2855,7 @@ This improves both ordinary JVM integration and native-image troubleshooting.
 
 ---
 
-# The Underlying Ecosystem Remains Usable
+## The Underlying Ecosystem Remains Usable { #underlying-ecosystem }
 
 A Kora application can benefit from the maturity of the Java ecosystem:
 
@@ -2872,7 +2875,7 @@ That is an important reason the framework can remain relatively small.
 
 ---
 
-# The Right Compatibility Claim
+## The Right Compatibility Claim { #right-compatibility-claim }
 
 Instead of saying:
 
@@ -2902,7 +2905,7 @@ This vocabulary is much more accurate.
 
 ---
 
-# The Strongest Example: Kora Documents Reflection Metadata Itself
+## The Strongest Example: Kora Documents Reflection Metadata Itself { #kora-documents-reflection }
 
 Perhaps the clearest evidence is that Kora's own Native Image documentation explicitly explains how third-party reflection metadata is handled.
 
@@ -2916,7 +2919,7 @@ It is the expected interoperability model.
 
 ---
 
-# Compile-Time Framework and Runtime Ecosystem Are Complementary
+## Compile-Time Framework and Runtime Ecosystem Are Complementary { #compile-time-runtime-complementary }
 
 The more accurate architectural story is:
 
@@ -2941,7 +2944,7 @@ Native Image remains an optional deployment optimization with explicit compatibi
 
 ---
 
-# What Kora Actually Buys You
+## What Kora Actually Buys You { #what-kora-buys }
 
 Kora's compile-time model gives you:
 
@@ -2968,7 +2971,7 @@ Understanding that boundary makes the advantages more credible, not less.
 
 ---
 
-# What Third-Party Libraries Still Decide
+## What Third-Party Libraries Still Decide { #third-party-libraries-decide }
 
 Each dependency still controls:
 
@@ -2989,7 +2992,7 @@ That is normal software composition.
 
 ---
 
-# What Deployment Still Decides
+## What Deployment Still Decides { #deployment-decides }
 
 The deployment environment controls another layer:
 
@@ -3009,7 +3012,7 @@ Framework choice and deployment choice interact, but they are not interchangeabl
 
 ---
 
-# Do Not Reject a Library for the Wrong Reason
+## Do Not Reject a Library for the Wrong Reason { #reject-library-wrong-reason }
 
 If a library is a bad choice because:
 
@@ -3031,7 +3034,7 @@ That would be self-imposed architecture purity.
 
 ---
 
-# Do Not Overstate Native Image Either
+## Do Not Overstate Native Image Either { #overstate-native-image }
 
 Native Image can provide meaningful startup and footprint advantages.
 
@@ -3047,7 +3050,7 @@ This is especially important for long-running services where HotSpot's JIT and b
 
 ---
 
-# Kora on HotSpot Is Still Fully Kora
+## Kora on HotSpot Is Still Fully Kora { #kora-on-hotspot }
 
 A Kora service does not become somehow less authentic because it runs as ordinary JVM bytecode.
 
@@ -3067,7 +3070,7 @@ Native Image is an additional deployment mode.
 
 ---
 
-# The Best Mental Model Is Layered Freedom
+## The Best Mental Model Is Layered Freedom { #layered-freedom }
 
 Kora is opinionated where opinion creates strong leverage:
 
@@ -3102,7 +3105,7 @@ This layered freedom is more useful than global architectural purity.
 
 ---
 
-# Final Myth-Busting Summary
+## Final Myth-Busting Summary { #final-myth-busting }
 
 The myth usually begins with one true statement:
 
@@ -3135,7 +3138,7 @@ A Kora application is still ordinary JVM software.
 
 ---
 
-# Conclusion: Compile-Time Where Kora Owns the Problem, Normal Java Everywhere Else
+## Conclusion: Compile-Time Where Kora Owns the Problem, Normal Java Everywhere Else { #conclusion }
 
 Kora's compile-time architecture is powerful precisely because it is targeted.
 

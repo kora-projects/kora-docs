@@ -1,10 +1,13 @@
 ---
 title: Virtual Threads First — Why the Kora Framework Is Synchronous Again
+date: 2026-09-09
 description: Why the Kora Framework is virtual-thread-first — synchronous controllers, HTTP clients, and JDBC repositories without reactive types.
 search:
   exclude: true
 ---
-# Virtual Threads First: Why Kora 2 Is Synchronous Again
+# Virtual Threads First: Why Kora 2 Is Synchronous Again { #virtual-threads-first }
+
+**September 9, 2026**
 
 For more than a decade, high-concurrency server development on the JVM appeared to move in one direction: away from blocking code and toward asynchronous, reactive, event-driven programming. The argument was compelling. Traditional Java servers frequently assigned one operating-system thread to each active request. Threads were relatively expensive, thread pools were necessarily bounded, and blocking a thread while waiting for a database or another service meant that an expensive resource was doing no useful work. If a service needed to keep tens of thousands of requests in flight, the conventional thread-per-request model could become the limiting factor.
 
@@ -37,7 +40,7 @@ This distinction is the key to understanding why Kora 2 can be synchronous witho
 
 ---
 
-## The original thread-per-request model was conceptually excellent
+## The original thread-per-request model was conceptually excellent { #thread-per-request-model }
 
 Traditional Java web programming was easy to understand because the execution model matched the structure of the business operation.
 
@@ -120,7 +123,7 @@ The direct programming model was attractive. The resource model underneath it wa
 
 ---
 
-## Reactive programming solved a real problem
+## Reactive programming solved a real problem { #reactive-solved-problem }
 
 It is easy to caricature reactive programming as unnecessary complexity introduced by framework authors. Historically, that is unfair.
 
@@ -236,7 +239,7 @@ Reactive systems therefore solved platform-thread scarcity by making **asynchron
 
 ---
 
-## The cost of encoding concurrency into every API
+## The cost of encoding concurrency into every API { #cost-of-async-types }
 
 Reactive programming can be elegant when the problem itself is naturally a stream or asynchronous pipeline. But for ordinary request/response business logic, the asynchronous type often describes the execution mechanism more than the domain.
 
@@ -357,7 +360,7 @@ Project Loom's answer is: increasingly, no.
 
 ---
 
-## Loom changes the unit of concurrency
+## Loom changes the unit of concurrency { #loom-unit-of-concurrency }
 
 Virtual threads were finalized in JDK 21 by JEP 444. A virtual thread is still a `java.lang.Thread`, but unlike a platform thread it is not permanently tied to one operating-system thread.
 
@@ -411,7 +414,7 @@ That is the central idea behind Loom.
 
 ---
 
-## Blocking a virtual thread is not the same as blocking a carrier
+## Blocking a virtual thread is not the same as blocking a carrier { #blocking-virtual-thread }
 
 The word *blocking* became overloaded during the reactive era, and this creates confusion when discussing virtual threads.
 
@@ -468,7 +471,7 @@ Application code no longer needs to manually transform the control flow into cal
 
 ---
 
-## Loom did not make blocking free
+## Loom did not make blocking free { #blocking-not-free }
 
 Virtual threads remove one important cost of blocking, not every cost.
 
@@ -518,7 +521,7 @@ This is a healthier conceptual model because execution capacity and resource cap
 
 ---
 
-## CPU-bound work is still CPU-bound
+## CPU-bound work is still CPU-bound { #cpu-bound-work }
 
 Virtual threads are designed primarily to improve the scalability of workloads that spend substantial time waiting.
 
@@ -546,7 +549,7 @@ A well-designed Kora application should still understand which resources are sca
 
 ---
 
-## What Kora 2 actually chooses
+## What Kora 2 actually chooses { #what-kora-chooses }
 
 Kora 2 does not merely support virtual threads as an optional optimization. Its public programming model is designed around them.
 
@@ -558,7 +561,7 @@ It then makes the consequences explicit: controllers, HTTP clients, repositories
 
 That design appears consistently across the framework.
 
-### HTTP server
+### HTTP server { #http-server }
 
 Kora's HTTP server documentation says request handling is synchronous and that every request is dispatched onto a virtual thread. Controllers, interceptors, and mappers return values directly rather than returning `CompletionStage`, Reactor types, or Kotlin `suspend` functions.
 
@@ -622,7 +625,7 @@ Kora 2's Undertow configuration reflects this architecture. The old choice betwe
 
 Virtual threads are not a mode layered beside another programming model. They are the execution assumption.
 
-### HTTP clients
+### HTTP clients { #http-clients }
 
 Kora 2's HTTP client contract is also synchronous:
 
@@ -656,7 +659,7 @@ A `suspend` HTTP client method is rejected by the generator.
 
 This is a major architectural statement. The framework is saying that asynchronous return types are no longer the default mechanism by which application code communicates scalability.
 
-### JDBC repositories
+### JDBC repositories { #jdbc-repositories }
 
 The same idea appears in data access.
 
@@ -693,7 +696,7 @@ With a virtual-thread application model, conventional JDBC becomes architectural
 
 This has significant consequences. JDBC is mature, extremely well understood, supported by a huge ecosystem, and maps directly onto the relational database interaction model used by most Java teams. Kora can therefore keep the thin abstraction it wants around JDBC rather than introducing a reactive data-access model merely to preserve event-loop liveness.
 
-### Scheduling
+### Scheduling { #scheduling }
 
 Kora's scheduling APIs follow the same direction. Scheduled methods are ordinary methods, and Kotlin scheduled methods must not be `suspend`.
 
@@ -701,7 +704,7 @@ Again, the framework does not ask the application to encode asynchronous executi
 
 ---
 
-## Kora is synchronous at the API boundary, not naive about I/O
+## Kora is synchronous at the API boundary, not naive about I/O { #sync-at-api-boundary }
 
 Calling Kora 2 "blocking" without qualification can be misleading.
 
@@ -743,7 +746,7 @@ The runtime and libraries can optimize *how waiting is implemented* without requ
 
 ---
 
-## Why a blocking API becomes a good API again
+## Why a blocking API becomes a good API again { #blocking-api-good }
 
 Before Loom, a blocking API carried an implicit architectural warning:
 
@@ -791,7 +794,7 @@ The JVM can handle the scheduling consequence.
 
 This restores several useful properties of ordinary Java.
 
-### Control flow is visible in source code
+### Control flow is visible in source code { #control-flow }
 
 A developer can read:
 
@@ -817,7 +820,7 @@ and understand the order of execution immediately.
 
 There is less accidental framework vocabulary between the business algorithm and its implementation.
 
-### Exceptions use the normal Java model
+### Exceptions use the normal Java model { #exceptions }
 
 Failures can propagate through the stack naturally:
 
@@ -843,7 +846,7 @@ Failures can propagate through the stack naturally:
 
 There is no separate reactive error channel and no need to remember which operator transforms, resumes, wraps, or delays an error.
 
-### Resource cleanup stays lexical
+### Resource cleanup stays lexical { #resource-cleanup }
 
 `try-with-resources` works exactly as intended:
 
@@ -865,7 +868,7 @@ There is no separate reactive error channel and no need to remember which operat
 
 The code that acquires a resource and the code that releases it remain structurally connected.
 
-### Transactions remain intuitive
+### Transactions remain intuitive { #transactions }
 
 A synchronous transaction can map onto an ordinary call scope:
 
@@ -891,7 +894,7 @@ A synchronous transaction can map onto an ordinary call scope:
 
 There is no need to ensure that transaction context survives scheduler changes or reactive subscription boundaries.
 
-### Debuggers see a logical stack
+### Debuggers see a logical stack { #debuggers }
 
 When a request is suspended in a blocking operation, its virtual-thread stack still represents the logical call chain.
 
@@ -899,7 +902,7 @@ This is one of Loom's most important engineering benefits. The runtime provides 
 
 ---
 
-## The stack is a feature, not overhead to eliminate
+## The stack is a feature, not overhead to eliminate { #stack-is-feature }
 
 Reactive architectures often replace a deep blocking stack with an explicit continuation graph.
 
@@ -929,7 +932,7 @@ This aligns well with Kora's broader philosophy: generated code, direct contract
 
 ---
 
-## Virtual threads and structured concurrency
+## Virtual threads and structured concurrency { #structured-concurrency }
 
 Removing reactive return types raises an obvious question:
 
@@ -1032,7 +1035,7 @@ That is a much smaller conceptual surface than making every potentially waiting 
 
 ---
 
-## Reactive programming and virtual threads optimize different layers
+## Reactive programming and virtual threads optimize different layers { #different-layers }
 
 It would be a mistake to claim that virtual threads make reactive programming obsolete.
 
@@ -1075,7 +1078,7 @@ When the problem is a transaction, RPC call, repository lookup, or request handl
 
 ---
 
-## Kora 2 removes the dual-programming-model problem
+## Kora 2 removes the dual-programming-model problem { #no-dual-programming-model }
 
 Frameworks that evolved through the reactive transition often support several execution models simultaneously.
 
@@ -1129,7 +1132,7 @@ The framework becomes more coherent because application code does not need to ch
 
 ---
 
-## Kotlin becomes simpler too
+## Kotlin becomes simpler too { #kotlin-simpler }
 
 Kotlin coroutines provide an excellent concurrency model, especially in ecosystems designed around suspending APIs. But they also introduce a second concurrency abstraction alongside Java threads.
 
@@ -1184,7 +1187,7 @@ Kotlin remains useful for its language features without requiring coroutines to 
 
 ---
 
-## Why this fits Kora's "thin abstractions" philosophy
+## Why this fits Kora's "thin abstractions" philosophy { #thin-abstractions }
 
 Kora's landing page emphasizes thin abstractions around familiar technologies such as JDBC, HTTP, Kafka, and gRPC.
 
@@ -1230,7 +1233,7 @@ This is especially important for a framework whose stated goals include transpar
 
 ---
 
-## Why it fits compile-time generation
+## Why it fits compile-time generation { #compile-time-generation }
 
 Kora performs dependency wiring, HTTP handler generation, repository generation, mapping, AOP, and other framework work at compile time.
 
@@ -1272,7 +1275,7 @@ That is a recurring Kora design pattern:
 
 ---
 
-## Carrier threads: the detail developers must understand
+## Carrier threads: the detail developers must understand { #carrier-threads }
 
 Virtual threads simplify application code, but developers should still understand the carrier model because it explains the remaining failure modes.
 
@@ -1310,7 +1313,7 @@ The JDK provides JFR events and virtual-thread diagnostics to help investigate s
 
 ---
 
-## An important JDK 24+ correction: `synchronized` is no longer the old Loom trap
+## An important JDK 24+ correction: `synchronized` is no longer the old Loom trap { #jdk24-synchronized }
 
 Many early virtual-thread articles repeat this rule:
 
@@ -1338,7 +1341,7 @@ Virtual threads do not remove bad locking architecture. JEP 491 removes an imple
 
 ---
 
-## Database pools become clearer, not unnecessary
+## Database pools become clearer, not unnecessary { #database-pools }
 
 A common misconception is that virtual threads make connection pools obsolete.
 
@@ -1372,7 +1375,7 @@ Kora's JDBC-first design fits naturally into this model because JDBC connection 
 
 ---
 
-## HTTP connection pools still matter
+## HTTP connection pools still matter { #http-connection-pools }
 
 The same rule applies to outbound HTTP.
 
@@ -1397,7 +1400,7 @@ They do not remove the need for concurrency control itself.
 
 ---
 
-## Timeouts become even more important
+## Timeouts become even more important { #timeouts }
 
 Cheap waiting can make it easier to tolerate many blocked operations, but cheap waiting is still waiting.
 
@@ -1430,7 +1433,7 @@ That is a much more accurate way to reason about distributed systems.
 
 ---
 
-## Retries can still create concurrency explosions
+## Retries can still create concurrency explosions { #retries }
 
 Reactive or synchronous, retries are dangerous when a dependency is already failing.
 
@@ -1452,7 +1455,7 @@ Virtual threads simplify the code that uses these policies. They do not replace 
 
 ---
 
-## ThreadLocals become useful again—but should still be used deliberately
+## ThreadLocals become useful again—but should still be used deliberately { #threadlocals }
 
 Reactive systems complicated `ThreadLocal` because a logical request could move across many worker threads. Frameworks therefore introduced explicit context propagation mechanisms.
 
@@ -1474,7 +1477,7 @@ The broader point remains: Loom lets request context follow the logical thread w
 
 ---
 
-## "Do not pool virtual threads"
+## "Do not pool virtual threads" { #do-not-pool }
 
 Platform threads are expensive enough that applications historically reused them in pools.
 
@@ -1514,7 +1517,7 @@ Kora's HTTP design follows this idea by dispatching requests to virtual threads 
 
 ---
 
-## What "Virtual Threads First" means architecturally
+## What "Virtual Threads First" means architecturally { #virtual-threads-first-architecturally }
 
 For Kora, virtual threads are more than a performance option. They shape API design.
 
@@ -1554,7 +1557,7 @@ That is arguably more important than the raw performance characteristics of virt
 
 ---
 
-## The historical cycle is not actually a circle
+## The historical cycle is not actually a circle { #historical-cycle }
 
 At first glance the industry appears to have returned to where it started:
 
@@ -1566,7 +1569,7 @@ thread per request
 
 But the final architecture is materially different from the first.
 
-### Old thread-per-request
+### Old thread-per-request { #old-thread-per-request }
 
 ```text
 1 request
@@ -1578,7 +1581,7 @@ But the final architecture is materially different from the first.
 
 Scalability was bounded by operating-system threads.
 
-### Reactive
+### Reactive { #reactive }
 
 ```text
 many requests
@@ -1590,7 +1593,7 @@ explicit continuations
 
 Scalability improved, but application code had to participate in multiplexing.
 
-### Virtual-thread request model
+### Virtual-thread request model { #virtual-thread-request-model }
 
 ```text
 1 request
@@ -1612,11 +1615,11 @@ The programming model returns to something simple because the runtime became sop
 
 ---
 
-## Why this matters for framework design
+## Why this matters for framework design { #framework-design }
 
 Before Loom, framework authors had to choose between two unattractive options for high concurrency.
 
-### Option A: keep synchronous APIs
+### Option A: keep synchronous APIs { #option-a }
 
 Advantages:
 
@@ -1629,7 +1632,7 @@ Disadvantage:
 
 - every waiting request consumes a platform worker thread.
 
-### Option B: expose asynchronous APIs
+### Option B: expose asynchronous APIs { #option-b }
 
 Advantages:
 
@@ -1645,7 +1648,7 @@ Disadvantages:
 
 Virtual threads create a third option:
 
-### Option C: synchronous APIs on lightweight threads
+### Option C: synchronous APIs on lightweight threads { #option-c }
 
 Advantages:
 
@@ -1661,7 +1664,7 @@ Kora 2 is designed around Option C.
 
 ---
 
-## Why this can reduce framework code
+## Why this can reduce framework code { #reduce-framework-code }
 
 Reactive support is not free for the framework either.
 
@@ -1697,7 +1700,7 @@ This aligns with Kora's "one clear way" philosophy. A smaller set of execution m
 
 ---
 
-## Why this can reduce application test complexity
+## Why this can reduce application test complexity { #reduce-test-complexity }
 
 Synchronous methods are easy to call in tests.
 
@@ -1736,7 +1739,7 @@ The value is not that asynchronous code is untestable. It is that asynchronous i
 
 ---
 
-## Why this can improve debugging
+## Why this can improve debugging { #improve-debugging }
 
 Consider an exception from a deeply nested service call.
 
@@ -1775,7 +1778,7 @@ That is exactly the kind of transparency Kora's compile-time architecture is des
 
 ---
 
-## Why this can improve observability
+## Why this can improve observability { #improve-observability }
 
 Observability is fundamentally about reconstructing causality.
 
@@ -1807,7 +1810,7 @@ Again, the benefit comes from reducing the number of concurrency dialects the fr
 
 ---
 
-## Virtual threads make familiar Java libraries more strategically valuable
+## Virtual threads make familiar Java libraries more strategically valuable { #familiar-libraries }
 
 The Java ecosystem contains decades of mature blocking APIs.
 
@@ -1847,7 +1850,7 @@ This can significantly reduce integration complexity.
 
 ---
 
-## But compatibility must be measured, not assumed
+## But compatibility must be measured, not assumed { #compatibility-measured }
 
 "Blocking API" does not automatically mean "virtual-thread friendly."
 
@@ -1881,7 +1884,7 @@ The virtual-thread model simplifies application code, but it does not absolve th
 
 ---
 
-## Blocking can be the more honest abstraction
+## Blocking can be the more honest abstraction { #blocking-honest }
 
 One of the strongest arguments for Kora's design is semantic rather than performance-related.
 
@@ -1927,7 +1930,7 @@ It lets the source code describe logical dependencies rather than scheduling mec
 
 ---
 
-## The effect on service-layer API design
+## The effect on service-layer API design { #service-layer-design }
 
 Once framework boundaries are synchronous, service APIs become much cleaner.
 
@@ -2002,7 +2005,7 @@ That is classic application architecture, made scalable again by the JVM.
 
 ---
 
-## The effect on code review and maintenance
+## The effect on code review and maintenance { #code-review }
 
 A direct call chain is easier to review because control flow is explicit.
 
@@ -2035,7 +2038,7 @@ Kora's compiler already validates framework structure aggressively. A simpler ex
 
 ---
 
-## The effect on onboarding
+## The effect on onboarding { #onboarding }
 
 A Java developer joining a Kora 2 service can rely heavily on ordinary JVM knowledge.
 
@@ -2069,7 +2072,7 @@ A concurrency model is not only a runtime choice. It is a training and maintenan
 
 ---
 
-## The effect on AI-assisted development
+## The effect on AI-assisted development { #ai-assisted }
 
 The same properties that help human developers also help code-generating and code-analyzing agents.
 
@@ -2111,37 +2114,37 @@ That combination—simple source semantics plus strong compile-time feedback—i
 
 ---
 
-## When should Kora developers still think explicitly about concurrency?
+## When should Kora developers still think explicitly about concurrency? { #concurrency-considerations }
 
 Virtual threads allow developers to ignore many scheduling details, but not all concurrency.
 
 There are several cases where concurrency should still be designed explicitly.
 
-### Parallel fan-out
+### Parallel fan-out { #parallel-fan-out }
 
 If a request needs three independent remote calls and latency matters, execute them concurrently using structured concurrency rather than sequentially.
 
-### Shared mutable state
+### Shared mutable state { #shared-mutable-state }
 
 Virtual threads are still threads. Data races, visibility rules, locks, and atomicity still matter.
 
-### Scarce downstream resources
+### Scarce downstream resources { #scarce-resources }
 
 Use connection pools, rate limits, semaphores, bulkheads, and other capacity controls.
 
-### CPU-heavy work
+### CPU-heavy work { #cpu-heavy }
 
 Do not assume more virtual threads increase CPU throughput.
 
-### Long native calls
+### Long native calls { #long-native-calls }
 
 Investigate carrier pinning and native integration behavior.
 
-### Streaming
+### Streaming { #streaming }
 
 If a problem is fundamentally an unbounded or demand-driven stream, a streaming abstraction may still be better than collecting everything into a blocking request/response API.
 
-### Cancellation
+### Cancellation { #cancellation }
 
 Distributed cancellation remains a system concern. Structured concurrency and interruption can help locally, but external calls and libraries must cooperate correctly.
 
@@ -2151,7 +2154,7 @@ It is to ensure that concurrency appears where the system genuinely needs it rat
 
 ---
 
-## A better mental model for blocking in Kora 2
+## A better mental model for blocking in Kora 2 { #mental-model }
 
 In older high-concurrency Java architectures, developers were often taught:
 
@@ -2183,7 +2186,7 @@ Once these are separated, system design becomes clearer.
 
 ---
 
-## Kora's concurrency stack
+## Kora's concurrency stack { #concurrency-stack }
 
 The Kora 2 architecture can be summarized in layers.
 
@@ -2219,7 +2222,7 @@ The runtime handles multiplexing.
 
 ---
 
-## From colored functions back to ordinary functions
+## From colored functions back to ordinary functions { #colored-functions }
 
 Asynchronous ecosystems sometimes use the term **function coloring** to describe APIs where asynchronous functions have a different type and composition model from synchronous functions.
 
@@ -2250,7 +2253,7 @@ That is one of the deepest architectural consequences of virtual threads.
 
 ---
 
-## What Kora gives up by making this choice
+## What Kora gives up by making this choice { #what-kora-gives-up }
 
 Every architectural simplification removes options.
 
@@ -2278,7 +2281,7 @@ That is a deliberate framework trade-off rather than an accidental limitation.
 
 ---
 
-## Why "synchronous again" is the important phrase
+## Why "synchronous again" is the important phrase { #synchronous-again }
 
 The word **again** matters because Kora 2's synchronous design is not based on ignoring the history of reactive systems.
 
@@ -2308,11 +2311,11 @@ That is progress precisely because the lessons of reactive systems have moved do
 
 ---
 
-## The deeper architectural lesson
+## The deeper architectural lesson { #architectural-lesson }
 
 The history of server concurrency can be read as a sequence of where the continuation lives.
 
-### Platform-thread era
+### Platform-thread era { #platform-thread-era }
 
 The continuation is represented by an OS-backed Java thread.
 
@@ -2320,7 +2323,7 @@ The continuation is represented by an OS-backed Java thread.
 continuation = platform thread + stack
 ```
 
-### Reactive era
+### Reactive era { #reactive-era }
 
 The continuation is represented explicitly in application/library objects.
 
@@ -2328,7 +2331,7 @@ The continuation is represented explicitly in application/library objects.
 continuation = callback / future / publisher state
 ```
 
-### Loom era
+### Loom era { #loom-era }
 
 The continuation is represented again by a Java thread and stack, but the JVM can suspend it cheaply.
 
@@ -2344,7 +2347,7 @@ Kora 2 chooses the version where the JVM owns that complexity.
 
 ---
 
-## A practical Kora 2 request
+## A practical Kora 2 request { #practical-request }
 
 Consider a typical endpoint:
 
@@ -2442,7 +2445,7 @@ That is the practical meaning of Kora's virtual-thread-first model.
 
 ---
 
-## And when the calls are independent
+## And when the calls are independent { #independent-calls }
 
 If customer data and fraud metadata can be loaded independently, the service can introduce concurrency deliberately:
 
@@ -2503,7 +2506,7 @@ This is arguably a more precise use of concurrency in the type and control-flow 
 
 ---
 
-## Performance is not only requests per second
+## Performance is not only requests per second { #performance }
 
 The value of this architecture should not be reduced to benchmark throughput.
 
@@ -2530,7 +2533,7 @@ The performance benefit is therefore not just that the service may handle many c
 
 ---
 
-## The real meaning of "Virtual Threads First"
+## The real meaning of "Virtual Threads First" { #real-meaning }
 
 "Virtual Threads First" should not be interpreted as:
 
@@ -2558,7 +2561,7 @@ It is one of the reasons the API can be designed this way at all.
 
 ---
 
-## Conclusion
+## Conclusion { #conclusion }
 
 The story of server concurrency on the JVM is often told as a contest between blocking and non-blocking programming. That framing is now too simplistic.
 

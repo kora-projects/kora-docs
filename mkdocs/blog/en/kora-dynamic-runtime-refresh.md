@@ -1,10 +1,13 @@
 ---
 title: Do Production Services Really Need a Dynamic Application Graph? — Kora Framework
+date: 2026-08-07
 description: How the Kora Framework keeps the application graph static while supporting runtime refresh, feature flags, and dynamic routing where they belong.
 search:
   exclude: true
 ---
-# Do Production Services Really Need a Dynamic Application Graph?
+# Do Production Services Really Need a Dynamic Application Graph? { #dynamic-application-graph }
+
+**August 7, 2026**
 
 The phrase *dynamic application* is used so loosely in backend engineering that it often hides several completely different requirements.
 
@@ -76,7 +79,7 @@ That is a surprisingly useful boundary.
 
 ---
 
-## The Word "Dynamic" Hides Several Different Things
+## The Word "Dynamic" Hides Several Different Things { #the-word-dynamic }
 
 A useful discussion has to separate at least three levels:
 
@@ -129,7 +132,7 @@ For the majority of production services, it is not.
 
 ---
 
-# The Typical Backend Is Structurally Predictable
+## The Typical Backend Is Structurally Predictable { #typical-backend }
 
 Consider a payment service.
 
@@ -233,7 +236,7 @@ In fact, something is gained: the compiler can verify that both providers exist 
 
 ---
 
-# Static Graph Does Not Mean Static Behavior
+## Static Graph Does Not Mean Static Behavior { #static-graph-behavior }
 
 This is the misconception worth eliminating first.
 
@@ -275,7 +278,7 @@ The service does not need a mutable type topology to be dynamic.
 
 ---
 
-# What Kora Actually Makes Static
+## What Kora Actually Makes Static { #what-kora-makes-static }
 
 Kora's compile-time model determines dependency structure before the application starts.
 
@@ -327,7 +330,7 @@ That is a much narrower meaning of static than the phrase "static application" s
 
 ---
 
-# What Kora Keeps Dynamic
+## What Kora Keeps Dynamic { #what-kora-keeps-dynamic }
 
 At runtime, Kora still manages several forms of change.
 
@@ -355,7 +358,7 @@ That distinction becomes especially clear once configuration refresh enters the 
 
 ---
 
-# Compile-Time Topology, Runtime Refresh
+## Compile-Time Topology, Runtime Refresh { #compile-time-topology }
 
 Kora 2 has an explicit runtime graph refresh mechanism.
 
@@ -409,7 +412,7 @@ It does not discover an arbitrary new application architecture.
 
 ---
 
-# `ValueOf<T>` Is the Key Abstraction
+## `ValueOf<T>` Is the Key Abstraction { #valueof-key-abstraction }
 
 Suppose we have:
 
@@ -483,7 +486,7 @@ The runtime can change which `ServiceB` instance is current.
 
 ---
 
-# Why Long-Lived Servers Need This
+## Why Long-Lived Servers Need This { #long-lived-servers }
 
 The distinction is especially useful for components that should not be restarted merely because one logical dependency changed.
 
@@ -518,7 +521,7 @@ This is a more precise kind of dynamism than throwing away the entire container.
 
 ---
 
-# Configuration Refresh Is a Concrete Example
+## Configuration Refresh Is a Concrete Example { #config-refresh-example }
 
 Kora's configuration watcher demonstrates that this is not merely a theoretical API.
 
@@ -556,7 +559,7 @@ It is not static configuration baked into the artifact.
 
 ---
 
-# Logging Levels Show the Model in Practice
+## Logging Levels Show the Model in Practice { #logging-levels }
 
 Logging is an especially easy example to understand.
 
@@ -586,7 +589,7 @@ This is exactly the distinction Kora is designed around.
 
 ---
 
-# A Better Mental Model for Config Refresh
+## A Better Mental Model for Config Refresh { #mental-model-config-refresh }
 
 Developers sometimes imagine configuration refresh as requiring a mutable container whose whole meaning is recomputed after each change.
 
@@ -646,7 +649,7 @@ This is analogous to replacing values in a validated dataflow graph.
 
 ---
 
-# `ValueOf<T>` Lets You Control Refresh Boundaries
+## `ValueOf<T>` Lets You Control Refresh Boundaries { #valueof-refresh-boundaries }
 
 Rebuilding every downstream component is not always desirable.
 
@@ -687,7 +690,7 @@ That is a sophisticated runtime model, but it remains understandable because the
 
 ---
 
-# Runtime Dynamism Should Have an Owner
+## Runtime Dynamism Should Have an Owner { #dynamism-owner }
 
 This leads to a broader architectural point.
 
@@ -721,7 +724,7 @@ Each concern has a place.
 
 ---
 
-# Feature Flags Do Not Require Dynamic DI
+## Feature Flags Do Not Require Dynamic DI { #feature-flags }
 
 Feature flags are a classic example of runtime dynamism being mistaken for dynamic wiring.
 
@@ -823,7 +826,7 @@ Static topology has not reduced runtime flexibility at all.
 
 ---
 
-# OpenFeature Fits Naturally Into This Model
+## OpenFeature Fits Naturally Into This Model { #openfeature }
 
 Kora does not need a giant framework-specific feature-flag abstraction to support dynamic flags.
 
@@ -853,7 +856,7 @@ That is exactly the sort of dynamism that belongs outside container topology.
 
 ---
 
-# Dynamic Configuration Does Not Mean Dynamic Classes
+## Dynamic Configuration Does Not Mean Dynamic Classes { #dynamic-config-classes }
 
 Remote configuration systems create the same distinction.
 
@@ -885,7 +888,7 @@ Treating a changed integer or endpoint as a reason to mutate the component-defin
 
 ---
 
-# Credentials Are Dynamic State
+## Credentials Are Dynamic State { #credentials-dynamic-state }
 
 Credential rotation is another common argument for runtime flexibility.
 
@@ -926,7 +929,7 @@ Only the instances or values change.
 
 ---
 
-# Dynamic Endpoints Are Usually Routing State
+## Dynamic Endpoints Are Usually Routing State { #dynamic-endpoints }
 
 Service discovery provides another example.
 
@@ -962,7 +965,7 @@ The application architecture does not.
 
 ---
 
-# Multi-Tenancy Rarely Requires One DI Graph Per Tenant
+## Multi-Tenancy Rarely Requires One DI Graph Per Tenant { #multi-tenancy }
 
 Multi-tenancy is often cited as a reason for dynamic dependency injection.
 
@@ -1008,7 +1011,7 @@ Generating one framework object graph per tenant may be unnecessary complexity.
 
 ---
 
-# Lists of Implementations Are a Built-In Strategy Mechanism
+## Lists of Implementations Are a Built-In Strategy Mechanism { #lists-of-implementations }
 
 Kora can inject collections of known implementations through `All<T>`.
 
@@ -1096,7 +1099,7 @@ A dynamic registry does not require dynamic DI registration.
 
 ---
 
-# Tags Make Multiple Known Implementations Explicit
+## Tags Make Multiple Known Implementations Explicit { #tags-implementations }
 
 Sometimes multiple components have the same Java type but different roles.
 
@@ -1129,7 +1132,7 @@ The important property is that ambiguity is resolved structurally instead of bei
 
 ---
 
-# Factories Are Static Definitions With Dynamic Inputs
+## Factories Are Static Definitions With Dynamic Inputs { #factories-static-definitions }
 
 A factory method is sometimes misunderstood as a compile-time constant.
 
@@ -1178,7 +1181,7 @@ Static dependency topology and runtime factories coexist naturally.
 
 ---
 
-# `@FactoryModule` Extends This to Parameterized Component Families
+## `@FactoryModule` Extends This to Parameterized Component Families { #factory-module }
 
 Kora's factory modules allow reusable module behavior to be parameterized.
 
@@ -1209,7 +1212,7 @@ unknown shape
 
 ---
 
-# Conditionality Can Also Be Compile-Time
+## Conditionality Can Also Be Compile-Time { #conditionality-compile-time }
 
 Kora supports conditional components as part of graph construction.
 
@@ -1229,7 +1232,7 @@ The distinction keeps dynamic behavior from leaking unnecessarily into dependenc
 
 ---
 
-# Why Runtime Classpath Scanning Is Usually Not a Business Requirement
+## Why Runtime Classpath Scanning Is Usually Not a Business Requirement { #runtime-classpath-scanning }
 
 Runtime scanning is often treated as an inherent property of sophisticated frameworks.
 
@@ -1263,7 +1266,7 @@ If the set of source components is already known while building the artifact, ru
 
 ---
 
-# Static Graph Gives You Earlier Failure
+## Static Graph Gives You Earlier Failure { #static-graph-earlier-failure }
 
 One of the strongest benefits of compile-time topology is that invalid architecture fails before deployment.
 
@@ -1293,7 +1296,7 @@ It changes when uncertainty is removed.
 
 ---
 
-# Production-Only Wiring Surprises Become Harder
+## Production-Only Wiring Surprises Become Harder { #production-wiring-surprises }
 
 Runtime dependency systems can support conditionals based on:
 
@@ -1318,7 +1321,7 @@ This makes the deployed artifact easier to reason about.
 
 ---
 
-# Startup Becomes More Predictable
+## Startup Becomes More Predictable { #startup-predictable }
 
 Classpath scanning and runtime graph assembly are not merely performance costs. They are sources of variability.
 
@@ -1348,7 +1351,7 @@ That improves startup predictability.
 
 ---
 
-# Ownership Becomes Easier to See
+## Ownership Becomes Easier to See { #ownership-easier }
 
 A static graph represented in source answers architectural questions more directly.
 
@@ -1376,7 +1379,7 @@ This is useful for code review and incident investigation because architecture i
 
 ---
 
-# Testing Becomes More Structural
+## Testing Becomes More Structural { #testing-structural }
 
 A validated graph also improves testing.
 
@@ -1410,7 +1413,7 @@ The test suite does not need to rediscover every wiring mistake.
 
 ---
 
-# AI Agents Benefit From the Same Boundary
+## AI Agents Benefit From the Same Boundary { #ai-agents-boundary }
 
 An AI coding agent has an easier time with a system when architecture can be reconstructed from source rather than runtime metadata.
 
@@ -1447,7 +1450,7 @@ Less mutable framework state means less invisible context to infer.
 
 ---
 
-# Mutable Framework State Is a Cost
+## Mutable Framework State Is a Cost { #mutable-framework-state }
 
 A highly dynamic container needs internal mutable state describing:
 
@@ -1476,7 +1479,7 @@ This reduces the number of moving parts involved in ordinary application executi
 
 ---
 
-# Dynamic Selection Belongs in Application Code When It Is Business Logic
+## Dynamic Selection Belongs in Application Code When It Is Business Logic { #dynamic-selection-application-code }
 
 Consider a shipping system with several carriers.
 
@@ -1540,7 +1543,7 @@ That is the boundary Kora encourages.
 
 ---
 
-# Runtime Routing Is More Expressive Than Container Conditions
+## Runtime Routing Is More Expressive Than Container Conditions { #runtime-routing }
 
 Container conditions are usually coarse.
 
@@ -1566,7 +1569,7 @@ A stable router with dynamic policy is simpler and more expressive.
 
 ---
 
-# Dynamic Retry Policies Do Not Require Dynamic AOP Definitions
+## Dynamic Retry Policies Do Not Require Dynamic AOP Definitions { #dynamic-retry-policies }
 
 Retry is another instructive case.
 
@@ -1608,7 +1611,7 @@ dynamic policy
 
 ---
 
-# Rate Limits Are Data
+## Rate Limits Are Data { #rate-limits-data }
 
 Rate limiting is even clearer.
 
@@ -1633,7 +1636,7 @@ DI topology is only one part of the system.
 
 ---
 
-# Business Rules Have Always Been Dynamic
+## Business Rules Have Always Been Dynamic { #business-rules-dynamic }
 
 It is worth stepping back.
 
@@ -1663,7 +1666,7 @@ But it should not be confused with runtime programming itself.
 
 ---
 
-# The Graph Can Refresh Without Becoming Unknown
+## The Graph Can Refresh Without Becoming Unknown { #graph-refresh-unknown }
 
 This is perhaps Kora's most interesting middle ground.
 
@@ -1705,7 +1708,7 @@ That is different from arbitrary runtime registration.
 
 ---
 
-# Refresh Propagation Is More Predictable Because Edges Are Known
+## Refresh Propagation Is More Predictable Because Edges Are Known { #refresh-propagation }
 
 If a component changes, Kora can rebuild its direct dependents because dependency edges are known.
 
@@ -1743,7 +1746,7 @@ A dynamic runtime registry may support more arbitrary mutation, but it also has 
 
 ---
 
-# Lifecycle Matters During Refresh
+## Lifecycle Matters During Refresh { #lifecycle-during-refresh }
 
 Refreshing instances is not just assignment.
 
@@ -1768,7 +1771,7 @@ Static topology helps because the container already understands dependency order
 
 ---
 
-# Stable Components Can Observe New Dependencies
+## Stable Components Can Observe New Dependencies { #stable-components-new-dependencies }
 
 The `ValueOf<T>` mechanism is powerful because it avoids cascading refresh farther than necessary.
 
@@ -1796,7 +1799,7 @@ That is operational dynamism with a controlled blast radius.
 
 ---
 
-# Refresh Is Not a Replacement for Every Dynamic Pattern
+## Refresh Is Not a Replacement for Every Dynamic Pattern { #refresh-not-replacement }
 
 Graph refresh is useful, but it should not become the answer to every changing value.
 
@@ -1814,11 +1817,11 @@ This distinction keeps refresh from becoming a hidden runtime programming model.
 
 ---
 
-# Three Levels of Change
+## Three Levels of Change { #three-levels-of-change }
 
 A useful decision framework is:
 
-## Level 1: Data changes
+## Level 1: Data changes { #level-1-data }
 
 Examples:
 
@@ -1836,7 +1839,7 @@ same components
 different data
 ```
 
-## Level 2: Component configuration changes
+## Level 2: Component configuration changes { #level-2-configuration }
 
 Examples:
 
@@ -1853,7 +1856,7 @@ same topology
 new component state or instance
 ```
 
-## Level 3: Component types/topology change
+## Level 3: Component types/topology change { #level-3-topology }
 
 Examples:
 
@@ -1872,7 +1875,7 @@ Most backend systems live overwhelmingly in Levels 1 and 2.
 
 ---
 
-# The True Dynamic Plugin Use Case Is Real
+## The True Dynamic Plugin Use Case Is Real { #dynamic-plugin-use-case }
 
 There are applications where Kora's static graph is genuinely less natural.
 
@@ -1898,7 +1901,7 @@ That is real runtime topology.
 
 ---
 
-# Application Servers Are Another Example
+## Application Servers Are Another Example { #application-servers }
 
 A general-purpose application server may deploy arbitrary applications after the server itself is installed.
 
@@ -1912,7 +1915,7 @@ That is a fundamentally different problem from a deployable REST service.
 
 ---
 
-# Plugin Marketplaces Need Unknown Extensions
+## Plugin Marketplaces Need Unknown Extensions { #plugin-marketplaces }
 
 Desktop platforms with plugin marketplaces also need dynamic extension discovery.
 
@@ -1936,7 +1939,7 @@ A runtime plugin architecture, OSGi-style system, custom classloader platform or
 
 ---
 
-# Some Workflow Engines May Need Dynamic Code
+## Some Workflow Engines May Need Dynamic Code { #workflow-engines }
 
 A workflow engine that can load arbitrary user-provided code modules at runtime can have similar requirements.
 
@@ -1962,7 +1965,7 @@ may.
 
 ---
 
-# Containers Whose Product Is Extensibility Are Different
+## Containers Whose Product Is Extensibility Are Different { #extensibility-containers }
 
 The central rule can be phrased this way:
 
@@ -1980,7 +1983,7 @@ These are different categories of software.
 
 ---
 
-# REST Services Rarely Need Unknown Components
+## REST Services Rarely Need Unknown Components { #rest-services }
 
 Take a normal REST service.
 
@@ -2004,7 +2007,7 @@ Compile-time topology fits that lifecycle naturally.
 
 ---
 
-# Kafka Consumers Are Structurally Stable Too
+## Kafka Consumers Are Structurally Stable Too { #kafka-consumers }
 
 A Kafka service may subscribe to dynamic partition assignments and process unbounded event data.
 
@@ -2032,7 +2035,7 @@ No dependency graph mutation is required.
 
 ---
 
-# API Gateways Are Dynamic Without Dynamic DI
+## API Gateways Are Dynamic Without Dynamic DI { #api-gateways }
 
 An API gateway can route based on configuration loaded from a control plane.
 
@@ -2056,7 +2059,7 @@ Registering one DI bean per route would be an unnecessary representation of data
 
 ---
 
-# Workers and Schedulers Follow the Same Pattern
+## Workers and Schedulers Follow the Same Pattern { #workers-schedulers }
 
 A worker may receive dynamically defined jobs.
 
@@ -2078,7 +2081,7 @@ A mutable runtime graph is not inherently useful.
 
 ---
 
-# Compile-Time Structure Improves Architecture Analysis
+## Compile-Time Structure Improves Architecture Analysis { #compile-time-architecture-analysis }
 
 A static graph has another advantage: it can be analyzed before runtime.
 
@@ -2099,7 +2102,7 @@ This gives dependency injection a role closer to architectural validation than r
 
 ---
 
-# Dynamic Containers Trade Early Knowledge for Runtime Freedom
+## Dynamic Containers Trade Early Knowledge for Runtime Freedom { #dynamic-containers-trade }
 
 This is not inherently bad.
 
@@ -2130,7 +2133,7 @@ If it does not, the flexibility may be mostly latent complexity.
 
 ---
 
-# Flexibility Has an Option Cost
+## Flexibility Has an Option Cost { #flexibility-option-cost }
 
 Engineers often evaluate flexibility as if more were automatically better.
 
@@ -2152,7 +2155,7 @@ That can be a very good trade for production services whose structure changes th
 
 ---
 
-# "But What About Profiles?"
+## "But What About Profiles?" { #what-about-profiles }
 
 Profiles are often used to assemble different dependency graphs for development, testing or deployment environments.
 
@@ -2180,7 +2183,7 @@ This keeps deployment configuration from becoming an implicit architecture langu
 
 ---
 
-# Deployment Is Already a Topology-Change Mechanism
+## Deployment Is Already a Topology-Change Mechanism { #deployment-topology-change }
 
 There is a larger operational observation here.
 
@@ -2208,7 +2211,7 @@ Compile-time graph construction aligns with that reality.
 
 ---
 
-# Runtime Configuration Should Not Replace Deployment Either
+## Runtime Configuration Should Not Replace Deployment Either { #runtime-config-deployment }
 
 The opposite mistake also exists.
 
@@ -2222,7 +2225,7 @@ The same discipline that rejects unnecessary runtime DI should reject unnecessar
 
 ---
 
-# Static Graphs Improve Reproducibility
+## Static Graphs Improve Reproducibility { #static-graphs-reproducibility }
 
 A compiled graph contributes to reproducibility because two processes running the same artifact have the same structural component model.
 
@@ -2242,7 +2245,7 @@ This reduces one dimension of environmental drift.
 
 ---
 
-# Configuration Can Still Cause Different Instances
+## Configuration Can Still Cause Different Instances { #config-different-instances }
 
 Structural reproducibility does not imply identical instances.
 
@@ -2264,7 +2267,7 @@ Architecture and environment remain separate concerns.
 
 ---
 
-# Static Topology Makes Security Easier to Reason About
+## Static Topology Makes Security Easier to Reason About { #static-topology-security }
 
 Runtime extension loading has security consequences.
 
@@ -2278,7 +2281,7 @@ For ordinary backend services, that is usually a simplification.
 
 ---
 
-# Observability Benefits From Explicit Components Too
+## Observability Benefits From Explicit Components Too { #observability-explicit-components }
 
 When component roles are known, observability can map more clearly to architecture.
 
@@ -2298,7 +2301,7 @@ The framework architecture remains legible.
 
 ---
 
-# What Happens During a Configuration Refresh?
+## What Happens During a Configuration Refresh? { #during-config-refresh }
 
 It is worth examining the mechanics conceptually.
 
@@ -2340,7 +2343,7 @@ That is why compile-time structure and runtime refresh are complementary rather 
 
 ---
 
-# A Runtime Refresh Example
+## A Runtime Refresh Example { #runtime-refresh-example }
 
 Imagine this simplified module:
 
@@ -2430,7 +2433,7 @@ This is a concrete example of:
 
 ---
 
-# Do Not Inject Raw Config Everywhere
+## Do Not Inject Raw Config Everywhere { #do-not-inject-raw-config }
 
 Kora's configuration guidance reinforces this model.
 
@@ -2456,7 +2459,7 @@ Runtime dynamism becomes easier to control because it is typed and localized.
 
 ---
 
-# `ValueOf<Config>` Exists for Truly Dynamic Reads
+## `ValueOf<Config>` Exists for Truly Dynamic Reads { #valueof-config }
 
 Sometimes a component genuinely needs generic or dynamic config access.
 
@@ -2478,7 +2481,7 @@ It makes the relationship explicit.
 
 ---
 
-# `PromiseOf<T>` Covers Deferred Access
+## `PromiseOf<T>` Covers Deferred Access { #promiseof-deferred-access }
 
 Kora also has `PromiseOf<T>` for lower-level cases where a component needs deferred access to another graph part.
 
@@ -2492,7 +2495,7 @@ The graph can represent different dependency semantics.
 
 ---
 
-# Direct Edges Carry Lifecycle Meaning
+## Direct Edges Carry Lifecycle Meaning { #direct-edges-lifecycle }
 
 The most interesting way to think about this is that graph edges are not only about lookup.
 
@@ -2521,7 +2524,7 @@ This makes dependency declarations semantically richer than a service locator.
 
 ---
 
-# Dynamic Registries Are Often Better Than Dynamic DI
+## Dynamic Registries Are Often Better Than Dynamic DI { #dynamic-registries }
 
 Suppose a system supports 100 tenant-defined notification templates.
 
@@ -2556,7 +2559,7 @@ The DI container does not need to model every piece of runtime state as a compon
 
 ---
 
-# Why This Is Easier to Test
+## Why This Is Easier to Test { #easier-to-test }
 
 Runtime registries and strategy routers are normal objects.
 
@@ -2588,7 +2591,7 @@ Moving dynamism into explicit components therefore improves testability.
 
 ---
 
-# Why This Is Easier to Debug
+## Why This Is Easier to Debug { #easier-to-debug }
 
 Suppose a request unexpectedly went to Adyen instead of Stripe.
 
@@ -2617,7 +2620,7 @@ That is usually easier to diagnose.
 
 ---
 
-# Why This Is Easier for Code Review
+## Why This Is Easier for Code Review { #easier-for-code-review }
 
 A code reviewer seeing:
 
@@ -2647,7 +2650,7 @@ Kora's philosophy favors explicit application logic when runtime selection is ge
 
 ---
 
-# Compile-Time Graphs Are Not "Less Enterprise"
+## Compile-Time Graphs Are Not "Less Enterprise" { #compile-time-graphs-enterprise }
 
 Dynamic containers became associated with enterprise capability partly because large application servers historically needed runtime extensibility.
 
@@ -2667,7 +2670,7 @@ For such systems, compile-time assembly can be a better fit than a generic runti
 
 ---
 
-# Microservices Strengthen the Case
+## Microservices Strengthen the Case { #microservices-strengthen-case }
 
 A monolithic application server hosting unknown applications benefits from runtime discovery.
 
@@ -2681,7 +2684,7 @@ The service boundary itself has reduced the need for an open-ended runtime conta
 
 ---
 
-# But Microservices Still Need Runtime Reconfiguration
+## But Microservices Still Need Runtime Reconfiguration { #microservices-runtime-reconfiguration }
 
 None of this means "rebuild for every value change."
 
@@ -2711,7 +2714,7 @@ is inaccurate.
 
 ---
 
-# The Better Comparison Is Structural vs Behavioral Dynamism
+## The Better Comparison Is Structural vs Behavioral Dynamism { #structural-vs-behavioral }
 
 A more useful matrix is:
 
@@ -2735,7 +2738,7 @@ The right-hand column is much narrower than the word *dynamic* initially suggest
 
 ---
 
-# The Specialized Boundary Should Be Stated Honestly
+## The Specialized Boundary Should Be Stated Honestly { #specialized-boundary }
 
 Kora's model is not universally better.
 
@@ -2777,7 +2780,7 @@ The important point is that this is a specialized architectural requirement, not
 
 ---
 
-# The Boundary Can Be Drawn Precisely
+## The Boundary Can Be Drawn Precisely { #boundary-drawn-precisely }
 
 Kora handles this class of system well:
 
@@ -2813,7 +2816,7 @@ These are genuinely different problem domains.
 
 ---
 
-# Static Graph Is a Constraint, and Constraints Can Be Valuable
+## Static Graph Is a Constraint, and Constraints Can Be Valuable { #static-graph-constraint }
 
 Kora deliberately removes one degree of runtime freedom.
 
@@ -2839,7 +2842,7 @@ For most services, arbitrary runtime topology mutation is not.
 
 ---
 
-# Compile-Time Validation Turns Architecture Into a Contract
+## Compile-Time Validation Turns Architecture Into a Contract { #compile-time-validation-contract }
 
 Once the graph is built ahead of time, it becomes part of the compiled application's contract.
 
@@ -2861,7 +2864,7 @@ Runtime can then focus on state.
 
 ---
 
-# This Reduces the Number of Runtime Failure Classes
+## This Reduces the Number of Runtime Failure Classes { #runtime-failure-classes }
 
 Kora cannot remove runtime failures.
 
@@ -2890,7 +2893,7 @@ That is a concrete reliability benefit of static topology.
 
 ---
 
-# Dynamic Behavior Still Fails Dynamically, as It Should
+## Dynamic Behavior Still Fails Dynamically, as It Should { #dynamic-behavior-fails }
 
 If Stripe is unavailable, that is a runtime failure.
 
@@ -2910,7 +2913,7 @@ It leaves the rest dynamic.
 
 ---
 
-# The Architecture Becomes More Explainable
+## The Architecture Becomes More Explainable { #architecture-explainable }
 
 This produces a useful property: the application can be explained in layers.
 
@@ -2934,7 +2937,7 @@ That is easier to reason about than treating all four as one container state.
 
 ---
 
-# Runtime Graph Refresh Is Controlled Mutation
+## Runtime Graph Refresh Is Controlled Mutation { #runtime-graph-refresh-mutation }
 
 It would also be wrong to describe Kora as having no mutable framework state whatsoever.
 
@@ -2954,7 +2957,7 @@ That is a more precise claim.
 
 ---
 
-# Why This Model Fits Kubernetes Well
+## Why This Model Fits Kubernetes Well { #fits-kubernetes }
 
 Kubernetes already treats application artifacts as disposable units.
 
@@ -2985,7 +2988,7 @@ The framework does not need runtime classpath discovery to participate in cloud-
 
 ---
 
-# A ConfigMap Change Is Not a New Application Architecture
+## A ConfigMap Change Is Not a New Application Architecture { #configmap-change }
 
 This sounds obvious when phrased directly.
 
@@ -3013,7 +3016,7 @@ Once this distinction is stated clearly, static graph design looks much less res
 
 ---
 
-# Runtime Reconfiguration Should Have Defined Blast Radius
+## Runtime Reconfiguration Should Have Defined Blast Radius { #blast-radius }
 
 One advantage of graph refresh with direct and indirect dependencies is that a team can reason about the blast radius of changes.
 
@@ -3033,7 +3036,7 @@ This is more controlled than globally refreshing an opaque context.
 
 ---
 
-# Refresh Design Becomes Part of Architecture
+## Refresh Design Becomes Part of Architecture { #refresh-design-architecture }
 
 For a refreshable application, dependency shape therefore communicates more than construction.
 
@@ -3079,7 +3082,7 @@ That is explicit architecture.
 
 ---
 
-# This Model Encourages Deliberate Live Reconfiguration
+## This Model Encourages Deliberate Live Reconfiguration { #deliberate-live-reconfiguration }
 
 Live reconfiguration can be dangerous when every dependency automatically becomes hot-reloadable.
 
@@ -3099,7 +3102,7 @@ By making refresh relationships visible, Kora encourages teams to think about th
 
 ---
 
-# Runtime Selection Can Be Per-Request
+## Runtime Selection Can Be Per-Request { #runtime-selection-per-request }
 
 Another reason dynamic DI is often unnecessary is granularity.
 
@@ -3124,7 +3127,7 @@ Static graph + runtime selection is actually *more* dynamic at the behavior leve
 
 ---
 
-# Known Implementations Are Often a Feature
+## Known Implementations Are Often a Feature { #known-implementations-feature }
 
 Knowing all possible strategies at compile time is not a limitation when those strategies are code maintained by the service team.
 
@@ -3142,7 +3145,7 @@ That is often exactly what teams want.
 
 ---
 
-# Unknown Data and Unknown Code Are Different Risks
+## Unknown Data and Unknown Code Are Different Risks { #unknown-data-unknown-code }
 
 Backend systems routinely accept unknown data.
 
@@ -3172,7 +3175,7 @@ A static application graph is fully compatible with the first.
 
 ---
 
-# Dynamic Graphs Can Be Valuable Inside Frameworks, Not Applications
+## Dynamic Graphs Can Be Valuable Inside Frameworks, Not Applications { #dynamic-graphs-inside-frameworks }
 
 There is also an architectural layering point.
 
@@ -3188,7 +3191,7 @@ This is one reason its runtime can remain smaller.
 
 ---
 
-# The Cost of Generic Runtime Assembly Is Paid by Every Service
+## The Cost of Generic Runtime Assembly Is Paid by Every Service { #cost-generic-runtime-assembly }
 
 A generic runtime container needs to carry capabilities that a particular service may never use.
 
@@ -3209,7 +3212,7 @@ This is analogous to partial evaluation: known structural decisions are resolved
 
 ---
 
-# The Runtime Still Has a Container, Just a Different Job
+## The Runtime Still Has a Container, Just a Different Job { #runtime-container-different-job }
 
 It would be inaccurate to say Kora has no runtime graph machinery at all.
 
@@ -3229,7 +3232,7 @@ The runtime container's job is execution and lifecycle, not architectural infere
 
 ---
 
-# That Separation Is the Core Design Choice
+## That Separation Is the Core Design Choice { #separation-core-design }
 
 The cleanest summary is:
 
@@ -3251,7 +3254,7 @@ They do not compete.
 
 ---
 
-# What About A/B Experiments?
+## What About A/B Experiments? { #ab-experiments }
 
 A/B experiments are sometimes treated as proof that applications must dynamically swap components.
 
@@ -3278,7 +3281,7 @@ This is better represented explicitly than by rebuilding the DI container every 
 
 ---
 
-# What About Blue/Green External Systems?
+## What About Blue/Green External Systems? { #blue-green-external }
 
 Suppose a service migrates from database A to database B.
 
@@ -3308,7 +3311,7 @@ No runtime topology mutation was required.
 
 ---
 
-# What About Runtime Client Replacement?
+## What About Runtime Client Replacement? { #runtime-client-replacement }
 
 If an endpoint or TLS configuration changes and a native client must be recreated, graph refresh handles a different case.
 
@@ -3332,7 +3335,7 @@ This is exactly what instance refresh is for.
 
 ---
 
-# Selection and Refresh Are Different Tools
+## Selection and Refresh Are Different Tools { #selection-and-refresh }
 
 It helps to keep two mechanisms distinct.
 
@@ -3360,7 +3363,7 @@ They solve different dynamic requirements.
 
 ---
 
-# Registries Add a Third Tool
+## Registries Add a Third Tool { #registries-third-tool }
 
 A registry handles a changing set of *data-defined entries*:
 
@@ -3379,7 +3382,7 @@ Between routers, refreshable instances and registries, a huge proportion of prod
 
 ---
 
-# Static Topology Is Particularly Friendly to Observability
+## Static Topology Is Particularly Friendly to Observability { #static-topology-observability }
 
 Because the set of component types is bounded, metrics and traces can be designed around stable categories.
 
@@ -3397,7 +3400,7 @@ This is not the biggest benefit, but it contributes to operational predictabilit
 
 ---
 
-# A Smaller Runtime State Space Is Easier to Operate
+## A Smaller Runtime State Space Is Easier to Operate { #smaller-runtime-state-space }
 
 Production reliability is partly about limiting state space.
 
@@ -3426,7 +3429,7 @@ This can make incidents easier to reproduce.
 
 ---
 
-# "Static" Is the Wrong Word Emotionally
+## "Static" Is the Wrong Word Emotionally { #static-wrong-word }
 
 The word *static* often sounds like:
 
@@ -3457,7 +3460,7 @@ The static property is narrower and more useful than the label suggests.
 
 ---
 
-# Kora's Model Is Closer to a Typed Dataflow Graph
+## Kora's Model Is Closer to a Typed Dataflow Graph { #typed-dataflow-graph }
 
 One way to think about the application graph is as a typed dataflow.
 
@@ -3487,7 +3490,7 @@ This mental model explains runtime refresh more accurately than the phrase "stat
 
 ---
 
-# There Is a Parallel With Functional Reactive Systems
+## There Is a Parallel With Functional Reactive Systems { #functional-reactive-parallel }
 
 Without claiming Kora is a functional reactive framework, the refresh semantics have a familiar shape:
 
@@ -3508,7 +3511,7 @@ Kora applies a related idea to component lifecycle.
 
 ---
 
-# Why This Matters for Framework Complexity
+## Why This Matters for Framework Complexity { #framework-complexity }
 
 A runtime discovery container must answer:
 
@@ -3538,7 +3541,7 @@ Narrower runtime responsibilities often mean less machinery.
 
 ---
 
-# Do You Need to Refresh Everything?
+## Do You Need to Refresh Everything? { #refresh-everything }
 
 No.
 
@@ -3563,7 +3566,7 @@ Graph design therefore influences refresh cost.
 
 ---
 
-# Runtime Refresh Is Not "Magic Hot Reload"
+## Runtime Refresh Is Not "Magic Hot Reload" { #not-magic-hot-reload }
 
 It is also important not to oversell the feature.
 
@@ -3581,7 +3584,7 @@ That boundary is clear and operationally sane.
 
 ---
 
-# Source-Code Change and Configuration Change Are Different
+## Source-Code Change and Configuration Change Are Different { #source-code-vs-config }
 
 This distinction is worth making explicit:
 
@@ -3601,7 +3604,7 @@ Most production teams do not need them.
 
 ---
 
-# This Also Helps AI-Assisted Operations
+## This Also Helps AI-Assisted Operations { #ai-assisted-operations }
 
 An AI agent debugging a live system can reason from a stable architecture.
 
@@ -3622,7 +3625,7 @@ Explicitness helps machine reasoning for the same reason it helps humans.
 
 ---
 
-# Static Graph Is Not a Rejection of Dependency Injection
+## Static Graph Is Not a Rejection of Dependency Injection { #static-graph-not-rejection }
 
 Kora still uses dependency injection extensively.
 
@@ -3641,7 +3644,7 @@ It simply moves validation and graph construction earlier.
 
 ---
 
-# The Main Trade-Off
+## The Main Trade-Off { #main-trade-off }
 
 The trade can be stated plainly.
 
@@ -3670,7 +3673,7 @@ For a REST service, usually yes.
 
 ---
 
-# A Decision Checklist
+## A Decision Checklist { #decision-checklist }
 
 Before concluding that a service needs dynamic DI, ask:
 
@@ -3689,7 +3692,7 @@ If the first four answers are no, a dynamic application graph may not be solving
 
 ---
 
-# A More Precise Architecture Vocabulary
+## A More Precise Architecture Vocabulary { #precise-architecture-vocabulary }
 
 Teams can improve design discussions by using more exact terms.
 
@@ -3723,7 +3726,7 @@ Only the last one clearly implies unknown runtime component topology.
 
 ---
 
-# The Biggest Myth: Compile-Time Means Everything Is Frozen
+## The Biggest Myth: Compile-Time Means Everything Is Frozen { #biggest-myth }
 
 The strongest misconception about Kora is that once the graph is compiled, the running application becomes a frozen set of objects with immutable configuration.
 
@@ -3751,7 +3754,7 @@ The set of possible components can be fixed without fixing the world around them
 
 ---
 
-# A Complete Example
+## A Complete Example { #complete-example }
 
 Consider a checkout service.
 
@@ -3799,7 +3802,7 @@ This is a realistic production model.
 
 ---
 
-# Now Compare the Truly Dynamic Case
+## Now Compare the Truly Dynamic Case { #truly-dynamic-case }
 
 Imagine instead that merchants can upload payment-provider plugins as JARs.
 
@@ -3835,7 +3838,7 @@ And it is much narrower than saying "Kora applications cannot be dynamic."
 
 ---
 
-# The Right Final Distinction
+## The Right Final Distinction { #right-final-distinction }
 
 The debate should therefore not be:
 
@@ -3867,7 +3870,7 @@ A specialized class of extensible platforms needs the second.
 
 ---
 
-# Conclusion: Put Dynamism Where It Belongs
+## Conclusion: Put Dynamism Where It Belongs { #conclusion }
 
 Production services are dynamic by nature.
 

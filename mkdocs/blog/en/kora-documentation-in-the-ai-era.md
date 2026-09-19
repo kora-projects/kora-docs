@@ -1,11 +1,13 @@
 ---
 title: Documentation in the AI Era — Kora Framework Docs Are No Longer Just Docs
+date: 2026-08-08
 description: Why documentation, generated source, and compiler feedback form one explainable system in the Kora Framework for the AI era.
 search:
   exclude: true
 ---
 
-# Documentation in the AI Era Is No Longer Just Documentation
+# Documentation in the AI Era Is No Longer Just Documentation { #ai-era-docs }
+**August 8, 2026**
 
 For most of software history, framework documentation had a simple role: a developer had a question, opened a website, searched for the relevant page, read the explanation, found an example, and
 translated that information into code. When the official documentation was incomplete, the developer expanded the search outward to Stack Overflow, blog posts, conference talks, GitHub issues, source
@@ -82,7 +84,7 @@ code, and an official Kora Skill into one machine-readable knowledge system that
 The implications go beyond Kora. They change how framework documentation should be designed, how communities should think about examples, how much historical Stack Overflow volume matters, and even
 what "well documented" means.
 
-## Documentation Used to Be a Human Retrieval Problem
+## Documentation Used to Be a Human Retrieval Problem { #human-retrieval }
 
 Traditional documentation assumes that the developer is the retrieval engine. The framework authors publish information, and the developer must identify the right vocabulary, locate the correct page,
 understand which version applies, reconcile multiple sections, translate a generic example to the application's architecture, and then test whether that interpretation was correct.
@@ -110,7 +112,7 @@ rarely fails only because a page is missing. It also fails because the informati
 
 This is why large framework communities became so valuable. Somebody, somewhere, had usually already performed the composition.
 
-## The Historical Power of Stack Overflow
+## The Historical Power of Stack Overflow { #stack-overflow }
 
 For more than a decade, one of the strongest advantages of a mature framework was not merely its official documentation. It was the accumulated archive of questions and answers around it.
 
@@ -132,7 +134,7 @@ might contain the exact question: "Why is my transaction not active inside this 
 That specificity was extraordinarily valuable because a human developer did not need to derive the interaction from first principles. A mature framework accumulated tens of thousands of these
 interaction-level answers over time, and a younger framework naturally looked weaker by comparison.
 
-## AI Changes the Economics of Missing Historical Answers
+## AI Changes the Economics of Missing Historical Answers { #missing-answers-economics }
 
 AI agents weaken this historical advantage, although they do not eliminate it.
 
@@ -161,7 +163,7 @@ the minimum viable knowledge ecosystem for a framework.
 
 A smaller framework can compensate for a smaller historical community corpus if its authoritative knowledge is structured enough to support reliable derivation.
 
-## The Metric Changes From Archive Size to Derivability
+## The Metric Changes From Archive Size to Derivability { #derivability-metric }
 
 The old question was:
 
@@ -186,7 +188,7 @@ runnable, generated code exposes implementation details, compiler diagnostics co
 
 Kora is deliberately moving toward the second model.
 
-## Kora Already Frames Documentation as More Than Pages
+## Kora Already Frames Documentation as More Than Pages { #kora-frames-docs }
 
 The Kora 2 landing page does something notable: it does not describe documentation only as a website.
 
@@ -198,7 +200,7 @@ knowledge rather than one monolithic manual.
 
 That structure is exactly what AI agents benefit from.
 
-## A Framework Knowledge Stack
+## A Framework Knowledge Stack { #knowledge-stack }
 
 The most useful way to think about Kora's knowledge model is as a stack:
 
@@ -237,7 +239,7 @@ Framework code ─┤
 
 The key insight is that these layers do not duplicate one another. Each one carries a different kind of truth.
 
-## Reference Documentation Provides Facts
+## Reference Documentation Provides Facts { #reference-facts }
 
 Reference documentation should answer precise questions: which annotation declares a component, what configuration keys an HTTP server accepts, which repository return types are supported, how
 `ValueOf<T>` behaves, what the default timeout is, which telemetry components can be overridden, which tags select a component, and which dependencies are required for a module.
@@ -248,7 +250,7 @@ interfaces and behavior.
 This becomes even more important for AI retrieval. Agents often need exact facts. A concise reference section saying "property X, type Duration, default 30s" is more useful for retrieval than several
 paragraphs of narrative surrounding the same fact.
 
-## Guides Provide Reasoning and Workflow
+## Guides Provide Reasoning and Workflow { #guides-reasoning }
 
 Guides solve a different problem. A guide answers: "How do I accomplish a complete task correctly?"
 
@@ -274,7 +276,7 @@ A good guide has narrative because sequence matters. It can explain why a depend
 
 That is the correct place for reasoning. Separating reference from guides therefore improves both human reading and AI retrieval. The reference gives facts. The guide gives process.
 
-## Examples Provide Canonical Implementations
+## Examples Provide Canonical Implementations { #examples-canonical }
 
 Examples are a third category. They answer: "What does a correct implementation actually look like?"
 
@@ -287,7 +289,7 @@ That makes examples executable evidence. An agent does not have to infer the fin
 
 This gives the knowledge stack a practical anchor.
 
-## Examples Become Much More Valuable With Agents
+## Examples Become Much More Valuable With Agents { #examples-with-agents }
 
 Historically, an example had to be reasonably close to the developer's exact use case to be useful. Suppose the example showed a simple JDBC repository, but the application needed JDBC plus
 transaction handling, custom mapping, and telemetry. The developer had to adapt the pattern manually.
@@ -314,7 +316,7 @@ This leads to an important shift:
 
 That makes a relatively small set of high-quality examples far more powerful than a very large pile of narrowly targeted snippets.
 
-## Runnable Examples Are Better Than Isolated Snippets
+## Runnable Examples Are Better Than Isolated Snippets { #runnable-examples }
 
 This matters because AI agents are extremely good at copying patterns, including bad ones.
 
@@ -324,7 +326,7 @@ That makes runnable examples a stronger canonical source. The agent can see not 
 
 The example demonstrates the integration boundary end to end. For machine-assisted development, that is significantly more valuable.
 
-## Code Itself Becomes Part of the Documentation System
+## Code Itself Becomes Part of the Documentation System { #code-as-docs }
 
 Kora has another property that becomes much more important in the AI era: the framework is intentionally inspectable.
 
@@ -336,7 +338,7 @@ method, the generated subclass or wrapper can show the actual execution path.
 
 This creates a hierarchy of evidence.
 
-## Readable Source Is Documentation Too
+## Readable Source Is Documentation Too { #readable-source }
 
 For an AI agent, readable source code is documentation.
 
@@ -349,7 +351,7 @@ abstraction.
 
 This turns generated source into something close to **executable documentation**.
 
-## Executable Documentation Is Stronger Than Narrative Alone
+## Executable Documentation Is Stronger Than Narrative Alone { #executable-docs }
 
 Written documentation says:
 
@@ -370,7 +372,7 @@ method. Generated code shows the call order.
 
 This is context-specific truth. The difference is enormous for debugging.
 
-## The Agent Can Move Down the Stack Until Uncertainty Disappears
+## The Agent Can Move Down the Stack Until Uncertainty Disappears { #agent-down-stack }
 
 Imagine a developer asks: "Why does my retry happen outside the transaction?"
 
@@ -391,7 +393,7 @@ compiler/test
 
 At each step, uncertainty decreases. That is far more powerful than searching for a blog post describing a similar case from three years ago.
 
-## Compiler Diagnostics Are Part of the Knowledge System
+## Compiler Diagnostics Are Part of the Knowledge System { #compiler-diagnostics }
 
 Because so much Kora framework structure is validated at compile time, the compiler is not merely a build tool. It is an interactive source of framework knowledge.
 
@@ -414,7 +416,7 @@ agent correction
 
 This is a remarkably effective learning interface.
 
-## Compiler Errors Are Better Than Silent Guessing
+## Compiler Errors Are Better Than Silent Guessing { #compiler-errors }
 
 AI coding has one persistent weakness: plausible code is not necessarily correct code.
 
@@ -425,7 +427,7 @@ Instead of relying on the agent's confidence, the toolchain answers. Kora's desi
 
 The docs say what should work. The compiler tells the agent whether this exact implementation does.
 
-## Tests Close the Loop
+## Tests Close the Loop { #tests-close-loop }
 
 Compiler correctness is not behavioral correctness. The final layer is testing.
 
@@ -451,7 +453,7 @@ This gives the knowledge system a verification cycle. The agent is not only read
 
 That is what makes documentation increasingly executable.
 
-## The Official Kora Skill Changes the Interface
+## The Official Kora Skill Changes the Interface { #kora-skill-interface }
 
 The official `kora-skills` repository is one of the most interesting parts of this architecture because it formalizes how an agent should approach Kora.
 
@@ -474,7 +476,7 @@ developer → agent → framework knowledge
 
 The agent becomes an active retrieval and adaptation layer.
 
-## The Skill Is More Than a Search Shortcut
+## The Skill Is More Than a Search Shortcut { #skill-search-shortcut }
 
 The weakest interpretation of an AI skill would be a file containing links. That would not be very interesting.
 
@@ -497,7 +499,7 @@ project setup, and learning.
 
 That is essentially a machine-oriented map of framework knowledge. It tells the agent not merely where information is but how to reason about the framework.
 
-## Versioned Skills Matter
+## Versioned Skills Matter { #versioned-skills }
 
 There is an important current-state detail.
 
@@ -516,7 +518,7 @@ That is exactly the right direction. A skill that ignores framework generations 
 
 Versioned agent knowledge can avoid that.
 
-## Versioning Is Critical for AI Reliability
+## Versioning Is Critical for AI Reliability { #versioning-ai-reliability }
 
 AI retrieval becomes dangerous when several framework generations use similar vocabulary.
 
@@ -532,7 +534,7 @@ Do not use Kora 1 guidance unless explicitly relevant.
 
 This makes the skill more than convenience. It becomes a **version boundary for machine reasoning**.
 
-## Static Documentation Becomes Interactive Documentation
+## Static Documentation Becomes Interactive Documentation { #interactive-docs }
 
 Imagine the developer asks:
 
@@ -566,7 +568,7 @@ tests validate
 
 The documentation has become interactive. Not because the HTML page changed, but because the access model changed.
 
-## The Documentation Becomes Executable Context
+## The Documentation Becomes Executable Context { #executable-context }
 
 This leads to one of the strongest formulations:
 
@@ -578,7 +580,7 @@ The distance between reading documentation and producing validated implementatio
 
 That changes how framework authors should think about documentation quality.
 
-## Documentation for Humans and Agents Has Different Failure Modes
+## Documentation for Humans and Agents Has Different Failure Modes { #failure-modes }
 
 Human readers tolerate some ambiguity because they bring broad judgment. An AI agent can amplify ambiguity.
 
@@ -588,7 +590,7 @@ less precise.
 
 Therefore machine-readable documentation places new pressure on documentation design.
 
-## Dense Documentation Becomes More Valuable
+## Dense Documentation Becomes More Valuable { #dense-docs }
 
 "More documentation" is not always better.
 
@@ -600,7 +602,7 @@ path for common problems.
 
 The framework's philosophy and its documentation strategy reinforce one another.
 
-## One Recommended Path Reduces Retrieval Ambiguity
+## One Recommended Path Reduces Retrieval Ambiguity { #recommended-path }
 
 Consider an agent asked: "How should I create a database repository?"
 
@@ -623,7 +625,7 @@ synchronous virtual-thread execution
 
 A smaller option space improves agent reliability.
 
-## Documentation Quality Becomes More Important Than Documentation Size
+## Documentation Quality Becomes More Important Than Documentation Size { #quality-over-size }
 
 Traditional framework comparisons often ask how many pages, tutorials, Stack Overflow questions, or blog posts exist.
 
@@ -644,7 +646,7 @@ The volume of text is secondary.
 
 This is why "95% documented" is more meaningful when the coverage is distributed across the right knowledge layers rather than concentrated in one gigantic manual.
 
-## A Monolithic Documentation Site Is Not Necessarily Better
+## A Monolithic Documentation Site Is Not Necessarily Better { #monolithic-site }
 
 A documentation site can become too ambitious. It may attempt to be simultaneously reference, tutorial, cookbook, conceptual guide, migration guide, FAQ, troubleshooting wiki, and historical archive.
 
@@ -652,7 +654,7 @@ That creates noise. The same concept appears repeatedly in different voices. Sea
 
 A layered documentation architecture is healthier.
 
-## The New Division of Responsibilities
+## The New Division of Responsibilities { #division-responsibilities }
 
 A strong framework knowledge system can use this division:
 
@@ -684,7 +686,7 @@ Tests
 
 Every layer has a job. This reduces duplication and gives an AI agent a rational escalation path when the first source is insufficient.
 
-## Reference Should Not Become a Tutorial
+## Reference Should Not Become a Tutorial { #reference-not-tutorial }
 
 Suppose the developer wants to know the exact type of a configuration property. The answer should be retrievable quickly.
 
@@ -694,7 +696,7 @@ This is why concise reference material is valuable. The tutorial can explain whe
 
 That separation helps both humans and agents.
 
-## Guides Should Not Become API Catalogs
+## Guides Should Not Become API Catalogs { #guides-not-catalogs }
 
 The opposite problem is equally common. A guide becomes unreadable when every possible configuration option is inserted into the workflow.
 
@@ -702,7 +704,7 @@ The guide should show the common path and explain the reasoning. The reference o
 
 This keeps the guide useful for context construction. An agent can combine the guide's sequence with the reference's exact values.
 
-## Examples Should Be Canonical, Not Exhaustive
+## Examples Should Be Canonical, Not Exhaustive { #examples-canonical-not-exhaustive }
 
 An examples repository does not need one service for every permutation. It needs examples that demonstrate canonical patterns cleanly.
 
@@ -712,7 +714,7 @@ Instead of writing many nearly identical examples for every combination, it can 
 
 The agent handles the permutation.
 
-## Generated Source Is Application-Specific Documentation
+## Generated Source Is Application-Specific Documentation { #generated-source-docs }
 
 Static examples can never exactly match the current project. Generated source can.
 
@@ -721,7 +723,7 @@ the exact code Kora produced for the application's contract.
 
 For debugging and explanation, that source has unusually high value.
 
-## Generated Graph Code Is Architectural Documentation
+## Generated Graph Code Is Architectural Documentation { #generated-graph-code }
 
 The same applies to dependency injection. An architecture diagram might say:
 
@@ -737,7 +739,7 @@ That makes architecture queryable.
 
 A developer can ask: "Why is this component in the graph?" and the agent can answer from code rather than framework mythology.
 
-## Generated AOP Code Documents Control Flow
+## Generated AOP Code Documents Control Flow { #generated-aop-code }
 
 AOP is usually one of the least transparent parts of enterprise frameworks.
 
@@ -748,7 +750,7 @@ based on the actual generated call structure.
 
 This is executable documentation in a very literal sense.
 
-## Framework Source Is the Final Authority
+## Framework Source Is the Final Authority { #framework-source-authority }
 
 Sometimes documentation and generated code are still not enough. Then open-source framework code becomes the final layer.
 
@@ -760,7 +762,7 @@ A human developer may hesitate to read hundreds of lines of processor code. An a
 
 Open source therefore becomes more valuable as documentation than it used to be.
 
-## Source Transparency Is an AI Multiplier
+## Source Transparency Is an AI Multiplier { #source-transparency }
 
 Framework source that is strongly typed, direct, small, consistent, and close to generated output is easier for agents to reason about.
 
@@ -768,7 +770,7 @@ Kora's emphasis on transparent generated code and simple abstractions has an une
 
 The same code quality that helps maintainers also helps models.
 
-## Error Messages Become Teaching Material
+## Error Messages Become Teaching Material { #error-messages-teaching }
 
 Imagine a new developer asks an agent to add a component and compilation fails because the graph contains an ambiguity.
 
@@ -778,7 +780,7 @@ The agent can then explain the concept while fixing it. This transforms framewor
 
 In older workflows, the developer might copy the error into Google. Now the compiler and agent can form a closed loop.
 
-## Learning Becomes Embedded in Work
+## Learning Becomes Embedded in Work { #embedded-learning }
 
 Traditional learning often happens before development:
 
@@ -803,7 +805,7 @@ This is closer to apprenticeship than documentation search. The framework knowle
 
 Kora's explicit model suits that style particularly well.
 
-## The Skill Becomes an Interactive Access Layer
+## The Skill Becomes an Interactive Access Layer { #skill-access-layer }
 
 This is the most important role of the official Kora Skill.
 
@@ -828,7 +830,7 @@ In other words, it becomes an **interactive access layer over canonical framewor
 
 That is a new category of developer tooling.
 
-## A Skill Is Closer to an API for Knowledge
+## A Skill Is Closer to an API for Knowledge { #skill-api-knowledge }
 
 Documentation is optimized for reading. A skill is optimized for an agent consuming knowledge while performing work.
 
@@ -839,7 +841,7 @@ wiring changes, and prefer the current recommended module.
 
 This turns framework conventions into machine-consumable operational instructions.
 
-## Machine-Readable Does Not Mean Machine-Only
+## Machine-Readable Does Not Mean Machine-Only { #machine-readable }
 
 The best machine-readable knowledge remains good human documentation.
 
@@ -851,7 +853,7 @@ The same structure improves human scanning, search engines, embeddings, RAG retr
 
 Good documentation design is increasingly multi-audience by default.
 
-## The Kora Knowledge Stack Is Not Just the Skill
+## The Kora Knowledge Stack Is Not Just the Skill { #stack-not-just-skill }
 
 It would be a mistake to reduce the idea to "Kora has an AI skill."
 
@@ -877,7 +879,7 @@ tests
 
 The components reinforce one another.
 
-## Why 95% Coverage Matters Differently Now
+## Why 95% Coverage Matters Differently Now { #coverage-matters }
 
 Coverage percentages have always been difficult to compare because frameworks define "functionality" differently.
 
@@ -889,7 +891,7 @@ Every well-documented area reduces that uncertainty.
 
 High official coverage therefore has a second-order effect: it improves the reliability of automated development.
 
-## Documentation Gaps Become Hallucination Gaps
+## Documentation Gaps Become Hallucination Gaps { #hallucination-gaps }
 
 This is a useful way to think about it.
 
@@ -911,7 +913,7 @@ Compiler validation adds another constraint.
 
 Together they reduce the space in which an agent can confidently invent something.
 
-## One Recommended Path Is an Anti-Hallucination Feature
+## One Recommended Path Is an Anti-Hallucination Feature { #anti-hallucination }
 
 Kora's "one problem, one solution" philosophy has a new consequence in this environment.
 
@@ -922,7 +924,7 @@ search space.
 
 That improves consistency.
 
-## Legacy Compatibility Can Be an AI Liability
+## Legacy Compatibility Can Be an AI Liability { #legacy-ai-liability }
 
 Large mature frameworks often carry old APIs for good reasons. Breaking millions of applications is unacceptable.
 
@@ -935,7 +937,7 @@ Versioned documentation and skills can reduce this problem.
 
 A younger framework like Kora has less historical baggage, which becomes an unexpected advantage for machine reasoning.
 
-## "Docs Without the Bloat" Becomes Technically Meaningful
+## "Docs Without the Bloat" Becomes Technically Meaningful { #docs-without-bloat }
 
 The phrase can sound like marketing, but there is a serious technical point behind it.
 
@@ -945,7 +947,7 @@ A large watery documentation corpus may actually be worse for an AI agent than a
 
 This is the machine-readable version of the same complaint humans have about bloated documentation.
 
-## Repetition Is Not Free
+## Repetition Is Not Free { #repetition-not-free }
 
 Documentation authors sometimes repeat the same explanation across many pages to make each page self-contained. That can help casual human browsing, but it can also create inconsistencies.
 
@@ -955,7 +957,7 @@ A layered knowledge system should centralize facts and let guides link to refere
 
 This makes maintenance and machine retrieval more reliable.
 
-## The Same Principle Applies to Examples
+## The Same Principle Applies to Examples { #principle-examples }
 
 Duplicated examples can drift. Suppose five examples contain slightly different ways to configure the same module. An agent may not know which one is canonical.
 
@@ -963,7 +965,7 @@ A smaller set of carefully maintained examples is often better.
 
 Again, quality beats volume.
 
-## Community Knowledge Still Matters, But Its Role Changes
+## Community Knowledge Still Matters, But Its Role Changes { #community-knowledge }
 
 None of this makes Stack Overflow, blogs, conference talks, or GitHub issues obsolete.
 
@@ -975,7 +977,7 @@ The agent should prefer official current source, then use community material as 
 
 This is a healthier hierarchy than treating the most upvoted 2019 answer as authoritative forever.
 
-## Canonical Sources Become More Valuable Than Popular Sources
+## Canonical Sources Become More Valuable Than Popular Sources { #canonical-sources }
 
 Search engines historically optimized heavily for popularity. AI development needs authority.
 
@@ -987,7 +989,7 @@ An official Skill can help encode that priority.
 
 That is another reason skills are more interesting than generic web search.
 
-## The Framework Can Teach the Agent Its Own Conventions
+## The Framework Can Teach the Agent Its Own Conventions { #teach-conventions }
 
 This is perhaps the most novel possibility.
 
@@ -1014,7 +1016,7 @@ That is not documentation in the old sense.
 
 It is a machine-readable development methodology.
 
-## Framework Conventions Become Programmable Context
+## Framework Conventions Become Programmable Context { #programmable-context }
 
 Every experienced team has unwritten framework conventions.
 
@@ -1033,7 +1035,7 @@ A skill can encode them directly for the agent. This reduces repeated review wor
 
 Kora's official skill model points in this direction.
 
-## Official Skills Can Reduce Model Drift
+## Official Skills Can Reduce Model Drift { #reduce-model-drift }
 
 Generic language models have stale knowledge. Frameworks evolve faster than model training cycles.
 
@@ -1045,7 +1047,7 @@ The framework team can effectively publish updated context without waiting for a
 
 That is a major change in framework documentation economics.
 
-## Documentation Releases Can Become Agent Releases
+## Documentation Releases Can Become Agent Releases { #agent-releases }
 
 Historically, a framework release involved:
 
@@ -1077,7 +1079,7 @@ If framework behavior changes materially, machine guidance should change with it
 
 That is why versioned skills are so important.
 
-## Kora 1 and Kora 2 Illustrate the Need for Version Boundaries
+## Kora 1 and Kora 2 Illustrate the Need for Version Boundaries { #version-boundaries }
 
 Kora is currently in exactly the situation where this matters.
 
@@ -1089,7 +1091,7 @@ A future Kora 2 skill should be able to describe Kora 2 directly without carryin
 
 This is what responsible machine-readable documentation should look like.
 
-## The Skill Can Become the Framework's Query Planner
+## The Skill Can Become the Framework's Query Planner { #skill-query-planner }
 
 A useful analogy is a database query planner.
 
@@ -1116,7 +1118,7 @@ The developer does not need to know the exact documentation taxonomy.
 
 That reduces navigation cost.
 
-## Developers Stop Needing the Exact Search Term
+## Developers Stop Needing the Exact Search Term { #no-search-term }
 
 This is an important usability improvement.
 
@@ -1129,7 +1131,7 @@ It can interpret intent, map it to framework terminology, and retrieve the corre
 
 This makes documentation accessible earlier in the learning curve.
 
-## AI Makes Good Taxonomy More Valuable, Not Less
+## AI Makes Good Taxonomy More Valuable, Not Less { #good-taxonomy }
 
 Although the agent can bridge vocabulary, a consistent framework taxonomy still matters.
 
@@ -1139,7 +1141,7 @@ Kora's relatively small set of primitives helps. Concepts such as `Component`, `
 
 That makes retrieval and explanation easier.
 
-## The Framework Knowledge Stack Can Be Queried From the Project Context
+## The Framework Knowledge Stack Can Be Queried From the Project Context { #queried-project-context }
 
 The most significant advantage over ordinary documentation search is that the agent sees the current project.
 
@@ -1150,7 +1152,7 @@ mapper exists. Add this client interface, reuse this mapper, and attach retry he
 
 That is context-specific documentation.
 
-## Context-Specific Documentation Is More Useful Than Generic Documentation
+## Context-Specific Documentation Is More Useful Than Generic Documentation { #context-specific-docs }
 
 This is the central experiential shift.
 
@@ -1162,7 +1164,7 @@ That can include which module is already present, which generated class exists, 
 
 This narrows the gap between learning and modifying the system.
 
-## Generated Sources Make Project Context Much Richer
+## Generated Sources Make Project Context Much Richer { #generated-project-context }
 
 Kora's generated source adds information that many frameworks hide.
 
@@ -1174,7 +1176,7 @@ That duality is extremely valuable.
 
 The model can compare what the developer wrote with what Kora generated.
 
-## Compiler Diagnostics Add a Third View
+## Compiler Diagnostics Add a Third View { #compiler-third-view }
 
 Now the agent has three perspectives:
 
@@ -1190,7 +1192,7 @@ If the docs are misunderstood, the compiler corrects the interpretation. If the 
 
 This is a richer knowledge environment than static docs alone.
 
-## Tests Add the Fourth View
+## Tests Add the Fourth View { #tests-fourth-view }
 
 Then tests add behavioral evidence.
 
@@ -1208,7 +1210,7 @@ An agent can move across all five.
 
 That is close to a complete interactive knowledge system.
 
-## The Framework Knowledge Stack Has Feedback, Not Just Retrieval
+## The Framework Knowledge Stack Has Feedback, Not Just Retrieval { #feedback-not-retrieval }
 
 This is the distinction between an information system and a development system.
 
@@ -1228,7 +1230,7 @@ The output feeds back into the next reasoning step.
 
 That closed loop is why AI-assisted development feels qualitatively different from search.
 
-## The Compiler Is an Oracle With Limited Scope
+## The Compiler Is an Oracle With Limited Scope { #compiler-oracle }
 
 Of course, the compiler does not know business correctness.
 
@@ -1241,7 +1243,7 @@ But the compiler is extremely good at rejecting structural nonsense.
 
 That is exactly where AI agents benefit from hard constraints.
 
-## Tests Are an Oracle With Another Scope
+## Tests Are an Oracle With Another Scope { #tests-oracle }
 
 Tests also have limits. They validate only covered behavior.
 
@@ -1264,7 +1266,7 @@ Human review remains essential.
 
 The point is that documentation participates directly in that loop.
 
-## This Changes What Framework Authors Should Optimize
+## This Changes What Framework Authors Should Optimize { #what-to-optimize }
 
 Historically, documentation teams optimized for page views, readability, and discoverability.
 
@@ -1273,7 +1275,7 @@ agent instructions.
 
 This is a new documentation discipline.
 
-## Documentation Should Be Treated Like Code
+## Documentation Should Be Treated Like Code { #docs-like-code }
 
 If AI agents depend on documentation operationally, docs become part of the development toolchain.
 
@@ -1283,7 +1285,7 @@ A broken example is no longer just an educational inconvenience.
 
 It can become bad input to automated coding.
 
-## Runnable Examples Should Be Continuously Verified
+## Runnable Examples Should Be Continuously Verified { #examples-continuously-verified }
 
 The best examples repository should be part of CI.
 
@@ -1295,7 +1297,7 @@ Kora's runnable examples are well suited to this approach because they are actua
 
 That is exactly the kind of artifact agents can trust more confidently.
 
-## Generated-Code Stability Also Matters
+## Generated-Code Stability Also Matters { #generated-code-stability }
 
 Generated source does not need to be a public API in the strict compatibility sense to be useful as documentation.
 
@@ -1305,7 +1307,7 @@ If generation becomes intentionally opaque or aggressively obfuscated, one of Ko
 
 Readability is therefore not merely a debugging nicety. It is part of the knowledge architecture.
 
-## Error Message Quality Becomes an AI Feature
+## Error Message Quality Becomes an AI Feature { #error-message-quality }
 
 Compiler diagnostics traditionally target humans. Now they also target agents.
 
@@ -1315,7 +1317,7 @@ The more structured the diagnostic, the faster an agent can self-correct.
 
 Kora's compile-time model creates the opportunity for this kind of feedback.
 
-## AI Changes the Value of Framework Transparency
+## AI Changes the Value of Framework Transparency { #framework-transparency }
 
 Transparency has always been useful. In the AI era it becomes multiplicative.
 
@@ -1327,7 +1329,7 @@ Generated code that only a small percentage of human developers would inspect ma
 
 That increases the return on transparency.
 
-## Hidden Runtime Magic Becomes More Expensive
+## Hidden Runtime Magic Becomes More Expensive { #hidden-runtime-magic }
 
 The opposite is also true.
 
@@ -1340,7 +1342,7 @@ This increases hallucination risk.
 
 Kora's explicit architecture reduces that hidden state.
 
-## Documentation and Framework Architecture Are Converging
+## Documentation and Framework Architecture Are Converging { #converging-architecture }
 
 This is one of the most interesting consequences.
 
@@ -1353,7 +1355,7 @@ Kora's generated-code model means that part of the explanation can live in the g
 
 Architecture therefore affects knowledge quality.
 
-## Kora's Small Surface Area Is an AI Advantage
+## Kora's Small Surface Area Is an AI Advantage { #small-surface-area }
 
 A smaller conceptual surface means fewer framework-specific tokens need to be loaded into context.
 
@@ -1365,7 +1367,7 @@ Framework complexity consumes attention, whether human or machine.
 
 Kora's explicit effort to keep abstractions small has a new benefit: lower context overhead.
 
-## Context Windows Are a Real Engineering Resource
+## Context Windows Are a Real Engineering Resource { #context-windows }
 
 An LLM has finite context.
 
@@ -1376,7 +1378,7 @@ A framework with a compact model is cheaper to reason about.
 
 This is a very literal sense in which simplicity becomes performance for AI development.
 
-## Dense Documentation Saves Context Tokens
+## Dense Documentation Saves Context Tokens { #dense-saves-tokens }
 
 A concise reference page with high information density consumes fewer tokens than a long repetitive explanation.
 
@@ -1386,7 +1388,7 @@ It can fit more relevant framework knowledge into the same reasoning context.
 
 This does not mean documentation should be cryptic. It means unnecessary repetition has a measurable cost.
 
-## Guides Supply the Context That Reference Cannot
+## Guides Supply the Context That Reference Cannot { #guides-supply-context }
 
 Token efficiency does not imply removing reasoning.
 
@@ -1394,7 +1396,7 @@ The solution is separation. Reference stays dense. Guides carry conceptual expla
 
 That is a better use of context than making every page self-contained and verbose.
 
-## Skills Can Load Knowledge Selectively
+## Skills Can Load Knowledge Selectively { #skills-load-selectively }
 
 A well-structured skill repository can further reduce context cost.
 
@@ -1404,7 +1406,7 @@ The official Kora skills repository's domain decomposition already points toward
 
 Selective loading is important for scalable agent workflows.
 
-## The Knowledge Stack Can Become a Tooling Surface
+## The Knowledge Stack Can Become a Tooling Surface { #tooling-surface }
 
 Once framework knowledge is structured for agents, other tools can use it too.
 
@@ -1414,7 +1416,7 @@ The skill is therefore not only a chat feature.
 
 It can become part of a broader developer tooling ecosystem.
 
-## Migration Guides Become Especially Important
+## Migration Guides Become Especially Important { #migration-guides }
 
 When Kora 2 changes from Kora 1, migration knowledge needs explicit representation.
 
@@ -1426,7 +1428,7 @@ The better the migration guide is structured, the more safely agents can transfo
 
 This is another example of documentation becoming executable context.
 
-## The Same Applies to Deprecations
+## The Same Applies to Deprecations { #deprecations }
 
 A deprecation message can contain the old API, the replacement API, the behavioral difference, and a migration example.
 
@@ -1436,7 +1438,7 @@ Framework authors should increasingly write deprecations with automation in mind
 
 The prose is no longer only informational. It can drive code changes.
 
-## Kora Examples Can Function as Regression Patterns
+## Kora Examples Can Function as Regression Patterns { #regression-patterns }
 
 Canonical examples can also serve as regression patterns.
 
@@ -1446,7 +1448,7 @@ If the application's structure diverges unexpectedly, that may indicate legitima
 
 The examples become reference implementations for both learning and maintenance.
 
-## AI Can Explain Generated Code Back to the Developer
+## AI Can Explain Generated Code Back to the Developer { #explain-generated-code }
 
 Another interesting loop is:
 
@@ -1466,7 +1468,7 @@ The developer gets the productivity of declarative APIs without losing access to
 
 That is exactly the kind of balance Kora's transparency model is trying to achieve.
 
-## The Framework Can Become Self-Explaining
+## The Framework Can Become Self-Explaining { #self-explaining }
 
 Taken far enough, the combination of docs, generated source, source code, skill, and agent creates a framework that can effectively explain itself.
 
@@ -1474,7 +1476,7 @@ The developer can ask: "Why did Kora generate this?" and the agent can answer us
 
 That is a qualitatively different experience from reading a static manual.
 
-## The New Documentation UX Is Conversational but Evidence-Based
+## The New Documentation UX Is Conversational but Evidence-Based { #conversational-ux }
 
 There is a risk in describing this as conversational documentation.
 
@@ -1498,7 +1500,7 @@ That is evidence-based conversation.
 
 The official Skill helps anchor the conversation in framework truth.
 
-## Authority Matters More Than Fluency
+## Authority Matters More Than Fluency { #authority-over-fluency }
 
 AI answers often sound fluent whether they are correct or not.
 
@@ -1510,7 +1512,7 @@ Framework-maintained skills can encode that hierarchy.
 
 This is a significant advantage over purely generic AI assistance.
 
-## The Knowledge Stack Should Have a Clear Precedence Order
+## The Knowledge Stack Should Have a Clear Precedence Order { #precedence-order }
 
 A sensible precedence could be:
 
@@ -1534,7 +1536,7 @@ The exact order depends on the question.
 
 The important thing is that the agent knows which sources are authoritative for which kind of claim.
 
-## Community Folklore Becomes Less Necessary
+## Community Folklore Becomes Less Necessary { #community-folklore }
 
 Mature frameworks often accumulate "things everyone knows" that are difficult to find in official docs.
 
@@ -1548,7 +1550,7 @@ In the AI era, this becomes even more valuable because folklore is hard to retri
 
 Explicit code is much easier.
 
-## Documentation Can Compete With Community Size
+## Documentation Can Compete With Community Size { #compete-community-size }
 
 A small framework will probably never have the same volume of forum posts as Spring.
 
@@ -1559,7 +1561,7 @@ surface can be much larger than the raw community corpus suggests.
 
 This is a significant change in framework economics.
 
-## The Cost of Being New Is Lower Than It Used to Be
+## The Cost of Being New Is Lower Than It Used to Be { #cost-of-new }
 
 Historically, using a newer framework meant accepting fewer Stack Overflow answers, fewer blog posts, fewer experienced hires, and fewer tutorials.
 
@@ -1569,7 +1571,7 @@ It cannot invent missing implementation quality or production maturity. But it c
 
 That makes good documentation disproportionately valuable to newer frameworks.
 
-## The Cost of Poor Documentation Is Higher Than It Used to Be
+## The Cost of Poor Documentation Is Higher Than It Used to Be { #cost-of-poor-docs }
 
 The reverse is equally important.
 
@@ -1579,7 +1581,7 @@ That can generate subtle incorrect code quickly.
 
 Therefore "AI can read source" is not an excuse to neglect docs. It raises the stakes for canonical knowledge.
 
-## AI Does Not Eliminate the Need for Documentation
+## AI Does Not Eliminate the Need for Documentation { #docs-still-needed }
 
 A common mistaken conclusion is:
 
@@ -1598,7 +1600,7 @@ Source code shows what the implementation does. Documentation says what it promi
 
 Both matter.
 
-## Source and Docs Answer Different Questions
+## Source and Docs Answer Different Questions { #source-vs-docs }
 
 Consider a timeout default. Source may show the current constant. Documentation should state whether that value is part of the supported contract.
 
@@ -1608,7 +1610,7 @@ Consider an extension point. Source shows how it works today. Documentation expl
 
 AI agents need both implementation truth and contract truth.
 
-## Guides Preserve Design Intent
+## Guides Preserve Design Intent { #guides-design-intent }
 
 This is why guides remain essential even when an agent can read source.
 
@@ -1622,7 +1624,7 @@ Those are architectural decisions, not merely APIs.
 
 Guides preserve them.
 
-## The Best Knowledge Systems Are Layered, Not Redundant
+## The Best Knowledge Systems Are Layered, Not Redundant { #layered-not-redundant }
 
 The ideal architecture is not to repeat the same answer six times.
 
@@ -1642,7 +1644,7 @@ That is a mature knowledge system.
 
 Kora is increasingly organized in that direction.
 
-## An Agent Can Turn Documentation Into a Project-Specific Guide
+## An Agent Can Turn Documentation Into a Project-Specific Guide { #project-specific-guide }
 
 Suppose a developer joins an unfamiliar Kora service.
 
@@ -1656,7 +1658,7 @@ The framework docs become the semantic dictionary. The project provides the inst
 
 This is one of the most useful forms of AI-assisted onboarding.
 
-## Onboarding Becomes Query-Driven
+## Onboarding Becomes Query-Driven { #query-driven-onboarding }
 
 Traditional onboarding often front-loads large amounts of context: read the architecture wiki, read framework docs, watch videos, read examples.
 
@@ -1672,7 +1674,7 @@ question arises
 
 Kora's small surface and explicit architecture make this especially effective.
 
-## The Same Helps Senior Engineers Too
+## The Same Helps Senior Engineers Too { #senior-engineers }
 
 This is not only for beginners.
 
@@ -1682,7 +1684,7 @@ Instead of memorizing every module, they can rely on the knowledge stack.
 
 This reduces the need for framework trivia as professional capital.
 
-## Memory Becomes Less Important Than Reasoning
+## Memory Becomes Less Important Than Reasoning { #memory-vs-reasoning }
 
 This connects to a broader change in software engineering.
 
@@ -1694,7 +1696,7 @@ A good framework knowledge system supports that shift.
 
 The agent handles lookup. The engineer handles judgment.
 
-## The Official Skill Can Encode Safe Defaults
+## The Official Skill Can Encode Safe Defaults { #skill-safe-defaults }
 
 One especially valuable role for a skill is preventing the agent from choosing clever but unsupported paths.
 
@@ -1711,7 +1713,7 @@ This can keep generated code aligned with framework philosophy.
 
 Without such guidance, a general-purpose model may import habits from Spring, Quarkus, or Ktor into Kora unnecessarily.
 
-## Framework Cross-Contamination Is a Real AI Problem
+## Framework Cross-Contamination Is a Real AI Problem { #cross-contamination }
 
 Language models have seen many Java frameworks.
 
@@ -1733,7 +1735,7 @@ It tells the model which conceptual world it is operating in.
 
 This is another reason official machine-readable context matters.
 
-## The Skill Can Reduce "Framework Accent"
+## The Skill Can Reduce "Framework Accent" { #framework-accent }
 
 AI-generated code often has an accent from more common ecosystems.
 
@@ -1743,7 +1745,7 @@ A Kora Skill can reinforce Kora-native patterns: compile-time modules, explicit 
 
 This helps the agent produce code that fits the framework rather than merely compiles.
 
-## Correct Code Is Not Enough; Idiomatic Code Matters
+## Correct Code Is Not Enough; Idiomatic Code Matters { #idiomatic-code }
 
 A general model may find a technically valid Java solution that bypasses the framework.
 
@@ -1753,7 +1755,7 @@ Official skill guidance can encode what Kora considers idiomatic.
 
 This is analogous to having a senior framework engineer present during every AI-assisted edit.
 
-## The Skill Is Also a Documentation Maintenance Test
+## The Skill Is Also a Documentation Maintenance Test { #skill-maintenance-test }
 
 Maintaining an official skill forces framework authors to clarify preferred patterns, stable terminology, version boundaries, and canonical sources.
 
@@ -1761,7 +1763,7 @@ If the team cannot express these clearly for an agent, the framework knowledge m
 
 In this sense, writing agent guidance is a useful pressure test for documentation quality.
 
-## Machine-Readable Knowledge Exposes Inconsistency Quickly
+## Machine-Readable Knowledge Exposes Inconsistency Quickly { #exposes-inconsistency }
 
 An agent traversing many sources may notice contradictions humans rarely connect.
 
@@ -1779,7 +1781,7 @@ The framework team can use AI not only to consume docs but to audit them.
 
 That is another new feedback loop.
 
-## Documentation Testing Can Become Automated
+## Documentation Testing Can Become Automated { #automated-doc-testing }
 
 A framework can increasingly test its knowledge system.
 
@@ -1788,7 +1790,7 @@ agent evaluation prompts against canonical answers.
 
 This moves documentation quality closer to software quality engineering.
 
-## Agent Evaluations May Become Part of Framework CI
+## Agent Evaluations May Become Part of Framework CI { #agent-evaluations-ci }
 
 Imagine Kora maintaining evaluation questions such as:
 
@@ -1805,7 +1807,7 @@ This is a natural extension of documentation-as-executable-context.
 
 The framework can test not only whether humans can read the docs, but whether agents can apply them correctly.
 
-## Framework Documentation Becomes an Interface
+## Framework Documentation Becomes an Interface { #docs-as-interface }
 
 This leads to a stronger conceptual claim:
 
@@ -1819,7 +1821,7 @@ A stale documentation page can therefore be almost as damaging as a bad API.
 
 That raises the bar for maintenance.
 
-## The Knowledge Interface Has Multiple Consumers
+## The Knowledge Interface Has Multiple Consumers { #interface-consumers }
 
 The same canonical Kora knowledge can serve a human developer, AI coding agent, IDE assistant, code review bot, migration tool, onboarding tutor, and support bot.
 
@@ -1827,7 +1829,7 @@ This multiplies the value of every improvement to documentation structure.
 
 A well-written guide is no longer only a page. It is reusable machine context.
 
-## The Old "More Content" Strategy Becomes Less Attractive
+## The Old "More Content" Strategy Becomes Less Attractive { #more-content-strategy }
 
 Framework communities historically gained visibility by producing huge amounts of blogs, answers, talks, and tutorials.
 
@@ -1849,7 +1851,7 @@ maximize authoritative signal
 
 Kora's compact documentation philosophy aligns with this shift.
 
-## Historical Archives Can Become Noise
+## Historical Archives Can Become Noise { #historical-archives-noise }
 
 A framework with 15 years of community content has enormous knowledge capital.
 
@@ -1863,7 +1865,7 @@ This is a real cost of maturity.
 
 It does not erase the benefits of a mature ecosystem, but it complicates retrieval.
 
-## A Younger Framework Can Start With AI-Native Knowledge Hygiene
+## A Younger Framework Can Start With AI-Native Knowledge Hygiene { #ai-native-hygiene }
 
 Kora has an opportunity to avoid some of that debt.
 
@@ -1873,7 +1875,7 @@ That is easier than cleaning up 15 years of conflicting material later.
 
 In this sense, being younger can be an advantage if the knowledge system is designed intentionally.
 
-## Kora's 95% Claim Should Be Read as Coverage, Not Volume
+## Kora's 95% Claim Should Be Read as Coverage, Not Volume { #coverage-not-volume }
 
 The meaningful part of the "95%+" statement is not the number of words.
 
@@ -1885,7 +1887,7 @@ A feature with 30 pages of vague explanation is not better documented than a fea
 
 Coverage is about answerability.
 
-## Answerability Is the New Documentation KPI
+## Answerability Is the New Documentation KPI { #answerability-kpi }
 
 A useful new KPI is:
 
@@ -1904,7 +1906,7 @@ For each module:
 
 If those answers exist, the feature is genuinely documented.
 
-## The Agent Can Surface Missing Documentation
+## The Agent Can Surface Missing Documentation { #surface-missing-docs }
 
 When an agent repeatedly has to inspect source because a contract is absent from docs, that is a signal.
 
@@ -1912,7 +1914,7 @@ Framework teams can use agent traces to identify common retrieval failures, ambi
 
 This creates a new feedback channel from documentation consumption.
 
-## Support Questions Can Improve Canonical Knowledge Directly
+## Support Questions Can Improve Canonical Knowledge Directly { #support-improve-knowledge }
 
 Historically, a support answer might remain in a chat or GitHub issue.
 
@@ -1922,7 +1924,7 @@ That prevents the same ambiguity from recurring.
 
 The knowledge system becomes self-improving.
 
-## The Skill Can Point to Generated Sources, Not Just Docs
+## The Skill Can Point to Generated Sources, Not Just Docs { #skill-generated-sources }
 
 One of the most Kora-specific possibilities is teaching agents to inspect generated source deliberately.
 
@@ -1946,7 +1948,7 @@ This is a powerful agent workflow because the framework already generates readab
 
 Not every framework can offer this escalation path cleanly.
 
-## Generated Code Becomes an Official Debugging Surface
+## Generated Code Becomes an Official Debugging Surface { #debugging-surface }
 
 This should be treated as intentional product design.
 
@@ -1958,7 +1960,7 @@ The generated artifact is not merely a compiler implementation detail.
 
 It is part of the developer experience.
 
-## Compiler Feedback and Generated Code Reinforce Each Other
+## Compiler Feedback and Generated Code Reinforce Each Other { #compiler-generated-reinforce }
 
 Suppose compilation fails while generating a mapper.
 
@@ -1972,7 +1974,7 @@ Together they triangulate the solution.
 
 This is exactly what a rich knowledge stack should do.
 
-## The Knowledge Stack Can Shorten the Support Loop
+## The Knowledge Stack Can Shorten the Support Loop { #shorten-support-loop }
 
 Traditional framework support may look like:
 
@@ -2002,7 +2004,7 @@ This can reduce maintainer load.
 
 A smaller framework benefits disproportionately from that.
 
-## Maintainer Bandwidth Becomes More Scalable
+## Maintainer Bandwidth Becomes More Scalable { #maintainer-bandwidth }
 
 A large framework can rely on a large community support network.
 
@@ -2014,7 +2016,7 @@ It cannot replace maintainers for bugs and deep design questions, but it can han
 
 That makes small framework ecosystems more viable.
 
-## Official Skills Can Encode Maintainer Intent Directly
+## Official Skills Can Encode Maintainer Intent Directly { #maintainer-intent }
 
 Community-trained AI may know what users often do.
 
@@ -2026,7 +2028,7 @@ The most common workaround on the internet may not be the intended solution.
 
 Machine-readable maintainer intent helps keep generated code aligned with the framework's design.
 
-## The Best Knowledge System Minimizes Lore
+## The Best Knowledge System Minimizes Lore { #minimizes-lore }
 
 Kora's broader philosophy is relevant here.
 
@@ -2038,7 +2040,7 @@ That makes the official knowledge system smaller and more complete.
 
 The architecture itself reduces documentation burden.
 
-## Less Runtime Magic Means Less Documentation About Magic
+## Less Runtime Magic Means Less Documentation About Magic { #less-runtime-magic }
 
 Every invisible runtime mechanism requires explanatory material.
 
@@ -2058,7 +2060,7 @@ Documentation can focus more on intent and contract.
 
 This is another way architecture and documentation interact.
 
-## Strong Typing Is Also Knowledge Encoding
+## Strong Typing Is Also Knowledge Encoding { #strong-typing }
 
 Types themselves carry documentation.
 
@@ -2098,7 +2100,7 @@ Strong typing therefore makes the application more self-describing.
 
 That helps both IDEs and agents.
 
-## The Project Itself Becomes a Knowledge Base
+## The Project Itself Becomes a Knowledge Base { #project-knowledge-base }
 
 Once source, generated code, build files, tests, and configuration are machine-readable, the current repository becomes part of the documentation system.
 
@@ -2110,7 +2112,7 @@ The project gives the dialect.
 
 This combination produces much better answers than either source alone.
 
-## The Framework Skill Should Respect Project Conventions
+## The Framework Skill Should Respect Project Conventions { #respect-project-conventions }
 
 Official guidance should not blindly overwrite local architecture.
 
@@ -2120,7 +2122,7 @@ For example, an official Kora recommendation plus a project already standardized
 
 The knowledge stack therefore supports adaptation rather than rigid code generation.
 
-## AI-Assisted Development Is Not About Removing Engineers
+## AI-Assisted Development Is Not About Removing Engineers { #not-removing-engineers }
 
 The strongest use of this system is not replacing human judgment.
 
@@ -2132,7 +2134,7 @@ The engineer can focus on whether the architecture is correct, whether the seman
 
 That division is productive.
 
-## Documentation Becomes Part of the Feedback Loop
+## Documentation Becomes Part of the Feedback Loop { #feedback-loop }
 
 The full Kora development loop can now be described as:
 
@@ -2158,7 +2160,7 @@ It is one stage inside the loop.
 
 That is the central transformation.
 
-## This Changes What "Developer Experience" Means
+## This Changes What "Developer Experience" Means { #developer-experience }
 
 Traditional DX metrics included API ergonomics, documentation clarity, startup time, build time, and debugging.
 
@@ -2168,7 +2170,7 @@ A framework can be pleasant for humans but difficult for agents.
 
 Kora's design tries to make the same properties serve both.
 
-## Human-Friendly and AI-Friendly Design Are Surprisingly Similar
+## Human-Friendly and AI-Friendly Design Are Surprisingly Similar { #human-ai-friendly }
 
 The overlap is substantial.
 
@@ -2180,7 +2182,7 @@ This is why Kora's AI fit can be described as a consequence of human-oriented de
 
 The documentation system follows the same pattern.
 
-## A Knowledge Stack Is Stronger Than a Knowledge Base
+## A Knowledge Stack Is Stronger Than a Knowledge Base { #stack-vs-base }
 
 A knowledge base stores information.
 
@@ -2204,7 +2206,7 @@ Documentation and guides store information. Examples and source provide implemen
 
 This is why "documentation" no longer feels like a sufficient word.
 
-## The Old Metric Is Becoming Obsolete
+## The Old Metric Is Becoming Obsolete { #old-metric-obsolete }
 
 The historical framework comparison:
 
@@ -2233,7 +2235,7 @@ Can mistakes be validated automatically?
 
 A smaller corpus can compete if those answers are strong.
 
-## The New Metric: Reliable Derivation
+## The New Metric: Reliable Derivation { #new-metric-derivation }
 
 The best summary is:
 
@@ -2248,7 +2250,7 @@ Can the correct answer be constructed reliably?
 
 That is what matters.
 
-## Kora's Documentation Model Fits This New Metric
+## Kora's Documentation Model Fits This New Metric { #kora-fits-new-metric }
 
 Kora's current direction combines:
 
@@ -2278,7 +2280,7 @@ Together they form a coherent machine-readable environment.
 
 That combination is much more interesting than page count.
 
-## The Official Skill Is the Missing Interface Layer
+## The Official Skill Is the Missing Interface Layer { #skill-interface-layer }
 
 Without the Skill, the agent still has to discover the knowledge architecture itself.
 
@@ -2302,7 +2304,7 @@ This is effectively framework-maintained context injection.
 
 It is a new kind of developer API.
 
-## The Current Kora Skill Is a Beginning, Not the End
+## The Current Kora Skill Is a Beginning, Not the End { #skill-beginning }
 
 Because the current package targets Kora 1.x, the natural next step is obvious: Kora 2 needs version-specific agent guidance that reflects its current architecture.
 
@@ -2316,7 +2318,7 @@ A generic timeless skill would be less trustworthy.
 
 Versioning is the correct architecture.
 
-## A Future Kora 2 Skill Can Encode the Whole Modern Model
+## A Future Kora 2 Skill Can Encode the Whole Modern Model { #future-kora2-skill }
 
 A Kora 2 package can eventually encode guidance around synchronous virtual-thread execution, Kora 2 DI rules, repository model, HTTP and OpenAPI, runtime graph refresh, current telemetry contracts,
 scheduling, resilience, current testing model, and generated-source inspection.
@@ -2325,7 +2327,7 @@ That would give agents a framework-native entry point to the entire Kora 2 knowl
 
 The Kora 2 landing page already presents this direction as part of the developer experience.
 
-## The Framework Website Can Become the Human View of the Same Knowledge
+## The Framework Website Can Become the Human View of the Same Knowledge { #website-human-view }
 
 Another interesting possibility is convergence.
 
@@ -2343,7 +2345,7 @@ Instead of maintaining separate inconsistent knowledge bases, the framework can 
 
 That is a much more maintainable long-term architecture.
 
-## Canonical Knowledge Should Be Reusable by Design
+## Canonical Knowledge Should Be Reusable by Design { #reusable-by-design }
 
 Documentation authors should therefore think in reusable units: one authoritative concept definition, one canonical configuration table, one runnable example, one migration rule.
 
@@ -2353,7 +2355,7 @@ This reduces duplication and drift.
 
 It also makes retrieval more precise.
 
-## AI Will Increase Pressure for Documentation Schema
+## AI Will Increase Pressure for Documentation Schema { #documentation-schema }
 
 Over time, frameworks may formalize knowledge more structurally.
 
@@ -2363,7 +2365,7 @@ Kora already has strong typed configuration and compile-time metadata internally
 
 The documentation layer can increasingly expose it.
 
-## Not Everything Should Become Structured Data
+## Not Everything Should Become Structured Data { #not-structured-data }
 
 Narrative still matters.
 
@@ -2381,7 +2383,7 @@ executable examples
 
 Again, different layers serve different needs.
 
-## The AI Era Rewards Frameworks That Know What They Are
+## The AI Era Rewards Frameworks That Know What They Are { #frameworks-know-themselves }
 
 A framework with unclear identity creates unclear guidance.
 
@@ -2393,7 +2395,7 @@ This is a subtle but important advantage.
 
 AI amplifies the value of a coherent framework philosophy.
 
-## Kora's "One Problem, One Solution" Becomes a Knowledge Architecture
+## Kora's "One Problem, One Solution" Becomes a Knowledge Architecture { #one-problem-one-solution }
 
 The principle is no longer only about coding style.
 
@@ -2403,7 +2405,7 @@ One canonical path creates a cleaner knowledge graph.
 
 That can improve both human onboarding and autonomous coding.
 
-## Fewer Abstractions Mean Fewer Documentation Edges
+## Fewer Abstractions Mean Fewer Documentation Edges { #fewer-abstractions }
 
 Imagine every abstraction as a node and every interaction as an edge.
 
@@ -2417,7 +2419,7 @@ It also reduces the number of interaction cases an AI agent must learn.
 
 This is a structural advantage, not merely a stylistic preference.
 
-## Documentation Coverage Can Scale Better Than Framework Surface
+## Documentation Coverage Can Scale Better Than Framework Surface { #coverage-scales }
 
 This explains an important Kora claim.
 
@@ -2437,7 +2439,7 @@ high.
 
 For agents, this ratio matters more than raw page count.
 
-## The Knowledge Stack Makes Small Ecosystems More Competitive
+## The Knowledge Stack Makes Small Ecosystems More Competitive { #small-ecosystems }
 
 A smaller framework normally suffers from a smaller support corpus.
 
@@ -2465,7 +2467,7 @@ But it reduces dependence on it.
 
 That is strategically important.
 
-## The Framework Can Answer Questions Nobody Has Asked Before
+## The Framework Can Answer Questions Nobody Has Asked Before { #answer-novel-questions }
 
 This may be the most important AI-era capability.
 
@@ -2481,7 +2483,7 @@ That is new.
 
 It changes the relationship between documentation completeness and community history.
 
-## Novel Questions Become Compositional Questions
+## Novel Questions Become Compositional Questions { #compositional-questions }
 
 Instead of requiring one stored answer per possible problem, the framework needs high-quality primitives.
 
@@ -2495,7 +2497,7 @@ AI performs the composition.
 
 Kora's modular documentation structure supports this naturally.
 
-## The Framework Knowledge Stack Mirrors the Framework Architecture
+## The Framework Knowledge Stack Mirrors the Framework Architecture { #mirrors-architecture }
 
 There is a pleasing symmetry here.
 
@@ -2519,7 +2521,7 @@ The agent combines them just as the framework combines components.
 
 This consistency makes the system easier to reason about.
 
-## Documentation Should Become a First-Class Release Artifact
+## Documentation Should Become a First-Class Release Artifact { #first-class-release }
 
 The final organizational implication is straightforward.
 
@@ -2540,7 +2542,7 @@ All version-aligned.
 
 That is the new standard Kora is moving toward.
 
-# Conclusion: Documentation Has Become an Interactive System
+## Conclusion: Documentation Has Become an Interactive System { #conclusion }
 
 Framework documentation used to be a destination.
 

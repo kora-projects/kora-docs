@@ -1,11 +1,14 @@
 ---
 title: Why the Kora Framework Doesn't Need an ORM for Most Services
+date: 2026-09-15
 description: Why a Kora Framework repository over native SQL covers most backend services better than an ORM, and when an ORM is still the right tool.
 search:
   exclude: true
 ---
 
-# Why Kora Doesn't Need an ORM for Most Services
+# Why Kora Doesn't Need an ORM for Most Services { #why-no-orm }
+
+**September 15, 2026**
 
 There is a familiar argument in Java backend development: if an application
 talks to a relational database, it should probably use an ORM. The reasoning
@@ -64,7 +67,7 @@ For many microservices, internal APIs, event handlers, transaction-oriented
 services, CRUD backends, and data-facing application components, Kora's
 answer is that a full ORM often solves more problems than the service has.
 
-## ORM Solves a Real Problem
+## ORM Solves a Real Problem { #orm-solves-problem }
 
 Any serious comparison should begin by giving ORM its due. Raw JDBC is
 unpleasant at scale. A developer traditionally has to acquire a connection,
@@ -90,7 +93,7 @@ safely and map results into typed values.
 
 Kora focuses on that narrower need.
 
-## The Fundamental Impedance Mismatch
+## The Fundamental Impedance Mismatch { #impedance-mismatch }
 
 The phrase "object-relational impedance mismatch" is old, but the underlying
 issue has not disappeared. A relational database represents information
@@ -119,7 +122,7 @@ closer to SQL result, generated row mapper, Java or Kotlin value. The
 mismatch is not "solved" by pretending the models are identical. The
 boundary is made explicit and mechanically cheap.
 
-## A Repository Does Not Need to Be an Entity Manager
+## A Repository Does Not Need to Be an Entity Manager { #repository-not-entity-manager }
 
 In Kora, a repository method can declare an explicit query and an ordinary
 typed return value. The developer defines the database operation and the
@@ -139,7 +142,7 @@ persistence-context state, and flush timing eventually become a database
 operation. For many service workloads, the explicit model is easier to
 reason about.
 
-## The Persistence Session Is Powerful but Not Free
+## The Persistence Session Is Powerful but Not Free { #persistence-session }
 
 One of the central concepts in traditional ORM architecture is the
 persistence session or persistence context. It provides useful guarantees.
@@ -164,7 +167,7 @@ database lifecycle. The connection and transaction have lifecycle; the
 objects do not. For request-oriented services, this often maps more directly
 to what the code is actually doing.
 
-## Hidden Queries Are an Operational Cost
+## Hidden Queries Are an Operational Cost { #hidden-queries }
 
 One of the most common ORM criticisms is hidden queries. That phrase is
 sometimes used unfairly, because experienced ORM users can write very
@@ -186,7 +189,7 @@ data the use case needs in one operation. The framework does not prevent
 developers from writing too many queries. It makes those queries harder to
 hide.
 
-## The N+1 Problem Is Really a Visibility Problem
+## The N+1 Problem Is Really a Visibility Problem { #n-plus-one-visibility }
 
 The N+1 query problem is often presented as an ORM-specific defect. It is
 not. Any application can execute one query to load N rows and then execute
@@ -205,7 +208,7 @@ operations. A repository can map the result directly into a projection
 designed for that use case. The query plan becomes part of the use-case
 design instead of an emergent property of entity traversal.
 
-## Query-Specific Models Reduce Impedance Instead of Hiding It
+## Query-Specific Models Reduce Impedance Instead of Hiding It { #query-specific-models }
 
 A major source of ORM complexity is the assumption that there should be one
 primary object representation of a database row. A User entity might contain
@@ -225,7 +228,7 @@ full value, a compact summary, a joined projection, a scalar, a boolean, or
 an update count. The Java model describes what this query returns. The SQL
 describes how the database computes it. Kora generates the mapping.
 
-## Dirty Tracking Is Convenient Until You Need to Know What Writes
+## Dirty Tracking Is Convenient Until You Need to Know What Writes { #dirty-tracking }
 
 Dirty checking is one of ORM's most useful features. Within a transaction,
 application code can load an entity, change a property, and rely on the
@@ -247,7 +250,7 @@ the operation actually matched the expected state.
 For transaction-oriented services, that explicitness is often more valuable
 than automatic dirty checking.
 
-## Explicit Updates Can Encode Business Concurrency Better
+## Explicit Updates Can Encode Business Concurrency Better { #explicit-updates-concurrency }
 
 Consider a state transition that is allowed only once. A generic entity
 workflow may load a row, check its status, mutate it, and flush. But the
@@ -263,7 +266,7 @@ That matters for command-oriented services where many writes are best
 expressed as atomic database operations rather than as object lifecycle
 changes.
 
-## The ORM Cache Is Another Layer of State
+## The ORM Cache Is Another Layer of State { #orm-cache-state }
 
 ORMs can maintain first-level and second-level caches. These mechanisms can
 be beneficial. They can also complicate reasoning about freshness,
@@ -280,7 +283,7 @@ Kora's repository model does not require an object cache simply to perform
 data access. Caching remains a separate architectural decision rather than
 an implicit property of persistence.
 
-## Memory Overhead Is More Than Entity Objects
+## Memory Overhead Is More Than Entity Objects { #memory-overhead }
 
 The important memory difference is not that an ORM allocates objects and
 JDBC does not. Both produce application data. The additional overhead comes
@@ -297,7 +300,7 @@ application data.
 This can reduce memory pressure and, just as importantly, reduce the number
 of framework concepts attached to every database object.
 
-## Snapshot-Based Dirty Checking Has a Cost Model
+## Snapshot-Based Dirty Checking Has a Cost Model { #snapshot-dirty-checking }
 
 Traditional dirty checking often requires the framework to remember enough
 previous state to know whether fields changed. That capability buys
@@ -312,7 +315,7 @@ This is a recurring Kora theme: avoid maintaining runtime state when
 explicit operations and compile-time structure already contain the required
 information.
 
-## Session Scope Is Often Harder Than Transaction Scope
+## Session Scope Is Often Harder Than Transaction Scope { #session-scope }
 
 A persistence session has semantics beyond the database transaction itself.
 Teams have to decide whether the session is per transaction, per request, or
@@ -328,7 +331,7 @@ operations. Returned values do not need a session after the query ends.
 
 For service applications, this lifecycle is often easier to explain.
 
-## Transactions Should Be About Database Operations
+## Transactions Should Be About Database Operations { #transactions-database-operations }
 
 A Kora JDBC transaction can be expressed directly around operations: insert
 order, insert items, insert outbox row, commit. The important fact is
@@ -341,7 +344,7 @@ transaction contains database actions rather than managed object state.
 This model is particularly intuitive for service workflows, outbox patterns,
 conditional updates, and explicit command handling.
 
-## ORM Flush Semantics Can Surprise Otherwise Simple Code
+## ORM Flush Semantics Can Surprise Otherwise Simple Code { #orm-flush-semantics }
 
 In an ORM, a query may cause pending entity changes to flush before the
 query executes so that results remain consistent with managed state. This
@@ -357,7 +360,7 @@ method was called. A select occurs because a select repository method was
 called. This tighter correspondence makes performance and transaction
 ordering easier to inspect.
 
-## Lazy Loading Is a Trade, Not Magic
+## Lazy Loading Is a Trade, Not Magic { #lazy-loading-trade }
 
 Lazy loading solves a real problem: do not load data until it is needed. But
 it does so by turning object navigation into potential I/O. A field access
@@ -373,7 +376,7 @@ the order, do not select the customer. The query shape communicates the
 fetch strategy directly. There is no separate lazy/eager configuration layer
 to maintain.
 
-## Kora Removes the Main JDBC Ergonomics Problem
+## Kora Removes the Main JDBC Ergonomics Problem { #jdbc-ergonomics }
 
 The strongest historical argument against raw JDBC is not that SQL itself is
 unpleasant. It is the surrounding code: try-with-resources, prepared
@@ -390,7 +393,7 @@ This changes the trade-off substantially. Kora is not asking developers to
 choose between Hibernate and hand-written JDBC plumbing. It offers a third
 option: explicit SQL with generated execution glue.
 
-## Generated Repositories Are Specialized Code
+## Generated Repositories Are Specialized Code { #generated-repositories }
 
 At compile time, Kora knows the repository method, query text, parameter
 names, parameter types, return type, row model, custom mappers, and database
@@ -405,7 +408,7 @@ HTTP adapters, OpenAPI boundaries, repositories, mappings, and aspects all
 follow the same principle: move predictable structural work to compilation
 and keep runtime thin.
 
-## Row Mapping Is Generated, Not Repeated
+## Row Mapping Is Generated, Not Repeated { #row-mapping-generated }
 
 Kora can generate row mapping for typed views such as Java records or Kotlin
 data classes. Instead of reflectively discovering constructors or manually
@@ -419,7 +422,7 @@ conversion.
 Mapping remains a first-class concern, but it does not require a full
 persistence session or runtime reflection engine.
 
-## Query Macros Remove Structural Repetition
+## Query Macros Remove Structural Repetition { #query-macros }
 
 Explicit SQL has one repetitive weakness: column lists and insert/update
 field lists can become tedious to maintain. Kora query macros target exactly
@@ -436,7 +439,7 @@ plain SQL.
 
 That is a narrow abstraction with a small semantic gap.
 
-## SQL Visibility Shortens Performance Debugging
+## SQL Visibility Shortens Performance Debugging { #sql-visibility }
 
 When a Kora repository is slow, the debugging sequence is direct: identify
 the repository method, read the SQL, run EXPLAIN or EXPLAIN ANALYZE, inspect
@@ -452,7 +455,7 @@ from the default path.
 For teams that own database performance, this transparency is often a major
 advantage.
 
-## Native Database Features Stop Being Escape Hatches
+## Native Database Features Stop Being Escape Hatches { #native-database-features }
 
 Relational databases provide powerful capabilities that do not map neatly to
 a universal object model. PostgreSQL offers RETURNING, ON CONFLICT, JSONB,
@@ -469,7 +472,7 @@ CONFLICT. An update can use RETURNING. The framework does not need to invent
 an intermediate abstraction for every database feature before the
 application can use it.
 
-## Database Portability Is Usually Overestimated
+## Database Portability Is Usually Overestimated { #database-portability }
 
 There are systems where supporting multiple relational databases is a
 genuine product requirement. In those systems, a portable abstraction can
@@ -488,7 +491,7 @@ for hypothetical benefit.
 Kora keeps the database visible and lets teams decide how portable they
 actually need to be.
 
-## One Repository Model Does Not Mean One Database Abstraction
+## One Repository Model Does Not Mean One Database Abstraction { #one-repository-model }
 
 Kora provides a common repository programming model for JDBC and Cassandra,
 but it does not pretend those databases are interchangeable.
@@ -505,7 +508,7 @@ consistency semantics.
 This is the right level of abstraction: unify developer mechanics, preserve
 technology reality.
 
-## Cassandra Shows Why ORM Thinking Does Not Generalize
+## Cassandra Shows Why ORM Thinking Does Not Generalize { #cassandra-orm-thinking }
 
 Cassandra tables are designed around access patterns. Denormalization is
 normal. Partition keys and clustering keys determine query viability.
@@ -517,7 +520,7 @@ declares a typed method, and Kora generates binding and row mapping.
 
 The same ergonomics survive. The database semantics do not get erased.
 
-## Most Services Do Not Need One Canonical Entity Type
+## Most Services Do Not Need One Canonical Entity Type { #canonical-entity-type }
 
 Without a persistence context, there is no pressure to make one class serve
 every database use case.
@@ -533,7 +536,7 @@ may return only an update count.
 This projection-first style often produces code closer to the actual use
 cases than one canonical entity graph.
 
-## Memory Use Becomes Easier to Control
+## Memory Use Becomes Easier to Control { #memory-use-control }
 
 Query-specific projections help memory behavior. If an endpoint needs three
 columns, it can select and materialize three columns. It does not need to
@@ -546,7 +549,7 @@ not impose a larger object graph than the query requested.
 
 Memory stays closer to the explicit data-access design.
 
-## The Second-Level Cache Is Not Automatically a Feature
+## The Second-Level Cache Is Not Automatically a Feature { #second-level-cache }
 
 Caching should answer a specific consistency and performance problem. A
 service may choose Redis, Caffeine, HTTP caching, materialized views, or
@@ -560,7 +563,7 @@ Kora keeps caching and persistence as separate concerns. The service adds a
 cache because a use case benefits from one, not because entity persistence
 brings a cache subsystem with it.
 
-## Simple Values Are Easier to Serialize
+## Simple Values Are Easier to Serialize { #simple-values-serialize }
 
 Managed ORM entities can contain lazy relationships or runtime proxies whose
 behavior depends on session state. Serializing them directly through an HTTP
@@ -575,7 +578,7 @@ HTTP contract and persistence contract remain separate.
 
 This fits Kora's broader contract-first philosophy.
 
-## Explicit SQL Does Not Mean Database Schema Dictates Java
+## Explicit SQL Does Not Mean Database Schema Dictates Java { #explicit-sql-schema }
 
 Kora mapping supports column naming overrides, embedded values, custom
 mappers, and typed wrappers. Java and Kotlin can still use meaningful value
@@ -588,7 +591,7 @@ state machine around the application model.
 This is an important distinction: rejecting ORM does not mean rejecting
 mapping or domain design.
 
-## Virtual Threads Change the Historical JDBC Trade-Off
+## Virtual Threads Change the Historical JDBC Trade-Off { #virtual-threads-jdbc }
 
 The most important Kora 2 connection is virtual threads.
 
@@ -607,7 +610,7 @@ That was a real engineering problem.
 
 Virtual threads change that particular constraint.
 
-## Virtual Threads Make Blocking Cheap to Park
+## Virtual Threads Make Blocking Cheap to Park { #virtual-threads-blocking }
 
 A virtual thread is still a Java Thread from the application's perspective,
 but it is not permanently tied to one carrier thread. During supported
@@ -623,7 +626,7 @@ requiring one heavyweight platform thread for every in-flight request.
 
 That is the foundation of Kora 2's synchronous direction.
 
-## Blocking a Virtual Thread Is Not the Same as Blocking a Carrier
+## Blocking a Virtual Thread Is Not the Same as Blocking a Carrier { #blocking-virtual-thread }
 
 The desired behavior is virtual thread waits, carrier becomes available.
 This is fundamentally different from the historical model where the
@@ -636,7 +639,7 @@ production validation.
 Virtual threads reduce the cost of waiting. They do not make every form of
 blocking universally free.
 
-## JDBC Is Naturally Compatible with the Synchronous Model
+## JDBC Is Naturally Compatible with the Synchronous Model { #jdbc-synchronous }
 
 JDBC is synchronous: execute query, wait, receive result. This historically
 created tension with event-loop servers because calling JDBC directly on an
@@ -654,7 +657,7 @@ remain synchronous. Database drivers remain mature JDBC drivers. Application
 control flow remains ordinary Java or Kotlin. Concurrency scales through
 virtual threads rather than through reactive return types.
 
-## Simple Synchronous Repository + JDBC + Virtual Threads
+## Simple Synchronous Repository + JDBC + Virtual Threads { #synchronous-repository-jdbc }
 
 The architecture can be summarized directly:
 
@@ -676,7 +679,7 @@ requires dedicating a heavyweight platform thread for the entire wait.
 Together, these properties remove much of the historical motivation for
 introducing reactive database APIs into ordinary request-response services.
 
-## Reactive Database APIs Still Have Legitimate Uses
+## Reactive Database APIs Still Have Legitimate Uses { #reactive-database-apis }
 
 Reactive database access is not obsolete. It remains valuable for workloads
 built around end-to-end streaming, explicit backpressure, reactive
@@ -691,7 +694,7 @@ synchronous request-response and transaction flow, JDBC becomes attractive
 again at concurrency levels that once pushed teams toward reactive
 programming.
 
-## Reactive Complexity Is an Engineering Cost
+## Reactive Complexity Is an Engineering Cost { #reactive-complexity }
 
 Reactive APIs change application structure. Instead of straightforward
 sequential control flow, developers work with operators, subscriptions,
@@ -705,7 +708,7 @@ If the only goal is avoiding blocked platform threads, virtual threads
 provide a much simpler answer. Kora 2 deliberately prefers that simpler
 model for the common path.
 
-## Transaction Code Is Easier to Read Synchronously
+## Transaction Code Is Easier to Read Synchronously { #transaction-code-synchronous }
 
 Transactions often contain dependent steps: insert order, use generated
 identifier, insert items, insert outbox event, return result.
@@ -721,7 +724,7 @@ the transaction itself into a reactive graph.
 For business services where transaction boundaries are central to
 correctness, this simplicity matters.
 
-## The Database Connection Pool Is Still the Real Limit
+## The Database Connection Pool Is Still the Real Limit { #connection-pool-limit }
 
 Virtual threads can create enormous concurrency. A database cannot
 necessarily handle enormous concurrency.
@@ -737,7 +740,7 @@ Virtual threads remove the application-thread bottleneck while preserving
 the database-resource bottleneck. That makes the connection pool's role
 clearer.
 
-## Unlimited Virtual Threads Do Not Mean Unlimited Database Concurrency
+## Unlimited Virtual Threads Do Not Mean Unlimited Database Concurrency { #unlimited-virtual-threads }
 
 Virtual threads make waiting cheap; they do not make the resource being
 waited for unlimited.
@@ -754,7 +757,7 @@ sensible retry policy.
 Virtual threads simplify concurrency mechanics. They do not repeal queueing
 theory.
 
-## Little's Law Still Applies
+## Little's Law Still Applies { #littles-law }
 
 For a stable system, concurrency is approximately throughput multiplied by
 latency. If latency increases under overload, the same throughput requires
@@ -766,7 +769,7 @@ operations. They do not make that system healthy.
 This is why Kora's synchronous model should be paired with production
 capacity planning rather than interpreted as "blocking is free."
 
-## The Pool Becomes an Explicit Backpressure Boundary
+## The Pool Becomes an Explicit Backpressure Boundary { #pool-backpressure }
 
 A bounded JDBC connection pool naturally limits the number of database
 operations executing concurrently. Many request virtual threads may exist,
@@ -779,7 +782,7 @@ pool saturation metrics, and latency SLOs.
 The simplicity of synchronous code does not remove the need for operational
 controls.
 
-## Do Not Hold a Database Connection While Waiting on the Network
+## Do Not Hold a Database Connection While Waiting on the Network { #hold-connection-network }
 
 Virtual threads make remote waiting cheap for Java, but database connections
 remain scarce. A transaction that performs a database update, then waits on
@@ -792,7 +795,7 @@ This is where patterns such as outbox, saga, idempotent workflow, or
 transaction-then-remote-call matter. Virtual threads optimize thread
 scheduling, not distributed transaction design.
 
-## Long Transactions Are Still Long Transactions
+## Long Transactions Are Still Long Transactions { #long-transactions }
 
 The same applies to expensive application computation inside a transaction.
 If a transaction opens, performs one query, spends seconds doing CPU work,
@@ -803,7 +806,7 @@ Kora's explicit transaction scope makes this easier to see in review. The
 rule remains simple: keep database transactions as small as correctness
 allows.
 
-## The Return of JDBC Is Really the Return of Straight-Line Code
+## The Return of JDBC Is Really the Return of Straight-Line Code { #return-of-jdbc }
 
 The point is not nostalgia for JDBC. Nobody wants thousands of hand-written
 result-set loops.
@@ -819,7 +822,7 @@ model, which production engineers had to understand anyway.
 That is why Kora can build a modern high-performance backend around a
 programming style that looks simple.
 
-## The Reactive Era Solved a Real Historical Constraint
+## The Reactive Era Solved a Real Historical Constraint { #reactive-era }
 
 Reactive server architectures were not invented because developers wanted
 complexity. They addressed real platform limitations. When requests consumed
@@ -835,7 +838,7 @@ This was a rational response to the platform available at the time.
 Virtual threads do not prove reactive architecture was a mistake. They
 change the assumptions under which teams make the choice today.
 
-## Kora 2 Can Prefer Synchronous APIs Without Going Backward
+## Kora 2 Can Prefer Synchronous APIs Without Going Backward { #kora2-synchronous-apis }
 
 Kora 2's synchronous-first model should not be read as "blocking won." A
 better interpretation is that the JVM changed enough that blocking-looking
@@ -849,7 +852,7 @@ smaller number of carriers.
 That lets framework designers recover familiar APIs without sacrificing I/O
 concurrency. Kora takes that opportunity aggressively.
 
-## Synchronous Signatures Improve API Locality
+## Synchronous Signatures Improve API Locality { #synchronous-signatures }
 
 A repository method returning a User says exactly what the caller needs to
 know. The caller receives a value. The exception model is ordinary. The
@@ -864,7 +867,7 @@ boundary, the synchronous signature has lower cognitive overhead.
 Virtual threads make that lower-overhead signature viable at high
 concurrency.
 
-## Debugging Becomes More Familiar
+## Debugging Becomes More Familiar { #debugging-familiar }
 
 Straight-line synchronous calls generally produce stack traces that match
 source structure more closely. During an incident, an engineer can often see
@@ -877,7 +880,7 @@ For platform teams with many ordinary Java developers, familiar debugging
 has economic value. A simpler model reduces training and incident-diagnosis
 cost.
 
-## Mature JDBC Drivers Are a Major Asset
+## Mature JDBC Drivers Are a Major Asset { #mature-jdbc-drivers }
 
 JDBC represents decades of engineering across database vendors. Drivers have
 mature support for authentication, prepared statements, batching, generated
@@ -893,7 +896,7 @@ ecosystem maturity becomes a major advantage.
 Kora's repository layer lets teams benefit from it without accepting raw
 JDBC boilerplate.
 
-## JDBC Transactions Are Widely Understood
+## JDBC Transactions Are Widely Understood { #jdbc-transactions }
 
 Experienced Java backend engineers already understand connection,
 auto-commit, commit, rollback, and isolation. This knowledge transfers
@@ -905,7 +908,7 @@ amount of framework-specific knowledge required to reason about atomicity.
 A CTO or platform team should care about this because transferable knowledge
 improves onboarding and team mobility.
 
-## An ORM Adds a Second Optimization Layer
+## An ORM Adds a Second Optimization Layer { #orm-optimization-layer }
 
 When an ORM application is slow, there are at least two optimization
 domains: ORM behavior and database behavior.
@@ -921,7 +924,7 @@ mapping, but the semantic gap is smaller.
 For platform teams trying to standardize performance practices, fewer layers
 can be a meaningful advantage.
 
-## Explicit Caching Gives More Deliberate SLOs
+## Explicit Caching Gives More Deliberate SLOs { #explicit-caching-slos }
 
 Suppose product data is cached for five minutes. An application-level cache
 can state the key, value, TTL, and invalidation behavior clearly.
@@ -934,7 +937,7 @@ models.
 Kora has dedicated cache abstractions, so caching can be added where the use
 case benefits rather than bundled with the persistence model.
 
-## ORM Entity Graphs Can Grow Beyond the Request
+## ORM Entity Graphs Can Grow Beyond the Request { #orm-entity-graphs }
 
 Object graphs are convenient because related data feels naturally navigable.
 They can also make it easy to load more data than the request needs.
@@ -948,7 +951,7 @@ select three joined values. The database is already good at constructing
 relational projections. There is no need to recreate an entire relationship
 graph in memory first.
 
-## Reporting and Aggregation Rarely Need Managed Entities
+## Reporting and Aggregation Rarely Need Managed Entities { #reporting-aggregation }
 
 Reports commonly need SUM, COUNT, GROUP BY, window functions, several joins,
 and date bucketing. The result may have no meaningful entity representation.
@@ -959,7 +962,7 @@ persistent identity or object lifecycle is required.
 This is one reason read-heavy services often gain little from full ORM
 semantics.
 
-## Search Is the Same Story
+## Search Is the Same Story { #search-same-story }
 
 Search endpoints often return a compact projection assembled from several
 sources: id, display title, owner, status, matched snippet.
@@ -969,7 +972,7 @@ the natural representation.
 
 Kora's compile-time mapping makes this cheap.
 
-## Read and Write Models Can Diverge Cleanly
+## Read and Write Models Can Diverge Cleanly { #read-write-models }
 
 A service may write through compact command queries and read through
 optimized projections. There is no requirement that both operations share
@@ -978,7 +981,7 @@ one entity class.
 This is compatible with CQRS-style thinking without requiring a heavyweight
 CQRS framework. Repository APIs simply reflect the actual use cases.
 
-## Most Services Are More Transaction-Script-Like Than They Admit
+## Most Services Are More Transaction-Script-Like Than They Admit { #transaction-script-like }
 
 A large number of microservices have application flows resembling: validate
 request, read several rows, apply rule, write one or several rows, write
@@ -994,7 +997,7 @@ semantics.
 For these applications, Kora repositories can remove substantial conceptual
 machinery without making database code verbose.
 
-## CRUD Is Not an Argument for ORM by Itself
+## CRUD Is Not an Argument for ORM by Itself { #crud-not-orm-argument }
 
 Basic CRUD is easy for almost every persistence technology. With Kora macros
 and generated mappers, CRUD repositories can remain concise while keeping
@@ -1004,7 +1007,7 @@ If a service needs simple CRUD plus a few custom queries, introducing
 persistence sessions, dirty tracking, lazy relationships, and cache
 semantics may be more abstraction than the problem requires.
 
-## Bulk Updates Are Natural Without Entity Materialization
+## Bulk Updates Are Natural Without Entity Materialization { #bulk-updates }
 
 Suppose a service must expire all sessions older than a timestamp. The
 natural database operation is one update over a set.
@@ -1017,7 +1020,7 @@ receives an update count.
 
 This is often simpler and more efficient.
 
-## Set-Based Thinking Is an Important Database Skill
+## Set-Based Thinking Is an Important Database Skill { #set-based-thinking }
 
 Relational databases are optimized for set operations. Object-oriented code
 naturally encourages iteration over objects.
@@ -1030,7 +1033,7 @@ perform one join, batch, aggregation, or conditional update instead.
 
 This mindset matters more than the persistence framework itself.
 
-## Virtual Threads Can Make Bad Database Patterns Fail Faster
+## Virtual Threads Can Make Bad Database Patterns Fail Faster { #virtual-threads-bad-patterns }
 
 Because virtual threads make concurrency cheap, teams can accidentally
 parallelize inefficient patterns. Launching one virtual thread per item does
@@ -1045,7 +1048,7 @@ concurrency to mask a poor access pattern.
 Virtual threads make legitimate concurrency cheap. They do not make
 inefficient database work efficient.
 
-## Batch APIs Still Matter
+## Batch APIs Still Matter { #batch-apis }
 
 For repeated inserts or updates, a generated batch repository method can
 reduce round trips and driver overhead. This is often preferable to one
@@ -1056,7 +1059,7 @@ application-level concurrency.
 
 Kora supports batching while keeping the query explicit.
 
-## Optimistic Locking Does Not Require a Managed Entity
+## Optimistic Locking Does Not Require a Managed Entity { #optimistic-locking }
 
 Optimistic locking is often associated with an entity version field, but the
 underlying mechanism is a conditional update.
@@ -1071,7 +1074,7 @@ require persistence lifecycle state.
 An ORM annotation is convenient; it is not the only implementation of
 optimistic concurrency.
 
-## Pessimistic Locking Is More Transparent in SQL
+## Pessimistic Locking Is More Transparent in SQL { #pessimistic-locking }
 
 Similarly, a database-specific locking clause can be written directly. Teams
 do not need to remember which ORM lock mode maps to which database behavior.
@@ -1079,7 +1082,7 @@ do not need to remember which ORM lock mode maps to which database behavior.
 For services intentionally standardized on one database engine, native SQL
 often communicates the concurrency mechanism more clearly.
 
-## The Outbox Pattern Fits Explicit Repositories Naturally
+## The Outbox Pattern Fits Explicit Repositories Naturally { #outbox-pattern }
 
 A reliable event-publication flow often needs to update business state and
 insert an outbox record in one transaction. With Kora, both operations can
@@ -1091,7 +1094,7 @@ defined around database operations directly.
 This is an excellent example of how simple synchronous repositories compose
 with distributed-system patterns.
 
-## Virtual Threads Do Not Fix Distributed Transactions
+## Virtual Threads Do Not Fix Distributed Transactions { #virtual-threads-distributed }
 
 A transaction that holds a database connection while waiting for another
 service is still risky. The virtual thread may park cheaply, but locks and
@@ -1103,7 +1106,7 @@ compensation, or another appropriate pattern.
 Kora's simpler programming model should not be confused with simpler
 distributed-systems requirements.
 
-## Query Count Becomes a Reviewable Metric
+## Query Count Becomes a Reviewable Metric { #query-count-metric }
 
 Because database access maps closely to repository calls, teams can create
 straightforward performance expectations: this endpoint should execute one
@@ -1115,7 +1118,7 @@ production measurements easier to correlate.
 
 This is another operational benefit of a thin data layer.
 
-## Telemetry Belongs in Generated Glue
+## Telemetry Belongs in Generated Glue { #telemetry-generated-glue }
 
 Hand-written JDBC often starts without consistent tracing and metrics.
 Kora's database infrastructure can integrate telemetry into generated
@@ -1129,7 +1132,7 @@ A complex manual query can still remain inside the same telemetry
 infrastructure rather than disappearing from observability simply because it
 needed an escape hatch.
 
-## A Good Abstraction Has an Escape Hatch
+## A Good Abstraction Has an Escape Hatch { #abstraction-escape-hatch }
 
 No declarative repository model covers every query elegantly. Dynamic search
 filters, unusual driver APIs, database-specific features, and specialized
@@ -1146,7 +1149,7 @@ necessary.
 A framework that has no escape hatch eventually becomes a framework
 developers fight.
 
-## Native Queries Are Not a Failure Mode in Kora
+## Native Queries Are Not a Failure Mode in Kora { #native-queries }
 
 In ORM projects, teams sometimes say they had to fall back to native SQL.
 That wording reveals the abstraction hierarchy: SQL sits below the preferred
@@ -1158,7 +1161,7 @@ database intentionally.
 
 That cultural difference affects how teams design and optimize persistence.
 
-## Repository Results Are Plain Values
+## Repository Results Are Plain Values { #repository-plain-values }
 
 A repository result can be a record, data class, scalar, list, nullable
 value, or query-specific projection. It does not carry a hidden persistence
@@ -1171,7 +1174,7 @@ session.
 
 Plain values fit virtual-thread-per-task architectures naturally.
 
-## Immutable Models Fit Especially Well
+## Immutable Models Fit Especially Well { #immutable-models }
 
 Java records and Kotlin data classes are natural database projections. A
 generated mapper constructs them once. They can move through the application
@@ -1183,7 +1186,7 @@ business computation.
 For concurrent services, fewer hidden mutations often make code easier to
 reason about.
 
-## Nullability Should Follow the Query, Not a Canonical Entity
+## Nullability Should Follow the Query, Not a Canonical Entity { #nullability-follow-query }
 
 A table column may be non-null, but an outer join can make the projection
 nullable. A table may have a nullable column that one query filters to
@@ -1195,7 +1198,7 @@ everywhere.
 
 Kotlin's nullability model is particularly useful here.
 
-## Multiple Databases Stay Explicit in the Application Graph
+## Multiple Databases Stay Explicit in the Application Graph { #multiple-databases }
 
 If a service talks to multiple databases, Kora can distinguish database
 components and wire repositories to the correct connection infrastructure
@@ -1207,7 +1210,7 @@ primary persistence context that every repository silently uses.
 This matters in systems where database ownership and routing are
 architectural concerns.
 
-## Database Access Is Not a Separate Framework Universe
+## Database Access Is Not a Separate Framework Universe { #database-access-framework }
 
 Some stacks have one container for application dependencies and another
 conceptual subsystem for persistence-managed objects.
@@ -1218,7 +1221,7 @@ services, clients, configuration, and telemetry.
 The database is special because databases are special, not because the
 framework creates an additional object-management universe around them.
 
-## Fewer Runtime Containers Mean Fewer Mental Models
+## Fewer Runtime Containers Mean Fewer Mental Models { #fewer-runtime-containers }
 
 A developer does not need to reason simultaneously about dependency
 injection state, persistence session state, runtime repository proxies, and
@@ -1228,7 +1231,7 @@ The repository is a generated component with explicit dependencies.
 
 This reduction in mental models is one of Kora's broader design goals.
 
-## ORMs Can Be Highly Performant
+## ORMs Can Be Highly Performant { #orms-highly-performant }
 
 None of this means ORM is inherently slow. A well-designed Hibernate
 application with appropriate projections, fetch plans, batching, caching,
@@ -1239,7 +1242,7 @@ The argument is about complexity per capability, not raw benchmark morality.
 If a team needs the ORM capabilities and knows how to operate them, the
 abstraction cost may be entirely justified.
 
-## Most ORM Problems Are Manageable with Expertise
+## Most ORM Problems Are Manageable with Expertise { #orm-problems-expertise }
 
 N+1 can be solved. Lazy loading can be controlled. Fetch plans can be
 explicit. Caches can be configured. Sessions can be scoped. SQL can be
@@ -1250,7 +1253,7 @@ expertise in the first place when their persistence needs are narrower.
 
 Kora's answer is often no.
 
-## The Smaller Model Can Be a Better Default
+## The Smaller Model Can Be a Better Default { #smaller-model-default }
 
 A new Kora service can begin with typed repository, explicit query,
 generated mapper, explicit transaction, JDBC, and virtual threads.
@@ -1262,7 +1265,7 @@ Starting with the smaller model reduces upfront complexity and makes the
 addition of more powerful abstractions a conscious choice rather than
 inherited convention.
 
-## The Best Architecture Is Often the One with Fewer Hidden State Machines
+## The Best Architecture Is Often the One with Fewer Hidden State Machines { #fewer-hidden-state-machines }
 
 A backend already contains many state machines: HTTP connections,
 transactions, locks, retries, circuit breakers, message offsets, business
@@ -1280,7 +1283,7 @@ when ready.
 
 That simplicity is strategically valuable.
 
-## The Modern Stack Changes the Historical Default
+## The Modern Stack Changes the Historical Default { #modern-stack-default }
 
 Twenty years ago, the trade-offs looked different. Raw JDBC was extremely
 verbose. Platform threads were expensive at high concurrency. Runtime
@@ -1295,7 +1298,7 @@ That changes what "simple database access" can mean.
 It is reasonable to revisit defaults created under older platform
 constraints.
 
-## The Right Question for a New Service
+## The Right Question for a New Service { #right-question-new-service }
 
 For a new Kora service, ask: do we need object persistence semantics, or do
 we need convenient database access?
@@ -1310,7 +1313,7 @@ persistence-session behavior, an ORM may be appropriate.
 Do not introduce a persistence session merely to avoid writing SELECT. Kora
 already makes SELECT cheap.
 
-## A Practical Decision Checklist
+## A Practical Decision Checklist { #decision-checklist }
 
 A service probably does not need a full ORM if queries are already important
 to application design, read models differ by use case, writes are explicit
@@ -1326,7 +1329,7 @@ expertise and conventions that outweigh the additional model complexity.
 
 This is not a moral choice. It is an architectural fit question.
 
-## A Kora Request Path with JDBC and Virtual Threads
+## A Kora Request Path with JDBC and Virtual Threads { #kora-request-path }
 
 The request lifecycle is straightforward:
 
@@ -1354,7 +1357,7 @@ and continues the ordinary call stack.
 
 This is the programming model Kora wants developers to see.
 
-## Where the Concurrency Limit Actually Lives
+## Where the Concurrency Limit Actually Lives { #concurrency-limit }
 
 Several resources have different roles. The HTTP server can maintain many
 connections. Virtual threads can represent many concurrent requests cheaply.
@@ -1367,7 +1370,7 @@ database connections, finite database execution capacity.
 Understanding this hierarchy is more useful than simply saying virtual
 threads scale.
 
-## Why a Reactive Driver May Not Improve a Pool-Bound Service
+## Why a Reactive Driver May Not Improve a Pool-Bound Service { #reactive-driver-pool }
 
 Suppose the database can productively process only a certain number of
 concurrent queries. A reactive driver can represent many waiting operations
@@ -1383,7 +1386,7 @@ and operational behavior.
 
 That is a more honest decision basis.
 
-## Synchronous Code Can Still Use Bulkheads
+## Synchronous Code Can Still Use Bulkheads { #synchronous-bulkheads }
 
 A virtual-thread service should not allow every incoming request to queue
 indefinitely for an expensive database operation.
@@ -1394,7 +1397,7 @@ specific work even when global request concurrency is high.
 Reactive architecture does not have a monopoly on bounded concurrency. The
 mechanism is simply different.
 
-## Transaction Isolation Still Matters Exactly as Before
+## Transaction Isolation Still Matters Exactly as Before { #transaction-isolation }
 
 Virtual threads do not change READ COMMITTED, REPEATABLE READ, SERIALIZABLE,
 phantom behavior, write skew, or deadlocks.
@@ -1403,7 +1406,7 @@ Kora's explicit JDBC approach may actually make it easier to remember that
 transaction correctness belongs to the database. The programming model
 changed. Database theory did not.
 
-## Connection Pool Timeouts Become Part of the Request SLO
+## Connection Pool Timeouts Become Part of the Request SLO { #connection-pool-timeouts }
 
 If a request waits hundreds of milliseconds for a connection before
 executing a fast query, user latency is already poor.
@@ -1416,7 +1419,7 @@ Metrics must separate pool acquisition from query execution.
 
 Cheap parking must not hide overload.
 
-## Virtual Threads Can Hide Overload Longer
+## Virtual Threads Can Hide Overload Longer { #virtual-threads-overload }
 
 A platform-thread service might visibly exhaust a worker pool during
 overload. A virtual-thread service can represent many more queued requests
@@ -1430,7 +1433,7 @@ request timeout rate, database saturation.
 
 Kora's simplicity should be paired with disciplined operational budgets.
 
-## N+1 with Virtual Threads Is Still N+1
+## N+1 with Virtual Threads Is Still N+1 { #n-plus-one-virtual-threads }
 
 Launching many virtual threads can reduce wall-clock latency for independent
 calls, but it does not reduce query count or database work.
@@ -1443,7 +1446,7 @@ The correct optimization is often one set-based query.
 Virtual threads make concurrency cheap. They do not make inefficient access
 patterns efficient.
 
-## The Best Database Operation Is Often the One You Do Not Execute
+## The Best Database Operation Is Often the One You Do Not Execute { #best-database-operation }
 
 Explicit repositories make it natural to optimize query count. Instead of
 load entity then lazily access three relationships, design one projection.
@@ -1455,7 +1458,7 @@ These optimizations often dwarf framework overhead.
 
 Kora's data-access model keeps them visible.
 
-## ORM Plus Virtual Threads Is Also Possible
+## ORM Plus Virtual Threads Is Also Possible { #orm-plus-virtual-threads }
 
 Virtual threads are not exclusive to Kora repositories. Hibernate and other
 ORM-based applications can also benefit from them, subject to library and
@@ -1467,7 +1470,7 @@ needed.
 
 Together they create a particularly transparent stack.
 
-## Why Kora's Choice Is Stronger Than Merely Using a JDBC Helper
+## Why Kora's Choice Is Stronger Than Merely Using a JDBC Helper { #kora-jdbc-helper }
 
 Java has had JDBC helper libraries for years. Kora adds a framework-wide
 compile-time model: repositories are generated, mappings are generated, DI
@@ -1480,7 +1483,7 @@ architecture.
 Most structural adaptation happens before runtime. Application code stays
 close to underlying technologies.
 
-## The Repository Model Complements OpenAPI-First Development
+## The Repository Model Complements OpenAPI-First Development { #repository-openapi }
 
 At the HTTP boundary, an OpenAPI contract can generate typed server and
 client code. At the database boundary, SQL plus a repository signature
@@ -1495,7 +1498,7 @@ Very little important behavior is hidden in runtime convention.
 
 This is a distinctive Kora design strength.
 
-## Thin Boundaries Reduce Semantic Translation
+## Thin Boundaries Reduce Semantic Translation { #thin-boundaries }
 
 A deep stack can look like HTTP abstraction, service abstraction, ORM
 abstraction, driver, database.
@@ -1509,7 +1512,7 @@ trace.
 That is valuable for performance, debugging, onboarding, and AI-assisted
 development.
 
-## AI Agents Benefit from Explicit Data Access
+## AI Agents Benefit from Explicit Data Access { #ai-agents-data-access }
 
 A coding agent can inspect repository method, SQL, model, migration, and
 generated implementation. It does not have to reconstruct hidden
@@ -1521,7 +1524,7 @@ the schema, an integration test can fail.
 
 This creates a tight and relatively deterministic feedback loop.
 
-## SQL Is Shared Technical Language for Humans and Agents
+## SQL Is Shared Technical Language for Humans and Agents { #sql-shared-language }
 
 A query communicates database intent directly. A DBA can inspect it. A
 backend engineer can inspect it. An AI agent can inspect it. The database
@@ -1532,7 +1535,7 @@ This shared language reduces semantic translation.
 Generated glue lets teams retain that shared language without paying manual
 JDBC boilerplate.
 
-## The Compiler Becomes the First Reviewer
+## The Compiler Becomes the First Reviewer { #compiler-first-reviewer }
 
 If repository structure and mapping do not line up, Kora can fail during
 annotation processing or KSP. If the application graph lacks a required
@@ -1543,7 +1546,7 @@ behavior, but many Java-side mistakes never reach runtime.
 
 This is valuable for both human and automated development.
 
-## Kora Does Give Up Some Things
+## Kora Does Give Up Some Things { #kora-gives-up }
 
 With Kora repositories, developers write SQL or CQL. The Java compiler
 cannot fully prove arbitrary SQL against the production schema. Rich
@@ -1556,7 +1559,7 @@ These are real costs.
 The thesis is that many services are better off accepting them than paying
 for a full ORM model they barely use.
 
-## What Kora Gains
+## What Kora Gains { #what-kora-gains }
 
 In exchange, teams get explicit queries, predictable query count, ordinary
 immutable values, query-specific projections, direct database features,
@@ -1566,7 +1569,7 @@ much smaller semantic gap to the database.
 
 For Kora's target workloads, that is a compelling package.
 
-## The ORM Can Still Be the Right Tool
+## The ORM Can Still Be the Right Tool { #orm-right-tool }
 
 If an application genuinely revolves around persistent aggregate graphs,
 automatic unit-of-work behavior, dirty tracking, relationship lifecycle, and
@@ -1577,7 +1580,7 @@ The right conclusion is not to remove ORM from the toolbox.
 It is to stop treating ORM as mandatory infrastructure for every service
 that uses a relational database.
 
-## The Default Should Match the Common Workload
+## The Default Should Match the Common Workload { #default-common-workload }
 
 Kora targets cloud-oriented backend services where startup, runtime
 efficiency, explicit boundaries, and predictable database behavior matter.
@@ -1588,7 +1591,7 @@ than inherited by convention.
 
 This is a healthy inversion of the traditional Java persistence default.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora does not need an ORM for most services because it attacks the two
 historical reasons developers reached for one from a different direction.
