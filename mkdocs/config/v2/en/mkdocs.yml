@@ -123,7 +123,7 @@ nav:
       - Policy-Driven Infrastructure: blog/kora-infra-and-funcs.md
       - Production Knowledge Built In: blog/kora-production-knowledge-built-in.md
       - Startup vs Build Time: blog/kora-startup-vs-build-time.md
-      - STEP: blog/kora-step.md
+      - Kora STEP: blog/kora-step.md
       - Structured Concurrency: blog/structured-concurrency-in-kora.md
       - Testing the Production Graph: blog/kora-test-graph.md
       - Application Graph as Architecture: blog/application-graph-as-architecture.md
