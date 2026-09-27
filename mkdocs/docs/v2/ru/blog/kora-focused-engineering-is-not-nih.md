@@ -1,0 +1,1 @@
+--8<-- "ru/kora-focused-engineering-is-not-nih.md"

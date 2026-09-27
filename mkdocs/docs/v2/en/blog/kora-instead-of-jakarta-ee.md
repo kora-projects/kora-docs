@@ -1,0 +1,1 @@
+--8<-- "en/kora-instead-of-jakarta-ee.md"

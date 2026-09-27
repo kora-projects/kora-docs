@@ -1,0 +1,1 @@
+--8<-- "ru/no-runtime-magic.md"

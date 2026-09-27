@@ -1,6 +1,5 @@
 ---
-title:
-    Kora in Practice: What a Real JVM Framework Benchmark Revealed
+title: "Kora in Practice: What a Real JVM Framework Benchmark Revealed"
 date: 2024-09-26
 description: This article is a written companion to a talk in which a developer with no prior Kora hands-on experience benchmarked Kora against several familiar JVM frameworks. It walks through the benchmark design, the results, and the architectural lessons the experiment revealed.
 search:

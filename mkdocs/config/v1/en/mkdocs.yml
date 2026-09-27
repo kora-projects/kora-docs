@@ -95,13 +95,13 @@ nav:
         - Camunda Zeebe: documentation/camunda8-worker.md
   - Blog:
       - All articles: blog/index.md
-      - Why Kora Is the Right Default: blog/kora-right-default-for-backend.md
       - You Need Good JVM Engineers: blog/you-need-good-jvm-engineers.md
       - Framework Skills vs Vendor Lock-In: blog/you-dont-need-kora-developers.md
       - Why Kora Instead of Jakarta EE: blog/kora-instead-of-jakarta-ee.md
       - Why Kora Over Spring: blog/kora-over-spring-for-backend.md
       - Why Kora Is Compile-Time: blog/why-kora-compile-time-framework.md
       - Kora Rethinks the Framework Model: blog/kora-rethinks-framework-model-itself.md
+      - Why Kora Is the Right Default: blog/kora-right-default-for-backend.md
       - Why Kora Doesn't Need an ORM: blog/kora-dont-need-orm.md
       - Compile-Time Frameworks and AI Agents: blog/neuro-agent-and-kora.md
       - Compile-Time Diagnostics: blog/compile-time-diagnostics.md

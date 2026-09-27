@@ -1,6 +1,6 @@
 ---
 title: Why Kora May Be the Right Default for Your Next JVM Backend
-date: 2026-09-22
+date: 2026-09-16
 description: A pragmatic argument for choosing Kora as the default JVM backend framework, covering compile-time validation, explicit architecture, Virtual Threads, thin abstractions, focused production modules, and low framework-specific overhead.
 search:
     exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Why Kora May Be the Right Default for Your Next JVM Backend { #why-kora }
 
-**September 22, 2026**
+**September 16, 2026**
 
 Choosing a backend framework is rarely about finding the tool with the longest feature list. Mature JVM teams already know that breadth can be deceptive: every additional abstraction, programming
 model, extension mechanism, compatibility layer, and runtime subsystem creates something the team eventually has to understand, standardize, debug, upgrade, and teach. A framework that can do almost

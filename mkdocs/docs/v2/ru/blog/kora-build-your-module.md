@@ -1,0 +1,1 @@
+--8<-- "ru/kora-build-your-module.md"

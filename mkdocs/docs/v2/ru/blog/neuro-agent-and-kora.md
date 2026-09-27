@@ -1,0 +1,1 @@
+--8<-- "ru/neuro-agent-and-kora.md"

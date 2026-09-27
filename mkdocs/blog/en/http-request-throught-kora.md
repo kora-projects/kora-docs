@@ -1,6 +1,7 @@
 ---
 title: How an HTTP Request Travels Through the Kora Framework on Virtual Threads
 date: 2026-08-14
+description: The two concurrency domains behind an HTTP request in Kora — Undertow I/O threads and virtual threads — and why blocking JDBC is fine.
 search:
     exclude: true
 ---

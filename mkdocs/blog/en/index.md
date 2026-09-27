@@ -13,8 +13,6 @@ The blog is shared by every documentation version. Articles describe ideas and p
 
 ## Articles
 
-- [Why Kora May Be the Right Default for Your Next JVM Backend](kora-right-default-for-backend.md) — a pragmatic argument for choosing Kora as the default JVM backend framework — compile-time
-  validation, explicit architecture, Virtual Threads, thin abstractions, and low framework-specific overhead.
 - [You Don't Need Kora Developers — You Need Good JVM Engineers](you-need-good-jvm-engineers.md) — why "there are no Kora developers" is the wrong objection — Kora builds on the JDBC, SQL, HTTP, and
   Java/Kotlin skills that strong JVM engineers already have.
 - [You Don't Need Kora Developers — Framework Skills vs Vendor Lock-In](you-dont-need-kora-developers.md) — why the "no Kora developers on the market" objection misunderstands hiring — strong JVM
@@ -27,6 +25,8 @@ The blog is shared by every documentation version. Articles describe ideas and p
   compile-time certainty means for startup, overhead, and debugging.
 - [Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model](kora-rethinks-framework-model-itself.md) — why moving DI and AOP to compile time is not enough, and Kora goes further by reducing
   the amount of framework model that needs to exist at all.
+- [Why Kora May Be the Right Default for Your Next JVM Backend](kora-right-default-for-backend.md) — a pragmatic argument for choosing Kora as the default JVM backend framework — compile-time
+  validation, explicit architecture, Virtual Threads, thin abstractions, and low framework-specific overhead.
 - [Why Kora Doesn't Need an ORM for Most Services](kora-dont-need-orm.md) — why a Kora repository over native SQL covers most backend services better than an ORM, and when an ORM is still the right
   tool.
 - [Why Compile-Time Frameworks Work Well With AI Coding Agents](neuro-agent-and-kora.md) — why Kora's compile-time graph, strong typing, and generated source make it unusually well matched to AI

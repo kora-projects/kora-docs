@@ -95,6 +95,65 @@ nav:
         - Camunda Zeebe: documentation/camunda8-worker.md
   - Тех-журнал:
       - Все статьи: blog/index.md
+      - Вам нужны хорошие JVM-инженеры: blog/you-need-good-jvm-engineers.md
+      - Навыки фреймворка против привязки к вендору: blog/you-dont-need-kora-developers.md
+      - Почему Kora вместо Jakarta EE: blog/kora-instead-of-jakarta-ee.md
+      - Почему Kora вместо Spring: blog/kora-over-spring-for-backend.md
+      - Почему Kora компилируемая: blog/why-kora-compile-time-framework.md
+      - Kora пересматривает модель фреймворка: blog/kora-rethinks-framework-model-itself.md
+      - Почему Kora — правильный выбор по умолчанию: blog/kora-right-default-for-backend.md
+      - Почему Kora не нуждается в ORM: blog/kora-dont-need-orm.md
+      - Фреймворки на этапе компиляции и AI-агенты: blog/neuro-agent-and-kora.md
+      - Диагностика на этапе компиляции: blog/compile-time-diagnostics.md
+      - Откуда берётся производительность Kora: blog/kora-performance.md
+      - Виртуальные потоки против реактивного подхода: blog/virtual-thread-vs-reactive.md
+      - Виртуальные потоки в продакшене: blog/virtual-thread-in-production.md
+      - Виртуальные потоки в первую очередь: blog/virtual-thread-first.md
+      - Тонкие абстракции: blog/kora-abstractions.md
+      - Миф о большой экосистеме: blog/myth-of-large-community.md
+      - Легче выучить: blog/kora-easier-to-learn.md
+      - Расширение экосистемы: blog/kora-extending-framework-ecosystem.md
+      - Стоимость отсутствующей интеграции: blog/cost-of-missing-integration.md
+      - Минимум магии для AI-агентов: blog/neuro-agent-best-native-kora-framework.md
+      - Граф приложения как архитектура: blog/application-graph-as-architecture.md
+      - Тестирование продакшн-графа: blog/kora-test-graph.md
+      - Структурированная конкурентность: blog/structured-concurrency-in-kora.md
+      - Kora против Spring через призму STEP: blog/kora-vs-spring-through-step-lens.md
+      - STEP в Kora: blog/kora-step.md
+      - Запуск против времени сборки: blog/kora-startup-vs-build-time.md
+      - Встроенные продакшн-знания: blog/kora-production-knowledge-built-in.md
+      - Политико-управляемая инфраструктура: blog/kora-infra-and-funcs.md
+      - Производительность экономит деньги: blog/kora-save-money-and-time.md
+      - OpenAPI-first разработка: blog/kora-openapi-development.md
+      - Один STEP за раз: blog/neuro-agents-kora-step.md
+      - Одна проблема — одно решение: blog/one-problem-one-solution.md
+      - Наблюдаемость по дизайну: blog/kora-observability.md
+      - Никакой магии во время выполнения: blog/no-runtime-magic.md
+      - Изучение фреймворка в эпоху AI: blog/neuro-era-learning-framework.md
+      - Kora Skill: blog/kora-skill-between-docs-and-agent.md
+      - Случайно AI-нативный: blog/neuro-native-framework-kora-became.md
+      - Экспертиза фреймворка > сообщество: blog/neuro-era-framework-matters-more-community.md
+      - Создайте свой модуль: blog/kora-build-your-module.md
+      - HTTP-запрос на виртуальных потоках: blog/http-request-throught-kora.md
+      - Отладка сгенерированного кода: blog/generated-code-transparent-debugging.md
+      - Сфокусированная инженерия — это не NIH: blog/kora-focused-engineering-is-not-nih.md
+      - Быстрый запуск: blog/fast-startup-not-convenience.md
+      - Корпоративная готовность без вселенной: blog/kora-enterprise-ready-without-universe.md
+      - Компиляция против скорости разработки: blog/kora-compile-time-and-development-speed.md
+      - Зрелость документации: blog/kora-documentation-maturity.md
+      - Документация в эпоху AI: blog/kora-documentation-in-the-ai-era.md
+      - Динамическое обновление во время выполнения: blog/kora-dynamic-runtime-refresh.md
+      - Подходы к тестированию: blog/kora-testing-different-approaches.md
+      - DI на этапе компиляции в масштабе: blog/compile-time-di-at-scale-kora.md
+      - DI на этапе компиляции: blog/compile-time-dependency-injection.md
+      - AOP на этапе компиляции: blog/kora-aop.md
+      - Сильные значения по умолчанию — не привязка: blog/kora-strong-default-not-lock-in.md
+      - Почему Kora для Kotlin: blog/kora-may-be-best-for-kotlin.md
+      - Компиляция ≠ только компиляция: blog/compile-time-not-libraries.md
+      - Цена докторской по Spring: blog/talk-joker-phd-in-spring-talk.md
+      - Kora на практике: blog/talk-benchmark-others-and-kora.md
+      - За пределами магии Spring: blog/talk-jvm-day-cognitive-load.md
+      - Почему была создана Kora: blog/talk-kora-why-build-pre-1.0-origin.md
   - Сообщество:
       - Разработки: community/development.md
   - Журнал изменений: changelog/changelog.md

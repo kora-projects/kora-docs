@@ -1,0 +1,1 @@
+--8<-- "ru/neuro-agent-best-native-kora-framework.md"

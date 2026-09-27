@@ -1,6 +1,5 @@
 ---
-title:
-    Beyond “Spring Magic”: Why Kora Was Designed Around Transparency, Compile-Time Guarantees, and Lower Cognitive Load
+title: "Beyond “Spring Magic”: Why Kora Was Designed Around Transparency, Compile-Time Guarantees, and Lower Cognitive Load"
 date: 2024-08-31
 description: This article is a written companion to a talk given at JVM Day 2024 about transparency, compile-time guarantees, and cognitive load. It summarizes the talk's key ideas and how they map onto modern Kora.
 search:

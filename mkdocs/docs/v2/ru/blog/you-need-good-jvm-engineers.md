@@ -1,0 +1,1 @@
+--8<-- "ru/you-need-good-jvm-engineers.md"

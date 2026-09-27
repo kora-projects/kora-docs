@@ -1,0 +1,1 @@
+--8<-- "ru/kora-vs-spring-through-step-lens.md"

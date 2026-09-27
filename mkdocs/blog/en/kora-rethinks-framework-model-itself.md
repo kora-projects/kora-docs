@@ -1,6 +1,5 @@
 ---
-title:
-    Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself
+title: "Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself"
 date: 2026-09-16
 description: Moving DI and AOP to compile time is a major improvement, but it does not automatically remove the complexity inherited from a Spring-like framework model. Kora goes further by deliberately reducing the amount of framework model that needs to exist at all.
 search:

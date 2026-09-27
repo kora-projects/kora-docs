@@ -1,4 +1,5 @@
 ---
+title: Fast Startup Is Not Just Developer Convenience
 date: 2026-08-11
 description: Why fast startup and time-to-readiness are production capacity properties in the Kora Framework, not just developer convenience.
 search:

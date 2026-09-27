@@ -1,0 +1,1 @@
+--8<-- "ru/kora-infra-and-funcs.md"
