@@ -3,28 +3,21 @@ title: Why the Kora Framework Doesn't Need an ORM for Most Services
 date: 2026-09-15
 description: Why a Kora Framework repository over native SQL covers most backend services better than an ORM, and when an ORM is still the right tool.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Why Kora Doesn't Need an ORM for Most Services { #why-no-orm }
 
 **September 15, 2026**
 
-There is a familiar argument in Java backend development: if an application
-talks to a relational database, it should probably use an ORM. The reasoning
-sounds obvious. SQL is repetitive, JDBC is verbose, object mapping is
-tedious, and persistence infrastructure has already been solved by mature
-libraries. For a long time this made ORM-based persistence the default
-choice for many server applications.
+There is a familiar argument in Java backend development: if an application talks to a relational database, it should probably use an ORM. The reasoning
+sounds obvious. SQL is repetitive, JDBC is verbose, object mapping is tedious, and persistence infrastructure has already been solved by mature libraries. For a long time this made ORM-based
+persistence the default choice for many server applications.
 
-The Kora Framework takes a different position. It does not claim that ORMs are bad,
-obsolete, or unnecessary in every application. It makes a narrower and more
-practical argument: for a large class of backend services, the expensive
-part of raw database access is not SQL itself. The expensive part is the
-mechanical code around SQL. If the framework can generate that mechanical
-code at compile time, then a service can keep explicit SQL and
-straightforward Java or Kotlin without adopting a full object-persistence
-model.
+The Kora Framework takes a different position. It does not claim that ORMs are bad, obsolete, or unnecessary in every application. It makes a narrower and more
+practical argument: for a large class of backend services, the expensive part of raw database access is not SQL itself. The expensive part is the
+mechanical code around SQL. If the framework can generate that mechanical code at compile time, then a service can keep explicit SQL and straightforward Java or Kotlin without adopting a full
+object-persistence model.
 
 That leads to a deliberately simple equation:
 
@@ -34,12 +27,9 @@ Java remains Java
 Kora generates glue
 ```
 
-Kora repositories let the developer write a query, declare a typed
-repository method, and let the framework generate the JDBC implementation,
-parameter binding, row mapping, resource handling, telemetry integration,
-and transaction participation. Kora 2 then combines that model with
-synchronous application code and virtual threads. The result is an
-architecture that looks almost old-fashioned on the surface:
+Kora repositories let the developer write a query, declare a typed repository method, and let the framework generate the JDBC implementation,
+parameter binding, row mapping, resource handling, telemetry integration, and transaction participation. Kora 2 then combines that model with
+synchronous application code and virtual threads. The result is an architecture that looks almost old-fashioned on the surface:
 
 ```text
 simple synchronous repository
@@ -51,115 +41,69 @@ virtual threads
 high concurrency without reactive DB API
 ```
 
-But the runtime model underneath is very different from the old
-platform-thread-per-request world that originally pushed many systems toward
-reactive database access. Virtual threads make blocking code cheap to park.
-Kora's generated repositories remove most of JDBC's repetitive ceremony. The
-database connection pool remains the real concurrency boundary, where it
-arguably belonged all along.
+But the runtime model underneath is very different from the old platform-thread-per-request world that originally pushed many systems toward
+reactive database access. Virtual threads make blocking code cheap to park. Kora's generated repositories remove most of JDBC's repetitive ceremony. The database connection pool remains the real
+concurrency boundary, where it arguably belonged all along.
 
-The interesting question is therefore not, "Is ORM good or bad?" The useful
-question is: what problems does an ORM solve, which of those problems does
-this service actually have, and which of them can be solved more cheaply
-with generated repositories and explicit SQL?
+The interesting question is therefore not, "Is ORM good or bad?" The useful question is: what problems does an ORM solve, which of those problems does this service actually have, and which of them can
+be solved more cheaply with generated repositories and explicit SQL?
 
-For many microservices, internal APIs, event handlers, transaction-oriented
-services, CRUD backends, and data-facing application components, Kora's
-answer is that a full ORM often solves more problems than the service has.
+For many microservices, internal APIs, event handlers, transaction-oriented services, CRUD backends, and data-facing application components, Kora's answer is that a full ORM often solves more problems
+than the service has.
 
 ## ORM Solves a Real Problem { #orm-solves-problem }
 
-Any serious comparison should begin by giving ORM its due. Raw JDBC is
-unpleasant at scale. A developer traditionally has to acquire a connection,
-create a prepared statement, bind parameters using numerical indexes,
-execute it, iterate a ResultSet, handle null values, map JDBC types into
-application types, close resources correctly, translate exceptions,
-coordinate transactions, and add instrumentation. A ten-line SQL query can
-require several dozen lines of Java.
+Any serious comparison should begin by giving ORM its due. Raw JDBC is unpleasant at scale. A developer traditionally has to acquire a connection, create a prepared statement, bind parameters using
+numerical indexes, execute it, iterate a ResultSet, handle null values, map JDBC types into application types, close resources correctly, translate exceptions, coordinate transactions, and add
+instrumentation. A ten-line SQL query can require several dozen lines of Java.
 
-ORMs removed much of that repetitive work. They also introduced powerful
-higher-level features: entity identity, persistence contexts, automatic
-dirty checking, cascades, relationship navigation, lazy loading, optimistic
-locking, second-level caches, query abstraction, schema mapping, and
-unit-of-work semantics. In applications built around rich aggregate
-persistence, these capabilities can be genuinely valuable.
+ORMs removed much of that repetitive work. They also introduced powerful higher-level features: entity identity, persistence contexts, automatic dirty checking, cascades, relationship navigation, lazy
+loading, optimistic locking, second-level caches, query abstraction, schema mapping, and unit-of-work semantics. In applications built around rich aggregate persistence, these capabilities can be
+genuinely valuable.
 
-The problem begins when that entire model becomes the default answer for
-applications that do not actually need most of it. A service that mostly
-executes explicit read projections, conditional updates, inserts, small
-transactions, and a handful of database-specific queries may not benefit
-from a managed object graph. It may simply need a concise way to execute SQL
-safely and map results into typed values.
+The problem begins when that entire model becomes the default answer for applications that do not actually need most of it. A service that mostly executes explicit read projections, conditional
+updates, inserts, small transactions, and a handful of database-specific queries may not benefit from a managed object graph. It may simply need a concise way to execute SQL safely and map results
+into typed values.
 
 Kora focuses on that narrower need.
 
 ## The Fundamental Impedance Mismatch { #impedance-mismatch }
 
-The phrase "object-relational impedance mismatch" is old, but the underlying
-issue has not disappeared. A relational database represents information
-using tables, rows, columns, keys, constraints, joins, sets, and declarative
-queries. Java applications represent information using classes, records,
-interfaces, references, collections, methods, and object identity. These are
-not the same model.
+The phrase "object-relational impedance mismatch" is old, but the underlying issue has not disappeared. A relational database represents information using tables, rows, columns, keys, constraints,
+joins, sets, and declarative queries. Java applications represent information using classes, records, interfaces, references, collections, methods, and object identity. These are not the same model.
 
-A relational relationship might be expressed through a foreign key while an
-object model might expose a direct reference. The difference seems small
-until lifecycle enters the picture. Is the related object already loaded?
-Should it be loaded immediately? Should the framework create a proxy? What
-happens outside the persistence session? Does serialization trigger a query?
-If the relationship changes, which SQL should be emitted? What if two object
-references represent the same row? What if the request needs only three
-columns but the entity contains forty?
+A relational relationship might be expressed through a foreign key while an object model might expose a direct reference. The difference seems small until lifecycle enters the picture. Is the related
+object already loaded? Should it be loaded immediately? Should the framework create a proxy? What happens outside the persistence session? Does serialization trigger a query? If the relationship
+changes, which SQL should be emitted? What if two object references represent the same row? What if the request needs only three columns but the entity contains forty?
 
-An ORM attempts to bridge these models by creating a rich persistence layer
-between them. Kora takes a different route: it does not try to make the
-relational model look like an object graph. It treats the database query as
-the database operation and maps the result into ordinary application values.
+An ORM attempts to bridge these models by creating a rich persistence layer between them. Kora takes a different route: it does not try to make the relational model look like an object graph. It
+treats the database query as the database operation and maps the result into ordinary application values.
 
-Instead of a pipeline where relational data becomes an ORM entity model,
-then a managed graph, then application values, the common Kora path is
-closer to SQL result, generated row mapper, Java or Kotlin value. The
-mismatch is not "solved" by pretending the models are identical. The
-boundary is made explicit and mechanically cheap.
+Instead of a pipeline where relational data becomes an ORM entity model, then a managed graph, then application values, the common Kora path is closer to SQL result, generated row mapper, Java or
+Kotlin value. The mismatch is not "solved" by pretending the models are identical. The boundary is made explicit and mechanically cheap.
 
 ## A Repository Does Not Need to Be an Entity Manager { #repository-not-entity-manager }
 
-In Kora, a repository method can declare an explicit query and an ordinary
-typed return value. The developer defines the database operation and the
-Java-level result. The generated implementation does the boring work.
+In Kora, a repository method can declare an explicit query and an ordinary typed return value. The developer defines the database operation and the Java-level result. The generated implementation does
+the boring work.
 
-There is no requirement that the returned value be a managed persistent
-object. It can be an immutable record. If code later creates another
-instance with the same identifier, there is no framework-level identity map
-that tries to decide whether those objects are the same persistent entity.
-Creating a modified copy does not automatically update the database. The
-database changes when code calls a repository operation that executes an
-update.
+There is no requirement that the returned value be a managed persistent object. It can be an immutable record. If code later creates another instance with the same identifier, there is no
+framework-level identity map that tries to decide whether those objects are the same persistent entity. Creating a modified copy does not automatically update the database. The database changes when
+code calls a repository operation that executes an update.
 
-That is a simpler semantic model: repository call equals database operation.
-It replaces the more indirect relationship where object mutation,
-persistence-context state, and flush timing eventually become a database
-operation. For many service workloads, the explicit model is easier to
-reason about.
+That is a simpler semantic model: repository call equals database operation. It replaces the more indirect relationship where object mutation, persistence-context state, and flush timing eventually
+become a database operation. For many service workloads, the explicit model is easier to reason about.
 
 ## The Persistence Session Is Powerful but Not Free { #persistence-session }
 
-One of the central concepts in traditional ORM architecture is the
-persistence session or persistence context. It provides useful guarantees.
-The framework can maintain entity identity inside the session. It can track
-loaded objects, notice changes, delay SQL until flush time, batch some work,
-manage relationships, and provide a unit-of-work abstraction.
+One of the central concepts in traditional ORM architecture is the persistence session or persistence context. It provides useful guarantees. The framework can maintain entity identity inside the
+session. It can track loaded objects, notice changes, delay SQL until flush time, batch some work, manage relationships, and provide a unit-of-work abstraction.
 
-This is valuable when an application genuinely wants to manipulate a
-persistent object graph. But the session is also a hidden state machine. A
-developer must understand whether an entity is transient, managed, detached,
-or removed, and what operations move it between these states. They must
-understand when SQL is emitted, what happens when a lazy relationship is
-accessed after the session closes, whether a query triggers a flush, and
-whether two references resolve to one managed identity.
+This is valuable when an application genuinely wants to manipulate a persistent object graph. But the session is also a hidden state machine. A developer must understand whether an entity is
+transient, managed, detached, or removed, and what operations move it between these states. They must understand when SQL is emitted, what happens when a lazy relationship is accessed after the
+session closes, whether a query triggers a flush, and whether two references resolve to one managed identity.
 
-None of these concepts are inherently bad. They are the cost of the
-abstraction. The question is whether a service needs to pay that cost.
+None of these concepts are inherently bad. They are the cost of the abstraction. The question is whether a service needs to pay that cost.
 
 Kora repositories usually do not introduce an equivalent persistence
 session. A query returns ordinary values. Those values have no hidden

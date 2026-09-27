@@ -2,7 +2,7 @@
 title: How an HTTP Request Travels Through the Kora Framework on Virtual Threads
 date: 2026-08-14
 search:
-  exclude: true
+    exclude: true
 ---
 
 # How an HTTP Request Travels Through Kora on Virtual Threads { #http-request-kora }

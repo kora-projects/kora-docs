@@ -5,6 +5,7 @@ description: Why the Kora Framework's compile-time graph, strong typing, and gen
 search:
   exclude: true
 ---
+
 # Why Compile-Time Frameworks Work Surprisingly Well With AI Coding Agents { #compile-time-frameworks-ai-agents }
 
 **September 14, 2026**

@@ -3,7 +3,7 @@ title: Production Knowledge Is Built Into the Kora Framework, Not Collected Arou
 date: 2026-08-27
 description: How the Kora Framework bakes operational practice — telemetry, resilience, readiness, lifecycle — into the framework instead of leaving teams to assemble it.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Production Knowledge Is Built Into Kora, Not Collected Around It { #production-knowledge }

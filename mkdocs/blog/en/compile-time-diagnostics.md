@@ -41,7 +41,8 @@ resolved, repositories still need implementations, routes still need handlers, m
 caching, and configuration still need to be wired into the application somehow. The real architectural question is not whether that work exists, but **when it happens, where errors surface, whether
 the result is deterministic, and whether developers can inspect what the framework decided to do**.
 
-The Kora Framework is a useful example because compile-time graph construction, annotation processing, Kotlin Symbol Processing, and source generation are not secondary implementation details. They are central to
+The Kora Framework is a useful example because compile-time graph construction, annotation processing, Kotlin Symbol Processing, and source generation are not secondary implementation details. They
+are central to
 the way the framework works. The framework attempts to validate dependencies, injections, graph structure, AOP contracts, mappings, repository declarations, and generated application infrastructure
 before the application starts. In a runtime-oriented architecture, the path to a structural error may look like this:
 

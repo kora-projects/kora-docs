@@ -21,7 +21,8 @@ child operations stopped? If one child fails immediately while two others are bl
 returned an error? How is the tracing context propagated into them?
 
 Structured concurrency is designed to answer those questions. Instead of treating concurrent tasks as independent pieces of work submitted to some executor, it treats them as children of a larger
-operation. Their lifetime, failure handling, cancellation, and completion are tied to the lexical scope that created them. For Kora Framework applications, this model fits particularly well because the
+operation. Their lifetime, failure handling, cancellation, and completion are tied to the lexical scope that created them. For Kora Framework applications, this model fits particularly well because
+the
 framework deliberately uses ordinary synchronous method signatures together with virtual threads. A controller or service remains synchronous from the caller's perspective, while a local section of
 that operation can fan out into several concurrent virtual threads when parallelism is actually beneficial.
 

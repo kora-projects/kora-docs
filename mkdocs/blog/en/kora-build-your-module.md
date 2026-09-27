@@ -3,8 +3,9 @@ title: How to Build Your Own First-Class Kora Framework Module
 date: 2026-08-15
 description: A step-by-step guide to building a first-class Kora Framework module with typed config, lifecycle, telemetry, and compile-time DI.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # How to Build Your Own First-Class Kora Module { #build-your-own }
 
 **August 15, 2026**

@@ -3,17 +3,21 @@ title: Do Production Services Really Need a Dynamic Application Graph? — Kora 
 date: 2026-08-06
 description: How the Kora Framework keeps the application graph static while supporting runtime refresh, feature flags, and dynamic routing where they belong.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # Do Production Services Really Need a Dynamic Application Graph? { #dynamic-application-graph }
 
 **August 6, 2026**
 
 The phrase *dynamic application* is used so loosely in backend engineering that it often hides several completely different requirements.
 
-A production service is obviously dynamic. Requests arrive with different data. Feature flags change while the process is running. Credentials rotate. Tenants appear and disappear. Rate limits move. Remote endpoints fail over. Retry budgets change. Business rules depend on current state. Configuration may be reloaded. Traffic is routed differently according to headers, accounts, regions, experiments, or operational policy.
+A production service is obviously dynamic. Requests arrive with different data. Feature flags change while the process is running. Credentials rotate. Tenants appear and disappear. Rate limits move.
+Remote endpoints fail over. Retry budgets change. Business rules depend on current state. Configuration may be reloaded. Traffic is routed differently according to headers, accounts, regions,
+experiments, or operational policy.
 
-From that observation, it is tempting to make a much stronger claim: because application behavior changes at runtime, the dependency injection container must also discover components, choose implementations, assemble proxies, scan the classpath, and mutate the dependency topology at runtime.
+From that observation, it is tempting to make a much stronger claim: because application behavior changes at runtime, the dependency injection container must also discover components, choose
+implementations, assemble proxies, scan the classpath, and mutate the dependency topology at runtime.
 
 Those two ideas are not the same.
 
@@ -23,7 +27,10 @@ Dynamic application behavior
 Dynamic dependency graph
 ```
 
-Kora's dependency-injection model is built around that distinction. The framework determines the application's component topology at compile time, validates that topology, and generates ordinary code for it. Yet the running application is not frozen. Component instances have lifecycle. Configuration can be watched and reloaded. Parts of the graph can be refreshed. Long-lived components can reference the current version of another component through `ValueOf<T>`. Collections of known implementations can be injected and selected at runtime. Tags distinguish implementations. Application logic can route between strategies based on configuration, feature flags, tenant data, request context, health, latency, or any other runtime signal.
+Kora's dependency-injection model is built around that distinction. The framework determines the application's component topology at compile time, validates that topology, and generates ordinary code
+for it. Yet the running application is not frozen. Component instances have lifecycle. Configuration can be watched and reloaded. Parts of the graph can be refreshed. Long-lived components can
+reference the current version of another component through `ValueOf<T>`. Collections of known implementations can be injected and selected at runtime. Tags distinguish implementations. Application
+logic can route between strategies based on configuration, feature flags, tenant data, request context, health, latency, or any other runtime signal.
 
 The structural question and the behavioral question are simply separated.
 
@@ -65,15 +72,18 @@ HTTP client
 external service
 ```
 
-The requests, records, SQL rows, feature flags, credentials, endpoints and policies may change constantly, but the fact that `OrderService` depends on `OrderRepository` usually does not become unknown at 14:37 on a Tuesday.
+The requests, records, SQL rows, feature flags, credentials, endpoints and policies may change constantly, but the fact that `OrderService` depends on `OrderRepository` usually does not become unknown
+at 14:37 on a Tuesday.
 
 That difference is the foundation of the Kora Framework's approach.
 
-> **Most backend applications are dynamic in data and configuration, not in their fundamental dependency structure. Kora deliberately keeps the application graph static while allowing runtime behavior where it actually belongs.**
+> **Most backend applications are dynamic in data and configuration, not in their fundamental dependency structure. Kora deliberately keeps the application graph static while allowing runtime behavior
+where it actually belongs.**
 
 The question is therefore not whether Kora supports runtime dynamism. It clearly does. The real question is where dynamism should live.
 
-Kora's answer is that dependency topology should be explicit and checked ahead of time when it is known ahead of time, while changing policies, configuration, state and decisions should remain runtime concepts.
+Kora's answer is that dependency topology should be explicit and checked ahead of time when it is known ahead of time, while changing policies, configuration, state and decisions should remain runtime
+concepts.
 
 That is a surprisingly useful boundary.
 
@@ -2718,21 +2728,21 @@ is inaccurate.
 
 A more useful matrix is:
 
-| Requirement | Needs Dynamic Graph? |
-| --- | --- |
-| Feature flag evaluation | Usually no |
-| Remote config | Usually no |
-| Endpoint failover | Usually no |
-| Credential rotation | Usually no |
-| Tenant routing | Usually no |
-| Rate-limit changes | Usually no |
-| Retry-policy changes | Usually no |
-| Business rule changes from data | Usually no |
+| Requirement                            | Needs Dynamic Graph?              |
+|----------------------------------------|-----------------------------------|
+| Feature flag evaluation                | Usually no                        |
+| Remote config                          | Usually no                        |
+| Endpoint failover                      | Usually no                        |
+| Credential rotation                    | Usually no                        |
+| Tenant routing                         | Usually no                        |
+| Rate-limit changes                     | Usually no                        |
+| Retry-policy changes                   | Usually no                        |
+| Business rule changes from data        | Usually no                        |
 | Refreshing configured client instances | No, if graph refresh is supported |
-| Choosing among known strategies | No |
-| Loading unknown classes from a new JAR | Yes, potentially |
-| Runtime plugin marketplace | Yes, potentially |
-| Hosting arbitrary applications | Yes, potentially |
+| Choosing among known strategies        | No                                |
+| Loading unknown classes from a new JAR | Yes, potentially                  |
+| Runtime plugin marketplace             | Yes, potentially                  |
+| Hosting arbitrary applications         | Yes, potentially                  |
 
 The right-hand column is much narrower than the word *dynamic* initially suggests.
 
@@ -3874,7 +3884,8 @@ A specialized class of extensible platforms needs the second.
 
 Production services are dynamic by nature.
 
-They process unpredictable data. They react to changing configuration. They evaluate flags. They rotate credentials. They route between providers. They apply tenant-specific rules. They retry according to current policy. They talk to endpoints that appear and disappear. They continuously change their state as the world changes around them.
+They process unpredictable data. They react to changing configuration. They evaluate flags. They rotate credentials. They route between providers. They apply tenant-specific rules. They retry
+according to current policy. They talk to endpoints that appear and disappear. They continuously change their state as the world changes around them.
 
 None of that proves that their dependency topology must also be discovered or mutated at runtime.
 
@@ -3894,9 +3905,12 @@ What changes is everything flowing through and around that structure.
 
 Kora embraces that reality by separating structural certainty from runtime flexibility.
 
-At compile time, it determines which components may exist, how they depend on one another, which implementations satisfy which contracts, and whether the graph is valid. That gives the framework compile-time diagnostics, explicit ownership, predictable assembly and readable generated wiring.
+At compile time, it determines which components may exist, how they depend on one another, which implementations satisfy which contracts, and whether the graph is valid. That gives the framework
+compile-time diagnostics, explicit ownership, predictable assembly and readable generated wiring.
 
-At runtime, Kora still creates and manages component instances. Configuration can be watched and reloaded. `RefreshableGraph` can rebuild the portion of the graph affected by a changed node. `ValueOf<T>` lets a stable component observe the current version of a dependency without being recreated itself. Feature flags, strategy routers, component collections, tags, registries and ordinary application logic can select behavior dynamically per request or per tenant.
+At runtime, Kora still creates and manages component instances. Configuration can be watched and reloaded. `RefreshableGraph` can rebuild the portion of the graph affected by a changed node.
+`ValueOf<T>` lets a stable component observe the current version of a dependency without being recreated itself. Feature flags, strategy routers, component collections, tags, registries and ordinary
+application logic can select behavior dynamically per request or per tenant.
 
 The result is not a static application.
 
@@ -3936,7 +3950,8 @@ Component C can either:
 
 That is not the absence of dynamism. It is controlled dynamism.
 
-The honest limitation appears only when the application itself is a runtime extension platform: an IDE, an application server, a plugin marketplace, a container for arbitrary user code, or another system that must download unknown bytecode, discover new types and mutate the dependency topology after deployment.
+The honest limitation appears only when the application itself is a runtime extension platform: an IDE, an application server, a plugin marketplace, a container for arbitrary user code, or another
+system that must download unknown bytecode, discover new types and mutate the dependency topology after deployment.
 
 For those systems, dynamic discovery is not incidental framework flexibility. It is part of the product.
 

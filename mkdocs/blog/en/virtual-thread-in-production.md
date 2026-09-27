@@ -5,6 +5,7 @@ description: How virtual threads behave under production load in the Kora Framew
 search:
   exclude: true
 ---
+
 # Virtual Threads in Production: Pinning, Carrier Threads and Load Spikes { #virtual-threads-in-production }
 
 **September 10, 2026**

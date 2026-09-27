@@ -14,7 +14,8 @@ Performance discussions around backend frameworks often collapse too quickly int
 becomes the explanation. That is useful as an external measurement, but it does not explain *why* a framework behaves the way it does, which costs it removes, which costs remain unavoidable, or
 whether the same architectural advantages will still matter once the benchmark is replaced by a real application with JSON mapping, database access, telemetry, resilience policies, and business logic.
 
-The Kora Framework is more interesting when viewed as a performance budget rather than as a benchmark result. The framework deliberately moves a large class of decisions out of the request path and into
+The Kora Framework is more interesting when viewed as a performance budget rather than as a benchmark result. The framework deliberately moves a large class of decisions out of the request path and
+into
 compilation. Dependency resolution, application graph construction, generated repositories, JSON codecs, HTTP adapters, and aspect wiring are prepared before the service starts. At runtime, the
 resulting application is much closer to ordinary compiled Java or Kotlin code calling deliberately chosen libraries through relatively thin framework adapters. The important idea is not that
 compile-time generation somehow makes every individual instruction faster. The idea is that work performed once by the compiler does not need to be rediscovered, interpreted, reflected upon, or

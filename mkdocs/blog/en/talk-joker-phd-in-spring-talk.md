@@ -1,16 +1,18 @@
 ---
-title: The Price of a “PhD in Spring”: What Kora Tries to Remove From the JVM Framework Experience
+title:
+    The Price of a “PhD in Spring”: What Kora Tries to Remove From the JVM Framework Experience
 date: 2024-10-14
 description: This article is a written companion to a talk that challenges how much framework-specific knowledge a developer should be expected to carry. It summarizes the talk's arguments, measurements, and the role Kora plays as a counterexample.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # The Price of a “PhD in Spring”: What Kora Tries to Remove From the JVM Framework Experience { #phd-in-spring }
 
 **October 14, 2024**
 
-This article is a written companion to a talk that challenges how much framework-specific knowledge a developer should be expected to carry. It summarizes the talk's arguments, measurements, and the role Kora plays as a counterexample.
+This article is a written companion to a talk that challenges how much framework-specific knowledge a developer should be expected to carry. It summarizes the talk's arguments, measurements, and the
+role Kora plays as a counterexample.
 
 <iframe width="100%" height="480" src="https://www.youtube.com/embed/Ksvcq-PRfX4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 

@@ -2,8 +2,9 @@
 date: 2026-08-11
 description: Why fast startup and time-to-readiness are production capacity properties in the Kora Framework, not just developer convenience.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # Fast Startup Is Not Just Developer Convenience { #fast-startup }
 
 **August 11, 2026**
@@ -15,7 +16,8 @@ For a cloud-native backend, the more important question is not **how quickly the
 cannot safely receive traffic does not help a rolling deployment, does not absorb a traffic spike, does not replace a preempted node, and does not reduce the latency of a scale-from-zero event. From
 the perspective of the platform, the critical transition is not `process started`; it is `Pod Ready`.
 
-This distinction is central to the Kora Framework's design. Kora 2 moves application-graph construction and validation to compile time, generates the wiring and adapters as ordinary source code, avoids runtime
+This distinction is central to the Kora Framework's design. Kora 2 moves application-graph construction and validation to compile time, generates the wiring and adapters as ordinary source code,
+avoids runtime
 reflection for the application graph, and initializes the prebuilt graph as parallel as possible. The Kora 2 landing page therefore presents startup and readiness not merely as benchmark results but
 as production properties: faster horizontal scaling, shorter rolling-deployment windows, lower warm-up impact, more practical scale-to-zero and spot capacity, and cheaper full-context integration
 testing.

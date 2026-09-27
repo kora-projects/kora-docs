@@ -3,8 +3,9 @@ title: Compile-Time DI at Scale — How the Kora Framework Keeps Large Projects 
 date: 2026-08-04
 description: How the Kora Framework uses @KoraSubmodule and Gradle modularization to keep compile-time dependency injection fast in large codebases.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # Compile-Time DI at Scale: How Kora Keeps Large Projects Fast { #compile-time-di-at-scale }
 
 **August 4, 2026**
@@ -38,7 +39,8 @@ valid.
 
 But a large application does not have to remain one enormous compilation unit.
 
-That distinction is central to understanding how the Kora Framework approaches compile-time dependency injection in a large codebase. Kora does not require every component in a service to live under one Gradle
+That distinction is central to understanding how the Kora Framework approaches compile-time dependency injection in a large codebase. Kora does not require every component in a service to live under
+one Gradle
 project and then ask a single annotation-processing invocation to rediscover the entire service after every edit. Its dependency-injection model includes an explicit mechanism for multi-module
 applications: `@KoraSubmodule`.
 

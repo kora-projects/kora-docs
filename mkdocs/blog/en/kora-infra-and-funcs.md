@@ -2,8 +2,9 @@
 date: 2026-08-26
 description: How the Kora Framework attaches resilience, caching, validation, and scheduling policy declaratively through compile-time generation.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # Policy-Driven Infrastructure in Kora: Resilience, Caching, Validation, and Scheduling { #policy-driven-infrastructure }
 
 **August 26, 2026**
@@ -13,7 +14,8 @@ misses a more important architectural question: **where does the policy live, an
 an invisible loop buried inside an HTTP client. The same cache can be an explicit acceleration layer or an opaque source of stale data. The same validation rule can protect an API boundary or leak
 deep into business code. The same scheduler can be a convenient timer or a distributed execution system with persistence, leases, recovery, and idempotency requirements.
 
-The Kora Framework is interesting because it tries to keep these policies declarative without turning them into runtime magic. Resilience annotations, cache annotations, validation annotations, and scheduling
+The Kora Framework is interesting because it tries to keep these policies declarative without turning them into runtime magic. Resilience annotations, cache annotations, validation annotations, and
+scheduling
 annotations are not merely syntactic conveniences. They describe infrastructure policy at the point where that policy belongs, while Kora generates the implementation around application code at
 compile time. The resulting model is different from a framework that discovers annotations at runtime, reflects over objects, constructs generic interceptor chains, and hides control flow behind
 dynamic proxies. In Kora, the application still uses explicit types, generated code is inspectable, configuration remains visible, and the framework tends to preserve the shape of the underlying

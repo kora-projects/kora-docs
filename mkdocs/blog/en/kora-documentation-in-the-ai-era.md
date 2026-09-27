@@ -3,10 +3,11 @@ title: Documentation in the AI Era — Kora Framework Docs Are No Longer Just Do
 date: 2026-08-07
 description: Why documentation, generated source, and compiler feedback form one explainable system in the Kora Framework for the AI era.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Documentation in the AI Era Is No Longer Just Documentation { #ai-era-docs }
+
 **August 7, 2026**
 
 For most of software history, framework documentation had a simple role: a developer had a question, opened a website, searched for the relevant page, read the explanation, found an example, and
@@ -20,7 +21,8 @@ reference pages, step-by-step guides, runnable examples, framework source, gener
 agent uses together. Instead of merely retrieving an answer that somebody wrote before, the agent can assemble a new answer for the exact application in front of it, write the implementation, compile
 it, inspect the error, correct the code, and validate the result.
 
-The Kora Framework is unusually well positioned for this model because its architecture is already designed around explicitness. The framework generates ordinary Java and Kotlin source. Dependency wiring is
+The Kora Framework is unusually well positioned for this model because its architecture is already designed around explicitness. The framework generates ordinary Java and Kotlin source. Dependency
+wiring is
 validated during compilation. Repositories, handlers, mappings, and aspects are materialized into readable code. The documentation is deliberately split between reference material, guides, and
 examples. The official `kora-examples` repository contains runnable services rather than disconnected snippets. The project also maintains an official `kora-skills` repository intended to give coding
 agents structured Kora-specific guidance.

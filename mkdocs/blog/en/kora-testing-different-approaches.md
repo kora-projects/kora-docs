@@ -3,7 +3,7 @@ title: Component vs Integration vs Black-Box Tests in the Kora Framework
 date: 2026-08-05
 description: How the Kora Framework separates component, integration, and black-box tests — what each layer proves, and how to place each test at the cheapest boundary that can prove it.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Component vs Integration vs Black-Box Tests in Kora { #testing-layers }
@@ -13,7 +13,8 @@ search:
 Testing strategy is often reduced to labels. One team calls a test “unit” because it runs in JUnit. Another calls the same test “integration” because a dependency-injection container starts. A third
 calls every HTTP test “end-to-end,” even when the application is running in the same process with half its dependencies mocked. Those labels do not tell us what the test proves.
 
-The Kora Framework provides a more useful way to draw the boundaries. Its testing documentation treats component, integration, and black-box tests as distinct layers, each built for a different question. Component
+The Kora Framework provides a more useful way to draw the boundaries. Its testing documentation treats component, integration, and black-box tests as distinct layers, each built for a different
+question. Component
 tests run a selected part of the Kora application graph and may replace dependencies. Integration tests still run inside the test process and call graph-managed components directly, but keep a real
 infrastructure boundary such as PostgreSQL. Black-box tests start the packaged application as an external process or container and interact with it only through its public API.
 

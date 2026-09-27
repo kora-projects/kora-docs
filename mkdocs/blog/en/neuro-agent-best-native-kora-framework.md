@@ -82,7 +82,8 @@ tests
 configuration
 ```
 
-instead of requiring the agent to guess large parts of the system from framework folklore. That is where compile-time frameworks become especially interesting. A model such as the Kora Framework pushes framework
+instead of requiring the agent to guess large parts of the system from framework folklore. That is where compile-time frameworks become especially interesting. A model such as the Kora Framework
+pushes framework
 structure through a pipeline like:
 
 ```text

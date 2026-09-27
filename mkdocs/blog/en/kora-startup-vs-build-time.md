@@ -3,7 +3,7 @@ title: Startup vs Build Time — Why the Kora Framework Moves Work Left
 date: 2026-08-28
 description: Why the Kora Framework shifts framework work from every startup into the build, and what that trade means for deployments, tests, and autoscaling.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Startup vs Build Time: Why Kora Moves Work Left { #startup-vs-build }

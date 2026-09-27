@@ -3,14 +3,16 @@ title: STEP — Simple, Transparent, Efficient, Predictable — Kora Framework
 date: 2026-08-29
 description: How the STEP principles tie the Kora Framework's individual features — compile-time DI, generated code, virtual threads, telemetry — into one coherent design.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # STEP — Simple. Transparent. Efficient. Predictable. How Kora Keeps Backend Engineering Direct { #step }
 
 **August 29, 2026**
 
-The Kora Framework can be described through individual technical features: compile-time dependency injection, generated repositories, generated HTTP handlers, compile-time AOP, Virtual Threads, OpenTelemetry, explicit lifecycle, fast startup, thin abstractions, and a modular production stack. Each of those features matters, but taken separately they can make the framework look like a collection of optimizations rather than a coherent design.
+The Kora Framework can be described through individual technical features: compile-time dependency injection, generated repositories, generated HTTP handlers, compile-time AOP, Virtual Threads,
+OpenTelemetry, explicit lifecycle, fast startup, thin abstractions, and a modular production stack. Each of those features matters, but taken separately they can make the framework look like a
+collection of optimizations rather than a coherent design.
 
 A better way to understand Kora is to ask what those decisions are trying to optimize together. The answer can be summarized as **STEP**:
 
@@ -21,27 +23,36 @@ E — Efficient
 P — Predictable
 ```
 
-The important part is not the acronym itself. The important part is that the four properties reinforce one another. A simpler programming model makes framework behavior easier to inspect. Greater transparency reduces uncertainty. Lower uncertainty makes runtime behavior more predictable. Predictability allows the framework to make stronger decisions at compile time and provide more efficient defaults. Efficiency then shortens feedback loops and reduces the amount of framework-specific tuning developers need to perform, which makes the development model simpler again.
+The important part is not the acronym itself. The important part is that the four properties reinforce one another. A simpler programming model makes framework behavior easier to inspect. Greater
+transparency reduces uncertainty. Lower uncertainty makes runtime behavior more predictable. Predictability allows the framework to make stronger decisions at compile time and provide more efficient
+defaults. Efficiency then shortens feedback loops and reduces the amount of framework-specific tuning developers need to perform, which makes the development model simpler again.
 
 Kora’s design can therefore be described through one central idea:
 
 > **Kora is designed around a simple idea: the common path of production backend development should be Simple, Transparent, Efficient, and Predictable.**
 
-This is not minimalism for the sake of minimalism. It is not an attempt to win a contest for the fewest annotations, modules, or dependencies. Kora is a comprehensive backend framework. It includes dependency injection, HTTP servers and clients, OpenAPI generation, data access, Kafka, gRPC, configuration, validation, transactions, caching, resilience, scheduling, telemetry, health probes, lifecycle management, testing, and extension points for external libraries.
+This is not minimalism for the sake of minimalism. It is not an attempt to win a contest for the fewest annotations, modules, or dependencies. Kora is a comprehensive backend framework. It includes
+dependency injection, HTTP servers and clients, OpenAPI generation, data access, Kafka, gRPC, configuration, validation, transactions, caching, resilience, scheduling, telemetry, health probes,
+lifecycle management, testing, and extension points for external libraries.
 
-The goal is different. Kora tries to minimize **accidental framework complexity** between the engineer and the actual system being built. Every abstraction, runtime mechanism, programming model, configuration path, and extension mechanism creates a cognitive and operational cost. STEP is a useful way to describe the discipline behind deciding which of those costs are worth paying.
+The goal is different. Kora tries to minimize **accidental framework complexity** between the engineer and the actual system being built. Every abstraction, runtime mechanism, programming model,
+configuration path, and extension mechanism creates a cognitive and operational cost. STEP is a useful way to describe the discipline behind deciding which of those costs are worth paying.
 
 The resulting principle is simple:
 
 > **Less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead keep the production backend path direct.**
 
-That directness matters during development, but it becomes even more valuable during testing, incidents, upgrades, migration, and long-term maintenance. STEP is therefore not only an API design idea. It is a criterion for the entire lifecycle of a service.
+That directness matters during development, but it becomes even more valuable during testing, incidents, upgrades, migration, and long-term maintenance. STEP is therefore not only an API design idea.
+It is a criterion for the entire lifecycle of a service.
 
 ## STEP Is About Reducing Accidental Framework Complexity { #step-complexity }
 
-Every backend system contains complexity that no framework can eliminate. A database has transaction semantics, locking, indexes, query plans, connection limits, and failure modes. Kafka has partitions, offsets, rebalances, ordering constraints, and broker behavior. HTTP has status codes, timeouts, connection pools, proxies, and protocol semantics. Distributed systems have partial failure, retries, idempotency, consistency, and capacity constraints. Those are properties of the systems engineers are actually building.
+Every backend system contains complexity that no framework can eliminate. A database has transaction semantics, locking, indexes, query plans, connection limits, and failure modes. Kafka has
+partitions, offsets, rebalances, ordering constraints, and broker behavior. HTTP has status codes, timeouts, connection pools, proxies, and protocol semantics. Distributed systems have partial
+failure, retries, idempotency, consistency, and capacity constraints. Those are properties of the systems engineers are actually building.
 
-A framework should help teams work with those realities. It should remove repetitive glue, standardize production concerns, and make common operations safer. But it should avoid adding a second layer of complexity large enough that engineers must understand the framework before they can understand the system.
+A framework should help teams work with those realities. It should remove repetitive glue, standardize production concerns, and make common operations safer. But it should avoid adding a second layer
+of complexity large enough that engineers must understand the framework before they can understand the system.
 
 A useful model is:
 
@@ -55,19 +66,23 @@ infrastructure complexity
 framework complexity
 ```
 
-The framework cannot eliminate business complexity. It cannot eliminate infrastructure complexity. It can only control the third term. Kora’s design is largely about keeping that term bounded. It does that by moving structural work into compilation, generating ordinary source, reducing runtime discovery, choosing one recommended path for common tasks, staying close to JVM and backend-native concepts, and applying production defaults inside the framework rather than forcing every application team to rediscover them.
+The framework cannot eliminate business complexity. It cannot eliminate infrastructure complexity. It can only control the third term. Kora’s design is largely about keeping that term bounded. It does
+that by moving structural work into compilation, generating ordinary source, reducing runtime discovery, choosing one recommended path for common tasks, staying close to JVM and backend-native
+concepts, and applying production defaults inside the framework rather than forcing every application team to rediscover them.
 
 This is what STEP describes.
 
 ## S — Simple: Reduce Decisions That Do Not Create Business Value { #s-simple }
 
-The first principle is **Simple**, but “simple” needs to be defined carefully. Simple does not mean primitive. It does not mean that the framework avoids advanced capabilities or that production systems are reduced to toy abstractions. A backend framework can be technically sophisticated internally while still offering a direct model to application developers.
+The first principle is **Simple**, but “simple” needs to be defined carefully. Simple does not mean primitive. It does not mean that the framework avoids advanced capabilities or that production
+systems are reduced to toy abstractions. A backend framework can be technically sophisticated internally while still offering a direct model to application developers.
 
 Kora’s idea of simplicity is closer to this:
 
 > **Simple does not mean primitive. It means removing choices and abstractions that do not create enough value to justify their cognitive cost.**
 
-Frameworks often become difficult not because any single API is complicated, but because the user must choose among several generations of APIs, several programming models, several extension mechanisms, and several equally valid ways to express the same task. The team first solves a framework decision problem and only then solves the application problem.
+Frameworks often become difficult not because any single API is complicated, but because the user must choose among several generations of APIs, several programming models, several extension
+mechanisms, and several equally valid ways to express the same task. The team first solves a framework decision problem and only then solves the application problem.
 
 The decision tree can look like:
 
@@ -95,31 +110,41 @@ clear supported path
 business code
 ```
 
-That difference sounds small when described as a diagram, but it compounds across a large organization. Every additional framework-level choice becomes a decision that must be documented, reviewed, taught, and maintained repeatedly across services.
+That difference sounds small when described as a diagram, but it compounds across a large organization. Every additional framework-level choice becomes a decision that must be documented, reviewed,
+taught, and maintained repeatedly across services.
 
 ### One Problem, One Recommended Solution { #one-problem }
 
-Kora’s “one problem → one recommended solution” philosophy is one of the clearest expressions of STEP. It does not mean that the framework prevents alternatives. Kora supports component replacement, custom modules, direct use of external libraries, and lower-level APIs where the default does not fit. The distinction is between **recommended path** and **mandatory path**.
+Kora’s “one problem → one recommended solution” philosophy is one of the clearest expressions of STEP. It does not mean that the framework prevents alternatives. Kora supports component replacement,
+custom modules, direct use of external libraries, and lower-level APIs where the default does not fit. The distinction is between **recommended path** and **mandatory path**.
 
-The framework tries to provide one path it is willing to support deeply for the common case. That path can be documented consistently, tested thoroughly, optimized centrally, and used as the default by tooling, examples, teams, and AI agents.
+The framework tries to provide one path it is willing to support deeply for the common case. That path can be documented consistently, tested thoroughly, optimized centrally, and used as the default
+by tooling, examples, teams, and AI agents.
 
 This reduces the number of architectural decisions that every individual service has to make again:
 
 > **Fewer valid ways to solve the same problem mean fewer architectural decisions that every individual service has to make again.**
 
-The benefit is not merely easier onboarding. It is codebase consistency. When several teams solve HTTP, data access, configuration, resilience, and telemetry using the same broad model, engineers can move between services without learning a new internal dialect each time.
+The benefit is not merely easier onboarding. It is codebase consistency. When several teams solve HTTP, data access, configuration, resilience, and telemetry using the same broad model, engineers can
+move between services without learning a new internal dialect each time.
 
 ### Familiar Java and Kotlin Are Part of Simplicity { #familiar-java }
 
-Kora’s simplicity also comes from its programming model. The framework tries to use normal Java and Kotlin concepts rather than replacing them with a separate application language. Developers work with constructors, interfaces, methods, records or data classes, synchronous calls, exceptions, SQL, gRPC contracts, HTTP routes, Kafka records, OpenTelemetry spans, and ordinary types.
+Kora’s simplicity also comes from its programming model. The framework tries to use normal Java and Kotlin concepts rather than replacing them with a separate application language. Developers work
+with constructors, interfaces, methods, records or data classes, synchronous calls, exceptions, SQL, gRPC contracts, HTTP routes, Kafka records, OpenTelemetry spans, and ordinary types.
 
-The framework adds compile-time meaning around those constructs, but the language remains recognizable. This matters because a framework-specific concept has a larger cognitive cost than a familiar language concept. If an engineer already knows constructors and interfaces, dependency injection expressed through constructors and interfaces has a lower learning burden than a separate service-locator model. If an engineer already understands synchronous Java, Virtual Threads let Kora preserve that model rather than requiring a second concurrency language for the common I/O-bound path.
+The framework adds compile-time meaning around those constructs, but the language remains recognizable. This matters because a framework-specific concept has a larger cognitive cost than a familiar
+language concept. If an engineer already knows constructors and interfaces, dependency injection expressed through constructors and interfaces has a lower learning burden than a separate
+service-locator model. If an engineer already understands synchronous Java, Virtual Threads let Kora preserve that model rather than requiring a second concurrency language for the common I/O-bound
+path.
 
 The result is that the framework can remain high-level without becoming semantically distant from the JVM.
 
 ### Virtual Threads Support the Simple Path { #virtual-threads-simple }
 
-Kora 2’s synchronous model is a particularly important example. For years, high-concurrency JVM services often faced pressure to adopt reactive APIs because blocking one platform thread per request was expensive. Reactive programming solved real scalability problems, but it introduced another programming model: publishers, operators, schedulers, context propagation rules, and asynchronous call chains.
+Kora 2’s synchronous model is a particularly important example. For years, high-concurrency JVM services often faced pressure to adopt reactive APIs because blocking one platform thread per request
+was expensive. Reactive programming solved real scalability problems, but it introduced another programming model: publishers, operators, schedulers, context propagation rules, and asynchronous call
+chains.
 
 Virtual Threads change the trade-off. Kora can keep ordinary synchronous signatures while the JVM handles large numbers of concurrent blocking operations efficiently.
 
@@ -137,13 +162,15 @@ repository / client
 response
 ```
 
-The engineer still needs to understand connection-pool limits, CPU saturation, locks, pinning, timeout budgets, and downstream capacity. Virtual Threads do not remove those constraints. What they remove is the requirement to adopt an additional application-wide concurrency abstraction merely to make blocking I/O scalable.
+The engineer still needs to understand connection-pool limits, CPU saturation, locks, pinning, timeout budgets, and downstream capacity. Virtual Threads do not remove those constraints. What they
+remove is the requirement to adopt an additional application-wide concurrency abstraction merely to make blocking I/O scalable.
 
 That is STEP simplicity: keep essential complexity visible and remove accidental complexity around it.
 
 ### Thin Abstractions Are Another Form of Simplicity { #thin-abstractions }
 
-Kora does not try to replace the semantics of familiar backend technologies with proprietary vocabulary. JDBC remains JDBC. SQL remains SQL. Kafka remains Kafka. gRPC remains gRPC. OpenTelemetry remains OpenTelemetry.
+Kora does not try to replace the semantics of familiar backend technologies with proprietary vocabulary. JDBC remains JDBC. SQL remains SQL. Kafka remains Kafka. gRPC remains gRPC. OpenTelemetry
+remains OpenTelemetry.
 
 The relationship is closer to:
 
@@ -169,13 +196,15 @@ adapter
 native technology
 ```
 
-This means existing engineering knowledge remains useful. A PostgreSQL problem is still debugged using SQL, query plans, indexes, and transaction semantics. A Kafka problem still involves partitions, offsets, rebalances, and consumer groups. A gRPC problem still involves deadlines, status codes, streaming, and generated contracts.
+This means existing engineering knowledge remains useful. A PostgreSQL problem is still debugged using SQL, query plans, indexes, and transaction semantics. A Kafka problem still involves partitions,
+offsets, rebalances, and consumer groups. A gRPC problem still involves deadlines, status codes, streaming, and generated contracts.
 
 The framework helps engineers use the technology rather than making them relearn the technology through a new conceptual model.
 
 ## T — Transparent: Make Framework Behavior Inspectable { #t-transparent }
 
-The second STEP principle is **Transparent**. Transparency is not the same as having no abstraction. All frameworks abstract repetitive work. Transparency means that when the abstraction matters, the engineer can inspect what it produced, which contract applies, which component is used, and why the application behaves the way it does.
+The second STEP principle is **Transparent**. Transparency is not the same as having no abstraction. All frameworks abstract repetitive work. Transparency means that when the abstraction matters, the
+engineer can inspect what it produced, which contract applies, which component is used, and why the application behaves the way it does.
 
 Kora’s compile-time model is central here:
 
@@ -189,7 +218,8 @@ Readable generated code
 Executable application
 ```
 
-The framework does not rely primarily on runtime reflection, dynamic proxy assembly, classpath scanning, or runtime graph construction to determine application structure. Instead, more of the framework’s structural decisions are made during compilation and materialized as ordinary source.
+The framework does not rely primarily on runtime reflection, dynamic proxy assembly, classpath scanning, or runtime graph construction to determine application structure. Instead, more of the
+framework’s structural decisions are made during compilation and materialized as ordinary source.
 
 That creates a different debugging and reasoning model.
 
@@ -197,9 +227,11 @@ That creates a different debugging and reasoning model.
 
 ### Compile-Time DI Makes Architecture Visible Earlier { #compile-time-di }
 
-Kora’s dependency graph is derived from `@KoraApp`, components, modules, constructors, tags, and other explicit contracts. Missing dependencies, ambiguous dependencies, cycles, and other graph problems can be rejected during compilation rather than discovered after the application starts.
+Kora’s dependency graph is derived from `@KoraApp`, components, modules, constructors, tags, and other explicit contracts. Missing dependencies, ambiguous dependencies, cycles, and other graph
+problems can be rejected during compilation rather than discovered after the application starts.
 
-This makes the application architecture more visible in two ways. First, relationships exist directly in source through types and constructors. Second, the resulting wiring is generated and can be inspected if necessary.
+This makes the application architecture more visible in two ways. First, relationships exist directly in source through types and constructors. Second, the resulting wiring is generated and can be
+inspected if necessary.
 
 The developer does not need to treat the container as a mysterious runtime authority. The compiler already knows a large part of the graph.
 
@@ -207,11 +239,13 @@ This reduces the gap between source architecture and runtime architecture.
 
 ### Generated Code Is a Transparency Mechanism { #generated-code }
 
-Generated source is sometimes framed as a cost: another directory, another implementation, another thing the framework created. But in Kora’s model, generated source is primarily an inspection surface.
+Generated source is sometimes framed as a cost: another directory, another implementation, another thing the framework created. But in Kora’s model, generated source is primarily an inspection
+surface.
 
 Developers are not expected to maintain it manually. They do not need to read generated code for routine application work. But when exact behavior matters, the implementation is available.
 
-A generated repository can show the actual JDBC path. A generated mapper can show the exact field conversion. A generated HTTP handler can show request adaptation. A generated AOP class can show wrapper order. A generated graph can expose component construction.
+A generated repository can show the actual JDBC path. A generated mapper can show the exact field conversion. A generated HTTP handler can show request adaptation. A generated AOP class can show
+wrapper order. A generated graph can expose component construction.
 
 This is valuable because ordinary Java and Kotlin are universal debugging formats. IDEs understand them. Debuggers understand them. Static analyzers understand them. AI agents understand them.
 
@@ -219,7 +253,9 @@ Generated code therefore reduces opacity rather than increasing it.
 
 ### Transparency Means Fewer “Why Did the Framework Do That?” Moments { #transparency-moments }
 
-The cost of hidden runtime behavior becomes visible when something unexpected happens. If a component exists only because of classpath discovery, an engineer must reconstruct the conditions that created it. If method behavior is assembled through several runtime interceptors, the engineer must determine their order. If configuration depends on multiple hidden defaults, the engineer must recover the final resolved state.
+The cost of hidden runtime behavior becomes visible when something unexpected happens. If a component exists only because of classpath discovery, an engineer must reconstruct the conditions that
+created it. If method behavior is assembled through several runtime interceptors, the engineer must determine their order. If configuration depends on multiple hidden defaults, the engineer must
+recover the final resolved state.
 
 Kora tries to move more of those answers into explicit contracts and generated code.
 
@@ -231,15 +267,18 @@ This creates a useful principle:
 
 ### Transparency Improves Code Review and Refactoring { #transparency-review }
 
-A reviewer can reason more effectively when architecture is visible through constructors, interfaces, annotations, and generated contracts. The review question becomes “does this dependency make sense?” or “does this repository query match the service contract?” rather than “what hidden runtime rule will activate here?”
+A reviewer can reason more effectively when architecture is visible through constructors, interfaces, annotations, and generated contracts. The review question becomes “does this dependency make
+sense?” or “does this repository query match the service contract?” rather than “what hidden runtime rule will activate here?”
 
-The same structure helps refactoring. If a constructor dependency changes, the graph must still compile. If a mapping becomes invalid, generation fails. If an AOP target cannot be intercepted, the processor can report the problem. If a repository contract no longer maps correctly, the generated implementation cannot compile.
+The same structure helps refactoring. If a constructor dependency changes, the graph must still compile. If a mapping becomes invalid, generation fails. If an AOP target cannot be intercepted, the
+processor can report the problem. If a repository contract no longer maps correctly, the generated implementation cannot compile.
 
 The compiler becomes part of the architectural feedback loop. This reduces the amount of runtime experimentation required to discover basic structural problems.
 
 ## E — Efficient: Performance Includes Engineering Time { #e-efficient }
 
-The third principle is **Efficient**. Efficiency is often reduced to benchmark throughput, latency, memory usage, or requests per second. Kora cares about those metrics, but STEP uses a broader definition.
+The third principle is **Efficient**. Efficiency is often reduced to benchmark throughput, latency, memory usage, or requests per second. Kora cares about those metrics, but STEP uses a broader
+definition.
 
 A useful model is:
 
@@ -251,7 +290,8 @@ Developer efficiency
 Cognitive efficiency
 ```
 
-All five matter. A framework can be fast in a synthetic benchmark while being expensive to build, operate, understand, or maintain. Conversely, a framework can be comfortable to develop with while consuming unnecessary infrastructure at fleet scale.
+All five matter. A framework can be fast in a synthetic benchmark while being expensive to build, operate, understand, or maintain. Conversely, a framework can be comfortable to develop with while
+consuming unnecessary infrastructure at fleet scale.
 
 Kora’s architecture tries to improve several dimensions at once.
 
@@ -259,9 +299,11 @@ Kora’s architecture tries to improve several dimensions at once.
 
 ### Runtime Efficiency Comes From Earlier Decisions { #runtime-efficiency }
 
-Kora’s performance model follows directly from compile-time decisions. Dependency wiring is precomputed. Generated implementations can use direct calls. Mapping can avoid reflection. AOP can be generated instead of assembled dynamically. Modules can stay fine-grained so services enable only what they need.
+Kora’s performance model follows directly from compile-time decisions. Dependency wiring is precomputed. Generated implementations can use direct calls. Mapping can avoid reflection. AOP can be
+generated instead of assembled dynamically. Modules can stay fine-grained so services enable only what they need.
 
-This does not mean every Kora application will automatically outperform every alternative. Workload, database latency, serialization, network behavior, business logic, and deployment shape matter far more than framework choice in many real systems.
+This does not mean every Kora application will automatically outperform every alternative. Workload, database latency, serialization, network behavior, business logic, and deployment shape matter far
+more than framework choice in many real systems.
 
 The architectural point is that Kora attempts to remove avoidable framework overhead before the application begins processing traffic.
 
@@ -271,15 +313,18 @@ Runtime efficiency is therefore not a separate performance trick. It is a conseq
 
 Virtual Threads are another example of efficiency reinforcing simplicity.
 
-The runtime can support high concurrency without requiring application code to adopt a callback-oriented or reactive API for ordinary blocking I/O. That preserves direct source-level control flow while allowing waiting operations to scale more cheaply than platform-thread-per-request models.
+The runtime can support high concurrency without requiring application code to adopt a callback-oriented or reactive API for ordinary blocking I/O. That preserves direct source-level control flow
+while allowing waiting operations to scale more cheaply than platform-thread-per-request models.
 
-The important boundary remains explicit: Virtual Threads make waiting cheap, not downstream resources unlimited. A service still needs bounded database pools, reasonable HTTP client limits, timeouts, and resource policies. Kora does not hide those infrastructure constraints.
+The important boundary remains explicit: Virtual Threads make waiting cheap, not downstream resources unlimited. A service still needs bounded database pools, reasonable HTTP client limits, timeouts,
+and resource policies. Kora does not hide those infrastructure constraints.
 
 The framework optimizes the thread model while leaving real capacity limits visible.
 
 ### Fine-Grained Modules Improve Infrastructure Efficiency { #fine-grained-modules }
 
-Kora’s modularity also contributes to efficiency. Applications enable the modules they actually need. This matters for dependency footprint, initialization work, classpath size, startup behavior, and cognitive load.
+Kora’s modularity also contributes to efficiency. Applications enable the modules they actually need. This matters for dependency footprint, initialization work, classpath size, startup behavior, and
+cognitive load.
 
 A service that uses JDBC, HTTP, Kafka, and telemetry does not need to carry unrelated framework subsystems merely because they exist.
 
@@ -299,7 +344,8 @@ Again, the STEP properties connect: compile-time structure creates predictabilit
 
 The most important extension of “efficient” is developer efficiency.
 
-Every framework-specific decision consumes engineering time. Every hidden runtime behavior creates debugging work. Every competing programming style creates review and onboarding cost. Every unnecessary abstraction requires documentation and maintenance.
+Every framework-specific decision consumes engineering time. Every hidden runtime behavior creates debugging work. Every competing programming style creates review and onboarding cost. Every
+unnecessary abstraction requires documentation and maintenance.
 
 These costs scale with the number of engineers, services, and years of operation.
 
@@ -335,7 +381,8 @@ That is why STEP efficiency is broader than performance marketing. It treats eng
 
 A strong framework should centralize framework-specific optimization.
 
-Application teams should not repeatedly decide how the framework should wire itself, which concurrency model should be used for the common path, how startup discovery should be reduced, or how telemetry should be attached across standard modules.
+Application teams should not repeatedly decide how the framework should wire itself, which concurrency model should be used for the common path, how startup discovery should be reduced, or how
+telemetry should be attached across standard modules.
 
 The desired experience is:
 
@@ -385,13 +432,15 @@ Known lifecycle
 Predictable runtime
 ```
 
-Kora cannot make networks reliable or databases infallible. It cannot remove production uncertainty from distributed systems. The predictability it targets is framework predictability: the application should not acquire unnecessary uncertainty from its own execution model.
+Kora cannot make networks reliable or databases infallible. It cannot remove production uncertainty from distributed systems. The predictability it targets is framework predictability: the application
+should not acquire unnecessary uncertainty from its own execution model.
 
 > **Predictability means the application behaves as closely as possible to what its source code says it should do.**
 
 ### Move Structural Uncertainty Into the Compiler { #structural-uncertainty }
 
-A missing dependency is not a runtime fact. An ambiguous component is not a runtime fact. An invalid generated mapping is not a runtime fact. Many repository contract errors and invalid framework compositions are knowable before the process starts.
+A missing dependency is not a runtime fact. An ambiguous component is not a runtime fact. An invalid generated mapping is not a runtime fact. Many repository contract errors and invalid framework
+compositions are knowable before the process starts.
 
 Kora tries to reject those conditions during compilation.
 
@@ -427,17 +476,21 @@ Predictability improves because fewer structural surprises are postponed until r
 
 Concurrency is a major source of runtime uncertainty in many frameworks.
 
-Kora’s synchronous Virtual Thread model gives application code a straightforward default. The engineer knows that the source-level call sequence corresponds closely to the application call sequence. There may still be framework infrastructure around the call, but the programming model remains ordinary synchronous Java/Kotlin.
+Kora’s synchronous Virtual Thread model gives application code a straightforward default. The engineer knows that the source-level call sequence corresponds closely to the application call sequence.
+There may still be framework infrastructure around the call, but the programming model remains ordinary synchronous Java/Kotlin.
 
 This reduces uncertainty about scheduler ownership, callback execution, context propagation, and operator semantics for the common path.
 
-The same principle applies to lifecycle. Kora’s application graph describes dependencies, initialization ordering, and release behavior explicitly. The runtime has a known structure before components begin processing traffic.
+The same principle applies to lifecycle. Kora’s application graph describes dependencies, initialization ordering, and release behavior explicitly. The runtime has a known structure before components
+begin processing traffic.
 
 ### Predictability Improves Failure Boundaries { #failure-boundaries }
 
 When static framework problems are eliminated during compilation, runtime failures become more meaningful.
 
-If the graph compiled and startup now fails while connecting to PostgreSQL, the problem space is narrower. If repository mapping compiled but an integration test fails against the real schema, the problem belongs to the database contract rather than basic framework wiring. If a gRPC call times out, the investigation can focus on deadlines, downstream behavior, and network conditions rather than whether a hidden framework component was created unexpectedly.
+If the graph compiled and startup now fails while connecting to PostgreSQL, the problem space is narrower. If repository mapping compiled but an integration test fails against the real schema, the
+problem belongs to the database contract rather than basic framework wiring. If a gRPC call times out, the investigation can focus on deadlines, downstream behavior, and network conditions rather than
+whether a hidden framework component was created unexpectedly.
 
 Predictability does not mean “nothing fails.” It means failures occur closer to the layer that actually owns them.
 
@@ -445,7 +498,8 @@ Predictability does not mean “nothing fails.” It means failures occur closer
 
 Production predictability includes startup behavior, resource use, lifecycle, observability, and shutdown.
 
-A framework that performs less runtime discovery has fewer initialization surprises. A known graph makes startup structure easier to reason about. Explicit lifecycle makes component ownership clearer. Integrated telemetry provides a consistent operational surface. Graceful shutdown behavior can be designed as part of the framework contract rather than added as an afterthought.
+A framework that performs less runtime discovery has fewer initialization surprises. A known graph makes startup structure easier to reason about. Explicit lifecycle makes component ownership clearer.
+Integrated telemetry provides a consistent operational surface. Graceful shutdown behavior can be designed as part of the framework contract rather than added as an afterthought.
 
 These properties matter because production incidents often become expensive when engineers cannot determine whether the failure comes from the application, the framework, or the infrastructure.
 
@@ -497,7 +551,8 @@ A framework decision can be evaluated by how it affects all four properties.
 
 A framework naturally accumulates features. Users ask for integrations, compatibility modes, alternate programming styles, convenience APIs, and specialized extension points.
 
-Some should be added. Some should live in external modules. Some should be solved through native libraries. Some should replace old mechanisms rather than coexist with them. Some should simply be rejected.
+Some should be added. Some should live in external modules. Some should be solved through native libraries. Some should replace old mechanisms rather than coexist with them. Some should simply be
+rejected.
 
 > **STEP requires saying no.**
 
@@ -505,7 +560,8 @@ This is not because fewer features are inherently better. It is because every ad
 
 A feature only improves the framework if the value it creates exceeds the complexity it adds.
 
-That makes STEP a useful governance mechanism. A new abstraction should be asked whether it makes a common task simpler, whether it makes behavior easier or harder to inspect, whether it adds runtime machinery, and whether it makes the system more or less predictable. Feature count alone is not enough.
+That makes STEP a useful governance mechanism. A new abstraction should be asked whether it makes a common task simpler, whether it makes behavior easier or harder to inspect, whether it adds runtime
+machinery, and whether it makes the system more or less predictable. Feature count alone is not enough.
 
 ## Production Essentials Define the Focus { #production-essentials }
 
@@ -529,7 +585,8 @@ The more precise goal is:
 
 > **The essential backend path, engineered exceptionally well.**
 
-This focus gives the framework room to optimize the paths most production services actually use. It also lets external libraries remain responsible for specialized concerns that do not need to become first-class Kora abstractions.
+This focus gives the framework room to optimize the paths most production services actually use. It also lets external libraries remain responsible for specialized concerns that do not need to become
+first-class Kora abstractions.
 
 ## STEP Applies to Development { #step-development }
 
@@ -543,7 +600,8 @@ Clear contracts
 Compile-time feedback
 ```
 
-A developer declares components, controllers, repositories, clients, configuration, and policies using familiar Java/Kotlin constructs. The compiler validates structural relationships. Generated code fills repetitive implementation gaps.
+A developer declares components, controllers, repositories, clients, configuration, and policies using familiar Java/Kotlin constructs. The compiler validates structural relationships. Generated code
+fills repetitive implementation gaps.
 
 The framework is present, but it does not demand that developers continuously think about its internal runtime model.
 
@@ -560,7 +618,8 @@ Explicit graph
 Native technology semantics
 ```
 
-If something is structurally invalid, the compiler should say so. If generated behavior matters, open the generated code. If the problem is Kafka, reason about Kafka. If the problem is SQL, reason about SQL.
+If something is structurally invalid, the compiler should say so. If generated behavior matters, open the generated code. If the problem is Kafka, reason about Kafka. If the problem is SQL, reason
+about SQL.
 
 The framework should reduce the number of cases where the answer depends on invisible runtime state.
 
@@ -570,7 +629,8 @@ The framework should reduce the number of cases where the answer depends on invi
 
 Testing benefits from the same architecture.
 
-Kora can build test graphs from the same application description used in production, retain required components, replace dependencies, override configuration, and integrate with ordinary JUnit and Testcontainers workflows.
+Kora can build test graphs from the same application description used in production, retain required components, replace dependencies, override configuration, and integrate with ordinary JUnit and
+Testcontainers workflows.
 
 The testing model therefore remains close to the production model.
 
@@ -662,7 +722,8 @@ One of the strongest consequences of STEP is that it expands the meaning of fram
 
 A framework is not only an execution engine. It is also an engineering environment.
 
-If engineers spend less time choosing framework abstractions, interpreting hidden behavior, and debugging framework mechanics, they spend more time working on domain logic, reliability, capacity, and product behavior.
+If engineers spend less time choosing framework abstractions, interpreting hidden behavior, and debugging framework mechanics, they spend more time working on domain logic, reliability, capacity, and
+product behavior.
 
 This is engineering efficiency.
 
@@ -708,11 +769,13 @@ STEP is therefore an organizational design principle as much as a framework desi
 
 Strong defaults are especially valuable to platform teams.
 
-If Kora already defines a clear path for DI, HTTP, data access, configuration, telemetry, and common production concerns, internal platform teams need fewer policy documents explaining which framework path developers should choose.
+If Kora already defines a clear path for DI, HTTP, data access, configuration, telemetry, and common production concerns, internal platform teams need fewer policy documents explaining which framework
+path developers should choose.
 
 The framework itself carries more of the standard.
 
-This does not eliminate internal architecture. Organizations still need their own security, deployment, domain, and reliability policies. But it reduces the amount of policy dedicated merely to choosing among framework alternatives.
+This does not eliminate internal architecture. Organizations still need their own security, deployment, domain, and reliability policies. But it reduces the amount of policy dedicated merely to
+choosing among framework alternatives.
 
 That is another form of simplicity.
 
@@ -720,9 +783,11 @@ That is another form of simplicity.
 
 Kora’s broader enterprise philosophy also fits STEP.
 
-The framework does not need to own every technology. When mature JVM or cloud-native systems already exist, thin integration often preserves simplicity, transparency, efficiency, and predictability better than another proprietary abstraction.
+The framework does not need to own every technology. When mature JVM or cloud-native systems already exist, thin integration often preserves simplicity, transparency, efficiency, and predictability
+better than another proprietary abstraction.
 
-Using OpenTelemetry directly preserves observability standards. Using Kafka concepts directly preserves messaging semantics. Using JDBC and SQL directly preserves database knowledge. Using vendor SDKs through modules preserves vendor documentation and APIs.
+Using OpenTelemetry directly preserves observability standards. Using Kafka concepts directly preserves messaging semantics. Using JDBC and SQL directly preserves database knowledge. Using vendor SDKs
+through modules preserves vendor documentation and APIs.
 
 This keeps the framework boundary smaller.
 
@@ -766,7 +831,8 @@ The philosophy also provides a useful way to evaluate framework changes over tim
 
 A new feature should ideally improve at least one STEP property without seriously degrading the others.
 
-A new runtime mechanism that improves convenience but hides behavior should be questioned. A new compatibility layer that preserves an old API but doubles the conceptual surface should be evaluated carefully. A new module that wraps a mature native API without adding meaningful integration may not justify its maintenance cost.
+A new runtime mechanism that improves convenience but hides behavior should be questioned. A new compatibility layer that preserves an old API but doubles the conceptual surface should be evaluated
+carefully. A new module that wraps a mature native API without adding meaningful integration may not justify its maintenance cost.
 
 STEP therefore acts as a governance mechanism.
 
@@ -776,11 +842,13 @@ Framework simplicity does not preserve itself automatically. It requires continu
 
 Long-lived frameworks naturally accumulate historical layers.
 
-Old APIs remain because applications depend on them. New APIs are added because the old ones are no longer ideal. Both coexist. Documentation becomes versioned by convention rather than only by release number.
+Old APIs remain because applications depend on them. New APIs are added because the old ones are no longer ideal. Both coexist. Documentation becomes versioned by convention rather than only by
+release number.
 
 Kora currently has an opportunity to keep a smaller active model.
 
-That may require stronger migration decisions. Removing old paths can create short-term upgrade cost. But preserving every historical mechanism forever creates permanent cognitive cost for every future developer.
+That may require stronger migration decisions. Removing old paths can create short-term upgrade cost. But preserving every historical mechanism forever creates permanent cognitive cost for every
+future developer.
 
 STEP tends to favor a coherent present over unlimited historical accumulation.
 
@@ -788,7 +856,8 @@ STEP tends to favor a coherent present over unlimited historical accumulation.
 
 The same principles apply to framework tooling.
 
-Specialized IDE support can be valuable. Visualizations can be useful. AI skills can accelerate development. But basic understanding of the application should remain possible through ordinary source, types, compiler diagnostics, generated code, and standard Java/Kotlin tooling.
+Specialized IDE support can be valuable. Visualizations can be useful. AI skills can accelerate development. But basic understanding of the application should remain possible through ordinary source,
+types, compiler diagnostics, generated code, and standard Java/Kotlin tooling.
 
 A useful rule is:
 
@@ -888,7 +957,8 @@ This is exactly the kind of environment in which autonomous coding works best.
 
 The official Kora Skill is a natural extension of the same philosophy.
 
-A Skill can tell an agent which path is canonical, where generated code lives, how to interpret compiler diagnostics, which current version conventions apply, and when to use native technology knowledge instead of framework-specific assumptions.
+A Skill can tell an agent which path is canonical, where generated code lives, how to interpret compiler diagnostics, which current version conventions apply, and when to use native technology
+knowledge instead of framework-specific assumptions.
 
 The Skill is most useful because the underlying framework is already STEP-oriented.
 
@@ -924,7 +994,8 @@ It is important not to reduce the model to “Kora is always faster.”
 
 Efficiency is broader than throughput, and STEP is broader than performance.
 
-A Kora application can still be badly designed. It can execute poor SQL, configure huge timeouts, overload a database pool, create lock contention, or use retries incorrectly. A framework cannot compensate for bad system architecture.
+A Kora application can still be badly designed. It can execute poor SQL, configure huge timeouts, overload a database pool, create lock contention, or use retries incorrectly. A framework cannot
+compensate for bad system architecture.
 
 STEP means the framework itself tries not to introduce avoidable complexity or overhead.
 
@@ -1008,7 +1079,8 @@ This makes STEP useful as an engineering decision framework rather than merely a
 
 Application teams can use the same model.
 
-When reviewing a service, ask whether the architecture is simpler than it needs to be, whether framework behavior is inspectable, whether there are unnecessary runtime layers, and whether failure boundaries are predictable.
+When reviewing a service, ask whether the architecture is simpler than it needs to be, whether framework behavior is inspectable, whether there are unnecessary runtime layers, and whether failure
+boundaries are predictable.
 
 The questions help identify accidental complexity introduced by application code as well as framework usage.
 
@@ -1016,7 +1088,8 @@ STEP can therefore influence both Kora design and Kora application design.
 
 ## STEP as a Maintenance Test { #step-maintenance-test }
 
-During maintenance, another set of questions appears: can a new engineer reconstruct this service quickly, identify dependencies from source, inspect generated behavior, tell which technology owns a failure, and predict what will happen after a change?
+During maintenance, another set of questions appears: can a new engineer reconstruct this service quickly, identify dependencies from source, inspect generated behavior, tell which technology owns a
+failure, and predict what will happen after a change?
 
 A service that scores well here will usually age better.
 
@@ -1024,7 +1097,8 @@ This is why STEP is fundamentally about long-term engineering economics.
 
 ## STEP as a Production Test { #step-production-test }
 
-Operators can ask similar questions: is startup behavior understandable, are readiness and liveness explicit, are metrics and traces available consistently, are resources bounded, and does shutdown behavior match expectations?
+Operators can ask similar questions: is startup behavior understandable, are readiness and liveness explicit, are metrics and traces available consistently, are resources bounded, and does shutdown
+behavior match expectations?
 
 Predictability and transparency extend naturally into operations.
 
@@ -1046,7 +1120,8 @@ Predictable reduces the uncertainty between source and runtime.
 
 Together they form a coherent engineering objective.
 
-A service is easier to build when the path is short. It is easier to debug when the path is visible. It is cheaper to operate when the path has less overhead. It is safer to maintain when the path behaves consistently.
+A service is easier to build when the path is short. It is easier to debug when the path is visible. It is cheaper to operate when the path has less overhead. It is safer to maintain when the path
+behaves consistently.
 
 That is STEP.
 
@@ -1054,9 +1129,13 @@ That is STEP.
 
 Kora’s design is easier to understand when its individual features are treated as parts of one system rather than separate selling points.
 
-Compile-time DI is not merely a startup optimization. It makes component relationships visible earlier, eliminates some runtime uncertainty, and gives developers deterministic diagnostics. Generated source is not merely code generation. It turns framework decisions into inspectable ordinary code. Virtual Threads are not merely a concurrency feature. They allow Kora to preserve a direct synchronous programming model while supporting high I/O concurrency.
+Compile-time DI is not merely a startup optimization. It makes component relationships visible earlier, eliminates some runtime uncertainty, and gives developers deterministic diagnostics. Generated
+source is not merely code generation. It turns framework decisions into inspectable ordinary code. Virtual Threads are not merely a concurrency feature. They allow Kora to preserve a direct
+synchronous programming model while supporting high I/O concurrency.
 
-Thin abstractions are not merely an API preference. They preserve the semantics, tooling, and knowledge of JDBC, SQL, Kafka, gRPC, HTTP, and OpenTelemetry. Fine-grained modules are not merely dependency management. They reduce runtime footprint and conceptual surface. Production telemetry, lifecycle, probes, resilience, and graceful shutdown are not add-ons. They make the service operationally observable and predictable.
+Thin abstractions are not merely an API preference. They preserve the semantics, tooling, and knowledge of JDBC, SQL, Kafka, gRPC, HTTP, and OpenTelemetry. Fine-grained modules are not merely
+dependency management. They reduce runtime footprint and conceptual surface. Production telemetry, lifecycle, probes, resilience, and graceful shutdown are not add-ons. They make the service
+operationally observable and predictable.
 
 One recommended path is not about restricting developers. It reduces the framework decision tree every service would otherwise have to reconstruct.
 
@@ -1107,7 +1186,8 @@ The framework is not trying to do less for the sake of doing less.
 
 It is trying to keep the common backend path direct.
 
-> **Kora follows STEP: Simple, Transparent, Efficient, Predictable. Less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead keep the production backend path direct—and make applications easier to build, debug, operate, and maintain.**
+> **Kora follows STEP: Simple, Transparent, Efficient, Predictable. Less runtime machinery, fewer competing styles, clearer contracts, and lower cognitive overhead keep the production backend path
+direct—and make applications easier to build, debug, operate, and maintain.**
 
 And the deeper principle behind the acronym is even simpler:
 

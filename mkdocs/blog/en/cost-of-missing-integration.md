@@ -5,6 +5,7 @@ description: How the Kora Framework keeps unsupported-library integration cheap 
 search:
   exclude: true
 ---
+
 # The Cost of the First Missing Integration: Why Kora Does Not Need a Starter for Everything { #cost-of-missing-integration }
 
 **September 4, 2026**

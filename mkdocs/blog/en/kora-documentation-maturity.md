@@ -3,7 +3,7 @@ title: Documentation Maturity Is About Coverage, Structure, and Signal — Kora 
 date: 2026-08-08
 description: Why Kora Framework documentation quality depends on coverage, structure, and signal — not framework age or page count.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Documentation Maturity Is About Coverage, Structure, and Signal — Not Framework Age or Page Count { #documentation-maturity }

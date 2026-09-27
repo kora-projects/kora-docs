@@ -3,7 +3,7 @@ title: OpenAPI-First Development with the Kora Framework
 date: 2026-08-24
 description: Why contract-first OpenAPI development in the Kora Framework generates typed servers, clients, and errors from one source of truth.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # OpenAPI-First Development with Kora { #openapi-first }

@@ -3,7 +3,7 @@ title: No Runtime Magic — What the Kora Framework Actually Generates
 date: 2026-08-20
 description: A walk through the Java and Kotlin sources the Kora Framework generates from annotations — the application graph, HTTP handlers, JSON codecs, repositories, and AOP proxies you can open and read.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # No Runtime Magic: What Kora Actually Generates { #no-runtime-magic }
@@ -18,7 +18,8 @@ The important question, however, is not whether a framework uses annotations. Th
 A runtime-oriented framework can keep annotations as metadata and interpret them while the application is starting or running. It can scan classes, inspect methods, build proxy chains, create runtime
 invocation handlers, and resolve application structure dynamically.
 
-The Kora Framework takes a different route. Its processors analyze application declarations during compilation and generate ordinary Java or Kotlin source code. Dependency injection becomes a generated application
+The Kora Framework takes a different route. Its processors analyze application declarations during compilation and generate ordinary Java or Kotlin source code. Dependency injection becomes a
+generated application
 graph, HTTP controllers become request handlers, repositories become concrete implementations, JSON models get generated readers and writers, and AOP annotations become generated subclasses or
 wrappers.
 
@@ -31,6 +32,7 @@ The core idea can be summarized very simply:
 This article follows a small Kora application through the generated sources and shows what actually appears between an annotation and runtime execution.
 
 ---
+
 ## Start With an Ordinary Application { #ordinary-application }
 
 Consider a small HTTP service. At the source level, it looks deliberately normal:
@@ -216,6 +218,7 @@ and Kotlin generation is handled through KSP under the corresponding generated s
 These generated files are one of the clearest ways to understand what Kora actually does.
 
 ---
+
 ## From Annotation to Execution { #annotation-to-execution }
 
 For the controller above, the path from source declaration to runtime request handling looks roughly like this:
@@ -245,6 +248,7 @@ these generated components are wired through the same application graph.
 The result is less a collection of independent framework tricks and more a compile-time pipeline that converts declarative application code into explicit JVM code.
 
 ---
+
 ## 1. Dependency Injection Becomes an Application Graph { #dependency-injection }
 
 Dependency injection is the foundation of the whole model.
@@ -314,6 +318,7 @@ So `@Component` is better understood not as a runtime discovery marker, but as i
 By the time the JVM starts, the dependency structure is no longer something the framework needs to discover. It is already encoded in compiled application code.
 
 ---
+
 ## 2. `@HttpController` Becomes a Concrete Request Handler { #http-controller }
 
 Now consider the HTTP layer.
@@ -415,6 +420,7 @@ UserController.getUser(...)
 The annotation defines the endpoint contract. The generated handler is what actually runs.
 
 ---
+
 ## 3. `@Json` Becomes Reader and Writer Classes { #json-codecs }
 
 JSON serialization is another useful example because many libraries solve it through runtime introspection.
@@ -533,6 +539,7 @@ during compilation.”
 When the application later returns `UserResponse`, the HTTP layer can invoke a concrete generated writer rather than discovering the DTO structure on demand.
 
 ---
+
 ## 4. `@Repository` Becomes Normal JDBC Code { #repository-jdbc }
 
 Repositories make the compile-time model especially easy to see.
@@ -654,6 +661,7 @@ is simply a normal interface call to a generated implementation. There is no nee
 This is one of the best examples of Kora's philosophy: preserve explicit SQL and type information, then generate the boring mechanical code around it.
 
 ---
+
 ## 5. AOP Becomes a Class You Can Open { #aop-class }
 
 AOP is often where annotation-driven frameworks feel most opaque.
@@ -773,6 +781,7 @@ the order they actually execute.
 The framework still provides interception. What disappears is the need for that interception to remain hidden.
 
 ---
+
 ## Putting the Pieces Together { #pieces-together }
 
 Each generated artifact is straightforward in isolation. DI becomes `ApplicationGraph`, HTTP annotations become request handlers, `@Json` becomes serializers and deserializers, `@Repository` becomes a
@@ -837,6 +846,7 @@ unexpectedly, inspect the application graph.
 You debug the implementation rather than trying to reconstruct invisible framework state.
 
 ---
+
 ## Generated Source Is Not Runtime Code Generation { #generated-source }
 
 There is an important distinction here because the term “code generation” can mean several things.
@@ -867,6 +877,7 @@ Once compilation finishes, the JVM does not care which class was written manuall
 That is why readable source generation matters so much to Kora's architecture.
 
 ---
+
 ## Annotations as Compile-Time DSL { #compile-time-dsl }
 
 A useful mental model is to think of Kora annotations as a small declarative language for the compiler.
@@ -930,6 +941,7 @@ you are saying:
 This is a better model than thinking about annotations as permanent runtime metadata. In Kora, many annotations are simply concise input to source generation.
 
 ---
+
 ## Why Readable Generated Code Matters { #readable-code }
 
 Compile-time generation alone does not guarantee transparency. A framework could generate enormous and effectively unreadable source files and still claim to be compile-time.
@@ -948,6 +960,7 @@ The key advantage is not that developers must read generated code every day. In 
 concrete implementation waiting underneath.
 
 ---
+
 ## Generated Code Is Executable Documentation { #executable-docs }
 
 Generated source is also useful as a form of executable documentation.
@@ -1005,6 +1018,7 @@ The generated AOP subclass tells you which aspect sits on the outside and where 
 Documentation can become stale. Generated code cannot drift from the compiled application in the same way because it is part of the code that produced that application.
 
 ---
+
 ## There Is Still Runtime Infrastructure { #runtime-infrastructure }
 
 “No runtime magic” does not mean “no runtime framework.”
@@ -1022,6 +1036,7 @@ generated. The AOP annotations are known, so the wrapper can be generated. The c
 Runtime is then responsible for executing these implementations, not discovering them.
 
 ---
+
 ## From Magic to Mechanical Code { #mechanical-code }
 
 Once you inspect the generated sources, many Kora features become surprisingly ordinary.
@@ -1037,6 +1052,7 @@ Kora's proposition is not to make developers write all of this code themselves. 
 inspect.
 
 ---
+
 ## Annotation ≠ Magic { #annotation-magic }
 
 Whether a framework uses annotations says very little about how transparent that framework is.

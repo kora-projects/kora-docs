@@ -3,7 +3,7 @@ title: You Don't Need Kora Developers — You Need Good JVM Engineers
 date: 2026-09-21
 description: Why "there are no Kora developers" is the wrong objection — the Kora Framework builds on the JDBC, SQL, HTTP, and Java/Kotlin skills that strong JVM engineers already have.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # You Don’t Need Kora Developers — You Need Good JVM Engineers { #good-jvm-engineers }
@@ -14,7 +14,8 @@ When companies evaluate a framework that is smaller than Spring, one objection a
 
 > “There are no Kora developers on the market.”
 
-Taken literally, the statement is true. There are far fewer engineers whose CV explicitly says *Kora* than engineers whose CV says *Spring Boot*. The Kora Framework is a much younger and smaller ecosystem, so it
+Taken literally, the statement is true. There are far fewer engineers whose CV explicitly says *Kora* than engineers whose CV says *Spring Boot*. The Kora Framework is a much younger and smaller
+ecosystem, so it
 would be strange if the labor market looked otherwise.
 
 But the literal statement is not the useful one.

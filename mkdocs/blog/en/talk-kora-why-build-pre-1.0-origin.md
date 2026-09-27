@@ -1,9 +1,10 @@
 ---
-title: Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora
+title:
+    Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora
 date: 2023-03-06
 description: This article is a written companion to a talk given before Kora 1.0. It covers the pre-1.0 architecture, the early benchmarks, and the ideas that survived into modern Kora.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora { #why-kora-was-built }

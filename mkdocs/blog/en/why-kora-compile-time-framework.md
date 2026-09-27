@@ -3,26 +3,32 @@ title: Why the Kora Framework — a Compile-Time Framework for the Modern JVM
 date: 2026-09-17
 description: Why the Kora Framework moves dependency injection, HTTP adapters, repositories, and AOP into compilation, and what compile-time certainty means for startup, overhead, and debugging.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Why Kora: Compile-Time Framework for the Modern JVM { #why-kora }
 
 **September 17, 2026**
 
-Modern JVM frameworks are remarkably productive. With a few annotations, you can create an HTTP endpoint, inject dependencies, start a transaction, call a database, add retries, expose metrics, validate input, and secure a method.
+Modern JVM frameworks are remarkably productive. With a few annotations, you can create an HTTP endpoint, inject dependencies, start a transaction, call a database, add retries, expose metrics,
+validate input, and secure a method.
 
-Historically, however, that convenience has often come with a trade-off: a meaningful part of the application is assembled and interpreted only after the process starts. Classpaths are scanned, metadata is discovered, dependency graphs are constructed, annotations are interpreted, proxies are created, and reflective or dynamic machinery connects abstractions that looked simple in source code.
+Historically, however, that convenience has often come with a trade-off: a meaningful part of the application is assembled and interpreted only after the process starts. Classpaths are scanned,
+metadata is discovered, dependency graphs are constructed, annotations are interpreted, proxies are created, and reflective or dynamic machinery connects abstractions that looked simple in source
+code.
 
 This approach works well and has powered a huge part of the JVM ecosystem. The Kora Framework starts from a different question:
 
 > If the compiler already has the classes, annotations, method signatures, generic types, and dependency declarations in front of it, why postpone so much work until runtime?
 
-Kora's answer is to move framework work into compilation. The application graph is built and validated during compilation. Framework adapters are generated as source code. Controllers become concrete request handlers, repository interfaces receive concrete implementations, and AOP annotations are transformed into generated classes containing the required behavior.
+Kora's answer is to move framework work into compilation. The application graph is built and validated during compilation. Framework adapters are generated as source code. Controllers become concrete
+request handlers, repository interfaces receive concrete implementations, and AOP annotations are transformed into generated classes containing the required behavior.
 
-By the time the application starts, considerably less remains to be discovered. This is the central architectural idea behind Kora: **do as much framework work as possible before the application starts**.
+By the time the application starts, considerably less remains to be discovered. This is the central architectural idea behind Kora: **do as much framework work as possible before the application
+starts**.
 
-Kora describes this as compile-time certainty: application structure is checked during compilation and the resulting framework machinery is represented as generated source rather than hidden runtime state.
+Kora describes this as compile-time certainty: application structure is checked during compilation and the resulting framework machinery is represented as generated source rather than hidden runtime
+state.
 
 ---
 
@@ -66,7 +72,9 @@ Consider something conceptually similar to:
     }
     ```
 
-The source already tells us quite a lot, but it may not fully describe what eventually executes. The framework still needs to determine how `PaymentService` is discovered, which implementation of `PaymentRepository` should be injected, how the dependency graph is constructed, whether `@Transactional` requires a proxy, whether `@Retryable` wraps that proxy or vice versa, and how all of those objects participate in lifecycle management.
+The source already tells us quite a lot, but it may not fully describe what eventually executes. The framework still needs to determine how `PaymentService` is discovered, which implementation of
+`PaymentRepository` should be injected, how the dependency graph is constructed, whether `@Transactional` requires a proxy, whether `@Retryable` wraps that proxy or vice versa, and how all of those
+objects participate in lifecycle management.
 
 In a runtime-centric architecture, many of these questions are resolved while the application is starting:
 
@@ -92,7 +100,8 @@ build runtime container
 start serving traffic
 ```
 
-There is nothing inherently wrong with this model. It gives frameworks a great deal of flexibility and enabled years of highly productive JVM development. The architectural consequence, however, is that part of the application exists as runtime framework state rather than as ordinary program structure.
+There is nothing inherently wrong with this model. It gives frameworks a great deal of flexibility and enabled years of highly productive JVM development. The architectural consequence, however, is
+that part of the application exists as runtime framework state rather than as ordinary program structure.
 
 Kora makes a different trade-off.
 
@@ -132,9 +141,11 @@ initialize lifecycle
 serve traffic
 ```
 
-The application still has dependency injection, controllers, repositories, lifecycle management, and AOP-style capabilities such as resilience, transactions, validation, caching, and security. The difference is not that those abstractions disappear, but **when the framework decides how they work**.
+The application still has dependency injection, controllers, repositories, lifecycle management, and AOP-style capabilities such as resilience, transactions, validation, caching, and security. The
+difference is not that those abstractions disappear, but **when the framework decides how they work**.
 
-In Kora, many of those decisions have already been resolved by the time compilation finishes. The v2 architecture builds and validates the dependency container from `@KoraApp`, `@Component`, `@Module`, and related declarations during compilation. Missing or ambiguous dependencies can therefore become build-time errors instead of application-startup surprises.
+In Kora, many of those decisions have already been resolved by the time compilation finishes. The v2 architecture builds and validates the dependency container from `@KoraApp`, `@Component`,
+`@Module`, and related declarations during compilation. Missing or ambiguous dependencies can therefore become build-time errors instead of application-startup surprises.
 
 That changes the relationship between application code and framework code in a fairly fundamental way.
 
@@ -142,7 +153,8 @@ That changes the relationship between application code and framework code in a f
 
 ## Compile Time Becomes Part of the Architecture { #compile-time-architecture }
 
-Java developers already rely heavily on compile-time guarantees. If a method expects a `Payment`, you cannot accidentally pass a `Customer`. If a type disappears or a class no longer implements a required method, compilation fails.
+Java developers already rely heavily on compile-time guarantees. If a method expects a `Payment`, you cannot accidentally pass a `Customer`. If a type disappears or a class no longer implements a
+required method, compilation fails.
 
 Kora extends the same philosophy into areas that traditional frameworks often delegate to runtime machinery.
 
@@ -169,7 +181,8 @@ For example:
     class PaymentService(private val repository: PaymentRepository)
     ```
 
-The constructor is not merely a hint for a runtime dependency injector. It becomes part of a dependency graph that Kora can analyze during compilation. If `PaymentRepository` cannot be resolved, the framework does not have to boot the application to discover that fact because the compiler already has enough information.
+The constructor is not merely a hint for a runtime dependency injector. It becomes part of a dependency graph that Kora can analyze during compilation. If `PaymentRepository` cannot be resolved, the
+framework does not have to boot the application to discover that fact because the compiler already has enough information.
 
 The same principle applies to dependency cycles, ambiguous candidates, invalid mappings, and other framework-level contracts. This gives development a different feedback loop:
 
@@ -247,7 +260,8 @@ Components and modules contribute nodes to that graph:
     class OrderService(private val repository: OrderRepository)
     ```
 
-Kora's annotation processors analyze those declarations and generate the application graph. The v2 documentation shows this explicitly: an interface annotated with `@KoraApp` results in generated graph code that describes the dependency relationships used when the application starts.
+Kora's annotation processors analyze those declarations and generate the application graph. The v2 documentation shows this explicitly: an interface annotated with `@KoraApp` results in generated
+graph code that describes the dependency relationships used when the application starts.
 
 The important architectural point is not the exact name or shape of the generated class. It is that **dependency resolution becomes source generation**.
 
@@ -269,7 +283,8 @@ Conceptually, the result is close to ordinary object construction:
     val controller = OrderController(service)
     ```
 
-The real graph naturally handles more than this simplified example: lifecycle, dependency ordering, modules, optional values, tags, graph refreshes, and framework integrations. But the relationships themselves are still represented concretely rather than being rediscovered from scratch every time the JVM starts.
+The real graph naturally handles more than this simplified example: lifecycle, dependency ordering, modules, optional values, tags, graph refreshes, and framework integrations. But the relationships
+themselves are still represented concretely rather than being rediscovered from scratch every time the JVM starts.
 
 ---
 
@@ -307,9 +322,11 @@ A developer should be able to write an expressive controller:
     }
     ```
 
-A runtime-oriented framework can inspect this method when the application starts, analyze its annotations and parameters, determine converters and response mappers, and then construct the machinery needed to invoke it.
+A runtime-oriented framework can inspect this method when the application starts, analyze its annotations and parameters, determine converters and response mappers, and then construct the machinery
+needed to invoke it.
 
-Kora can perform most of that analysis during compilation instead. It knows the route, method parameters, path bindings, argument types, return type, and available mappers, so it can generate the adapter that connects the HTTP server to the controller.
+Kora can perform most of that analysis during compilation instead. It knows the route, method parameters, path bindings, argument types, return type, and available mappers, so it can generate the
+adapter that connects the HTTP server to the controller.
 
 Conceptually, the generated handler performs something like:
 
@@ -320,7 +337,8 @@ read path parameter
 → map User to HTTP response
 ```
 
-This is an important distinction. `@HttpRoute` is not merely runtime metadata that the framework repeatedly interprets. It acts much more like **input to a compiler**: the annotation describes intent, and the generated source implements it.
+This is an important distinction. `@HttpRoute` is not merely runtime metadata that the framework repeatedly interprets. It acts much more like **input to a compiler**: the annotation describes intent,
+and the generated source implements it.
 
 ---
 
@@ -360,7 +378,8 @@ Consider:
     }
     ```
 
-The developer describes the database contract, while the framework generates the implementation. During compilation Kora already knows the repository method, its parameter and return types, the SQL query, the selected database abstraction, and the available parameter and result mappers.
+The developer describes the database contract, while the framework generates the implementation. During compilation Kora already knows the repository method, its parameter and return types, the SQL
+query, the selected database abstraction, and the available parameter and result mappers.
 
 That gives the compiler enough information to generate repetitive plumbing while leaving the important part—the database operation itself—explicit.
 
@@ -406,7 +425,8 @@ Consider:
     }
     ```
 
-A runtime-oriented framework may create one or more proxies around this component and dynamically construct an invocation chain. Kora instead has enough information to generate the required subclass or wrapper during compilation.
+A runtime-oriented framework may create one or more proxies around this component and dynamically construct an invocation chain. Kora instead has enough information to generate the required subclass
+or wrapper during compilation.
 
 Conceptually, the result may resemble:
 
@@ -443,7 +463,8 @@ Conceptually, the result may resemble:
 
 The real generated code depends on the aspects involved, but the architectural principle remains the same: **the behavior eventually becomes normal code**.
 
-Kora uses compile-time AOP for capabilities such as resilience, transactions, validation, caching, and other infrastructure concerns instead of requiring runtime dynamic proxies to construct those chains after startup.
+Kora uses compile-time AOP for capabilities such as resilience, transactions, validation, caching, and other infrastructure concerns instead of requiring runtime dynamic proxies to construct those
+chains after startup.
 
 This also has a practical debugging benefit. If you need to understand what surrounds a method call, there is actual generated implementation code that can be inspected.
 
@@ -477,7 +498,8 @@ source generation
 normal execution
 ```
 
-This shifts the discussion away from microbenchmarks about the cost of reflective invocation and toward a more meaningful question: **how much work does the framework still need to perform after the application has already started?**
+This shifts the discussion away from microbenchmarks about the cost of reflective invocation and toward a more meaningful question: **how much work does the framework still need to perform after the
+application has already started?**
 
 ---
 
@@ -485,7 +507,8 @@ This shifts the discussion away from microbenchmarks about the cost of reflectiv
 
 Startup time is sometimes treated as a cosmetic benchmark metric, but for backend infrastructure it is much more than that.
 
-When a runtime-oriented container starts, it may need to perform a substantial amount of framework work before the service is ready. Kora has already moved much of that work into the build. The application graph exists, dependencies have been validated, and framework adapters have already been generated.
+When a runtime-oriented container starts, it may need to perform a substantial amount of framework work before the service is ready. Kora has already moved much of that work into the build. The
+application graph exists, dependencies have been validated, and framework adapters have already been generated.
 
 The remaining graph can then be instantiated and initialized, including parallel initialization where dependencies allow it.
 
@@ -507,7 +530,8 @@ new capacity serves traffic
 
 The same consideration applies during rolling deployments. If every replacement instance spends longer performing runtime framework work, the cluster spends more time with reduced effective capacity.
 
-Fast startup also affects integration tests, component tests, local development, ephemeral environments, scheduled jobs, low-traffic services, and scale-to-zero architectures. Kora deliberately pays part of the framework cost during compilation so that each later startup has less work to perform.
+Fast startup also affects integration tests, component tests, local development, ephemeral environments, scheduled jobs, low-traffic services, and scale-to-zero architectures. Kora deliberately pays
+part of the framework cost during compilation so that each later startup has less work to perform.
 
 For long-running backend systems, that can be a very attractive trade.
 
@@ -515,7 +539,8 @@ For long-running backend systems, that can be a very attractive trade.
 
 ## Runtime Overhead Is More Than CPU Cycles { #runtime-overhead }
 
-Framework overhead is often reduced to benchmark numbers, but runtime overhead has several dimensions: CPU, memory, allocation pressure, startup work, metadata, proxy layers, generated runtime state, and additional call paths.
+Framework overhead is often reduced to benchmark numbers, but runtime overhead has several dimensions: CPU, memory, allocation pressure, startup work, metadata, proxy layers, generated runtime state,
+and additional call paths.
 
 There is also another form of overhead that is harder to benchmark: **cognitive overhead**.
 
@@ -533,11 +558,13 @@ Suppose this line executes:
     orderService.create(order)
     ```
 
-When debugging a heavily runtime-driven framework, an engineer may still need to determine whether `orderService` is the real object or a proxy, which interceptors apply, whether the proxy is interface-based or subclass-based, how self-invocation behaves, where the implementation was selected, which mapper was discovered, and when the object was registered.
+When debugging a heavily runtime-driven framework, an engineer may still need to determine whether `orderService` is the real object or a proxy, which interceptors apply, whether the proxy is
+interface-based or subclass-based, how self-invocation behaves, where the implementation was selected, which mapper was discovered, and when the object was registered.
 
 Those are not CPU costs, but they are engineering costs.
 
-Kora's compile-time model attacks both categories at once. Generated code can reduce unnecessary runtime machinery, but it also makes framework behavior visible. That second property is arguably just as important as the first.
+Kora's compile-time model attacks both categories at once. Generated code can reduce unnecessary runtime machinery, but it also makes framework behavior visible. That second property is arguably just
+as important as the first.
 
 ---
 
@@ -545,7 +572,8 @@ Kora's compile-time model attacks both categories at once. Generated code can re
 
 Framework magic is attractive while everything works. The difficult part begins when it does not.
 
-An annotation that turns ten lines of repetitive infrastructure into one line is useful. An annotation whose actual behavior requires understanding several layers of hidden runtime machinery is much less useful.
+An annotation that turns ten lines of repetitive infrastructure into one line is useful. An annotation whose actual behavior requires understanding several layers of hidden runtime machinery is much
+less useful.
 
 Kora tries to preserve declarative convenience without making the resulting behavior opaque. Annotations such as:
 
@@ -613,7 +641,8 @@ compiler
 runtime
 ```
 
-There is less runtime interpretation between declaration and execution, which makes framework behavior more deterministic. Predictability in this sense is not merely a performance feature; it is a maintainability feature.
+There is less runtime interpretation between declaration and execution, which makes framework behavior more deterministic. Predictability in this sense is not merely a performance feature; it is a
+maintainability feature.
 
 ---
 
@@ -623,7 +652,8 @@ Code generation sometimes has a poor reputation because developers associate it 
 
 That is not what generated framework infrastructure has to look like.
 
-Kora treats generated source as part of its transparency model. Ideally, generated code should be relatively boring: request parameters are read, a method is called, a mapper is applied, a component is instantiated, or an AOP wrapper delegates through the required infrastructure.
+Kora treats generated source as part of its transparency model. Ideally, generated code should be relatively boring: request parameters are read, a method is called, a mapper is applied, a component
+is instantiated, or an AOP wrapper delegates through the required infrastructure.
 
 Conceptually:
 
@@ -719,7 +749,8 @@ Frameworks begin with convenient abstractions:
     @Cacheable
     ```
 
-Those abstractions are useful because nobody wants to repeatedly write infrastructure plumbing by hand. Eventually, however, the machine needs concrete operations: object construction, method calls, parameter parsing, response mapping, database driver calls, retries, and cache lookups.
+Those abstractions are useful because nobody wants to repeatedly write infrastructure plumbing by hand. Eventually, however, the machine needs concrete operations: object construction, method calls,
+parameter parsing, response mapping, database driver calls, retries, and cache lookups.
 
 Kora tries to make the transformation between these two levels explicit:
 
@@ -797,7 +828,8 @@ is not inherently better than writing:
 
 The second version communicates intent more clearly, and repetitive transport plumbing should absolutely be automated.
 
-Kora's answer is not to eliminate the high-level API, but to compile it into a lower-level explicit implementation. Developers get a concise programming model, while runtime execution gets direct code.
+Kora's answer is not to eliminate the high-level API, but to compile it into a lower-level explicit implementation. Developers get a concise programming model, while runtime execution gets direct
+code.
 
 In other words, Kora does not try to remove abstraction. It tries to **move much of the abstraction cost away from runtime**.
 
@@ -807,11 +839,13 @@ In other words, Kora does not try to remove abstraction. It tries to **move much
 
 Compile-time generation alone is not sufficient. A framework could generate enormous abstraction stacks just as easily as it could construct them dynamically.
 
-Kora combines generation with another design choice: stay relatively close to the underlying technologies. The project uses familiar JVM concepts around Java and Kotlin, JDBC, Cassandra, HTTP, Kafka, gRPC, OpenTelemetry, and other infrastructure rather than trying to replace each technology with a completely separate conceptual model.
+Kora combines generation with another design choice: stay relatively close to the underlying technologies. The project uses familiar JVM concepts around Java and Kotlin, JDBC, Cassandra, HTTP, Kafka,
+gRPC, OpenTelemetry, and other infrastructure rather than trying to replace each technology with a completely separate conceptual model.
 
 That matters because every framework abstraction has a learning cost. Developers need to understand the technology itself, the framework's model of that technology, and the mapping between the two.
 
-Thin abstractions try to keep that mapping small. The result is not zero abstraction, but abstraction focused on removing repetitive work without hiding the technology behind a completely different mental model.
+Thin abstractions try to keep that mapping small. The result is not zero abstraction, but abstraction focused on removing repetitive work without hiding the technology behind a completely different
+mental model.
 
 ---
 
@@ -821,11 +855,14 @@ For a single small service, many of these differences can look academic. Modern 
 
 Organizations, however, rarely operate one service.
 
-A small per-instance framework cost is multiplied across instances per service, availability zones, services, teams, environments, and scaling headroom. What appears insignificant on a developer laptop can become real infrastructure cost when repeated thousands of times.
+A small per-instance framework cost is multiplied across instances per service, availability zones, services, teams, environments, and scaling headroom. What appears insignificant on a developer
+laptop can become real infrastructure cost when repeated thousands of times.
 
-The same multiplication happens with engineering complexity. One obscure runtime convention may be manageable for a framework expert, but that convention is eventually multiplied across hundreds of services, dozens of developers, new hires, upgrades, and production incidents.
+The same multiplication happens with engineering complexity. One obscure runtime convention may be manageable for a framework expert, but that convention is eventually multiplied across hundreds of
+services, dozens of developers, new hires, upgrades, and production incidents.
 
-Kora therefore treats efficiency and transparency as related concerns. Less framework machinery means fewer resources consumed by each application, while more explicit machinery means less runtime state engineers need to keep in their heads.
+Kora therefore treats efficiency and transparency as related concerns. Less framework machinery means fewer resources consumed by each application, while more explicit machinery means less runtime
+state engineers need to keep in their heads.
 
 ---
 
@@ -847,7 +884,8 @@ Suppose a component requires:
     PaymentGateway
     ```
 
-but no valid implementation exists. A runtime framework may allow the project to compile successfully, build a container image, start a deployment, and only then fail while constructing its application context.
+but no valid implementation exists. A runtime framework may allow the project to compile successfully, build a container image, start a deployment, and only then fail while constructing its
+application context.
 
 Kora would rather detect that problem while compiling.
 
@@ -884,7 +922,8 @@ Compile-time generation naturally has a cost. Annotation processors and KSP proc
 
 Kora's architecture does not make framework work disappear. It **relocates that work**.
 
-Instead of paying a larger part of the cost during every application startup, the framework pays it during the build. For backend applications this is often favorable because one artifact may be started repeatedly across developer machines, tests, CI environments, staging, production, rolling deployments, autoscaling events, and machine failures.
+Instead of paying a larger part of the cost during every application startup, the framework pays it during the build. For backend applications this is often favorable because one artifact may be
+started repeatedly across developer machines, tests, CI environments, staging, production, rolling deployments, autoscaling events, and machine failures.
 
 Compilation occurs before all of those runs.
 
@@ -896,9 +935,11 @@ The relevant trade is therefore not "work versus no work." It is **where that wo
 
 There is also an important boundary to compile-time generation.
 
-Some information is inherently dynamic. Configuration values change, database results change, remote systems become healthy or unhealthy, requests carry different data, and resilience state evolves while the process is running.
+Some information is inherently dynamic. Configuration values change, database results change, remote systems become healthy or unhealthy, requests carry different data, and resilience state evolves
+while the process is running.
 
-Kora is not trying to turn a server application into a completely static program. Instead, it separates architecture that is already knowable during compilation from state that genuinely belongs to runtime.
+Kora is not trying to turn a server application into a completely static program. Instead, it separates architecture that is already knowable during compilation from state that genuinely belongs to
+runtime.
 
 Compile-time questions include:
 
@@ -952,13 +993,15 @@ without crossing a large opaque runtime container whose internal state must firs
 
 That makes debugging, architecture reviews, and onboarding easier because concrete relationships remain visible in code.
 
-There is also a useful side effect for modern development tooling. AI-assisted coding tools reason much more reliably about explicit Java or Kotlin classes, method calls, generated implementations, and typed contracts than about behavior that exists only as runtime container state. Generated source therefore benefits not only human inspection but also machine-assisted reasoning.
+There is also a useful side effect for modern development tooling. AI-assisted coding tools reason much more reliably about explicit Java or Kotlin classes, method calls, generated implementations,
+and typed contracts than about behavior that exists only as runtime container state. Generated source therefore benefits not only human inspection but also machine-assisted reasoning.
 
 ---
 
 ## The Broader Philosophy { #broader-philosophy }
 
-Compile-time generation is ultimately one expression of a broader Kora principle: move knowledge out of hidden framework runtime state and into things that can be inspected directly—types, source code, generated source, compiler diagnostics, and explicit configuration.
+Compile-time generation is ultimately one expression of a broader Kora principle: move knowledge out of hidden framework runtime state and into things that can be inspected directly—types, source
+code, generated source, compiler diagnostics, and explicit configuration.
 
 That principle influences several parts of Kora's design:
 
@@ -972,7 +1015,8 @@ That principle influences several parts of Kora's design:
 * thin integrations;
 * direct Java and Kotlin programming models.
 
-The resulting framework is deliberately less dynamic in some places than traditional runtime-oriented frameworks. That is not accidental. Kora favors certainty over runtime flexibility that many backend applications never actually need, generated implementation over implicit runtime interpretation, and compiler errors over runtime surprises.
+The resulting framework is deliberately less dynamic in some places than traditional runtime-oriented frameworks. That is not accidental. Kora favors certainty over runtime flexibility that many
+backend applications never actually need, generated implementation over implicit runtime interpretation, and compiler errors over runtime surprises.
 
 ---
 
@@ -1024,7 +1068,8 @@ Developers write declarations such as:
     class UserService { ... }
     ```
 
-The framework generates the plumbing required to make those declarations real. After that, as much as possible, what remains should look unsurprising to a JVM engineer: objects, method calls, interfaces, generated classes, database drivers, HTTP handlers, executors, virtual threads, and ordinary JVM code.
+The framework generates the plumbing required to make those declarations real. After that, as much as possible, what remains should look unsurprising to a JVM engineer: objects, method calls,
+interfaces, generated classes, database drivers, HTTP handlers, executors, virtual threads, and ordinary JVM code.
 
 This is why generated source is so central to Kora's architecture. It represents the point where a framework abstraction becomes a concrete program implementation.
 
@@ -1070,7 +1115,8 @@ greater predictability
 
 That combination is what makes the compile-time model interesting.
 
-It is not reflection avoidance by itself, code generation by itself, or benchmark performance by itself. The important idea is that the framework turns high-level declarations into concrete, typed, inspectable JVM code **before production ever sees the application**.
+It is not reflection avoidance by itself, code generation by itself, or benchmark performance by itself. The important idea is that the framework turns high-level declarations into concrete, typed,
+inspectable JVM code **before production ever sees the application**.
 
 That is the architecture behind Kora, and it can be summarized in one principle:
 

@@ -18,7 +18,8 @@ library uses reflection, runtime class loading, proxy generation, or metadata di
 
 That conclusion does not describe how Kora actually works.
 
-The Kora Framework avoids reflection, runtime dependency discovery, dynamic proxies, and runtime bytecode generation in the parts of the stack that Kora itself controls. It builds the application graph at compile
+The Kora Framework avoids reflection, runtime dependency discovery, dynamic proxies, and runtime bytecode generation in the parts of the stack that Kora itself controls. It builds the application
+graph at compile
 time, generates repositories and HTTP adapters, produces compile-time AOP subclasses, generates mapping code, and turns framework wiring into ordinary Java or Kotlin bytecode before the process
 starts.
 

@@ -17,7 +17,8 @@ The deployed application does something else. A dependency-injection container s
 resources are initialized in dependency order, and lifecycle callbacks decide when the component is ready and when it is safe to stop. The test proves the class. It does not prove that the class
 belongs to the application that will actually run.
 
-The Kora Framework approaches this problem through its application graph. The graph built from `@KoraApp`, components, modules, factory methods, tags, and constructor dependencies is not only a production bootstrap
+The Kora Framework approaches this problem through its application graph. The graph built from `@KoraApp`, components, modules, factory methods, tags, and constructor dependencies is not only a
+production bootstrap
 mechanism. The JUnit extension can take that application definition, select the part needed by a test, replace chosen nodes, initialize the result, and inject graph-managed components into the test.
 This makes the production graph the starting point for component and integration testing instead of something recreated independently in test code.
 

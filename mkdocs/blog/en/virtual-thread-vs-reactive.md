@@ -5,6 +5,7 @@ description: How the Kora Framework's virtual-thread-first model compares to rea
 search:
   exclude: true
 ---
+
 # Virtual Threads vs Reactive: What Actually Changes in Backend Architecture { #virtual-threads-vs-reactive }
 
 **September 11, 2026**
@@ -21,7 +22,8 @@ typically models waiting explicitly in its APIs and composes asynchronous stages
 resumes lightweight threads underneath it. Both models can achieve high concurrency, but they make different trade-offs in APIs, drivers, context propagation, debugging, flow control, resource
 management, and failure handling.
 
-Kora 2 makes a clear architectural choice here. The Kora Framework's application-facing contracts are synchronous: controllers, HTTP clients, repositories, and scheduled tasks use ordinary Java or Kotlin signatures,
+Kora 2 makes a clear architectural choice here. The Kora Framework's application-facing contracts are synchronous: controllers, HTTP clients, repositories, and scheduled tasks use ordinary Java or
+Kotlin signatures,
 while Kora dispatches application work onto virtual threads. Reactive and Kotlin `suspend` contracts are not part of Kora modules. In the HTTP server, request handling is synchronous and each request
 is dispatched to a virtual thread; JDBC repositories are synchronous as well. The point is not to imitate a reactive stack with different syntax, but to return to direct code while retaining a
 concurrency model suitable for modern backend workloads.

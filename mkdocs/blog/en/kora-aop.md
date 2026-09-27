@@ -3,8 +3,9 @@ title: Compile-Time AOP Without Dynamic Proxies — Kora Framework
 date: 2026-08-02
 description: How the Kora Framework implements aspect-oriented programming with generated compile-time subclasses instead of runtime dynamic proxies.
 search:
-  exclude: true
+    exclude: true
 ---
+
 # Compile-Time AOP Without Dynamic Proxies { #compile-time-aop }
 
 **August 2, 2026**
@@ -18,7 +19,8 @@ interception, creates a proxy, stores metadata describing the advice chain, reso
 model is invalid, because the final object graph and interception strategy are resolved only when the application starts. The annotation looks declarative and simple, while the execution path becomes
 indirect.
 
-The Kora Framework takes a different approach. Its AOP model is built around compile-time generation. Instead of waiting until runtime to discover that a component requires interception, Kora processes the relevant
+The Kora Framework takes a different approach. Its AOP model is built around compile-time generation. Instead of waiting until runtime to discover that a component requires interception, Kora
+processes the relevant
 annotations during compilation and generates a concrete class containing the interception logic. For Java this happens through annotation processing; for Kotlin, through KSP. The generated source is
 ordinary Java or Kotlin source code. It becomes part of the application graph like other generated Kora components, and the JVM executes it as ordinary compiled code.
 

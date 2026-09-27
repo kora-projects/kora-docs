@@ -3,7 +3,7 @@ title: One Problem, One Solution — Why the Kora Framework Has Fewer Abstractio
 date: 2026-08-22
 description: Why the Kora Framework deliberately keeps a small solution space — one canonical path per problem — and what that means for maintainability, onboarding, upgrades, and AI agents.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # One Problem, One Solution: Why Kora Deliberately Has Fewer Abstractions { #one-problem-one-solution }

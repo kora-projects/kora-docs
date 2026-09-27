@@ -3,7 +3,7 @@ title: Generated Code Makes Debugging More Transparent in the Kora Framework
 date: 2026-08-13
 description: Why the Kora Framework's generated Java and Kotlin sources are an inspectable escape hatch that makes framework behavior easier to debug, not harder.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Generated Code Makes Debugging More Transparent, Not Harder { #generated-code-transparent-debugging }
@@ -18,7 +18,8 @@ into unfamiliar classes, stack traces will contain synthetic names, and understa
 
 That description sounds plausible, but it does not match how debugging normally works in Kora.
 
-The Kora Framework does not replace the application with an opaque generated runtime. It moves framework work to compile time and produces ordinary Java or Kotlin source that is compiled together with the
+The Kora Framework does not replace the application with an opaque generated runtime. It moves framework work to compile time and produces ordinary Java or Kotlin source that is compiled together with
+the
 application. Dependency wiring, HTTP handlers, repository implementations, mappings, and AOP wrappers become concrete classes rather than runtime reflection rules or dynamic proxy chains. IntelliJ can
 navigate them, the JVM can debug them, the compiler validates them, breakpoints can be placed in them, and an AI agent can read them like any other source file.
 

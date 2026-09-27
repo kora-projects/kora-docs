@@ -1,30 +1,37 @@
 ---
-title: Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself
+title:
+    Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself
 date: 2026-09-16
 description: Moving DI and AOP to compile time is a major improvement, but it does not automatically remove the complexity inherited from a Spring-like framework model. Kora goes further by deliberately reducing the amount of framework model that needs to exist at all.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself { #compile-time-not-enough-framework }
 
 **September 16, 2026**
 
-Moving dependency injection and AOP to compile time is one of the most important architectural improvements modern JVM frameworks have made. It reduces reflection, moves structural errors earlier, improves startup, lowers runtime metadata costs, and gives the compiler a larger role in validating the application before it ever runs. Frameworks such as Micronaut have demonstrated that this approach works at production scale and can preserve a familiar annotation-driven development model while substantially changing the cost profile underneath it.
+Moving dependency injection and AOP to compile time is one of the most important architectural improvements modern JVM frameworks have made. It reduces reflection, moves structural errors earlier,
+improves startup, lowers runtime metadata costs, and gives the compiler a larger role in validating the application before it ever runs. Frameworks such as Micronaut have demonstrated that this
+approach works at production scale and can preserve a familiar annotation-driven development model while substantially changing the cost profile underneath it.
 
 But compile-time processing solves only one dimension of framework complexity.
 
-A framework can move bean definitions, AOP proxies, query models, configuration metadata, and dependency wiring into the compiler and still preserve much of the conceptual structure inherited from an older container-centric model. The runtime becomes leaner, yet developers may still need to understand bean contexts, qualifiers, scopes, replacement semantics, proxy behavior, lifecycle abstractions, framework-specific annotations, multiple execution models, and a broad platform of framework-owned concepts.
+A framework can move bean definitions, AOP proxies, query models, configuration metadata, and dependency wiring into the compiler and still preserve much of the conceptual structure inherited from an
+older container-centric model. The runtime becomes leaner, yet developers may still need to understand bean contexts, qualifiers, scopes, replacement semantics, proxy behavior, lifecycle abstractions,
+framework-specific annotations, multiple execution models, and a broad platform of framework-owned concepts.
 
 That leads to the deeper question:
 
 > **If you are already willing to redesign the runtime architecture, why preserve so much of the old framework programming model?**
 
-Kora's most interesting design choice is not simply that it performs dependency injection, AOP, repositories, mappings, and HTTP infrastructure at compile time. Its more radical choice is that it also tries to reduce the amount of framework model that needs to exist at all.
+Kora's most interesting design choice is not simply that it performs dependency injection, AOP, repositories, mappings, and HTTP infrastructure at compile time. Its more radical choice is that it also
+tries to reduce the amount of framework model that needs to exist at all.
 
 That is the central thesis of this article:
 
-> **Moving DI and AOP to compile time is a major improvement, but it does not automatically remove the architectural complexity inherited from a Spring-like programming model. Kora goes further: it does not only move framework work earlier — it also deliberately reduces the amount of framework model that exists in the first place.**
+> **Moving DI and AOP to compile time is a major improvement, but it does not automatically remove the architectural complexity inherited from a Spring-like programming model. Kora goes further: it
+does not only move framework work earlier — it also deliberately reduces the amount of framework model that exists in the first place.**
 
 The distinction is easiest to express visually.
 
@@ -68,7 +75,8 @@ It is also:
 
 Compile-time processing is powerful because it changes when the framework makes decisions.
 
-A runtime-oriented dependency-injection system might discover components, resolve relationships, construct proxies, analyze annotations, and validate contracts during startup. A compile-time system can move much of that work into annotation processing, KSP, or another compiler phase.
+A runtime-oriented dependency-injection system might discover components, resolve relationships, construct proxies, analyze annotations, and validate contracts during startup. A compile-time system
+can move much of that work into annotation processing, KSP, or another compiler phase.
 
 The result can be dramatically better:
 
@@ -108,7 +116,9 @@ That is a real architectural improvement.
 
 The problem is that the second diagram says nothing about how many concepts the framework exposes to the application developer.
 
-A framework can eliminate runtime reflection while still presenting a large conceptual system. It can precompute a dependency container without reducing the importance of container semantics. It can generate proxies ahead of time without changing the developer's proxy-based mental model. It can precompute metadata for several execution styles without reducing the number of styles the team must choose between.
+A framework can eliminate runtime reflection while still presenting a large conceptual system. It can precompute a dependency container without reducing the importance of container semantics. It can
+generate proxies ahead of time without changing the developer's proxy-based mental model. It can precompute metadata for several execution styles without reducing the number of styles the team must
+choose between.
 
 This is why compile-time should not be treated as synonymous with simplicity.
 
@@ -168,13 +178,15 @@ Those concepts can be compiled earlier.
 
 They are still concepts the developer must understand.
 
-This is not inherently bad. A mature dependency model provides flexibility. It can support conditional components, environment-specific wiring, replacement in tests, custom scopes, lifecycle policies, third-party integrations, and a large extension ecosystem.
+This is not inherently bad. A mature dependency model provides flexibility. It can support conditional components, environment-specific wiring, replacement in tests, custom scopes, lifecycle policies,
+third-party integrations, and a large extension ecosystem.
 
 The architectural question is whether a greenfield backend needs all of that machinery as the default mental model.
 
 Kora answers more aggressively.
 
-Its application graph is described through constructors, interfaces, `@Component`, `@Module`, `@KoraApp`, and generated wiring. The framework still provides dependency injection, but the developer is encouraged to reason in terms of ordinary object relationships rather than primarily in terms of a dynamic container.
+Its application graph is described through constructors, interfaces, `@Component`, `@Module`, `@KoraApp`, and generated wiring. The framework still provides dependency injection, but the developer is
+encouraged to reason in terms of ordinary object relationships rather than primarily in terms of a dynamic container.
 
 That changes the center of gravity.
 
@@ -210,7 +222,9 @@ The difference is that the framework tries to collapse those abstractions back i
 
 Spring-like familiarity is a real adoption advantage.
 
-Micronaut explicitly embraces this. Its documentation says many APIs are heavily inspired by Spring and Grails by design, helping developers become productive quickly. That is a rational product choice. A large population of JVM engineers already knows annotations such as `@Controller`, `@Singleton`, `@Value`, `@ConfigurationProperties`, repository-style APIs, bean concepts, AOP annotations, and familiar application-context patterns.
+Micronaut explicitly embraces this. Its documentation says many APIs are heavily inspired by Spring and Grails by design, helping developers become productive quickly. That is a rational product
+choice. A large population of JVM engineers already knows annotations such as `@Controller`, `@Singleton`, `@Value`, `@ConfigurationProperties`, repository-style APIs, bean concepts, AOP annotations,
+and familiar application-context patterns.
 
 Preserving that vocabulary lowers migration friction.
 
@@ -248,7 +262,8 @@ There are two different kinds of familiarity.
 
 The first is framework familiarity.
 
-A developer knows what a bean scope means, which annotation activates a component, how proxy replacement works, how environment conditions affect registration, how framework configuration binds, and how interception behaves.
+A developer knows what a bean scope means, which annotation activates a component, how proxy replacement works, how environment conditions affect registration, how framework configuration binds, and
+how interception behaves.
 
 The second is backend familiarity.
 
@@ -258,7 +273,8 @@ The second category is more durable.
 
 Kora tries to preserve that durability.
 
-A repository should still feel like database access. Kafka should still behave like Kafka. HTTP should still be HTTP. gRPC contracts should remain gRPC contracts. Telemetry should remain aligned with OpenTelemetry. Virtual Threads should use normal Java control flow.
+A repository should still feel like database access. Kafka should still behave like Kafka. HTTP should still be HTTP. gRPC contracts should remain gRPC contracts. Telemetry should remain aligned with
+OpenTelemetry. Virtual Threads should use normal Java control flow.
 
 This means an experienced JVM engineer can bring more of their existing mental model directly into the framework.
 
@@ -276,7 +292,8 @@ That is a strong architecture.
 
 But compile-time proxies are still proxies.
 
-The developer may still need to think about proxy boundaries, interception, bean identity, replacement, method eligibility, execution order, and the relationship between the declared class and the object the framework actually exposes.
+The developer may still need to think about proxy boundaries, interception, bean identity, replacement, method eligibility, execution order, and the relationship between the declared class and the
+object the framework actually exposes.
 
 Moving the proxy earlier changes its cost profile.
 
@@ -314,10 +331,14 @@ A retry and timeout composition can become something conceptually equivalent to:
 
 ```java
 return retry.retry(() ->
-    timeout.execute(() ->
-        super.call()
+    timeout.
+
+execute(() ->
+    super.
+
+call()
     )
-);
+        );
 ```
 
 Dependency injection can become:
@@ -371,7 +392,8 @@ Kora's design philosophy reflects this willingness to remove rather than merely 
 
 Virtual Threads are the clearest example of a platform feature changing framework design.
 
-Before Loom, highly concurrent blocking applications faced a real trade-off. Platform threads were expensive enough that reactive programming, callback models, asynchronous APIs, event loops, and coroutine-based approaches could provide substantial scalability benefits.
+Before Loom, highly concurrent blocking applications faced a real trade-off. Platform threads were expensive enough that reactive programming, callback models, asynchronous APIs, event loops, and
+coroutine-based approaches could provide substantial scalability benefits.
 
 Those models remain valuable in some workloads.
 
@@ -430,7 +452,8 @@ performance optimization
 conceptual simplification
 ```
 
-Kora's stronger position is that if the platform now provides a sufficiently strong default concurrency model for mainstream backend work, supporting many competing models may no longer be worth the cognitive cost.
+Kora's stronger position is that if the platform now provides a sufficiently strong default concurrency model for mainstream backend work, supporting many competing models may no longer be worth the
+cognitive cost.
 
 That is a different design philosophy from frameworks that optimize multiple models equally.
 
@@ -442,7 +465,8 @@ In practice, every additional supported approach increases the space of possible
 
 Large teams eventually respond by writing internal rules.
 
-They define which HTTP client is approved, which persistence API is preferred, whether reactive code is allowed, which test style is canonical, how configuration should be written, and which integrations are considered standard.
+They define which HTTP client is approved, which persistence API is preferred, whether reactive code is allowed, which test style is canonical, how configuration should be written, and which
+integrations are considered standard.
 
 The framework offers many paths.
 
@@ -480,7 +504,8 @@ For a greenfield service estate, that can be a major advantage.
 
 A framework can be compile-time-first and still become a very broad platform.
 
-Micronaut 5 is a good example. Its own release material describes a platform refresh spanning more than seventy Micronaut modules. That breadth covers data, cloud integration, messaging, languages, testing, security, serverless, GraalVM, configuration, and many other capabilities.
+Micronaut 5 is a good example. Its own release material describes a platform refresh spanning more than seventy Micronaut modules. That breadth covers data, cloud integration, messaging, languages,
+testing, security, serverless, GraalVM, configuration, and many other capabilities.
 
 That is a strength for teams that want a broad managed ecosystem.
 
@@ -582,7 +607,8 @@ It aims for familiar JVM development, not necessarily familiar Spring-style mach
 
 Compile-time repositories are a good example of the distinction between optimizing an old model and simplifying it.
 
-Micronaut Data uses ahead-of-time compilation to precompute repository queries and explicitly positions itself as removing the runtime metamodel and query translation costs associated with older data abstractions.
+Micronaut Data uses ahead-of-time compilation to precompute repository queries and explicitly positions itself as removing the runtime metamodel and query translation costs associated with older data
+abstractions.
 
 That is a significant improvement.
 
@@ -596,13 +622,15 @@ The design question is not simply whether query generation happens at compile ti
 
 It is how much persistence framework the application needs in the first place.
 
-If explicit SQL and predictable database behavior are priorities, a thinner repository model can be easier to reason about than a broad data platform even when both compile their metadata ahead of time.
+If explicit SQL and predictable database behavior are priorities, a thinner repository model can be easier to reason about than a broad data platform even when both compile their metadata ahead of
+time.
 
 ## HTTP Shows the Same Pattern { #http }
 
 The same distinction appears in HTTP.
 
-A compile-time framework can precompute routes, request mappings, reflection metadata, and controller information while still maintaining a broad annotation universe and multiple server/client programming models.
+A compile-time framework can precompute routes, request mappings, reflection metadata, and controller information while still maintaining a broad annotation universe and multiple server/client
+programming models.
 
 Kora can take a narrower path: generated handlers, direct request/response contracts, declarative clients, OpenAPI generation, telemetry, and one primary execution model.
 
@@ -646,7 +674,8 @@ That reduces the value of “this looks like Spring” as a standalone advantage
 
 What remains difficult for both humans and agents is architectural complexity.
 
-An agent still has to reason about which execution model is active, which bean scope applies, how proxies interact, what gets replaced, which annotation generation path is used, and which competing pattern the project expects.
+An agent still has to reason about which execution model is active, which bean scope applies, how proxies interact, what gets replaced, which annotation generation path is used, and which competing
+pattern the project expects.
 
 This leads to a very modern principle:
 
@@ -900,7 +929,8 @@ greenfield framework design should not assume that familiarity is always worth p
 
 Kora becomes particularly attractive when the application is greenfield and the team is free to optimize around modern JVM capabilities.
 
-If the service primarily needs HTTP, JDBC or direct database access, Kafka, gRPC, configuration, resilience, telemetry, validation, scheduling, and testing, Kora can provide that surface without introducing a large container-centric mental model.
+If the service primarily needs HTTP, JDBC or direct database access, Kafka, gRPC, configuration, resilience, telemetry, validation, scheduling, and testing, Kora can provide that surface without
+introducing a large container-centric mental model.
 
 It is especially compelling when the team values:
 
@@ -920,19 +950,19 @@ In that context, Kora's refusal to reproduce familiar framework complexity can b
 
 The architectural difference can be made explicit.
 
-| Dimension | Compile-time Spring-like model | Kora model |
-|---|---|---|
-| Primary goal | Preserve familiar framework model with lower runtime cost | Reduce runtime cost and framework model together |
-| DI | Compile-time bean definitions/context | Compile-time explicit application graph |
-| AOP | Proxies generated ahead of time | Generated wrappers/subclasses exposed as source |
-| Familiarity | Spring/Grails-style concepts reduce migration friction | Standard JVM/backend concepts remain familiar |
-| Execution styles | Often multiple supported models | One primary synchronous Virtual-Thread path |
-| Data | Broad repository/persistence platform | Thin generated repositories with explicit control |
-| Framework surface | Broad managed ecosystem | Focused backend surface |
-| Cognitive model | Container concepts remain important | Ordinary types and generated code emphasized |
-| Runtime | Lean and precomputed | Lean and precomputed |
-| AI advantage | Familiar APIs plus compiler metadata | Smaller solution space plus inspectable generated code |
-| Governance | Teams may still define preferred subset | Framework already narrows the default path |
+| Dimension         | Compile-time Spring-like model                            | Kora model                                             |
+|-------------------|-----------------------------------------------------------|--------------------------------------------------------|
+| Primary goal      | Preserve familiar framework model with lower runtime cost | Reduce runtime cost and framework model together       |
+| DI                | Compile-time bean definitions/context                     | Compile-time explicit application graph                |
+| AOP               | Proxies generated ahead of time                           | Generated wrappers/subclasses exposed as source        |
+| Familiarity       | Spring/Grails-style concepts reduce migration friction    | Standard JVM/backend concepts remain familiar          |
+| Execution styles  | Often multiple supported models                           | One primary synchronous Virtual-Thread path            |
+| Data              | Broad repository/persistence platform                     | Thin generated repositories with explicit control      |
+| Framework surface | Broad managed ecosystem                                   | Focused backend surface                                |
+| Cognitive model   | Container concepts remain important                       | Ordinary types and generated code emphasized           |
+| Runtime           | Lean and precomputed                                      | Lean and precomputed                                   |
+| AI advantage      | Familiar APIs plus compiler metadata                      | Smaller solution space plus inspectable generated code |
+| Governance        | Teams may still define preferred subset                   | Framework already narrows the default path             |
 
 The table shows why “both are compile-time” is not the end of the comparison.
 
@@ -1014,7 +1044,9 @@ Micronaut and other modern frameworks have demonstrated the value of that approa
 
 But compile-time processing is not the end state.
 
-A framework can eliminate runtime reflection and still preserve a large amount of historical framework complexity. It can generate proxies ahead of time while keeping proxy semantics central. It can precompute dependency metadata while preserving container-oriented thinking. It can support many execution models efficiently while still forcing teams to choose between them. It can become extremely fast while remaining conceptually broad.
+A framework can eliminate runtime reflection and still preserve a large amount of historical framework complexity. It can generate proxies ahead of time while keeping proxy semantics central. It can
+precompute dependency metadata while preserving container-oriented thinking. It can support many execution models efficiently while still forcing teams to choose between them. It can become extremely
+fast while remaining conceptually broad.
 
 Kora's more radical bet is that modern JVM backends no longer need much of that complexity at all.
 
@@ -1048,6 +1080,7 @@ And that leads to the final architectural question:
 
 > **If you are already willing to redesign the runtime architecture, why preserve so much of the old framework programming model?**
 
-Compile-time DI and AOP solve an important part of the problem, but they are not the end state. A framework can eliminate reflection and still preserve a large amount of historical framework complexity. Kora's more radical bet is that modern JVM backends no longer need much of that complexity at all.
+Compile-time DI and AOP solve an important part of the problem, but they are not the end state. A framework can eliminate reflection and still preserve a large amount of historical framework
+complexity. Kora's more radical bet is that modern JVM backends no longer need much of that complexity at all.
 
 The next step after making the old model faster is asking whether you still need the old model.

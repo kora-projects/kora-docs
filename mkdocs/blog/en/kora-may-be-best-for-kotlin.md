@@ -1,4 +1,15 @@
-# Why Kora May Be the Best Kind of Framework for Kotlin
+---
+title: Why Kora May Be the Best Kind of Framework for Kotlin
+date: 2026-08-01
+description: Why Kora combines Kotlin's strongest language features with KSP-based compile-time processing, synchronous framework contracts, and Virtual Threads — keeping Kotlin as Kotlin instead of adding a Kotlin-specific backend universe.
+search:
+  exclude: true
+---
+
+# Why Kora May Be the Best Kind of Framework for Kotlin { #why-kora-kotlin }
+
+**August 1, 2026**
+
 
 Kotlin backend development has spent years being associated with a particular set of assumptions. Kotlin is concise, expressive, null-safe, data-oriented, and comfortable with functional patterns, so
 the natural next step often seemed to be a backend stack that was equally Kotlin-specific: coroutines, `suspend` APIs, coroutine contexts, DSLs, specialized execution models, compiler plugins, and

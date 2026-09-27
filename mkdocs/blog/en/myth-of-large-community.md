@@ -10,7 +10,6 @@ search:
 
 **September 7, 2026**
 
-
 The phrase "small ecosystem" sounds devastating when attached to a backend framework.
 
 For many engineering teams, it immediately suggests risk. Fewer Stack Overflow answers. Fewer blog posts. Fewer conference talks. Fewer tutorials. Fewer examples copied into GitHub repositories. Fewer
@@ -29,7 +28,8 @@ The more useful principle is almost the opposite:
 
 > A framework should ideally reduce the number of questions developers need to ask, not maximize the number of answers available for those questions.
 
-This is especially relevant when discussing frameworks such as the Kora Framework, where one of the most common criticisms is that the surrounding public community is far smaller than the ecosystem around Spring,
+This is especially relevant when discussing frameworks such as the Kora Framework, where one of the most common criticisms is that the surrounding public community is far smaller than the ecosystem
+around Spring,
 Hibernate, or other long-established JVM technologies.
 
 The criticism is not meaningless. A smaller project has fewer independent users producing content. It has fewer third-party courses. Fewer consulting firms specialize in it. Fewer engineers arrive

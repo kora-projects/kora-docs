@@ -3,7 +3,7 @@ title: Performance You Don't Need Still Saves Money and Time — Kora Framework
 date: 2026-08-25
 description: Why Kora Framework efficiency matters even when you don't need maximum throughput — lower CPU, faster startup, smaller fleets, and cheaper operation.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Performance You Don't Need Still Saves Money And Time { #performance }
@@ -29,7 +29,8 @@ throughput the service *does* need.
 
 That distinction is the foundation of fleet economics.
 
-The Kora Framework's design makes this particularly interesting because its performance characteristics are not primarily produced by application-specific tuning. Kora moves dependency resolution, wiring, mappings,
+The Kora Framework's design makes this particularly interesting because its performance characteristics are not primarily produced by application-specific tuning. Kora moves dependency resolution,
+wiring, mappings,
 repository implementations, HTTP adapters, and other framework work into compilation. It generates ordinary Java and Kotlin source code, avoids runtime reflection and dynamic graph construction for
 its core application model, uses thin abstractions around familiar infrastructure, initializes the prebuilt graph quickly, and keeps runtime machinery deliberately small.
 

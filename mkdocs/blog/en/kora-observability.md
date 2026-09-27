@@ -3,7 +3,7 @@ title: Observability by Design — One Request Across the Entire Kora Framework 
 date: 2026-08-21
 description: How the Kora Framework threads logging, metrics, and tracing through one request end to end, with consistent context across HTTP, database, clients, and messaging.
 search:
-  exclude: true
+    exclude: true
 ---
 
 # Observability by Design: One Request Across the Entire Kora Stack { #observability-by-design }
@@ -14,7 +14,8 @@ Observability is often added to a backend service after the application already 
 serious incident does somebody ask for latency metrics, distributed tracing, structured logs, readiness probes, and a shutdown strategy that does not kill requests in flight. That sequence is
 understandable, but operationally backward. By the time a production service is failing, the information required to explain the failure must already exist.
 
-The Kora Framework takes a different view. Observability is part of the service architecture from the beginning. The framework integrates telemetry across modules, Micrometer metrics, OpenTelemetry tracing,
+The Kora Framework takes a different view. Observability is part of the service architecture from the beginning. The framework integrates telemetry across modules, Micrometer metrics, OpenTelemetry
+tracing,
 structured logging with trace correlation, liveness and readiness probes on a separate system port, and lifecycle behavior including graceful shutdown.
 
 The important idea is not merely that Kora "supports metrics" or "supports tracing." Almost every modern framework does. The more interesting property is that these signals line up with the real
