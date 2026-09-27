@@ -1,13 +1,13 @@
 ---
 title: Do Production Services Really Need a Dynamic Application Graph? — Kora Framework
-date: 2026-08-07
+date: 2026-08-06
 description: How the Kora Framework keeps the application graph static while supporting runtime refresh, feature flags, and dynamic routing where they belong.
 search:
   exclude: true
 ---
 # Do Production Services Really Need a Dynamic Application Graph? { #dynamic-application-graph }
 
-**August 7, 2026**
+**August 6, 2026**
 
 The phrase *dynamic application* is used so loosely in backend engineering that it often hides several completely different requirements.
 

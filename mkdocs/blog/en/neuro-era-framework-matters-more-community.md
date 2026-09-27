@@ -1,6 +1,6 @@
 ---
 title: In the AI Era, Framework Expertise Matters More Than Community Size — Kora Framework
-date: 2026-08-17
+date: 2026-08-16
 description: Why an explicit, inspectable framework like the Kora Framework helps AI coding agents more than a large community and abundant forum answers.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # In the AI Era, Framework Expertise Matters More Than Community Size { #ai-era-framework-expertise }
 
-**August 17, 2026**
+**August 16, 2026**
 
 For most of the modern history of software development, the size of a framework's community was treated as a technical property.
 

@@ -1,6 +1,6 @@
 ---
 title: You Don't Need Kora Developers — Framework Skills vs Vendor Lock-In
-date: 2026-09-17
+date: 2026-09-20
 description: Why the "no Kora developers on the market" objection misunderstands hiring — strong JVM engineers become productive in the Kora Framework quickly without framework lock-in.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # You Don't Need Kora Developers: Framework Skills vs Vendor Lock-In { #you-dont-need-kora-developers }
 
-**September 17, 2026**
+**September 20, 2026**
 
 When companies evaluate a framework that is smaller than Spring, one objection appears almost immediately: “There are no Kora developers on the market.” Taken literally, the statement is true. There
 are far fewer engineers whose CV explicitly says *Kora* than engineers whose CV says *Spring Boot*. The Kora Framework is a much younger and smaller ecosystem, so it would be strange if the labor market looked

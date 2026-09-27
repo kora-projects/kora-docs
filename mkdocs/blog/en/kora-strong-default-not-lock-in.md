@@ -1,13 +1,13 @@
 ---
 title: A Strong Default Is Not Lock-In — The Kora Framework Is Built to Be Extended
-date: 2026-08-02
+date: 2026-08-01
 description: Why the Kora Framework's opinionated defaults are extensible — replace generated components and add integrations through the same application graph.
 search:
   exclude: true
 ---
 # A Strong Default Is Not Lock-In: Kora Is Built to Be Extended { #strong-default-not-lock-in }
 
-**August 2, 2026**
+**August 1, 2026**
 
 Opinionated frameworks are often judged through a false binary.
 

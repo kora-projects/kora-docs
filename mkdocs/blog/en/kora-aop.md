@@ -1,13 +1,13 @@
 ---
 title: Compile-Time AOP Without Dynamic Proxies — Kora Framework
-date: 2026-08-03
+date: 2026-08-02
 description: How the Kora Framework implements aspect-oriented programming with generated compile-time subclasses instead of runtime dynamic proxies.
 search:
   exclude: true
 ---
 # Compile-Time AOP Without Dynamic Proxies { #compile-time-aop }
 
-**August 3, 2026**
+**August 2, 2026**
 
 Aspect-oriented programming has a reputation problem in the Java ecosystem. The underlying idea is useful: some behavior genuinely belongs around a method call rather than inside the business method
 itself. Transactions, validation, retries, circuit breakers, caching, tracing, authorization, metrics, and logging all fit that description. The problem is not the idea of interception. The problem is

@@ -1,12 +1,12 @@
 ---
-date: 2026-08-12
+date: 2026-08-11
 description: Why fast startup and time-to-readiness are production capacity properties in the Kora Framework, not just developer convenience.
 search:
   exclude: true
 ---
 # Fast Startup Is Not Just Developer Convenience { #fast-startup }
 
-**August 12, 2026**
+**August 11, 2026**
 
 Fast startup is often discussed as if it were a developer-experience feature. A framework starts in a fraction of a second, the local edit-run loop feels pleasant, and somebody puts the number into a
 benchmark table. That is useful, but it is also the least interesting consequence of fast startup in a production service.

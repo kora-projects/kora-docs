@@ -1,6 +1,6 @@
 ---
 title: STEP — Simple, Transparent, Efficient, Predictable — Kora Framework
-date: 2026-08-30
+date: 2026-08-29
 description: How the STEP principles tie the Kora Framework's individual features — compile-time DI, generated code, virtual threads, telemetry — into one coherent design.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # STEP — Simple. Transparent. Efficient. Predictable. How Kora Keeps Backend Engineering Direct { #step }
 
-**August 30, 2026**
+**August 29, 2026**
 
 The Kora Framework can be described through individual technical features: compile-time dependency injection, generated repositories, generated HTTP handlers, compile-time AOP, Virtual Threads, OpenTelemetry, explicit lifecycle, fast startup, thin abstractions, and a modular production stack. Each of those features matters, but taken separately they can make the framework look like a collection of optimizations rather than a coherent design.
 

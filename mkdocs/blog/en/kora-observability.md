@@ -1,6 +1,6 @@
 ---
 title: Observability by Design — One Request Across the Entire Kora Framework Stack
-date: 2026-08-22
+date: 2026-08-21
 description: How the Kora Framework threads logging, metrics, and tracing through one request end to end, with consistent context across HTTP, database, clients, and messaging.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Observability by Design: One Request Across the Entire Kora Stack { #observability-by-design }
 
-**August 22, 2026**
+**August 21, 2026**
 
 Observability is often added to a backend service after the application already works. First the HTTP endpoint is implemented, then the repository, then the outbound client, and only after the first
 serious incident does somebody ask for latency metrics, distributed tracing, structured logs, readiness probes, and a shutdown strategy that does not kill requests in flight. That sequence is

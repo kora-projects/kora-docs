@@ -1,4 +1,14 @@
-# Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself
+---
+title: Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself
+date: 2026-09-16
+description: Moving DI and AOP to compile time is a major improvement, but it does not automatically remove the complexity inherited from a Spring-like framework model. Kora goes further by deliberately reducing the amount of framework model that needs to exist at all.
+search:
+  exclude: true
+---
+
+# Compile-Time Is Not Enough: Why Kora Rethinks the Framework Model Itself { #compile-time-not-enough-framework }
+
+**September 16, 2026**
 
 Moving dependency injection and AOP to compile time is one of the most important architectural improvements modern JVM frameworks have made. It reduces reflection, moves structural errors earlier, improves startup, lowers runtime metadata costs, and gives the compiler a larger role in validating the application before it ever runs. Frameworks such as Micronaut have demonstrated that this approach works at production scale and can preserve a familiar annotation-driven development model while substantially changing the cost profile underneath it.
 

@@ -1,4 +1,14 @@
-# Kora vs Spring: A Modern JVM Backend Through the STEP Lens
+---
+title: Kora vs Spring: A Modern JVM Backend Through the STEP Lens
+date: 2026-08-30
+description: Compares Kora and Spring as JVM backend frameworks through the STEP lens (Simple, Transparent, Efficient, Predictable), arguing that Kora's focused, compile-time, Virtual-Thread-oriented model is compelling for greenfield services while Spring's breadth remains decisive for established ecosystems.
+search:
+  exclude: true
+---
+
+# Kora vs Spring: A Modern JVM Backend Through the STEP Lens { #kora-vs-spring-step-lens }
+
+**August 30, 2026**
 
 Spring remains the dominant reference point for JVM backend development. Its ecosystem is enormous, its integration surface is broad, its documentation is mature, and a large percentage of Java developers have encountered Spring Boot, Spring MVC, Spring Data, Spring Security, or some other part of the Spring universe. For many organizations, those advantages are decisive. Existing infrastructure, internal starters, operational conventions, security integrations, platform tooling, and accumulated team knowledge can make Spring the rational choice even before any technical comparison begins.
 

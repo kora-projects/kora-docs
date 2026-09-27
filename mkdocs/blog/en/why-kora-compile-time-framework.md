@@ -1,6 +1,6 @@
 ---
 title: Why the Kora Framework — a Compile-Time Framework for the Modern JVM
-date: 2026-09-16
+date: 2026-09-17
 description: Why the Kora Framework moves dependency injection, HTTP adapters, repositories, and AOP into compilation, and what compile-time certainty means for startup, overhead, and debugging.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Why Kora: Compile-Time Framework for the Modern JVM { #why-kora }
 
-**September 16, 2026**
+**September 17, 2026**
 
 Modern JVM frameworks are remarkably productive. With a few annotations, you can create an HTTP endpoint, inject dependencies, start a transaction, call a database, add retries, expose metrics, validate input, and secure a method.
 

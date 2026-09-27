@@ -1,4 +1,14 @@
-# Why Choose Kora Over Spring for a New JVM Backend?
+---
+title: Why Choose Kora Over Spring for a New JVM Backend
+date: 2026-09-18
+description: A greenfield comparison of Kora and Spring for new JVM backends, arguing that Kora's thinner architecture, compile-time guarantees, Virtual Thread-first model, and lower framework overhead make it a stronger engineering default when simplicity and transparency are the priorities.
+search:
+  exclude: true
+---
+
+# Why Choose Kora Over Spring for a New JVM Backend? { #why-choose-kora-over-spring }
+
+**September 18, 2026**
 
 Spring is the safer default by familiarity and ecosystem size. For many organizations, that is enough to decide the framework question before architecture is even discussed. Spring has decades of production history, enormous documentation coverage, a huge integration catalog, extensive IDE support, a large hiring pool, and a mature ecosystem around security, data, cloud infrastructure, batch processing, messaging, observability, testing, and enterprise integration.
 

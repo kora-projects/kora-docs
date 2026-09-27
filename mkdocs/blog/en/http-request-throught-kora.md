@@ -1,13 +1,13 @@
 ---
 title: How an HTTP Request Travels Through the Kora Framework on Virtual Threads
-date: 2026-08-15
+date: 2026-08-14
 search:
   exclude: true
 ---
 
 # How an HTTP Request Travels Through Kora on Virtual Threads { #http-request-kora }
 
-**August 15, 2026**
+**August 14, 2026**
 
 A typical Kora Framework HTTP endpoint can look almost deceptively simple:
 

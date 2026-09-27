@@ -1,6 +1,6 @@
 ---
 title: Focused Engineering Is Not NIH — Why the Kora Framework Builds Only What It Can Own Well
-date: 2026-08-13
+date: 2026-08-12
 description: Why building Kora Framework internals is not "Not Invented Here" when it fits requirements better than wrapping mature external libraries.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Focused Engineering Is Not NIH: Why Kora Builds Only What It Can Own Well { #focused-engineering-nih }
 
-**August 13, 2026**
+**August 12, 2026**
 
 The accusation of “Not Invented Here” is easy to make against any framework that contains its own dependency injection engine, HTTP abstractions, repository generator, AOP implementation, OpenAPI generator, resilience components, scheduling infrastructure, or specialized runtime pieces. If a mature external library already exists somewhere in the JVM ecosystem, why not simply depend on it? Why build anything inside the framework at all? That question is useful, but only if it is asked precisely. NIH is not the act of writing software internally. If it were, every framework, database, compiler, operating system, and platform would be guilty by definition. NIH is a decision-making failure: rejecting mature external solutions primarily because they were not created inside the organization, even when those external solutions fit the requirements well and integrating them would be cheaper, safer, and more maintainable than replacing them.
 

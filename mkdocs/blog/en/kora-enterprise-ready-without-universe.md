@@ -1,6 +1,6 @@
 ---
 title: Enterprise-Ready Without a Framework Universe — Kora Framework
-date: 2026-08-11
+date: 2026-08-10
 description: Why the Kora Framework can be production-ready — observability, resilience, lifecycle, security — without recreating every project in the Spring universe.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Enterprise-Ready Without a Framework Universe: Why Kora Doesn’t Need to Recreate Spring { #enterprise-ready }
 
-**August 11, 2026**
+**August 10, 2026**
 
 "Enterprise-ready" is one of the most overloaded phrases in backend engineering. Sometimes it means operational maturity: observability, resilience, predictable lifecycle, graceful shutdown, secure configuration, testing, and the ability to survive real production load. Sometimes it means ecosystem maturity: integrations, documentation, commercial support, vendor relationships, hiring availability, migration tooling, and years of accumulated production knowledge. And sometimes it quietly means something narrower and more historical: *does this framework have its own equivalent of every major project in the Spring universe?* Those are not the same requirement.
 

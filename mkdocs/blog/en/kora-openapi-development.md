@@ -1,6 +1,6 @@
 ---
 title: OpenAPI-First Development with the Kora Framework
-date: 2026-08-25
+date: 2026-08-24
 description: Why contract-first OpenAPI development in the Kora Framework generates typed servers, clients, and errors from one source of truth.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # OpenAPI-First Development with Kora { #openapi-first }
 
-**August 25, 2026**
+**August 24, 2026**
 
 OpenAPI is often introduced as documentation. A team writes controllers, request DTOs, response DTOs, validation annotations, security annotations, and exception mappings, and only after the
 application already exists does a plugin inspect that code and emit an `openapi.json` file. Swagger UI renders it, client generators may consume it, and the file is called an API contract.

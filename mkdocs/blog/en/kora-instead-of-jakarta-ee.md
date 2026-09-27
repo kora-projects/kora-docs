@@ -1,4 +1,14 @@
-# Why Kora Instead of the Jakarta EE Model?
+---
+title: Why Kora Instead of the Jakarta EE Model
+date: 2026-09-19
+description: Compares the Jakarta EE specification platform with the Kora framework, arguing they optimize for different goals: standardized portability across implementations versus direct, explicit, and predictable JVM backend development.
+search:
+  exclude: true
+---
+
+# Why Kora Instead of the Jakarta EE Model? { #why-kora-instead-of-jakarta-ee }
+
+**September 19, 2026**
 
 Jakarta EE and Kora solve overlapping backend problems, but they begin from fundamentally different architectural questions.
 

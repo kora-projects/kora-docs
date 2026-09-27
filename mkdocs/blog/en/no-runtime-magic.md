@@ -1,6 +1,6 @@
 ---
 title: No Runtime Magic — What the Kora Framework Actually Generates
-date: 2026-08-21
+date: 2026-08-20
 description: A walk through the Java and Kotlin sources the Kora Framework generates from annotations — the application graph, HTTP handlers, JSON codecs, repositories, and AOP proxies you can open and read.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # No Runtime Magic: What Kora Actually Generates { #no-runtime-magic }
 
-**August 21, 2026**
+**August 20, 2026**
 
 Annotations often get associated with framework magic. A class gets `@HttpController`, a method gets `@Transactional`, an interface gets `@Repository`, and suddenly dependency injection works, HTTP
 requests reach methods, database calls execute, JSON appears in responses, and resilience policies wrap business logic.

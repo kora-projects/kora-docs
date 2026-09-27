@@ -1,6 +1,6 @@
 ---
 title: Startup vs Build Time — Why the Kora Framework Moves Work Left
-date: 2026-08-29
+date: 2026-08-28
 description: Why the Kora Framework shifts framework work from every startup into the build, and what that trade means for deployments, tests, and autoscaling.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Startup vs Build Time: Why Kora Moves Work Left { #startup-vs-build }
 
-**August 29, 2026**
+**August 28, 2026**
 
 Framework performance is usually discussed at runtime. How quickly does the application start? How many requests per second can it process? How much memory does it consume? How much latency does the
 framework add to a request?

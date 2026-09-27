@@ -1,6 +1,6 @@
 ---
 title: One STEP at a Time — Why the Kora Framework Works So Well for AI Agents
-date: 2026-08-24
+date: 2026-08-23
 description: Why the Kora Framework's explicit, inspectable, fast-to-validate design makes each AI-agent iteration produce useful information instead of guesswork.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # One STEP at a Time: Why Kora Works So Well for AI Agents { #step }
 
-**August 24, 2026**
+**August 23, 2026**
 
 AI coding agents do not need to understand an entire framework before they can be useful. They need something more practical: the ability to take the next correct step, verify what happened, and continue from evidence rather than speculation. That distinction matters because autonomous development is inherently iterative. An agent reads the project, forms a hypothesis, changes something, compiles, runs tests, inspects the result, and updates its understanding. The quality of the framework directly affects how reliable that loop becomes. If there are many competing programming models, hidden runtime mechanisms, slow feedback cycles, and failures that appear far away from their causes, the agent spends more time guessing. If the system is explicit, inspectable, fast to validate, and structurally deterministic, each iteration produces useful information.
 

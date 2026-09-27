@@ -1,13 +1,13 @@
 ---
 title: Documentation in the AI Era — Kora Framework Docs Are No Longer Just Docs
-date: 2026-08-08
+date: 2026-08-07
 description: Why documentation, generated source, and compiler feedback form one explainable system in the Kora Framework for the AI era.
 search:
   exclude: true
 ---
 
 # Documentation in the AI Era Is No Longer Just Documentation { #ai-era-docs }
-**August 8, 2026**
+**August 7, 2026**
 
 For most of software history, framework documentation had a simple role: a developer had a question, opened a website, searched for the relevant page, read the explanation, found an example, and
 translated that information into code. When the official documentation was incomplete, the developer expanded the search outward to Stack Overflow, blog posts, conference talks, GitHub issues, source

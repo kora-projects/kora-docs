@@ -1,6 +1,6 @@
 ---
 title: Performance You Don't Need Still Saves Money and Time — Kora Framework
-date: 2026-08-26
+date: 2026-08-25
 description: Why Kora Framework efficiency matters even when you don't need maximum throughput — lower CPU, faster startup, smaller fleets, and cheaper operation.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Performance You Don't Need Still Saves Money And Time { #performance }
 
-**August 26, 2026**
+**August 25, 2026**
 
 Backend performance discussions are often framed around an obvious question: *Do we actually need this much throughput?*
 

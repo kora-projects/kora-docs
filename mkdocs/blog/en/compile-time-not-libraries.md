@@ -1,6 +1,6 @@
 ---
 title: A Compile-Time Framework Does Not Mean Compile-Time-Only Libraries — Kora Framework
-date: 2026-08-01
+date: 2026-07-31
 description: Why the Kora Framework's compile-time model does not forbid ordinary JVM libraries that use reflection, proxies, or runtime metadata.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Compile-Time Framework Does Not Mean Compile-Time-Only Libraries { #compile-time-framework }
 
-**August 1, 2026**
+**July 31, 2026**
 
 The phrase *compile-time framework* is easy to misunderstand.
 

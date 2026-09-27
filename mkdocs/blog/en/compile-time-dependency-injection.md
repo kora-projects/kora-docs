@@ -1,6 +1,6 @@
 ---
 title: Compile-Time Dependency Injection — How the Kora Framework Builds an Application
-date: 2026-08-04
+date: 2026-08-03
 description: How the Kora Framework resolves, validates, and generates the application graph at compile time — components, modules, tags, All<T>, ValueOf<T>, lifecycle, and refreshable subgraphs.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Compile-Time Dependency Injection: How Kora Builds an Application { #compile-time-dependency-injection }
 
-**August 4, 2026**
+**August 3, 2026**
 
 Dependency injection is often introduced as a convenience mechanism: instead of constructing every object manually, a class declares what it needs and the container provides it. That description is
 useful, but it hides the more interesting architectural question: **when does the container decide what the application actually is?**

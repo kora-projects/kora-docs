@@ -1,6 +1,6 @@
 ---
 title: Kora Framework — Accidentally AI-Native
-date: 2026-08-18
+date: 2026-08-17
 description: Why the Kora Framework's compile-time, explicit, inspectable design makes it unusually easy for AI coding agents to understand, modify, and verify.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Kora Accidentally Became an AI-Native Framework { #ai-native }
 
-**August 18, 2026**
+**August 17, 2026**
 
 AI-native software is usually discussed as software that *contains* AI. A framework gets an LLM integration, a vector-store module, an agent SDK, a prompt abstraction, or a tool-calling API, and the label follows. That definition is useful when describing product capabilities, but it misses a more fundamental question that is becoming increasingly important for software engineering: **how easy is the framework itself for an AI coding agent to understand, modify, verify, and debug?**
 

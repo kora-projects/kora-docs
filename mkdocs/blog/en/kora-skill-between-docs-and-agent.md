@@ -1,6 +1,6 @@
 ---
 title: Kora Skill — the Missing Layer Between Documentation and AI Agents
-date: 2026-08-19
+date: 2026-08-18
 description: How a Kora Framework "skill" bridges human documentation and AI coding agents, giving agents an authoritative, executable view of the framework.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Kora Skill as the Missing Layer Between Documentation and AI Agents { #kora-skill-as-missing }
 
-**August 19, 2026**
+**August 18, 2026**
 
 Framework documentation was written for people.
 

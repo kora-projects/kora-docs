@@ -1,6 +1,6 @@
 ---
 title: One Problem, One Solution — Why the Kora Framework Has Fewer Abstractions
-date: 2026-08-23
+date: 2026-08-22
 description: Why the Kora Framework deliberately keeps a small solution space — one canonical path per problem — and what that means for maintainability, onboarding, upgrades, and AI agents.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # One Problem, One Solution: Why Kora Deliberately Has Fewer Abstractions { #one-problem-one-solution }
 
-**August 23, 2026**
+**August 22, 2026**
 
 Modern backend frameworks are often evaluated by asking how much they can do. How many databases can they abstract? How many programming models can they support? How many ways can a controller be
 declared, a dependency injected, a query expressed, or a remote service called?

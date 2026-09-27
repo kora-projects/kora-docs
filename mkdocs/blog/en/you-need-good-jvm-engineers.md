@@ -1,6 +1,6 @@
 ---
 title: You Don't Need Kora Developers — You Need Good JVM Engineers
-date: 2026-09-18
+date: 2026-09-21
 description: Why "there are no Kora developers" is the wrong objection — the Kora Framework builds on the JDBC, SQL, HTTP, and Java/Kotlin skills that strong JVM engineers already have.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # You Don’t Need Kora Developers — You Need Good JVM Engineers { #good-jvm-engineers }
 
-**September 18, 2026**
+**September 21, 2026**
 
 When companies evaluate a framework that is smaller than Spring, one objection appears almost immediately:
 

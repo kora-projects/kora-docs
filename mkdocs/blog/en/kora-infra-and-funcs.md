@@ -1,12 +1,12 @@
 ---
-date: 2026-08-27
+date: 2026-08-26
 description: How the Kora Framework attaches resilience, caching, validation, and scheduling policy declaratively through compile-time generation.
 search:
   exclude: true
 ---
 # Policy-Driven Infrastructure in Kora: Resilience, Caching, Validation, and Scheduling { #policy-driven-infrastructure }
 
-**August 27, 2026**
+**August 26, 2026**
 
 Modern backend frameworks are often evaluated by the number of features they expose: circuit breakers, retries, caches, validators, schedulers, metrics, and so on. That comparison is useful, but it
 misses a more important architectural question: **where does the policy live, and how visible is it to the application?** The same retry primitive can be either a clear part of the service contract or

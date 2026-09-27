@@ -1,13 +1,13 @@
 ---
 title: Compile-Time DI at Scale — How the Kora Framework Keeps Large Projects Fast
-date: 2026-08-05
+date: 2026-08-04
 description: How the Kora Framework uses @KoraSubmodule and Gradle modularization to keep compile-time dependency injection fast in large codebases.
 search:
   exclude: true
 ---
 # Compile-Time DI at Scale: How Kora Keeps Large Projects Fast { #compile-time-di-at-scale }
 
-**August 5, 2026**
+**August 4, 2026**
 
 Compile-time dependency injection has an obvious attraction: move dependency discovery, graph validation, and wiring out of application startup and into the compiler, then start the service with an
 already known graph. The runtime becomes simpler, startup becomes more deterministic, and many errors that would otherwise appear only when a container is created become ordinary compilation failures.

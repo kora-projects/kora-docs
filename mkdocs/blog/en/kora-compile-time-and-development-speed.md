@@ -1,6 +1,6 @@
 ---
 title: Does Compile-Time Code Generation Really Make Development Slower? — Kora Framework
-date: 2026-08-10
+date: 2026-08-09
 description: Whether compile-time DI, repository, and mapper generation actually slow development in the Kora Framework, and how incremental builds and submodules keep feedback fast.
 search:
   exclude: true
@@ -8,7 +8,7 @@ search:
 
 # Does Compile-Time Code Generation Really Make Development Slower? { #does-compile-time-code }
 
-**August 10, 2026**
+**August 9, 2026**
 
 There is a persistent intuition in JVM backend development that sounds reasonable enough to become a rule of thumb: if a framework performs dependency injection, repository generation, HTTP routing, mapping, validation, AOP, or other infrastructure work during compilation, then compilation must become slower. From there, the conclusion is often extended one step further: a framework that relies heavily on annotation processing or compiler plugins must also produce a slower development experience than a framework that defers more work until application startup.
 
