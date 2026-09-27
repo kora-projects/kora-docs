@@ -1,8 +1,18 @@
-# Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora
+---
+title: Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora
+date: 2023-03-06
+description: This article is a written companion to a talk given before Kora 1.0. It covers the pre-1.0 architecture, the early benchmarks, and the ideas that survived into modern Kora.
+search:
+  exclude: true
+---
+
+# Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora { #why-kora-was-built }
 
 **March 6, 2023**
 
-https://www.youtube.com/watch?v=3-FXxOotLVs
+This article is a written companion to a talk given before Kora 1.0. It covers the pre-1.0 architecture, the early benchmarks, and the ideas that survived into modern Kora.
+
+<iframe width="100%" height="480" src="https://www.youtube.com/embed/3-FXxOotLVs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 This talk captures Kora at a particularly interesting moment in its history. It is not a presentation about the mature Kora 1.2.x line, and it is certainly not a presentation about the much more
 developed Kora 2.0 generation. The framework shown here is **pre-stable Kora, roughly from the 0.9-era before 1.0.0**, when APIs were still changing freely, backward compatibility was not yet
@@ -24,7 +34,7 @@ consolidated synchronous model, uses virtual threads throughout application code
 architectural mechanisms, and documents the framework as a much more mature production platform. The talk should therefore be read as the origin story of those ideas, not as a snapshot of current
 Kora.
 
-## Spring Solved the Productivity Problem, but Runtime Convenience Has a Cost
+## Spring Solved the Productivity Problem, but Runtime Convenience Has a Cost { #spring-solved-the-productivity-problem-but-runtime-convenience-has-a-cost }
 
 The speaker starts from a position that is deliberately balanced. Spring is productive because it removes a huge amount of manual composition work. A developer can create a service with a controller,
 database access, configuration, and business logic very quickly, and Spring Boot makes this even easier by analyzing the classpath and automatically assembling what appears to be needed. For many
@@ -60,7 +70,7 @@ in source.
 The objection in the talk is therefore not “Spring uses proxies, therefore Spring is bad.” It is that the team wanted a stronger relationship between the source code they saw and the code the JVM
 actually executed. They wanted fewer framework-only layers, earlier validation, faster startup, and a smaller operational footprint.
 
-## Plain Spring Improved the Numbers but Removed the Main Convenience
+## Plain Spring Improved the Numbers but Removed the Main Convenience { #plain-spring-improved-the-numbers-but-removed-the-main-convenience }
 
 The team next tried removing Spring Boot auto-configuration while keeping plain Spring. This was an important experiment because it isolated how much of the startup cost came from Boot's dynamic
 convenience rather than from the core container itself. Once beans were registered manually and the application context became more explicit, memory and startup improved materially.
@@ -71,7 +81,7 @@ also remained.
 
 This experiment sharpened the target. The team did not want “Spring without Spring Boot.” They wanted the ergonomics of a framework with a runtime much closer to handwritten Java.
 
-## Quarkus and Micronaut Solved Part of the Problem, Not the Whole One
+## Quarkus and Micronaut Solved Part of the Problem, Not the Whole One { #quarkus-and-micronaut-solved-part-of-the-problem-not-the-whole-one }
 
 Quarkus and Micronaut naturally entered the comparison because both were designed with startup and build-time optimization in mind. In the speaker's view, they were important improvements over
 conventional runtime-heavy approaches, but they still did not match the exact design constraints the team had set for itself. The team wanted to avoid not only slow startup but also opaque generated
@@ -95,7 +105,7 @@ This is one of the areas where the historical nature of the presentation is esse
 Micronaut, Spring, the JDK, and Kora itself have all evolved substantially since then. The interesting part is not the exact criticism of each framework in that year; it is the architectural criterion
 Kora was choosing for itself.
 
-## The Real Baseline Was Handwritten Undertow + JDBC
+## The Real Baseline Was Handwritten Undertow + JDBC { #the-real-baseline-was-handwritten-undertow-jdbc }
 
 Instead of treating another framework as the performance ceiling, the team created a baseline with no framework at all. The baseline used Undertow and JDBC directly. Routes, SQL, mappings, and
 application assembly were written manually. This gave the team a reference point for what a low-abstraction JVM service could do if developer productivity were ignored.
@@ -122,7 +132,7 @@ spring-java-jdbc         ████                            ~350
 This is not a new benchmark reconstructed from raw data; it is a simplified visual summary of the graph shown in the presentation. The key point is the distance between the direct baseline and
 framework implementations, which became the motivation for Kora's architecture.
 
-## Why Another Framework Made Sense in a Microservice Environment
+## Why Another Framework Made Sense in a Microservice Environment { #why-another-framework-made-sense-in-a-microservice-environment }
 
 The speaker's argument becomes much stronger when placed in the microservice context. A small service may contain very little business logic: receive an HTTP request, validate a model, execute a
 query, call another service, publish a message, and return a result. When the business path is short, the relative cost of framework initialization and runtime abstractions becomes more visible.
@@ -148,7 +158,7 @@ make runtime resemble direct library usage
 Again, this was **pre-stable Kora, around the 0.9-era**, not the later 1.2.x or 2.0 framework. The significance of the talk is that the core philosophy was already visible even while many concrete
 modules and APIs were still experimental.
 
-## The Resource-Constrained Benchmark
+## The Resource-Constrained Benchmark { #the-resource-constrained-benchmark }
 
 The more important benchmark in the talk used a newly written service inside a constrained environment. The conditions shown on the slide were:
 
@@ -167,7 +177,7 @@ a few hundred megabytes of RAM, framework behavior becomes part of the applicati
 The final comparison included several Spring configurations and Kora. The results were striking because progressively removing Spring infrastructure moved Spring closer to Kora, reinforcing the team's
 original hypothesis that much of the gap came from framework machinery rather than business code.
 
-## Startup Memory: the Clearest Difference
+## Startup Memory: the Clearest Difference { #startup-memory-the-clearest-difference }
 
 The minimum memory needed to start was reported as:
 
@@ -197,7 +207,7 @@ It is worth repeating that these values describe **early, pre-1.0 Kora**, approx
 subsequently matured the implementation, integration modules, tooling, and production support, while Kora 2.0 evolved the model much further. The historical result is useful because it shows why the
 architecture was chosen, not because 64 MB should be treated as a current universal Kora requirement.
 
-## Startup Time Followed the Same Pattern
+## Startup Time Followed the Same Pattern { #startup-time-followed-the-same-pattern }
 
 The reported startup times were:
 
@@ -224,7 +234,7 @@ The interesting observation is not merely that Kora started faster. Once Spring 
 In other words, the experiment did not show that the Spring core was inherently incapable of fast startup. It showed that convenience layers have measurable cost, and Kora attempted to offer
 convenience through compilation rather than through runtime discovery.
 
-## Steady-State CPU Was Much Closer
+## Steady-State CPU Was Much Closer { #steady-state-cpu-was-much-closer }
 
 At a fixed **500 RPS**, CPU consumption was reported as:
 
@@ -251,7 +261,7 @@ fixed load, Kora and stripped-down Spring were fairly close. The major gains wer
 That makes the benchmark more credible because the story is not “Kora wins every metric by a huge margin.” It is “removing runtime machinery changes some costs dramatically and other costs only
 modestly.”
 
-## Maximum Throughput Moved Kora Closer to the Baseline
+## Maximum Throughput Moved Kora Closer to the Baseline { #maximum-throughput-moved-kora-closer-to-the-baseline }
 
 The reported maximum throughput was:
 
@@ -284,7 +294,7 @@ Average response time showed a smaller difference:
 The conclusion was that Kora got closer to the direct baseline without requiring teams to give up framework capabilities. It still did not equal the handwritten Undertow/JDBC service, which was
 expected. The goal was not zero abstraction cost; the goal was to make the abstraction cost small and visible.
 
-## The Key Decision: Generate Source, Not Runtime Bytecode
+## The Key Decision: Generate Source, Not Runtime Bytecode { #the-key-decision-generate-source-not-runtime-bytecode }
 
 The most important implementation decision in the talk is Kora's use of generated source code. The team deliberately asked why the framework should manipulate bytecode itself when Java and Kotlin
 already have compilers designed to turn source into bytecode. Instead of constructing the application dynamically at runtime, Kora processors generated ordinary code during the build.
@@ -310,7 +320,7 @@ This remains one of the clearest lines connecting the pre-1.0 Kora shown in the 
 documentation still describes compile-time application graph generation, no runtime reflection, no dynamic proxies at runtime, and generated human-readable source as fundamental principles. Modern
 Kora is much larger and more polished than the 0.9-era framework, but it did not abandon this core idea.
 
-## Compile-Time Dependency Injection Made the Graph an Artifact
+## Compile-Time Dependency Injection Made the Graph an Artifact { #compile-time-dependency-injection-made-the-graph-an-artifact }
 
 The root application interface in the presentation explicitly included infrastructure modules such as configuration, Undertow, JSON, JDBC, and logging. Exact module names and APIs evolved later, but
 the architectural idea was already clear: the application's capabilities were declared explicitly, and Kora generated the final dependency graph from them.
@@ -352,7 +362,7 @@ response is important: every DI container has an equivalent structure somewhere.
 
 The generated graph was never meant to be handwritten. It was meant to be inspectable.
 
-## Controllers Became Ordinary Generated Handlers
+## Controllers Became Ordinary Generated Handlers { #controllers-became-ordinary-generated-handlers }
 
 Controllers followed the same pattern. The developer wrote a normal controller method with Kora's route annotations, and the processor generated the handler module that understood the route, request
 decoding, parameter mapping, response mapping, and the controller invocation.
@@ -378,7 +388,7 @@ This early implementation later evolved heavily. Modern Kora 2.0 uses a more mat
 this pre-stable 0.9-era talk describes. The historical point remains relevant: Kora wanted generated, readable adapters around ordinary application methods rather than an increasingly opaque runtime
 execution model.
 
-## Repositories Automated Boilerplate Without Hiding SQL
+## Repositories Automated Boilerplate Without Hiding SQL { #repositories-automated-boilerplate-without-hiding-sql }
 
 Repositories were another example of the same philosophy. Developers wrote repository contracts and SQL, while Kora generated the concrete implementation, driver calls, and mapping glue. The speaker
 openly admits that developers accustomed to Hibernate or derived query methods might dislike having to write SQL manually, but the team considered explicit SQL an advantage for performance-sensitive
@@ -403,7 +413,7 @@ around the 0.9 generation.** The 1.2.x line changed and stabilized many parts of
 the framework on synchronous code executed with virtual threads. The database philosophy—explicit contracts, generated repositories, thin integration—survived; the execution model changed
 substantially.
 
-## The Framework Was Intentionally Small and Incomplete
+## The Framework Was Intentionally Small and Incomplete { #the-framework-was-intentionally-small-and-incomplete }
 
 One of the most valuable aspects of the talk is how openly the speaker describes the limitations of that early framework. Kora was still below 1.0.0, and when asked about backward compatibility, the
 answer was essentially that there was none yet. APIs could change. Some integrations were missing. Security was being debated rather than rushed into the framework. ORM-like conveniences were
@@ -420,7 +430,7 @@ resilience, and generated code.
 So when the talk says “we may add this later,” “there is no compatibility yet,” or discusses integrations that current Kora no longer uses, those statements belong to the **pre-stable 0.9-era** and
 should not be projected onto the 1.2.x or 2.0 framework.
 
-## Java and Kotlin Were First-Class Goals From the Beginning
+## Java and Kotlin Were First-Class Goals From the Beginning { #java-and-kotlin-were-first-class-goals-from-the-beginning }
 
 Even in this early stage, the team did not want Kora to be a Java-only framework with superficial Kotlin support. The talk describes separate generation approaches and frustration with relying on
 imperfect generated Java stubs for Kotlin-specific language features. The intention was to understand Kotlin constructs such as nullability and default parameters properly rather than forcing Kotlin
@@ -429,7 +439,7 @@ through a Java-shaped model.
 That investment became more important later. In the 1.2.x period, Kotlin/KSP support was significantly improved, and by the 2.0 line generated Java/Kotlin sources remain part of the normal development
 experience. The modern documentation even encourages developers to inspect generated sources as a learning and debugging tool, which is a direct continuation of the philosophy shown in this talk.
 
-## Explicit Modules Were About Control, Not Ceremony
+## Explicit Modules Were About Control, Not Ceremony { #explicit-modules-were-about-control-not-ceremony }
 
 During the Q&A, an audience member asks why the main application explicitly includes framework modules instead of relying entirely on annotations and automatic discovery. The answer is architectural
 control. If an application needs a capability, it adds that module. If it does not need the capability, it does not bring it into the graph.
@@ -447,7 +457,7 @@ Do not need it?        do not add it
 The pre-1.0 syntax and module names changed later, but the principle survived and became much more polished in newer versions. Modern Kora 2 explicitly presents itself as a controlled stack where
 services add only the modules they need.
 
-## Testing Reflected the Original Target: Small Services
+## Testing Reflected the Original Target: Small Services { #testing-reflected-the-original-target-small-services }
 
 The speaker describes an early preference for integration and black-box tests rather than extensive framework-specific mocking. The reasoning is connected directly to Kora's target: if services are
 small and start cheaply, testing the real application becomes much more practical.
@@ -459,7 +469,7 @@ integration, and black-box testing as first-class parts of the framework.
 The philosophical continuity is more interesting than the old limitation. Kora prefers tests that remain close to the actual generated application graph rather than constructing a parallel testing
 universe disconnected from production wiring.
 
-## “We Hire Java Developers, Not Spring Developers”
+## “We Hire Java Developers, Not Spring Developers” { #we-hire-java-developers-not-spring-developers }
 
 One of the most memorable moments in the Q&A has little to do with benchmark numbers. An audience member asks whether engineers might be worried about working with an internal or less popular
 framework because they want Spring and Hibernate on their résumés.
@@ -478,7 +488,7 @@ Modern Kora's evolution makes this point even stronger than the early talk did. 
 HTTP/gRPC/Kafka concepts close to the underlying technologies, and compile-time generated code that can be inspected in the IDE. The framework has matured substantially since 0.9 without turning into
 an isolated programming universe.
 
-## Health, Metrics, Security, and Native Image Were Still Being Shaped
+## Health, Metrics, Security, and Native Image Were Still Being Shaped { #health-metrics-security-and-native-image-were-still-being-shaped }
 
 The Q&A also gives a useful picture of the framework's maturity level. Health checks and metrics existed as opt-in modules, but the speaker could not recall the exact default metric set during the
 discussion. Security was not yet treated as a mandatory framework abstraction and was still under debate. Native image support existed as experiments rather than as the main runtime strategy. There
@@ -490,7 +500,7 @@ production concerns as part of a much more mature framework.
 
 The useful lesson is not that early Kora lacked features. It is that the team was deliberately selective about which abstractions deserved to become framework concepts.
 
-## A Primitive View of the Evolution
+## A Primitive View of the Evolution { #a-primitive-view-of-the-evolution }
 
 The historical progression can be summarized like this:
 
@@ -529,7 +539,7 @@ Kora 2.0 line
 
 This is why the talk remains worth reading today. Many APIs are historical. The architectural direction is not.
 
-## What the Benchmarks Actually Proved
+## What the Benchmarks Actually Proved { #what-the-benchmarks-actually-proved }
 
 The benchmark did not prove that Kora would always outperform Spring, Quarkus, or Micronaut. It proved something narrower and more useful: **the team's architectural assumptions were measurable**.
 Removing auto-configuration lowered startup cost. Removing runtime discovery and reducing abstraction layers moved performance closer to the manual baseline. Generating source and the application
@@ -552,7 +562,7 @@ but Kora still reached higher maximum RPS.
 
 This is a much more useful interpretation than “Kora was X times faster.” It shows where the cost was actually being paid.
 
-## The Most Important Artifact Was Not a Benchmark Graph but Generated Code
+## The Most Important Artifact Was Not a Benchmark Graph but Generated Code { #the-most-important-artifact-was-not-a-benchmark-graph-but-generated-code }
 
 The presentation spends significant time showing generated controllers, generated repositories, and the generated dependency graph. That emphasis is deliberate. The team was not only trying to reduce
 CPU consumption; it was trying to make framework behavior explainable.
@@ -587,7 +597,7 @@ is used, they can inspect the repository implementation. If they wonder how the 
 Modern Kora 2 has made this idea even more explicit. Generated code is not merely an implementation detail; the current documentation treats it as a normal debugging and learning surface. In that
 sense, one of the strongest ideas from the 0.9-era did not just survive—it became more central as the framework matured.
 
-## What Changed the Most by Kora 2
+## What Changed the Most by Kora 2 { #what-changed-the-most-by-kora-2 }
 
 The biggest conceptual change from the talk to modern Kora is the execution model. The early framework experimented with several database and asynchronous technologies, including R2DBC and
 Vert.x-oriented paths. By the 2.0 line, Kora is far more opinionated: framework application code is synchronous, virtual threads are the normal execution mechanism, and reactive or Kotlin `suspend`
@@ -614,7 +624,7 @@ response
 
 This was not the shape of the pre-stable 0.9-era framework in the talk. It is the later conclusion reached after several generations of development.
 
-## Why the Historical Talk Still Matters
+## Why the Historical Talk Still Matters { #why-the-historical-talk-still-matters }
 
 The presentation is useful precisely because it predates the polished framework.
 
@@ -632,7 +642,7 @@ This talk explains why Kora exists.
 
 That distinction makes it valuable even though the concrete API belongs to the **pre-1.0, roughly 0.9+ period**.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 This presentation should be read as an engineering origin story for Kora, not as current documentation. The version being demonstrated is **pre-stable Kora, around the 0.9-era before 1.0.0**, with
 experimental modules, evolving APIs, no stable compatibility promise, and a much smaller ecosystem than the framework has today. Several technologies mentioned in the talk later changed or
@@ -686,3 +696,4 @@ Java, Kotlin, SQL, HTTP, Kafka, gRPC, databases, concurrency, and ordinary appli
 
 That is the real story this early talk captures: Kora did not begin as an attempt to build a larger framework. It began as an attempt to make the framework smaller at runtime, more explicit to the
 developer, and closer to the code the JVM actually executes.
+

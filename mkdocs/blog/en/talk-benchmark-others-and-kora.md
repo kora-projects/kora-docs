@@ -1,8 +1,18 @@
-# Kora in Practice: What a Real JVM Framework Benchmark Revealed
+---
+title: Kora in Practice: What a Real JVM Framework Benchmark Revealed
+date: 2024-09-26
+description: This article is a written companion to a talk in which a developer with no prior Kora hands-on experience benchmarked Kora against several familiar JVM frameworks. It walks through the benchmark design, the results, and the architectural lessons the experiment revealed.
+search:
+  exclude: true
+---
+
+# Kora in Practice: What a Real JVM Framework Benchmark Revealed { #kora-in-practice }
 
 **September 26, 2024**
 
-https://www.youtube.com/live/3-FXxOotLVs?si=Zhze6VPWpEGASCWx&t=2968
+This article is a written companion to a talk in which a developer with no prior Kora hands-on experience benchmarked Kora against several familiar JVM frameworks. It walks through the benchmark design, the results, and the architectural lessons the experiment revealed.
+
+<iframe width="100%" height="480" src="https://www.youtube.com/embed/3-FXxOotLVs?start=2968" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Kora was probably one of the least familiar frameworks discussed in the talk. It originated inside T-Bank and was later released publicly under the Kora Projects organization. At first glance, it may
 look like one more JVM backend framework competing in an already crowded space. The interesting part is not that another framework exists, but the design choices behind it and what happened when those
@@ -16,7 +26,7 @@ Kora ended up producing the strongest result in that particular benchmark.
 But the most useful part of the talk was not simply that Kora finished first. The experiment also exposed why the framework behaves differently, what trade-offs it makes, where the ecosystem is still
 smaller, how resource consumption compared with Spring Boot WebFlux, and why benchmarking the existing system before a rewrite is at least as important as benchmarking the replacement.
 
-## What Makes Kora Different
+## What Makes Kora Different { #what-makes-kora-different }
 
 The central architectural idea is that Kora tries to move framework work out of runtime and into compilation.
 
@@ -46,7 +56,7 @@ The practical implication is that a Kora service can behave much closer to a man
 
 These two properties—compile-time generation and relatively thin abstractions—form the foundation of the performance story shown later in the benchmark.
 
-## Explicit Rather Than Magical
+## Explicit Rather Than Magical { #explicit-rather-than-magical }
 
 Kora's programming model is more explicit than what many Spring developers are used to.
 
@@ -61,7 +71,7 @@ The speaker's assessment was essentially that the approach is reasonable even if
 
 Kora supports both Java and Kotlin, so the same overall framework model can be used in either language.
 
-## Data Access: Generated Repositories, but SQL Remains Visible
+## Data Access: Generated Repositories, but SQL Remains Visible { #data-access-generated-repositories-but-sql-remains-visible }
 
 The data-access layer follows the same philosophy.
 
@@ -90,7 +100,7 @@ That means some SQL still has to be written.
 
 The speaker treats this as a reasonable compromise: Kora removes boilerplate but keeps the actual database contract visible.
 
-## Kora's Exact Benchmark Result
+## Kora's Exact Benchmark Result { #kora-s-exact-benchmark-result }
 
 The Kora implementation produced the strongest numbers in the benchmark.
 
@@ -125,7 +135,7 @@ Spring Boot WebFlux was actually very close. Its average latency was only a few 
 
 The more significant differences appeared when resource consumption was taken into account.
 
-## Kora and WebFlux Were the Two Clear Leaders
+## Kora and WebFlux Were the Two Clear Leaders { #kora-and-webflux-were-the-two-clear-leaders }
 
 The speaker singled out Kora and Spring Boot WebFlux as the two strongest performers and compared their behavior over time.
 
@@ -139,7 +149,7 @@ Kora's lead was visible early and remained broadly consistent.
 
 The exact values naturally fluctuated from run to run, but the relative ordering stayed similar enough for the speaker to treat the result as meaningful rather than a one-off spike.
 
-## Resource Consumption Made the Difference More Interesting
+## Resource Consumption Made the Difference More Interesting { #resource-consumption-made-the-difference-more-interesting }
 
 The biggest distinction between Kora and WebFlux appeared in CPU consumption.
 
@@ -182,7 +192,7 @@ The speaker also observed that Spring Boot used roughly a few hundred megabytes 
 Again, the benchmark should not be interpreted as a universal memory law for either framework. Heap behavior depends on application code, GC configuration, JVM options, traffic shape, and
 dependencies. But within this experiment, Kora's resource profile was clearly better.
 
-## The Original Service Was Better Than Expected
+## The Original Service Was Better Than Expected { #the-original-service-was-better-than-expected }
 
 One of the most important moments in the talk came after the framework comparison.
 
@@ -213,7 +223,7 @@ The lesson is that the original system should have been measured first.
 Before replacing a working service because another technology is expected to be faster, the team should know whether performance is genuinely the limiting factor and how much improvement is actually
 required.
 
-## The Real-World Result Was Even More Dramatic
+## The Real-World Result Was Even More Dramatic { #the-real-world-result-was-even-more-dramatic }
 
 One of the final slides adds an important production detail.
 
@@ -229,7 +239,7 @@ The broader conclusion remains unchanged: the Kora rewrite delivered a substanti
 
 But the exact multiplier should be treated as workload-specific rather than as a generic Kora performance claim.
 
-## A Smaller Ecosystem Was a Real Limitation
+## A Smaller Ecosystem Was a Real Limitation { #a-smaller-ecosystem-was-a-real-limitation }
 
 Kora was not perfect in the experiment.
 
@@ -256,7 +266,7 @@ This is an important distinction.
 
 A framework does not need a prebuilt adapter for everything if adding the missing one remains cheap.
 
-## The Documentation Was Good Enough for a First-Time User
+## The Documentation Was Good Enough for a First-Time User { #the-documentation-was-good-enough-for-a-first-time-user }
 
 Another interesting detail is that the speaker was not an experienced Kora user.
 
@@ -272,7 +282,7 @@ In this case, the speaker was able to understand enough of the framework from it
 
 This reinforces Kora's broader advantage: much of the framework behavior is explicit and compile-time generated rather than hidden behind runtime conventions.
 
-## Reactive Programming Was Still Extremely Competitive
+## Reactive Programming Was Still Extremely Competitive { #reactive-programming-was-still-extremely-competitive }
 
 Another interesting conclusion from the benchmark is that reactive programming was far from obsolete.
 
@@ -295,7 +305,7 @@ The serious conclusion is simpler:
 
 Measure the workload.
 
-## Why the Ranking Should Not Be Generalized
+## Why the Ranking Should Not Be Generalized { #why-the-ranking-should-not-be-generalized }
 
 The speaker is careful to qualify the result.
 
@@ -323,7 +333,7 @@ A framework can dominate TechEmpower or another synthetic benchmark and still be
 
 Conversely, a framework that does not dominate a public leaderboard may perform perfectly well under the actual business workload.
 
-## The Most Valuable Conclusion Was Methodological
+## The Most Valuable Conclusion Was Methodological { #the-most-valuable-conclusion-was-methodological }
 
 The final slides make the speaker's broader conclusion explicit.
 
@@ -371,7 +381,7 @@ The speaker explicitly admits that the existing solution analysis happened too l
 
 That is probably the most transferable lesson in the entire talk.
 
-## What This Benchmark Says About Kora
+## What This Benchmark Says About Kora { #what-this-benchmark-says-about-kora }
 
 Within the limits of this experiment, Kora demonstrated several notable properties.
 
@@ -401,7 +411,7 @@ among the compared variants.
 
 That combination is what makes the result interesting.
 
-## Conclusion
+## Conclusion { #conclusion }
 
 Kora entered the talk as one of the lesser-known frameworks and left the benchmark at the top of the table.
 
@@ -436,3 +446,4 @@ The final lesson of the talk is therefore both about Kora and about engineering 
 your own workload decide.**
 
 In this experiment, that process led to Kora.
+

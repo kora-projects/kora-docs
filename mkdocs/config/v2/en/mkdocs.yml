@@ -148,6 +148,10 @@ nav:
       - Compile-Time AOP: blog/kora-aop.md
       - Strong Defaults Are Not Lock-In: blog/kora-strong-default-not-lock-in.md
       - Compile-Time ≠ Compile-Time-Only: blog/compile-time-not-libraries.md
+      - Why Kora Was Built: blog/talk-kora-why-build-pre-1.0-origin.md
+      - Beyond Spring Magic: blog/talk-jvm-day-cognitive-load.md
+      - Kora in Practice: blog/talk-benchmark-others-and-kora.md
+      - The Price of a PhD in Spring: blog/talk-joker-phd-in-spring-talk.md
   - Community:
       - Development: community/development.md
   - Changelog: changelog/changelog.md
