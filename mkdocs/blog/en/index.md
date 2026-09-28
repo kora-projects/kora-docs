@@ -79,6 +79,8 @@ The blog is shared by every documentation version. Articles describe ideas and p
   modify, and verify.
 - [In the AI Era, Framework Expertise Matters More Than Community Size](neuro-era-framework-matters-more-community.md) — why an explicit, inspectable framework helps AI coding agents more than a large
   community and abundant forum answers.
+- [When a Million Answers Are a Warning Sign](million-answers-a-warning-sign.md) — why a huge framework Q&A corpus can be both a valuable ecosystem asset and evidence that too much framework behavior
+  is difficult to derive from the system itself, and why Kora aims to reduce the number of ordinary questions.
 - [How to Build Your Own First-Class Kora Module](kora-build-your-module.md) — a step-by-step guide to building a first-class Kora module with typed config, lifecycle, telemetry, and compile-time DI.
 - [How an HTTP Request Travels Through Kora on Virtual Threads](http-request-throught-kora.md) — the two concurrency domains behind an HTTP request — Undertow I/O threads and virtual threads — and why
   blocking JDBC is fine.

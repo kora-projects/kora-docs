@@ -1,0 +1,1 @@
+--8<-- "ru/million-answers-a-warning-sign.md"

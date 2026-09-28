@@ -1,0 +1,1 @@
+--8<-- "ru/neuro-native-framework-kora-became.md"

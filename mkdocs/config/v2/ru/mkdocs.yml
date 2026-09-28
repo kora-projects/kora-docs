@@ -102,7 +102,7 @@ nav:
       - Kora пересматривает модель фреймворка: blog/kora-rethinks-framework-model-itself.md
       - Почему Kora — правильный выбор по умолчанию: blog/kora-right-default-for-backend.md
       - Почему Kora не нуждается в ORM: blog/kora-dont-need-orm.md
-      - Фреймворки на этапе компиляции и AI-агенты: blog/neuro-agent-and-kora.md
+      - Фреймворки на этапе компиляции и нейро-агенты: blog/neuro-agent-and-kora.md
       - Диагностика на этапе компиляции: blog/compile-time-diagnostics.md
       - Откуда берётся производительность Kora: blog/kora-performance.md
       - Виртуальные потоки против реактивного подхода: blog/virtual-thread-vs-reactive.md
@@ -113,7 +113,7 @@ nav:
       - Легче выучить: blog/kora-easier-to-learn.md
       - Расширение экосистемы: blog/kora-extending-framework-ecosystem.md
       - Стоимость отсутствующей интеграции: blog/cost-of-missing-integration.md
-      - Минимум магии для AI-агентов: blog/neuro-agent-best-native-kora-framework.md
+      - Минимум магии для нейро-агентов: blog/neuro-agent-best-native-kora-framework.md
       - Граф приложения как архитектура: blog/application-graph-as-architecture.md
       - Тестирование продакшн-графа: blog/kora-test-graph.md
       - Структурированная конкурентность: blog/structured-concurrency-in-kora.md
@@ -128,10 +128,11 @@ nav:
       - Одна проблема — одно решение: blog/one-problem-one-solution.md
       - Наблюдаемость по дизайну: blog/kora-observability.md
       - Никакой магии во время выполнения: blog/no-runtime-magic.md
-      - Изучение фреймворка в эпоху AI: blog/neuro-era-learning-framework.md
+      - Изучение фреймворка в нейро-эпоху: blog/neuro-era-learning-framework.md
       - Kora Skill: blog/kora-skill-between-docs-and-agent.md
-      - Случайно AI-нативный: blog/neuro-native-framework-kora-became.md
+      - Kora в нейро-эпоху: blog/neuro-native-framework-kora-became.md
       - Экспертиза фреймворка > сообщество: blog/neuro-era-framework-matters-more-community.md
+      - Миллион ответов — тревожный знак: blog/million-answers-a-warning-sign.md
       - Создайте свой модуль: blog/kora-build-your-module.md
       - HTTP-запрос на виртуальных потоках: blog/http-request-throught-kora.md
       - Отладка сгенерированного кода: blog/generated-code-transparent-debugging.md
@@ -140,7 +141,7 @@ nav:
       - Корпоративная готовность без вселенной: blog/kora-enterprise-ready-without-universe.md
       - Компиляция против скорости разработки: blog/kora-compile-time-and-development-speed.md
       - Зрелость документации: blog/kora-documentation-maturity.md
-      - Документация в эпоху AI: blog/kora-documentation-in-the-ai-era.md
+      - Документация в нейро-эпоху: blog/kora-documentation-in-the-ai-era.md
       - Динамическое обновление во время выполнения: blog/kora-dynamic-runtime-refresh.md
       - Подходы к тестированию: blog/kora-testing-different-approaches.md
       - DI на этапе компиляции в масштабе: blog/compile-time-di-at-scale-kora.md

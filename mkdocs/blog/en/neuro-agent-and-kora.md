@@ -1689,16 +1689,11 @@ feedback quality
 feedback frequency
 ```
 
-Precise compiler errors improve quality.
-
-Fast build/test loops improve frequency.
-
-Generated source improves interpretability.
-
-Strong typing improves both.
-
-One recommended way reduces the number of iterations needed.
-
+Precise compiler errors improve quality. 
+Fast build/test loops improve frequency. 
+Generated source improves interpretability. 
+Strong typing improves both. 
+One recommended way reduces the number of iterations needed. 
 These properties compound.
 
 That is why Kora's AI story is architectural rather than a single feature.

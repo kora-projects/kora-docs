@@ -362,10 +362,8 @@ from zero."
 Third, the build cache can reuse task outputs when Gradle finds an identical input fingerprint. This is especially valuable in CI, where a clean workspace does not necessarily imply that every task
 must execute if a remote build cache already contains valid outputs.
 
-Fourth, the Gradle daemon and configuration cache reduce repeated build overhead outside compilation itself.
-
-Fifth, independent project tasks can execute in parallel when the task graph allows it.
-
+Fourth, the Gradle daemon and configuration cache reduce repeated build overhead outside compilation itself. 
+Fifth, independent project tasks can execute in parallel when the task graph allows it. 
 The result is not magic. It is ordinary Gradle engineering applied to a framework whose compile-time work respects explicit module boundaries.
 
 ## The Kora Build Charts Need the Right Interpretation { #build-charts }
@@ -377,10 +375,8 @@ A clean build answers a useful but limited question:
 
 > If nothing from the previous build can be reused, how much total work is required to produce the application artifact?
 
-That matters in reproducibility testing, some CI environments, release pipelines, and cold build scenarios.
-
-But it is not the dominant loop for a developer changing one service all day.
-
+That matters in reproducibility testing, some CI environments, release pipelines, and cold build scenarios. 
+But it is not the dominant loop for a developer changing one service all day. 
 The normal loop is closer to:
 
 ```text
@@ -420,14 +416,12 @@ Incremental build cost
 The second formula is what matters for developer feedback at scale.
 
 Compile-time frameworks are sometimes judged only by the first formula, while runtime frameworks are informally judged by the second. That comparison is misleading. If the question is developer
-productivity, both should be measured under the same realistic edit-build-test workflow.
-
+productivity, both should be measured under the same realistic edit-build-test workflow. 
 A framework that moves work into compilation can still have an excellent feedback loop when that work is incremental, partitioned, cacheable, and parallelizable.
 
 ## Gradle's Task Graph Is Part of the Architecture { #task-graph }
 
-Once a service becomes multi-project, the Gradle task graph becomes a concrete representation of architectural dependency direction.
-
+Once a service becomes multi-project, the Gradle task graph becomes a concrete representation of architectural dependency direction. 
 Imagine this project structure:
 
 ```text
@@ -470,16 +464,14 @@ The first is **task-level parallelism**: unrelated module compilation tasks can 
 
 The second is **work avoidance**: tasks whose inputs have not changed may not run at all.
 
-Work avoidance is usually more powerful than simply adding threads. The fastest compiler task is the one Gradle can prove does not need to execute.
-
+Work avoidance is usually more powerful than simply adding threads. The fastest compiler task is the one Gradle can prove does not need to execute. 
 This is why sensible project decomposition matters so much. A poorly structured module graph can accidentally serialize the build:
 
 ```text
 :A → :B → :C → :D → :E → :application
 ```
 
-Even if the modules are individually small, a deep dependency chain limits parallelism and increases the downstream impact of changes near the bottom.
-
+Even if the modules are individually small, a deep dependency chain limits parallelism and increases the downstream impact of changes near the bottom. 
 A healthier structure often has wider independent areas and a thin composition layer:
 
 ```text
@@ -496,8 +488,7 @@ The goal is not maximum fan-out for its own sake. The goal is a dependency graph
 
 ## Dependency Direction Matters More Than Module Count { #dependency-direction }
 
-Multi-module builds are not fast merely because they contain many modules.
-
+Multi-module builds are not fast merely because they contain many modules. 
 A repository with fifty modules can compile worse than one with ten if every module depends on almost every other module. The performance benefit comes from **boundaries plus dependency discipline**.
 
 Suppose `orders` depends directly on internal classes from `catalog`, `users`, `billing`, `notifications`, and `infrastructure`. A small public change in a foundational module can propagate widely.
@@ -572,8 +563,7 @@ Conceptually:
 
 This gives the project a visible answer to the question: **what constitutes the deployed application?**
 
-The domain modules own their own components. The application module decides which domains and infrastructure modules are assembled into the process.
-
+The domain modules own their own components. The application module decides which domains and infrastructure modules are assembled into the process. 
 That arrangement also keeps the composition layer relatively stable. Most daily edits happen below it.
 
 The root graph still matters because Kora ultimately needs to validate the complete dependency graph. A missing dependency that crosses submodule boundaries must still fail somewhere. Compile-time
@@ -728,10 +718,8 @@ Consider this class in `:catalog`:
     }
     ```
 
-If the developer changes only the private algorithm, the module itself must obviously compile again. Its generated code may also need to be reconsidered depending on processor inputs.
-
-But consumers of `:catalog` have not necessarily observed a source-level contract change. The public type and method shape may be identical.
-
+If the developer changes only the private algorithm, the module itself must obviously compile again. Its generated code may also need to be reconsidered depending on processor inputs. 
+But consumers of `:catalog` have not necessarily observed a source-level contract change. The public type and method shape may be identical. 
 Now compare that with:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -746,34 +734,29 @@ Now compare that with:
     fun calculate(product: Product, segment: CustomerSegment): Money
     ```
 
-The public contract changed. Downstream code using that method may need recompilation or may fail compilation.
-
+The public contract changed. Downstream code using that method may need recompilation or may fail compilation. 
 This distinction is what a modular build can exploit.
 
 In practical terms, the performance goal is not:
 
 > Never rebuild anything downstream.
 
-That would be impossible and undesirable. If a contract changed, downstream validation is exactly what you want.
-
+That would be impossible and undesirable. If a contract changed, downstream validation is exactly what you want. 
 The real goal is:
 
 > Do not make unrelated code pay for a change merely because everything shares the same compilation unit.
 
-That is a much more defensible promise.
-
+That is a much more defensible promise. 
 Compile-time safety and incremental compilation are not enemies. A well-designed build lets the compiler aggressively re-check code when contracts change while avoiding irrelevant work when they do
 not.
 
 ## Generated Code Does Not Eliminate Incrementality { #generated-code }
 
-Another common misconception is that source generation inherently defeats incremental builds.
-
+Another common misconception is that source generation inherently defeats incremental builds. 
 It can, if a processor behaves like a global black box whose output depends on the entire source tree for every input. But source generation itself does not imply that model.
 
 Kora's submodule mechanism is explicitly designed to establish discovery boundaries. A submodule compilation summarizes the components and modules owned by that Gradle project into generated source
-that can be connected by the final application.
-
+that can be connected by the final application. 
 That means generated source participates in the module's output just like other compiled artifacts.
 
 A useful mental model is:
@@ -792,8 +775,7 @@ compiled module artifact
 consumed by downstream project
 ```
 
-The generated source is not hidden runtime state. It is a build product.
-
+The generated source is not hidden runtime state. It is a build product. 
 This has a practical debugging benefit too. If a developer wants to know what a module contributes to the final application, the generated source provides something concrete to inspect. Build
 performance and transparency reinforce one another: the framework creates an explicit artifact at the same boundary Gradle already understands.
 
@@ -809,8 +791,7 @@ to:
 
 > Have we already built this exact set of inputs somewhere?
 
-If the answer is yes, Gradle can restore outputs instead of executing the task.
-
+If the answer is yes, Gradle can restore outputs instead of executing the task. 
 For a modular Kora service, this can be particularly effective in CI. Consider a pull request that changes only `:orders`.
 
 Without a useful cache strategy:
@@ -839,24 +820,17 @@ compose/package
 run required tests
 ```
 
-This is one reason a clean filesystem should not automatically be equated with a full cold computation. Modern CI builds can be ephemeral and still reuse work.
-
+This is one reason a clean filesystem should not automatically be equated with a full cold computation. Modern CI builds can be ephemeral and still reuse work. 
 Of course, cache effectiveness depends on reproducible task inputs, stable toolchains, correct plugin behavior, and disciplined build configuration. A cache is not a substitute for modularity. But
-modularity improves the granularity at which cached results can be reused.
-
-A single enormous compile task gives the cache one enormous key. Change any relevant input and the whole task misses.
-
+modularity improves the granularity at which cached results can be reused. 
+A single enormous compile task gives the cache one enormous key. Change any relevant input and the whole task misses. 
 Ten coherent compile tasks give the build ten independent opportunities for hits.
 
 ## Configuration Cache and the Non-Compilation Part of Feedback { #configuration-cache }
 
-Developers often attribute all build latency to compilation even when project configuration consumes a noticeable part of every invocation.
-
+Developers often attribute all build latency to compilation even when project configuration consumes a noticeable part of every invocation. 
 Gradle's configuration cache attacks a different layer of the problem. It can reuse the configured task graph rather than re-evaluating all build scripts on every invocation when the build is
-compatible with it.
-
-This matters more as repositories grow. A large multi-project build can otherwise spend meaningful time before compilation even begins.
-
+compatible with it. This matters more as repositories grow. A large multi-project build can otherwise spend meaningful time before compilation even begins. 
 The total feedback loop is roughly:
 
 ```text
@@ -870,10 +844,8 @@ Gradle startup/configuration
 + packaging or execution
 ```
 
-Optimizing only the annotation processor while ignoring the rest of this equation gives an incomplete picture.
-
-That is why Kora's own cached-build scenario is notable for including the whole modern Gradle toolchain rather than presenting processor speed in isolation.
-
+Optimizing only the annotation processor while ignoring the rest of this equation gives an incomplete picture. 
+That is why Kora's own cached-build scenario is notable for including the whole modern Gradle toolchain rather than presenting processor speed in isolation. 
 Compile-time DI lives inside a build system. Its practical performance should be judged there.
 
 ## Parallel Compilation Helps, But Dependency Shape Decides How Much { #parallel-compilation }
@@ -913,8 +885,7 @@ Many large repositories eventually create a module named something like:
 :utils
 ```
 
-At first this looks efficient. Everyone can reuse the same helpers.
-
+At first this looks efficient. Everyone can reuse the same helpers. 
 Over time, it often becomes one of the worst locations for build invalidation because nearly every domain depends on it.
 
 The graph turns into:
@@ -929,10 +900,8 @@ The graph turns into:
                application
 ```
 
-A change to `:shared` potentially affects nearly the entire repository.
-
-Compile-time DI makes this cost visible, but it does not create the underlying architectural problem. A highly connected shared module is already a coupling hotspot.
-
+A change to `:shared` potentially affects nearly the entire repository. 
+Compile-time DI makes this cost visible, but it does not create the underlying architectural problem. A highly connected shared module is already a coupling hotspot. 
 The remedy is usually to make shared modules smaller and more stable:
 
 ```text
@@ -942,19 +911,15 @@ The remedy is usually to make shared modules smaller and more stable:
 :test-support
 ```
 
-or to move helpers back into the domain that actually owns them.
-
-The principle is simple: dependencies near the bottom of the project graph should change less frequently than dependencies near the leaves.
-
+or to move helpers back into the domain that actually owns them. 
+The principle is simple: dependencies near the bottom of the project graph should change less frequently than dependencies near the leaves. 
 If everything depends on a module, treat its API as infrastructure.
 
 ## How Far Should You Modularize? { #how-far-modularize }
 
 If modules can improve incremental compilation, why not create hundreds of them?
 
-Because module boundaries have costs too.
-
-Every Gradle project can add:
+Because module boundaries have costs too. Every Gradle project can add:
 
 - configuration overhead;
 - task graph size;
@@ -983,12 +948,9 @@ Build / maintenance cost
    too few      useful        too many
 ```
 
-With too few modules, compilation units become large, dependencies are unconstrained, and changes invalidate broad areas.
-
-With too many modules, orchestration overhead and architectural ceremony dominate.
-
-The target is not maximum modularity. It is **coherent modularity**.
-
+With too few modules, compilation units become large, dependencies are unconstrained, and changes invalidate broad areas. 
+With too many modules, orchestration overhead and architectural ceremony dominate. 
+The target is not maximum modularity. It is **coherent modularity**. 
 A practical module usually deserves to exist when it has several of these properties:
 
 - clear domain ownership;
@@ -1005,8 +967,7 @@ If a module contains a complete domain area owned by a team and depended on thro
 
 ## A Sensible Migration Path for a Growing Kora Service { #migration-path }
 
-A service does not need to begin life with an elaborate multi-project build.
-
+A service does not need to begin life with an elaborate multi-project build. 
 That would optimize for a scale the codebase does not yet have.
 
 A more natural progression is:
@@ -1062,26 +1023,19 @@ Incremental build
     → locality, invalidation, cacheability, parallelism
 ```
 
-The first is partly a framework implementation problem.
-
-The second is a framework-plus-architecture-plus-build-system problem.
-
-This distinction prevents two opposite mistakes.
-
-The first mistake is saying, "Incremental builds exist, so processor cost does not matter." It does matter.
-
+The first is partly a framework implementation problem. 
+The second is a framework-plus-architecture-plus-build-system problem. 
+This distinction prevents two opposite mistakes. 
+The first mistake is saying, "Incremental builds exist, so processor cost does not matter." It does matter. 
 The second mistake is saying, "Annotation processing adds work to a clean build, therefore every edit in a large service must be slow." That does not follow.
 
 A good large-project design addresses both.
 
 ## The Runtime Payoff Is Still the Point { #runtime-payoff }
 
-Why accept compile-time work at all?
-
-Because Kora uses it to remove work from a much more operationally sensitive phase: application startup and request handling.
-
-At compile time, Kora can resolve and validate the dependency graph, generate wiring, generate integration code, and turn framework behavior into ordinary compiled Java/Kotlin.
-
+Why accept compile-time work at all? 
+Because Kora uses it to remove work from a much more operationally sensitive phase: application startup and request handling. 
+At compile time, Kora can resolve and validate the dependency graph, generate wiring, generate integration code, and turn framework behavior into ordinary compiled Java/Kotlin. 
 At runtime, the service does not need to rediscover that architecture by scanning the classpath and building a container from metadata.
 
 The trade can be represented as:
@@ -1121,19 +1075,13 @@ build latency." The objective is to make compile-time work **bounded and increme
 
 ## Compile-Time Boundaries Can Be Architectural Boundaries { #compile-time-boundaries }
 
-There is a deeper idea here than build optimization.
-
+There is a deeper idea here than build optimization. 
 Runtime DI containers can make application composition globally convenient. Put classes on a classpath, add annotations, let scanning discover them, and allow the runtime container to assemble the
-result.
-
-That convenience can blur boundaries. If every class is globally discoverable, the framework provides little pressure to decide which compilation unit actually owns a component.
-
+result. That convenience can blur boundaries. If every class is globally discoverable, the framework provides little pressure to decide which compilation unit actually owns a component. 
 Kora's model is more explicit. The processor analyzes the module containing `@KoraApp` and modules explicitly marked as Kora submodules. Ordinary project modules do not automatically become discovery
 scopes.
 
-That makes module participation intentional.
-
-The architecture can say:
+That makes module participation intentional. The architecture can say:
 
 ```text
 This domain owns these components.
@@ -1154,14 +1102,12 @@ Gradle compilation boundary
 Kora component-discovery boundary
 ```
 
-When those boundaries align, developers get a system that is easier to reason about both statically and operationally.
-
+When those boundaries align, developers get a system that is easier to reason about both statically and operationally. 
 The build does not merely become faster. The architecture becomes more legible.
 
 ## What to Measure in a Real Repository { #what-to-measure }
 
-Teams evaluating compile-time DI should avoid measuring only one number.
-
+Teams evaluating compile-time DI should avoid measuring only one number. 
 A useful benchmark suite for a large Kora repository should include at least several scenarios.
 
 ### 1. Cold clean build { #cold-clean-build }
@@ -1375,12 +1321,10 @@ billing source ─────────────> billing compilation ─�
 notifications source ───────> notifications compilation┘
 ```
 
-Each domain has its own compile-time scope.
-
+Each domain has its own compile-time scope. 
 Each domain can expose its declarations through `@KoraSubmodule`.
 
-Gradle determines what is dirty, what is reusable, and what can run concurrently.
-
+Gradle determines what is dirty, what is reusable, and what can run concurrently. 
 The final Kora application validates and composes the complete graph.
 
 This is the key to understanding the phrase **compile-time DI at scale**. The compile-time nature of the framework does not require the compile-time unit to be the entire codebase.
@@ -1390,8 +1334,7 @@ This is the key to understanding the phrase **compile-time DI at scale**. The co
 Compile-time dependency injection creates a straightforward concern: as the application grows, the framework has more declarations and a larger dependency graph to process. If the entire codebase
 remains one monolithic compilation unit, build latency can grow along with it.
 
-The solution is not to pretend that compilation is free.
-
+The solution is not to pretend that compilation is free. 
 The solution is to stop treating "large application" and "single compilation unit" as synonyms.
 
 Kora provides `@KoraSubmodule` specifically for multi-project applications. Domain modules can own their components and module declarations, compile them independently, and expose them to a separate
@@ -1399,14 +1342,11 @@ root application where `@KoraApp` performs final composition. That allows the DI
 source-processing scope.
 
 Once that structure exists, the rest of the modern Gradle toolchain becomes relevant: incremental compilation reduces unnecessary downstream work, compile avoidance distinguishes implementation
-changes from API changes where possible, the build cache reuses module outputs, the configuration cache reduces repeated configuration cost, and independent modules can compile in parallel.
-
+changes from API changes where possible, the build cache reuses module outputs, the configuration cache reduces repeated configuration cost, and independent modules can compile in parallel. 
 None of these mechanisms guarantees that every edit is local. A public contract change should propagate. A frequently modified shared module can invalidate many consumers. A badly designed module
 graph can serialize the build. Too many tiny modules can create overhead of their own.
 
-That is exactly the point.
-
-Build scalability becomes an architecture problem with understandable rules rather than an unavoidable tax of compile-time DI.
+That is exactly the point. Build scalability becomes an architecture problem with understandable rules rather than an unavoidable tax of compile-time DI.
 
 A large Kora service should therefore be designed so that business boundaries, Gradle boundaries, and DI discovery boundaries reinforce one another. The root application remains the place where the
 complete graph is assembled, while individual domains become independently compiled contributors to that graph.

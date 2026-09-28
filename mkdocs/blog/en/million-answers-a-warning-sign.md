@@ -1,12 +1,14 @@
 ---
 title: When a Million Answers Are a Warning Sign — Framework Complexity, Community Knowledge, and Kora
-date: 2026-09-28
+date: 2026-08-16
 description: Why a huge framework Q&A corpus can be both a valuable ecosystem asset and evidence that too much framework behavior is difficult to derive from the system itself.
 search:
     exclude: true
 ---
 
 # When a Million Answers Are a Warning Sign { #million-answers-warning-sign }
+
+**August 16, 2026**
 
 A large framework community is usually presented as an uncomplicated advantage. Millions of users have already encountered the edge cases. Search results are full of examples. Conference schedules
 contain deep dives into every subsystem. Stack Overflow contains years of answers. Consultants, courses, IDE plugins, books, and internal company knowledge have accumulated around the technology. If a

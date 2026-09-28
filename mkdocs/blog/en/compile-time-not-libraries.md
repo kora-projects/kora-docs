@@ -227,18 +227,12 @@ Kora application
 
 There is no contradiction here.
 
-The Kora portion of the runtime remains generated and explicit.
-
-The third-party libraries continue to use their own implementation strategies.
-
-This is how the JVM ecosystem normally works: different libraries make different trade-offs.
-
-One library may prefer reflection because its model is inherently dynamic.
-
-Another may use bytecode generation because it wants runtime specialization.
-
-Another may use generated classes produced by its own annotation processor.
-
+The Kora portion of the runtime remains generated and explicit. 
+The third-party libraries continue to use their own implementation strategies. 
+This is how the JVM ecosystem normally works: different libraries make different trade-offs. 
+One library may prefer reflection because its model is inherently dynamic. 
+Another may use bytecode generation because it wants runtime specialization. 
+Another may use generated classes produced by its own annotation processor. 
 Another may use handwritten direct Java.
 
 A framework does not need to force a single philosophy onto every dependency in order to optimize the parts it owns.
@@ -267,17 +261,11 @@ Kora HttpClient abstraction
 OkHttp / Apache HttpClient / native transport
 ```
 
-The top part can be compile-time generated.
-
-The transport remains the transport.
-
-That is an important clue about Kora's actual philosophy.
-
-If compile-time purity were the goal, using an external transport whose implementation strategy is outside Kora's control would be architecturally suspect.
-
-Instead, Kora explicitly supports it.
-
-The practical rule is closer to this:
+The top part can be compile-time generated. 
+The transport remains the transport. 
+That is an important clue about Kora's actual philosophy. 
+If compile-time purity were the goal, using an external transport whose implementation strategy is outside Kora's control would be architecturally suspect. 
+Instead, Kora explicitly supports it. The practical rule is closer to this:
 
 > **Where Kora owns the abstraction, it can remove unnecessary runtime machinery. Where an existing Java library already solves the problem well, integrate it rather than reproducing the ecosystem.**
 
@@ -486,8 +474,7 @@ Suppose a library uses:
 
 based on a configuration property.
 
-On HotSpot, that can be completely ordinary.
-
+On HotSpot, that can be completely ordinary. 
 The Kora graph can create the library through a factory:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -516,21 +503,16 @@ The Kora graph can create the library through a factory:
 
 The application runs normally.
 
-If the same service is later compiled into a native executable, GraalVM may need to know which classes can be referenced through that `Class.forName` path.
-
-That is not a Kora bridge problem.
-
-It is a reachability problem.
-
+If the same service is later compiled into a native executable, GraalVM may need to know which classes can be referenced through that `Class.forName` path. 
+That is not a Kora bridge problem. 
+It is a reachability problem. 
 The integration into Kora may still consist of a single factory method.
 
 ---
 
 ## Native Image Is an Optimization Target, Not a Framework Law { #native-image-optimization-target }
 
-A Kora service does not have to run as a Native Image.
-
-Kora runs on a normal JVM.
+A Kora service does not have to run as a Native Image. Kora runs on a normal JVM.
 
 That is important because discussions about compile-time frameworks often slide unconsciously from:
 
@@ -575,8 +557,7 @@ Kora + Native Image
 
 because startup latency, memory footprint, deployment density, or a serverless/scale-to-zero environment makes native compilation useful.
 
-The second team must evaluate its dependency set against Native Image requirements.
-
+The second team must evaluate its dependency set against Native Image requirements. 
 The first team does not suddenly inherit those restrictions merely because Kora itself is Native Image friendly.
 
 ---
@@ -625,8 +606,7 @@ generated source
 normal bytecode
 ```
 
-This does not guarantee that every application dependency is Native Image compatible.
-
+This does not guarantee that every application dependency is Native Image compatible. 
 It means the framework starts from a cleaner baseline.
 
 That is a much more precise advantage.
@@ -668,10 +648,8 @@ The framework optimizes what it controls and integrates what it does not.
 
 ## Logback Is Another Good Example { #logback-example }
 
-Logging libraries frequently perform runtime discovery, configuration parsing, plugin lookup, or reflective class creation.
-
-Kora's Native Image documentation explicitly discusses resource and reflection metadata for logging-related classes.
-
+Logging libraries frequently perform runtime discovery, configuration parsing, plugin lookup, or reflective class creation. 
+Kora's Native Image documentation explicitly discusses resource and reflection metadata for logging-related classes. 
 Again, this demonstrates that Kora does not pretend the whole Java ecosystem follows one runtime model.
 
 The actual architecture is:
@@ -686,10 +664,8 @@ Logback's own runtime behavior
 
 When compiling to Native Image, metadata is added where GraalVM needs help.
 
-On a normal JVM, that metadata is irrelevant.
-
-The JVM does not even consume the Native Image metadata directory as part of ordinary execution.
-
+On a normal JVM, that metadata is irrelevant. 
+The JVM does not even consume the Native Image metadata directory as part of ordinary execution. 
 That separation is exactly the point.
 
 ---
@@ -712,32 +688,22 @@ jni-config.json
 
 This is not a replacement API.
 
-It is not an adapter translating the library into Kora concepts.
-
-It does not mean the application must rewrite the library.
-
-It is build metadata for a different execution environment.
-
+It is not an adapter translating the library into Kora concepts. 
+It does not mean the application must rewrite the library. 
+It is build metadata for a different execution environment. 
 A team may need to provide or consume that metadata whether Kora is involved or not.
 
 ---
 
 ## The GraalVM Reachability Metadata Repository Changes the Ecosystem Story { #graalvm-reachability-repository }
 
-Native Image compatibility has also become less framework-specific over time.
-
-There is now an ecosystem-level mechanism for sharing reachability metadata.
-
-A library can ship metadata itself.
-
-A framework integration can ship metadata for a dependency it knows about.
-
-The GraalVM Reachability Metadata Repository can provide metadata externally.
-
-An application can add custom metadata for its own unusual paths.
-
-This means Native Image compatibility increasingly looks like a dependency property rather than a requirement for every framework to maintain a proprietary hint system for the entire Java ecosystem.
-
+Native Image compatibility has also become less framework-specific over time. 
+There is now an ecosystem-level mechanism for sharing reachability metadata. 
+A library can ship metadata itself. 
+A framework integration can ship metadata for a dependency it knows about. 
+The GraalVM Reachability Metadata Repository can provide metadata externally. 
+An application can add custom metadata for its own unusual paths. 
+This means Native Image compatibility increasingly looks like a dependency property rather than a requirement for every framework to maintain a proprietary hint system for the entire Java ecosystem. 
 Kora benefits from that ecosystem rather than trying to replace it.
 
 ---
@@ -747,8 +713,7 @@ Kora benefits from that ecosystem rather than trying to replace it.
 If a third-party library's dynamic behavior is not already covered, GraalVM provides a tracing agent that can observe reflective access, resource loading, proxy generation, and related behavior while
 the application runs on a JVM.
 
-A team can exercise the relevant scenarios and generate metadata from observed usage.
-
+A team can exercise the relevant scenarios and generate metadata from observed usage. 
 That does not solve every native-image problem automatically, but it demonstrates the right ownership model:
 
 ```text
@@ -795,10 +760,8 @@ bytecode generator
 new class
 ```
 
-HotSpot handles these patterns naturally because the JVM remains open to runtime class loading.
-
-Native Image works from a closed-world assumption and therefore cannot always reproduce arbitrary unknown runtime loading.
-
+HotSpot handles these patterns naturally because the JVM remains open to runtime class loading. 
+Native Image works from a closed-world assumption and therefore cannot always reproduce arbitrary unknown runtime loading. 
 If a library fundamentally depends on loading bytecode that did not exist when the native executable was built, the challenge may be architectural rather than merely metadata-related.
 
 Again, the correct conclusion is:
@@ -821,16 +784,11 @@ On a standard JVM, the library may still be perfectly usable with Kora.
 
 ## JNI Is Also a Separate Constraint { #jni-constraint }
 
-JNI provides another example of why the three layers must be separated.
-
-A library can use native code through JNI and work normally on HotSpot.
-
-Kora can inject its client like any other Java object.
-
-For Native Image, additional configuration and platform compatibility may be required.
-
-None of that means Kora's application graph is incompatible with JNI.
-
+JNI provides another example of why the three layers must be separated. 
+A library can use native code through JNI and work normally on HotSpot. 
+Kora can inject its client like any other Java object. 
+For Native Image, additional configuration and platform compatibility may be required. 
+None of that means Kora's application graph is incompatible with JNI. 
 It means the final executable has a native interoperability requirement.
 
 The same distinction applies to:
@@ -848,12 +806,9 @@ Framework DI and deployment format are different concerns.
 
 ## Runtime Bytecode Generation Does Not Automatically Break Kora Either { #runtime-bytecode-generation }
 
-Java libraries sometimes use Byte Buddy, ASM, CGLIB, Javassist, or similar tooling.
-
-On the JVM, such a library can run inside a Kora application.
-
-Kora's own runtime does not begin using runtime-generated proxies simply because one dependency does.
-
+Java libraries sometimes use Byte Buddy, ASM, CGLIB, Javassist, or similar tooling. 
+On the JVM, such a library can run inside a Kora application. 
+Kora's own runtime does not begin using runtime-generated proxies simply because one dependency does. 
 The costs remain localized.
 
 For Native Image, runtime bytecode generation may be unsupported or require a different approach.
@@ -872,8 +827,7 @@ Kora's compile-time design does not collapse the two.
 
 ## One Reflective Dependency Does Not Turn Kora Into a Reflective Framework { #reflective-dependency }
 
-Another common overstatement is that a reflection-heavy dependency "destroys Kora's main advantage."
-
+Another common overstatement is that a reflection-heavy dependency "destroys Kora's main advantage." 
 That is not how performance composition works.
 
 An application's cost is roughly the sum of many components:
@@ -893,14 +847,10 @@ framework overhead
 + external services
 ```
 
-If one library performs expensive reflection on a specific execution path, that path pays for it.
-
-That does not retroactively change how the dependency graph is wired.
-
-It does not turn generated HTTP mappings into runtime reflection.
-
-It does not turn generated repositories into proxies.
-
+If one library performs expensive reflection on a specific execution path, that path pays for it. 
+That does not retroactively change how the dependency graph is wired. 
+It does not turn generated HTTP mappings into runtime reflection. 
+It does not turn generated repositories into proxies. 
 It does not cause Kora AOP to become dynamic.
 
 The rest of the stack remains what it was.
@@ -935,10 +885,8 @@ rules engine cost
 repository cost
 ```
 
-If the rules engine becomes a bottleneck, profile the rules engine.
-
-Replacing Kora's compile-time DI with runtime reflection would not make the rules engine cheaper.
-
+If the rules engine becomes a bottleneck, profile the rules engine. 
+Replacing Kora's compile-time DI with runtime reflection would not make the rules engine cheaper. 
 Similarly, the presence of the rules engine does not erase savings elsewhere.
 
 This is the normal way systems performance should be analyzed.
@@ -949,10 +897,8 @@ This is the normal way systems performance should be analyzed.
 
 The same applies at startup.
 
-Kora may start quickly because its graph and framework adapters are already generated.
-
-A third-party library may then spend two seconds scanning a classpath or loading metadata.
-
+Kora may start quickly because its graph and framework adapters are already generated. 
+A third-party library may then spend two seconds scanning a classpath or loading metadata. 
 The application startup time becomes:
 
 ```text
@@ -963,23 +909,18 @@ third-party initialization
 
 The library can dominate the total.
 
-But that does not mean Kora's compile-time startup design ceased to exist.
-
-It means the application selected a library with expensive initialization.
-
+But that does not mean Kora's compile-time startup design ceased to exist. 
+It means the application selected a library with expensive initialization. 
 That distinction matters because it identifies the correct optimization target.
 
 ---
 
 ## Memory Cost Is Also Additive { #memory-cost-additive }
 
-Suppose Kora uses little runtime metadata for DI and AOP, but a third-party engine keeps a large reflective metadata cache.
-
-The total process includes that memory.
-
-Kora cannot remove memory used by a dependency it does not control.
-
-But its own lower overhead still leaves more of the memory budget available to the dependency and business workload.
+Suppose Kora uses little runtime metadata for DI and AOP, but a third-party engine keeps a large reflective metadata cache. 
+The total process includes that memory. 
+Kora cannot remove memory used by a dependency it does not control. 
+But its own lower overhead still leaves more of the memory budget available to the dependency and business workload. 
 
 This is one reason framework efficiency remains useful even when application libraries are not equally lightweight.
 
@@ -991,16 +932,11 @@ This leads to an important principle:
 
 > **A framework can minimize its own overhead without pretending it controls the implementation strategy of every library in the JVM ecosystem.**
 
-This is a much more realistic goal than runtime purity.
-
-The framework controls its own recurring machinery.
-
-The application team controls library selection.
-
-The library controls its internal architecture.
-
-The deployment platform adds its own constraints.
-
+This is a much more realistic goal than runtime purity. 
+The framework controls its own recurring machinery. 
+The application team controls library selection. 
+The library controls its internal architecture. 
+The deployment platform adds its own constraints. 
 These layers should be optimized independently where possible.
 
 ---
@@ -1017,12 +953,9 @@ no dynamic class loading
 no runtime generated code
 ```
 
-The result would not merely be restrictive.
-
-It would exclude a large amount of useful Java software for reasons unrelated to application correctness.
-
-Teams would lose mature SDKs, specialized protocol libraries, logging systems, drivers, testing tools, and vendor clients unless every dependency were rewritten into a Kora-approved style.
-
+The result would not merely be restrictive. 
+It would exclude a large amount of useful Java software for reasons unrelated to application correctness. 
+Teams would lose mature SDKs, specialized protocol libraries, logging systems, drivers, testing tools, and vendor clients unless every dependency were rewritten into a Kora-approved style. 
 That would be an ecosystem purity test.
 
 Kora does not need one.
