@@ -5,7 +5,19 @@ hide:
   - navigation
 ---
 
-## 1.2.20
+## 1.2.21
+
+Added:
+
+- Added optional cleanup of orphaned Quartz jobs on startup in scheduling module
+- Added configurable comparison of trigger start/end times in scheduling module
+
+Fixed:
+
+- Fixed multipart request sending response before the body was fully read
+- Fixed cookie parser dropping trailing `=` from a value
+
+### 1.2.20
 
 Added:
 

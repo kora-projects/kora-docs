@@ -548,21 +548,23 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
     }
     scheduling {
         waitForJobComplete = true //(2)!
+        cleanupOrphanedJobs = false //(3)!
+        compareStartEndTime = true //(4)!
         telemetry {
             logging {
-                enabled = false //(3)!
+                enabled = false //(5)!
             }
             metrics {
-                enabled = true //(4)!
-                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(5)!
-                tags = { // (6)!
+                enabled = true //(6)!
+                slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(7)!
+                tags = { // (8)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
             }
             tracing {
-                enabled = true //(7)!
-                attributes = { // (8)!
+                enabled = true //(9)!
+                attributes = { // (10)!
                     "key1" = "value1"
                     "key2" = "value2"
                 }
@@ -573,12 +575,14 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
 
     1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
     2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
-    3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    6. Configures metric tags (default: `{}`)
-    7. Enables module tracing (default: `true`)
-    8. Configures tracing attributes (default: `{}`)
+    3. Whether to remove [orphaned jobs](#persistent-job-store) from the persistent job store on scheduler startup (default: `false`, available since `1.2.21`)
+    4. Whether to include the trigger's absolute start/end time in the [schedule equality check](#persistent-job-store) on restart (default: `true`, available since `1.2.21`)
+    5. Enables module logging (default: `false`)
+    6. Enables module metrics (default: `true`)
+    7. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    8. Configures metric tags (default: `{}`)
+    9. Enables module tracing (default: `true`)
+    10. Configures tracing attributes (default: `{}`)
 
 === ":simple-yaml: `YAML`"
 
@@ -587,30 +591,34 @@ The configuration of a specific `cron` task can also contain the `telemetry` sec
       org.quartz.threadPool.threadCount: "10"
     scheduling:
       waitForJobComplete: true #(2)!
+      cleanupOrphanedJobs: false #(3)!
+      compareStartEndTime: true #(4)!
       telemetry:
         logging:
-          enabled: false #(3)!
+          enabled: false #(5)!
         metrics:
-          enabled: true #(4)!
-          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(5)!
-          tags: #(6)!
+          enabled: true #(6)!
+          slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(7)!
+          tags: #(8)!
             key1: value1
             key2: value2
         tracing:
-          enabled: true #(7)!
-          attributes: #(8)!
+          enabled: true #(9)!
+          attributes: #(10)!
             key1: value1
             key2: value2
     ```
 
     1. `Quartz` scheduler configuration parameters (by default, properties from `quartz.properties` below are used)
     2. Whether to wait for tasks to complete before scheduler shutdown during [graceful shutdown](container.md#component-lifecycle) (default: `true`)
-    3. Enables module logging (default: `false`)
-    4. Enables module metrics (default: `true`)
-    5. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-    6. Configures metric tags (default: `{}`)
-    7. Enables module tracing (default: `true`)
-    8. Configures tracing attributes (default: `{}`)
+    3. Whether to remove [orphaned jobs](#persistent-job-store) from the persistent job store on scheduler startup (default: `false`, available since `1.2.21`)
+    4. Whether to include the trigger's absolute start/end time in the [schedule equality check](#persistent-job-store) on restart (default: `true`, available since `1.2.21`)
+    5. Enables module logging (default: `false`)
+    6. Enables module metrics (default: `true`)
+    7. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) for metrics (default: `ru.tinkoff.kora.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+    8. Configures metric tags (default: `{}`)
+    9. Enables module tracing (default: `true`)
+    10. Configures tracing attributes (default: `{}`)
 
 Default settings are used from:
 
@@ -981,6 +989,27 @@ During [graceful shutdown](container.md#component-lifecycle), the `scheduling.wa
 With `true` (default) it calls `scheduler.shutdown(true)` and blocks until running tasks finish; with `false` it stops without waiting.
 As with the native scheduler, long-running tasks should still cooperatively check
 [Thread.currentThread().isInterrupted()](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#isInterrupted--) and stop the work manually.
+
+### Persistent Job Store { #persistent-job-store }
+
+With a persistent `JobStore` (for example, `org.quartz.impl.jdbcjobstore.JobStoreTX`), jobs and triggers outlive the application,
+so on every startup and graph refresh Kora reconciles the stored state with the tasks present in the application graph.
+Two options, available since `1.2.21`, control this reconciliation:
+
+- `scheduling.cleanupOrphanedJobs` (default: `false`) removes from the store, on scheduler startup, every job that is no longer registered in the application graph,
+  for example after a class with `@ScheduleWithCron` was deleted or renamed.
+  When disabled, such orphaned jobs remain in the store and `Quartz` logs `JobPersistenceException: Couldn't retrieve job because a required class was not found`
+  on every startup while its misfire handler retries them.
+- `scheduling.compareStartEndTime` (default: `true`) includes the trigger's absolute start and end time in the check that decides whether a persisted trigger must be rescheduled.
+  When disabled, a persisted trigger is rescheduled only if its schedule definition changes: the `cron` expression, or the repeat interval and count of a `SimpleTrigger`.
+  Disable it when a trigger's start time is built relative to application startup (for example, `startAt(now + interval)`):
+  otherwise the trigger is rescheduled on every restart, its `next_fire_time` shifts, and the schedule loses its original phase.
+
+!!! warning "Enable `cleanupOrphanedJobs` with caution"
+
+    Cleanup removes every job absent from the current application graph, so it also removes foreign jobs when the scheduler store is shared with other job sources:
+    jobs added to `org.quartz.Scheduler` directly, outside `@ScheduleWithCron` and `@ScheduleWithTrigger`,
+    or jobs registered by another application instance in a clustered setup, for example during a rolling deployment when one instance does not yet know about the jobs of another.
 
 ### Scheduler { #scheduler }
 

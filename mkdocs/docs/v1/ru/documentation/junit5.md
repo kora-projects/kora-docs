@@ -678,7 +678,7 @@ agent:
 
     ```groovy
     dependencies {
-        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.20"
+        testAnnotationProcessor "ru.tinkoff.kora:annotation-processors:1.2.21"
     }
     ```
 
@@ -688,7 +688,7 @@ agent:
 
     ```groovy
     dependencies {
-        kspTest("ru.tinkoff.kora:symbol-processors:1.2.20")
+        kspTest("ru.tinkoff.kora:symbol-processors:1.2.21")
     }
     ```
 
