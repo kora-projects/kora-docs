@@ -224,6 +224,7 @@ extra_css:
 
 # Structure - https://github.com/squidfunk/mkdocs-material/discussions/2346
 extra:
+  homepage: /   # header logo -> landing, published at the site root by the Pages workflow
   analytics:
     provider: counter
     property: counter

@@ -61,6 +61,8 @@
 {% set social_image_alt = 'Kora — комплексный серверный фреймворк для Java и Kotlin' if current_lang == 'ru' else 'Kora comprehensive backend framework for Java and Kotlin' %}
 {% set og_locale = 'ru_RU' if current_lang == 'ru' else 'en_US' %}
 {% set og_alt_locale = 'en_US' if current_lang == 'ru' else 'ru_RU' %}
+{# The landing is published at the site root (/ and /ru/), see landing.html. #}
+{% set landing_url = (config.site_url.split('/', 3)[:3] | join('/')) ~ ('/ru/' if current_lang == 'ru' else '/') %}
 {% if is_blog and page.meta.title %}
 {% set title = page.meta.title %}
 {% elif page and page.meta and page.meta.seo_title %}
@@ -166,7 +168,7 @@
 }, {
     "@type": "BreadcrumbList",
     "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "Kora", "item": home_url},
+        {"@type": "ListItem", "position": 1, "name": "Kora", "item": landing_url},
         {"@type": "ListItem", "position": 2, "name": blog_name, "item": blog_url},
         {"@type": "ListItem", "position": 3, "name": page.meta.title, "item": canonical_url}
     ]
@@ -199,7 +201,6 @@
 <script type="application/ld+json">{{ {"@context": "https://schema.org", "@graph": graph} | tojson }}</script>
 {% endif %}
 {% if not is_blog and page.meta and page.meta.seo_title %}
-{% set home_url = config.site_url %}
 {% set section = page.ancestors | map(attribute='title') | list | last if page.ancestors else '' %}
 {% set is_guide = page.file.src_uri.startswith('guides/') or page.file.src_uri.startswith('examples/') %}
 {% set mentions = [] %}
@@ -229,7 +230,7 @@
     }, {
         "@type": "BreadcrumbList",
         "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "Kora", "item": home_url},
+            {"@type": "ListItem", "position": 1, "name": "Kora", "item": landing_url},
             {"@type": "ListItem", "position": 2, "name": page.title, "item": canonical_url}
         ]
     }]
@@ -258,9 +259,9 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    /* Remember which language the visitor is actually reading, so the site
-       entry point (mkdocs/index.html) can send returning visitors straight
-       back to it instead of always defaulting to one language. */
+    /* Remember which language the visitor is actually reading, so the root
+       landing (/) can send returning Russian readers straight on to /ru/
+       instead of always defaulting to English. */
     document.cookie = "kora_lang={{ config.theme.language }}; path=/; max-age=31536000; SameSite=Lax";
     /* Remember which docs version the visitor is actually reading, so the
        landing page can send them back into the same version (v1/v2) when they

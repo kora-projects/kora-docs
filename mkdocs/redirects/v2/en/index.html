@@ -8,9 +8,13 @@
     <link rel="canonical" href="https://koraframework.io/">
     <meta http-equiv="refresh" content="0; url=/">
     <script>
-        // Backward compatibility for the old language-only URL /en/ (previously
-        // the v1 English landing). The English landing now lives at the root.
-        try { document.cookie = "kora_lang=en; path=/; max-age=31536000; SameSite=Lax"; } catch (e) { /* cookies disabled */ }
+        // The v2 build's home page is published at the site root (the Pages
+        // workflow moves it there). Remember that the reader chose English v2
+        // (e.g. via the language or version switcher) before sending them on.
+        try {
+            document.cookie = "kora_lang=en; path=/; max-age=31536000; SameSite=Lax";
+            document.cookie = "kora_docs_version=v2; path=/; max-age=31536000; SameSite=Lax";
+        } catch (e) { /* cookies disabled */ }
         location.replace("/" + location.search + location.hash);
     </script>
 </head>

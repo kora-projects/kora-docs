@@ -9,7 +9,7 @@
 
 ## Entry points
 
-- [Kora Framework (EN)](https://koraframework.io/v2/en/): landing page
-- [Kora Framework (RU)](https://koraframework.io/v2/ru/): landing page
+- [Kora Framework (EN)](https://koraframework.io/): landing page
+- [Kora Framework (RU)](https://koraframework.io/ru/): landing page
 - [Kora Blog](https://koraframework.io/v2/en/blog/): articles on Kora's design, compile-time approach, performance and production operation
 - [Source code](https://github.com/kora-projects/kora)

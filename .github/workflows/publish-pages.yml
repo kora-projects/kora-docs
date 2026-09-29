@@ -5,9 +5,7 @@ on:
   push:
     branches:
       - 'master'
-      - 'feature/homepage'
       - 'feature/kora-2.0'
-      - 'feature/kora-2.0-blog'
     paths:
       - 'mkdocs/**'
       - '.github/workflows/**'
@@ -41,8 +39,10 @@ jobs:
           mkdir public
           mv mkdocs/generated/v1 public/v1
           mv mkdocs/generated/v2 public/v2
-          mv mkdocs/index.html public
-          cp -r mkdocs/redirects/. public   # CNAME, robots.txt, sitemap index, llms.txt, 404, /docs /guides /changelog shortcuts
+          mkdir public/ru
+          mv public/v2/en/index.html public/index.html      # landing at the site root
+          mv public/v2/ru/index.html public/ru/index.html   # Russian landing at /ru/
+          cp -r mkdocs/redirects/. public   # CNAME, robots.txt, sitemap index, llms.txt, 404, /v2/<lang>/ -> landing, /docs /guides /changelog shortcuts
           python3 mkdocs/hooks/legacy_redirects.py public   # old /kora-docs/... URLs -> koraframework.io paths
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4

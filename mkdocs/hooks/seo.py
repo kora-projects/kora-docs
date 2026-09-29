@@ -12,7 +12,8 @@
 
 3. Russian landing. landing.html translates its English markup in the browser
    from a JS dictionary. Crawlers that do not run JS (most AI crawlers) would
-   index /v2/ru/ as English, so the same dictionary is applied at build time.
+   index /ru/ (the v2 ru home, moved there by the Pages workflow) as English,
+   so the same dictionary is applied at build time.
    The EN/RU toggle navigates to the other page, so the runtime pass finds
    nothing left to translate.
 

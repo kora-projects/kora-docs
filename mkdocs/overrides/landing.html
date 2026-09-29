@@ -1,16 +1,22 @@
 {% set current_lang = config.theme.language | default('en') %}
-{% set current_site_url = config.site_url | replace('/v1/', '/v2/') %}
-{% set canonical_url = current_site_url %}
-{% set en_url = current_site_url | replace('/ru/', '/en/') %}
-{% set ru_url = current_site_url | replace('/en/', '/ru/') %}
-{# Root-relative paths for navigation links, so the toggle stays on the current host (also locally). #}
-{% set en_path = '/' ~ en_url.split('/', 3)[3] %}
-{% set ru_path = '/' ~ ru_url.split('/', 3)[3] %}
+{# The landing is published at the site root: / (en) and /ru/ (ru). The Pages
+   workflow moves the v2 build's index.html there and leaves a redirect stub at
+   /v2/<lang>/. Docs and assets stay in the versioned build, so every link below
+   is root-relative to it and works from both places (also locally). #}
+{% set site_root = config.site_url.split('/', 3)[:3] | join('/') ~ '/' %}
+{% set docs_url = config.site_url | replace('/v1/', '/v2/') %}
+{% set docs_path = '/' ~ config.site_url.split('/', 3)[3] %}
+{% set en_url = site_root %}
+{% set ru_url = site_root ~ 'ru/' %}
+{% set canonical_url = ru_url if current_lang == 'ru' else en_url %}
+{% set en_path = '/' %}
+{% set ru_path = '/ru/' %}
+{% set landing_path = ru_path if current_lang == 'ru' else en_path %}
 {% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
 {% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
-{% set social_image_url = canonical_url ~ 'assets/img/' ~ social_image_name %}
-{% set social_square_url = canonical_url ~ 'assets/img/' ~ social_square_name %}
-{% set logo_url = en_url ~ 'assets/img/kora-big.png' %}
+{% set social_image_url = docs_url ~ 'assets/img/' ~ social_image_name %}
+{% set social_square_url = docs_url ~ 'assets/img/' ~ social_square_name %}
+{% set logo_url = (docs_url | replace('/ru/', '/en/')) ~ 'assets/img/kora-big.png' %}
 {% set seo_title_en = 'Kora Framework - Compile-Time Java and Kotlin Backend' %}
 {% set seo_title_ru = 'Kora - Java- и Kotlin-фреймворк с генерацией кода' %}
 {% set seo_description_en = 'Kora is a compile-time Java and Kotlin backend framework with generated, reflection-free code, fast startup, and production-ready cloud modules.' %}
@@ -25,6 +31,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if current_lang == 'en' %}
+    <style>html.kora-lang-pending body { visibility: hidden; }</style>
+    <script>
+        /* The English landing is also the site root, which shows the reader's
+           language in place, picked the same way the old root redirect did: the
+           language they last read (kora_lang cookie, set by docs pages and the
+           EN/RU toggle), otherwise the browser language. The i18n script below
+           applies it; the page stays hidden until then so English never flashes. */
+        (function () {
+            if (location.pathname !== "/") return;
+            var lang = "en";
+            try {
+                var match = document.cookie.match(/(?:^|;\s*)kora_lang=(ru|en)/);
+                var nav = ((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase();
+                lang = match ? match[1] : (nav.indexOf("ru") === 0 ? "ru" : "en");
+            } catch (e) { /* cookies disabled */ }
+            window.koraRootLanguage = lang;
+            if (lang === "ru") {
+                document.documentElement.lang = "ru";
+                document.documentElement.classList.add("kora-lang-pending");
+                setTimeout(function () { document.documentElement.classList.remove("kora-lang-pending"); }, 3000);
+            }
+        })();
+    </script>
+    {% endif %}
     <title>{{ seo_title }}</title>
     <meta name="description" content="{{ seo_description }}">
     <meta name="author" content="Kora Projects">
@@ -33,7 +64,7 @@
     <link rel="alternate" hreflang="en" href="{{ en_url }}">
     <link rel="alternate" hreflang="ru" href="{{ ru_url }}">
     <link rel="alternate" hreflang="x-default" href="{{ en_url }}">
-    <link rel="alternate" type="text/plain" title="llms.txt" href="{{ canonical_url }}llms.txt">
+    <link rel="alternate" type="text/plain" title="llms.txt" href="{{ docs_url }}llms.txt">
 
     <meta property="og:site_name" content="Kora Framework">
     <meta property="og:type" content="website">
@@ -110,17 +141,17 @@
           "about": { "@id": "https://github.com/kora-projects/kora#software" },
           "primaryImageOfPage": { "@id": "{{ canonical_url }}#primaryimage" },
           "significantLink": [
-            "{{ canonical_url }}guides/getting-started/",
-            "{{ canonical_url }}documentation/general/",
-            "{{ canonical_url }}blog/",
+            "{{ docs_url }}guides/getting-started/",
+            "{{ docs_url }}documentation/general/",
+            "{{ docs_url }}blog/",
             "https://github.com/kora-projects/kora-examples"
           ],
           "mainEntity": { "@id": "{{ canonical_url }}#faq" }
         },
         {
           "@type": "Blog",
-          "@id": "{{ canonical_url }}blog/#blog",
-          "url": "{{ canonical_url }}blog/",
+          "@id": "{{ docs_url }}blog/#blog",
+          "url": "{{ docs_url }}blog/",
           "name": "{{ 'Блог Kora' if current_lang == 'ru' else 'Kora Blog' }}",
           "inLanguage": "{{ current_lang }}",
           "publisher": { "@id": "https://github.com/kora-projects#organization" },
@@ -140,7 +171,7 @@
           "isAccessibleForFree": true,
           "keywords": ["Java framework", "Kotlin framework", "compile-time dependency injection", "annotation processing", "KSP", "virtual threads", "microservices", "backend", "OpenTelemetry"],
           "creator": { "@id": "https://github.com/kora-projects#organization" },
-          "subjectOf": { "@id": "{{ canonical_url }}blog/#blog" }
+          "subjectOf": { "@id": "{{ docs_url }}blog/#blog" }
         },
         {% if current_lang == 'ru' %}
         {
@@ -182,7 +213,7 @@
       ]
     }
     </script>
-    <link rel="icon" type="image/x-icon" href="{{ 'assets/img/kora.ico' | url }}?v=2">
+    <link rel="icon" type="image/x-icon" href="{{ docs_path }}assets/img/kora.ico?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Commissioner:FLAR,wght@0..100,100..900&display=swap" rel="stylesheet">
@@ -3503,13 +3534,14 @@
     </div>
     <header class="topbar">
         <nav class="nav" aria-label="Primary navigation">
-            <a class="brand" href="{{ '.' | url }}">
+            <a class="brand" href="{{ landing_path }}">
                 <span class="brand-icon" aria-hidden="true">K</span>
-                <span class="brand-mark">Kora <span class="brand-version">2.0.0.RC1</span></span>
+                <span class="brand-mark">Kora <span class="brand-version">2.0.0.RC2</span></span>
             </a>
             <div class="nav-links" aria-label="Page sections">
                 <a href="#philosophy">Principles</a>
-                <a href="{{ 'guides/getting-started/' | url }}">Guides</a>
+                <a href="{{ docs_path }}guides/getting-started/">Guides</a>
+                <a href="https://github.com/kora-projects/kora-skills">Skill</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
             </div>
             <div class="nav-actions">
@@ -3517,7 +3549,7 @@
                     <a{% if current_lang == 'en' %} class="is-active" aria-current="page"{% endif %} href="{{ en_path }}" hreflang="en" lang="en" data-lang="en">EN</a>
                     <a{% if current_lang == 'ru' %} class="is-active" aria-current="page"{% endif %} href="{{ ru_path }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
                 </div>
-                <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
+                <a class="button" href="{{ docs_path }}documentation/general/">Docs</a>
             </div>
         </nav>
     </header>
@@ -3532,7 +3564,7 @@
                         Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services easy, simple, blazing fast and already familiar production JVM stack from day one.
                     </p>
                     <div class="hero-actions" id="start">
-                        <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Get started</a>
+                        <a class="button primary" href="{{ docs_path }}guides/getting-started/">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
                         <div class="command" aria-label="Gradle dependency example"><a href="https://central.sonatype.com/artifact/io.koraframework/kora-bom"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC2</code></a></div>
                     </div>
@@ -3853,9 +3885,9 @@
                         </span>
                     </div>
                     <div class="docs-actions">
-                        <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Guides</a>
+                        <a class="button primary" href="{{ docs_path }}guides/getting-started/">Guides</a>
                         <a class="button accent" href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
-                        <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
+                        <a class="button" href="{{ docs_path }}documentation/general/">Docs</a>
                         <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
                     </div>
                 </summary>
@@ -3883,7 +3915,7 @@
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="runtime">
                     <small>Core</small>
                     <h3>Simple, easy, familiar</h3>
-                    <p>Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin.</p>
+                    <p>Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin. Virtual-thread-first: direct, synchronous code with no reactive chains or callbacks.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="compiler">
                     <small>Compiler</small>
@@ -3893,7 +3925,7 @@
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="http">
                     <small>HTTP</small>
                     <h3>Servers, clients, OpenAPI</h3>
-                    <p>HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.</p>
+                    <p>HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation. Spec-first: build servers and clients from your OpenAPI contract with a strongly typed generator and rich options.</p>
                 </article>
                 <article class="module" tabindex="0" role="button" aria-expanded="false" data-module="data">
                     <small>Data</small>
@@ -4262,7 +4294,7 @@
                     <p>Follow the guided setup, use the official examples, or jump straight into the module documentation for the stack you already know you need.</p>
                 </div>
                 <div class="hero-actions">
-                    <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Read the guide</a>
+                    <a class="button primary" href="{{ docs_path }}guides/getting-started/">Read the guide</a>
                     <a class="button" href="https://github.com/kora-projects/kora-examples">Examples</a>
                 </div>
             </div>
@@ -4273,7 +4305,7 @@
         <div class="footer-inner">
             <span>Kora Framework documentation.</span>
             <div class="footer-links">
-                <a href="{{ 'documentation/general/' | url }}">Docs</a>
+                <a href="{{ docs_path }}documentation/general/">Docs</a>
                 <a href="https://github.com/kora-projects/kora-examples">Examples</a>
                 <a href="https://github.com/kora-projects/kora-skills">Kora Skills</a>
                 <a href="https://github.com/kora-projects">GitHub</a>
@@ -4328,6 +4360,7 @@
             "workarounds,": "костылей,",
             "dirty hacks": "грязных хаков",
             "and kludges.": "и обходных путей.",
+            "Simple. Transparent. Efficient. Predictable.": "Просто. Прозрачно. Предсказуемо. Эффективно.",
             "Kora builds the application graph at compile time, generates transparent highload-grade source code, and gives cloud-native services easy, simple, blazing fast and already familiar production JVM stack from day one.": "Kora строит граф приложения во время компиляции, генерирует высокопроизводительный исходный код и сразу готова к использованию в облачно-ориентированной среде как простой, понятный, эффективный и уже знакомый стек на JVM.",
             "Get started": "Начать",
             "View on GitHub": "Смотреть на GitHub",
@@ -4404,7 +4437,7 @@
             "one component at a time.": "по компоненту за раз.",
             "Start small, add only integrations your service needs, and keep every dependency in controll.": "Начинайте с малого, добавляйте только те интеграции, которые нужны сервису, и держите каждую зависимость под контролем.",
             "Servers, clients, OpenAPI": "Серверы, клиенты, OpenAPI",
-            "HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation.": "HTTP-серверы, декларативные клиенты, request mapping, interceptors, служебные эндпоинты и строго типизированная генерация OpenAPI.",
+            "HTTP servers, declarative clients, request mapping, interceptors, management endpoints, and strongly typed OpenAPI generation. Spec-first: build servers and clients from your OpenAPI contract with a strongly typed generator and rich options.": "HTTP-серверы, декларативные клиенты, request mapping, interceptors, служебные эндпоинты и строго типизированная генерация OpenAPI. Spec-first подход: серверы и клиенты создаются из OpenAPI-контракта строго типизированным генератором с богатыми настройками.",
             "Data": "Данные",
             "Kora repositories": "Репозитории Kora",
             "One consistent repository model for JDBC and Cassandra, with generated implementations, compile-time mappings, query macros, and explicit control over data access.": "Единая модель репозиториев для JDBC и Cassandra: сгенерированные реализации, преобразования во время компиляции, макросы запросов и явный контроль над доступом к данным.",
@@ -4421,7 +4454,7 @@
             "Replace, decorate, or complement nearly any component and adapt framework behavior through an explicit, compile-time application graph.": "Почти любой компонент можно заменить, обернуть или дополнить и адаптировать поведение фреймворка через явный граф приложения, создаваемый во время компиляции.",
             "Core": "Основы",
             "Simple, easy, familiar": "Просто, легко, знакомо",
-            "Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin.": "Компоненты, внедрение через конструктор, модули, типизированная конфигурация и запуск приложения на привычных Java и Kotlin.",
+            "Components, constructor injection, modules, typed configuration, and application startup in familiar Java and Kotlin. Virtual-thread-first: direct, synchronous code with no reactive chains or callbacks.": "Компоненты, внедрение через конструктор, модули, типизированная конфигурация и запуск приложения на привычных Java и Kotlin. Подход virtual-thread-first: прямой синхронный код без реактивных цепочек и колбэков.",
             "What this gets you": "Что вы получаете",
             "Compiler": "Компилятор",
             "Transparent, no runtime magic": "Прозрачность, никакой магии во время выполнения",
@@ -4631,6 +4664,8 @@
                 : "{{ seo_title_en }}";
             document.querySelectorAll("[data-lang]").forEach((button) => {
                 button.classList.toggle("is-active", button.dataset.lang === lang);
+                if (button.dataset.lang === lang) button.setAttribute("aria-current", "page");
+                else button.removeAttribute("aria-current");
             });
 
             textNodes.forEach((node) => {
@@ -4669,9 +4704,25 @@
         collectTextNodes();
         collectAttrNodes();
 
+        // At the site root the EN/RU toggle switches language in place. On /ru/
+        // (and /v2/<lang>/) it navigates, so remember the choice first, otherwise
+        // the root would reopen in the language from the old kora_lang cookie.
+        const isRoot = window.location.pathname === "/";
+        document.querySelectorAll("a[data-lang]").forEach((link) => {
+            link.addEventListener("click", (event) => {
+                if (isRoot) {
+                    event.preventDefault();
+                    applyLanguage(link.dataset.lang);
+                    return;
+                }
+                try { document.cookie = "kora_lang=" + link.dataset.lang + "; path=/; max-age=31536000; SameSite=Lax"; } catch (e) { /* cookies disabled */ }
+            });
+        });
+
         window.setKoraLanguage = applyLanguage;
-        window.koraLanguage = "{{ current_lang }}";
+        window.koraLanguage = (isRoot && window.koraRootLanguage) || "{{ current_lang }}";
         applyLanguage(window.koraLanguage);
+        document.documentElement.classList.remove("kora-lang-pending");
     })();
 
     (() => {
@@ -5134,77 +5185,249 @@
             http: {
                 examples: [
                     {
-                        label: "Client",
-                        sourceTitle: "PaymentClient.java",
-                        sourceCode: `@HttpClient(configPath = "httpClient.payments")
-public interface PaymentClient {
+                        label: "Response types",
+                        sourceTitle: "PetLookup.java",
+                        sourceCode: `@Component
+public final class PetLookup {
 
-    @HttpRoute(method = HttpMethod.POST, path = "/payments")
-    void create(@Json PaymentRequest request);
+    private final PetApi petApi;
 
-    @Json
-    @HttpRoute(method = HttpMethod.GET, path = "/payments/{id}")
-    PaymentFindResponse findById(@Path UUID id);
-}`,
-                        generatedTitle: "$PaymentClient_Impl.java",
-                        generatedCode: `@Generated("HttpClientAnnotationProcessor")
-public final class $PaymentClient_Impl implements PaymentClient {
-    private final HttpClient _client;
-    private final HttpClientRequestMapper<PaymentRequest> _requestMapper;
-    private final HttpClientResponseMapper<PaymentResponse> _responseMapper;
-
-    public PaymentResponse create(PaymentRequest request) {
-        final HttpBodyOutput _body;
-        try {
-            _body = _requestMapper.apply(Context.current(), request);
-        } catch (Exception e) {
-            throw new HttpClientEncoderException(e);
-        }
-
-        var _request = HttpClientRequest.of("POST", "/payments", "/payments",
-            HttpHeaders.of(), _body, null);
-        var _future = _client.execute(_request).toCompletableFuture();
-        try (var _response = _future.get()) {
-            if (_response.code() >= 200 && _response.code() < 300) {
-                return _responseMapper.apply(_response);
-            }
-            throw HttpClientResponseException
-                .fromResponseFuture(_response).get();
-        } catch (Exception e) {
-            throw new HttpClientUnknownException(e);
-        }
+    public PetLookup(PetApi petApi) {
+        this.petApi = petApi;
     }
+
+    public Pet findById(long id) {
+        return switch (petApi.getPetById(id)) {
+            case GetPetById200ApiResponse ok -> ok.content();
+            case GetPetById404ApiResponse notFound ->
+                throw new IllegalStateException("Pet not found: " + id);
+            case GetPetById400ApiResponse invalid ->
+                throw new IllegalArgumentException("Invalid pet id: " + id);
+        };
+    }
+}`,
+                        generatedTitle: "PetApiResponses.java",
+                        generatedCode: `@Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+public interface PetApiResponses {
+  @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+  sealed interface GetPetByIdApiResponse {
+    /**
+     * Successful operation (status code 200)
+     */
+    @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+    record GetPetById200ApiResponse(Pet content) implements GetPetByIdApiResponse {
+    }
+
+    /**
+     * Validation exception (status code 400)
+     */
+    @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+    record GetPetById400ApiResponse() implements GetPetByIdApiResponse {
+    }
+
+    /**
+     * Pet not found (status code 404)
+     */
+    @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+    record GetPetById404ApiResponse() implements GetPetByIdApiResponse {
+    }
+  }
+
+  // DeletePetApiResponse, UpdatePetApiResponse ...
 }`
                     },
                     {
-                        label: "Controller",
-                        sourceTitle: "HelloController.java",
+                        label: "Server types",
+                        sourceTitle: "PetDelegate.java",
                         sourceCode: `@Component
-@HttpController
-public final class HelloController {
-    @HttpRoute(method = HttpMethod.GET, path = "/hello/{name}")
-    public String hello(@Path String name) {
-        return "Hello, " + name + "!";
+public final class PetDelegate implements PetApiDelegate {
+
+    // getPetById, addPet ...
+
+    @Override
+    public UpdatePetApiResponse updatePet(long petId, PetUpdateTO petUpdateTO) {
+        var updated = petService.update(petId, petUpdateTO);
+        if (updated.isPresent()) {
+            var body = petMapper.asDTO(updated.get());
+            return new UpdatePet200ApiResponse(body);
+        } else {
+            return new UpdatePet404ApiResponse(
+                new MessageTO("Pet not found for ID: " + petId));
+        }
+    }
+
+    @Override
+    public DeletePetApiResponse deletePet(long petId) {
+        if (petService.delete(petId)) {
+            return new DeletePet200ApiResponse(
+                new MessageTO("Successfully deleted pet with ID: " + petId));
+        } else {
+            return new DeletePet404ApiResponse(
+                new MessageTO("Pet not found for ID: " + petId));
+        }
     }
 }`,
-                        generatedTitle: "$HelloController_Route.java",
-                        generatedCode: `@Generated("HttpServerAnnotationProcessor")
-public final class $HelloController_Route
-        implements HttpServerRequestHandler {
+                        generatedTitle: "PetCreateTO.java + PetApiServerResponseMappers.java",
+                        generatedCode: `// request body
+@Generated("ModelGenerator")
+@Valid
+@JsonWriter
+public record PetCreateTO(
+    @Size(min = 1, max = 50) String name,
+    @Valid CategoryCreateTO category) {
 
-    private final HelloController _controller;
-    private final BlockingRequestExecutor _executor;
-    private final HttpServerResponseMapper<String> _responseMapper;
+  @JsonReader
+  public PetCreateTO {
+  }
+}
 
-    public CompletionStage<HttpServerResponse> handle(
-                    Context _ctx,
-                    HttpServerRequest _request) {
-        var name = _request.pathParams().get("name");
-        return _executor.execute(_ctx, () -> {
-            var _result = _controller.hello(name);
-            return _responseMapper.apply(_ctx, _request, _result);
-        });
+// response -> HTTP status + JSON body
+@Component
+class GetPetByIdApiResponseMapper
+    implements HttpServerResponseMapper<PetApiResponses.GetPetByIdApiResponse> {
+
+  private final HttpServerResponseMapper<HttpResponseEntity<PetTO>> response200Delegate;
+  private final HttpServerResponseMapper<HttpResponseEntity<MessageTO>> response404Delegate;
+  // 400, 408, 429, 500 ...
+
+  @Override
+  public HttpServerResponse apply(HttpServerRequest request,
+      PetApiResponses.GetPetByIdApiResponse response) throws IOException {
+    switch (response) {
+      case GetPetById200ApiResponse rs -> {
+        var entity = HttpResponseEntity.of(200, HttpHeaders.empty(), rs.content());
+        return this.response200Delegate.apply(request, entity);
+      }
+      case GetPetById404ApiResponse rs -> {
+        var entity = HttpResponseEntity.of(404, HttpHeaders.empty(), rs.content());
+        return this.response404Delegate.apply(request, entity);
+      }
+      // 400, 408, 429, 500 ...
     }
+  }
+}`
+                    },
+                    {
+                        label: "OpenAPI client",
+                        sourceTitle: "PetApi.java",
+                        sourceCode: `@HttpClient("httpClient.petV3.petApi")
+public interface PetApi {
+
+    @HttpRoute(method = "POST", path = "/v3/pet")
+    @ResponseCodeMapper(code = 200, mapper = AddPet200ApiResponseMapper.class)
+    @ResponseCodeMapper(code = 405, mapper = AddPet405ApiResponseMapper.class)
+    AddPetApiResponse addPet(@Json Pet pet);
+
+    @HttpRoute(method = "GET", path = "/v3/pet/{petId}")
+    @ResponseCodeMapper(code = 200, mapper = GetPetById200ApiResponseMapper.class)
+    @ResponseCodeMapper(code = 400, mapper = GetPetById400ApiResponseMapper.class)
+    @ResponseCodeMapper(code = 404, mapper = GetPetById404ApiResponseMapper.class)
+    GetPetByIdApiResponse getPetById(@Path("petId") long petId);
+
+    @HttpRoute(method = "DELETE", path = "/v3/pet/{petId}")
+    @ResponseCodeMapper(code = 200, mapper = DeletePet200ApiResponseMapper.class)
+    @ResponseCodeMapper(code = 404, mapper = DeletePet404ApiResponseMapper.class)
+    @ResponseCodeMapper(code = 400, mapper = DeletePet400ApiResponseMapper.class)
+    DeletePetApiResponse deletePet(
+            @Path("petId") long petId,
+            @Header("api_key") @Nullable String apiKey);
+
+    // updatePet, findPetsByStatus, findPetsByTags ...
+}`,
+                        generatedTitle: "$PetApi_ClientImpl.java",
+                        generatedCode: `@Generated("ClientClassGenerator")
+public final class $PetApi_ClientImpl implements PetApi {
+
+  @Override
+  public PetApiResponses.GetPetByIdApiResponse getPetById(long petId)
+      throws HttpClientException {
+    var _uri = URI.create(rootUrl + "/v3/pet/"
+      + EncoderUtils.encode(Objects.toString(petId), StandardCharsets.UTF_8, true));
+    var _request = HttpClientRequest.of("GET", _uri, getPetByIdUriTemplate,
+        HttpHeaders.of(), HttpBody.empty(), getPetByIdRequestTimeout);
+
+    try (var _response = getPetByIdClient.execute(_request)) {
+      return switch (_response.code()) {
+        case 200 -> getPetById200ResponseMapper.apply(_response);
+        case 400 -> getPetById400ResponseMapper.apply(_response);
+        case 404 -> getPetById404ResponseMapper.apply(_response);
+        default -> throw HttpClientResponseException.fromResponse(_response);
+      };
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new HttpClientUnknownException(e);
+    }
+  }
+}`
+                    },
+                    {
+                        label: "Client types",
+                        sourceTitle: "PetApiResponses.java",
+                        sourceCode: `@Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+public interface PetApiResponses {
+  @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+  sealed interface AddPetApiResponse {
+    /**
+     * Successful operation (status code 200)
+     */
+    @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+    record AddPet200ApiResponse(Pet content) implements AddPetApiResponse {
+    }
+
+    /**
+     * Validation exception (status code 400)
+     */
+    @Generated("io.koraframework.openapi.generator.javagen.ApiResponseGenerator")
+    record AddPet400ApiResponse() implements AddPetApiResponse {
+    }
+  }
+}`,
+                        generatedTitle: "Pet.java + PetApiClientResponseMappers.java",
+                        generatedCode: `// request / response body
+@Generated("ModelGenerator")
+@JsonWriter
+public record Pet(long id,
+    @Size(min = 1, max = 50) String name,
+    @Valid @Nullable Category category,
+    @Nullable List<Tag> tags,
+    @Nullable StatusEnum status) {
+
+  @JsonReader
+  public Pet {
+  }
+
+  public Pet(long id, String name) {
+    this(id, name, null, null, null);
+  }
+
+  // withId, withName, withStatus ...
+}
+
+// HTTP response -> typed response, one mapper per status code
+@Component
+class AddPet200ApiResponseMapper implements HttpClientResponseMapper<AddPetApiResponse> {
+
+  private final HttpClientResponseMapper<Pet> delegate;
+
+  public AddPet200ApiResponseMapper(@Json HttpClientResponseMapper<Pet> delegate) {
+    this.delegate = delegate;
+  }
+
+  @Override
+  public AddPetApiResponse apply(HttpClientResponse response) throws IOException {
+    var content = this.delegate.apply(response);
+    return new AddPet200ApiResponse(content);
+  }
+}
+
+@Component
+class AddPet400ApiResponseMapper implements HttpClientResponseMapper<AddPetApiResponse> {
+
+  @Override
+  public AddPetApiResponse apply(HttpClientResponse response) throws IOException {
+    return new AddPet400ApiResponse();
+  }
 }`
                     }
                 ]
@@ -5268,19 +5491,22 @@ public final class $UserRepository_Impl implements UserRepository {
                         label: "Configuration",
                         sourceTitle: "application.conf",
                         sourceCode: `httpServer {
-  privateApiHttpPort = 8085
-  privateApiHttpMetricsPath = "/metrics"
-  privateApiHttpReadinessPath = "/system/readiness"
-  privateApiHttpLivenessPath = "/system/liveness"
+  port = 8080
 
   telemetry {
     logging.enabled = true
     metrics.enabled = true
     tracing.enabled = true
   }
-}
 
-metrics.opentelemetrySpec = "V120"
+  # system server: /metrics and probes, separate from public traffic
+  system {
+    port = 8085
+    metricsPath = "/metrics"
+    readinessPath = "/system/readiness"
+    livenessPath = "/system/liveness"
+  }
+}
 
 tracing {
   exporter.endpoint = "http://otel-collector:4317"
@@ -5336,18 +5562,26 @@ public final class CustomHttpServerTelemetryFactory
         return telemetry::observe;
     }
 }`,
-                        generatedTitle: "$Application_Graph.java",
+                        generatedTitle: "ApplicationGraph.java",
                         generatedCode: `@Generated("KoraAppProcessor")
-final class $Application_Graph {
-    // User component wins over @DefaultComponent.
-    final Node<HttpServerTelemetryFactory> httpServerTelemetryFactory =
-        graph.registerNode(g -> new CustomHttpServerTelemetryFactory(
-            g.valueOf(customTelemetry)));
+public final class ApplicationGraph {
+    // Simplified. Your @Component replaces the @DefaultComponent
+    // HttpServerTelemetryFactory declared in HttpServerModule.
+    final Node<HttpServerTelemetryFactory> telemetryFactory = graphDraw.addNode(
+        g -> new CustomHttpServerTelemetryFactory(g.get(customTelemetry)));
 
-    final Node<HttpServerTelemetry> publicHttpServerTelemetry =
-        graph.registerNode(g -> g.valueOf(httpServerTelemetryFactory)
-            .get("public", g.valueOf(httpServerConfig).port(),
-                g.valueOf(httpServerConfig).telemetry()));
+    // Every server - public and system - builds its handler with it.
+    final Node<HttpHandler> publicHandler = graphDraw.addNode(
+        g -> g.get(publicServerModule).handler(
+            g.get(publicServerConfig),
+            g.get(publicRouter),
+            g.get(telemetryFactory)));
+
+    final Node<HttpHandler> systemHandler = graphDraw.addNode(
+        g -> g.get(systemServerModule).handler(
+            g.get(systemServerConfig),
+            g.get(systemRouter),
+            g.get(telemetryFactory)));
 }`
                     },
                     {
@@ -5454,18 +5688,27 @@ public final class $KafkaConsumer_Handler
             aop: {
                 examples: [{
                     sourceTitle: "ResilientService.java",
-                    sourceCode: `@Component
-public final class ResilientService {
+                    sourceCode: `@CircuitBreakerSpec("resilient.circuitbreaker.payments")
+public interface PaymentCircuitBreaker extends CircuitBreaker {}
+
+@RetrySpec("resilient.retry.payments")
+public interface PaymentRetry extends Retry {}
+
+@TimeoutSpec("resilient.timeout.payments")
+public interface PaymentTimeout extends Timeouter {}
+
+@Component
+public class ResilientService {
     private final PaymentClient client;
 
     public ResilientService(PaymentClient client) {
         this.client = client;
     }
 
-    @Fallback(value = "payments", method = "fallback(request)")
-    @CircuitBreaker("payments")
-    @Retry("payments")
-    @Timeout("payments")
+    @Fallback(method = "fallback(request)")
+    @CircuitBreakable(PaymentCircuitBreaker.class)
+    @Retryable(PaymentRetry.class)
+    @Timeout(PaymentTimeout.class)
     public PaymentResponse charge(PaymentRequest request) {
         return client.create(request);
     }
@@ -5478,25 +5721,23 @@ public final class ResilientService {
                     generatedCode: `@AopProxy
 @Generated("AopAnnotationProcessor")
 public final class $ResilientService__AopProxy extends ResilientService {
-    // Every aspect below compiles to a plain method call -
-    // zero reflection, zero dynamic proxy, zero runtime overhead.
-
     private PaymentResponse timeout(PaymentRequest request) {
-        return timeout.execute(() -> super.charge(request));
+        return paymentTimeout.execute(() -> super.charge(request));
     }
 
     private PaymentResponse retry(PaymentRequest request) {
-        return retry.retry(() -> timeout(request));
+        return paymentRetry.retry(() -> timeout(request));
     }
 
+    @Override
     public PaymentResponse charge(PaymentRequest request) {
         try {
-            circuitBreaker.acquire();
+            paymentCircuitBreaker.acquire();
             var result = retry(request);
-            circuitBreaker.releaseOnSuccess();
+            paymentCircuitBreaker.releaseOnSuccess();
             return result;
         } catch (Throwable e) {
-            circuitBreaker.releaseOnError(e);
+            paymentCircuitBreaker.releaseOnError(e);
             return fallback(request);
         }
     }
@@ -5508,40 +5749,123 @@ public final class $ResilientService__AopProxy extends ResilientService {
                     {
                         label: "New database",
                         sourceTitle: "Application.java",
-                        sourceCode: `@KoraApp
+                        sourceCode: `// application.conf: otherDb { jdbcUrl = ..., username = ..., password = ... }
+@KoraApp
 public interface Application extends JdbcDatabaseModule {
 
     final class OtherDatabase { }
 
     @Tag(OtherDatabase.class)
-    default JdbcDatabaseConfig otherJdbcDataBaseConfig(
-                    Config config,
-                    ConfigValueExtractor<JdbcDatabaseConfig> extractor) {
-        var value = config.get("db.other");
-        return extractor.extract(value);
+    @FactoryModule
+    default JdbcDatabaseFactoryModule otherJdbcDatabase() {
+        return new JdbcDatabaseFactoryModule("otherDb");
     }
+}
 
-    @Tag(OtherDatabase.class)
-    default JdbcDatabase otherJdbcDataBase(
-                    @Tag(OtherDatabase.class) JdbcDatabaseConfig config,
-                    DataBaseTelemetryFactory telemetryFactory,
-                    @Tag(OtherDatabase.class) @Nullable Executor executor) {
-        return new JdbcDatabase(config, telemetryFactory, executor);
-    }
+@Repository(executorTag = Application.OtherDatabase.class)
+public interface ReportsRepository extends JdbcRepository {
+
+    @Query("SELECT count(*) FROM reports")
+    long count();
 }`,
-                        generatedTitle: "$Application_Graph.java",
+                        generatedTitle: "ApplicationGraph.java",
                         generatedCode: `@Generated("KoraAppProcessor")
-final class $Application_Graph {
-
-    final Node<JdbcDatabase> jdbcDatabase = graph.registerNode(
-        JdbcDatabaseModule::jdbcDatabase, defaultConfig, telemetryFactory);
+public final class ApplicationGraph {
+    // Simplified. JdbcDatabaseModule declares the first factory module ("jdbc"),
+    // your @FactoryModule method adds the second one ("otherDb").
+    final Node<JdbcDatabaseFactoryModule> jdbcDatabase = graphDraw.addNode(
+        g -> impl.jdbcDatabase());
 
     @Tag(Application.OtherDatabase.class)
-    final Node<JdbcDatabase> otherJdbcDataBase = graph.registerNode(
-        Application::otherJdbcDataBase, otherConfig, telemetryFactory);
+    final Node<JdbcDatabaseFactoryModule> otherJdbcDatabase = graphDraw.addNode(
+        g -> impl.otherJdbcDatabase());
 
-    // Two databases, two explicit nodes, one graph -
-    // nothing auto-discovered, nothing hidden by reflection.
+    // Everything the factory module creates inherits the tag of its method.
+    @Tag(Application.OtherDatabase.class)
+    final Node<JdbcDatabaseConfig> otherJdbcDatabaseConfig = graphDraw.addNode(
+        g -> g.get(otherJdbcDatabase).jdbcDatabaseConfig(
+            g.get(config), g.get(jdbcDatabaseConfigMapper)));
+
+    @Tag(Application.OtherDatabase.class)
+    final Node<JdbcDataSource> otherJdbcDataSource = graphDraw.addNode(
+        g -> g.get(otherJdbcDatabase).jdbcDataSource(
+            g.get(otherJdbcDatabaseConfig), g.get(databaseTelemetryFactory), null));
+
+    // The repository picks the second database by its executorTag.
+    final Node<$ReportsRepository_Impl> reportsRepository = graphDraw.addNode(
+        g -> new $ReportsRepository_Impl(
+            g.get(otherJdbcDataSource), g.get(longResultSetMapper)));
+}`
+                    },
+                    {
+                        label: "New HTTP server",
+                        sourceTitle: "Application.java",
+                        sourceCode: `// application.conf: httpServer.admin { port = 8090 }
+@KoraApp
+public interface Application extends UndertowPublicHttpServerModule {
+
+    @AdminApi
+    @FactoryModule
+    default UndertowHttpServerFactoryModule adminHttpServer() {
+        return new UndertowHttpServerFactoryModule(
+            "kora-undertow-admin", "httpServer.admin");
+    }
+}
+
+@Tag(AdminApi.class)
+@Target({ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
+public @interface AdminApi { }
+
+@AdminApi
+@Component
+@HttpController
+public final class AdminController {
+
+    @HttpRoute(method = HttpMethod.GET, path = "/admin/ping")
+    public String ping() {
+        return "pong";
+    }
+}`,
+                        generatedTitle: "AdminControllerModule.java + ApplicationGraph.java",
+                        generatedCode: `@Generated("ControllerModuleGenerator")
+@Module
+public interface AdminControllerModule {
+
+  @Tag(AdminApi.class)
+  default HttpServerRequestHandler get_admin_ping(
+      @Tag(AdminApi.class) AdminController _controller,
+      HttpServerResponseMapper<String> _responseMapper) {
+    return HttpServerRequestHandlerImpl.of("GET", "/admin/ping", (_request) -> {
+      var _result = _controller.ping();
+      return _responseMapper.apply(_request, _result);
+    });
+  }
+}
+
+@Generated("KoraAppProcessor")
+public final class ApplicationGraph {
+    // Simplified. The admin server is a third HTTP server next to the
+    // public (httpServer) and system (httpServer.system) ones.
+    @Tag(AdminApi.class)
+    final Node<UndertowHttpServerFactoryModule> adminHttpServer = graphDraw.addNode(
+        g -> impl.adminHttpServer());
+
+    // Only @AdminApi handlers are routed to the admin server.
+    @Tag(AdminApi.class)
+    final Node<HttpServerRouter> adminRouter = graphDraw.addNode(
+        g -> g.get(adminHttpServer).router(
+            All.all(g, adminPingHandler), All.all(g), g.get(adminServerConfig)));
+
+    @Tag(AdminApi.class)
+    final Node<HttpHandler> adminHandler = graphDraw.addNode(
+        g -> g.get(adminHttpServer).handler(
+            g.get(adminServerConfig), g.get(adminRouter), g.get(telemetryFactory)));
+
+    @Tag(AdminApi.class)
+    final Node<UndertowHttpServer> adminServer = graphDraw.addNode(
+        g -> g.get(adminHttpServer).server(
+            g.get(xnioWorker).value(), g.valueOf(adminHandler),
+            g.valueOf(adminServerConfig), null, null));
 }`
                     },
                     {
@@ -5956,6 +6280,226 @@ BUILD FAILED in 1s`
         };
 
         const kotlinModuleCode = {
+            http: {
+                examples: [
+                    {
+                        sourceTitle: "PetLookup.kt",
+                        sourceCode: `@Component
+class PetLookup(private val petApi: PetApi) {
+
+    fun findById(id: Long): Pet = when (val response = petApi.getPetById(id)) {
+        is GetPetById200ApiResponse -> response.content
+        is GetPetById404ApiResponse ->
+            throw IllegalStateException("Pet not found: $id")
+        is GetPetById400ApiResponse ->
+            throw IllegalArgumentException("Invalid pet id: $id")
+    }
+}`,
+                        generatedTitle: "PetApiResponses.kt",
+                        generatedCode: `@Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+public interface PetApiResponses {
+  @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+  public sealed interface GetPetByIdApiResponse {
+    /**
+     * Successful operation (status code 200)
+     */
+    @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+    public data class GetPetById200ApiResponse(
+      public val content: Pet,
+    ) : GetPetByIdApiResponse
+
+    /**
+     * Validation exception (status code 400)
+     */
+    @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+    public class GetPetById400ApiResponse() : GetPetByIdApiResponse
+
+    /**
+     * Pet not found (status code 404)
+     */
+    @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+    public class GetPetById404ApiResponse() : GetPetByIdApiResponse
+  }
+
+  // DeletePetApiResponse, UpdatePetApiResponse ...
+}`
+                    },
+                    {
+                        sourceTitle: "PetDelegate.kt",
+                        sourceCode: `@Component
+class PetDelegate(
+    private val petService: PetService,
+    private val petMapper: PetMapper
+) : PetApiDelegate {
+
+    // getPetById, addPet ...
+
+    override fun updatePet(id: Long, petUpdateTO: PetUpdateTO): PetApiResponses.UpdatePetApiResponse {
+        val updated = petService.update(id, petUpdateTO)
+        return if (updated != null) {
+            val body = petMapper.petWithCategoryToPetTO(updated)
+            UpdatePet200ApiResponse(body)
+        } else {
+            UpdatePet404ApiResponse(
+                MessageTO("Pet not found for ID: $id"))
+        }
+    }
+
+    override fun deletePet(id: Long): PetApiResponses.DeletePetApiResponse {
+        return if (petService.delete(id)) {
+            DeletePet200ApiResponse(
+                MessageTO("Successfully deleted pet with ID: $id"))
+        } else {
+            DeletePet404ApiResponse(
+                MessageTO("Pet not found for ID: $id"))
+        }
+    }
+}`,
+                        generatedTitle: "PetCreateTO.kt + PetApiServerResponseMappers.kt",
+                        generatedCode: `// request body
+@Valid
+@Json
+public data class PetCreateTO(
+  @field:Size(min = 1, max = 50)
+  public val name: String,
+  @field:Valid
+  public val category: CategoryCreateTO,
+)
+
+// response -> HTTP status + JSON body
+@Component
+public open class GetPetByIdApiResponseMapper(
+  @Json public val response200Delegate: HttpServerResponseMapper<HttpResponseEntity<PetTO>>,
+  @Json public val response404Delegate: HttpServerResponseMapper<HttpResponseEntity<MessageTO>>,
+  // 400, 408, 429, 500 ...
+) : HttpServerResponseMapper<PetApiResponses.GetPetByIdApiResponse> {
+
+  override fun apply(request: HttpServerRequest, rs: PetApiResponses.GetPetByIdApiResponse?): HttpServerResponse {
+    require(rs != null)
+    when (rs) {
+      is GetPetById200ApiResponse -> {
+        val entity = HttpResponseEntity.of(200, HttpHeaders.empty(), rs.content)
+        return this.response200Delegate.apply(request, entity)
+      }
+      is GetPetById404ApiResponse -> {
+        val entity = HttpResponseEntity.of(404, HttpHeaders.empty(), rs.content)
+        return this.response404Delegate.apply(request, entity)
+      }
+      // 400, 408, 429, 500 ...
+    }
+  }
+}`
+                    },
+                    {
+                        sourceTitle: "PetApi.kt",
+                        sourceCode: `@HttpClient("httpClient.petV3.petApi")
+interface PetApi {
+
+    @HttpRoute(method = "POST", path = "/v3/pet")
+    @ResponseCodeMapper(code = 200, mapper = AddPet200ApiResponseMapper::class)
+    @ResponseCodeMapper(code = 405, mapper = AddPet405ApiResponseMapper::class)
+    fun addPet(@Json pet: Pet): AddPetApiResponse
+
+    @HttpRoute(method = "GET", path = "/v3/pet/{petId}")
+    @ResponseCodeMapper(code = 200, mapper = GetPetById200ApiResponseMapper::class)
+    @ResponseCodeMapper(code = 400, mapper = GetPetById400ApiResponseMapper::class)
+    @ResponseCodeMapper(code = 404, mapper = GetPetById404ApiResponseMapper::class)
+    fun getPetById(@Path("petId") petId: Long): GetPetByIdApiResponse
+
+    @HttpRoute(method = "DELETE", path = "/v3/pet/{petId}")
+    @ResponseCodeMapper(code = 200, mapper = DeletePet200ApiResponseMapper::class)
+    @ResponseCodeMapper(code = 404, mapper = DeletePet404ApiResponseMapper::class)
+    @ResponseCodeMapper(code = 400, mapper = DeletePet400ApiResponseMapper::class)
+    fun deletePet(
+        @Path("petId") petId: Long,
+        @Header("api_key") apiKey: String? = null
+    ): DeletePetApiResponse
+
+    // updatePet, findPetsByStatus, findPetsByTags ...
+}`,
+                        generatedTitle: "$PetApi_ClientImpl.kt",
+                        generatedCode: `@Generated("ClientClassGenerator")
+public final class \`$PetApi_ClientImpl\`(/* ... */) : PetApi {
+
+  public override fun getPetById(petId: Long): PetApiResponses.GetPetByIdApiResponse {
+    val _uri = URI.create(rootUrl + "/v3/pet/"
+      + EncoderUtils.encode(petId.toString(), StandardCharsets.UTF_8, true))
+    val _request = HttpClientRequest.of("GET", _uri, getPetByIdUriTemplate,
+      HttpHeaders.of(), HttpBody.empty(), getPetByIdRequestTimeout)
+
+    try {
+      getPetByIdClient.execute(_request).use { _response ->
+        return when (_response.code()) {
+          200 -> getPetById200ResponseMapper.apply(_response)!!
+          400 -> getPetById400ResponseMapper.apply(_response)!!
+          404 -> getPetById404ResponseMapper.apply(_response)!!
+          else -> throw HttpClientResponseException.fromResponse(_response)
+        }
+      }
+    } catch (_e: RuntimeException) {
+      throw _e
+    } catch (_e: Exception) {
+      throw HttpClientUnknownException(_e)
+    }
+  }
+}`
+                    },
+                    {
+                        sourceTitle: "PetApiResponses.kt",
+                        sourceCode: `@Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+public interface PetApiResponses {
+  @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+  public sealed interface AddPetApiResponse {
+    /**
+     * Successful operation (status code 200)
+     */
+    @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+    public data class AddPet200ApiResponse(
+      public val content: Pet,
+    ) : AddPetApiResponse
+
+    /**
+     * Validation exception (status code 400)
+     */
+    @Generated("io.koraframework.openapi.generator.kotlingen.ApiResponseGenerator")
+    public class AddPet400ApiResponse() : AddPetApiResponse
+  }
+}`,
+                        generatedTitle: "Pet.kt + PetApiClientResponseMappers.kt",
+                        generatedCode: `// request / response body
+@Json
+public data class Pet(
+  public val id: Long,
+  public val name: String,
+  public val category: Category? = null,
+  public val tags: List<Tag>? = null,
+  public val status: StatusEnum? = null,
+) {
+  // enum StatusEnum ...
+}
+
+// HTTP response -> typed response, one mapper per status code
+@Component
+public open class AddPet200ApiResponseMapper(
+  @Json public val delegate: HttpClientResponseMapper<Pet>,
+) : HttpClientResponseMapper<AddPetApiResponse> {
+
+  override fun apply(response: HttpClientResponse): AddPetApiResponse {
+    val content = this.delegate.apply(response)!!
+    return AddPet200ApiResponse(content)
+  }
+}
+
+@Component
+public open class AddPet400ApiResponseMapper : HttpClientResponseMapper<AddPetApiResponse> {
+
+  override fun apply(response: HttpClientResponse): AddPetApiResponse {
+    return AddPet400ApiResponse()
+  }
+}`
+                    }
+                ]
+            },
             ops: {
                 examples: [
                     {
@@ -6000,21 +6544,29 @@ class CustomHttpServerTelemetryFactory(
         config: HttpServerTelemetryConfig
     ): HttpServerTelemetry = HttpServerTelemetry { request -> telemetry.observe(request) }
 }`,
-                        generatedTitle: "Application_Graph.kt",
+                        generatedTitle: "ApplicationGraph.kt",
                         generatedCode: `@Generated("KoraAppProcessor")
-class Application_Graph {
-    // User component wins over @DefaultComponent.
-    val httpServerTelemetryFactory: Node<HttpServerTelemetryFactory> =
-        graph.registerNode {
-            CustomHttpServerTelemetryFactory(it.valueOf(customTelemetry))
-        }
+class ApplicationGraph {
+    // Simplified. Your @Component replaces the @DefaultComponent
+    // HttpServerTelemetryFactory declared in HttpServerModule.
+    val telemetryFactory: Node<HttpServerTelemetryFactory> = graphDraw.addNode {
+        CustomHttpServerTelemetryFactory(it.get(customTelemetry))
+    }
 
-    val publicHttpServerTelemetry: Node<HttpServerTelemetry> =
-        graph.registerNode {
-            it.valueOf(httpServerTelemetryFactory).get(
-                "public", it.valueOf(httpServerConfig).port(),
-                it.valueOf(httpServerConfig).telemetry())
-        }
+    // Every server - public and system - builds its handler with it.
+    val publicHandler: Node<HttpHandler> = graphDraw.addNode {
+        it.get(publicServerModule).handler(
+            it.get(publicServerConfig),
+            it.get(publicRouter),
+            it.get(telemetryFactory))
+    }
+
+    val systemHandler: Node<HttpHandler> = graphDraw.addNode {
+        it.get(systemServerModule).handler(
+            it.get(systemServerConfig),
+            it.get(systemRouter),
+            it.get(telemetryFactory))
+    }
 }`
                     },
                     {
@@ -6059,33 +6611,128 @@ class Application_Graph {
                 examples: [
                     {
                         sourceTitle: "Application.kt",
-                        sourceCode: `@KoraApp
+                        sourceCode: `// application.conf: otherDb { jdbcUrl = ..., username = ..., password = ... }
+@KoraApp
 interface Application : JdbcDatabaseModule {
 
     class OtherDatabase
 
     @Tag(OtherDatabase::class)
-    fun otherJdbcDataBaseConfig(
-        config: Config,
-        extractor: ConfigValueExtractor<JdbcDatabaseConfig>
-    ): JdbcDatabaseConfig = extractor.extract(config.get("db.other"))
+    @FactoryModule
+    fun otherJdbcDatabase(): JdbcDatabaseFactoryModule {
+        return JdbcDatabaseFactoryModule("otherDb")
+    }
+}
 
-    @Tag(OtherDatabase::class)
-    fun otherJdbcDataBase(
-        @Tag(OtherDatabase::class) config: JdbcDatabaseConfig,
-        telemetryFactory: DataBaseTelemetryFactory,
-        @Tag(OtherDatabase::class) executor: Executor?
-    ): JdbcDatabase = JdbcDatabase(config, telemetryFactory, executor)
+@Repository(executorTag = Application.OtherDatabase::class)
+interface ReportsRepository : JdbcRepository {
+
+    @Query("SELECT count(*) FROM reports")
+    fun count(): Long
 }`,
-                        generatedTitle: "Application_Graph.kt",
+                        generatedTitle: "ApplicationGraph.kt",
                         generatedCode: `@Generated("KoraAppProcessor")
-class Application_Graph {
-    val jdbcDatabase: Node<JdbcDatabase> = graph.registerNode(
-        JdbcDatabaseModule::jdbcDatabase, defaultConfig, telemetryFactory)
+class ApplicationGraph {
+    // Simplified. JdbcDatabaseModule declares the first factory module ("jdbc"),
+    // your @FactoryModule method adds the second one ("otherDb").
+    val jdbcDatabase: Node<JdbcDatabaseFactoryModule> = graphDraw.addNode {
+        impl.jdbcDatabase()
+    }
 
     @Tag(Application.OtherDatabase::class)
-    val otherJdbcDataBase: Node<JdbcDatabase> = graph.registerNode(
-        Application::otherJdbcDataBase, otherConfig, telemetryFactory)
+    val otherJdbcDatabase: Node<JdbcDatabaseFactoryModule> = graphDraw.addNode {
+        impl.otherJdbcDatabase()
+    }
+
+    // Everything the factory module creates inherits the tag of its method.
+    @Tag(Application.OtherDatabase::class)
+    val otherJdbcDatabaseConfig: Node<JdbcDatabaseConfig> = graphDraw.addNode {
+        it.get(otherJdbcDatabase).jdbcDatabaseConfig(
+            it.get(config), it.get(jdbcDatabaseConfigMapper))
+    }
+
+    @Tag(Application.OtherDatabase::class)
+    val otherJdbcDataSource: Node<JdbcDataSource> = graphDraw.addNode {
+        it.get(otherJdbcDatabase).jdbcDataSource(
+            it.get(otherJdbcDatabaseConfig), it.get(databaseTelemetryFactory), null)
+    }
+
+    // The repository picks the second database by its executorTag.
+    val reportsRepository: Node<\`$ReportsRepository_Impl\`> = graphDraw.addNode {
+        \`$ReportsRepository_Impl\`(
+            it.get(otherJdbcDataSource), it.get(longResultSetMapper))
+    }
+}`
+                    },
+                    {
+                        sourceTitle: "Application.kt",
+                        sourceCode: `// application.conf: httpServer.admin { port = 8090 }
+@KoraApp
+interface Application : UndertowPublicHttpServerModule {
+
+    @Tag(AdminApi::class)
+    @FactoryModule
+    fun adminHttpServer(): UndertowHttpServerFactoryModule {
+        return UndertowHttpServerFactoryModule(
+            "kora-undertow-admin", "httpServer.admin")
+    }
+}
+
+@Tag(AdminApi::class)
+annotation class AdminApi
+
+@Tag(AdminApi::class)
+@Component
+@HttpController
+class AdminController {
+
+    @HttpRoute(method = HttpMethod.GET, path = "/admin/ping")
+    fun ping(): String = "pong"
+}`,
+                        generatedTitle: "AdminControllerModule.kt + ApplicationGraph.kt",
+                        generatedCode: `@Generated("HttpControllerProcessor")
+@Module
+public interface AdminControllerModule {
+
+  @Tag(AdminApi::class)
+  public fun get_admin_ping(
+    @Tag(AdminApi::class) _controller: AdminController,
+    _responseMapper: HttpServerResponseMapper<String>
+  ): HttpServerRequestHandler =
+    HttpServerRequestHandlerImpl.of("GET", "/admin/ping") process@{ _request ->
+      val _result = _controller.ping()
+      return@process _responseMapper.apply(_request, _result)
+    }
+}
+
+@Generated("KoraAppProcessor")
+class ApplicationGraph {
+    // Simplified. The admin server is a third HTTP server next to the
+    // public (httpServer) and system (httpServer.system) ones.
+    @Tag(AdminApi::class)
+    val adminHttpServer: Node<UndertowHttpServerFactoryModule> = graphDraw.addNode {
+        impl.adminHttpServer()
+    }
+
+    // Only @AdminApi handlers are routed to the admin server.
+    @Tag(AdminApi::class)
+    val adminRouter: Node<HttpServerRouter> = graphDraw.addNode {
+        it.get(adminHttpServer).router(
+            All.all(it, adminPingHandler), All.all(it), it.get(adminServerConfig))
+    }
+
+    @Tag(AdminApi::class)
+    val adminHandler: Node<HttpHandler> = graphDraw.addNode {
+        it.get(adminHttpServer).handler(
+            it.get(adminServerConfig), it.get(adminRouter), it.get(telemetryFactory))
+    }
+
+    @Tag(AdminApi::class)
+    val adminServer: Node<UndertowHttpServer> = graphDraw.addNode {
+        it.get(adminHttpServer).server(
+            it.get(xnioWorker).value(), it.valueOf(adminHandler),
+            it.valueOf(adminServerConfig), null, null)
+    }
 }`
                     },
                     {
@@ -6435,7 +7082,6 @@ BUILD FAILED in 1s`
         };
 
         const sharedSnippetIndexes = {
-            http: [3, 0],
             data: [2],
             integration: [4],
             aop: [5]
@@ -7233,12 +7879,13 @@ public interface UserRepository extends JdbcRepository {
 }`
             },
             {
-                title: "HttpClient.java",
-                code: `@HttpClient(configPath = "httpClient.payments")
+                title: "PaymentClient.java",
+                code: `@HttpClient("httpClient.payments")
 public interface PaymentClient {
 
+    @Json
     @HttpRoute(method = HttpMethod.POST, path = "/payments")
-    void create(@Json PaymentRequest request);
+    PaymentResponse create(@Json PaymentRequest request);
 
     @Json
     @HttpRoute(method = HttpMethod.GET, path = "/payments/{id}")
@@ -7268,17 +7915,17 @@ public final class EventsConsumer {
             {
                 title: "ResilientService.java",
                 code: `@Component
-public final class ResilientService {
+public class ResilientService {
     private final PaymentClient client;
 
     public ResilientService(PaymentClient client) {
         this.client = client;
     }
 
-    @Fallback(value = "payments", method = "fallback(request)")
-    @CircuitBreaker("payments")
-    @Retry("payments")
-    @Timeout("payments")
+    @Fallback(method = "fallback(request)")
+    @CircuitBreakable(PaymentCircuitBreaker.class)
+    @Retryable(PaymentRetry.class)
+    @Timeout(PaymentTimeout.class)
     public PaymentResponse charge(PaymentRequest request) {
         return client.create(request);
     }
@@ -7292,24 +7939,27 @@ public final class ResilientService {
 
         const generatedSnippets = [
             {
-                title: "$HelloController_Route.java",
-                code: `@Generated("HttpServerAnnotationProcessor")
-public final class $HelloController_Route
-        implements HttpServerRequestHandler {
+                title: "HelloControllerModule.java",
+                code: `@Generated("ControllerModuleGenerator")
+@Module
+public interface HelloControllerModule {
 
-    private final HelloController _controller;
-    private final BlockingRequestExecutor _executor;
-    private final HttpServerResponseMapper<String> _responseMapper;
+  default HttpServerRequestHandler get_hello_name(
+      HelloController _controller,
+      HttpServerResponseMapper<String> _responseMapper) {
+    return HttpServerRequestHandlerImpl.of("GET", "/hello/{name}", (_request) -> {
+      final String name;
+      try {
+        name = HttpRequestHandlerUtils.parsePathString(_request, "name");
+      } catch (Exception _e) {
+        if (_e instanceof HttpServerResponse) throw _e;
+        throw HttpServerResponseException.of(400, _e);
+      }
 
-    public CompletionStage<HttpServerResponse> handle(
-                    Context _ctx,
-                    HttpServerRequest _request) {
-        var name = _request.pathParams().get("name");
-        return _executor.execute(_ctx, () -> {
-            var _result = _controller.hello(name);
-            return _responseMapper.apply(_ctx, _request, _result);
-        });
-    }
+      var _result = _controller.hello(name);
+      return _responseMapper.apply(_request, _result);
+    });
+  }
 }`
             },
             {
@@ -7363,30 +8013,36 @@ public final class $UserRepository_Impl implements UserRepository {
 }`
             },
             {
-                title: "$PaymentClient_Impl.java",
-                code: `@Generated("HttpClientAnnotationProcessor")
-public final class $PaymentClient_Impl implements PaymentClient {
-    private final HttpClient _client;
-    private final HttpClientRequestMapper<PaymentRequest> _requestMapper;
-    private final HttpClientResponseMapper<PaymentResponse> _responseMapper;
+                title: "$PaymentClient_ClientImpl.java",
+                code: `@Generated("ClientClassGenerator")
+public final class $PaymentClient_ClientImpl implements PaymentClient {
+    private final HttpClient createClient;
+    private final URI createUri;
+    private final String createUriTemplate;
+    private final Duration createRequestTimeout;
+    private final HttpClientRequestMapper<PaymentRequest> createRequestMapper;
+    private final HttpClientResponseMapper<PaymentResponse> createResponseMapper;
+    // ... the same for findById
 
-    public PaymentResponse create(PaymentRequest request) {
+    @Override
+    public PaymentResponse create(PaymentRequest request) throws HttpClientException {
         final HttpBodyOutput _body;
         try {
-            _body = _requestMapper.apply(Context.current(), request);
-        } catch (Exception e) {
-            throw new HttpClientEncoderException(e);
+            _body = createRequestMapper.apply(request);
+        } catch (Exception _e) {
+            throw new HttpClientEncoderException(_e);
         }
 
-        var _request = HttpClientRequest.of("POST", "/payments", "/payments",
-            HttpHeaders.of(), _body, null);
-        var _future = _client.execute(_request).toCompletableFuture();
-        try (var _response = _future.get()) {
-            if (_response.code() >= 200 && _response.code() < 300) {
-                return _responseMapper.apply(_response);
+        var _request = HttpClientRequest.of("POST", createUri, createUriTemplate,
+            HttpHeaders.of(), _body, createRequestTimeout);
+        try (var _response = createClient.execute(_request)) {
+            var _code = _response.code();
+            if (_code >= 200 && _code < 300) {
+                return createResponseMapper.apply(_response);
             }
-            throw HttpClientResponseException
-                .fromResponseFuture(_response).get();
+            throw HttpClientResponseException.fromResponse(_response);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new HttpClientUnknownException(e);
         }
@@ -7438,23 +8094,23 @@ public final class $KafkaConsumer_Handler
                 code: `@AopProxy
 @Generated("AopAnnotationProcessor")
 public final class $ResilientService__AopProxy extends ResilientService {
-
     private PaymentResponse timeout(PaymentRequest request) {
-        return timeout.execute(() -> super.charge(request));
+        return paymentTimeout.execute(() -> super.charge(request));
     }
 
     private PaymentResponse retry(PaymentRequest request) {
-        return retry.retry(() -> timeout(request));
+        return paymentRetry.retry(() -> timeout(request));
     }
 
+    @Override
     public PaymentResponse charge(PaymentRequest request) {
         try {
-            circuitBreaker.acquire();
+            paymentCircuitBreaker.acquire();
             var result = retry(request);
-            circuitBreaker.releaseOnSuccess();
+            paymentCircuitBreaker.releaseOnSuccess();
             return result;
         } catch (Throwable e) {
-            circuitBreaker.releaseOnError(e);
+            paymentCircuitBreaker.releaseOnError(e);
             return fallback(request);
         }
     }
@@ -7525,10 +8181,11 @@ interface UserRepository : JdbcRepository {
 }`
             },
             {
-                title: "HttpClient.kt",
-                code: `@HttpClient(configPath = "httpClient.payments")
+                title: "PaymentClient.kt",
+                code: `@HttpClient("httpClient.payments")
 interface PaymentClient {
 
+    @Json
     @HttpRoute(method = HttpMethod.POST, path = "/payments")
     fun create(@Json request: PaymentRequest): PaymentResponse
 
@@ -7562,16 +8219,16 @@ class EventsConsumer {
 open class ResilientService(
     private val client: PaymentClient
 ) {
-    @Fallback(value = "payments", method = "fallback(request)")
-    @CircuitBreaker("payments")
-    @Retry("payments")
-    @Timeout("payments")
+    @Fallback(method = "fallback(request)")
+    @CircuitBreakable(PaymentCircuitBreaker::class)
+    @Retryable(PaymentRetry::class)
+    @Timeout(PaymentTimeout::class)
     open fun charge(request: PaymentRequest): PaymentResponse {
         return client.create(request)
     }
 
     protected open fun fallback(request: PaymentRequest): PaymentResponse {
-        return PaymentResponse.pending(request.id())
+        return PaymentResponse.pending(request.id)
     }
 }`
             }
@@ -7579,23 +8236,19 @@ open class ResilientService(
 
         const kotlinGeneratedSnippets = [
             {
-                title: "HelloController_Route.kt",
-                code: `@Generated("HttpServerSymbolProcessor")
-class HelloController_Route(
-    private val controller: HelloController,
-    private val executor: BlockingRequestExecutor,
-    private val responseMapper: HttpServerResponseMapper<String>
-) : HttpServerRequestHandler {
+                title: "HelloControllerModule.kt",
+                code: `@Generated("HttpControllerProcessor")
+@Module
+public interface HelloControllerModule {
 
-    override fun handle(
-        ctx: Context,
-        request: HttpServerRequest
-    ): CompletionStage<HttpServerResponse> {
-        val name = request.pathParams()["name"]
-        return executor.execute(ctx) {
-            val result = controller.hello(name)
-            responseMapper.apply(ctx, request, result)
-        }
+  public fun get_hello_name(
+    _controller: HelloController,
+    _responseMapper: HttpServerResponseMapper<String>
+  ): HttpServerRequestHandler =
+    HttpServerRequestHandlerImpl.of("GET", "/hello/{name}") process@{ _request ->
+      val name = parsePathString(_request, "name")
+      val _result = _controller.hello(name)
+      return@process _responseMapper.apply(_request, _result)
     }
 }`
             },
@@ -7654,39 +8307,40 @@ class UserRepository_Impl(
 }`
             },
             {
-                title: "PaymentClient_Impl.kt",
-                code: `@Generated("HttpClientSymbolProcessor")
-class PaymentClient_Impl(
-    private val client: HttpClient,
-    private val requestMapper: HttpClientRequestMapper<PaymentRequest>,
-    private val responseMapper: HttpClientResponseMapper<PaymentResponse>
+                title: "$PaymentClient_ClientImpl.kt",
+                code: `@Generated("ClientClassGenerator")
+class \`$PaymentClient_ClientImpl\`(
+    httpClient: HttpClient,
+    config: \`$PaymentClient_Config\`,
+    telemetryFactory: HttpClientTelemetryFactory,
+    @Tag(Json::class) private val createRequestMapper: HttpClientRequestMapper<PaymentRequest>,
+    @Tag(Json::class) private val createResponseMapper: HttpClientResponseMapper<PaymentResponse>,
+    // ... the same for findById
 ) : PaymentClient {
 
     override fun create(request: PaymentRequest): PaymentResponse {
-        val body = try {
-            requestMapper.apply(Context.current(), request)
-        } catch (e: Exception) {
-            throw HttpClientEncoderException(e)
+        val _body = try {
+            createRequestMapper.apply(request)
+        } catch (_e: HttpClientException) {
+            throw _e
+        } catch (_e: Exception) {
+            throw HttpClientEncoderException(_e)
         }
 
-        val httpRequest = HttpClientRequest.of(
-            "POST",
-            "/payments",
-            "/payments",
-            HttpHeaders.of(),
-            body,
-            null
-        )
-
+        val _request = HttpClientRequest.of("POST", createUri, createUriTemplate,
+            HttpHeaders.of(), _body, createRequestTimeout)
         try {
-            client.execute(httpRequest).toCompletableFuture().get().use { response ->
-                if (response.code() in 200..299) {
-                    return responseMapper.apply(response)
+            createClient.execute(_request).use { _response ->
+                val _code = _response.code()
+                if (_code in 200..299) {
+                    return createResponseMapper.apply(_response)!!
                 }
-                throw HttpClientResponseException.fromResponseFuture(response).get()
+                throw HttpClientResponseException.fromResponse(_response)
             }
-        } catch (e: Exception) {
-            throw HttpClientUnknownException(e)
+        } catch (_e: RuntimeException) {
+            throw _e
+        } catch (_e: Exception) {
+            throw HttpClientUnknownException(_e)
         }
     }
 }`
@@ -7732,32 +8386,31 @@ class KafkaConsumer_Handler(
 }`
             },
             {
-                title: "ResilientService_AopProxy.kt",
+                title: "$ResilientService__AopProxy.kt",
                 code: `@AopProxy
 @Generated("AopSymbolProcessor")
-class ResilientService_AopProxy(
+class \`$ResilientService__AopProxy\`(
     client: PaymentClient,
-    private val timeout: Timeout,
-    private val retry: Retry,
-    private val circuitBreaker: CircuitBreaker
+    private val paymentTimeout: PaymentTimeout,
+    private val paymentRetry: PaymentRetry,
+    private val paymentCircuitBreaker: PaymentCircuitBreaker
 ) : ResilientService(client) {
-
     private fun timeout(request: PaymentRequest): PaymentResponse {
-        return timeout.execute { super.charge(request) }
+        return paymentTimeout.execute { super.charge(request) }
     }
 
     private fun retry(request: PaymentRequest): PaymentResponse {
-        return retry.retry { timeout(request) }
+        return paymentRetry.retry { timeout(request) }
     }
 
     override fun charge(request: PaymentRequest): PaymentResponse {
         return try {
-            circuitBreaker.acquire()
+            paymentCircuitBreaker.acquire()
             val result = retry(request)
-            circuitBreaker.releaseOnSuccess()
+            paymentCircuitBreaker.releaseOnSuccess()
             result
         } catch (e: Throwable) {
-            circuitBreaker.releaseOnError(e)
+            paymentCircuitBreaker.releaseOnError(e)
             fallback(request)
         }
     }
