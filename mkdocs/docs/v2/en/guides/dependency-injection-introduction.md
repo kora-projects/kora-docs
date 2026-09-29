@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Introduction to Kora: Compile-Time Dependency Injection Basics"
+seo_description: "Learn Kora's core model: the compile-time DI container, @KoraApp, @Component and @Module, how dependencies are declared and resolved, and the tag system."
+keywords: ["Kora Framework", "Kora introduction", "dependency injection tutorial", "compile-time DI", "@Component", "@Module", "Kora tags"]
 search:
   exclude: true
 title: Dependency Injection with Kora

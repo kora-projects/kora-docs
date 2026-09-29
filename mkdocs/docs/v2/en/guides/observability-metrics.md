@@ -1,4 +1,7 @@
 ---
+seo_title: "Metrics Guide: Micrometer and Prometheus in Kora"
+seo_description: "Add Micrometer metrics to a Kora HTTP service: MetricsModule, MeterRegistry, the Prometheus scrape endpoint, telemetry flags and custom business metrics."
+keywords: ["Kora Framework", "Kora metrics", "Micrometer", "Prometheus", "MeterRegistry", "business metrics"]
 search:
   exclude: true
 title: Metrics with Kora

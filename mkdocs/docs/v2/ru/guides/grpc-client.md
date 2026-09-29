@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "gRPC-клиент в Kora: вызов сервисов на protobuf"
+seo_description: "Вызов gRPC-сервисов из Kora: генерация кода из protobuf, конфигурация клиента, блокирующие и асинхронные стабы, обёртка стаба в тестируемый сервис."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-клиент Kora", "gRPC-стабы", "protobuf", "gRPC-клиент Java"]
 search:
   exclude: true
 title: gRPC-клиент с Kora
@@ -193,7 +196,7 @@ HTTP-клиенты часто моделируют сбои через коды
 Версии модулей Kora берутся из BOM Kora `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

@@ -1,0 +1,1 @@
+--8<-- "ru/kora-abstractions.md"

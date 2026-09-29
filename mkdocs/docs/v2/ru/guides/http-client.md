@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "HTTP-клиент в Kora: декларативные REST-клиенты"
+seo_description: "Вызов REST API из Kora декларативным @HttpClient: типизированные маршруты, JSON DTO, настройка каждого клиента и сгенерированная реализация без рефлексии."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-клиент Kora", "декларативный HTTP-клиент", "@HttpClient", "REST-клиент Java", "альтернатива Feign"]
 search:
   exclude: true
 title: Руководство по HTTP-клиенту
@@ -116,7 +119,7 @@ HTTP-клиенту также нужна конфигурация времен�
 Версии берутся из BOM `io.koraframework:kora-bom`, поэтому отдельные модули Kora объявляются без версии:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

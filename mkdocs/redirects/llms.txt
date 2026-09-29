@@ -1,0 +1,15 @@
+# Kora Framework
+
+> Kora is a backend framework for Java and Kotlin that builds the application graph and dependency injection at compile time, generates transparent source code with no runtime reflection, runs application code on virtual threads, and ships production-ready modules for HTTP, databases, Kafka, gRPC, OpenTelemetry and testing. Apache 2.0 licensed, source: https://github.com/kora-projects/kora
+
+## Documentation indexes
+
+- [English documentation and blog](https://koraframework.io/v2/en/llms.txt): every page of the current (v2) English documentation, guides and blog with a one-line summary
+- [Русская документация и блог](https://koraframework.io/v2/ru/llms.txt): every page of the current (v2) Russian documentation, guides and blog with a one-line summary
+
+## Entry points
+
+- [Kora Framework (EN)](https://koraframework.io/v2/en/): landing page
+- [Kora Framework (RU)](https://koraframework.io/v2/ru/): landing page
+- [Kora Blog](https://koraframework.io/v2/en/blog/): articles on Kora's design, compile-time approach, performance and production operation
+- [Source code](https://github.com/kora-projects/kora)

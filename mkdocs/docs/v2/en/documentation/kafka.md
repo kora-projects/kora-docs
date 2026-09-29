@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Kafka: @KafkaListener and @KafkaPublisher Reference"
+seo_description: "Reference for Kora Kafka: consumers and producers, listener and publisher annotations, configuration, serialization, errors, rebalancing and transactions."
+keywords: ["Kora Framework", "Kora Kafka", "@KafkaListener", "@KafkaPublisher", "Kafka consumer Java", "Kafka transactions"]
 description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry; key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener."
@@ -36,7 +39,7 @@ For a step-by-step walkthrough before the reference details, see [Kafka Messagin
 
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:kafka")
     ```
 

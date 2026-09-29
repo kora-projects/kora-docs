@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Camunda 7 REST API: Undertow, OpenAPI and CORS"
+seo_description: "Expose the Camunda 7 REST API from Kora on a dedicated Undertow server with OpenAPI, Swagger UI and Scalar pages, CORS, telemetry and graceful shutdown."
+keywords: ["Kora Framework", "Kora Camunda REST", "Camunda 7 REST API", "Undertow", "Swagger UI", "BPMN"]
 description: "Explains how Kora exposes the Camunda 7 REST API over a dedicated Undertow HTTP server, with OpenAPI, Swagger UI and Scalar pages, CORS, telemetry, and graceful shutdown. Use when working with CamundaRestUndertowModule, CamundaRestModule, CamundaRestConfig, CamundaRest, KoraProcessEngineProvider, camunda.rest, CORS, telemetry."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about exposing the Camunda 7 REST API from a Kora application over its own Undertow HTTP server, its OpenAPI / Swagger UI / Scalar pages, CORS, telemetry, and graceful shutdown; key triggers include CamundaRestUndertowModule, CamundaRestModule, CamundaRestConfig, CamundaRest, KoraProcessEngineProvider, camunda.rest, camunda.rest.openapi.files, camunda.rest.cors, engine-rest, CamundaRestResources."

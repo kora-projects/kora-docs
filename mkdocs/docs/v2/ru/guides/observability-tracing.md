@@ -1,4 +1,7 @@
 ---
+seo_title: "Трассировка в Kora: распределённая трассировка OpenTelemetry"
+seo_description: "Трассировка OpenTelemetry в сервисе на Kora: OTLP HTTP-экспортер, конфигурация, имя сервиса, бизнес-спаны и связь трейсов с логами."
+keywords: ["Kora Framework", "фреймворк Kora", "трассировка Kora", "OpenTelemetry", "OTLP", "распределённая трассировка", "спаны"]
 search:
   exclude: true
 title: Трассировка с Kora

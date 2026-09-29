@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Dependency Injection Guide: Components, Modules, Tags | Kora"
+seo_description: "A hands-on Kora dependency injection guide: build a graph of components and modules, use tags, factories, optional and collection dependencies, and fix graph errors."
+keywords: ["Kora Framework", "Kora dependency injection", "DI guide", "compile-time DI", "Kora modules", "Kora tags", "Java DI"]
 search:
   exclude: true
 title: Building Kora DI Applications
@@ -355,7 +358,7 @@ Add `gradle.properties` so Gradle can detect installed JDKs, download the requir
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
 
-    koraVersion=2.0.0.RC1
+    koraVersion=2.0.0.RC2
     junitVersion=6.1.3
     ```
 
@@ -366,7 +369,7 @@ Add `gradle.properties` so Gradle can detect installed JDKs, download the requir
     org.gradle.java.installations.auto-download=true
     kotlin.jvm.target.validation.mode=warning
 
-    koraVersion=2.0.0.RC1
+    koraVersion=2.0.0.RC2
     junitVersion=6.1.3
     ```
 
@@ -3767,9 +3770,9 @@ Solutions:
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:logging-logback")

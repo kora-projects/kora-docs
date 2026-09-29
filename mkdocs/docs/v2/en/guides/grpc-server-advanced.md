@@ -1,4 +1,7 @@
 ﻿---
+seo_title: "Advanced gRPC Server: Streaming, Interceptors, Auth | Kora"
+seo_description: "Advanced Kora gRPC servers: streaming handlers, server interceptors, server reflection and API key authorization for production gRPC services."
+keywords: ["Kora Framework", "Kora gRPC streaming", "gRPC interceptors", "gRPC reflection", "gRPC authorization", "grpc-java"]
 search:
   exclude: true
 title: Advanced gRPC Server with Kora
@@ -158,7 +161,7 @@ The build is the one from the base gRPC server guide plus the artifacts reflecti
 Versions of Kora modules come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora artifacts are declared without a version:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

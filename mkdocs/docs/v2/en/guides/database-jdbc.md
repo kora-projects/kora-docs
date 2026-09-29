@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "JDBC Database Guide: Repositories with Plain SQL in Kora"
+seo_description: "Connect a Kora service to PostgreSQL with JDBC: entities, @Repository interfaces with SQL queries, Hikari configuration and compile-time generated repositories."
+keywords: ["Kora Framework", "Kora JDBC", "Kora repository", "PostgreSQL Java", "SQL repository", "Hikari", "ORM alternative"]
 search:
   exclude: true
 title: Database Integration with Kora
@@ -197,7 +200,7 @@ Now add the database-specific dependencies for PostgreSQL, JDBC repositories, an
 
 `database-jdbc` provides the repository infrastructure and the Hikari connection pool. `database-flyway` runs schema migrations before repositories are used, but it only brings `flyway-core` with it: since
 Flyway 10 every database dialect lives in its own artifact, so `org.flywaydb:flyway-database-postgresql` must be added explicitly. Without it the application fails at startup with `Unsupported Database:
-PostgreSQL`. Keep the dialect version aligned with the `flyway-core` version that Kora `2.0.0.RC1` brings, which is `13.3.0`. The PostgreSQL JDBC driver is only needed at runtime.
+PostgreSQL`. Keep the dialect version aligned with the `flyway-core` version that Kora `2.0.0.RC2` brings, which is `13.3.0`. The PostgreSQL JDBC driver is only needed at runtime.
 
 ## Modules { #modules }
 

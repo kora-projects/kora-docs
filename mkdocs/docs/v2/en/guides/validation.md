@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Validation Guide: Validate Models and Controllers in Kora"
+seo_description: "Validate DTOs and HTTP controller input in Kora with constraint annotations, compile-time generated validators and clear 400 error responses."
+keywords: ["Kora Framework", "Kora validation", "bean validation alternative", "input validation", "@Valid", "HTTP 400"]
 search:
   exclude: true
 title: Validation with Kora

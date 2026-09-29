@@ -5,47 +5,254 @@
 {% include "partials/version-selector.html" %}
 {% endblock %}
 
+{% block site_meta %}
+{# Blog articles are shared by every docs version, so v1 copies point their
+   canonical at v2 to avoid duplicate content. page.meta is filled from the
+   article front matter by hooks/seo.py. #}
+{% set is_blog = page and page.file and page.file.src_uri.startswith('blog/') %}
+{% set canonical_url = page.canonical_url | replace('/v1/', '/v2/', 1) if is_blog else page.canonical_url %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+{# seo_description is the search-facing text (v2 docs); description is
+   also consumed by AI tooling and may be long or agent-oriented. #}
+{% if page.meta and page.meta.seo_description %}
+<meta name="description" content="{{ page.meta.seo_description }}">
+{% elif page.meta and page.meta.description %}
+<meta name="description" content="{{ page.meta.description }}">
+{% elif config.site_description %}
+<meta name="description" content="{{ config.site_description }}">
+{% endif %}
+<meta name="author" content="{{ page.meta.author if page.meta and page.meta.author else 'Kora Projects' }}">
+{% if page.meta and page.meta.keywords %}
+<meta name="keywords" content="{{ page.meta.keywords | join(', ') }}">
+{% endif %}
+{% if is_blog or config.extra.docs_version == 'v2' %}
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+{% endif %}
+{% if canonical_url %}
+<link rel="canonical" href="{{ canonical_url }}">
+{% if page.meta and page.meta.kora_has_translation %}
+{% set en_url = canonical_url | replace('/ru/', '/en/', 1) %}
+{% set ru_url = canonical_url | replace('/en/', '/ru/', 1) %}
+<link rel="alternate" hreflang="en" href="{{ en_url }}">
+<link rel="alternate" hreflang="ru" href="{{ ru_url }}">
+<link rel="alternate" hreflang="x-default" href="{{ en_url }}">
+{% endif %}
+{% endif %}
+{% if page.previous_page %}
+<link rel="prev" href="{{ page.previous_page.url | url }}">
+{% endif %}
+{% if page.next_page %}
+<link rel="next" href="{{ page.next_page.url | url }}">
+{% endif %}
+<link rel="icon" href="{{ config.theme.favicon | url }}">
+{% endblock %}
+
 {% block extrahead %}
+{% set is_blog = page and page.file and page.file.src_uri.startswith('blog/') %}
+{% set is_article = is_blog and page.meta.kora_blog_article %}
+{% set canonical_url = page.canonical_url | replace('/v1/', '/v2/', 1) if is_blog else page.canonical_url %}
 {% set title = config.site_name %}
-{% set titleConfig = config.site_name %}
-{% set copyright = config.copyright %}
-{% if page and page.meta and page.meta.title %}
+{% set current_lang = config.theme.language | default('en') %}
+{% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
+{% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
+{% set social_image_url = config.site_url ~ 'assets/img/' ~ social_image_name %}
+{% set social_square_url = config.site_url ~ 'assets/img/' ~ social_square_name %}
+{% set social_image_alt = 'Kora — комплексный серверный фреймворк для Java и Kotlin' if current_lang == 'ru' else 'Kora comprehensive backend framework for Java and Kotlin' %}
+{% set og_locale = 'ru_RU' if current_lang == 'ru' else 'en_US' %}
+{% set og_alt_locale = 'en_US' if current_lang == 'ru' else 'ru_RU' %}
+{% if is_blog and page.meta.title %}
+{% set title = page.meta.title %}
+{% elif page and page.meta and page.meta.seo_title %}
+{% set title = page.meta.seo_title %}
+{% elif page and page.meta and page.meta.title %}
 {% set title = title ~ " - " ~ page.meta.title %}
 {% elif page and page.title and not page.is_homepage %}
 {% set title = title ~ " - " ~ page.title | striptags %}
 {% endif %}
 {% set description = page.content | replace("</li>", ", ") | striptags | truncate | replace("¶ ", ": ") | replace("Добавлено: ", "") | replace("Исправлено: ", "") %}
-{% if page and page.meta and page.meta.description %}
+{% if page and page.meta and page.meta.seo_description %}
+{% set description = page.meta.seo_description %}
+{% elif page and page.meta and page.meta.description %}
 {% set description = page.meta.description %}
 {% endif %}
-<meta property="description" content="{{ titleConfig }} {{ description }} | {{ copyright }} | Тинькофф">
 <meta property="og:site_name" content="Kora Framework">
-<meta property="og:type" content="website"/>
+<meta property="og:type" content="{{ 'article' if is_article else 'website' }}"/>
 <meta property="og:title" content="{{ title }}"/>
-<meta property="og:description" content="Kora Framework {{ description }}"/>
-<meta property="og:url" content="{{ page.canonical_url }}"/>
-<meta property="og:image" content="{{ config.site_url }}assets/img/kora-long.png"/>
-<meta property="og:image:type" content="image/png"/>
-<meta property="og:image:width" content="450"/>
-<meta property="og:image:height" content="150"/>
+<meta property="og:description" content="{{ description }}"/>
+<meta property="og:url" content="{{ canonical_url }}"/>
+{% if is_article %}
+<meta property="article:published_time" content="{{ page.meta.date }}"/>
+<meta property="article:modified_time" content="{{ page.meta.updated or page.meta.date }}"/>
+<meta property="article:author" content="https://github.com/kora-projects"/>
+<meta property="article:section" content="{{ 'Блог' if current_lang == 'ru' else 'Blog' }}"/>
+{% for keyword in page.meta.keywords or [] %}
+<meta property="article:tag" content="{{ keyword }}"/>
+{% endfor %}
+{% endif %}
+<meta property="og:locale" content="{{ og_locale }}"/>
+<meta property="og:locale:alternate" content="{{ og_alt_locale }}"/>
+<meta property="og:image" content="{{ social_image_url }}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="{{ social_image_alt }}"/>
+<meta property="og:image" content="{{ social_square_url }}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="1200"/>
+<meta property="og:image:alt" content="{{ social_image_alt }}"/>
 
 <meta name="twitter:title" content="{{ title }}"/>
 <meta name="twitter:creator" content="@KoraFramework"/>
-<meta name="twitter:card" content="{{ config.site_url }}assets/img/kora-long.png"/>
-<meta name="twitter:site" content="{{ config.site_url }}"/>
-<meta name="twitter:description" content="{{ titleConfig }} {{ description }}"/>
-<meta name="twitter:image" content="{{ config.site_url }}assets/img/kora-long.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:site" content="@KoraFramework"/>
+<meta name="twitter:description" content="{{ description }}"/>
+<meta name="twitter:image" content="{{ social_image_url }}"/>
+<meta name="twitter:image:alt" content="{{ social_image_alt }}"/>
+{% if is_article %}
+<meta name="twitter:label1" content="{{ 'Время чтения' if current_lang == 'ru' else 'Reading time' }}"/>
+<meta name="twitter:data1" content="{{ page.meta.kora_reading_minutes }} {{ 'мин' if current_lang == 'ru' else 'min' }}"/>
+<meta name="twitter:label2" content="{{ 'Опубликовано' if current_lang == 'ru' else 'Published' }}"/>
+<meta name="twitter:data2" content="{{ page.meta.date }}"/>
+{% endif %}
+{% if is_blog and page.meta.kora_blog_article is defined %}
+{% set home_url = config.site_url | replace('/v1/', '/v2/', 1) %}
+{% set blog_url = home_url ~ 'blog/' %}
+{% set blog_name = 'Блог Kora' if current_lang == 'ru' else 'Kora Blog' %}
+{% set organization = {
+    "@type": "Organization",
+    "@id": "https://github.com/kora-projects#organization",
+    "name": "Kora Projects",
+    "url": "https://github.com/kora-projects",
+    "logo": {"@type": "ImageObject", "url": "https://koraframework.io/v2/en/assets/img/kora-big.png"},
+    "sameAs": ["https://github.com/kora-projects", "https://t.me/kora_users"]
+} %}
+{% set software = {
+    "@type": "SoftwareSourceCode",
+    "@id": "https://github.com/kora-projects/kora#software",
+    "name": "Kora Framework",
+    "alternateName": "Kora",
+    "codeRepository": "https://github.com/kora-projects/kora",
+    "programmingLanguage": ["Java", "Kotlin"],
+    "runtimePlatform": "Java Virtual Machine (JVM)",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0"
+} %}
+{% set mentions = [] %}
+{% for keyword in (page.meta.keywords or [])[1:] %}
+{% set _ = mentions.append({"@type": "Thing", "name": keyword}) %}
+{% endfor %}
+{% if is_article %}
+{% set graph = [organization, software, {
+    "@type": "BlogPosting",
+    "@id": canonical_url ~ "#article",
+    "url": canonical_url,
+    "mainEntityOfPage": canonical_url,
+    "headline": page.meta.title,
+    "description": description,
+    "datePublished": page.meta.date,
+    "dateModified": page.meta.updated or page.meta.date,
+    "inLanguage": current_lang,
+    "wordCount": page.meta.kora_word_count,
+    "timeRequired": "PT" ~ page.meta.kora_reading_minutes ~ "M",
+    "articleSection": blog_name,
+    "image": social_image_url,
+    "author": {"@id": organization["@id"]},
+    "publisher": {"@id": organization["@id"]},
+    "about": {"@id": software["@id"]},
+    "keywords": page.meta.keywords or [],
+    "mentions": mentions,
+    "isPartOf": {"@type": "Blog", "@id": blog_url ~ "#blog", "name": blog_name, "url": blog_url}
+}, {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Kora", "item": home_url},
+        {"@type": "ListItem", "position": 2, "name": blog_name, "item": blog_url},
+        {"@type": "ListItem", "position": 3, "name": page.meta.title, "item": canonical_url}
+    ]
+}] %}
+{% else %}
+{% set posts = [] %}
+{% for item in page.parent.children if page.parent and item.is_page and item.meta.kora_blog_article %}
+{% set _ = posts.append({
+    "@type": "BlogPosting",
+    "headline": item.meta.title,
+    "url": item.canonical_url,
+    "datePublished": item.meta.date,
+    "description": item.meta.description,
+    "keywords": item.meta.keywords or []
+}) %}
+{% endfor %}
+{% set graph = [organization, software, {
+    "@type": "Blog",
+    "@id": blog_url ~ "#blog",
+    "url": blog_url,
+    "name": blog_name,
+    "description": description,
+    "inLanguage": current_lang,
+    "publisher": {"@id": organization["@id"]},
+    "about": {"@id": software["@id"]},
+    "keywords": page.meta.keywords or [],
+    "blogPost": posts
+}] %}
+{% endif %}
+<script type="application/ld+json">{{ {"@context": "https://schema.org", "@graph": graph} | tojson }}</script>
+{% endif %}
+{% if not is_blog and page.meta and page.meta.seo_title %}
+{% set home_url = config.site_url %}
+{% set section = page.ancestors | map(attribute='title') | list | last if page.ancestors else '' %}
+{% set is_guide = page.file.src_uri.startswith('guides/') or page.file.src_uri.startswith('examples/') %}
+{% set mentions = [] %}
+{% for keyword in (page.meta.keywords or [])[1:] %}
+{% set _ = mentions.append({"@type": "Thing", "name": keyword}) %}
+{% endfor %}
+{% set doc = {
+    "@context": "https://schema.org",
+    "@graph": [{
+        "@type": "TechArticle",
+        "@id": canonical_url ~ "#article",
+        "url": canonical_url,
+        "mainEntityOfPage": canonical_url,
+        "headline": page.meta.seo_title,
+        "name": page.title,
+        "description": description,
+        "inLanguage": current_lang,
+        "articleSection": section,
+        "proficiencyLevel": "Beginner" if is_guide else "Expert",
+        "keywords": page.meta.keywords or [],
+        "mentions": mentions,
+        "image": social_image_url,
+        "isPartOf": {"@type": "WebSite", "@id": "https://koraframework.io/#website", "name": "Kora Framework", "url": "https://koraframework.io/"},
+        "about": {"@type": "SoftwareSourceCode", "@id": "https://github.com/kora-projects/kora#software", "name": "Kora Framework", "codeRepository": "https://github.com/kora-projects/kora", "programmingLanguage": ["Java", "Kotlin"]},
+        "author": {"@type": "Organization", "@id": "https://github.com/kora-projects#organization", "name": "Kora Projects", "url": "https://github.com/kora-projects"},
+        "publisher": {"@id": "https://github.com/kora-projects#organization"}
+    }, {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Kora", "item": home_url},
+            {"@type": "ListItem", "position": 2, "name": page.title, "item": canonical_url}
+        ]
+    }]
+} %}
+<script type="application/ld+json">{{ doc | tojson }}</script>
+{% endif %}
 {% endblock %}
 
 {% block htmltitle %}
+{% if page and page.file and page.file.src_uri.startswith('blog/') and page.meta.title %}
+<title>{{ page.meta.title }}</title>
+{% elif page and page.meta and page.meta.seo_title %}
+<title>{{ page.meta.seo_title }}</title>
+{% elif config.extra.docs_version == 'v2' and page and page.title and not page.is_homepage %}
+<title>{{ page.title | striptags }} | {{ 'Фреймворк Kora' if config.theme.language == 'ru' else 'Kora Framework' }}</title>
+{% else %}
 {% set title = config.site_name %}
 {% if page and page.title and not page.is_homepage %}
 {% set title = page.title ~ " - " ~ title | striptags %}
 {% endif %}
 {% set title = title ~ " | Kora" %}
 <title>{{ title }}</title>
-<p style="display: none">Kora облачно ориентированный серверный фреймворк написанный на Java для написания Java / Kotlin приложений с упором на производительность, эффективность, прозрачность сделанный выходцами из Т-Банк / Тинькофф</p>
-<p style="display: none">Kora is a cloud-oriented server-side Java framework for writing Java / Kotlin applications with a focus on performance, efficiency and transparency</p>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -243,6 +450,87 @@
         window.addEventListener("mousedown", cancelWheelScroll, { passive: true, capture: true });
         window.addEventListener("touchstart", cancelWheelScroll, { passive: true });
         window.addEventListener("keydown", cancelWheelScroll);
+    })();
+</script>
+<script>
+    /* MkDocs Material stores its palette on data-md-color-scheme, while Tluma's
+       auto theme watches html[data-theme]. Bridge the two and keep them synced. */
+    (() => {
+        const syncTlumaTheme = () => {
+            const scheme = document.body.getAttribute("data-md-color-scheme")
+                || document.documentElement.getAttribute("data-md-color-scheme");
+            document.documentElement.setAttribute("data-theme", scheme === "slate" ? "dark" : "light");
+        };
+
+        syncTlumaTheme();
+        new MutationObserver(syncTlumaTheme).observe(document.body, {
+            attributes: true,
+            attributeFilter: ["data-md-color-scheme"]
+        });
+    })();
+
+    window.tlumaConfig = {
+        source: "kora-projects/kora-docs",
+        theme: "auto",
+        /* Tluma supports only fixed presets inside its cross-origin iframe.
+           Keep that UI neutral; the local shell below uses Kora's exact color. */
+        brandColor: "slate",
+        button: "bottom-right",
+        welcomePulse: true,
+        edgePadding: "1rem",
+        autoOpen: false,
+        desktopFullscreenByDefault: false
+    };
+</script>
+<script src="https://tluma.ai/widget.js" async></script>
+<script>
+    (() => {
+        const launcherLabel = {% if config.theme.language == "ru" %}"Нейро-чат"{% else %}null{% endif %};
+        const customizeTlumaShell = () => {
+            const host = document.querySelector("[data-tluma-ask-ai-host]");
+            const shadow = host && host.shadowRoot;
+            const button = shadow && shadow.querySelector(".tluma-button");
+            const label = button && button.querySelector("span");
+            if (!button || !label) return false;
+
+            if (launcherLabel) {
+                label.textContent = launcherLabel;
+                button.setAttribute("aria-label", launcherLabel);
+                const panel = shadow.querySelector(".tluma-panel");
+                if (panel) panel.setAttribute("aria-label", launcherLabel);
+            }
+
+            if (!shadow.querySelector("[data-kora-tluma-style]")) {
+                const style = document.createElement("style");
+                style.setAttribute("data-kora-tluma-style", "");
+                style.textContent = `
+                    .tluma-root {
+                        --tluma-brand-main: var(--md-primary-fg-color, #ffb02e) !important;
+                        --tluma-brand-soft: var(--md-accent-fg-color, #ffb02e) !important;
+                        --tluma-brand-contrast: #1a1509 !important;
+                        --tluma-brand-main-rgb: 255, 176, 46 !important;
+                        font-family: "JetBrains Mono", ui-monospace, monospace !important;
+                    }
+                    .tluma-button {
+                        border-radius: 0.45rem !important;
+                        box-shadow: 0 0.35rem 1.2rem rgba(26, 21, 9, 0.22) !important;
+                    }
+                    .tluma-panel {
+                        border-radius: 0.55rem !important;
+                        border-color: color-mix(in srgb, var(--md-primary-fg-color, #ffb02e) 28%, transparent) !important;
+                    }
+                `;
+                shadow.appendChild(style);
+            }
+            return true;
+        };
+
+        if (customizeTlumaShell()) return;
+        const observer = new MutationObserver(() => {
+            if (!customizeTlumaShell()) return;
+            observer.disconnect();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     })();
 </script>
 {% endblock %}

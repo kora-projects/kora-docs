@@ -2,8 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Redirect</title>
-    <meta http-equiv="refresh" content="0; url=/kora-docs/v2/en/guides/getting-started/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kora Getting Started Guide - Java and Kotlin</title>
+    <meta name="description" content="Build your first Kora service with step-by-step Java and Kotlin guides covering setup, dependency injection, configuration, HTTP, data, and testing.">
+    <meta name="robots" content="noindex,follow">
+    <link rel="canonical" href="https://koraframework.io/v2/en/guides/getting-started/">
+    <link rel="alternate" hreflang="en" href="https://koraframework.io/v2/en/guides/getting-started/">
+    <link rel="alternate" hreflang="ru" href="https://koraframework.io/v2/ru/guides/getting-started/">
+    <link rel="alternate" hreflang="x-default" href="https://koraframework.io/v2/en/guides/getting-started/">
+    <meta property="og:site_name" content="Kora Framework">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Build Your First Kora Service">
+    <meta property="og:description" content="Step-by-step Java and Kotlin guides for Kora Framework.">
+    <meta property="og:url" content="https://koraframework.io/v2/en/guides/getting-started/">
+    <meta property="og:image" content="https://koraframework.io/v2/en/assets/img/kora-social-guides.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Build your first Kora service">
+    <meta property="og:image" content="https://koraframework.io/v2/en/assets/img/kora-social-square-guides.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="1200">
+    <meta property="og:image:alt" content="Build your first Kora service">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@KoraFramework">
+    <meta name="twitter:title" content="Build Your First Kora Service">
+    <meta name="twitter:description" content="Step-by-step Java and Kotlin guides for Kora Framework.">
+    <meta name="twitter:image" content="https://koraframework.io/v2/en/assets/img/kora-social-guides.jpg">
+    <meta name="twitter:image:alt" content="Build your first Kora service">
+    <meta http-equiv="refresh" content="0; url=/v2/en/guides/getting-started/" />
     <style>
         .centralizedContainer {height: 100%;width: 100%;display: flex;position: fixed;align-items: center;justify-content: center;font-size: 200%;}
     </style>
@@ -12,7 +40,7 @@
             // Universal, version/language-agnostic shortcut. Resolves to the
             // reader's remembered language (kora_lang) and docs version
             // (kora_docs_version) - both cookies are set by every docs page -
-            // so docs can link to a stable /kora-docs/guides/ path. Defaults
+            // so docs can link to a stable /guides/ path. Defaults
             // to the current version (v2) and browser language.
             var section = "guides/getting-started/";
 
@@ -23,19 +51,19 @@
                 lang = nav.indexOf("ru") === 0 ? "ru" : "en";
             }
 
-            var verMatch = document.cookie.match(/(?:^|; )kora_docs_version=(v\d+)(?:;|$)/);
+            var verMatch = document.cookie.match(/(?:^|; )kora_docs_version=(v1|v2)(?:;|$)/);
             var version = verMatch ? verMatch[1] : "v2";
 
-            location.replace("/kora-docs/" + version + "/" + lang + "/" + section);
+            location.replace("/" + version + "/" + lang + "/" + section);
         })();
     </script>
     <noscript>
-        <meta http-equiv="refresh" content="0; url=/kora-docs/v2/en/guides/getting-started/">
+        <meta http-equiv="refresh" content="0; url=/v2/en/guides/getting-started/">
     </noscript>
 </head>
 <body>
 <div class="centralizedContainer">
-    <div><a href="/kora-docs/v2/en/guides/getting-started/">Redirect</a> to documentation.</div>
+    <div>Continue to the <a href="/v2/en/guides/getting-started/">Kora getting-started guide</a>.</div>
 </div>
 </body>
 </html>

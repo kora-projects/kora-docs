@@ -1,4 +1,7 @@
 ---
+seo_title: "Транспорт Netty в Kora: event loop, EPOLL и io_uring"
+seo_description: "Справочник по общему транспорту Netty в Kora: группы event loop, транспорты NIO, EPOLL, KQUEUE и io_uring, фабрики каналов и потоков."
+keywords: ["Kora Framework", "фреймворк Kora", "Netty в Kora", "Netty", "EPOLL", "io_uring"]
 description: "Explains the shared Kora Netty transport: event loop groups, transport selection between NIO, EPOLL, KQUEUE and io_uring, channel factory and thread factories. Use when working with NettyModule, NettyTransportConfig, NettyChannelFactory, NettyEventLoopFactory, EventLoopGroup."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the shared Netty transport and event loop configuration in Kora; key triggers include NettyModule, NettyTransportConfig, NettyChannelFactory, NettyEventLoopFactory, EventLoopGroup, EventLoopWorker, EventLoopBoss, netty config section, Epoll, KQueue, io_uring, NIO."

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Camunda 8 Zeebe Workers: @JobWorker Reference"
+seo_description: "Build Camunda 8 Zeebe job workers in Kora: CamundaClient configuration, @JobWorker handlers, job variables, telemetry and supported signatures."
+keywords: ["Kora Framework", "Kora Camunda 8", "Zeebe", "@JobWorker", "Camunda client", "workflow automation"]
 description: "Explains Kora Camunda 8 Zeebe worker integration, CamundaClient configuration, job handling, variables, telemetry, and supported handler signatures. Use when working with @JobWorker, @JobVariable, @JobVariables, CamundaClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora Camunda 8 Zeebe worker integration, CamundaClient configuration, job handling, variables, telemetry, and supported handler signatures; key triggers include @JobWorker, @JobVariable, @JobVariables, CamundaClient, JobContext, KoraJobWorker, JobWorkerException, ZeebeWorkerModule, ZeebeClientConfig, ZeebeWorkerConfig."

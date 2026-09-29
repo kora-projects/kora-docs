@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Advanced HTTP Client: Mappers, Interceptors, Auth | Kora"
+seo_description: "Advanced Kora HTTP clients: parameter mappers, response code mapping, client interceptors, API key authorization and imperative requests when you need them."
+keywords: ["Kora Framework", "Kora HTTP client advanced", "response code mapping", "client interceptors", "API key authorization", "REST client"]
 search:
   exclude: true
 title: HTTP Client Advanced Guide

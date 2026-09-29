@@ -1,4 +1,7 @@
 ---
+seo_title: "Расширение JUnit 5 для Kora: справочник по @KoraAppTest"
+seo_description: "Справочник по расширению JUnit 5 для Kora: тесты графа приложения, внедрение компонентов, моки Mockito и MockK, тестовая конфигурация, изменение графа."
+keywords: ["Kora Framework", "фреймворк Kora", "JUnit 5 Kora", "@KoraAppTest", "Mockito", "MockK"]
 description: "Explains the Kora JUnit 5 test extension: application graph tests, component injection, tags, Mockito and MockK mocks, test configuration, container modification and lifecycle. Use when working with @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about JUnit 5 testing: the io.koraframework:test-junit5 artifact, the io.koraframework.test.extension.junit5 package, limiting the application graph in a test, injecting components, Mockito and MockK mocks, overriding test configuration and modifying the dependency container; key triggers include @KoraAppTest, @TestComponent, KoraAppGraph, KoraAppTestConfigModifier, KoraConfigModification, KoraAppTestGraphModifier, KoraGraphModification, @MockitoStrictness, Testcontainers."
@@ -62,7 +65,7 @@ agent:
 
     Обработчик символов Kora для тестовых исходников `build.gradle.kts`:
     ```groovy
-    kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
+    kspTest("io.koraframework:symbol-processors:2.0.0.RC2")
     ```
 
     `kspTest` требуется только тогда, когда тестовые исходники объявляют собственное `@KoraApp`, смотрите [Тестовый граф](#test-graph).
@@ -746,7 +749,7 @@ agent:
 
     ```groovy
     dependencies {
-        kspTest("io.koraframework:symbol-processors:2.0.0.RC1")
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC2")
     }
     ```
 

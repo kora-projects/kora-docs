@@ -1,0 +1,1 @@
+--8<-- "ru/talk-kora-why-build-pre-1.0-origin.md"

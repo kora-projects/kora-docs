@@ -8,6 +8,7 @@ description: "Overview of the Kora framework: a compile-time Java and Kotlin fra
 agent:
     use_when: "Use this file for high-level questions about what Kora is and what it provides: the Simplicity, Performance, Efficiency and Transparency principles, the list of available modules and integrations, the JDK 25 / Gradle 9.5 / Kotlin 2.4.10 / KSP 2.3.11 requirements, the io.koraframework group and the io.koraframework:kora-bom BOM, and which guide a newcomer should read first."
 template: landing.html
+glightbox: false
 ---
 
 Kora is a general purpose Java framework for writing server-side Java or Kotlin applications with a focus on Simplicity, Performance, Efficiency, Transparency.

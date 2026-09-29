@@ -1,4 +1,7 @@
 ---
+seo_title: "Метрики в Kora: Micrometer и Prometheus"
+seo_description: "Метрики Micrometer в HTTP-сервисе на Kora: MetricsModule, MeterRegistry, эндпоинт Prometheus, флаги телеметрии и собственные бизнес-метрики."
+keywords: ["Kora Framework", "фреймворк Kora", "метрики Kora", "Micrometer", "Prometheus", "MeterRegistry", "бизнес-метрики"]
 search:
   exclude: true
 title: Метрики с Kora

@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Advanced JDBC: Mappers, Macros, Transactions | Kora"
+seo_description: "Advanced Kora JDBC: Flyway migrations, custom and PostgreSQL mappers, SQL macros, projections, DTOs and transactions in compile-time generated repositories."
+keywords: ["Kora Framework", "Kora JDBC advanced", "SQL macros", "JDBC transactions", "PostgreSQL mapper", "Flyway", "projections"]
 search:
   exclude: true
 title: Advanced JDBC with Kora
@@ -181,7 +184,7 @@ The base JDBC guide already adds the main database dependencies. Keep those depe
 
 `database-jdbc` provides the repository infrastructure, the `JdbcExecutor` used for manual queries and transactions, and the Hikari connection pool. `database-flyway` applies schema migrations before
 repositories are used; it brings only `flyway-core`, so the PostgreSQL dialect artifact `org.flywaydb:flyway-database-postgresql` has to be declared explicitly and kept at the same version as the
-`flyway-core` that Kora `2.0.0.RC1` resolves, which is `13.3.0`. The PostgreSQL driver lets the application connect to the database at runtime.
+`flyway-core` that Kora `2.0.0.RC2` resolves, which is `13.3.0`. The PostgreSQL driver lets the application connect to the database at runtime.
 
 ## Modules { #modules }
 

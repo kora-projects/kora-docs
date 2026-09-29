@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "gRPC-клиент Kora продвинутый: перехватчики, авторизация, стриминг"
+seo_description: "Продвинутые gRPC-клиенты Kora: клиентские перехватчики, метаданные авторизации, стриминговые вызовы, конфигурация и тестирование."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-клиент Kora", "перехватчик gRPC-клиента", "стриминг gRPC", "авторизация gRPC"]
 search:
   exclude: true
 title: Продвинутый gRPC-клиент с Kora
@@ -222,7 +225,7 @@ Kora превращает эту механику в меньший API, кот�
 Версии модулей Kora берутся из BOM Kora `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

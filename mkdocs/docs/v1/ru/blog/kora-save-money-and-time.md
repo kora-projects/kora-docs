@@ -1,0 +1,1 @@
+--8<-- "ru/kora-save-money-and-time.md"

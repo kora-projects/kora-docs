@@ -1,4 +1,7 @@
 ---
+seo_title: "Advanced HTTP Server: Interceptors, Forms, Auth | Kora"
+seo_description: "Advanced Kora HTTP server: custom request mappers, form and multipart bodies, controller and global interceptors, JSON error handling and API key authorization."
+keywords: ["Kora Framework", "Kora HTTP interceptors", "HTTP server advanced", "multipart upload", "API key authorization", "error handling", "Undertow"]
 search:
   exclude: true
 title: HTTP Server Advanced Guide

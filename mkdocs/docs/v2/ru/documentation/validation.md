@@ -1,4 +1,7 @@
 ---
+seo_title: "Валидация Kora: ограничения и валидация методов"
+seo_description: "Справочник по валидации Kora: аннотации ограничений, валидация классов и методов, аргументов и результатов, свои ограничения и ответ HTTP 400."
+keywords: ["Kora Framework", "фреймворк Kora", "валидация Kora", "аннотации ограничений", "валидация методов", "HTTP 400"]
 description: "Explains the Kora validation constraint annotations, class and method validation, argument and result validation, configuration validation, custom constraints, mapping validation failures to HTTP 400, and supported validation signatures. Use when working with @Valid, @Validate, @ValidatedBy, @NotBlank, @NotEmpty, @Pattern, @Size, @OneOf, @UUID, @Uri, @Url, @Range, @Min, @Max, @Positive, @Negative, @Digits, @Past, @Future, @AssertTrue, ValidatorModule, ValidationModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about validation constraint annotations, class and method validation, argument and result validation, configuration validation, custom constraints, mapping ViolationException to HTTP 400, and supported validation signatures; key triggers include @Valid, @Validate, @ValidatedBy, @NotBlank, @NotEmpty, @Pattern, @Size, @OneOf, @UUID, @Uri, @Url, @Range, @Min, @Max, @Positive, @PositiveOrZero, @Negative, @NegativeOrZero, @Digits, @Past, @PastOrPresent, @Future, @FutureOrPresent, @AssertTrue, @AssertFalse, Validator, ValidatorFactory, ValidationContext, Violation, ViolationException, ValidationHttpServerInterceptor, ViolationExceptionHttpServerResponseMapper, ValidatorModule, ValidationModule, validation-common, validation-module."
@@ -34,7 +37,7 @@ agent:
 
     [Зависимость](general.md#dependencies) в `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:validation-module")
     ```
 

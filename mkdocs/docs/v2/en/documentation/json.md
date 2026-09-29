@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora JSON: Compile-Time Readers and Writers Reference"
+seo_description: "Reference for Kora JSON: generated readers and writers, required and optional fields, naming, sealed types, enums, JsonNullable, custom mappers and Jackson."
+keywords: ["Kora Framework", "Kora JSON", "JSON serialization Java", "JsonNullable", "Jackson alternative", "no reflection"]
 description: "Explains Kora compile-time JSON reader and writer generation, field requirements, naming strategies, ignores, serialization levels, value types, JsonNullable, sealed hierarchies, enums, custom codecs, parse errors, and the Jackson escape hatch. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @JsonDiscriminatorField, @NamingStrategy, @Mapping, JsonNullable, RawJson, JacksonModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about compile-time JSON reader and writer generation, field requirements, naming strategies, ignores, serialization levels, value types, JsonNullable, sealed hierarchies, enums, custom codecs, parse errors, and the Jackson escape hatch; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @JsonDiscriminatorField, @JsonDiscriminatorValue, @NamingStrategy, @Mapping, JsonNullable, RawJson, StreamReadException, JsonModule, JacksonModule, json-common."
@@ -35,7 +38,7 @@ For a step-by-step walkthrough before the reference details, see [JSON](../guide
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:json-common")
     ```
 
@@ -1089,7 +1092,7 @@ Every `JacksonModule` mapper depends on an `ObjectMapper` component, so a [facto
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1")
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2")
     implementation("io.koraframework:jackson-module")
     ```
 

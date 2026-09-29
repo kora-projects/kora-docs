@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Dependency Injection Container: Reference"
+seo_description: "Reference for Kora's compile-time DI container: components, modules, factories, tags, conditions, lifecycle, graph resolution and dependency wrappers."
+keywords: ["Kora Framework", "Kora dependency injection", "DI container", "compile-time DI", "@Component", "@Module", "@KoraSubmodule"]
 description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora SOAP Client: WSDL Code Generation and WS-Security"
+seo_description: "Reference for the Kora SOAP client: wsdl2java generation, configuration, generated clients, WS-Security, MTOM, logging, error handling and testing."
+keywords: ["Kora Framework", "Kora SOAP client", "SOAP Java", "WSDL", "wsdl2java", "WS-Security"]
 description: "Explains Kora SOAP client setup, configuration, usage, generated clients, envelope processors and WS-Security, multipart/MTOM and RPC-style operations, logging, exception handling, testing, and the wsdl2java Gradle plugin. Use when working with SoapClientModule, wsdl2java, jakarta.jws.WebService, SOAPAction, SoapFaultException, SoapEnvelopeProcessorsUtils."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora SOAP client setup, configuration, usage patterns, generated clients, envelope processors and WS-Security authorization, multipart/MTOM and RPC-style operations, logger customization, exception handling, testing, and wsdl2java Gradle plugin integration; key triggers include SoapClientModule, SoapServiceConfig, wsdl2java, jakarta.jws.WebService, SOAPAction, SoapException, SoapFaultException, SoapInvalidHttpResponseException, SoapEnvelopeProcessorsUtils, wssAuth, DefaultSoapClientLoggerFactory."

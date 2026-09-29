@@ -1,4 +1,7 @@
 ---
+seo_title: "JSON Guide: Request and Response Mapping in Kora"
+seo_description: "Map JSON in a Kora HTTP API: @Json DTOs, compile-time generated JsonReader and JsonWriter, sealed polymorphic responses and reading JSON without reflection."
+keywords: ["Kora Framework", "Kora JSON", "JSON serialization", "JsonReader", "JsonWriter", "REST API JSON", "no reflection"]
 search:
   exclude: true
 title: JSON Processing with Kora

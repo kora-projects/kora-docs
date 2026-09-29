@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Validation: Constraints and Method Validation"
+seo_description: "Reference for Kora validation: constraint annotations, class and method validation, argument and result checks, custom constraints and HTTP 400 mapping."
+keywords: ["Kora Framework", "Kora validation", "constraint annotations", "method validation", "bean validation alternative", "HTTP 400"]
 description: "Explains the Kora validation constraint annotations, class and method validation, argument and result validation, configuration validation, custom constraints, mapping validation failures to HTTP 400, and supported validation signatures. Use when working with @Valid, @Validate, @ValidatedBy, @NotBlank, @NotEmpty, @Pattern, @Size, @OneOf, @UUID, @Uri, @Url, @Range, @Min, @Max, @Positive, @Negative, @Digits, @Past, @Future, @AssertTrue, ValidatorModule, ValidationModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about validation constraint annotations, class and method validation, argument and result validation, configuration validation, custom constraints, mapping ViolationException to HTTP 400, and supported validation signatures; key triggers include @Valid, @Validate, @ValidatedBy, @NotBlank, @NotEmpty, @Pattern, @Size, @OneOf, @UUID, @Uri, @Url, @Range, @Min, @Max, @Positive, @PositiveOrZero, @Negative, @NegativeOrZero, @Digits, @Past, @PastOrPresent, @Future, @FutureOrPresent, @AssertTrue, @AssertFalse, Validator, ValidatorFactory, ValidationContext, Violation, ViolationException, ValidationHttpServerInterceptor, ViolationExceptionHttpServerResponseMapper, ValidatorModule, ValidationModule, validation-common, validation-module."
@@ -34,7 +37,7 @@ For a step-by-step walkthrough before the reference details, see [Validation](..
 
     [Dependency](general.md#dependencies) in `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:validation-module")
     ```
 

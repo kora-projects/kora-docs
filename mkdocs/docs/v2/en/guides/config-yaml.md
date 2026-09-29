@@ -1,4 +1,7 @@
 ---
+seo_title: "YAML Configuration Guide: Type-Safe Config in Kora"
+seo_description: "Type-safe YAML configuration for a Kora service: config-yaml, @ConfigSource, @ConfigMapper, required values, environment overrides and generated config code."
+keywords: ["Kora Framework", "Kora YAML", "YAML configuration", "type-safe config", "@ConfigSource", "Java configuration", "Kotlin configuration"]
 search:
   exclude: true
 title: YAML Configuration Management with Kora

@@ -1,4 +1,7 @@
 ---
+seo_title: "Проект на Kora: Gradle, JDK, KSP и обработчики аннотаций"
+seo_description: "Настройка проекта на Kora: совместимость JDK и Kotlin, сборка Gradle, kora-bom, обработчики аннотаций для Java, KSP для Kotlin и запуск приложения."
+keywords: ["Kora Framework", "фреймворк Kora", "настройка Kora", "Gradle", "kora-bom", "обработчики аннотаций", "KSP"]
 description: "Explains Kora framework fundamentals, annotation processors, KSP, JDK and Kotlin compatibility, Gradle build setup, dependencies, application entry point, and terminology. Use when working with @KoraApp, KoraApplication, annotation processors, KSP, Gradle, the io.koraframework:kora-bom BOM, application plugin."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora framework fundamentals, annotation processors, KSP, JDK and Kotlin compatibility, Gradle, the io.koraframework:kora-bom BOM, module dependencies, the @KoraApp entry point and the application plugin."
@@ -210,7 +213,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
 
         annotationProcessor "io.koraframework:annotation-processors"
 
@@ -248,9 +251,9 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-server-undertow")
@@ -298,7 +301,7 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
         testAnnotationProcessor "io.koraframework:annotation-processors" //(3)!
@@ -315,10 +318,10 @@ Kora рассчитана на сборку через [Gradle](https://gradle.o
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
-        kspTest("io.koraframework:symbol-processors:2.0.0.RC1") //(3)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC2") //(3)!
     }
     ```
 

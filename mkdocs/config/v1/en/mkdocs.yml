@@ -4,7 +4,9 @@ site_dir: "../../../generated/v1/en"
 
 # Project information
 site_name: Kora Framework 1.2.21
-site_url: https://kora-projects.github.io/kora-docs/v1/en/
+site_url: https://koraframework.io/v1/en/
+hooks:
+  - ../../../hooks/translations.py
 nav:
   - Guides:
       - Introduction: guides/home.md
@@ -93,6 +95,68 @@ nav:
         - Camunda BPMN: documentation/camunda7-bpmn.md
         - Camunda REST: documentation/camunda7-rest.md
         - Camunda Zeebe: documentation/camunda8-worker.md
+  - Blog:
+      - All articles: blog/index.md
+      - You Need Good JVM Engineers: blog/you-need-good-jvm-engineers.md
+      - Framework Skills vs Vendor Lock-In: blog/you-dont-need-kora-developers.md
+      - Why Kora Instead of Jakarta EE: blog/kora-instead-of-jakarta-ee.md
+      - Why Kora Over Spring: blog/kora-over-spring-for-backend.md
+      - Why Kora Is Compile-Time: blog/why-kora-compile-time-framework.md
+      - Kora Rethinks the Framework Model: blog/kora-rethinks-framework-model-itself.md
+      - Why Kora Is the Right Default: blog/kora-right-default-for-backend.md
+      - Why Kora Doesn't Need an ORM: blog/kora-dont-need-orm.md
+      - Compile-Time Frameworks and AI Agents: blog/neuro-agent-and-kora.md
+      - Compile-Time Diagnostics: blog/compile-time-diagnostics.md
+      - Where Kora Performance Comes From: blog/kora-performance.md
+      - Virtual Threads vs Reactive: blog/virtual-thread-vs-reactive.md
+      - Virtual Threads in Production: blog/virtual-thread-in-production.md
+      - Virtual Threads First: blog/virtual-thread-first.md
+      - Thin Abstractions: blog/kora-abstractions.md
+      - The Myth of the Large Ecosystem: blog/myth-of-large-community.md
+      - Easier to Learn: blog/kora-easier-to-learn.md
+      - Extending the Ecosystem: blog/kora-extending-framework-ecosystem.md
+      - Cost of a Missing Integration: blog/cost-of-missing-integration.md
+      - Least Magic for AI Agents: blog/neuro-agent-best-native-kora-framework.md
+      - Application Graph as Architecture: blog/application-graph-as-architecture.md
+      - Testing the Production Graph: blog/kora-test-graph.md
+      - Structured Concurrency: blog/structured-concurrency-in-kora.md
+      - Kora vs Spring Through STEP: blog/kora-vs-spring-through-step-lens.md
+      - Kora STEP: blog/kora-step.md
+      - Startup vs Build Time: blog/kora-startup-vs-build-time.md
+      - Production Knowledge Built In: blog/kora-production-knowledge-built-in.md
+      - Policy-Driven Infrastructure: blog/kora-infra-and-funcs.md
+      - Performance Saves Money: blog/kora-save-money-and-time.md
+      - OpenAPI-First Development: blog/kora-openapi-development.md
+      - One STEP at a Time: blog/neuro-agents-kora-step.md
+      - One Problem, One Solution: blog/one-problem-one-solution.md
+      - Observability by Design: blog/kora-observability.md
+      - No Runtime Magic: blog/no-runtime-magic.md
+      - Learning a Framework in the AI Era: blog/neuro-era-learning-framework.md
+      - Kora Skill: blog/kora-skill-between-docs-and-agent.md
+      - Accidentally AI-Native: blog/neuro-native-framework-kora-became.md
+      - Framework Expertise > Community: blog/neuro-era-framework-matters-more-community.md
+      - A Million Answers Are a Warning Sign: blog/million-answers-a-warning-sign.md
+      - Build Your Own Module: blog/kora-build-your-module.md
+      - HTTP Request on Virtual Threads: blog/http-request-throught-kora.md
+      - Generated Code Debugging: blog/generated-code-transparent-debugging.md
+      - Focused Engineering Is Not NIH: blog/kora-focused-engineering-is-not-nih.md
+      - Fast Startup: blog/fast-startup-not-convenience.md
+      - Enterprise-Ready Without a Universe: blog/kora-enterprise-ready-without-universe.md
+      - Compile-Time vs Dev Speed: blog/kora-compile-time-and-development-speed.md
+      - Documentation Maturity: blog/kora-documentation-maturity.md
+      - Docs in the AI Era: blog/kora-documentation-in-the-ai-era.md
+      - Dynamic Runtime Refresh: blog/kora-dynamic-runtime-refresh.md
+      - Testing Approaches: blog/kora-testing-different-approaches.md
+      - Compile-Time DI at Scale: blog/compile-time-di-at-scale-kora.md
+      - Compile-Time DI: blog/compile-time-dependency-injection.md
+      - Compile-Time AOP: blog/kora-aop.md
+      - Strong Defaults Are Not Lock-In: blog/kora-strong-default-not-lock-in.md
+      - Why Kora for Kotlin: blog/kora-may-be-best-for-kotlin.md
+      - Compile-Time ≠ Compile-Time-Only: blog/compile-time-not-libraries.md
+      - The Price of a PhD in Spring: blog/talk-joker-phd-in-spring-talk.md
+      - Kora in Practice: blog/talk-benchmark-others-and-kora.md
+      - Beyond Spring Magic: blog/talk-jvm-day-cognitive-load.md
+      - Why Kora Was Built: blog/talk-kora-why-build-pre-1.0-origin.md
   - Community:
       - Development: community/development.md
   - Changelog: changelog/changelog.md
@@ -168,17 +232,17 @@ extra:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
   alternate:
     - name: Русский
-      link: /kora-docs/v1/ru/
+      link: /v1/ru/
       lang: ru
     - name: English
-      link: /kora-docs/v1/en/
+      link: /v1/en/
       lang: en
   docs_version: v1
   versions:
     - name: V1
-      link: /kora-docs/v1/en/
+      link: /v1/en/
     - name: V2
-      link: /kora-docs/v2/en/
+      link: /v2/en/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora
@@ -206,7 +270,11 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - !relative $docs_dir
+        - !relative $config_dir/../../../blog
+      check_paths: true
   - pymdownx.betterem
   - pymdownx.tabbed:        # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
       alternate_style: true

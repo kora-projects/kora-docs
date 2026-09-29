@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Введение в Kora: основы внедрения зависимостей при компиляции"
+seo_description: "Основная модель Kora: DI-контейнер на этапе компиляции, @KoraApp, @Component и @Module, объявление и разрешение зависимостей, система тегов."
+keywords: ["Kora Framework", "фреймворк Kora", "введение в Kora", "внедрение зависимостей", "DI на этапе компиляции", "@Component", "@Module"]
 search:
   exclude: true
 title: Внедрение зависимостей в Kora

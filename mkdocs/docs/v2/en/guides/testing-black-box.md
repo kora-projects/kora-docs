@@ -1,4 +1,7 @@
 ---
+seo_title: "Black-Box Testing Guide: Test the Packaged Kora App"
+seo_description: "Test a packaged Kora application as a black box: build a Docker image, run it with Testcontainers, wait for readiness and call its HTTP API from tests."
+keywords: ["Kora Framework", "Kora black-box testing", "Testcontainers", "Docker", "end-to-end testing", "API testing"]
 search:
   exclude: true
 title: Black Box Testing with Kora

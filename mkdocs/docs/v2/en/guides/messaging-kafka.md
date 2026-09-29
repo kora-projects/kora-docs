@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Kafka Guide: Producers and Consumers in Kora"
+seo_description: "Build event-driven Kora services with Apache Kafka: typed events, @KafkaPublisher producers, @KafkaListener consumers, configuration and Docker Compose."
+keywords: ["Kora Framework", "Kora Kafka", "Apache Kafka Java", "Kafka consumer", "Kafka producer", "event-driven microservices"]
 search:
   exclude: true
 title: Messaging with Kafka
@@ -190,7 +193,7 @@ First, add Kafka support to the project you already built in the HTTP Server gui
     }
     ```
 
-Kafka support in Kora comes from a single `kafka` artifact, which brings the Apache Kafka client (`4.3.1` in Kora `2.0.0.RC1`) with it. JSON support matters because we want to send structured event
+Kafka support in Kora comes from a single `kafka` artifact, which brings the Apache Kafka client (`4.3.1` in Kora `2.0.0.RC2`) with it. JSON support matters because we want to send structured event
 objects instead of raw strings, and the code generator for both the publisher and the listener already lives in the `annotation-processors` / `symbol-processors` artifact you apply.
 
 ## Modules { #modules }

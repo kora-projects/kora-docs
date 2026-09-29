@@ -1,4 +1,7 @@
 ---
+seo_title: "Observability Guide: Metrics, Tracing, Logs and Probes | Kora"
+seo_description: "How metrics, tracing, logging and probes fit together in a Kora service: default telemetry, the module graph, configuration and a Docker Compose stack."
+keywords: ["Kora Framework", "Kora observability", "OpenTelemetry", "Prometheus", "distributed tracing", "structured logging", "health probes"]
 search:
   exclude: true
 title: Observability & Monitoring with Kora

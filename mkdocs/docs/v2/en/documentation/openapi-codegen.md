@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora OpenAPI Codegen: Generate Servers and Clients"
+seo_description: "Reference for Kora OpenAPI code generation: generator modes for Java and Kotlin clients and servers, options, extensions, validation and authorization."
+keywords: ["Kora Framework", "Kora OpenAPI", "openapi-generator", "OpenAPI code generation", "contract-first", "API client generation"]
 description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
 agent:
     use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
@@ -20,7 +23,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     ```groovy
     buildscript {
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2")
         }
     }
     ```
@@ -40,7 +43,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     ```groovy
     buildscript {
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2")
         }
     }
     ```

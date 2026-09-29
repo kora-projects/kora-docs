@@ -1,0 +1,1 @@
+--8<-- "ru/talk-jvm-day-cognitive-load.md"

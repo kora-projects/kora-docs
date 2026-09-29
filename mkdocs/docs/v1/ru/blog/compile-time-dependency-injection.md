@@ -1,0 +1,1 @@
+--8<-- "ru/compile-time-dependency-injection.md"

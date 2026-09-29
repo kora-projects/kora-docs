@@ -1,0 +1,1 @@
+--8<-- "ru/kora-over-spring-for-backend.md"

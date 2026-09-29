@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora S3 Client: Declarative Client and AWS SDK"
+seo_description: "Reference for Kora S3: the declarative @S3.Client on Kora's HTTP client and the AWS SDK S3Client wrapper — operations, models, errors and testing."
+keywords: ["Kora Framework", "Kora S3", "S3 client Java", "AWS SDK S3", "object storage", "declarative client"]
 description: "Explains the two independent Kora S3 artifacts: the declarative s3-client-kora client built on Kora's own HTTP client and the s3-client-aws wrapper that publishes the AWS SDK S3Client. Covers @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, request arguments, response models, configuration, exceptions and testing."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about S3-compatible object storage: choosing between s3-client-kora and s3-client-aws, declarative clients, bucket and credentials resolution, key templates, multipart upload, byte ranges and exception handling; key triggers include @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, KoraS3ClientModule, AwsS3ClientModule, S3ClientConfig, AwsS3Config, S3ClientFactory, GetObjectResult, HeadObjectResult, ListBucketResult, S3ClientNoSuchKeyException."

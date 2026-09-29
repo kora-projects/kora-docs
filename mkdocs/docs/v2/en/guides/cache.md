@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Cache Guide: @Cacheable, @CachePut and Invalidation in Kora"
+seo_description: "Add caching to a Kora service with Caffeine: @Cacheable, @CachePut, @CacheInvalidate, cache warm-up, configuration and the generated AOP code behind it."
+keywords: ["Kora Framework", "Kora cache", "@Cacheable", "Caffeine cache", "cache invalidation", "compile-time AOP", "Java caching"]
 search:
   exclude: true
 title: Caching Strategies with Kora

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Tracing: OpenTelemetry OTLP Reference"
+seo_description: "Reference for Kora tracing: OpenTelemetry OTLP gRPC and HTTP exporters, configuration, context propagation, sampling, manual spans and async context."
+keywords: ["Kora Framework", "Kora tracing", "OpenTelemetry", "OTLP exporter", "context propagation", "sampling"]
 description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."

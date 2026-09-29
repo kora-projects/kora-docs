@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI-сервер Kora продвинутый: несколько контрактов, авторизация"
+seo_description: "Продвинутые contract-first серверы Kora: несколько контрактов OpenAPI, формы и multipart, перехватчики через расширения генератора, ошибки валидации, авторизация."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI Kora", "несколько контрактов OpenAPI", "авторизация OpenAPI", "openapi-generator", "multipart"]
 search:
   exclude: true
 title: Продвинутое руководство по контрактному HTTP-серверу

@@ -1,4 +1,7 @@
 ---
+seo_title: "Миграции баз данных в Kora: Flyway и Liquibase"
+seo_description: "Миграции баз данных Flyway или Liquibase в Kora: подключение модуля, конфигурация, поведение при старте, диалекты СУБД и интеграция с JDBC."
+keywords: ["Kora Framework", "фреймворк Kora", "миграции Kora", "Flyway", "Liquibase", "миграции БД"]
 description: "Explains Kora database migration modules for Flyway and Liquibase, migration configuration, startup behavior, DBMS dialect artifacts, and JDBC integration. Use when working with FlywayJdbcDatabaseModule, LiquibaseJdbcDatabaseModule, FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDataSource."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora database migration modules for Flyway and Liquibase, migration configuration, migration modes, startup behavior, DBMS dialect artifacts and JDBC integration; key triggers include FlywayJdbcDatabaseModule, LiquibaseJdbcDatabaseModule, FlywayJdbcDatabaseInterceptor, LiquibaseJdbcDatabaseInterceptor, FlywayConfig, LiquibaseConfig, JdbcDataSource, Unsupported Database."

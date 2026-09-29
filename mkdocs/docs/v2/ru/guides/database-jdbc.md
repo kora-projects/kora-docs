@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "База данных JDBC в Kora: репозитории на чистом SQL"
+seo_description: "Подключение сервиса на Kora к PostgreSQL через JDBC: сущности, интерфейсы @Repository с SQL-запросами, настройка Hikari и генерация репозиториев."
+keywords: ["Kora Framework", "фреймворк Kora", "JDBC в Kora", "репозитории Kora", "PostgreSQL Java", "SQL-репозиторий", "Hikari"]
 search:
   exclude: true
 title: Интеграция с базой данных в Kora
@@ -199,7 +202,7 @@ JDBC также вводит инфраструктуру времени вып�
 
 `database-jdbc` даёт инфраструктуру репозиториев и пул соединений Hikari. `database-flyway` выполняет миграции схемы до того, как репозитории начнут работать, но тянет за собой только `flyway-core`:
 начиная с Flyway 10 поддержка каждой СУБД вынесена в отдельный артефакт, поэтому `org.flywaydb:flyway-database-postgresql` нужно добавить явно. Без него приложение падает на старте с ошибкой
-`Unsupported Database: PostgreSQL`. Версию диалекта держите совпадающей с версией `flyway-core`, которую приносит Kora `2.0.0.RC1`, — это `13.3.0`. Драйвер PostgreSQL нужен только во время выполнения.
+`Unsupported Database: PostgreSQL`. Версию диалекта держите совпадающей с версией `flyway-core`, которую приносит Kora `2.0.0.RC2`, — это `13.3.0`. Драйвер PostgreSQL нужен только во время выполнения.
 
 ## Модули { #modules }
 

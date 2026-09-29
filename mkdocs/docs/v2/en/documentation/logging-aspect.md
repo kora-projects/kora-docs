@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Logging Aspect: @Log, Masking and MDC"
+seo_description: "Reference for Kora's logging aspect: log method arguments and results with @Log, selective logging, structured values, masking sensitive data and MDC."
+keywords: ["Kora Framework", "Kora @Log", "logging aspect", "data masking", "MDC", "compile-time AOP"]
 description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."

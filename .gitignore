@@ -15,3 +15,4 @@
 
 # Local preview assembly produced by scripts/serve-local.sh
 .local-serve/
+__pycache__/

@@ -1,4 +1,7 @@
 ---
+seo_title: "Кеширование в Kora: @Cacheable, @CachePut и инвалидация"
+seo_description: "Кеширование в сервисе на Kora с Caffeine: @Cacheable, @CachePut, @CacheInvalidate, прогрев кеша, конфигурация и сгенерированный AOP-код."
+keywords: ["Kora Framework", "фреймворк Kora", "кеш Kora", "@Cacheable", "Caffeine", "инвалидация кеша", "AOP на этапе компиляции"]
 search:
   exclude: true
 title: Стратегии кэширования с Kora

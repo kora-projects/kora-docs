@@ -1,0 +1,1 @@
+--8<-- "ru/why-kora-compile-time-framework.md"

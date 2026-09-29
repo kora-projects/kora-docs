@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Liveness and Readiness Probes Reference"
+seo_description: "Reference for Kora probes: liveness and readiness on the system HTTP server, probe paths, built-in framework probes, aggregation and Kubernetes behavior."
+keywords: ["Kora Framework", "Kora probes", "liveness probe", "readiness probe", "Kubernetes", "health check"]
 description: "Explains Kora readiness and liveness probes on the system HTTP server, probe paths in the httpServer.system config section, built-in framework probes, aggregation and response semantics, and Kubernetes-style availability reporting. Use when working with ReadinessProbe, LivenessProbe, ReadinessProbeFailure, LivenessProbeFailure, /system/readiness, /system/liveness."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about readiness and liveness probes, the system HTTP server endpoints /system/readiness and /system/liveness, probe path configuration under httpServer.system, built-in framework readiness probes, and waiting on readiness during startup; key triggers include ReadinessProbe, LivenessProbe, ReadinessProbeFailure, LivenessProbeFailure, readinessPath, livenessPath, Probe is not ready yet."

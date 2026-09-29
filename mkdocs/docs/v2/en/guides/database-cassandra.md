@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Cassandra Database Guide: Repositories with CQL in Kora"
+seo_description: "Use Apache Cassandra from Kora: entities, @Repository interfaces with CQL queries, driver configuration and generated repository code for Java and Kotlin."
+keywords: ["Kora Framework", "Kora Cassandra", "Apache Cassandra Java", "CQL repository", "Cassandra driver", "NoSQL"]
 search:
   exclude: true
 title: Cassandra Database Integration with Kora

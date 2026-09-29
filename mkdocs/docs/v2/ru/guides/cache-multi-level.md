@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Многоуровневый кеш в Kora: Caffeine и Redis"
+seo_description: "Двухуровневый кеш в Kora: Caffeine в памяти перед Redis — контракт кеша, реализация, прогрев, конфигурация и запуск через Docker Compose."
+keywords: ["Kora Framework", "фреймворк Kora", "многоуровневый кеш Kora", "кеш Redis", "Caffeine", "распределённый кеш"]
 search:
   exclude: true
 title: Многоуровневое кеширование с Redis

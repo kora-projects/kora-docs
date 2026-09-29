@@ -1,4 +1,7 @@
 ---
+seo_title: "Hello World: первое приложение на Kora на Java или Kotlin"
+seo_description: "Первый сервис на Kora: настройка Gradle и JDK, kora-bom, обработчики аннотаций или KSP, @KoraApp, HTTP-контроллер, конфигурация и сгенерированный код."
+keywords: ["Kora Framework", "фреймворк Kora", "начало работы с Kora", "hello world Kora", "REST-сервис на Java", "Kotlin бэкенд", "Gradle"]
 search:
   exclude: true
 title: Создание первого приложения на Kora
@@ -507,7 +510,7 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
     }
     ```
 
@@ -521,7 +524,7 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```groovy
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
 
@@ -543,9 +546,9 @@ Kora состоит из нескольких модулей. Чтобы не у
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon") //(3)!
         implementation("io.koraframework:http-server-undertow") //(4)!

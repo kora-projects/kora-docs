@@ -1,0 +1,1 @@
+--8<-- "en/compile-time-diagnostics.md"

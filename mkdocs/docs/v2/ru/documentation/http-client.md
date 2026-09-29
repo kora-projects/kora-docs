@@ -1,4 +1,7 @@
 ---
+seo_title: "HTTP-клиент Kora: декларативные клиенты, OkHttp, JDK"
+seo_description: "Справочник по HTTP-клиентам Kora: транспорты OkHttp, Apache HttpClient и JDK, декларативный @HttpClient, маппинг, перехватчики, авторизация, телеметрия."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-клиент Kora", "@HttpClient", "OkHttp", "декларативный REST-клиент"]
 description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule."

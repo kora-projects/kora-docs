@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Project Setup: Gradle, JDK, KSP and Annotation Processors"
+seo_description: "Set up a Kora project: JDK and Kotlin compatibility, Gradle build, the kora-bom, annotation processors for Java, KSP for Kotlin, and running the application."
+keywords: ["Kora Framework", "Kora setup", "Kora Gradle", "kora-bom", "annotation processors", "KSP", "JDK 25"]
 description: "Explains Kora framework fundamentals, annotation processors, KSP, JDK and Kotlin compatibility, Gradle build setup, dependencies, application entry point, and terminology. Use when working with @KoraApp, KoraApplication, annotation processors, KSP, Gradle, the io.koraframework:kora-bom BOM, application plugin."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora framework fundamentals, annotation processors, KSP, JDK and Kotlin compatibility, Gradle, the io.koraframework:kora-bom BOM, module dependencies, the @KoraApp entry point and the application plugin."
@@ -210,7 +213,7 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
 
         annotationProcessor "io.koraframework:annotation-processors"
 
@@ -248,9 +251,9 @@ The `BOM` version is specified once, and the rest of the Kora dependencies are d
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-server-undertow")
@@ -298,7 +301,7 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
         testAnnotationProcessor "io.koraframework:annotation-processors" //(3)!
@@ -315,10 +318,10 @@ But the application must also connect the [`BOM`](https://docs.gradle.org/curren
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
-        kspTest("io.koraframework:symbol-processors:2.0.0.RC1") //(3)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC2") //(3)!
     }
     ```
 

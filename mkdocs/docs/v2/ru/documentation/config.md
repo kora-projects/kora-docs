@@ -1,4 +1,7 @@
 ---
+seo_title: "Конфигурация Kora: справочник по HOCON, YAML и типам"
+seo_description: "Справочник по конфигурации Kora: источники HOCON и YAML, типизированный маппинг через @ConfigSource, внедрение, отслеживание изменений и поддерживаемые типы."
+keywords: ["Kora Framework", "фреймворк Kora", "конфигурация Kora", "HOCON", "YAML", "@ConfigSource", "типизированная конфигурация"]
 description: "Explains the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types. Use when working with @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
