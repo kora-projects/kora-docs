@@ -1,14 +1,14 @@
 ---
 seo_title: "Метрики в Kora: Micrometer и Prometheus"
-seo_description: "Метрики Micrometer в HTTP-сервисе на Kora: MetricsModule, MeterRegistry, эндпоинт Prometheus, флаги телеметрии и собственные бизнес-метрики."
+seo_description: "Метрики Micrometer в HTTP-сервисе на Kora: MetricsModule, MeterRegistry, эндпоинт Prometheus, флаги телеметрии, общий переключатель metrics.enabled и собственные бизнес-метрики."
 keywords: ["Kora Framework", "фреймворк Kora", "метрики Kora", "Micrometer", "Prometheus", "MeterRegistry", "бизнес-метрики"]
 search:
   exclude: true
 title: Метрики с Kora
 summary: Build focused Micrometer metrics for a Kora HTTP service, including framework metrics, business counters, timers, private metrics endpoints, and practical verification.
-description: "Step-by-step Micrometer metrics for a Kora HTTP service: the io.koraframework:micrometer-module dependency, MetricsModule and the injected MeterRegistry, the Prometheus scrape endpoint on httpServer.system.metricsPath, the telemetry.metrics.enabled flag that gates every component metric, slo histogram buckets and common tags, and a custom MetricsService with a Timer, a tagged Counter and a ConcurrentHashMap meter cache."
+description: "Step-by-step Micrometer metrics for a Kora HTTP service: the io.koraframework:micrometer-module dependency, MetricsModule and the injected MeterRegistry, the Prometheus scrape endpoint on httpServer.system.metricsPath, the telemetry.metrics.enabled flag that gates every component metric, slo histogram buckets and common tags, the application-wide metrics.enabled switch and metrics.tags common tags, and a custom MetricsService with a Timer, a tagged Counter and a ConcurrentHashMap meter cache."
 agent:
-  use_when: "Use this file for questions about adding metrics to a Kora application step by step: io.koraframework:micrometer-module, MetricsModule, injecting MeterRegistry, Micrometer Counter and Timer, serviceLevelObjectives, tag cardinality, caching meters in a ConcurrentHashMap, the /metrics endpoint on httpServer.system.port, and why http_server_* metrics are missing until telemetry.metrics.enabled is set to true."
+  use_when: "Use this file for questions about adding metrics to a Kora application step by step: io.koraframework:micrometer-module, MetricsModule, injecting MeterRegistry, Micrometer Counter and Timer, serviceLevelObjectives, tag cardinality, caching meters in a ConcurrentHashMap, the /metrics endpoint on httpServer.system.port, the application-wide metrics.enabled switch and metrics.tags, and why http_server_* metrics are missing until telemetry.metrics.enabled is set to true."
 tags: observability, metrics, micrometer, meter-registry, counters, timers, monitoring
 ---
 
@@ -275,7 +275,7 @@ Micrometer можно воспринимать как универсальный
     3.  Метрики источника данных JDBC и его пула соединений.
 
 На собственные метрики, которые ваш код регистрирует через `MeterRegistry`, этот флаг не влияет. `user.creation.total` появится, как только подключен `MetricsModule` и код отработал, потому что сам
-реестр всегда живой. Флаг управляет только телеметрией модулей Kora.
+реестр живой. Флаг управляет только телеметрией модулей Kora.
 
 ### Корзины гистограммы и общие теги { #slo-and-tags }
 
@@ -317,6 +317,40 @@ Micrometer можно воспринимать как универсальный
 
 Длительность в `slo` несет свою единицу измерения (`"1ms"`, `"250ms"`, `"1s"`), а голое число читается как миллисекунды, поэтому `slo = [1, 10, 50]` и `slo = ["1ms", "10ms", "50ms"]` описывают один и тот же список.
 Эти два ключа действуют только на метрики, которые сообщает сам модуль. Собственный таймер, который вы сейчас напишете, получает свои корзины из построителя Micrometer — об этом следующий раздел.
+
+### Общий переключатель и общие теги { #application-metrics }
+
+У `MetricsModule` есть собственная секция `metrics` для того, что относится ко всему реестру, а не к одному модулю:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    metrics {
+      enabled = true //(1)!
+      tags { //(2)!
+        "application" = "guide-observability-app"
+      }
+    }
+    ```
+
+    1.  Общий переключатель приложения. При `false` реестр пустой (no-op), а `/metrics` отвечает пустым телом (по умолчанию: `true`).
+    2.  Общие теги, добавляемые ко всем метрикам реестра, включая JVM и собственные метрики (по умолчанию: `{}`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    metrics:
+      enabled: true #(1)!
+      tags: #(2)!
+        application: "guide-observability-app"
+    ```
+
+    1.  Общий переключатель приложения. При `false` реестр пустой (no-op), а `/metrics` отвечает пустым телом (по умолчанию: `true`).
+    2.  Общие теги, добавляемые ко всем метрикам реестра, включая JVM и собственные метрики (по умолчанию: `{}`).
+
+Обратите внимание на противоположные умолчания: `metrics.enabled` равен `true`, а каждый `<module>.telemetry.metrics.enabled` — `false`. `metrics.enabled = false` — единственный переключатель, который
+глушит все, включая собственные метрики, не убирая `MetricsModule` из графа. Если значение общего тега известно только при старте, его вместо конфигурации добавляет компонент `MetricsTagsProvider`, смотрите
+[Метрики](../documentation/metrics.md#tags-provider).
 
 ## Сервис метрик { #metrics-service }
 
@@ -799,6 +833,9 @@ MeterRegistry:
 
 `/metrics` отвечает `200`, но там только значения JVM:
 : Установите `<module>.telemetry.metrics.enabled = true` для тех модулей, за которыми хотите наблюдать.
+
+`/metrics` отвечает `200` с пустым телом:
+: Общий для приложения `metrics.enabled` равен `false`, поэтому `MetricsModule` предоставляет пустой реестр.
 
 `/metrics` отвечает `# Metric Scraper disabled`:
 : `MetricsModule` не подключен, поэтому в графе нет `MetricsScraper`.

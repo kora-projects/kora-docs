@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora Tracing: OpenTelemetry OTLP Reference"
 seo_description: "Reference for Kora tracing: OpenTelemetry OTLP gRPC and HTTP exporters, configuration, context propagation, sampling, manual spans and async context."
-keywords: ["Kora Framework", "Kora tracing", "OpenTelemetry", "OTLP exporter", "context propagation", "sampling"]
-description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
+keywords: ["Kora Framework", "Kora tracing", "OpenTelemetry", "OTLP exporter", "context propagation", "sampling", "Resource attributes", "OpentelemetryTracingAttributesProvider"]
+description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, Resource attributes from configuration and OpentelemetryTracingAttributesProvider components, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
+  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, service-wide Resource attributes from tracing.attributes and OpentelemetryTracingAttributesProvider components, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
 ---
 
 Tracing helps link separate application operations into a single execution chain and understand where a request spent time or failed.
@@ -95,7 +95,7 @@ Tracing is described by two configuration sections.
 The `tracing` section is described by `OpentelemetryTracingConfig` and is provided by `OpentelemetryTracingModule`:
 
 - `enabled` — the global tracing switch (default: `true`). With `false` Kora installs a no-op `TracerProvider`, so no `Span` are recorded and nothing is exported.
-- `attributes` — `OpenTelemetry Resource` attributes (default: `{}`).
+- `attributes` — `OpenTelemetry Resource` attributes (default: `{}`); merged with the attributes of [`OpentelemetryTracingAttributesProvider`](#attributes-provider) components and winning on a key conflict.
 
 The `tracing.exporter` section is described by `OpentelemetryGrpcExporterConfig` (for `OTLP/gRPC`) and `OpentelemetryHttpExporterConfig` (for `OTLP/HTTP`); both interfaces have the same field set, so switching the exporter module does not change the configuration.
 If `tracing.exporter.endpoint` is not specified, no exporter and no span processor are created — the application starts and spans are still created and propagated, they are simply never sent to an external collector.
@@ -228,6 +228,39 @@ The example project uses environment substitution for the endpoint and overrides
     ```
 
     1. Resolved from the `METRIC_COLLECTOR_ENDPOINT` environment variable, see [environment substitution](config.md#environment-variables).
+
+### Resource attributes provider { #attributes-provider }
+
+When a `Resource` attribute is known only at startup (a host name, a pod name, a build version), register an `OpentelemetryTracingAttributesProvider` component from the `io.koraframework.opentelemetry.tracing` package:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class HostTracingAttributesProvider implements OpentelemetryTracingAttributesProvider {
+
+        @Override
+        public Map<String, String> attributes() {
+            return Map.of("host.name", System.getenv().getOrDefault("HOSTNAME", "unknown"));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class HostTracingAttributesProvider : OpentelemetryTracingAttributesProvider {
+
+        override fun attributes(): Map<String, String> {
+            return mapOf("host.name" to (System.getenv("HOSTNAME") ?: "unknown"))
+        }
+    }
+    ```
+
+Any number of providers can be registered. `OpentelemetryTracingModule` collects all of them and puts their attributes into the `Resource` of the `TracerProvider`, so they are attached to every `Span` exactly like `tracing.attributes`.
+`tracing.attributes` is applied last, so on a key conflict the configuration value wins over every provider.
+Attributes are resolved once, when the `Resource` is created.
 
 If the application also has the [metrics](metrics.md) module, its `MeterProvider` is handed to the exporter and the span processor, and they report their own internal metrics through the same registry.
 
@@ -426,6 +459,7 @@ Crossing a thread boundary is the one case that needs explicit work — see [Asy
 
 The core tracing components are provided by `OpentelemetryTracingModule` as `@DefaultComponent`, which means each of them can be replaced by declaring your own component of the same type:
 
+- `Resource` — the service-wide attributes attached to every `Span`; by default built from [`OpentelemetryTracingAttributesProvider`](#attributes-provider) components and `tracing.attributes`.
 - `Sampler` — decides which `Span` are recorded. The default is `Sampler.parentBased(Sampler.alwaysOn())`, i.e. record every root `Span` and follow the parent's decision for child `Span`.
 - `IdGenerator` — generates trace and span identifiers. The default is `IdGenerator.random()`.
 - `Supplier<SpanLimits>` — limits on attributes, events, and links per `Span`. The default is `SpanLimits.getDefault()`.
@@ -508,7 +542,7 @@ Log correlation is done by the [Logback module](logging-slf4j.md#logback): `Kora
 
 ```xml
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+    <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
 </appender>
 
 <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">

@@ -8,7 +8,7 @@ title: Наблюдаемость и мониторинг с Kora
 summary: Assemble metrics, tracing, structured logging, and health probes into one Kora application, and find the focused guide for each signal.
 description: "The Kora observability hub: how metrics, tracing, logging and probes fit together in one application, which telemetry is on by default and which is not, the complete module graph with MetricsModule and OpentelemetryHttpExporterModule, the full httpServer.system, tracing and logging configuration, traceId correlation in log lines, the system port that serves /metrics and the probes, and links to the focused metrics, tracing and probes guides."
 agent:
-  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
+  use_when: "Use this file for questions about Kora observability as a whole: which of metrics, tracing, logging or probes to use for a problem, how they combine in one application, the complete @KoraApp graph with MetricsModule and OpentelemetryHttpExporterModule, why telemetry.metrics.enabled and telemetry.logging.enabled default to false while tracing defaults to true, the application-wide metrics.enabled switch, the system HTTP port 8085 serving /metrics, /system/liveness and /system/readiness, correlating logs with traceId and spanId, and where each signal is taught step by step."
 tags: observability, metrics, tracing, logging, health-checks, monitoring
 ---
 
@@ -309,7 +309,7 @@ logging {
 
 !!! warning "Трассировка включена по умолчанию. Метрики и логирование — нет."
 
-    `TelemetryConfig.TracingConfig#enabled` возвращает `true`, а `MetricsConfig#enabled` и `LoggingConfig#enabled` — оба `false`. Все модули Kora наследуют эти умолчания.
+    `TelemetryConfig.TracingConfig#enabled` возвращает `true`, а `TelemetryConfig.MetricsConfig#enabled` и `TelemetryConfig.LoggingConfig#enabled` — оба `false`. Все модули Kora наследуют эти умолчания.
 
 Эта асимметрия сбивает с толку, поэтому стоит сказать прямо. Приложение, подключившее `MetricsModule` и больше ничего, нормально стартует и отвечает на `/metrics` кодом `200` — но в теле будут только
 значения JVM, процесса и `kora.up`. Не будет ни `http_server_request_duration_seconds`, ни `http_client_*`, ни `db_*`, и в логах не будет объяснения. Собственный `telemetry.metrics.enabled` модуля тоже
@@ -318,8 +318,8 @@ logging {
 С трассировкой все наоборот. Подключите модуль экспортера, задайте адрес — и спаны пойдут без дополнительных переключателей. Молча выключает трассировку как раз *отсутствующий* адрес: без
 `tracing.exporter.endpoint` спаны по-прежнему создаются, а контекст по-прежнему передается, они просто никуда не отправляются — и об этом снова ничего не пишется в лог.
 
-Собственные метрики, которые вы регистрируете через `MeterRegistry`, ничем из этого не затронуты. Они появляются, как только подключен `MetricsModule` и отработал код, потому что сам реестр всегда жив.
-Флаг управляет только телеметрией модулей Kora.
+Собственные метрики, которые вы регистрируете через `MeterRegistry`, ничем из этого не затронуты. Они появляются, как только подключен `MetricsModule` и отработал код, потому что реестр жив,
+если только общий для приложения переключатель `metrics.enabled` (по умолчанию: `true`) не выставлен в `false` — тогда для всего подставляется пустой реестр. Флаг модуля управляет только телеметрией модулей Kora.
 
 Системный сервер — осознанное исключение в другую сторону: `SystemHttpServerConfig` переопределяет свою трассировку на `false`, поэтому оркестратор, опрашивающий готовность каждые несколько секунд, не
 закапывает ваши настоящие трассировки.
@@ -331,7 +331,7 @@ logging {
 ```xml title="src/main/resources/logback.xml"
 <configuration debug="false">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+        <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
 
     <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
@@ -577,6 +577,9 @@ curl -i http://localhost:8085/system/readiness
 
 `/metrics` отвечает `200`, но показывает только значения JVM:
 : Задайте `<module>.telemetry.metrics.enabled = true`. Для каждого модуля значение по умолчанию — `false`.
+
+`/metrics` отвечает `200` с пустым телом:
+: Общий для приложения `metrics.enabled` равен `false`, поэтому `MetricsModule` предоставляет пустой реестр.
 
 `/metrics` отвечает `# Metric Scraper disabled`:
 : `MetricsModule` не подключен, поэтому в графе нет `MetricsScraper`.

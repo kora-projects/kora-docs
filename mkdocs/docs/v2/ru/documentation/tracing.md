@@ -1,10 +1,10 @@
 ---
 seo_title: "Трассировка Kora: справочник по OpenTelemetry OTLP"
-seo_description: "Справочник по трассировке Kora: экспортеры OpenTelemetry OTLP gRPC и HTTP, конфигурация, передача контекста, семплирование, ручные спаны."
-keywords: ["Kora Framework", "фреймворк Kora", "трассировка Kora", "OpenTelemetry", "OTLP", "передача контекста", "семплирование"]
-description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
+seo_description: "Справочник по трассировке Kora: экспортеры OpenTelemetry OTLP gRPC и HTTP, конфигурация, атрибуты Resource, передача контекста, семплирование, ручные спаны."
+keywords: ["Kora Framework", "фреймворк Kora", "трассировка Kora", "OpenTelemetry", "OTLP", "передача контекста", "семплирование", "атрибуты Resource", "OpentelemetryTracingAttributesProvider"]
+description: "Explains Kora OpenTelemetry tracing with the OTLP/gRPC and OTLP/HTTP exporters, tracing configuration, Resource attributes from configuration and OpentelemetryTracingAttributesProvider components, trace context propagation, sampling, manual spans and carrying the trace context across threads. Use when working with OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, KoraTracer, OpentelemetryContext, Tracer, Span, OTLP."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
+  use_when: "Use this file for Kora docs or implementation questions about OpenTelemetry tracing: choosing the OTLP/gRPC or OTLP/HTTP exporter, the tracing and tracing.exporter config sections, service-wide Resource attributes from tracing.attributes and OpentelemetryTracingAttributesProvider components, per-module telemetry.tracing options, W3C trace context propagation, sampling, creating spans manually and carrying the trace context to another thread; key triggers include OpentelemetryTracingModule, OpentelemetryTracingAttributesProvider, OpentelemetryGrpcExporterModule, OpentelemetryHttpExporterModule, OpentelemetryTracingConfig, KoraTracer, OpentelemetryContext, Tracer, Span, SpanProcessor, SpanExporter, Sampler, OTLP."
 ---
 
 Трассировка помогает связать отдельные операции приложения в единую цепочку выполнения и понять, где запрос провел время или завершился ошибкой.
@@ -95,7 +95,7 @@ Kora предоставляет два взаимоисключающих мод
 Секция `tracing` описывается классом `OpentelemetryTracingConfig` и предоставляется модулем `OpentelemetryTracingModule`:
 
 - `enabled` — глобальный переключатель трассировки (по умолчанию: `true`). При `false` Kora ставит `TracerProvider`-заглушку, поэтому `Span` не записываются и ничего не экспортируется.
-- `attributes` — атрибуты `OpenTelemetry Resource` (по умолчанию: `{}`).
+- `attributes` — атрибуты `OpenTelemetry Resource` (по умолчанию: `{}`); объединяются с атрибутами компонентов [`OpentelemetryTracingAttributesProvider`](#attributes-provider) и побеждают при совпадении ключей.
 
 Секция `tracing.exporter` описывается классами `OpentelemetryGrpcExporterConfig` (для `OTLP/gRPC`) и `OpentelemetryHttpExporterConfig` (для `OTLP/HTTP`); у обоих интерфейсов одинаковый набор полей, поэтому смена модуля экспортера не меняет конфигурацию.
 Если `tracing.exporter.endpoint` не указан, ни экспортер, ни обработчик span не создаются — приложение стартует, `Span` по-прежнему создаются и распространяются, просто их никогда не отправляют во внешний коллектор.
@@ -228,6 +228,39 @@ Kora предоставляет два взаимоисключающих мод
     ```
 
     1. Разрешается из переменной окружения `METRIC_COLLECTOR_ENDPOINT`, смотрите [подстановку переменных окружения](config.md#environment-variables).
+
+### Поставщик атрибутов Resource { #attributes-provider }
+
+Если значение атрибута `Resource` известно только при старте (имя хоста, имя пода, версия сборки), зарегистрируйте компонент `OpentelemetryTracingAttributesProvider` из пакета `io.koraframework.opentelemetry.tracing`:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Component
+    public final class HostTracingAttributesProvider implements OpentelemetryTracingAttributesProvider {
+
+        @Override
+        public Map<String, String> attributes() {
+            return Map.of("host.name", System.getenv().getOrDefault("HOSTNAME", "unknown"));
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Component
+    class HostTracingAttributesProvider : OpentelemetryTracingAttributesProvider {
+
+        override fun attributes(): Map<String, String> {
+            return mapOf("host.name" to (System.getenv("HOSTNAME") ?: "unknown"))
+        }
+    }
+    ```
+
+Поставщиков можно зарегистрировать сколько угодно. `OpentelemetryTracingModule` собирает их все и помещает их атрибуты в `Resource` провайдера `TracerProvider`, поэтому они прикрепляются к каждому `Span` так же, как `tracing.attributes`.
+`tracing.attributes` применяется последним, поэтому при совпадении ключей значение из конфигурации побеждает любого поставщика.
+Атрибуты вычисляются один раз, при создании `Resource`.
 
 Если в приложении подключен также модуль [метрик](metrics.md), его `MeterProvider` передается экспортеру и обработчику span, и они сообщают свои внутренние метрики через тот же реестр.
 
@@ -426,6 +459,7 @@ Kora сшивает распределенные трассировки по с�
 
 Базовые компоненты трассировки предоставляются модулем `OpentelemetryTracingModule` как `@DefaultComponent`, а значит каждый из них можно заменить, объявив собственный компонент того же типа:
 
+- `Resource` — атрибуты уровня сервиса, прикрепляемые к каждому `Span`; по умолчанию собирается из компонентов [`OpentelemetryTracingAttributesProvider`](#attributes-provider) и `tracing.attributes`.
 - `Sampler` — решает, какие `Span` записываются. По умолчанию используется `Sampler.parentBased(Sampler.alwaysOn())`, то есть записывается каждый корневой `Span`, а для дочерних `Span` следует решению родителя.
 - `IdGenerator` — генерирует идентификаторы трассировки и span. По умолчанию используется `IdGenerator.random()`.
 - `Supplier<SpanLimits>` — ограничения на количество атрибутов, событий и связей у одного `Span`. По умолчанию используется `SpanLimits.getDefault()`.
@@ -508,7 +542,7 @@ Kora сшивает распределенные трассировки по с�
 
 ```xml
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+    <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
 </appender>
 
 <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">

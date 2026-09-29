@@ -6,9 +6,9 @@ search:
   exclude: true
 title: Metrics with Kora
 summary: Build focused Micrometer metrics for a Kora HTTP service, including framework metrics, business counters, timers, private metrics endpoints, and practical verification.
-description: "Step-by-step Micrometer metrics for a Kora HTTP service: the io.koraframework:micrometer-module dependency, MetricsModule and the injected MeterRegistry, the Prometheus scrape endpoint on httpServer.system.metricsPath, the telemetry.metrics.enabled flag that gates every component metric, slo histogram buckets and common tags, and a custom MetricsService with a Timer, a tagged Counter and a ConcurrentHashMap meter cache."
+description: "Step-by-step Micrometer metrics for a Kora HTTP service: the io.koraframework:micrometer-module dependency, MetricsModule and the injected MeterRegistry, the Prometheus scrape endpoint on httpServer.system.metricsPath, the telemetry.metrics.enabled flag that gates every component metric, slo histogram buckets and common tags, the application-wide metrics.enabled switch and metrics.tags common tags, and a custom MetricsService with a Timer, a tagged Counter and a ConcurrentHashMap meter cache."
 agent:
-  use_when: "Use this file for questions about adding metrics to a Kora application step by step: io.koraframework:micrometer-module, MetricsModule, injecting MeterRegistry, Micrometer Counter and Timer, serviceLevelObjectives, tag cardinality, caching meters in a ConcurrentHashMap, the /metrics endpoint on httpServer.system.port, and why http_server_* metrics are missing until telemetry.metrics.enabled is set to true."
+  use_when: "Use this file for questions about adding metrics to a Kora application step by step: io.koraframework:micrometer-module, MetricsModule, injecting MeterRegistry, Micrometer Counter and Timer, serviceLevelObjectives, tag cardinality, caching meters in a ConcurrentHashMap, the /metrics endpoint on httpServer.system.port, the application-wide metrics.enabled switch and metrics.tags, and why http_server_* metrics are missing until telemetry.metrics.enabled is set to true."
 tags: observability, metrics, micrometer, meter-registry, counters, timers, monitoring
 ---
 
@@ -275,7 +275,7 @@ Every telemetry block is nested under the configuration section of the module th
     3.  Metrics of the JDBC data source and its connection pool.
 
 Custom metrics registered by your own code through `MeterRegistry` are not affected by this flag. `user.creation.total` appears as soon as `MetricsModule` is connected and the code runs, because the
-registry itself is always live. The flag only gates the telemetry of Kora modules.
+registry itself is live. The flag only gates the telemetry of Kora modules.
 
 ### Histogram Buckets and Common Tags { #slo-and-tags }
 
@@ -317,6 +317,40 @@ The same `telemetry.metrics` block carries two more options that shape what a mo
 
 A duration in `slo` carries its own unit (`"1ms"`, `"250ms"`, `"1s"`), and a bare number is read as milliseconds, so `slo = [1, 10, 50]` and `slo = ["1ms", "10ms", "50ms"]` describe the same list.
 These two keys apply only to metrics that the module itself reports. The custom timer you are about to write gets its buckets from the Micrometer builder instead, which the next section shows.
+
+### Application-Wide Switch and Common Tags { #application-metrics }
+
+`MetricsModule` has a section of its own, `metrics`, for what applies to the whole registry rather than to one module:
+
+===! ":material-code-json: `Hocon`"
+
+    ```javascript
+    metrics {
+      enabled = true //(1)!
+      tags { //(2)!
+        "application" = "guide-observability-app"
+      }
+    }
+    ```
+
+    1.  Application-wide switch. With `false` the registry is a no-op one and `/metrics` answers with an empty body (default: `true`).
+    2.  Common tags added to every metric in the registry, including JVM and custom metrics (default: `{}`).
+
+=== ":simple-yaml: `YAML`"
+
+    ```yaml
+    metrics:
+      enabled: true #(1)!
+      tags: #(2)!
+        application: "guide-observability-app"
+    ```
+
+    1.  Application-wide switch. With `false` the registry is a no-op one and `/metrics` answers with an empty body (default: `true`).
+    2.  Common tags added to every metric in the registry, including JVM and custom metrics (default: `{}`).
+
+Note the opposite defaults: `metrics.enabled` is `true`, while every `<module>.telemetry.metrics.enabled` is `false`. `metrics.enabled = false` is the one switch that silences everything, custom
+metrics included, without removing `MetricsModule` from the graph. When a common tag value is known only at startup, a `MetricsTagsProvider` component contributes it instead of the configuration, see
+[Metrics](../documentation/metrics.md#tags-provider).
 
 ## Metrics Service { #metrics-service }
 
@@ -390,7 +424,7 @@ Update the timer with a few practical latency boundaries:
             Duration.ofMillis(500),
         )
         .register(meterRegistry)
-```
+    ```
 
 These values are not universal. They are examples of business latency targets: 50 ms is excellent, 100 ms is healthy, 250 ms is already worth watching, and 500 ms is a clear warning for such a small operation. Pick boundaries that match your own service.
 
@@ -799,6 +833,9 @@ Metric is missing:
 
 `/metrics` answers `200` but has only JVM values:
 : Set `<module>.telemetry.metrics.enabled = true` for the modules you want to observe.
+
+`/metrics` answers `200` with an empty body:
+: The application-wide `metrics.enabled` is `false`, so `MetricsModule` provides a no-op registry.
 
 `/metrics` answers `# Metric Scraper disabled`:
 : `MetricsModule` is not connected, so no `MetricsScraper` exists in the graph.
