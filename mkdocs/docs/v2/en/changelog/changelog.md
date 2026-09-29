@@ -8,7 +8,73 @@ hide:
   - navigation
 ---
 
-## 2.0.0.RC1
+## 2.0.0.RC2
+
+Migration required:
+
+
+Added:
+
+- Added OpenAPI status-code range responses (`4XX`, `5XX`) for Java and Kotlin clients and servers
+- Added OpenAPI client successful response mode with typed error exceptions
+- Added Resilient `Retry` and `CircuitBreaker` non-registered exceptions
+- Added distributed Resilient `RateLimiter` and `RetryBudget`
+- Added pluggable telemetry attributes and metric tags providers with enable switch
+- Added HTTP telemetry masking for headers, queries and structured bodies
+- Added Kafka telemetry masking with `TRACE` consumer payload logging
+- Added gRPC telemetry masking with tagged strategies
+- Added Scheduling DB module
+- Added PostgreSQL JDBC database module
+- Added `keepAlive` parameter for `KoraApplication#run`
+- Added `Either#fold` to map either side into a single result
+
+Improved:
+
+- Optimized Undertow request processing with fewer allocations and NIO response body writes
+- Improved JSON reader parse-error messages
+- Improved JDK scheduling to use virtual threads for jobs
+- Refactored Logback JSON encoder with SPI selector and masking of raw payloads
+- Refactored Kafka consumer `assign` strategy to accept multiple topics via config
+- Refactored HTTP server `Server` name header as optional option and disabled by default
+- Updated dependencies versions
+
+Fixed:
+
+- Fixed OpenAPI generator multipart form mapping and parsing
+- Fixed OpenAPI generator free-form map schemas should resolve to `Object`
+- Fixed OpenAPI generator `date-time` should honour `typeMappings`
+- Fixed OpenAPI generator spec text with `%` or `$` breaking code generation
+- Fixed OpenAPI generator array of inline enum should keep its collection type
+- Fixed OpenAPI generator client `Authorization` header should carry its auth scheme
+- Fixed OpenAPI generator `SUCCESSFUL` client response mapper should be a graph component
+- Fixed HTTP client response body decoding failures should be wrapped
+- Fixed HTTP client transport integration for JDK and Apache clients
+- Fixed HTTP client connect failures should map to `HttpClientConnectionException` for Apache and JDK clients
+- Fixed HTTP server Undertow should serve requests with the handler replaced by a refresh
+- Fixed HTTP server request duration metric should carry `http.response.status_code`
+- Fixed HTTP cookie parser should keep trailing `=` in cookie values
+- Fixed Kafka KSP listener with `Headers` and deserialization exception argument
+- Fixed database mapping of empty embedded
+- Fixed database `snake_case` column names in Kotlin symbol processor
+- Removed unreachable coroutine code paths from the Kotlin repository generators
+- Fixed validation constraint factory argument order in Kotlin symbol processor
+- Fixed KSP graph interceptor tagged with `Tag.Any` should intercept components of any tag
+- Fixed `GraphCondition.and` should return `Matched` when all conditions matched
+- Fixed `@KoraApp` condition components should be ordered after their last dependency
+- Fixed `@KoraApp` circular dependency going through `All<T>` should be reported as a cycle
+- Fixed application init and release time should be logged in milliseconds
+- Fixed graph refresh should not recreate independent nodes
+- Fixed graph node read from a factory may not be initialized yet
+- Fixed graph refresh that creates nothing logging a bogus `IllegalArgumentException`
+- Fixed graph refresh should survive an `equals` that throws
+- Fixed config watcher refreshing the graph on every check after the first config change
+- Fixed JDK scheduling executor should not depend on jobs
+- Fixed `Caffeine` cache metrics registered twice
+- Fixed S3 client issues on strict S3-compatible servers
+- Fixed Logback `KoraMdcConverter` should render nothing instead of failing outside an MDC scope
+- Fixed JSON deprecated `JsonParser.getText()` replaced with `getString()`
+
+### 2.0.0.RC1
 
 Migration required:
 
