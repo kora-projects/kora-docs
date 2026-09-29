@@ -8,7 +8,7 @@ title: Messaging with Kafka
 summary: Extend the HTTP Server guide with asynchronous user creation using Kafka producer and consumer components in the same Kora application
 description: "Step-by-step event-driven messaging for a Kora 2.0 service with Apache Kafka: the io.koraframework:kafka artifact and KafkaModule, a generated @KafkaPublisher interface with @KafkaPublisher.Topic pointing at a named topic config section, a @KafkaListener consumer with the defensive event-plus-exception signature, @Json event payloads, the kafka.producer and kafka.consumer configuration sections with driverProperties, and a local Kafka broker through Docker Compose."
 agent:
-  use_when: "Use this file for questions about publishing and consuming Kafka events from a Kora 2.0 service: io.koraframework:kafka, KafkaModule, @KafkaPublisher and its Topic nested annotation, @KafkaListener and its tag attribute, @Json event serialization, the synchronous and Future / CompletionStage / CompletableFuture / suspend / Deferred publisher signatures, the event-plus-Exception listener signature for deserialization failures, kafka.producer.* and kafka.consumer.* config keys (driverProperties, topics, pollTimeout, threads, offset, backoffTimeout, telemetry), returning 202 Accepted from an async create endpoint, and running a local broker."
+  use_when: "Use this file for questions about publishing and consuming Kafka events from a Kora 2.0 service: io.koraframework:kafka, KafkaModule, @KafkaPublisher and its Topic nested annotation, @KafkaListener and its tag attribute, @Json event serialization, the synchronous and Future / CompletionStage / CompletableFuture / suspend / Deferred publisher signatures, the event-plus-Exception listener signature for deserialization failures, kafka.producer.* and kafka.consumer.* config keys (driverProperties, topics, pollTimeout, threads, offset, backoffTimeout, telemetry, telemetry.logging.maskHeaders), TRACE-level record logging, returning 202 Accepted from an async create endpoint, and running a local broker."
 tags: kafka, messaging, asynchronous, event-driven, producer, consumer
 ---
 
@@ -253,7 +253,7 @@ Now extend your application with Kafka support.
     }
     ```
 
-`KafkaModule` extends `KafkaDeserializersModule` and `KafkaSerializersModule` and contributes the producer and consumer telemetry factories. At this point nothing publishes or consumes yet. We are only
+`KafkaModule` extends `KafkaListenerModule` and `KafkaPublisherModule`, which contribute the default deserializers and serializers and the consumer and producer telemetry factories. At this point nothing publishes or consumes yet. We are only
 enabling the framework module that will generate producer and consumer components for us.
 
 ## Events { #events }
@@ -774,6 +774,10 @@ What this configuration does:
 - defines one consumer named `user-created`
 - points both of them to the same Kafka topic
 - enables simple logging telemetry so you can see the flow while learning
+
+Logging telemetry does not write record contents at `DEBUG` or `INFO`. Switch the listener logger to `TRACE` to also see the record headers, key, and value.
+Headers listed in `telemetry.logging.maskHeaders` (by default `authorization`, `cookie`, and `set-cookie`) are masked, JSON payloads are masked only when you register a `DataMasker`,
+and the publisher logs masked headers only, never the key or value. See [Logging and masking](../documentation/kafka.md#telemetry-consumer-logging).
 
 `driverProperties` is a passthrough to the Apache Kafka client, so anything the driver understands belongs there under its native key. Everything outside that block is Kora's own: besides `topics` and
 `pollTimeout`, a listener also accepts `threads`, `offset`, `backoffTimeout`, `partitionRefreshInterval`, `shutdownWait`, and `allowEmptyRecords`.
