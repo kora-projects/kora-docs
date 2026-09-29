@@ -4,7 +4,7 @@ seo_description: "Reference for Kora configuration: HOCON and YAML sources, type
 keywords: ["Kora Framework", "Kora configuration", "HOCON", "YAML", "@ConfigSource", "typed configuration", "config reload"]
 description: "Explains the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types. Use when working with @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule, Either, Either.fold, KORA_CONFIG_WATCHER_ENABLED."
 ---
 
 The configuration module reads application settings from `HOCON` or `YAML` files, environment variables, `Java` system
@@ -1166,6 +1166,10 @@ inside an archive or was built without an application file, there is nothing on 
 Replacing the symlink a configuration file points at counts as a change too, which is what makes mounted secrets and
 `ConfigMap` updates visible without a restart.
 
+After a refresh the watcher keeps the state of the files it already tracks, so the graph is refreshed again only when
+a tracked file changes once more or when the reread configuration adds or drops a file (for example, a new `include`).
+An unchanged configuration does not trigger further refreshes.
+
 You can disable the watcher by using:
 
 1. Environment variable `KORA_CONFIG_WATCHER_ENABLED` (default: `true`)
@@ -1399,3 +1403,23 @@ Both of these forms are valid for the `endpoint` field:
     1. Resolved as the right type (`EndpointConfig`)
 
 Use `isLeft()` / `isRight()` to check which side was resolved, and `left()` / `right()` to read the value.
+`fold(leftMapper, rightMapper)` applies the left mapper to a left value or the right mapper to a right value
+and returns the mapped result, so both shapes can be turned into one value without branching:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    String url = fooServiceConfig.endpoint().fold(
+        host -> host,
+        endpoint -> "https://" + endpoint.host() + ":" + endpoint.port()
+    );
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val url = fooServiceConfig.endpoint().fold(
+        { host -> host },
+        { endpoint -> "https://${endpoint.host()}:${endpoint.port()}" }
+    )
+    ```

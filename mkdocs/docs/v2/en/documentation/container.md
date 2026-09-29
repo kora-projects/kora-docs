@@ -4,7 +4,7 @@ seo_description: "Reference for Kora's compile-time DI container: components, mo
 keywords: ["Kora Framework", "Kora dependency injection", "DI container", "compile-time DI", "@Component", "@Module", "@KoraSubmodule"]
 description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."
+  use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, GraphCondition, RefreshableGraph, KoraApplication.run, keepAlive."
 ---
 
 The dependency container is the core of the `Kora` framework. It builds the dependency graph, validates it,
@@ -516,7 +516,7 @@ The extensions mechanism is provided for this purpose. Each extension is able to
 If the extension can do this, it performs the required code generation and reports how to obtain that component.
 
 For example, there are extensions that know how to create optimal `JsonReader` and `JsonWriter` components, repositories,
-declarative `HTTP` clients, `gRPC` stubs, configuration mappers, validators, and `MapStruct`/`Konvert` mappers.
+declarative `HTTP` clients, `gRPC` stubs, configuration mappers, validators, `MapStruct` mappers in Java, and `Konvert` mappers in Kotlin.
 Available extensions are discovered through the `ServiceLoader` mechanism from all dependencies provided in the annotation processor scope.
 
 This mechanism is system-level and is most often used by internal `Kora` modules.
@@ -822,7 +822,8 @@ When several candidates of one type compete for the same injection point and **a
 `Kora` does not fail at compile time: it picks the one whose condition matched at runtime.
 If none matched, or more than one matched, the graph fails to initialize.
 
-`GraphCondition` also provides `GraphCondition.and(...)` and `GraphCondition.or(...)` for composing conditions.
+`GraphCondition` also provides `GraphCondition.and(...)` and `GraphCondition.or(...)` for composing conditions:
+`and(...)` matches only when every condition matches, `or(...)` matches as soon as one of them matches.
 
 ### Optional dependencies { #optional-dependencies }
 
@@ -1222,6 +1223,8 @@ Fix:
 actual component from the graph on first access (and re-resolves it after a graph refresh), so both components can be
 constructed. No action is required from the developer, but keep in mind that the proxied side becomes usable only after
 the graph is fully bound, so it must not be called from a constructor.
+A proxy can stand in only for a single component: if the dependency that closes the cycle is an `All<T>` list,
+a `TypeRef<T>` or the `Graph` itself, the cycle is reported with the same `Circular dependency found:` compilation error.
 
 In the example below `ServiceAImpl` and `ServiceBImpl` reference each other through interfaces, so the cycle is broken
 by an auto-generated `PromisedProxy` and the graph resolves successfully:
@@ -1385,9 +1388,16 @@ so the entry point in the same package will look like this:
     }
     ```
 
-`KoraApplication.run` has the signature `public static void run(Supplier<ApplicationGraphDraw> supplier)`.
-It builds the graph, logs how long initialization took, registers a shutdown hook that releases the graph,
-and then blocks the calling thread until shutdown. If initialization fails, the error is logged and the JVM exits with code `-1`.
+`KoraApplication.run` has two overloads:
+
+* `run(Supplier<ApplicationGraphDraw> supplier)` is the same as `run(supplier, true)`.
+* `run(Supplier<ApplicationGraphDraw> supplier, boolean keepAlive)` controls whether the calling thread waits for shutdown.
+
+Both build the graph, log how long initialization took in milliseconds, and register a shutdown hook that releases the graph.
+With `keepAlive = true` the calling thread then blocks until the shutdown hook has released the graph.
+With `keepAlive = false` the method returns right after initialization: the shutdown hook still releases the graph when the JVM exits,
+but the JVM keeps running only while other non-daemon threads are alive.
+If initialization fails, the error is logged and the JVM exits with code `-1`.
 
 If you need the graph object itself — in tests or in advanced flows where you look up a component or trigger a refresh
 manually — call `ApplicationGraph.graph().init()`, which returns an `InitializedGraph` (a `RefreshableGraph` with
@@ -1403,6 +1413,10 @@ In the middle of the lifecycle, a component may be updated and then the containe
 that depend on the changed component. This happens atomically: the container builds the affected part of the graph
 into a temporary copy, and only when every component in it has been initialized successfully does it swap the copy in
 and release the replaced objects. If at least one component fails, the temporary objects are released and the old graph stays in place.
+
+Only components whose dependencies were actually replaced are recreated; components that do not depend on the changed part keep their instances.
+If a recreated component is `equals` to its previous instance, the container keeps the previous instance, discards the new one,
+and its dependents are not recreated because of it. If `equals` throws, the component is treated as changed.
 
 ### Component lifecycle { #component-lifecycle }
 
@@ -1725,4 +1739,6 @@ and it runs before `Lifecycle.release()` and `AutoCloseable.close()`.
 
 An interceptor is bound to a component by the **exact** declared type of that component — `GraphInterceptor<JdbcDataSource>`
 intercepts a component declared as `JdbcDataSource`, not its subtypes — and by tag: an untagged interceptor intercepts
-untagged components, and `@Tag(Tag.Any.class)` on the interceptor makes it intercept components with any tag.
+untagged components, an interceptor with `@Tag(SomeTag.class)` intercepts only components with that tag,
+and `@Tag(Tag.Any.class)` on the interceptor makes it intercept components with any tag as well as untagged ones.
+The Java annotation processor and the Kotlin symbol processor apply the same tag matching rules.

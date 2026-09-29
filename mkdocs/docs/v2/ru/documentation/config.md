@@ -4,7 +4,7 @@ seo_description: "Справочник по конфигурации Kora: ис�
 keywords: ["Kora Framework", "фреймворк Kora", "конфигурация Kora", "HOCON", "YAML", "@ConfigSource", "типизированная конфигурация"]
 description: "Explains the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types. Use when working with @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule, Either, Either.fold, KORA_CONFIG_WATCHER_ENABLED."
 ---
 
 Модуль конфигурации читает настройки приложения из файлов `HOCON` или `YAML`, переменных окружения, системных свойств
@@ -1172,6 +1172,10 @@ services:
 Подмена символической ссылки, на которую указывает файл конфигурации, тоже считается изменением — именно это делает
 видимыми без перезапуска смонтированные секреты и обновления `ConfigMap`.
 
+После обновления наблюдатель сохраняет состояние уже отслеживаемых файлов, поэтому граф обновляется снова только тогда,
+когда отслеживаемый файл опять изменился или когда перечитанная конфигурация добавила или убрала файл (например, новый `include`).
+Неизменная конфигурация не вызывает повторных обновлений.
+
 Отключить наблюдатель можно с помощью:
 
 1. Переменной окружения `KORA_CONFIG_WATCHER_ENABLED` (по умолчанию: `true`)
@@ -1405,3 +1409,23 @@ services:
     1. Разрешается как правый тип (`EndpointConfig`)
 
 Используйте `isLeft()` / `isRight()`, чтобы проверить, какая сторона была разрешена, и `left()` / `right()`, чтобы прочитать значение.
+`fold(leftMapper, rightMapper)` применяет левый маппер к левому значению или правый маппер к правому
+и возвращает результат, поэтому обе формы можно свести к одному значению без ветвления:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    String url = fooServiceConfig.endpoint().fold(
+        host -> host,
+        endpoint -> "https://" + endpoint.host() + ":" + endpoint.port()
+    );
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    val url = fooServiceConfig.endpoint().fold(
+        { host -> host },
+        { endpoint -> "https://${endpoint.host()}:${endpoint.port()}" }
+    )
+    ```

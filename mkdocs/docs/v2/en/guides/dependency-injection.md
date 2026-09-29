@@ -326,8 +326,8 @@ Edit the top-level Gradle settings file. It names the Gradle build and tells Gra
     ```kotlin
     pluginManagement {
         plugins {
-            id("org.jetbrains.kotlin.jvm") version "2.4.10" //(1)!
-            id("com.google.devtools.ksp") version "2.3.11" //(2)!
+            id("org.jetbrains.kotlin.jvm") version "2.4.20" //(1)!
+            id("com.google.devtools.ksp") version "2.3.12" //(2)!
         }
     }
 
