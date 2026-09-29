@@ -1,10 +1,10 @@
 ---
 seo_title: "Аспект логирования Kora: @Log, маскирование и MDC"
-seo_description: "Справочник по аспекту логирования Kora: логирование аргументов и результатов через @Log, выборочное логирование, структурные значения, маскирование, MDC."
+seo_description: "Справочник по аспекту логирования Kora: логирование аргументов и результатов через @Log, выборочное логирование, структурные значения, маскирование значений и сырых данных, MDC."
 keywords: ["Kora Framework", "фреймворк Kora", "@Log в Kora", "аспект логирования", "маскирование данных", "MDC"]
-description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
+description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, raw payload masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingPathRules, DataMasker, JsonDataMasker, XmlDataMasker, FormUrlencodedDataMasker, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."
+  use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, masking of raw JSON, XML and form-urlencoded payloads, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingPathRules, DataMasker, JsonDataMasker, XmlDataMasker, FormUrlencodedDataMasker, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."
 ---
 
 Модуль декларативного логирования позволяет описывать логирование метода с помощью аннотаций `@Log`, `@Mask` и `@Mdc`.
@@ -67,7 +67,7 @@ agent:
 Уровень детализации никогда не бывает *менее* подробным, чем уровень самого события: если событие пишется на `DEBUG`, то параметр, объявленный как `@Log(Level.INFO)`, все равно попадет в лог на `DEBUG` — описывать событие, которое не пишется, смысла нет.
 Какой уровень детализации активен, зависит от эффективного уровня логгера, настроенного через `logging.levels` — смотрите [настройку уровней логирования](logging-slf4j.md#configuration).
 
-Значения пишутся в структурированный маркер `data`; энкодер `ConsoleTextRecordEncoder` из [Logback](logging-slf4j.md#logback) выводит его отдельной строкой после сообщения.
+Значения пишутся в структурированный маркер `data`; [текстовый энкодер](logging-slf4j.md#record-format) Logback выводит его отдельной строкой после сообщения, а [JSON-энкодер](logging-slf4j.md#json-format) пишет его как поле `data` верхнего уровня.
 
 ### Аргументов { #argument }
 
@@ -653,7 +653,70 @@ INFO  [main] io.koraframework.example.Example.register - >
 - `credentials.cardNumber` - маскирует `cardNumber` только тогда, когда до него добрались через поле `credentials`;
 - `payments.*.cardNumber` - `*` соответствует ровно одному динамическому сегменту пути, что как раз дают ключи словарей.
 
+Элементы массива или коллекции не добавляют собственного сегмента, поэтому `items.password` совпадает и с `password` внутри каждого элемента `items`.
+
 Те же правила можно собрать билдером: `MaskingRules.builder(User.class).mask("password", new MaskingFull()).build()`.
+`MaskingRules<T>` расширяет `MaskingPathRules` — не зависящий от типа механизм правил, который используется и для [сырых данных](#raw-payload-masking).
+
+#### Маскирование сырых данных { #raw-payload-masking }
+
+`@Mask` работает в момент записи типизированного значения.
+Телеметрия транспортов логирует и данные, которые представляют собой только байты — тело HTTP-запроса или ответа, значение записи Kafka, — и для них пакет `io.koraframework.logging.common.masking.raw` предоставляет `DataMasker`.
+`DataMasker` — это мягкий парсер: он один раз проходит по сырым байтам, копирует их в вывод и подменяет совпавшие значения, не декодируя данные и не строя из них документ.
+
+| Маскировщик | `format()` | Что маскирует |
+|---|---|---|
+| `JsonDataMasker` | `json` | значения полей; объект или массив, совпавший целиком, заменяется одной строкой |
+| `XmlDataMasker` | `xml` | текст элементов и значения атрибутов; префиксы пространств имен игнорируются, поэтому `<ns:password>` совпадает с `password` |
+| `FormUrlencodedDataMasker` | `form-urlencoded` | значения параметров; имена перед сравнением декодируются из percent-encoding, поэтому `pass%77ord` совпадает с `password` |
+
+Правила задаются через `MaskingPathRules` — тот же механизм, который расширяет `MaskingRules<T>`, с тем же [синтаксисом ключей](#masking-rules), но без привязки к логируемому типу:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @Module
+    public interface MaskingModule {
+
+        @Tag(HttpServerTelemetry.class) //(1)!
+        default DataMasker httpServerJsonMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull())
+                .mask("card.number", new MaskingKeepLast())
+                .build());
+        }
+    }
+    ```
+
+    1. По умолчанию ничего не зарегистрировано: модуль, логирующий сырые данные, собирает компоненты `DataMasker` со своим тегом телеметрии и выбирает тот, чей `format()` соответствует данным.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @Module
+    interface MaskingModule {
+
+        @Tag(HttpServerTelemetry::class) //(1)!
+        fun httpServerJsonMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull())
+                .mask("card.number", MaskingKeepLast())
+                .build()
+        )
+    }
+    ```
+
+    1. По умолчанию ничего не зарегистрировано: модуль, логирующий сырые данные, собирает компоненты `DataMasker` со своим тегом телеметрии и выбирает тот, чей `format()` соответствует данным.
+
+Тег — `HttpServerTelemetry` для [HTTP-сервера](http-server.md), `HttpClientTelemetry` для [HTTP-клиента](http-client.md) и `KafkaConsumerTelemetry` для потребителя [Kafka](kafka.md).
+Маскировщик можно вызвать и напрямую: `mask(byte[])` читает данные как `UTF-8`, а `mask(byte[], Charset)` использует кодировку, объявленную транспортом.
+
+Данные не заслуживают доверия, поэтому такое маскирование в нескольких местах отличается от `@Mask`:
+
+- имена сравниваются без учета регистра для букв `ASCII`, поэтому `Password` не проскочит мимо правила `password`;
+- маскирование закрывается при сбое: как только `JsonDataMasker` или `XmlDataMasker` теряет структуру, все после этого места заменяется на `<masked:unparseable>` или `<!--masked:unparseable-->`, так что поврежденное тело или тело не в `JSON` никогда не утекает в лог; в данных form-urlencoded повреждение остается в пределах одного параметра, значение которого маскируется;
+- вывод длиннее предела (по умолчанию: `64` КиБ) обрезается и заканчивается на `<masked:truncated>` или `<!--masked:truncated-->`, а вложенность `JSON` и `XML` по умолчанию ограничена `64` уровнями; оба предела задаются аргументами конструктора;
+- стратегия, которая выбрасывает исключение или возвращает `null`, дает `***`, а для объекта или массива, маскируемого целиком, стратегия получает `null`.
 
 ### MDC (Mapped Diagnostic Context) { #mdc-mapped-diagnostic-context }
 
@@ -675,7 +738,7 @@ INFO  [main] io.koraframework.example.Example.register - >
 Значением записи становится значение параметра.
 
 Параметры типов `String`, `Integer`/`Int`, `Long`, `Boolean` и `StructuredArgumentWriter` сохраняют свой тип в `JSON`, остальные примитивы пишутся через `String.valueOf(...)`, а любой другой тип — через `toString()`.
-Если значение непримитивного параметра равно `null`, запись в `MDC` просто не добавляется.
+Значение `null` у параметра типа `String`, `Integer`/`Int`, `Long` или `Boolean` пишется как `JSON` `null`, параметр типа `StructuredArgumentWriter` не должен быть `null`, а значение `null` любого другого непримитивного типа просто не добавляет запись в `MDC`.
 
 #### Аннотация параметра { #parameter-annotation }
 

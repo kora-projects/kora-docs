@@ -1,10 +1,10 @@
 ---
-seo_title: "Kora Logging: SLF4J, Logback and Structured Logs"
-seo_description: "Reference for Kora logging: SLF4J loggers, log level configuration with runtime refresh, the Logback module, async appender, structured logs and scoped MDC."
-keywords: ["Kora Framework", "Kora logging", "SLF4J", "Logback", "structured logging", "MDC"]
-description: "Explains Kora SLF4J logging: obtaining a Logger, the logging.levels configuration and its runtime refresh, per-component telemetry logging, the Logback module with ConsoleTextRecordEncoder and KoraAsyncAppender, structured logs and the scoped MDC. Use when working with LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, StructuredArgument, MDC, KoraMdcConverter, telemetry.logging.enabled."
+seo_title: "Kora Logging: SLF4J, Logback, JSON and Structured Logs"
+seo_description: "Reference for Kora logging: SLF4J loggers, log level configuration with runtime refresh, the Logback module, text and JSON encoders, async appender, structured logs and scoped MDC."
+keywords: ["Kora Framework", "Kora logging", "SLF4J", "Logback", "JSON logging", "structured logging", "MDC"]
+description: "Explains Kora SLF4J logging: obtaining a Logger, the logging.levels configuration and its runtime refresh, per-component telemetry logging, the Logback module with KoraLogbackConfigurator, encoder selection (text, pretty, json), the logging-logback-json JsonRecordEncoder with field masking, KoraAsyncAppender and its bootstrap properties, structured logs and the scoped MDC. Use when working with LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, LogbackEncoderFactory, kora.logging.encoder, JsonRecordEncoder, StructuredArgument, MDC, KoraMdcConverter, telemetry.logging.enabled."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about SLF4J logging setup, logging.levels configuration and runtime refresh, per-component telemetry logging, Logback integration, alternative SLF4J implementations, structured log fields and MDC; key triggers include LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, LoggingLevelRefresher, ConsoleTextRecordEncoder, KoraAsyncAppender, KoraMdcConverter, KoraLoggingMarkerConverter, StructuredArgument, MDC, telemetry.logging.enabled."
+  use_when: "Use this file for Kora docs or implementation questions about SLF4J logging setup, logging.levels configuration and runtime refresh, per-component telemetry logging, Logback integration, text and JSON log encoders, encoder selection without logback.xml, JSON record masking, async appender tuning, alternative SLF4J implementations, structured log fields and MDC; key triggers include LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, LoggingLevelRefresher, KoraLogbackConfigurator, LogbackEncoderFactory, kora.logging.encoder, KORA_LOGGING_ENCODER, kora.logging.config, logging-logback-json, JsonRecordEncoder, LoggingEventJsonWriter, LoggingEventJsonMasker, FieldLoggingEventJsonMasker, maskField, ConsoleTextRecordEncoder, LoggingEventTextWriter, KoraAsyncAppender, KoraMdcConverter, KoraLoggingMarkerConverter, StructuredArgument, MDC, telemetry.logging.enabled."
 ---
 
 Kora uses [`slf4j-api`](https://www.slf4j.org/) as the common logging facade across the framework.
@@ -77,7 +77,7 @@ The section has a single `levels` map that assigns a level to `ROOT`, to a packa
 
     When the `logging` section is absent, `levels` is an empty map and Kora applies no levels of its own.
     The [Logback](#logback) implementation, however, resets all loggers on every (re)apply: `ROOT` is normalized to `INFO` and every other per-logger level is cleared so that it inherits from its parent, after which the configured levels are applied on top.
-    As a result, the `<root level="...">` value from `logback.xml` is effectively replaced by `INFO` at startup unless a `ROOT` level is set in the configuration.
+    As a result, the `<root level="...">` value from `logback.xml`, or the [`kora.logging.levels.root`](#bootstrap-properties) property of the default pipeline, is effectively replaced by `INFO` at startup unless a `ROOT` level is set in the configuration.
 
 ### Runtime level refresh { #levels-refresh }
 
@@ -197,7 +197,16 @@ The module provides a logging implementation based on [`Logback`](https://www.ba
 
 ### Configuration { #configuration-2 }
 
-`Logback` is configured through `logback.xml`, while Kora configuration usually contains only logging levels.
+A `logback.xml` file is optional.
+The module registers `KoraLogbackConfigurator` through the `Logback` `Configurator` SPI, and it resolves the configuration in this order:
+
+1. When `Logback` finds a configuration file (`logback-test.xml`, `logback.xml`, or the file named by the `logback.configurationFile` system property), the file is applied as usual and Kora adds no appenders of its own.
+2. Otherwise Kora selects one [encoder](#encoder-selection) and attaches it to the root logger through a `ConsoleAppender` named `KORA_CONSOLE`, wrapped into a `KoraAsyncAppender` named `KORA_ASYNC`. The root level of this pipeline is taken from the [`kora.logging.levels.root`](#bootstrap-properties) property (default: `INFO`).
+
+In both cases `java.util.logging` is routed into `Logback`: the default `JUL` console handler is removed, and `Logback` levels are mirrored into `JUL`, so a library logging through `JUL` follows the levels set in `logging.levels`.
+The bridge is skipped when a configuration file has already installed it, and is switched off with `kora.logging.config.jul-bridge=false`.
+
+A configuration file is needed only when the default pipeline does not fit, for example to add a file appender or a [custom pattern](#custom-pattern).
 Example `logback.xml`:
 
 ```xml
@@ -205,7 +214,7 @@ Example `logback.xml`:
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="io.koraframework.logging.logback.ConsoleTextRecordEncoder"/>
+        <encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder"/>
     </appender>
 
     <appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
@@ -228,17 +237,61 @@ Both are stored in a `KoraLoggingEvent`, which is the event type the Kora encode
     An appender chain without `KoraAsyncAppender` produces plain `Logback` events, and those fields simply do not appear in the output.
     Wrap the real appender in `KoraAsyncAppender` even when asynchronous writing is not the goal.
 
+The defaults of `KoraAsyncAppender` favour the application over the log: the queue is bounded, a full queue drops the record instead of blocking the logging thread, and shutdown waits at most a second for the queue to be flushed.
+They are changed through the [bootstrap properties](#bootstrap-properties), and in `logback.xml` the nested `<queueSize>`, `<discardingThreshold>`, `<maxFlushTime>` and `<neverBlock>` elements of the appender override those properties.
+
+### Encoder selection { #encoder-selection }
+
+The encoder of the default pipeline is created by a `LogbackEncoderFactory`.
+Factories are discovered through `java.util.ServiceLoader`, so putting a module on the classpath is enough to make its encoder available, and exactly one of them is used: the one named by `kora.logging.encoder` (case insensitive), or, when nothing is named, the one with the highest priority.
+
+| Name | Factory | Module | Priority | Output |
+|---|---|---|---|---|
+| `text` | `ConsoleTextEncoderFactory` | `logging-logback` | `0` | [plain text](#record-format) |
+| `pretty` | `ColorConsoleTextEncoderFactory` | `logging-logback` | `1000` in a `Gradle` test worker, the lowest possible otherwise | the same text with the timestamp and the level highlighted with `ANSI` colors |
+| `json` | `JsonEncoderFactory` | `logging-logback-json` | `100` | [one `JSON` object per line](#json-format) |
+
+As a result, an application logs plain text by default, switches to `JSON` as soon as `logging-logback-json` is on the classpath, and logs colored text in `Gradle` tests, which are detected by the `org.gradle.test.worker` system property.
+A test that asserts on `JSON` output opts out of colors with `kora.logging.encoder=json`, and colored text is enabled anywhere with `KORA_LOGGING_ENCODER=pretty`.
+
+The value `none` hands configuration back to the default configuration of `Logback` itself.
+An unknown name is reported as a `Logback` status error and has the same effect.
+A custom encoder is plugged in the same way, by [registering a factory](#json-masking) of your own.
+
+### Bootstrap properties { #bootstrap-properties }
+
+`Logback` starts before the application graph and its [configuration file](config.md) exist, so the module reads its own settings from `JVM` system properties and environment variables.
+Every property is looked up as a system property first and then as an environment variable whose name is the property in upper case with `.` and `-` replaced by `_`:
+
+| System property | Environment variable | Description |
+|---|---|---|
+| `kora.logging.encoder` | `KORA_LOGGING_ENCODER` | Name of the [encoder](#encoder-selection) of the default pipeline, or `none` (default: the discovered encoder with the highest priority). |
+| `kora.logging.levels.root` | `KORA_LOGGING_LEVELS_ROOT` | Root logger level of the default pipeline until `logging.levels` is applied (default: `INFO`). |
+| `kora.logging.config.jul-bridge` | `KORA_LOGGING_CONFIG_JUL_BRIDGE` | Routes `java.util.logging` into `Logback` (default: `true`). |
+| `kora.logging.config.timestamp-epoch-millis` | `KORA_LOGGING_CONFIG_TIMESTAMP_EPOCH_MILLIS` | Writes the record timestamp as milliseconds since the epoch instead of a formatted date (default: `false`). |
+| `kora.logging.config.queue-size` | `KORA_LOGGING_CONFIG_QUEUE_SIZE` | Capacity of the `KoraAsyncAppender` queue (default: `512`). |
+| `kora.logging.config.discarding-threshold` | `KORA_LOGGING_CONFIG_DISCARDING_THRESHOLD` | Remaining queue capacity below which `TRACE`, `DEBUG` and `INFO` records are dropped, `0` never drops by level (default: a fifth of the queue size). |
+| `kora.logging.config.max-flush-time` | `KORA_LOGGING_CONFIG_MAX_FLUSH_TIME` | How long shutdown waits for the queue to be flushed, as `1s`, `500ms` or `PT1S`, `0` waits without a limit (default: `1s`). |
+| `kora.logging.config.never-block` | `KORA_LOGGING_CONFIG_NEVER_BLOCK` | Drops a record instead of blocking the logging thread when the queue is full (default: `true`). |
+
+A malformed value does not stop logging from starting: the default is used instead. For `jul-bridge` and the `KoraAsyncAppender` settings the value is also reported as a `Logback` status warning, an unknown encoder name is reported as a status error, and an unknown root level silently falls back to `INFO`.
+
+!!! warning "Not keys of the application configuration"
+
+    These properties are read only from system properties and environment variables, never from `application.conf` or `application.yaml`.
+    Logger levels of a running application are still set through the [`logging.levels`](#configuration) section, which replaces the root level of the default pipeline once the graph starts.
+
 ### Log record format { #record-format }
 
-`ConsoleTextRecordEncoder` is the only encoder shipped by the module.
+The `text` and `pretty` encoders are both `io.koraframework.logging.logback.text.ConsoleTextRecordEncoder`.
 It produces a text line with structured fields appended, not a single `JSON` document, and is composed as follows:
 
-- `yyyy-MM-dd HH:mm:ss.SSS` timestamp in `UTC`, the level, the thread name in square brackets, and the logger name;
+- `yyyy-MM-dd HH:mm:ss.SSS` timestamp in `UTC` (the epoch milliseconds with `kora.logging.config.timestamp-epoch-millis=true`), the level, the thread name in square brackets, and the logger name;
 - `traceId=... spanId=...` when the record was produced inside a traced operation;
 - the Kora `MDC` entries as `key=<json value>`;
 - the `SLF4J` `MDC` entries as plain `key=value`;
 - the formatted message;
-- one tab-indented `fieldName={json}` line per structured field taken from markers, message arguments, and `SLF4J` key-value pairs;
+- one tab-indented `fieldName={json}` line per structured field taken from markers, message arguments, and `SLF4J` key-value pairs whose value is a `StructuredArgumentWriter`;
 - the stack trace, when the record carries a `Throwable`.
 
 ```text
@@ -247,6 +300,142 @@ It produces a text line with structured fields appended, not a single `JSON` doc
 ```
 
 The logger name is written in full and is shortened package by package only when it exceeds 100 characters.
+
+Each of these parts is appended by a `LoggingEventTextWriter` from the `io.koraframework.logging.logback.text.writer` package: `DefaultLoggingEventTextWriter`, `DefaultTraceTextWriter`, `DefaultMdcTextWriter`, `DefaultMessageTextWriter`, `DefaultStructuredTextWriter` and `DefaultExceptionTextWriter`, in this order.
+Declaring `<writer>` elements in `logback.xml` replaces the default list as a whole, so a custom layout lists every part it keeps:
+
+```xml
+<encoder class="io.koraframework.logging.logback.text.ConsoleTextRecordEncoder">
+    <writer class="io.koraframework.logging.logback.text.writer.DefaultLoggingEventTextWriter"/>
+    <writer class="io.koraframework.logging.logback.text.writer.DefaultTraceTextWriter"/>
+    <writer class="io.koraframework.logging.logback.text.writer.DefaultMessageTextWriter"/>
+    <writer class="io.koraframework.logging.logback.text.writer.DefaultExceptionTextWriter"/>
+</encoder>
+```
+
+A writer that throws does not lose the record: the encoder falls back to a line with the level, the logger, the message and the failure.
+
+### JSON format { #json-format }
+
+`JsonRecordEncoder` writes every record as a single line of `JSON`, which log collectors ingest without a parsing pattern.
+It lives in a separate module:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    [Dependency](general.md#dependencies) `build.gradle`:
+    ```groovy
+    implementation "io.koraframework:logging-logback-json"
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    [Dependency](general.md#dependencies) `build.gradle.kts`:
+    ```groovy
+    implementation("io.koraframework:logging-logback-json")
+    ```
+
+The module has no Kora module interface to add: its `json` encoder is discovered on the classpath and, having a higher priority than `text`, becomes the [default encoder](#encoder-selection).
+
+A record contains the following fields, and a field without a value is left out:
+
+- `@timestamp` — an `ISO 8601` date in `UTC`, or a number of epoch milliseconds with `kora.logging.config.timestamp-epoch-millis=true`;
+- `level`, `thread`, `logger`, `message`;
+- `traceId`, `spanId` — when the record was produced inside a traced operation;
+- `mdc` — an object with the Kora `MDC` entries as typed `JSON` values and the `SLF4J` `MDC` entries as strings; on the same key the Kora `MDC` wins;
+- `data` — the structured argument named `data`, which is where the [`@Log`](logging-aspect.md) aspect writes arguments and results; several `data` arguments are merged into one object;
+- `args` — the other structured arguments from markers and message parameters, and every `SLF4J` key-value pair; a plain key-value value keeps its number or boolean type and any other object is written through `toString()`;
+- `exception` — an object with `class`, `message` and `stacktrace`, when the record carries a `Throwable`; a structured argument named `exception` or `throwable` is added to it as `data`.
+
+```json
+{"@timestamp":"2026-07-02T10:15:30.123Z","level":"INFO","thread":"kora-undertow-1","logger":"io.koraframework.example.SomeService","message":"user logged in","traceId":"4bf92f3577b34da6a3ce929d0e0e4736","spanId":"00f067aa0ba902b7","mdc":{"userId":42},"args":{"role":"admin"}}
+```
+
+The encoder can also be declared in `logback.xml`.
+Like the text encoder, it is assembled from writers — `LoggingEventJsonWriter` implementations from the `io.koraframework.logging.logback.json.writer` package — and nested `<writer>` elements replace the default list as a whole.
+A writer that throws does not lose the record: the encoder falls back to a record with `@timestamp`, `level`, `logger`, `message` and the failure in `exception`.
+
+#### Record masking { #json-masking }
+
+`JsonRecordEncoder` can mask fields of the finished record by name, whatever wrote them:
+
+```xml
+<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="io.koraframework.logging.logback.json.JsonRecordEncoder">
+        <maskField>password</maskField>
+        <maskField>token</maskField>
+    </encoder>
+</appender>
+
+<appender name="ASYNC" class="io.koraframework.logging.logback.KoraAsyncAppender">
+    <appender-ref ref="STDOUT"/>
+</appender>
+```
+
+`<maskField>` values are turned into a `FieldLoggingEventJsonMasker`: a field with that name is matched case insensitively anywhere in the record — in `mdc`, `data` or `args` — and its value is replaced with `"***"`, an object or an array as a whole.
+For other rules, implement `LoggingEventJsonMasker` and declare it as `<masker class="..."/>`: `shouldMask(path, fieldName)` receives the dotted path from the record root, such as `args.user.password`, and `writeMasked` writes the replacement (default: `"***"`).
+When both `<masker>` and `<maskField>` are declared, the `<maskField>` values are ignored with a status warning.
+
+This masking works on field names only and knows nothing about the logged types; to mask values of a type wherever it is logged, use [`@Mask`](logging-aspect.md#masking).
+
+The `json` encoder of the default pipeline is created without masking.
+To keep the pipeline without writing `logback.xml`, register an encoder factory of your own:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    public final class MaskedJsonEncoderFactory implements LogbackEncoderFactory {
+
+        @Override
+        public String name() {
+            return "masked-json"; //(1)!
+        }
+
+        @Override
+        public int priority() {
+            return 200; //(2)!
+        }
+
+        @Override
+        public Encoder<ILoggingEvent> create(LoggerContext context) {
+            var encoder = new JsonRecordEncoder();
+            encoder.addMaskField("password");
+            encoder.addMaskField("token");
+            return encoder; //(3)!
+        }
+    }
+    ```
+
+    1. Name that selects this encoder through `kora.logging.encoder=masked-json`.
+    2. Higher than `json` (`100`), so the factory wins without being named; in `Gradle` tests `pretty` (`1000`) still wins unless an encoder is named.
+    3. The encoder is returned not started: `KoraLogbackConfigurator` sets its context and starts it.
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    class MaskedJsonEncoderFactory : LogbackEncoderFactory {
+
+        override fun name(): String = "masked-json" //(1)!
+
+        override fun priority(): Int = 200 //(2)!
+
+        override fun create(context: LoggerContext): Encoder<ILoggingEvent> {
+            val encoder = JsonRecordEncoder()
+            encoder.addMaskField("password")
+            encoder.addMaskField("token")
+            return encoder //(3)!
+        }
+    }
+    ```
+
+    1. Name that selects this encoder through `kora.logging.encoder=masked-json`.
+    2. Higher than `json` (`100`), so the factory wins without being named; in `Gradle` tests `pretty` (`1000`) still wins unless an encoder is named.
+    3. The encoder is returned not started: `KoraLogbackConfigurator` sets its context and starts it.
+
+The factory is discovered through `java.util.ServiceLoader`, so it is listed in a service file rather than declared as a graph component:
+
+```text title="src/main/resources/META-INF/services/io.koraframework.logging.logback.LogbackEncoderFactory"
+com.example.MaskedJsonEncoderFactory
+```
 
 ### Custom pattern { #custom-pattern }
 
@@ -274,8 +463,9 @@ Instead of `ConsoleTextRecordEncoder`, a standard `PatternLayoutEncoder` can be 
 </configuration>
 ```
 
-`KoraMdcConverter` prefers the `MDC` snapshot carried by `KoraLoggingEvent` and only falls back to reading the currently bound `MDC` directly.
-That fallback is defined only inside an [`MDC` scope](#mdc-scope), which is another reason to keep `KoraAsyncAppender` in front of the pattern appender: with it, records emitted during graph initialization or from a shutdown hook are encoded safely.
+`KoraMdcConverter` prefers the `MDC` snapshot carried by `KoraLoggingEvent` and only falls back to reading the `MDC` bound to the logging thread, rendering each entry as `key: <json value>`.
+On a thread with no [`MDC` scope](#mdc-scope) — graph initialization, a shutdown hook, a library thread pool — it renders nothing, and the rest of the line is still written.
+Behind a plain asynchronous appender the converter runs on the writer thread and sees no `MDC` at all, which is why `KoraAsyncAppender` takes the snapshot on the calling thread before handing the record over.
 
 !!! note "A log line is not a startup contract"
 
