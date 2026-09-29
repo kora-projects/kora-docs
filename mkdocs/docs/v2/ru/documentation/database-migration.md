@@ -30,7 +30,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "io.koraframework:database-flyway"
-    implementation "org.flywaydb:flyway-database-postgresql:13.3.0" //(1)!
+    implementation "org.flywaydb:flyway-database-postgresql:13.8.1" //(1)!
     ```
 
     1. Поддержка конкретной СУБД, смотрите [Поддержка баз данных](#flyway-database-support).
@@ -46,7 +46,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("io.koraframework:database-flyway")
-    implementation("org.flywaydb:flyway-database-postgresql:13.3.0") //(1)!
+    implementation("org.flywaydb:flyway-database-postgresql:13.8.1") //(1)!
     ```
 
     1. Поддержка конкретной СУБД, смотрите [Поддержка баз данных](#flyway-database-support).
@@ -70,7 +70,7 @@ FlywayException: Unsupported Database: PostgreSQL 16.x
 ```
 
 Для PostgreSQL это артефакт `org.flywaydb:flyway-database-postgresql`, артефакты для остальных баз данных перечислены в [документации Flyway](https://documentation.red-gate.com/fd).
-Версию артефакта указывайте такой же, как у `flyway-core`, который приходит вместе с `database-flyway`, — в Kora 2.0 это `13.3.0`.
+Версию артефакта указывайте такой же, как у `flyway-core`, который приходит вместе с `database-flyway`, — в Kora 2.0 это `13.8.1`.
 Артефакт не входит в [`kora-bom`](general.md#dependencies), поэтому версию всегда требуется указывать явно.
 
 ### Конфигурация { #configuration }

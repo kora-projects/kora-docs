@@ -8,7 +8,7 @@ title: Продвинутый JDBC с Kora
 summary: Learn advanced Kora JDBC repository patterns with related tables, nullable foreign keys, entity macros, batch inserts, transactions, projections, and custom mappers
 description: "Advanced Kora JDBC repository patterns on PostgreSQL: a second table with a nullable foreign key, @EntityJdbc insert models, the %{entity#inserts} macro, @Batch inserts with @Id generated keys, custom JdbcParameterColumnMapper and JdbcResultColumnMapper components, PostgreSQL array parameters with ANY(:ids), nested @Embedded projections and transactions through JdbcRepository.executor().inTx(...)."
 agent:
-  use_when: "Use this file for questions about advanced Kora JDBC repositories: %{entity#inserts} and other SQL macros, @Batch with @Id generated keys, UpdateCount, custom JdbcParameterColumnMapper / JdbcResultColumnMapper, passing a List into ANY(:ids), @Embedded projections with a column prefix, JdbcExecutor.inTx and its SqlSupplier / SqlRunnable SAM types in Kotlin, TxIsolation and ConnectionContext post-commit actions."
+  use_when: "Use this file for questions about advanced Kora JDBC repositories: %{entity#inserts} and other SQL macros, @Batch with @Id generated keys, UpdateCount, custom JdbcParameterColumnMapper / JdbcResultColumnMapper, passing a List into ANY(:ids), @Embedded projections with a column prefix, JdbcExecutor.inTx and its SqlSupplier / SqlRunnable SAM types in Kotlin, the inTxKt extension, the database-jdbc-postgres @Pg array mappers, TxIsolation and ConnectionContext post-commit actions."
 tags: database, jdbc, postgres, transactions, batch, macros
 ---
 
@@ -162,7 +162,7 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -178,7 +178,7 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -186,7 +186,7 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 `database-jdbc` предоставляет инфраструктуру репозиториев, исполнитель `JdbcExecutor` для ручных запросов и транзакций, а также пул соединений Hikari. `database-flyway` применяет миграции схемы до
 использования репозиториев; он приносит только `flyway-core`, поэтому артефакт диалекта PostgreSQL `org.flywaydb:flyway-database-postgresql` нужно объявить явно и держать в той же версии, что и
-`flyway-core`, который разрешает Kora `2.0.0.RC2`, — это `13.3.0`. Драйвер PostgreSQL нужен приложению во время выполнения.
+`flyway-core`, который разрешает Kora `2.0.0.RC2`, — это `13.8.1`. Драйвер PostgreSQL нужен приложению во время выполнения.
 
 ## Модули { #modules }
 
@@ -542,6 +542,10 @@ Kora находит эти преобразователи по их обобще
 Контракт `JdbcParameterColumnMapper.set(...)` помечает значение как `@Nullable` через JSpecify, поэтому реализация на Kotlin обязана принимать `List<Long>?` и сама обрабатывать ветку `null`. Объявить
 параметр переопределения как non-null `List<Long>` не получится — код не скомпилируется. При этом обобщенный аргумент интерфейса остается non-null: `JdbcParameterColumnMapper<List<Long>>`, потому что
 именно по этому типу Kora подбирает преобразователь для параметров репозитория.
+
+В этом руководстве преобразователь написан вручную, чтобы показать его контракт. В реальном сервисе на `PostgreSQL` модуль `io.koraframework:database-jdbc-postgres` уже предоставляет
+преобразователи массивов для `List`, `Set`, `Collection` и массивов: унаследуйте `PostgresJdbcDatabaseModule` вместо `JdbcDatabaseModule`, пометьте параметр `assigneeIds` аннотацией `@Pg`, и собственный компонент не понадобится, см.
+[PostgreSQL](../documentation/database-jdbc.md#postgres-arrays).
 
 ## Новый репозиторий { #new-repository }
 
@@ -1580,7 +1584,7 @@ var created = taskRepository.executor().inTx(JdbcExecutor.TxIsolation.REPEATABLE
 ```
 
 В Java компилятор выбирает перегрузку по форме лямбды, поэтому достаточно `inTx(() -> { ... })`. В Kotlin голая лямбда неоднозначна для такого набора перегрузок, и компилятор сообщает
-`Overload resolution ambiguity`. Поэтому сервис на Kotlin создает SAM явно: `JdbcExecutor.SqlSupplier { ... }`, когда блок возвращает значение, и `JdbcExecutor.SqlRunnable { ... }`, когда не возвращает.
+`Overload resolution ambiguity`. Поэтому сервис на Kotlin создает SAM явно: `JdbcExecutor.SqlSupplier { ... }`, когда блок возвращает значение, и `JdbcExecutor.SqlRunnable { ... }`, когда не возвращает. Расширения `inTxKt { ... }` и `withConnectionKt { ... }` из `io.koraframework.database.jdbc` принимают вместо этого обычную лямбду Kotlin; варианта `inTxKt` с `TxIsolation` нет.
 
 Перегрузка `SqlFunction<ConnectionContext, T>` дает доступ к `ConnectionContext`, через который можно зарегистрировать действия, выполняемые после того, как исход транзакции известен:
 
@@ -2027,7 +2031,7 @@ curl -X POST http://localhost:8080/tasks \
 **Kotlin сообщает `Overload resolution ambiguity` на `inTx`:**
 
 У `JdbcExecutor.inTx(...)` восемь перегрузок, поэтому Kotlin не может вывести, какой функциональный интерфейс реализует голая лямбда. Создайте SAM явно: `JdbcExecutor.SqlSupplier { ... }` для блока,
-возвращающего значение, или `JdbcExecutor.SqlRunnable { ... }` для блока без результата.
+возвращающего значение, или `JdbcExecutor.SqlRunnable { ... }` для блока без результата, либо вызовите расширение `inTxKt { ... }`, которое принимает обычную лямбду.
 
 **Запрос назначенных задач сопоставляет неправильные столбцы:**
 

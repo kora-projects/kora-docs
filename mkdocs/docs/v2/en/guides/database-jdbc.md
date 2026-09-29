@@ -8,7 +8,7 @@ title: Database Integration with Kora
 summary: Learn how to integrate databases with Kora using JDBC and perform CRUD operations
 description: "Step-by-step PostgreSQL persistence with Kora JDBC: the io.koraframework:database-jdbc and database-flyway artifacts, JdbcDatabaseModule and FlywayJdbcDatabaseModule, an @EntityJdbc DAO with @Column mapping, a @Repository extending JdbcRepository with @Query, Optional and UpdateCount results, the jdbc configuration section with Hikari pool settings, flyway.locations and the generated repository and row mapper sources."
 agent:
-  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup."
+  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup; points to database-jdbc-postgres for PostgreSQL-specific column types."
 tags: database, jdbc, crud, persistence
 ---
 
@@ -176,7 +176,7 @@ Now add the database-specific dependencies for PostgreSQL, JDBC repositories, an
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -192,7 +192,7 @@ Now add the database-specific dependencies for PostgreSQL, JDBC repositories, an
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -200,7 +200,7 @@ Now add the database-specific dependencies for PostgreSQL, JDBC repositories, an
 
 `database-jdbc` provides the repository infrastructure and the Hikari connection pool. `database-flyway` runs schema migrations before repositories are used, but it only brings `flyway-core` with it: since
 Flyway 10 every database dialect lives in its own artifact, so `org.flywaydb:flyway-database-postgresql` must be added explicitly. Without it the application fails at startup with `Unsupported Database:
-PostgreSQL`. Keep the dialect version aligned with the `flyway-core` version that Kora `2.0.0.RC2` brings, which is `13.3.0`. The PostgreSQL JDBC driver is only needed at runtime.
+PostgreSQL`. Keep the dialect version aligned with the `flyway-core` version that Kora `2.0.0.RC2` brings, which is `13.8.1`. The PostgreSQL JDBC driver is only needed at runtime.
 
 ## Modules { #modules }
 
@@ -1020,6 +1020,7 @@ You also inspected generated JDBC code to see how Kora turns repository annotati
 ## What's Next? { #whats-next }
 
 - [Advanced JDBC Patterns](database-jdbc-advanced.md) to add a second table, transactions, custom mappers, macros, and projections.
+- [PostgreSQL module](../documentation/database-jdbc.md#postgres) to map PostgreSQL arrays, `interval`, range types, and `json` / `jsonb` columns without hand-written mappers.
 - [Integration Testing](testing-integration.md) to verify JDBC repositories, migrations, and PostgreSQL behavior with Testcontainers.
 - [Black Box Testing](testing-black-box.md) to validate the packaged HTTP application end to end.
 - [Cassandra Database](database-cassandra.md) if you want to compare the same persistence lesson with a distributed database model.

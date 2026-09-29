@@ -30,7 +30,7 @@ Migrations are run by `FlywayJdbcDatabaseInterceptor`, which is provided by `Fly
     [Dependency](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "io.koraframework:database-flyway"
-    implementation "org.flywaydb:flyway-database-postgresql:13.3.0" //(1)!
+    implementation "org.flywaydb:flyway-database-postgresql:13.8.1" //(1)!
     ```
 
     1. Support for a specific DBMS, see [Database Support](#flyway-database-support).
@@ -46,7 +46,7 @@ Migrations are run by `FlywayJdbcDatabaseInterceptor`, which is provided by `Fly
     [Dependency](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("io.koraframework:database-flyway")
-    implementation("org.flywaydb:flyway-database-postgresql:13.3.0") //(1)!
+    implementation("org.flywaydb:flyway-database-postgresql:13.8.1") //(1)!
     ```
 
     1. Support for a specific DBMS, see [Database Support](#flyway-database-support).
@@ -70,7 +70,7 @@ FlywayException: Unsupported Database: PostgreSQL 16.x
 ```
 
 For PostgreSQL the artifact is `org.flywaydb:flyway-database-postgresql`; artifacts for other databases are listed in the [Flyway documentation](https://documentation.red-gate.com/fd).
-Version the artifact the same as the `flyway-core` that comes with `database-flyway` — `13.3.0` in Kora 2.0.
+Version the artifact the same as the `flyway-core` that comes with `database-flyway` — `13.8.1` in Kora 2.0.
 The artifact is not part of [`kora-bom`](general.md#dependencies), so the version must always be specified explicitly.
 
 ### Configuration { #configuration }

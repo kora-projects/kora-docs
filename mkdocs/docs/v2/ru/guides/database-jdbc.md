@@ -8,7 +8,7 @@ title: Интеграция с базой данных в Kora
 summary: Learn how to integrate databases with Kora using JDBC and perform CRUD operations
 description: "Step-by-step PostgreSQL persistence with Kora JDBC: the io.koraframework:database-jdbc and database-flyway artifacts, JdbcDatabaseModule and FlywayJdbcDatabaseModule, an @EntityJdbc DAO with @Column mapping, a @Repository extending JdbcRepository with @Query, Optional and UpdateCount results, the jdbc configuration section with Hikari pool settings, flyway.locations and the generated repository and row mapper sources."
 agent:
-  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup."
+  use_when: "Use this file for questions about adding a PostgreSQL database to a Kora service with JDBC: io.koraframework:database-jdbc, database-flyway, JdbcDatabaseModule, FlywayJdbcDatabaseModule, @Repository, JdbcRepository, @Query, @EntityJdbc, @Column, UpdateCount, RETURNING id, the jdbc config section (jdbcUrl, username, password, poolName, maxPoolSize) and Flyway migrations at startup; points to database-jdbc-postgres for PostgreSQL-specific column types."
 tags: database, jdbc, crud, persistence
 ---
 
@@ -178,7 +178,7 @@ JDBC также вводит инфраструктуру времени вып�
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -194,7 +194,7 @@ JDBC также вводит инфраструктуру времени вып�
 
         implementation("io.koraframework:database-jdbc")
         implementation("io.koraframework:database-flyway")
-        implementation("org.flywaydb:flyway-database-postgresql:13.3.0")
+        implementation("org.flywaydb:flyway-database-postgresql:13.8.1")
 
         runtimeOnly("org.postgresql:postgresql:42.7.13")
     }
@@ -202,7 +202,7 @@ JDBC также вводит инфраструктуру времени вып�
 
 `database-jdbc` даёт инфраструктуру репозиториев и пул соединений Hikari. `database-flyway` выполняет миграции схемы до того, как репозитории начнут работать, но тянет за собой только `flyway-core`:
 начиная с Flyway 10 поддержка каждой СУБД вынесена в отдельный артефакт, поэтому `org.flywaydb:flyway-database-postgresql` нужно добавить явно. Без него приложение падает на старте с ошибкой
-`Unsupported Database: PostgreSQL`. Версию диалекта держите совпадающей с версией `flyway-core`, которую приносит Kora `2.0.0.RC2`, — это `13.3.0`. Драйвер PostgreSQL нужен только во время выполнения.
+`Unsupported Database: PostgreSQL`. Версию диалекта держите совпадающей с версией `flyway-core`, которую приносит Kora `2.0.0.RC2`, — это `13.8.1`. Драйвер PostgreSQL нужен только во время выполнения.
 
 ## Модули { #modules }
 
@@ -1021,6 +1021,7 @@ HTTP-контракт остается стабильным, пока слой �
 ## Что дальше? { #whats-next }
 
 - [Продвинутые шаблоны JDBC](database-jdbc-advanced.md), чтобы добавить вторую таблицу, транзакции, пользовательские преобразователи, макросы и проекции.
+- [Модуль PostgreSQL](../documentation/database-jdbc.md#postgres), чтобы отображать массивы PostgreSQL, `interval`, range-типы и столбцы `json` / `jsonb` без собственных преобразователей.
 - [Интеграционное тестирование](testing-integration.md), чтобы проверять JDBC-репозитории, миграции и поведение PostgreSQL с Testcontainers.
 - [Тестирование как черный ящик](testing-black-box.md), чтобы проверять упакованное HTTP-приложение сквозным образом.
 - [База данных Cassandra](database-cassandra.md), если вы хотите сравнить тот же урок хранения данных с моделью распределенной базы данных.
