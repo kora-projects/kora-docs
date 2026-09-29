@@ -95,8 +95,8 @@ Kora dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, s
     ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version ("2.4.10") //(1)!
-        id("com.google.devtools.ksp") version ("2.3.11")
+        kotlin("jvm") version ("2.4.20") //(1)!
+        id("com.google.devtools.ksp") version ("2.3.12")
     }
 
     repositories {

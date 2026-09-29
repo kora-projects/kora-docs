@@ -98,8 +98,8 @@ Kora создает вспомогательные классы во время 
     ```kotlin
     plugins {
         id("application")
-        kotlin("jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        kotlin("jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
         id("com.gradleup.shadow") version "9.4.1"
         id("org.graalvm.buildtools.native") version "1.1.7" //(1)!
     }
@@ -373,7 +373,7 @@ Kora поставляет метаданные для собственных м�
 ```json title="src/main/resources/META-INF/native-image/io.koraframework.examples/logback/reflect-config.json"
 [
   {
-    "name": "io.koraframework.logging.logback.ConsoleTextRecordEncoder",
+    "name": "io.koraframework.logging.logback.text.ConsoleTextRecordEncoder",
     "allDeclaredConstructors": true,
     "allPublicMethods": true
   },

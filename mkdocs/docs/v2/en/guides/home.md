@@ -19,7 +19,7 @@ Use the documentation in two complementary ways:
 - **Repository examples** are complete runnable services. They are useful when you want to compare your project with a working application or copy a proven setup.
 
 Every guide and every example targets the same toolchain: `JDK` `25`, `Gradle` `9.5+`, the `io.koraframework:kora-bom` `BOM`,
-and, for `Kotlin`, `Kotlin` `2.4.10` with `KSP` `2.3.11`.
+and, for `Kotlin`, `Kotlin` `2.4` with a matching `KSP` `2.3` release (the framework itself is built with `Kotlin` `2.4.20` and `KSP` `2.3.12`).
 The toolchain itself is described in [Compatibility](../documentation/general.md#compatibility) and [Build System](../documentation/general.md#build-system).
 
 ## Guided Learning Path { #guided-learning-path }

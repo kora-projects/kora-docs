@@ -2067,7 +2067,7 @@ Kora сканирует только эти модули.
 - клиентские заглушки gRPC
 - извлекатели конфигурации для интерфейсов `@ConfigSource` и `@ConfigMapper`
 - реализации `Validator<T>` для типов с `@Valid`
-- реализации мапперов MapStruct и Konvert
+- реализации мапперов MapStruct в Java и Konvert в Kotlin
 
 ===! ":fontawesome-brands-java: `Java`"
 

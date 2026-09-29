@@ -6,7 +6,7 @@ hide:
     - toc
 description: "Overview of the Kora framework: a compile-time Java and Kotlin framework for server-side applications with reflection-free dependency injection, generated aspects and preconfigured modules for HTTP, databases, Kafka, gRPC, cache, resilience and observability. Use when you need to understand what Kora is, which modules it ships, what JDK and build tooling it requires, and where to start reading."
 agent:
-    use_when: "Use this file for high-level questions about what Kora is and what it provides: the Simplicity, Performance, Efficiency and Transparency principles, the list of available modules and integrations, the JDK 25 / Gradle 9.5 / Kotlin 2.4.10 / KSP 2.3.11 requirements, the io.koraframework group and the io.koraframework:kora-bom BOM, and which guide a newcomer should read first."
+    use_when: "Use this file for high-level questions about what Kora is and what it provides: the Simplicity, Performance, Efficiency and Transparency principles, the list of available modules and integrations, the JDK 25 / Gradle 9.5 / Kotlin 2.4.20 / KSP 2.3.12 requirements, the io.koraframework group and the io.koraframework:kora-bom BOM, and which guide a newcomer should read first."
 template: landing.html
 glightbox: false
 ---
@@ -90,11 +90,11 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 - Type-safe [configuration](documentation/config.md) in `HOCON` or `YAML` format
 - Large set of preconfigured integrations:
     - [HTTP server](documentation/http-server.md) on `Undertow` and declarative [HTTP clients](documentation/http-client.md) on `JDK`, `OkHttp` or `Apache` transports
-    - [Database repositories](documentation/database-common.md) for [JDBC](documentation/database-jdbc.md) and [Cassandra](documentation/database-cassandra.md), plus [schema migrations](documentation/database-migration.md) via `Flyway` or `Liquibase`
+    - [Database repositories](documentation/database-common.md) for [JDBC](documentation/database-jdbc.md) and [Cassandra](documentation/database-cassandra.md), [PostgreSQL-specific](documentation/database-jdbc.md#postgres) arrays, ranges and `JSON` mappers, plus [schema migrations](documentation/database-migration.md) via `Flyway` or `Liquibase`
     - Messaging and remote calls: [Kafka](documentation/kafka.md) consumers and producers, [gRPC server](documentation/grpc-server.md) and [gRPC client](documentation/grpc-client.md), [SOAP client](documentation/soap-client.md), [S3 client](documentation/s3-client.md)
-    - Compile-time [Json](documentation/json.md) readers and writers, and object mapping via [MapStruct](documentation/mapstruct.md) or `Konvert`
-    - [Caching](documentation/cache.md) via `Caffeine` and `Redis`, and [resilience](documentation/resilient.md) with circuit breaker, retry, timeout, rate limiter and fallback
-    - [Scheduling](documentation/scheduling.md), [validation](documentation/validation.md) and [Camunda](documentation/camunda7-bpmn.md) integrations
+    - Compile-time [Json](documentation/json.md) readers and writers, and object mapping via [MapStruct](documentation/mapstruct.md#mapstruct) for `Java` or [Konvert](documentation/mapstruct.md#konvert) for `Kotlin`
+    - [Caching](documentation/cache.md) via `Caffeine` and `Redis`, and [resilience](documentation/resilient.md) with circuit breaker, retry, timeout, rate limiter and fallback, including a [Redis-backed distributed](documentation/resilient.md#dependency-distributed) rate limiter and retry budget
+    - [Scheduling](documentation/scheduling.md) on the `JDK`, `Quartz` or [db-scheduler](documentation/scheduling.md#db-scheduler), [validation](documentation/validation.md) and [Camunda](documentation/camunda7-bpmn.md) integrations
 - Observability, [tracing](documentation/tracing.md) and [metrics](documentation/metrics.md) according to `OpenTelemetry` standard, [logging](documentation/logging-slf4j.md) and [probes](documentation/probes.md) for all modules
 - Easy and rapid testing with [JUnit5](documentation/junit5.md)
 - Simple and detailed documentation supported by [guides and examples of working services](guides/home.md)
@@ -103,7 +103,7 @@ Kora provides all the tools needed for modern Java or Kotlin server-side develop
 
 Kora artifacts are published under the `io.koraframework` group and are compiled for `Java` `25`,
 so `JDK` `25` is the minimum required to compile and run an application on Kora, regardless of the language.
-Applications are built with `Gradle` `9.5+`, and `Kotlin` projects use `Kotlin` `2.4.10` together with `KSP` `2.3.11` -
+Applications are built with `Gradle` `9.5+`, and `Kotlin` projects use `Kotlin` `2.4.20` together with `KSP` `2.3.12` -
 the same versions the framework itself is built with.
 
 Dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, so individual Kora dependencies are declared without an explicit version.

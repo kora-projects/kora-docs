@@ -402,8 +402,8 @@ rm -rf app
     import org.gradle.jvm.toolchain.JvmVendorSpec
 
     plugins {
-        id("org.jetbrains.kotlin.jvm") version "2.4.10"
-        id("com.google.devtools.ksp") version "2.3.11"
+        id("org.jetbrains.kotlin.jvm") version "2.4.20"
+        id("com.google.devtools.ksp") version "2.3.12"
         id("application")
     }
     ```
