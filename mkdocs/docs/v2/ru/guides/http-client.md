@@ -8,7 +8,7 @@ title: Руководство по HTTP-клиенту
 summary: Build a separate Kora application that calls the user endpoints from the HTTP Server guide with declarative synchronous clients
 description: "Step-by-step declarative HTTP client for a Kora 2.0 service: the io.koraframework:http-client-ok artifact and OkHttpClientModule, a @HttpClient interface whose @HttpRoute methods bind @Path, @Query, @Header and @Cookie parameters and @Json request and response DTOs, HttpResponseEntity returns and a custom HttpClientResponseMapper, HttpClientResponseException on non-2xx answers, the httpClient.userApi url, requestTimeout and telemetry configuration next to httpServer.port and httpServer.system.port, and a @KoraAppTest check of the client against the running server application."
 agent:
-  use_when: "Use this file for questions about calling another service from Kora 2.0 with a declarative client: io.koraframework:http-client-ok, OkHttpClientModule, @HttpClient with a config path, @HttpRoute with HttpMethod, @Path, @Query, @Header, @Cookie, @Json bodies, HttpResponseEntity, writing an HttpClientResponseMapper for a type Kora has no ready mapper for, HttpClientResponseException and its code, headers and bytes, the httpClient.userApi.url and requestTimeout keys versus the transport-wide httpClient.connectTimeout, readTimeout and proxy, why suspend and CompletionStage client methods are rejected, and running the client and server applications side by side."
+  use_when: "Use this file for questions about calling another service from Kora 2.0 with a declarative client: io.koraframework:http-client-ok, OkHttpClientModule, @HttpClient with a config path, @HttpRoute with HttpMethod, @Path, @Query, @Header, @Cookie, @Json bodies, HttpResponseEntity, writing an HttpClientResponseMapper for a type Kora has no ready mapper for, HttpClientResponseException and its code, headers and bytes, HttpClientConnectionException for an unreachable server, masking client logs with MaskingStrategy, the httpClient.userApi.url and requestTimeout keys versus the transport-wide httpClient.connectTimeout, readTimeout and proxy, why suspend and CompletionStage client methods are rejected, and running the client and server applications side by side."
 tags: http-client, http-server, declarative-client, okhttp, integration
 ---
 
@@ -903,6 +903,7 @@ curl -X POST http://localhost:8081/client/test-all-user-endpoints
 - Убедитесь, что серверное приложение работает на порту `8080` для ручных проверок
 - Убедитесь, что `httpClient.userApi.url` указывает на реальный URL сервера
 - Если вы переопределяете `USER_API_URL`, проверьте, что значение по-прежнему указывает на публичный API серверного приложения
+- Вызов недоступного сервера на любом транспорте завершается `HttpClientConnectionException`, в том числе когда истекает `httpClient.connectTimeout`, см. [Ошибка соединения](../documentation/http-client.md#connection-exception)
 
 **Сборка падает с `No component found for dependency:` и типом `HttpClientResponseMapper`:**
 
@@ -930,7 +931,7 @@ curl -X POST http://localhost:8081/client/test-all-user-endpoints
 **Телеметрия клиента слишком шумная:**
 
 - Отключите или настройте `httpClient.userApi.telemetry.logging.enabled` в `application.conf`, когда закончите отладку
-- Чувствительные заголовки уже маскируются: `authorization`, `cookie` и `set-cookie` по умолчанию заменяются на `***`
+- Чувствительные заголовки уже маскируются: `authorization`, `cookie` и `set-cookie` по умолчанию заменяются на `***`. Чтобы изменить замену или маскировать JSON-тела, зарегистрируйте `MaskingStrategy` или `DataMasker` с тегом `@Tag(HttpClientTelemetry.class)`, см. [Маскирование](../documentation/http-client.md#telemetry-masking)
 
 **Системные эндпоинты не отвечают:**
 

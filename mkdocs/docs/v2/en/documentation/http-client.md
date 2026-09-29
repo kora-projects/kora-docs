@@ -1,10 +1,10 @@
 ---
 seo_title: "Kora HTTP Client: Declarative Clients, OkHttp, JDK Client"
 seo_description: "Reference for Kora HTTP clients: OkHttp, Apache HttpClient and JDK transports, declarative @HttpClient, mapping, interceptors, auth and telemetry."
-keywords: ["Kora Framework", "Kora HTTP client", "@HttpClient", "OkHttp", "Apache HttpClient", "declarative REST client"]
-description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith."
+keywords: ["Kora Framework", "Kora HTTP client", "@HttpClient", "OkHttp", "Apache HttpClient", "declarative REST client", "HTTP client telemetry masking"]
+description: "Explains Kora HTTP clients, the OkHttp, Apache HttpClient and JDK transports, declarative client annotations, request and response mapping, interceptors, authorization, error mapping and telemetry with masking. Use when working with @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientConnectionException, MaskingStrategy, DataMasker."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization and telemetry; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule."
+  use_when: "Use this file for Kora docs or implementation questions about Kora HTTP clients, the OkHttp / Apache HttpClient / JDK transports, declarative client annotations, request and response mapping, interceptors, authorization, exception mapping per transport and telemetry with header, query and body masking; key triggers include @HttpClient, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @Mapping, @ResponseCodeMapper, @InterceptWith, HttpClientResponseMapper, HttpClientRequestMapper, HttpClientParameterWriter, HttpClientInterceptor, HttpClientModule, OkHttpClientModule, ApacheHttpClientModule, JdkHttpClientModule, HttpClientException, HttpClientConnectionException, HttpClientTimeoutException, HttpClientTelemetry, HttpClientTelemetryFactory, DefaultHttpClientLoggerFactory, DefaultHttpClientBodyConverter, MaskingStrategy, DataMasker, JsonDataMasker, MaskingPathRules, maskHeaders, maskQueries, @Retryable, @CircuitBreakable."
 ---
 
 The `HTTP client` module describes outgoing HTTP calls: transport implementation, request mapping, response mapping,
@@ -427,7 +427,7 @@ Basic JDK HttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response (default: `2m`)
+    2.  Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
 
 === ":simple-yaml: `YAML`"
 
@@ -438,7 +438,7 @@ Basic JDK HttpClient configuration parameters:
     ```
 
     1.  Maximum time to establish a connection (default: `5s`)
-    2.  Maximum time to read a response (default: `2m`)
+    2.  Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
 
 ??? note "Full Configuration"
 
@@ -469,7 +469,7 @@ Basic JDK HttpClient configuration parameters:
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
-        4. Maximum time to read a response (default: `2m`)
+        4. Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
         6. Proxy host (required if the `proxy` section is present, no default)
         7. Proxy port (required if the `proxy` section is present, no default)
@@ -498,7 +498,7 @@ Basic JDK HttpClient configuration parameters:
         1. Whether to follow [HTTP redirects](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) (default: `true`)
         2. Which `HTTP` protocol version to use, available values: `HTTP_1_1` / `HTTP_2` (default: `HTTP_1_1`)
         3. Maximum time to establish a connection (default: `5s`)
-        4. Maximum time to read a response (default: `2m`)
+        4. Maximum time to read a response; shared with the other transports and not applied by the JDK client, use `requestTimeout` to bound a call (default: `2m`)
         5. Whether to use `https_proxy` / `HTTPS_PROXY` / `http_proxy` / `HTTP_PROXY` and `no_proxy` / `NO_PROXY` environment variables for proxy configuration (default: `false`)
         6. Proxy host (required if the `proxy` section is present, no default)
         7. Proxy port (required if the `proxy` section is present, no default)
@@ -725,25 +725,24 @@ Basic declarative client configuration parameters:
                 telemetry {
                     logging {
                         enabled = false //(3)!
-                        mask = "***" //(4)!
-                        maskQueries = [ ] //(5)!
-                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(6)!
-                        pathFull = false //(7)!
-                        maxRequestBodyLogSize = "2MiB" //(8)!
-                        maxResponseBodyLogSize = "2MiB" //(9)!
+                        maskQueries = [ ] //(4)!
+                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
+                        pathFull = false //(6)!
+                        maxRequestBodyLogSize = "2MiB" //(7)!
+                        maxResponseBodyLogSize = "2MiB" //(8)!
                     }
                     metrics {
-                        enabled = false //(10)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(11)!
-                        tags = { // (12)!
+                        enabled = false //(9)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                        tags = { // (11)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(13)!
-                        pathFull = true //(14)!
-                        attributes = { // (15)!
+                        enabled = true //(12)!
+                        pathFull = true //(13)!
+                        attributes = { // (14)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -756,18 +755,17 @@ Basic declarative client configuration parameters:
         1. Base service `URL` where requests will be sent (required, no default)
         2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, no default)
         3. Enables module logging (default: `false`)
-        4. Mask used to hide specified headers and request or response parameters (default: `***`)
-        5. List of request parameters to hide (default: `[]`)
-        6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
-        8. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
-        9. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
-        10. Enables module metrics (default: `false`)
-        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        12. Configures metric tags (default: `{}`)
-        13. Enables module tracing (default: `true`)
-        14. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
-        15. Configures tracing attributes (default: `{}`)
+        4. Query parameter names whose values are replaced with the [masking strategy](#telemetry-masking) (default: `[]`)
+        5. Request and response header names whose values are replaced with the [masking strategy](#telemetry-masking) (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
+        7. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        8. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        9. Enables module metrics (default: `false`)
+        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
+        14. Configures tracing attributes (default: `{}`)
 
     === ":simple-yaml: `YAML`"
 
@@ -779,22 +777,21 @@ Basic declarative client configuration parameters:
             telemetry:
               logging:
                 enabled: false #(3)!
-                mask: "***" #(4)!
-                maskQueries: [ ] #(5)!
-                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(6)!
-                pathFull: false #(7)!
-                maxRequestBodyLogSize: "2MiB" #(8)!
-                maxResponseBodyLogSize: "2MiB" #(9)!
+                maskQueries: [ ] #(4)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
+                pathFull: false #(6)!
+                maxRequestBodyLogSize: "2MiB" #(7)!
+                maxResponseBodyLogSize: "2MiB" #(8)!
               metrics:
-                enabled: false #(10)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(11)!
-                tags: #(12)!
+                enabled: false #(9)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+                tags: #(11)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(13)!
-                pathFull: true #(14)!
-                attributes: #(15)!
+                enabled: true #(12)!
+                pathFull: true #(13)!
+                attributes: #(14)!
                   key1: value1
                   key2: value2
         ```
@@ -802,18 +799,17 @@ Basic declarative client configuration parameters:
         1. Base service `URL` where requests will be sent (required, no default)
         2. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, no default)
         3. Enables module logging (default: `false`)
-        4. Mask used to hide specified headers and request or response parameters (default: `***`)
-        5. List of request parameters to hide (default: `[]`)
-        6. List of request or response headers to hide (default: `[ "authorization", "cookie", "set-cookie" ]`)
-        7. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
-        8. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
-        9. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
-        10. Enables module metrics (default: `false`)
-        11. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
-        12. Configures metric tags (default: `{}`)
-        13. Enables module tracing (default: `true`)
-        14. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
-        15. Configures tracing attributes (default: `{}`)
+        4. Query parameter names whose values are replaced with the [masking strategy](#telemetry-masking) (default: `[]`)
+        5. Request and response header names whose values are replaced with the [masking strategy](#telemetry-masking) (default: `[ "authorization", "cookie", "set-cookie" ]`)
+        6. Whether to log the full request path instead of the route template; when not specified, the full path is logged only at `TRACE` level and the template otherwise (optional, no default)
+        7. Maximum request body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        8. Maximum response body size that is still written to the log; a larger body is skipped with a warning (default: `2MiB`)
+        9. Enables module metrics (default: `false`)
+        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (default: `io.koraframework.telemetry.common.TelemetryConfig.MetricsConfig#DEFAULT_SLO`)
+        11. Configures metric tags (default: `{}`)
+        12. Enables module tracing (default: `true`)
+        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (default: `true`)
+        14. Configures tracing attributes (default: `{}`)
 
 ???+ warning "Metrics and logging are disabled by default"
 
@@ -871,25 +867,24 @@ Basic method configuration parameters:
                     telemetry {
                         logging {
                             enabled = false //(2)!
-                            mask = "***" //(3)!
-                            maskQueries = [ ] //(4)!
-                            maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(5)!
-                            pathFull = false //(6)!
-                            maxRequestBodyLogSize = "2MiB" //(7)!
-                            maxResponseBodyLogSize = "2MiB" //(8)!
+                            maskQueries = [ ] //(3)!
+                            maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(4)!
+                            pathFull = false //(5)!
+                            maxRequestBodyLogSize = "2MiB" //(6)!
+                            maxResponseBodyLogSize = "2MiB" //(7)!
                         }
                         metrics {
-                            enabled = false //(9)!
-                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
-                            tags = { // (11)!
+                            enabled = false //(8)!
+                            slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
+                            tags = { // (10)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
                         }
                         tracing {
-                            enabled = true //(12)!
-                            pathFull = true //(13)!
-                            attributes = { // (14)!
+                            enabled = true //(11)!
+                            pathFull = true //(12)!
+                            attributes = { // (13)!
                                 "key1" = "value1"
                                 "key2" = "value2"
                             }
@@ -902,18 +897,17 @@ Basic method configuration parameters:
 
         1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, inherits the client value)
         2. Enables module logging (optional, inherits the client value)
-        3. Mask used to hide specified headers and request or response parameters (optional, inherits the client value)
-        4. List of request parameters to hide (optional, inherits the client value)
-        5. List of request or response headers to hide (optional, inherits the client value)
-        6. Whether to log the full request path instead of the route template (optional, inherits the client value)
-        7. Maximum request body size that is still written to the log (optional, inherits the client value)
-        8. Maximum response body size that is still written to the log (optional, inherits the client value)
-        9. Enables module metrics (optional, inherits the client value)
-        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
-        11. Configures metric tags (optional, inherits the client value)
-        12. Enables module tracing (optional, inherits the client value)
-        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
-        14. Configures tracing attributes (optional, inherits the client value)
+        3. Query parameter names whose values are replaced with the [masking strategy](#telemetry-masking) (optional, inherits the client value)
+        4. Request and response header names whose values are replaced with the [masking strategy](#telemetry-masking) (optional, inherits the client value)
+        5. Whether to log the full request path instead of the route template (optional, inherits the client value)
+        6. Maximum request body size that is still written to the log (optional, inherits the client value)
+        7. Maximum response body size that is still written to the log (optional, inherits the client value)
+        8. Enables module metrics (optional, inherits the client value)
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
+        10. Configures metric tags (optional, inherits the client value)
+        11. Enables module tracing (optional, inherits the client value)
+        12. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
+        13. Configures tracing attributes (optional, inherits the client value)
 
     === ":simple-yaml: `YAML`"
 
@@ -925,40 +919,38 @@ Basic method configuration parameters:
               telemetry:
                 logging:
                   enabled: false #(2)!
-                  mask: "***" #(3)!
-                  maskQueries: [ ] #(4)!
-                  maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(5)!
-                  pathFull: false #(6)!
-                  maxRequestBodyLogSize: "2MiB" #(7)!
-                  maxResponseBodyLogSize: "2MiB" #(8)!
+                  maskQueries: [ ] #(3)!
+                  maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(4)!
+                  pathFull: false #(5)!
+                  maxRequestBodyLogSize: "2MiB" #(6)!
+                  maxResponseBodyLogSize: "2MiB" #(7)!
                 metrics:
-                  enabled: false #(9)!
-                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
-                  tags: #(11)!
+                  enabled: false #(8)!
+                  slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
+                  tags: #(10)!
                     key1: value1
                     key2: value2
                 tracing:
-                  enabled: true #(12)!
-                  pathFull: true #(13)!
-                  attributes: #(14)!
+                  enabled: true #(11)!
+                  pathFull: true #(12)!
+                  attributes: #(13)!
                     key1: value1
                     key2: value2
         ```
 
         1. Maximum request time: may include `DNS` resolution, connection, request body write, server processing, and response body read. If the call requires redirects or retries, they must all finish within one period (optional, inherits the client value)
         2. Enables module logging (optional, inherits the client value)
-        3. Mask used to hide specified headers and request or response parameters (optional, inherits the client value)
-        4. List of request parameters to hide (optional, inherits the client value)
-        5. List of request or response headers to hide (optional, inherits the client value)
-        6. Whether to log the full request path instead of the route template (optional, inherits the client value)
-        7. Maximum request body size that is still written to the log (optional, inherits the client value)
-        8. Maximum response body size that is still written to the log (optional, inherits the client value)
-        9. Enables module metrics (optional, inherits the client value)
-        10. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
-        11. Configures metric tags (optional, inherits the client value)
-        12. Enables module tracing (optional, inherits the client value)
-        13. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
-        14. Configures tracing attributes (optional, inherits the client value)
+        3. Query parameter names whose values are replaced with the [masking strategy](#telemetry-masking) (optional, inherits the client value)
+        4. Request and response header names whose values are replaced with the [masking strategy](#telemetry-masking) (optional, inherits the client value)
+        5. Whether to log the full request path instead of the route template (optional, inherits the client value)
+        6. Maximum request body size that is still written to the log (optional, inherits the client value)
+        7. Maximum response body size that is still written to the log (optional, inherits the client value)
+        8. Enables module metrics (optional, inherits the client value)
+        9. Configures [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) buckets in milliseconds for metrics (optional, inherits the client value)
+        10. Configures metric tags (optional, inherits the client value)
+        11. Enables module tracing (optional, inherits the client value)
+        12. Whether the span carries the full `url.full` attribute instead of only `url.path` (optional, inherits the client value)
+        13. Configures tracing attributes (optional, inherits the client value)
 
 ### Request { #request }
 
@@ -1723,7 +1715,7 @@ and never throws `HttpClientResponseException` for such a method.
 
     1. `@Json` is a type-use annotation here, so the success and error payloads can be tagged independently
 
-`Either` exposes `isLeft()` / `isRight()` and the nullable accessors `left()` / `right()`.
+`Either` exposes `isLeft()` / `isRight()`, the nullable accessors `left()` / `right()`, and `fold(leftMapper, rightMapper)`, which maps either side into a single result (see [Either](config.md#either)).
 `HttpResponseEntity<Either<T, E>>` is supported as well when the status code and headers are also required.
 
 #### Custom response { #custom-response }
@@ -1896,8 +1888,8 @@ try {
 Main exception types:
 
 * `HttpClientResponseException` — response was received, but its code was not handled as successful. Contains `getCode()`, `getHeaders()`, and `getBytes()`.
-* `HttpClientTimeoutException` — request, connection, or read timeout expired.
-* `HttpClientConnectionException` — error while establishing or maintaining a connection to the remote host.
+* `HttpClientTimeoutException` — request or read timeout expired.
+* `HttpClientConnectionException` — error while establishing or maintaining a connection to the remote host, including an expired connection timeout.
 * `HttpClientEncoderException` — error while converting a user value into a request body.
 * `HttpClientDecoderException` — error while converting a response body into a user type.
 * `HttpClientUnknownException` — other transport client error that did not match a more specific category.
@@ -2048,121 +2040,8 @@ By default a non-`2xx` response throws [`HttpClientResponseException`](#response
 ## Interceptors { #interceptors }
 
 You can create interceptors to change behavior or create additional behavior using the `HttpClientInterceptor` interface.
-Interceptors can be attached to specific methods or the entire `@HttpClient` class using the `@InterceptWith` annotation.
-Kora ships ready-made interceptors (such as [Root URL](#root-uri-interceptor) and the [authorization](#authorization) interceptors),
-and you can implement your own — see [method-level](#interceptor-custom) and [class-level](#interceptor-custom) examples below.
-
-```java
-public interface HttpClientInterceptor {
-
-    HttpClientResponse processRequest(InterceptChain chain, HttpClientRequest request) throws Exception; //(1)!
-
-    interface InterceptChain {
-        HttpClientResponse process(HttpClientRequest request) throws Exception; //(2)!
-    }
-}
-```
-
-1. Called for every request the interceptor is attached to
-2. Continues the chain (the next interceptor, or the actual transport call)
-
-An interceptor can:
-
-* **Modify the request before sending** — rebuild it via `request.toBuilder()` (add a header, change the URI, replace the body), then pass the new request to `chain.process(ctx, newRequest)`
-* **Continue the chain** — return `chain.process(ctx, request)` unchanged
-* **Short-circuit** — return a response without calling `chain.process(...)` (for example a cached response)
-* **Inspect or transform the response** — call `chain.process(...)` and chain a `thenApply` / `thenCompose` / `exceptionally` on the returned `CompletionStage`
-* **Fail the call** — throw an exception or return a failed `CompletionStage` to break the chain
-
-Example that adds a header to every request and inspects the response status:
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Component
-    public final class TracingInterceptor implements HttpClientInterceptor {
-
-        @Override
-        public CompletionStage<HttpClientResponse> processRequest(Context ctx, InterceptChain chain, HttpClientRequest request) throws Exception {
-            HttpClientRequest modified = request.toBuilder()
-                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
-                .build();
-
-            return chain.process(ctx, modified).thenApply(response -> {
-                if (response.code() >= 500) {
-                    // observe server errors
-                }
-                return response;
-            });
-        }
-    }
-    ```
-
-    1. `request.toBuilder()` returns an `HttpClientRequestBuilder` initialized from the current request
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Component
-    class TracingInterceptor : HttpClientInterceptor {
-
-        override fun processRequest(
-            ctx: Context,
-            chain: HttpClientInterceptor.InterceptChain,
-            request: HttpClientRequest
-        ): CompletionStage<HttpClientResponse> {
-            val modified = request.toBuilder()
-                .header("x-request-id", UUID.randomUUID().toString()) //(1)!
-                .build()
-
-            return chain.process(ctx, modified).thenApply { response ->
-                if (response.code() >= 500) {
-                    // observe server errors
-                }
-                response
-            }
-        }
-    }
-    ```
-
-    1. `request.toBuilder()` returns an `HttpClientRequestBuilder` initialized from the current request
-
-For the imperative `HttpClient`, an interceptor is attached with `httpClient.with(interceptor)` instead of `@InterceptWith`.
-
-### Root URL { #root-uri-interceptor }
-
-`RootUriInterceptor` is a ready-made interceptor that adds a base `URL` to relative requests.
-If the request already contains a scheme (`http://` or `https://`), the interceptor leaves it unchanged.
-If the request is relative, `RootUriInterceptor` adds the root address and guarantees one `/` separator between the root and the path.
-
-===! ":fontawesome-brands-java: `Java`"
-
-    ```java
-    @Module
-    public interface ClientModule {
-
-        default RootUriInterceptor rootUriInterceptor() {
-            return new RootUriInterceptor("https://api.example.com");
-        }
-    }
-    ```
-
-=== ":simple-kotlin: `Kotlin`"
-
-    ```kotlin
-    @Module
-    interface ClientModule {
-
-        fun rootUriInterceptor(): RootUriInterceptor {
-            return RootUriInterceptor("https://api.example.com")
-        }
-    }
-    ```
-
-After registering the interceptor, connect it to the client:
-
-===! ":fontawesome-brands-java: `Java`"
 Interceptors are attached with the `@InterceptWith` annotation, either to a specific method or to the whole `@HttpClient` interface.
+Kora ships ready-made [authorization](#authorization) interceptors, and you can implement your own, see [Custom interceptor](#interceptor-custom).
 
 ```java
 public interface HttpClientInterceptor {
@@ -2179,8 +2058,7 @@ public interface HttpClientInterceptor {
 2. Passes the request further down the chain and returns the response
 
 The request is immutable, so a modified request is produced with `request.toBuilder()`.
-
-**Method-level interceptor:**
+For the imperative `HttpClient`, an interceptor is attached with `httpClient.with(interceptor)` instead of `@InterceptWith`.
 
 ### Custom interceptor { #interceptor-custom }
 
@@ -2726,13 +2604,13 @@ HttpClientException
 
 #### Timeout Exception { #timeout-exception }
 
-Thrown when the request exceeds the configured timeout (`requestTimeout`, `connectTimeout` or `readTimeout`).
+Thrown when the request exceeds the configured timeout (`requestTimeout` or `readTimeout`).
+A connection that cannot be established within `connectTimeout` is reported as [HttpClientConnectionException](#connection-exception) instead.
 
 **Causes:**
 
 - Server doesn't respond within `requestTimeout`
-- Connection establishment timeout exceeded (`connectTimeout`)
-- Response read timeout exceeded (`readTimeout`)
+- Response read timeout exceeded (`readTimeout`; applied by the OkHttp and Apache transports, the JDK transport does not use it)
 - Network delays
 
 **Recommendations:**
@@ -2744,13 +2622,26 @@ Thrown when the request exceeds the configured timeout (`requestTimeout`, `conne
 #### Connection Exception { #connection-exception }
 
 Thrown when connection to the server cannot be established.
+Every transport reports a failed connect, including an expired `connectTimeout`, as `HttpClientConnectionException`.
 
 **Causes:**
 
 - DNS resolution failure
 - Server unavailable (port closed, firewall)
 - Connection refused
-- SSL/TLS handshake failed
+- Connection establishment timeout exceeded (`connectTimeout`)
+- SSL/TLS handshake failed (OkHttp and Apache HttpClient)
+
+How each transport maps I/O failures:
+
+| Transport | `HttpClientConnectionException` | `HttpClientTimeoutException` |
+|-----------|---------------------------------|------------------------------|
+| OkHttp | Any other `IOException`, including a connect timeout | `InterruptedIOException` with the message `timeout`, which OkHttp raises for the `requestTimeout` call timeout |
+| Apache HttpClient | `ConnectTimeoutException` and any other `IOException` | `SocketTimeoutException` (`requestTimeout` or `readTimeout`) |
+| JDK | `ConnectException`, `HttpConnectTimeoutException`, `ProtocolException` | `HttpTimeoutException` (`requestTimeout`) |
+
+In the JDK transport any other `IOException` (a TLS handshake failure, for example) retries the request once if its body has not been sent yet.
+When the body was already sent, or the retry fails with anything but a connect timeout, a protocol error or a request timeout, the call fails with [HttpClientUnknownException](#unknown-exception).
 
 **Recommendations:**
 
@@ -2827,42 +2718,54 @@ Thrown when an error occurs that doesn't fit other categories, including any che
 The recommendations above (retry, circuit breaker, timeout, fallback) are provided by the [Resilient](resilient.md) module rather than the HTTP client itself.
 Its annotations apply directly to declarative `@HttpClient` methods, so you can add fault tolerance without changing the call sites:
 
-* `@Retry` — retry the call on failure
-* `@CircuitBreaker` — stop calling a failing dependency and fail fast until it recovers
+* `@Retryable` — retry the call on failure
+* `@CircuitBreakable` — stop calling a failing dependency and fail fast until it recovers
 * `@Timeout` — bound the total call time
 * `@Fallback` — return a fallback result when the call fails
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
+    @RetrySpec("resilient.retry.someClient") //(1)!
+    public interface SomeClientRetry extends Retry { }
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.someClient")
+    public interface SomeClientCircuitBreaker extends CircuitBreaker { }
+
     @HttpClient
     public interface SomeClient {
 
-        @Retry("someClient.hello") //(1)!
-        @CircuitBreaker("someClient.hello") //(2)!
+        @Retryable(SomeClientRetry.class) //(2)!
+        @CircuitBreakable(SomeClientCircuitBreaker.class)
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         HttpResponseEntity<String> hello();
     }
     ```
 
-    1. Retry configuration path
-    2. Circuit breaker configuration path
+    1. Specification interface bound to the configuration path of the retry
+    2. The aspect references the specification type, see [Specifications](resilient.md#specifications)
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
+    @RetrySpec("resilient.retry.someClient") //(1)!
+    interface SomeClientRetry : Retry
+
+    @CircuitBreakerSpec("resilient.circuitbreaker.someClient")
+    interface SomeClientCircuitBreaker : CircuitBreaker
+
     @HttpClient
     interface SomeClient {
 
-        @Retry("someClient.hello") //(1)!
-        @CircuitBreaker("someClient.hello") //(2)!
+        @Retryable(SomeClientRetry::class) //(2)!
+        @CircuitBreakable(SomeClientCircuitBreaker::class)
         @HttpRoute(method = HttpMethod.GET, path = "/hello/world")
         fun hello(): HttpResponseEntity<String>
     }
     ```
 
-    1. Retry configuration path
-    2. Circuit breaker configuration path
+    1. Specification interface bound to the configuration path of the retry
+    2. The aspect references the specification type, see [Specifications](resilient.md#specifications)
 
 Note the difference from the transport `requestTimeout` ([Client Configuration](#client-configuration)): `requestTimeout` bounds a single HTTP attempt,
 while `@Timeout` bounds the whole method call including retries. See the [Resilient](resilient.md) module for the configuration and semantics of each annotation.
@@ -3186,12 +3089,12 @@ a component of the corresponding type:
 - `DefaultHttpClientMetricsFactory` builds the metrics recorder;
 - `DefaultHttpClientBodyConverter` turns a captured body into the string that is written to the log.
 
-When logging, metrics and tracing are all disabled for a client, the factory returns a no-op telemetry and no wrapper is installed at all.
+When logging, metrics and tracing are all disabled for a client method, the factory returns a no-op telemetry.
 
 **Logging.** Two loggers are created per client method, named after the client class, the method, and the direction:
 `com.example.SomeClient.hello.request` and `com.example.SomeClient.hello.response`.
 Their level decides how much is written: `INFO` logs the operation only, `DEBUG` adds query parameters and headers,
-`TRACE` adds the body. Masked query parameters and headers are replaced with the configured `mask`,
+`TRACE` adds the body. Values of masked query parameters and headers are replaced by the [masking strategy](#telemetry-masking),
 and a body larger than `maxRequestBodyLogSize` / `maxResponseBodyLogSize` is skipped with a warning.
 See [Logging](logging-slf4j.md) for the logger configuration itself.
 
@@ -3205,62 +3108,162 @@ See [Tracing](tracing.md).
 
 ### Logging { #telemetry-logging }
 
-Client logging is written through `SLF4J` under two loggers named after the client: `<clientName>.request` and `<clientName>.response`
-(where `<clientName>` is derived from the `@HttpClient` interface). Enabling logging in the configuration
-(`telemetry.logging.enabled = true`) turns the telemetry on, but **what** is written is governed by the log level of those loggers,
+Client logging is written through `SLF4J` under two loggers per client method, named after the canonical name of the `@HttpClient` interface,
+the method name and the direction: `<interface>.<method>.request` and `<interface>.<method>.response`.
+Enabling logging in the configuration (`telemetry.logging.enabled = true`) turns the telemetry on, but **what** is written is governed by the log level of those loggers,
 so you tune verbosity from your logging framework (`logback`, etc.):
 
 | Log level | What is logged |
 |-----------|----------------|
-| `INFO`    | Request start and response end line: method, path template, response status, result code, and duration |
-| `DEBUG`   | Additionally request and response **headers** |
+| `INFO`    | Request start and response end line: method and path template, response status, result code, and duration |
+| `DEBUG`   | Additionally request query parameters and request and response **headers** |
 | `TRACE`   | Additionally request and response **bodies**, and the full (non-templated) path |
+| `WARN`    | A request that failed with an exception: result code `CONNECTION_ERROR`, duration and exception type |
 
-The configuration fields shape the output (see [Configuration](#configuration) for the full list):
+The configuration fields shape the output (see [Client Configuration](#client-configuration) for the full list):
 
-* `pathTemplate` — when `true` (default), the low-cardinality route template (`/users/{id}`) is logged and used as the metric/trace label instead of the resolved path (`/users/42`); at `TRACE` the resolved path is logged
-* `maskHeaders` — header names whose values are replaced with `mask` (default masks `authorization`, `cookie`, `set-cookie`)
-* `maskQueries` — query parameter names whose values are replaced with `mask`
-* `mask` — the replacement string (default `***`)
+* `pathFull` — when set, forces the full path (`true`) or the route template (`false`) in the log; when not set, the full path is logged only at `TRACE`
+* `maskHeaders` — header names whose values are [masked](#telemetry-masking) (default masks `authorization`, `cookie`, `set-cookie`)
+* `maskQueries` — query parameter names whose values are [masked](#telemetry-masking)
+* `maxRequestBodyLogSize` / `maxResponseBodyLogSize` — a larger body is not logged and a warning is written instead
 
-For a client whose interface produces the name `someClient`, enable full body logging with:
+For the `hello` method of the `com.example.SomeClient` interface, enable full body logging with:
 
 ```xml
-<logger name="someClient.request" level="TRACE"/>
-<logger name="someClient.response" level="TRACE"/>
+<logger name="com.example.SomeClient.hello.request" level="TRACE"/>
+<logger name="com.example.SomeClient.hello.response" level="TRACE"/>
 ```
+
+### Masking { #telemetry-masking }
+
+Values of the headers listed in `telemetry.logging.maskHeaders` and of the query parameters listed in `telemetry.logging.maskQueries`
+(names are compared in lower case) are replaced with the result of the `MaskingStrategy` component tagged `@Tag(HttpClientTelemetry.class)`.
+The strategy receives every value separately, and the default one writes `***`.
+The lists of names are configured per client and per method, while the strategy is a single component shared by all clients.
+To change how values are masked, register your own strategy with the same tag — it replaces the default one.
+Any `MaskingStrategy` fits, including the built-in [strategies](logging-aspect.md#masking-strategies) of the logging module.
+
+Request and response bodies written at `TRACE` are masked by a `DataMasker` (`io.koraframework.logging.common.masking.raw`)
+tagged `@Tag(HttpClientTelemetry.class)` and selected by the body `Content-Type`: `json` for `*/json` and `*+json`,
+`xml` for `*/xml` and `*+xml`, `form-urlencoded` for `application/x-www-form-urlencoded`.
+No masker is registered by default, so without one the body is logged as is.
+Register `JsonDataMasker`, `XmlDataMasker` or `FormUrlencodedDataMasker` with masking rules, one per format:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends OkHttpClientModule {
+
+        @Tag(HttpClientTelemetry.class)
+        default MaskingStrategy httpClientMaskingStrategy() {
+            return new MaskingKeepLast("***", 4); //(1)!
+        }
+
+        @Tag(HttpClientTelemetry.class)
+        default DataMasker httpClientJsonDataMasker() {
+            return new JsonDataMasker(MaskingPathRules.builder()
+                .mask("password", new MaskingFull()) //(2)!
+                .mask("user.token", new MaskingKeepLast()) //(3)!
+                .build());
+        }
+    }
+    ```
+
+    1.  Header and query parameter values keep their last 4 characters after `***`
+    2.  A single segment matches a field with this name at any depth; `MaskingFull` replaces the value with `***`
+    3.  A dotted path is matched from the payload root, `*` matches exactly one segment; `MaskingKeepLast` keeps the last 4 characters after `***`
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : OkHttpClientModule {
+
+        @Tag(HttpClientTelemetry::class)
+        fun httpClientMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4) //(1)!
+
+        @Tag(HttpClientTelemetry::class)
+        fun httpClientJsonDataMasker(): DataMasker = JsonDataMasker(
+            MaskingPathRules.builder()
+                .mask("password", MaskingFull()) //(2)!
+                .mask("user.token", MaskingKeepLast()) //(3)!
+                .build()
+        )
+    }
+    ```
+
+    1.  Header and query parameter values keep their last 4 characters after `***`
+    2.  A single segment matches a field with this name at any depth; `MaskingFull` replaces the value with `***`
+    3.  A dotted path is matched from the payload root, `*` matches exactly one segment; `MaskingKeepLast` keeps the last 4 characters after `***`
+
+`DefaultHttpClientBodyConverter` is registered as a `@DefaultComponent` and is the override point for body masking:
+a `@Component` subclass can override `selectRequestDataMasker` / `selectResponseDataMasker` to choose a masker per client or per message,
+or `convertBody(ByteBuffer, String, DataMasker)` to change how the bytes become text.
 
 ### Custom logger { #telemetry-custom-logger }
 
-To fully control the log format or destination, provide your own `HttpClientLoggerFactory` (or `HttpClientLogger`) component — it replaces
-the default `Sl4fjHttpClientLoggerFactory`. The same applies to metrics (`HttpClientMetricsFactory`) and tracing (`HttpClientTracerFactory`):
-supplying any of these components overrides the corresponding default, while the others keep their default implementation.
+The default telemetry is assembled from replaceable components of `HttpClientModule`:
+
+- `DefaultHttpClientLoggerFactory` — creates the request and response loggers, registered as a `@DefaultComponent`;
+- `DefaultHttpClientBodyConverter` — turns a captured body into log text, registered as a `@DefaultComponent`;
+- `DefaultHttpClientMetricsFactory` — creates the metrics recorder; it is not registered in the graph, so a component of this type replaces the built-in instance;
+- `HttpClientTelemetryFactory` — builds the whole telemetry of a client method; a factory with a tag is selected with `@HttpClient(telemetryTag = ...)`.
+
+A component of the same type replaces the default one. For example, a logger factory that writes every client to the same pair of loggers:
 
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
     @Component
-    public final class MyHttpClientLoggerFactory implements HttpClientLoggerFactory {
+    public final class SharedHttpClientLoggerFactory extends DefaultHttpClientLoggerFactory {
+
+        private final MaskingStrategy maskingStrategy;
+
+        public SharedHttpClientLoggerFactory(@Tag(HttpClientTelemetry.class) MaskingStrategy maskingStrategy) {
+            super(maskingStrategy);
+            this.maskingStrategy = maskingStrategy;
+        }
 
         @Override
-        public HttpClientLogger get(TelemetryConfig.LogConfig logging, String clientName) {
-            return new MyHttpClientLogger(clientName); //(1)!
+        public DefaultHttpClientLogger create(DefaultHttpClientTelemetry.TelemetryContext context) {
+            var logging = context.config().logging();
+            return new DefaultHttpClientLogger(
+                LoggerFactory.getLogger("http-client.request"), //(1)!
+                LoggerFactory.getLogger("http-client.response"),
+                logging.maskQueries(), //(2)!
+                logging.maskHeaders(),
+                maskingStrategy,
+                context
+            );
         }
     }
     ```
 
-    1. Your `HttpClientLogger` implementation controlling exactly what and how to log
+    1.  Logger names are up to you; the logged record still carries `clientConfigPath`
+    2.  Names are compared in lower case: the default factory lowercases them, here they are passed as configured
 
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
     @Component
-    class MyHttpClientLoggerFactory : HttpClientLoggerFactory {
+    class SharedHttpClientLoggerFactory(
+        @Tag(HttpClientTelemetry::class) private val maskingStrategy: MaskingStrategy
+    ) : DefaultHttpClientLoggerFactory(maskingStrategy) {
 
-        override fun get(logging: TelemetryConfig.LogConfig, clientName: String): HttpClientLogger {
-            return MyHttpClientLogger(clientName) //(1)!
+        override fun create(context: DefaultHttpClientTelemetry.TelemetryContext): DefaultHttpClientLoggerFactory.DefaultHttpClientLogger {
+            val logging = context.config().logging()
+            return DefaultHttpClientLoggerFactory.DefaultHttpClientLogger(
+                LoggerFactory.getLogger("http-client.request"), //(1)!
+                LoggerFactory.getLogger("http-client.response"),
+                logging.maskQueries(), //(2)!
+                logging.maskHeaders(),
+                maskingStrategy,
+                context
+            )
         }
     }
     ```
 
-    1. Your `HttpClientLogger` implementation controlling exactly what and how to log
+    1.  Logger names are up to you; the logged record still carries `clientConfigPath`
+    2.  Names are compared in lower case: the default factory lowercases them, here they are passed as configured
