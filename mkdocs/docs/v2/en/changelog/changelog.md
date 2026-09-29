@@ -12,6 +12,26 @@ hide:
 
 Migration required:
 
+- JDK scheduling `ThreadPoolSchedulingJdkExecutor` replaced by `VirtualThreadSchedulingJdkExecutor`: jobs run on `kora-jdk-scheduler-job` virtual threads with a single `kora-jdk-scheduler-timer` platform thread, concurrency is limited by `scheduling.jdk.maxConcurrentExecutions` (unlimited by default) and running executions are interrupted after `scheduling.jdk.shutdownWait` on shutdown
+- Resilient `RateLimiter` default algorithm changed from fixed window to token bucket (`RateLimiterConfig.type` is `TOKEN_BUCKET`), set `type = FIXED_WINDOW` to keep the previous behavior
+- Resilient `KoraRetry` accepts the `RetryBudget` interface instead of `KoraRetryBudget`
+- Resilient `Retry` and `CircuitBreaker` no longer treat exceptions implementing `NonRetryableException` / `NonCircuitableException` as failures, custom `RetryPredicate` / `CircuitBreakerPredicate` replace this check
+- HTTP server no longer sends the `Server: Kora` response header by default, set `httpServer.headerServerNameEnabled = true` to restore it
+- HTTP server Undertow no longer applies `Configurer<HttpHandler>`, only `Configurer<Undertow.Builder>` and `Configurer<XnioWorker.Builder>` remain
+- HTTP client and server `telemetry.logging.mask` config key removed, register a `MaskingStrategy` tagged `@Tag(HttpServerTelemetry.class)` / `@Tag(HttpClientTelemetry.class)` to change the replacement of masked values
+- HTTP client Apache and JDK connect failures are thrown as `HttpClientConnectionException` instead of `HttpClientUnknownException` / `HttpClientTimeoutException`
+- Kafka `KafkaAssignConsumerContainer` constructor lost its `String topic` parameter: topics are read from `KafkaListenerConfig.topics()` and `topicsPattern` is rejected by the `assign` strategy
+- Kafka `KafkaDeserializersModule` moved to `io.koraframework.kafka.common.consumer.deserializer` and `KafkaSerializersModule` to `io.koraframework.kafka.common.producer.serializer`
+- gRPC server `DefaultGrpcServerBodyConverter#convertRequestMessage` now takes the service, method and request `Metadata`, and gRPC headers `authorization`, `cookie`, `set-cookie` are masked in logs by default
+- Telemetry `metrics` config section is mapped to `MetricsConfig` (`enabled`, `tags`), `metrics.enabled = false` replaces the `MeterRegistry` with a no-op one
+- Telemetry `OpentelemetryTracingModule#opentelemetryResourceConfig` renamed to `opentelemetryTracingConfig`, `opentelemetryTracingResource` takes `All<OpentelemetryTracingAttributesProvider>` and tracing factories are `@DefaultComponent`
+- Logback `ConsoleTextRecordEncoder` moved to the `io.koraframework.logging.logback.text` package, update the encoder class in `logback.xml`
+- Logback without `logback.xml` is configured by `KoraLogbackConfigurator`: the encoder is selected by `kora.logging.encoder` / `KORA_LOGGING_ENCODER` (`text`, `pretty`, `json`, `none`) and `java.util.logging` is bridged by default (`kora.logging.config.jul-bridge`)
+- OpenAPI generator client security interceptors add the `Basic ` / `Bearer ` prefix themselves, `HttpClientTokenProvider` must return the bare token
+- OpenAPI generator server security answers `403` instead of `401` when an authenticated principal lacks required scopes
+- OpenAPI generator array or map of inline enum is generated as a collection of the enum instead of a single enum value
+- OpenAPI generator `typeMappings` for `date-time` are applied, so generated types change for projects that declare such mapping
+- Redis `lettuce-core` updated to major version `7.8.0`
 
 Added:
 
