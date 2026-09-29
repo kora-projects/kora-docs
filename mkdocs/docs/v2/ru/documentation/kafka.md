@@ -1,4 +1,7 @@
 ---
+seo_title: "Kafka в Kora: справочник по @KafkaListener и @KafkaPublisher"
+seo_description: "Справочник по Kafka в Kora: консьюмеры и продюсеры, аннотации слушателей и публикаторов, конфигурация, сериализация, ошибки, ребалансировка, транзакции."
+keywords: ["Kora Framework", "фреймворк Kora", "Kafka в Kora", "@KafkaListener", "@KafkaPublisher", "транзакции Kafka"]
 description: "Explains Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry. Use when working with @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora Kafka consumers and producers, listener and publisher annotations, configuration, serialization, error handling, rebalance events, transactions, and telemetry; key triggers include @KafkaListener, @KafkaPublisher, @KafkaPublisher.Topic, @Json, @Tag, KafkaModule, KafkaListenerConfig, KafkaPublisherConfig, TransactionalPublisher, KafkaSkipRecordException, KafkaPublishException, RecordValueDeserializationException, ConsumerAwareRebalanceListener."
@@ -37,7 +40,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:kafka")
     ```
 

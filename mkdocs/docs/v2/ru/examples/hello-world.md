@@ -1,4 +1,7 @@
 ---
+seo_title: "Пример Hello World: минимальный HTTP-сервис на Kora"
+seo_description: "Минимальный сервис на Kora, отвечающий на GET /hello/world: Gradle с kora-bom, граф @KoraApp, @HttpController с текстовым и JSON-ответом и конфигурация."
+keywords: ["Kora Framework", "фреймворк Kora", "hello world Kora", "пример Kora", "минимальный HTTP-сервис на Java", "@HttpController"]
 search:
   exclude: true
 description: "Builds a minimal Kora service from scratch that answers GET /hello/world: Gradle setup with the io.koraframework:kora-bom BOM and annotation-processors or symbol-processors, a @KoraApp graph with HoconConfigModule, LogbackModule, JsonModule and UndertowPublicHttpServerModule, an @HttpController with plaintext, @Json and HttpResponseEntity responses, and the httpServer configuration. Use when writing the very first Kora application."
@@ -63,7 +66,7 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
         annotationProcessor "io.koraframework:annotation-processors" //(3)!
 
         implementation "io.koraframework:http-server-undertow"
@@ -104,8 +107,8 @@ distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip
     version = "0.1.0-SNAPSHOT"
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:http-server-undertow")
         implementation("io.koraframework:json-common")

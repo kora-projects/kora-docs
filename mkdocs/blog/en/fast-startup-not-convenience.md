@@ -1,7 +1,8 @@
 ---
-title: Fast Startup Is Not Just Developer Convenience
+title: "Fast JVM Startup Is Capacity, Not Just Convenience"
 date: 2026-08-11
-description: Why fast startup and time-to-readiness are production capacity properties in the Kora Framework, not just developer convenience.
+description: "Why startup time and time-to-readiness drive rolling deploys, autoscaling, scale-to-zero and cloud cost — and how Kora removes startup work from JVM services."
+keywords: ["Kora Framework", "JVM startup time", "time to readiness", "Kubernetes autoscaling", "HPA", "scale to zero", "cold start", "cloud cost"]
 search:
     exclude: true
 ---

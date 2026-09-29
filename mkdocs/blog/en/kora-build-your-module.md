@@ -1,7 +1,8 @@
 ---
-title: How to Build Your Own First-Class Kora Framework Module
+title: "How to Build Your Own Kora Module: A Step-by-Step Guide"
 date: 2026-08-15
-description: A step-by-step guide to building a first-class Kora Framework module with typed config, lifecycle, telemetry, and compile-time DI.
+description: "Build a first-class Kora module for any Java library: typed configuration, construction through compile-time DI, lifecycle, telemetry, health checks and tests."
+keywords: ["Kora Framework", "Kora module", "@Module", "custom integration", "typed configuration", "OpenTelemetry", "Java library integration"]
 search:
     exclude: true
 ---

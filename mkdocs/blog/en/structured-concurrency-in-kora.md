@@ -1,7 +1,8 @@
 ---
-title: Structured Concurrency in Kora Framework Applications
+title: "Structured Concurrency with StructuredTaskScope in Kora"
 date: 2026-08-31
-description: How Java structured concurrency (StructuredTaskScope) fits the Kora Framework's synchronous virtual-thread model — fan-out, failure domains, deadlines, cancellation, and keeping parallelism local.
+description: "How Java's StructuredTaskScope fits Kora's synchronous virtual-thread model: local fan-out, failure propagation, cancellation, deadlines and observability."
+keywords: ["Kora Framework", "structured concurrency", "StructuredTaskScope", "virtual threads", "Project Loom", "Java concurrency", "fan-out"]
 search:
   exclude: true
 ---

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora 2.0 Changelog: Release Notes"
+seo_description: "Release notes for Kora 2.0: new features, breaking changes, fixes and migration notes for the Java and Kotlin backend framework."
+keywords: ["Kora Framework", "Kora changelog", "Kora 2.0", "release notes", "migration guide"]
 search:
   exclude: true
 hide:

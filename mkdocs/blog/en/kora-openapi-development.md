@@ -1,7 +1,8 @@
 ---
-title: OpenAPI-First Development with the Kora Framework
+title: "OpenAPI-First Development: The Contract as Source of Truth"
 date: 2026-08-24
-description: Why contract-first OpenAPI development in the Kora Framework generates typed servers, clients, and errors from one source of truth.
+description: "Contract-first OpenAPI in Kora generates typed servers, clients, models and error responses, so API changes become compile errors instead of runtime drift."
+keywords: ["Kora Framework", "OpenAPI", "contract-first API", "OpenAPI code generation", "REST API", "HTTP client generation", "API design"]
 search:
     exclude: true
 ---

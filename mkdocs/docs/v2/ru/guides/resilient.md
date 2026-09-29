@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Отказоустойчивость в Kora: retry, circuit breaker, таймауты"
+seo_description: "Отказоустойчивые сервисы на Kora: аннотации retry, fallback, timeout, circuit breaker и rate limiter, их комбинирование и сгенерированный код."
+keywords: ["Kora Framework", "фреймворк Kora", "отказоустойчивость Kora", "circuit breaker", "retry", "rate limiter", "альтернатива Resilience4j"]
 search:
   exclude: true
 title: Шаблоны отказоустойчивости

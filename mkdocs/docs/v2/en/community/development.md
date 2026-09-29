@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Community Tools: IntelliJ IDEA Plugin"
+seo_description: "Community-built tools for Kora, including the IntelliJ IDEA plugin that navigates dependency injection points and their implementations."
+keywords: ["Kora Framework", "Kora IntelliJ plugin", "IntelliJ IDEA", "Kora community", "IDE support"]
 search:
   exclude: true
 description: "Lists developments and extensions for Kora created by the community, currently the Kora plugin for IntelliJ IDEA that shows dependency injection points and their implementations in Kora DI. Use when looking for community-made tooling around Kora or for IDE support for Kora DI."

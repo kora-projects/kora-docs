@@ -1,4 +1,7 @@
 ---
+seo_title: "Конфигурация YAML в Kora: типобезопасные настройки"
+seo_description: "Типобезопасная конфигурация YAML в сервисе на Kora: config-yaml, @ConfigSource, @ConfigMapper, обязательные значения, переменные окружения и генерация кода."
+keywords: ["Kora Framework", "фреймворк Kora", "YAML в Kora", "конфигурация YAML", "типобезопасная конфигурация", "@ConfigSource", "конфигурация Java"]
 search:
   exclude: true
 title: Управление YAML-конфигурацией в Kora

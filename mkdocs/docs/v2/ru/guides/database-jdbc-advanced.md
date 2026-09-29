@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "JDBC в Kora продвинутый: мапперы, макросы, транзакции"
+seo_description: "Продвинутый JDBC в Kora: миграции Flyway, свои мапперы и мапперы PostgreSQL, SQL-макросы, проекции, DTO и транзакции в сгенерированных репозиториях."
+keywords: ["Kora Framework", "фреймворк Kora", "JDBC Kora", "SQL-макросы", "транзакции JDBC", "маппер PostgreSQL", "Flyway"]
 search:
   exclude: true
 title: Продвинутый JDBC с Kora
@@ -183,7 +186,7 @@ PostgreSQL может сравнить значение с SQL-массивом 
 
 `database-jdbc` предоставляет инфраструктуру репозиториев, исполнитель `JdbcExecutor` для ручных запросов и транзакций, а также пул соединений Hikari. `database-flyway` применяет миграции схемы до
 использования репозиториев; он приносит только `flyway-core`, поэтому артефакт диалекта PostgreSQL `org.flywaydb:flyway-database-postgresql` нужно объявить явно и держать в той же версии, что и
-`flyway-core`, который разрешает Kora `2.0.0.RC1`, — это `13.3.0`. Драйвер PostgreSQL нужен приложению во время выполнения.
+`flyway-core`, который разрешает Kora `2.0.0.RC2`, — это `13.3.0`. Драйвер PostgreSQL нужен приложению во время выполнения.
 
 ## Модули { #modules }
 

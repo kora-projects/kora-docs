@@ -1,7 +1,8 @@
 ---
-title: One Problem, One Solution — Why the Kora Framework Has Fewer Abstractions
+title: "One Problem, One Solution: Fewer Framework Abstractions"
 date: 2026-08-22
-description: Why the Kora Framework deliberately keeps a small solution space — one canonical path per problem — and what that means for maintainability, onboarding, upgrades, and AI agents.
+description: "Why Kora keeps one canonical path per problem — synchronous concurrency, one DI graph, SQL, typed config — and how that eases onboarding, upgrades and AI agents."
+keywords: ["Kora Framework", "framework design", "canonical path", "maintainability", "developer onboarding", "cognitive load", "typed configuration"]
 search:
     exclude: true
 ---

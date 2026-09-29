@@ -1,7 +1,8 @@
 ---
-title: Production Knowledge Is Built Into the Kora Framework, Not Collected Around It
+title: "Production Knowledge Built Into the Framework"
 date: 2026-08-27
-description: How the Kora Framework bakes operational practice — telemetry, resilience, readiness, lifecycle — into the framework instead of leaving teams to assemble it.
+description: "How Kora bakes operational practice into defaults — telemetry, resilience, readiness probes, graceful shutdown, latency and resource efficiency for high-load services."
+keywords: ["Kora Framework", "production readiness", "high load", "graceful shutdown", "readiness probes", "SRE practices", "cloud-native Java"]
 search:
     exclude: true
 ---

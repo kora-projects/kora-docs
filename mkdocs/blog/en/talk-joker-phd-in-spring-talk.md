@@ -1,7 +1,8 @@
 ---
-title: "The Price of a “PhD in Spring”: What Kora Tries to Remove From the JVM Framework Experience"
+title: "The Price of a “PhD in Spring” and How Kora Lowers It"
 date: 2024-10-14
-description: This article is a written companion to a talk that challenges how much framework-specific knowledge a developer should be expected to carry. It summarizes the talk's arguments, measurements, and the role Kora plays as a counterexample.
+description: "Joker talk companion: the hidden framework knowledge developers carry — lifecycle, configuration precedence, test context caching, aspects — and Kora's alternative."
+keywords: ["Kora Framework", "Spring complexity", "Spring Boot configuration", "Spring test context caching", "Spring AOP", "Joker conference", "cognitive load"]
 search:
     exclude: true
 ---

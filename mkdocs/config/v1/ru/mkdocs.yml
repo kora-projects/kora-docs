@@ -4,7 +4,9 @@ site_dir: "../../../generated/v1/ru"
 
 # Project information
 site_name: Kora фреймворк 1.2.21
-site_url: https://kora-projects.github.io/kora-docs/v1/ru/
+site_url: https://koraframework.io/v1/ru/
+hooks:
+  - ../../../hooks/translations.py
 nav:
   - Руководства:
       - Основы:
@@ -230,17 +232,17 @@ extra:
     json: [ .s2 ]   # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/?h=annotations#custom-selectors
   alternate:
     - name: Русский
-      link: /kora-docs/v1/ru/
+      link: /v1/ru/
       lang: ru
     - name: English
-      link: /kora-docs/v1/en/
+      link: /v1/en/
       lang: en
   docs_version: v1
   versions:
     - name: V1
-      link: /kora-docs/v1/ru/
+      link: /v1/ru/
     - name: V2
-      link: /kora-docs/v2/ru/
+      link: /v2/ru/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/kora-projects/kora

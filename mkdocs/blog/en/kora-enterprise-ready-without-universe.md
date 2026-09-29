@@ -1,7 +1,8 @@
 ---
-title: Enterprise-Ready Without a Framework Universe — Kora Framework
+title: "Enterprise-Ready Without a Framework Universe"
 date: 2026-08-10
-description: Why the Kora Framework can be production-ready — observability, resilience, lifecycle, security — without recreating every project in the Spring universe.
+description: "How Kora delivers enterprise essentials — observability, resilience, lifecycle, OpenAPI contracts, security — by reusing the JVM ecosystem instead of rebuilding it."
+keywords: ["Kora Framework", "enterprise Java", "production readiness", "OpenTelemetry", "OpenAPI", "resilience", "Spring ecosystem alternative"]
 search:
     exclude: true
 ---

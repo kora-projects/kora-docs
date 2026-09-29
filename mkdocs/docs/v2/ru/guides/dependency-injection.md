@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Внедрение зависимостей в Kora: компоненты, модули, теги"
+seo_description: "Практическое руководство по DI в Kora: граф компонентов и модулей, теги, фабрики, опциональные зависимости и коллекции, исправление ошибок графа."
+keywords: ["Kora Framework", "фреймворк Kora", "внедрение зависимостей Kora", "руководство по DI", "DI на этапе компиляции", "модули Kora", "теги Kora"]
 search:
   exclude: true
 title: Создание приложений Kora с внедрением зависимостей
@@ -355,7 +358,7 @@ Gradle должен сделать здесь несколько вещей:
     org.gradle.java.installations.auto-detect=true
     org.gradle.java.installations.auto-download=true
 
-    koraVersion=2.0.0.RC1
+    koraVersion=2.0.0.RC2
     junitVersion=6.1.3
     ```
 
@@ -366,7 +369,7 @@ Gradle должен сделать здесь несколько вещей:
     org.gradle.java.installations.auto-download=true
     kotlin.jvm.target.validation.mode=warning
 
-    koraVersion=2.0.0.RC1
+    koraVersion=2.0.0.RC2
     junitVersion=6.1.3
     ```
 
@@ -3769,9 +3772,9 @@ Gradle-модуль маркерный интерфейс `@KoraSubmodule` и н
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:logging-logback")

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Guides and Examples: Where to Start"
+seo_description: "Start learning Kora: step-by-step Java and Kotlin guides plus complete example repositories for HTTP, OpenAPI, JDBC, Kafka, gRPC, caching and testing."
+keywords: ["Kora Framework", "Kora guides", "Kora examples", "Java tutorial", "Kotlin tutorial", "backend framework tutorial"]
 search:
   exclude: true
 description: "Explains where to start with Kora guides and examples, how to choose between step-by-step guides and complete repository examples, and where to find working Java and Kotlin applications for HTTP, OpenAPI, JDBC, Cassandra, Kafka, gRPC, S3, cache, resilience, validation, observability and testing. Use when planning a learning path through the Kora documentation."

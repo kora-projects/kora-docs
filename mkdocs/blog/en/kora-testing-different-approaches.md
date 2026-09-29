@@ -1,7 +1,8 @@
 ---
-title: Component vs Integration vs Black-Box Tests in the Kora Framework
+title: "Component vs Integration vs Black-Box Tests on the JVM"
 date: 2026-08-05
-description: How the Kora Framework separates component, integration, and black-box tests — what each layer proves, and how to place each test at the cheapest boundary that can prove it.
+description: "What component, integration and black-box tests each prove in a Kora service, and how to place every test at the cheapest boundary that can catch the failure."
+keywords: ["Kora Framework", "test pyramid", "component tests", "integration tests", "black-box testing", "JUnit 5", "testing strategy"]
 search:
     exclude: true
 ---

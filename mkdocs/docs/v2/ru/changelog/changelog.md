@@ -1,4 +1,7 @@
 ---
+seo_title: "Журнал изменений Kora 2.0"
+seo_description: "Журнал изменений Kora 2.0: новые возможности, несовместимые изменения, исправления и заметки о миграции для Java- и Kotlin-фреймворка."
+keywords: ["Kora Framework", "фреймворк Kora", "изменения Kora", "Kora 2.0", "релиз", "миграция"]
 search:
   exclude: true
 hide:

@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "gRPC Client Guide: Calling Protobuf Services from Kora"
+seo_description: "Call gRPC services from Kora: protobuf code generation, client configuration, blocking and async stub types, and wrapping stubs in a testable service."
+keywords: ["Kora Framework", "Kora gRPC client", "gRPC stubs", "protobuf", "gRPC Java client", "grpc-java"]
 search:
   exclude: true
 title: gRPC Client with Kora
@@ -192,7 +195,7 @@ Now add the client-side Kora module and protobuf support.
 Versions of Kora modules come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora artifacts are declared without a version:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

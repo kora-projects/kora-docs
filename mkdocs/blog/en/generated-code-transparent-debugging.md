@@ -1,7 +1,8 @@
 ---
-title: Generated Code Makes Debugging More Transparent in the Kora Framework
+title: "How Generated Code Makes Framework Debugging Transparent"
 date: 2026-08-13
-description: Why the Kora Framework's generated Java and Kotlin sources are an inspectable escape hatch that makes framework behavior easier to debug, not harder.
+description: "Kora generates readable Java and Kotlin sources for DI, HTTP handlers, repositories and AOP, so you can step through real framework behavior in the debugger."
+keywords: ["Kora Framework", "generated source code", "Java debugging", "annotation processing", "KSP", "IDE debugger", "AOP", "framework transparency"]
 search:
     exclude: true
 ---

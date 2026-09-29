@@ -1,4 +1,7 @@
 ---
+seo_title: "Пробы в Kora: проверки liveness и readiness"
+seo_description: "Пробы liveness и readiness в сервисе на Kora: LivenessProbe и ReadinessProbe, пути системного HTTP-сервера, встроенные пробы и настройка Kubernetes."
+keywords: ["Kora Framework", "фреймворк Kora", "пробы Kora", "liveness", "readiness", "health check Kubernetes"]
 search:
   exclude: true
 title: Пробы с Kora

@@ -1,7 +1,8 @@
 ---
-title: Where Kora Framework Performance Comes From
+title: "Where Framework Performance Actually Comes From"
 date: 2026-09-12
-description: The Kora Framework's performance as a budget across compile time, startup, and runtime — generated wiring, thin abstractions, virtual threads, and the costs it cannot remove.
+description: "Kora's performance as a budget across compile time, startup and runtime: generated wiring, prepared routes, fast mapping, JDBC repositories and virtual threads."
+keywords: ["Kora Framework", "Java framework performance", "JVM performance", "startup time", "throughput", "TechEmpower benchmark", "virtual threads"]
 search:
   exclude: true
 ---

@@ -1,7 +1,8 @@
 ---
 title: "Kora vs Spring: A Modern JVM Backend Through the STEP Lens"
 date: 2026-08-30
-description: Compares Kora and Spring as JVM backend frameworks through the STEP lens (Simple, Transparent, Efficient, Predictable), arguing that Kora's focused, compile-time, Virtual-Thread-oriented model is compelling for greenfield services while Spring's breadth remains decisive for established ecosystems.
+description: "Kora and Spring compared on simplicity, transparency, efficiency and predictability: where compile-time Kora wins for greenfield and where Spring's breadth decides."
+keywords: ["Kora Framework", "Kora vs Spring", "Spring Boot comparison", "JVM framework comparison", "compile-time DI", "runtime proxies", "virtual threads"]
 search:
     exclude: true
 ---

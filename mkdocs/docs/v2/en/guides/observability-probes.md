@@ -1,4 +1,7 @@
 ---
+seo_title: "Probes Guide: Liveness and Readiness Checks in Kora"
+seo_description: "Add liveness and readiness probes to a Kora service: LivenessProbe and ReadinessProbe, system HTTP server paths, built-in probes and Kubernetes setup."
+keywords: ["Kora Framework", "Kora probes", "liveness probe", "readiness probe", "Kubernetes health check", "health endpoint"]
 search:
   exclude: true
 title: Probes with Kora

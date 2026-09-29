@@ -1,4 +1,7 @@
 ---
+seo_title: "gRPC-клиент Kora: стабы, перехватчики и TLS"
+seo_description: "Справочник по gRPC-клиенту Kora: настройка protobuf, конфигурация клиента, внедрение сгенерированных стабов, перехватчики, TLS и телеметрия."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-клиент Kora", "gRPC-стабы", "grpc-java", "TLS"]
 description: "Explains the Kora gRPC client: the grpc-client module, protobuf Gradle plugin setup, the grpcClient configuration section, injecting generated stubs, per-client interceptors, TLS credentials, channel tuning and telemetry. Use when working with GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, ManagedChannelLifecycle, ChannelCredentials, protobuf plugin."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC client: injecting BlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.<Service> configuration section, url scheme and TLS, deadlines, keepAlive and load balancing, per-client ClientInterceptor tagging, authorization metadata, error handling and telemetry; key triggers include GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, GrpcOkHttpClientChannelFactory, ManagedChannelLifecycle, Configurer, ChannelCredentials, protobuf plugin."

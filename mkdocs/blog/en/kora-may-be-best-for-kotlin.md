@@ -1,7 +1,8 @@
 ---
-title: Why Kora May Be the Best Kind of Framework for Kotlin
+title: "Why Kora May Be the Best Kind of Framework for Kotlin"
 date: 2026-08-01
-description: Why Kora combines Kotlin's strongest language features with KSP-based compile-time processing, synchronous framework contracts, and Virtual Threads — keeping Kotlin as Kotlin instead of adding a Kotlin-specific backend universe.
+description: "Kora pairs Kotlin with KSP compile-time processing, preserved nullability and virtual threads instead of suspend contracts — Kotlin stays Kotlin on the backend."
+keywords: ["Kora Framework", "Kotlin backend framework", "KSP", "Kotlin coroutines", "virtual threads", "Kotlin null safety", "Kotlin server-side"]
 search:
   exclude: true
 ---

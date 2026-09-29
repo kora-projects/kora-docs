@@ -1,7 +1,8 @@
 ---
-title: "Policy-Driven Infrastructure in Kora: Resilience, Caching, Validation, and Scheduling"
+title: "Policy-Driven Resilience, Caching, Validation and Scheduling"
 date: 2026-08-26
-description: How the Kora Framework attaches resilience, caching, validation, and scheduling policy declaratively through compile-time generation.
+description: "How Kora attaches retries, circuit breakers, timeouts, caching, validation and scheduled jobs as declarative policies generated at compile time — and how they compose."
+keywords: ["Kora Framework", "resilience", "circuit breaker", "retry", "caching", "validation", "scheduling", "compile-time AOP"]
 search:
     exclude: true
 ---

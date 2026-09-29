@@ -1,7 +1,8 @@
 ---
-title: Why the Kora Framework Doesn't Need an ORM for Most Services
+title: "Why Most Backend Services Don't Need an ORM"
 date: 2026-09-15
-description: Why a Kora Framework repository over native SQL covers most backend services better than an ORM, and when an ORM is still the right tool.
+description: "Why Kora repositories over native SQL fit most services better than Hibernate-style ORMs — N+1, dirty tracking, hidden queries — and when an ORM is still right."
+keywords: ["Kora Framework", "Kora repositories", "ORM vs SQL", "Hibernate alternative", "JPA", "native SQL", "JDBC repository", "N+1 problem"]
 search:
     exclude: true
 ---

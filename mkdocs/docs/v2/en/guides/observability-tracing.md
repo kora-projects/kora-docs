@@ -1,4 +1,7 @@
 ---
+seo_title: "Tracing Guide: OpenTelemetry Distributed Tracing in Kora"
+seo_description: "Add OpenTelemetry tracing to a Kora service: OTLP HTTP exporter, tracing configuration, service name, business spans and trace-to-log correlation."
+keywords: ["Kora Framework", "Kora tracing", "OpenTelemetry", "OTLP", "distributed tracing", "spans", "log correlation"]
 search:
   exclude: true
 title: Tracing with Kora

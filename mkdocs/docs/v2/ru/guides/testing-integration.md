@@ -1,4 +1,7 @@
 ---
+seo_title: "Интеграционное тестирование Kora с Testcontainers"
+seo_description: "Интеграционные тесты JDBC-приложений на Kora: тестовый граф приложения, @KoraAppTest, Testcontainers с PostgreSQL и модификаторы конфигурации."
+keywords: ["Kora Framework", "фреймворк Kora", "интеграционные тесты Kora", "Testcontainers", "PostgreSQL", "JUnit 5"]
 search:
   exclude: true
 title: Интеграционное тестирование с Kora
@@ -168,7 +171,7 @@ Kora дает граф приложения, а [Testcontainers](https://java.te
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        kspTest("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
 
         testImplementation(platform("org.junit:junit-bom:6.1.3"))
 

@@ -1,7 +1,8 @@
 ---
-title: Compile-Time Dependency Injection — How the Kora Framework Builds an Application
+title: "Compile-Time Dependency Injection in Kora: How It Works"
 date: 2026-08-03
-description: How the Kora Framework resolves, validates, and generates the application graph at compile time — components, modules, tags, All<T>, ValueOf<T>, lifecycle, and refreshable subgraphs.
+description: "How Kora resolves and validates the dependency graph at compile time: @KoraApp, @Component, @Module, tags, All<T>, ValueOf<T>, lifecycle and build errors."
+keywords: ["Kora Framework", "Kora dependency injection", "compile-time DI", "annotation processing", "KSP", "@KoraApp", "@Module", "Java DI framework"]
 search:
     exclude: true
 ---

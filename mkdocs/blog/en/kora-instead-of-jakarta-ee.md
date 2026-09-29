@@ -1,8 +1,8 @@
 ---
-title: Why Kora Instead of the Jakarta EE Model
+title: "Kora vs Jakarta EE: Portability or Directness?"
 date: 2026-09-19
-description:
-    Compares the Jakarta EE specification platform with the Kora framework, arguing they optimize for different goals: standardized portability across implementations versus direct, explicit, and predictable JVM backend development.
+description: "Jakarta EE optimizes for portable specifications across vendors; Kora for direct, explicit JVM backends. CDI, interceptors, persistence, REST and hosting compared."
+keywords: ["Kora Framework", "Kora vs Jakarta EE", "Jakarta EE", "CDI", "JAX-RS", "JPA", "Java EE alternative", "application server"]
 search:
     exclude: true
 ---

@@ -1,7 +1,8 @@
 ---
-title: Разработка OpenAPI-First с фреймворком Kora
+title: "OpenAPI-first разработка: контракт как источник истины"
 date: 2026-08-24
-description: Почему контракт-первая разработка OpenAPI в фреймворке Kora генерирует типизированные серверы, клиенты и ошибки из одного источника истины.
+description: "Contract-first OpenAPI в Kora генерирует типизированные серверы, клиенты, модели и ошибки — изменения API становятся ошибками компиляции, а не дрейфом."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI", "contract-first", "генерация кода OpenAPI", "REST API", "дизайн API"]
 search:
   exclude: true
 ---

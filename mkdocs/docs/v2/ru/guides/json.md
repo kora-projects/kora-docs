@@ -1,4 +1,7 @@
 ---
+seo_title: "JSON в Kora: маппинг запросов и ответов"
+seo_description: "Работа с JSON в HTTP API на Kora: DTO с @Json, генерация JsonReader и JsonWriter при компиляции, sealed-ответы и чтение JSON без рефлексии."
+keywords: ["Kora Framework", "фреймворк Kora", "JSON в Kora", "сериализация JSON", "JsonReader", "JsonWriter", "REST API"]
 search:
   exclude: true
 title: Работа с JSON в Kora

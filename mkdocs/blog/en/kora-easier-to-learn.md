@@ -1,7 +1,8 @@
 ---
-title: The Kora Framework Is Easier to Learn Because It Uses the JVM You Already Know
+title: "An Easier Framework to Learn: Reusing the JVM You Know"
 date: 2026-09-06
-description: Why the Kora Framework stays close to JDBC, SQL, HTTP, and plain Java/Kotlin, so existing JVM knowledge transfers instead of being replaced.
+description: "Why Kora is quick to learn: JDBC, SQL, Kafka, gRPC, HTTP and OpenTelemetry stay as they are, so Java and Kotlin knowledge transfers instead of being replaced."
+keywords: ["Kora Framework", "learning Kora", "Java backend framework", "Kotlin backend", "JDBC", "OpenTelemetry", "developer onboarding"]
 search:
   exclude: true
 ---

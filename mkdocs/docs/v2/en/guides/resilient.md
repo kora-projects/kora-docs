@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Resilience Guide: Retry, Circuit Breaker, Timeout in Kora"
+seo_description: "Make Kora services fault tolerant: retry, fallback, timeout, circuit breaker and rate limiter annotations, how to combine them, and the generated code."
+keywords: ["Kora Framework", "Kora resilience", "circuit breaker", "retry", "rate limiter", "fault tolerance", "Resilience4j alternative"]
 search:
   exclude: true
 title: Build Resilient CRUD Operations with Retry, Timeout, Circuit Breaker, and Fallback

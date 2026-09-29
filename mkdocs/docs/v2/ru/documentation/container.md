@@ -1,4 +1,7 @@
 ---
+seo_title: "Контейнер внедрения зависимостей Kora: справочник"
+seo_description: "Справочник DI-контейнера Kora на этапе компиляции: компоненты, модули, фабрики, теги, условия, жизненный цикл, разрешение графа и обёртки зависимостей."
+keywords: ["Kora Framework", "фреймворк Kora", "внедрение зависимостей Kora", "DI-контейнер", "DI на этапе компиляции", "@Component", "@Module"]
 description: "Explains Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers. Use when working with @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora compile-time dependency injection container, components, modules, factory modules, tags, conditions, lifecycle, graph resolution, and dependency wrappers; key triggers include @KoraApp, @Component, @Module, @KoraSubmodule, @FactoryModule, @Root, @Tag, @DefaultComponent, @Conditional, ValueOf, All, PromiseOf, GraphInterceptor, KoraApplication.run."

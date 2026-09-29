@@ -1,7 +1,8 @@
 ---
-title: Does Compile-Time Code Generation Really Make Development Slower? — Kora Framework
+title: "Does Compile-Time Code Generation Slow Development Down?"
 date: 2026-08-09
-description: Whether compile-time DI, repository, and mapper generation actually slow development in the Kora Framework, and how incremental builds and submodules keep feedback fast.
+description: "Measuring Kora's annotation processing honestly: clean vs incremental builds, the Gradle daemon, submodules, and why generated DI and repositories keep feedback fast."
+keywords: ["Kora Framework", "annotation processing performance", "compile-time code generation", "Gradle incremental build", "build speed", "KSP", "developer productivity"]
 search:
     exclude: true
 ---

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Configuration: HOCON, YAML and Typed Config Reference"
+seo_description: "Reference for Kora configuration: HOCON and YAML sources, typed config mapping with @ConfigSource, injection, the config watcher and supported value types."
+keywords: ["Kora Framework", "Kora configuration", "HOCON", "YAML", "@ConfigSource", "typed configuration", "config reload"]
 description: "Explains the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types. Use when working with @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora configuration system for HOCON and YAML, typed configuration mapping, configuration injection, config sources, the config watcher, and supported value types; key triggers include @ConfigSource, @ConfigMapper, ConfigValueMapper, @EnvironmentConfig, @SystemPropertiesConfig, @ApplicationConfig, Config, HoconConfigModule, YamlConfigModule."

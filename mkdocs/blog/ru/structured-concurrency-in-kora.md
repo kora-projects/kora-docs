@@ -1,7 +1,8 @@
 ---
-title: Структурированная конкурентность в приложениях на фреймворке Kora
+title: "Структурная конкурентность со StructuredTaskScope в Kora"
 date: 2026-08-31
-description: Как структурированная конкурентность Java (StructuredTaskScope) вписывается в синхронную модель виртуальных потоков фреймворка Kora — fan-out, домены отказов, дедлайны, отмена и локальность параллелизма.
+description: "Как StructuredTaskScope в Java сочетается с синхронной моделью Kora на виртуальных потоках: fan-out, распространение ошибок, отмена, дедлайны и наблюдаемость."
+keywords: ["Kora Framework", "фреймворк Kora", "структурная конкурентность", "StructuredTaskScope", "виртуальные потоки", "Project Loom", "конкурентность Java"]
 search:
     exclude: true
 ---

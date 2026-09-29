@@ -1,4 +1,7 @@
 ---
+seo_title: "HOCON Configuration Guide: Type-Safe Config in Kora"
+seo_description: "Type-safe HOCON configuration for a Kora service: config-hocon, @ConfigSource, @ConfigMapper, required values, environment overrides and generated config code."
+keywords: ["Kora Framework", "Kora HOCON", "HOCON configuration", "type-safe config", "@ConfigSource", "Java configuration", "Kotlin configuration"]
 search:
   exclude: true
 title: Configuration Management with Kora

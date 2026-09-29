@@ -1,4 +1,7 @@
 ---
+seo_title: "Метрики Kora: справочник по Micrometer и Prometheus"
+seo_description: "Справочник по метрикам Kora: реестр Micrometer, экспорт в Prometheus, настройка телеметрии модулей, кастомизация и полный список стандартных метрик."
+keywords: ["Kora Framework", "фреймворк Kora", "метрики Kora", "Micrometer", "Prometheus", "телеметрия"]
 description: "Explains Kora metrics with Micrometer, Prometheus export through the system HTTP server, per-module telemetry.metrics configuration, registry and metric factory customization, and a full metric reference. Use when working with MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, telemetry.metrics.enabled, httpServer.system.metricsPath, Metrics Reference."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora metrics with Micrometer, Prometheus export through the system HTTP server, the per-module telemetry.metrics block, registry and metric factory customization, and module-specific metric names and tags; key triggers include MetricsModule, MeterRegistry, MetricsScraper, PrometheusMeterRegistryInitializer, DefaultHttpServerMetricsFactory, telemetry.metrics.enabled, telemetry.metrics.slo, httpServer.system.metricsPath, Metrics Reference."

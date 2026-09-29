@@ -1,7 +1,8 @@
 ---
-title: Compile-Time AOP Without Dynamic Proxies — Kora Framework
+title: "Compile-Time AOP Without Dynamic Proxies in Java"
 date: 2026-08-02
-description: How the Kora Framework implements aspect-oriented programming with generated compile-time subclasses instead of runtime dynamic proxies.
+description: "How Kora implements AOP with generated subclasses instead of runtime proxies: compile-time validation, readable interceptors, self-invocation and performance."
+keywords: ["Kora Framework", "Kora AOP", "aspect-oriented programming", "compile-time AOP", "dynamic proxies", "self-invocation", "Spring AOP alternative", "annotation processing"]
 search:
     exclude: true
 ---

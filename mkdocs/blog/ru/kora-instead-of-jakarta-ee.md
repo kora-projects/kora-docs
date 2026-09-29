@@ -1,8 +1,8 @@
 ---
-title: Почему Kora вместо модели Jakarta EE
+title: "Kora или Jakarta EE: переносимость или прямота?"
 date: 2026-09-19
-description:
-    Сравнивает платформу спецификаций Jakarta EE с фреймворком Kora, утверждая, что они оптимизируются под разные цели: стандартизированную переносимость между реализациями против прямой, явной и предсказуемой разработки JVM-бэкенда.
+description: "Jakarta EE оптимизирует переносимость спецификаций между вендорами, Kora — прямой и явный JVM-бэкенд. Сравниваем CDI, перехватчики, persistence, REST и хостинг."
+keywords: ["Kora Framework", "фреймворк Kora", "Kora против Jakarta EE", "Jakarta EE", "CDI", "JAX-RS", "JPA", "альтернатива Java EE"]
 search:
     exclude: true
 ---

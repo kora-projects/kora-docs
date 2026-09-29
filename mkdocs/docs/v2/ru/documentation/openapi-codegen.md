@@ -1,4 +1,7 @@
 ---
+seo_title: "Кодогенерация OpenAPI в Kora: серверы и клиенты"
+seo_description: "Справочник по генерации кода из OpenAPI в Kora: режимы для клиентов и серверов на Java и Kotlin, опции, расширения, валидация и авторизация."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI в Kora", "openapi-generator", "генерация кода OpenAPI", "contract-first"]
 description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
 agent:
     use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
@@ -20,7 +23,7 @@ agent:
     ```groovy
     buildscript {
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2")
         }
     }
     ```
@@ -40,7 +43,7 @@ agent:
     ```groovy
     buildscript {
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1")
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2")
         }
     }
     ```

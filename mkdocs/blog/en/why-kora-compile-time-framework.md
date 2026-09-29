@@ -1,7 +1,8 @@
 ---
-title: Why the Kora Framework — a Compile-Time Framework for the Modern JVM
+title: "Why Kora: A Compile-Time Framework for the Modern JVM"
 date: 2026-09-17
-description: Why the Kora Framework moves dependency injection, HTTP adapters, repositories, and AOP into compilation, and what compile-time certainty means for startup, overhead, and debugging.
+description: "Kora moves dependency injection, HTTP adapters, repositories and AOP into compilation — what compile-time certainty means for startup, overhead and debugging."
+keywords: ["Kora Framework", "compile-time framework", "Java framework", "Kotlin framework", "annotation processing", "no runtime reflection", "fast startup"]
 search:
     exclude: true
 ---

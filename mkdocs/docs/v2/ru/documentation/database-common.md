@@ -1,4 +1,7 @@
 ---
+seo_title: "Репозитории баз данных Kora: сущности, запросы, макросы"
+seo_description: "Общая модель баз данных Kora для JDBC и Cassandra: сущности, идентификаторы, именование, встроенные поля, параметры запросов, SQL-макросы, батчи."
+keywords: ["Kora Framework", "фреймворк Kora", "репозитории Kora", "базы данных Kora", "SQL-макросы", "маппинг сущностей"]
 description: "Common Kora database model shared by the JDBC and Cassandra modules: entities, identifiers, naming, embedded fields, query parameters, SQL macros, batch queries, affected rows, several databases in one application, and query telemetry. Use when working with @Repository, @Query, @Table, @Column, @Id, @Embedded, @Batch, @Mapping and UpdateCount."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the common database model shared by the JDBC and Cassandra modules: entities and views, @Table, @Column, @Id, @Embedded, naming strategies, @Repository and @Query, query parameter binding, SQL macros (%{return#selects}, %{entity#inserts}, %{entity#where = @id}), @Batch, UpdateCount, several databases in one application, and DatabaseTelemetry."

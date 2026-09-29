@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI HTTP Server Guide: Contract-First APIs with Kora"
+seo_description: "Generate a Kora HTTP server from an OpenAPI contract with openapi-generator: generated controllers, delegates, sealed responses and server-side validation."
+keywords: ["Kora Framework", "Kora OpenAPI", "OpenAPI server generation", "contract-first API", "openapi-generator", "REST API", "API validation"]
 search:
   exclude: true
 title: Contract-First HTTP Server with OpenAPI
@@ -132,7 +135,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -142,7 +145,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(4)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(4)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(5)!
 
@@ -175,7 +178,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -187,9 +190,9 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(4)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(4)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(5)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(5)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-server-undertow")

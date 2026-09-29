@@ -1,4 +1,7 @@
 ---
+seo_title: "HTTP-сервер в Kora: создаём REST API"
+seo_description: "REST API на HTTP-сервере Kora (Undertow): @HttpController, @HttpRoute, параметры пути и запроса, JSON-тела, ответы, репозитории и сервисный слой."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-сервер Kora", "REST API на Java", "REST API на Kotlin", "@HttpController", "Undertow"]
 search:
   exclude: true
 title: Руководство по HTTP-серверу
@@ -107,7 +110,7 @@ HTTP-сервер живет в модуле `http-server-undertow`, а подд
 
     ```groovy
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
 
@@ -131,9 +134,9 @@ HTTP-сервер живет в модуле `http-server-undertow`, а подд
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon") //(3)!
         implementation("io.koraframework:http-server-undertow") //(4)!

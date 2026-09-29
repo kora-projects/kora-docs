@@ -1,4 +1,7 @@
 ---
+seo_title: "HTTP Server Guide: Build a REST API with Kora"
+seo_description: "Build a REST API with Kora's Undertow HTTP server: @HttpController, @HttpRoute, path and query binding, JSON bodies, responses, repositories and a service layer."
+keywords: ["Kora Framework", "Kora HTTP server", "REST API Java", "REST API Kotlin", "@HttpController", "Undertow", "CRUD API"]
 search:
   exclude: true
 title: HTTP Server Guide
@@ -106,7 +109,7 @@ instead of being written on every line.
 
     ```groovy
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
 
@@ -130,9 +133,9 @@ instead of being written on every line.
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon") //(3)!
         implementation("io.koraframework:http-server-undertow") //(4)!

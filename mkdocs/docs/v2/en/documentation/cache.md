@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Cache: Caffeine and Redis Caching Reference"
+seo_description: "Reference for Kora caching: cache annotations, Caffeine and Redis backends, key mapping, invalidation, loadable caches, telemetry and method signatures."
+keywords: ["Kora Framework", "Kora cache", "Caffeine", "Redis cache", "@Cacheable", "cache invalidation"]
 description: "Explains Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, execution modes and supported method signatures. Use when working with @Cache, @Cacheable, @CachePut, @CacheInvalidate, @CacheInvalidateAll, @CacheMode, CaffeineCacheModule, LettuceRedisCacheModule, CacheKeyMapper, LoadableCache."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora cache module, cache annotations, Caffeine and Redis cache backends, cache key mapping, telemetry, invalidation, execution modes and supported method signatures; key triggers include @Cache, @Cacheable, @CachePut, @CacheInvalidate, @CacheInvalidateAll, CacheMode, CaffeineCacheModule, LettuceRedisCacheModule, RedisCacheClient, CacheKeyMapper, LoadableCache."

@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora GraalVM Native Image: Build and Run Native Binaries"
+seo_description: "Build a Kora application into a GraalVM Native Image: Gradle plugin, JDK 25 toolchain, two-stage Docker build, reachability metadata and verification."
+keywords: ["Kora Framework", "Kora GraalVM", "GraalVM Native Image", "native Java", "Docker", "fast startup"]
 description: "Explains how to build a Kora application into a GraalVM Native Image: the Gradle plugin and JDK 25 toolchain, the fat JAR and the two-stage Docker build, reachability metadata, and how to verify the resulting binary. Use when working with GraalVM, native-image, nativeCompile, reachability metadata, reflect-config.json, AOT, native build."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about building a Kora application into a GraalVM Native Image; key triggers include GraalVM, native-image, org.graalvm.buildtools.native, nativeCompile, reachability metadata, reflect-config.json, native-image.properties, tracing agent, AOT, native build, native Docker image."

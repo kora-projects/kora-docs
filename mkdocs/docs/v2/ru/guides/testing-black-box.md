@@ -1,4 +1,7 @@
 ---
+seo_title: "Тестирование чёрным ящиком: проверяем собранное приложение Kora"
+seo_description: "Тестирование собранного приложения Kora как чёрного ящика: Docker-образ, запуск через Testcontainers, ожидание готовности и вызовы HTTP API из тестов."
+keywords: ["Kora Framework", "фреймворк Kora", "тестирование чёрным ящиком", "Testcontainers", "Docker", "end-to-end тесты"]
 search:
   exclude: true
 title: Тестирование как черный ящик с Kora

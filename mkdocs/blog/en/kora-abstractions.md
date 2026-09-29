@@ -1,7 +1,8 @@
 ---
-title: Thin Abstractions — Why the Kora Framework Stays Close to JDBC, Kafka, gRPC and HTTP
+title: "Thin Abstractions: Staying Close to JDBC, Kafka, gRPC and HTTP"
 date: 2026-09-08
-description: How the Kora Framework keeps its abstractions thin — removing repetitive integration while preserving the SQL, Kafka records, grpc-java stubs, and HTTP semantics you already know.
+description: "How Kora removes integration boilerplate while keeping plain SQL, Kafka records, grpc-java stubs and HTTP semantics visible — easier debugging, upgrades and hiring."
+keywords: ["Kora Framework", "thin abstractions", "JDBC", "Apache Kafka", "gRPC Java", "HTTP", "framework design", "leaky abstractions"]
 search:
   exclude: true
 ---

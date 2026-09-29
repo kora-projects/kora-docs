@@ -1,7 +1,8 @@
 ---
-title: Learning a Framework in the AI Era — and Why the Kora Framework Fits
+title: "Learning a Backend Framework in the AI Era"
 date: 2026-08-19
-description: How learning shifted from memorizing framework lore to reasoning from evidence, and why the Kora Framework fits the new model.
+description: "Learning shifted from memorizing framework lore to reasoning from evidence — docs, generated source and compiler errors. Why Kora is built for this model."
+keywords: ["Kora Framework", "learning Kora", "AI-assisted learning", "compiler errors", "generated source", "developer onboarding", "strong typing"]
 search:
     exclude: true
 ---

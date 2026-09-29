@@ -1,7 +1,8 @@
 ---
-title: Why Compile-Time Frameworks Like the Kora Framework Work Well With AI Coding Agents
+title: "Why Compile-Time Frameworks Work Well With AI Coding Agents"
 date: 2026-09-14
-description: Why the Kora Framework's compile-time graph, strong typing, and generated source make it unusually well matched to AI coding agents.
+description: "Kora's compile-time graph, explicit constructors, strong types and generated source give AI coding agents fast, precise compiler feedback instead of startup mysteries."
+keywords: ["Kora Framework", "AI coding agents", "LLM code generation", "agentic coding", "compile-time validation", "strong typing", "generated source"]
 search:
   exclude: true
 ---

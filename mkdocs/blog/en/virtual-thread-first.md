@@ -1,7 +1,8 @@
 ---
-title: Virtual Threads First — Why the Kora Framework Is Synchronous Again
+title: "Virtual Threads First: Why Kora Is Synchronous Again"
 date: 2026-09-09
-description: Why the Kora Framework is virtual-thread-first — synchronous controllers, HTTP clients, and JDBC repositories without reactive types.
+description: "Why Kora 2 is virtual-thread-first: synchronous controllers, HTTP clients and JDBC repositories without reactive types, and what Loom does not make free."
+keywords: ["Kora Framework", "virtual threads", "Project Loom", "synchronous programming", "reactive programming", "JDBC", "Java concurrency"]
 search:
     exclude: true
 ---

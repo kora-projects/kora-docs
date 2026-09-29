@@ -1,4 +1,7 @@
 ---
+seo_title: "Integration Testing Guide: Testcontainers and Kora"
+seo_description: "Integration tests for Kora JDBC applications: a test application graph, @KoraAppTest, Testcontainers PostgreSQL and configuration modifiers for real databases."
+keywords: ["Kora Framework", "Kora integration testing", "Testcontainers", "PostgreSQL", "JUnit 5", "database testing"]
 search:
   exclude: true
 title: Integration Testing with Kora
@@ -168,7 +171,7 @@ PostgreSQL dialect artifact has to be added at the same version, otherwise migra
 
     ```kotlin title="build.gradle.kts"
     dependencies {
-        kspTest("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+        kspTest("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
 
         testImplementation(platform("org.junit:junit-bom:6.1.3"))
 

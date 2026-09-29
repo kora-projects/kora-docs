@@ -1,7 +1,8 @@
 ---
-title: Вам не нужны разработчики Kora — вам нужны хорошие JVM-инженеры
+title: "Вам нужны не Kora-разработчики, а хорошие JVM-инженеры"
 date: 2026-09-21
-description: Почему «нет разработчиков Kora» — неправильное возражение — фреймворк Kora строится на навыках JDBC, SQL, HTTP и Java/Kotlin, которые у сильных JVM-инженеров уже есть.
+description: "Kora опирается на навыки JDBC, SQL, Kafka, HTTP, OpenAPI, OpenTelemetry и PostgreSQL, которые у сильных JVM-инженеров уже есть, — карта переносимых навыков."
+keywords: ["Kora Framework", "фреймворк Kora", "JVM-инженеры", "найм бэкенд-разработчиков", "SQL", "PostgreSQL", "OpenTelemetry"]
 search:
   exclude: true
 ---

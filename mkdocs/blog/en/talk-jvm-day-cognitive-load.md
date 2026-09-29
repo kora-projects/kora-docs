@@ -1,7 +1,8 @@
 ---
-title: "Beyond “Spring Magic”: Why Kora Was Designed Around Transparency, Compile-Time Guarantees, and Lower Cognitive Load"
+title: "Beyond “Spring Magic”: Transparency and Lower Cognitive Load"
 date: 2024-08-31
-description: This article is a written companion to a talk given at JVM Day 2024 about transparency, compile-time guarantees, and cognitive load. It summarizes the talk's key ideas and how they map onto modern Kora.
+description: "JVM Day 2024 talk companion: type-safe DI, explicit lifecycle and modules, compile-time guarantees and generated code — how Kora reduces cognitive load."
+keywords: ["Kora Framework", "Spring magic", "cognitive load", "type-safe dependency injection", "compile-time guarantees", "JVM Day 2024", "conference talk"]
 search:
     exclude: true
 ---

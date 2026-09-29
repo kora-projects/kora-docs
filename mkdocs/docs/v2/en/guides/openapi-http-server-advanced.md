@@ -1,4 +1,7 @@
 ---
+seo_title: "Advanced OpenAPI Server: Multiple Contracts, Auth | Kora"
+seo_description: "Advanced contract-first Kora servers: several OpenAPI contracts, forms and multipart, interceptors via generator extensions, validation errors and authorization."
+keywords: ["Kora Framework", "Kora OpenAPI advanced", "OpenAPI multiple contracts", "OpenAPI authorization", "openapi-generator", "multipart"]
 search:
   exclude: true
 title: Contract-First HTTP Server Advanced Guide

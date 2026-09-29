@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Camunda 7 BPMN: Embedded Process Engine"
+seo_description: "Run the Camunda 7 BPMN engine embedded in Kora: deployment, JavaDelegate components, engine services, transactions, job executor, configuration and telemetry."
+keywords: ["Kora Framework", "Kora Camunda", "Camunda 7", "BPMN", "process engine", "workflow Java"]
 description: "Explains Kora Camunda 7 BPMN embedded process engine integration, resource deployment, delegates, engine services, transactions, configuration, and telemetry. Use when working with CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, KoraDelegate, CamundaTransactionManager, ProcessEngineConfigurator, Metrics Reference."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora Camunda 7 BPMN embedded process engine, resource deployment, delegates, engine services, transactions, configuration, and telemetry; key triggers include CamundaEngineBpmnModule, CamundaEngineBpmnConfig, ProcessEngine, JavaDelegate, KoraDelegate, CamundaEngineDataSource, CamundaTransactionManager, ProcessEngineConfigurator, CamundaVersion, Metrics Reference."

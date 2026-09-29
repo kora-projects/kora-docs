@@ -3,6 +3,9 @@
 {% set canonical_url = current_site_url %}
 {% set en_url = current_site_url | replace('/ru/', '/en/') %}
 {% set ru_url = current_site_url | replace('/en/', '/ru/') %}
+{# Root-relative paths for navigation links, so the toggle stays on the current host (also locally). #}
+{% set en_path = '/' ~ en_url.split('/', 3)[3] %}
+{% set ru_path = '/' ~ ru_url.split('/', 3)[3] %}
 {% set social_image_name = 'kora-social-card-ru.jpg' if current_lang == 'ru' else 'kora-social-card-en.jpg' %}
 {% set social_square_name = 'kora-social-card-square-ru.jpg' if current_lang == 'ru' else 'kora-social-card-square-en.jpg' %}
 {% set social_image_url = canonical_url ~ 'assets/img/' ~ social_image_name %}
@@ -30,6 +33,7 @@
     <link rel="alternate" hreflang="en" href="{{ en_url }}">
     <link rel="alternate" hreflang="ru" href="{{ ru_url }}">
     <link rel="alternate" hreflang="x-default" href="{{ en_url }}">
+    <link rel="alternate" type="text/plain" title="llms.txt" href="{{ canonical_url }}llms.txt">
 
     <meta property="og:site_name" content="Kora Framework">
     <meta property="og:type" content="website">
@@ -65,8 +69,8 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "@id": "https://kora-projects.github.io/kora-docs/#website",
-          "url": "https://kora-projects.github.io/kora-docs/",
+          "@id": "https://koraframework.io/#website",
+          "url": "https://koraframework.io/",
           "name": "Kora Framework",
           "alternateName": "Kora",
           "inLanguage": ["en", "ru"],
@@ -102,9 +106,25 @@
           "name": "{{ seo_title }}",
           "description": "{{ seo_description }}",
           "inLanguage": "{{ current_lang }}",
-          "isPartOf": { "@id": "https://kora-projects.github.io/kora-docs/#website" },
+          "isPartOf": { "@id": "https://koraframework.io/#website" },
           "about": { "@id": "https://github.com/kora-projects/kora#software" },
-          "primaryImageOfPage": { "@id": "{{ canonical_url }}#primaryimage" }
+          "primaryImageOfPage": { "@id": "{{ canonical_url }}#primaryimage" },
+          "significantLink": [
+            "{{ canonical_url }}guides/getting-started/",
+            "{{ canonical_url }}documentation/general/",
+            "{{ canonical_url }}blog/",
+            "https://github.com/kora-projects/kora-examples"
+          ],
+          "mainEntity": { "@id": "{{ canonical_url }}#faq" }
+        },
+        {
+          "@type": "Blog",
+          "@id": "{{ canonical_url }}blog/#blog",
+          "url": "{{ canonical_url }}blog/",
+          "name": "{{ 'Блог Kora' if current_lang == 'ru' else 'Kora Blog' }}",
+          "inLanguage": "{{ current_lang }}",
+          "publisher": { "@id": "https://github.com/kora-projects#organization" },
+          "about": { "@id": "https://github.com/kora-projects/kora#software" }
         },
         {
           "@type": "SoftwareSourceCode",
@@ -115,10 +135,50 @@
           "codeRepository": "https://github.com/kora-projects/kora",
           "programmingLanguage": ["Java", "Kotlin"],
           "runtimePlatform": "Java Virtual Machine (JVM)",
+          "softwareVersion": "{{ config.site_name.split(' ') | last }}",
           "license": "https://www.apache.org/licenses/LICENSE-2.0",
           "isAccessibleForFree": true,
-          "creator": { "@id": "https://github.com/kora-projects#organization" }
+          "keywords": ["Java framework", "Kotlin framework", "compile-time dependency injection", "annotation processing", "KSP", "virtual threads", "microservices", "backend", "OpenTelemetry"],
+          "creator": { "@id": "https://github.com/kora-projects#organization" },
+          "subjectOf": { "@id": "{{ canonical_url }}blog/#blog" }
+        },
+        {% if current_lang == 'ru' %}
+        {
+          "@type": "FAQPage",
+          "@id": "{{ canonical_url }}#faq",
+          "inLanguage": "ru",
+          "mainEntity": [
+            { "@type": "Question", "name": "Что такое Kora?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Kora — серверный фреймворк для Java и Kotlin. Он строит граф приложения на этапе компиляции и генерирует читаемый исходный код вместо runtime-рефлексии и динамических прокси." } },
+            { "@type": "Question", "name": "Как в Kora работает внедрение зависимостей?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Внедрение зависимостей выполняется на этапе компиляции: для Java через annotation processing, для Kotlin через KSP. Ошибки графа обнаруживаются при сборке, а не при запуске приложения." } },
+            { "@type": "Question", "name": "Поддерживает ли Kora виртуальные потоки?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Да. Kora выполняет прикладной код синхронно на виртуальных потоках: контроллеры, HTTP-клиенты, репозитории и планировщики объявляются обычными блокирующими сигнатурами." } },
+            { "@type": "Question", "name": "Какие модули есть в Kora?",
+              "acceptedAnswer": { "@type": "Answer", "text": "HTTP-сервер и клиенты, генерация по OpenAPI, репозитории поверх JDBC, Kafka, gRPC, S3, кеширование, отказоустойчивость, конфигурация, метрики и трассировка OpenTelemetry, а также тестирование графа приложения." } },
+            { "@type": "Question", "name": "Под какой лицензией распространяется Kora?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Kora распространяется бесплатно под лицензией Apache 2.0, исходный код доступен на GitHub: https://github.com/kora-projects/kora" } }
+          ]
         }
+        {% else %}
+        {
+          "@type": "FAQPage",
+          "@id": "{{ canonical_url }}#faq",
+          "inLanguage": "en",
+          "mainEntity": [
+            { "@type": "Question", "name": "What is Kora?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Kora is a backend framework for Java and Kotlin. It builds the application graph at compile time and generates readable source code instead of relying on runtime reflection and dynamic proxies." } },
+            { "@type": "Question", "name": "How does dependency injection work in Kora?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Dependency injection is resolved at compile time: through annotation processing for Java and KSP for Kotlin. Graph errors are reported during the build instead of at application startup." } },
+            { "@type": "Question", "name": "Does Kora support virtual threads?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Kora executes application code synchronously on virtual threads: controllers, HTTP clients, repositories and scheduled tasks are declared with ordinary blocking signatures." } },
+            { "@type": "Question", "name": "Which modules does Kora provide?",
+              "acceptedAnswer": { "@type": "Answer", "text": "HTTP server and clients, OpenAPI code generation, JDBC-based repositories, Kafka, gRPC, S3, caching, resilience, configuration, OpenTelemetry metrics and tracing, and application graph testing." } },
+            { "@type": "Question", "name": "What license is Kora released under?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Kora is free and open source under the Apache 2.0 license. The source code is on GitHub: https://github.com/kora-projects/kora" } }
+          ]
+        }
+        {% endif %}
       ]
     }
     </script>
@@ -3454,8 +3514,8 @@
             </div>
             <div class="nav-actions">
                 <div class="lang" aria-label="Documentation language">
-                    <a{% if current_lang == 'en' %} class="is-active" aria-current="page"{% endif %} href="{{ en_url }}" hreflang="en" lang="en" data-lang="en">EN</a>
-                    <a{% if current_lang == 'ru' %} class="is-active" aria-current="page"{% endif %} href="{{ ru_url }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
+                    <a{% if current_lang == 'en' %} class="is-active" aria-current="page"{% endif %} href="{{ en_path }}" hreflang="en" lang="en" data-lang="en">EN</a>
+                    <a{% if current_lang == 'ru' %} class="is-active" aria-current="page"{% endif %} href="{{ ru_path }}" hreflang="ru" lang="ru" data-lang="ru">RU</a>
                 </div>
                 <a class="button" href="{{ 'documentation/general/' | url }}">Docs</a>
             </div>
@@ -3474,7 +3534,7 @@
                     <div class="hero-actions" id="start">
                         <a class="button primary" href="{{ 'guides/getting-started/' | url }}">Get started</a>
                         <a class="button" href="https://github.com/kora-projects">View on GitHub</a>
-                        <div class="command" aria-label="Gradle dependency example"><a href="https://central.sonatype.com/artifact/io.koraframework/kora-bom"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC1</code></a></div>
+                        <div class="command" aria-label="Gradle dependency example"><a href="https://central.sonatype.com/artifact/io.koraframework/kora-bom"><code><span>io.koraframework</span>:kora-bom:2.0.0.RC2</code></a></div>
                     </div>
                     <div class="hero-note" aria-label="Framework highlights">
                         <div class="metric">
@@ -4548,7 +4608,7 @@
 
         const localizeHref = (href, lang) => {
             if (!href || href.startsWith("#") || href.startsWith("https://") || href.startsWith("http://") || href.startsWith("mailto:")) return href;
-            // Links are relative to the current build (e.g. /kora-docs/v2/en/). Resolve to an
+            // Links are relative to the current build (e.g. /v2/en/). Resolve to an
             // absolute path, then swap the version segment to whichever version the visitor last
             // read and the language segment to the toggled language.
             let url;
@@ -4588,7 +4648,8 @@
                 node.setAttribute(name, lang === "ru" && attrRu[en] ? attrRu[en] : en);
             });
 
-            document.querySelectorAll("a[href]").forEach((link) => {
+            // The EN/RU toggle ([data-lang]) already points at a specific language.
+            document.querySelectorAll("a[href]:not([data-lang])").forEach((link) => {
                 link.setAttribute("href", localizeHref(link.getAttribute("href"), lang));
             });
 

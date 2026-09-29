@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "gRPC-сервер Kora продвинутый: стриминг, перехватчики, авторизация"
+seo_description: "Продвинутые gRPC-серверы Kora: стриминговые обработчики, серверные перехватчики, server reflection и авторизация по API-ключу."
+keywords: ["Kora Framework", "фреймворк Kora", "стриминг gRPC Kora", "перехватчики gRPC", "gRPC reflection", "авторизация gRPC"]
 search:
   exclude: true
 title: Продвинутый gRPC-сервер с Kora
@@ -160,7 +163,7 @@ Kora по-прежнему владеет связыванием компоне�
 Версии модулей Kora берутся из BOM Kora `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

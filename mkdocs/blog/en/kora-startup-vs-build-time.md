@@ -1,7 +1,8 @@
 ---
-title: Startup vs Build Time — Why the Kora Framework Moves Work Left
+title: "Startup vs Build Time: Moving Framework Work Left"
 date: 2026-08-28
-description: Why the Kora Framework shifts framework work from every startup into the build, and what that trade means for deployments, tests, and autoscaling.
+description: "Why Kora shifts framework work from every JVM startup into the build, and what that trade means for deployments, tests, autoscaling and CI build times."
+keywords: ["Kora Framework", "startup time", "build time", "annotation processing", "shift left", "runtime reflection", "JVM startup"]
 search:
     exclude: true
 ---

@@ -1,7 +1,8 @@
 ---
-title: The Application Graph as Architecture in the Kora Framework
+title: "The Application Graph as Executable Architecture in Kora"
 date: 2026-09-02
-description: Why the Kora Framework's compile-time application graph is not just DI wiring but an inspectable, validated map of the system's architecture.
+description: "Kora's compile-time application graph is more than DI wiring: a validated, inspectable map of dependencies, lifecycle, modules and infrastructure."
+keywords: ["Kora Framework", "Kora application graph", "compile-time dependency injection", "software architecture", "component lifecycle", "Java backend", "Kotlin backend"]
 search:
   exclude: true
 ---

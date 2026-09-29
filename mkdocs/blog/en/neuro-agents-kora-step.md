@@ -1,7 +1,8 @@
 ---
-title: One STEP at a Time — Why the Kora Framework Works So Well for AI Agents
+title: "One STEP at a Time: Why AI Agents Iterate Well in Kora"
 date: 2026-08-23
-description: Why the Kora Framework's explicit, inspectable, fast-to-validate design makes each AI-agent iteration produce useful information instead of guesswork.
+description: "How Kora's STEP design — simple, transparent, efficient, predictable — makes each AI agent iteration produce verifiable evidence instead of guesswork."
+keywords: ["Kora Framework", "Kora STEP principles", "AI coding agents", "agent feedback loop", "generated source", "virtual threads", "agentic development"]
 search:
     exclude: true
 ---

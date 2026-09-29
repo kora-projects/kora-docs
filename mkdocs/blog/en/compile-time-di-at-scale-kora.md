@@ -1,7 +1,8 @@
 ---
-title: Compile-Time DI at Scale — How the Kora Framework Keeps Large Projects Fast
+title: "Compile-Time DI at Scale: Fast Builds for Large Kora Projects"
 date: 2026-08-04
-description: How the Kora Framework uses @KoraSubmodule and Gradle modularization to keep compile-time dependency injection fast in large codebases.
+description: "How @KoraSubmodule and Gradle modules keep Kora's compile-time dependency injection fast in large codebases: incremental builds and clear module boundaries."
+keywords: ["Kora Framework", "@KoraSubmodule", "compile-time DI", "Gradle multi-module build", "incremental compilation", "build performance", "large Java projects"]
 search:
     exclude: true
 ---

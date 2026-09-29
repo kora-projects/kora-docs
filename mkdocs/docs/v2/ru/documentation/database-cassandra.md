@@ -1,4 +1,7 @@
 ---
+seo_title: "Cassandra в Kora: репозитории, CQL и UDT"
+seo_description: "Справочник по Cassandra в Kora: настройка драйвера, профили выполнения, маппинг сущностей и UDT, CQL-запросы репозиториев и ручные запросы."
+keywords: ["Kora Framework", "фреймворк Kora", "Cassandra в Kora", "Apache Cassandra", "CQL", "UDT"]
 description: "Explains Kora Cassandra repositories, Cassandra driver configuration, execution profiles, entity and UDT mapping, manual CQL queries, and repository signatures. Use when working with @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, CassandraDatabaseModule, CassandraExecutor."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora Cassandra repositories, Cassandra driver configuration, execution profiles, entity and UDT mapping, manual CQL queries via CassandraQuery, and repository signatures; key triggers include @Repository, @Query, @EntityCassandra, @Table, @Id, @Column, @UDT, @CassandraProfile, CassandraDatabaseModule, CassandraRepository, CassandraExecutor, CassandraSession."

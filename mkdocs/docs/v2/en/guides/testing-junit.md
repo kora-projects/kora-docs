@@ -1,4 +1,7 @@
 ---
+seo_title: "Component Testing Guide: JUnit 5 and Mocks in Kora"
+seo_description: "Test Kora components with JUnit 5: @KoraAppTest, @TestComponent, Mockito or MockK mocks inside the application graph and test configuration overrides."
+keywords: ["Kora Framework", "Kora testing", "JUnit 5", "@KoraAppTest", "Mockito", "MockK", "component tests"]
 search:
   exclude: true
 title: JUnit Testing with Kora

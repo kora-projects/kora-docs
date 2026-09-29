@@ -1,7 +1,8 @@
 ---
-title: You Don't Need Kora Developers — Framework Skills vs Vendor Lock-In
+title: "You Don't Need Kora Developers: Skills vs Vendor Lock-In"
 date: 2026-09-20
-description: Why the "no Kora developers on the market" objection misunderstands hiring — strong JVM engineers become productive in the Kora Framework quickly without framework lock-in.
+description: "Why “no Kora developers on the market” misreads hiring: strong JVM engineers become productive in Kora fast, and their skills stay portable, not locked in."
+keywords: ["Kora Framework", "hiring Java developers", "vendor lock-in", "transferable skills", "JVM engineers", "framework adoption", "team onboarding"]
 search:
     exclude: true
 ---

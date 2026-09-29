@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI HTTP Client Guide: Generate Typed Clients with Kora"
+seo_description: "Generate a typed Kora HTTP client from an OpenAPI file: generator setup, client configuration, response code mapping and testing the generated client."
+keywords: ["Kora Framework", "Kora OpenAPI client", "OpenAPI client generation", "openapi-generator", "typed HTTP client", "contract-first"]
 search:
   exclude: true
 title: Contract-First HTTP Client with OpenAPI
@@ -491,7 +494,7 @@ But now it also needs OpenAPI generation support. As on the server side, this co
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -501,7 +504,7 @@ But now it also needs OpenAPI generation support. As on the server side, this co
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
 
         annotationProcessor "io.koraframework:annotation-processors"
 
@@ -543,7 +546,7 @@ But now it also needs OpenAPI generation support. As on the server side, this co
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -555,9 +558,9 @@ But now it also needs OpenAPI generation support. As on the server side, this co
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1")
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2")
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-client-common") //(4)!

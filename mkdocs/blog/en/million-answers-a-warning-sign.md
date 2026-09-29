@@ -1,7 +1,8 @@
 ---
-title: When a Million Answers Are a Warning Sign — Framework Complexity, Community Knowledge, and Kora
+title: "When a Million Answers Are a Warning Sign"
 date: 2026-08-16
-description: Why a huge framework Q&A corpus can be both a valuable ecosystem asset and evidence that too much framework behavior is difficult to derive from the system itself.
+description: "Why a huge Q&A corpus can signal hidden framework complexity, not just a healthy ecosystem — and how Kora aims for behavior you can derive from the code itself."
+keywords: ["Kora Framework", "framework complexity", "Stack Overflow", "developer community", "framework magic", "documentation", "cognitive load"]
 search:
     exclude: true
 ---

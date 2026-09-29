@@ -1,4 +1,7 @@
 ---
+seo_title: "Мапперы MapStruct и Konvert в Kora"
+seo_description: "Мапперы MapStruct для Java и Konvert для Kotlin как компоненты графа Kora: внедрение, вспомогательные мапперы, теги и сгенерированные реализации."
+keywords: ["Kora Framework", "фреймворк Kora", "MapStruct в Kora", "MapStruct", "Konvert", "маппинг объектов"]
 description: "Explains how Kora turns compile-time generated mappers into graph components: MapStruct @Mapper implementations in Java and Kotlin, helper injection through uses and injectionStrategy, tags, and the Kotlin-native Konvert @Konverter KSP extension. Use when working with @Mapper, @Mapping, MapStruct, mapstruct-processor, @Konverter, Konvert, konvert-api, generated Impl, uses, injectionStrategy, componentModel, @Tag, kapt, KSP."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about mapping DTOs, entities and rows with MapStruct or Konvert in a Kora application, where the generated mapper implementation becomes an injectable Kora component without @Component; key triggers include @Mapper, @Mapping, MapStruct, mapstruct-processor, @Konverter, Konvert, konvert-api, generated Impl, uses, injectionStrategy, componentModel, @Tag, kapt, KSP, annotation-processors, symbol-processors."
@@ -55,7 +58,7 @@ Kora интегрирует библиотеки преобразования о
     [Зависимость](general.md#dependencies) в `build.gradle.kts`:
     ```kotlin
     kapt("org.mapstruct:mapstruct-processor:1.6.3") //(1)!
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
     implementation("org.mapstruct:mapstruct:1.6.3") //(3)!
     ```
@@ -283,7 +286,7 @@ Kora разрешает каждый из них из графа — поэто�
 [Зависимость](general.md#dependencies) в `build.gradle.kts`:
 ```kotlin
 ksp("io.mcarle:konvert:4.5.1") //(1)!
-ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
 implementation("io.mcarle:konvert-api:4.5.1") //(3)!
 ```

@@ -1,7 +1,8 @@
 ---
-title: Documentation in the AI Era — Kora Framework Docs Are No Longer Just Docs
+title: "Framework Documentation in the AI Era: Beyond Pages"
 date: 2026-08-07
-description: Why documentation, generated source, and compiler feedback form one explainable system in the Kora Framework for the AI era.
+description: "Why reference docs, guides, runnable examples, generated source and compiler feedback form one knowledge system in Kora — and why that matters for AI assistants."
+keywords: ["Kora Framework", "Kora documentation", "documentation for AI", "LLM coding assistants", "runnable examples", "developer documentation", "AI-assisted development"]
 search:
     exclude: true
 ---

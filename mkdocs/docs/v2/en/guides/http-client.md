@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "HTTP Client Guide: Declarative REST Clients in Kora"
+seo_description: "Call REST APIs from Kora with a declarative @HttpClient: typed routes, JSON DTOs, configuration per client and generated implementation without reflection."
+keywords: ["Kora Framework", "Kora HTTP client", "declarative HTTP client", "@HttpClient", "REST client Java", "REST client Kotlin", "Feign alternative"]
 search:
   exclude: true
 title: HTTP Client with Kora
@@ -115,7 +118,7 @@ This guide uses OkHttp.
 Versions come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora modules are declared without a version:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

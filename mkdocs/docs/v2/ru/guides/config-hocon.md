@@ -1,4 +1,7 @@
 ---
+seo_title: "Конфигурация HOCON в Kora: типобезопасные настройки"
+seo_description: "Типобезопасная конфигурация HOCON в сервисе на Kora: config-hocon, @ConfigSource, @ConfigMapper, обязательные значения, переменные окружения и генерация кода."
+keywords: ["Kora Framework", "фреймворк Kora", "HOCON в Kora", "конфигурация HOCON", "типобезопасная конфигурация", "@ConfigSource", "конфигурация Java"]
 search:
   exclude: true
 title: Управление HOCON-конфигурацией в Kora

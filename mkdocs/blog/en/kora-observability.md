@@ -1,7 +1,8 @@
 ---
-title: Observability by Design — One Request Across the Entire Kora Framework Stack
+title: "Observability by Design: One Request Across the Stack"
 date: 2026-08-21
-description: How the Kora Framework threads logging, metrics, and tracing through one request end to end, with consistent context across HTTP, database, clients, and messaging.
+description: "How Kora threads logs, metrics and OpenTelemetry traces through one request across HTTP, database, clients and messaging, with consistent context propagation."
+keywords: ["Kora Framework", "observability", "OpenTelemetry", "distributed tracing", "metrics", "structured logging", "context propagation"]
 search:
     exclude: true
 ---

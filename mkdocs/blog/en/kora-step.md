@@ -1,7 +1,8 @@
 ---
-title: STEP — Simple, Transparent, Efficient, Predictable — Kora Framework
+title: "STEP: Simple, Transparent, Efficient, Predictable"
 date: 2026-08-29
-description: How the STEP principles tie the Kora Framework's individual features — compile-time DI, generated code, virtual threads, telemetry — into one coherent design.
+description: "The STEP principles behind Kora and how they tie compile-time DI, generated code, virtual threads and telemetry into one coherent backend framework design."
+keywords: ["Kora Framework", "Kora STEP principles", "framework design principles", "simplicity", "transparency", "predictability", "backend engineering"]
 search:
     exclude: true
 ---

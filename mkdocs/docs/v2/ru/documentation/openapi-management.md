@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI в Kora: Swagger UI и Scalar"
+seo_description: "Публикация контрактов OpenAPI со страницами Swagger UI и Scalar из сервиса на Kora: подключение модуля, конфигурация и пути эндпоинтов."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI Kora", "Swagger UI", "Scalar", "документация API"]
 description: "Explains the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server. Use when working with OpenApiManagementModule, OpenApiManagementConfig, openapi.management.files, CacheMode, Swagger UI, Scalar."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora OpenAPI management module that publishes OpenAPI contract files and the Swagger UI and Scalar viewer pages through the public HTTP server; key triggers include OpenApiManagementModule, OpenApiManagementConfig, OpenApiHttpServerHandler, SwaggerUIHttpServerHandler, ScalarHttpServerHandler, openapi.management.files, openapi.management.path, swaggerui, scalar, CacheMode, /openapi, /swagger-ui, /scalar."

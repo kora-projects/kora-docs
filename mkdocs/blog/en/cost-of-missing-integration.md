@@ -1,7 +1,8 @@
 ---
-title: The Cost of the First Missing Integration — Why the Kora Framework Does Not Need a Starter for Everything
+title: "The Real Cost of a Missing Framework Integration"
 date: 2026-09-04
-description: How the Kora Framework keeps unsupported-library integration cheap using typed config, module factories, lifecycle, and probes.
+description: "Why Kora doesn't need a starter for every library: typed config, @Module factories, explicit lifecycle and health probes keep integrating any Java client cheap."
+keywords: ["Kora Framework", "Kora @Module", "library integration", "Spring Boot starters", "typed configuration", "health checks", "Java client libraries"]
 search:
   exclude: true
 ---

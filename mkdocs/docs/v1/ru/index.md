@@ -9,6 +9,7 @@ description: "Explains Index in Kora documentation. Use when working with Index.
 agent:
     use_when: "Use this file for Kora docs or implementation questions about Index."
 template: landing.html
+glightbox: false
 ---
 
 Kora - это Java фреймворк общего назначения для написания серверных Java или Kotlin приложений с упором на Простоту, Производительность, Эффективность, Прозрачность.

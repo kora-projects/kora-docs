@@ -1,7 +1,8 @@
 ---
-title: Virtual Threads in Production — Pinning, Carriers, and Load Spikes in the Kora Framework
+title: "Virtual Threads in Production: Pinning, Carriers, Load Spikes"
 date: 2026-09-10
-description: How virtual threads behave under production load in the Kora Framework — pinning, carrier starvation, connection pools, and overload control.
+description: "How virtual threads behave under real load in Kora services: pinning, carrier starvation, connection pools as backpressure, Little's Law and overload control."
+keywords: ["Kora Framework", "virtual threads in production", "thread pinning", "carrier threads", "connection pool", "Little's Law", "backpressure"]
 search:
   exclude: true
 ---

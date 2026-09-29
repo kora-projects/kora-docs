@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI HTTP-клиент: генерация типизированных клиентов в Kora"
+seo_description: "Генерация типизированного HTTP-клиента Kora из файла OpenAPI: настройка генератора, конфигурация клиента, маппинг кодов ответа и тестирование."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI-клиент Kora", "генерация клиента OpenAPI", "openapi-generator", "типизированный HTTP-клиент"]
 search:
   exclude: true
 title: Контрактный HTTP-клиент с OpenAPI
@@ -491,7 +494,7 @@ Kora делает это особенно практичным, потому ч�
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -501,7 +504,7 @@ Kora делает это особенно практичным, потому ч�
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
 
         annotationProcessor "io.koraframework:annotation-processors"
 
@@ -543,7 +546,7 @@ Kora делает это особенно практичным, потому ч�
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -555,9 +558,9 @@ Kora делает это особенно практичным, потому ч�
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1")
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2")
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-client-common") //(4)!

@@ -1,4 +1,7 @@
 ﻿---
+seo_title: "gRPC-сервер в Kora: сервисы на protobuf"
+seo_description: "gRPC-сервер на Kora: генерация кода из protobuf, реализация сервиса и обработчика, конфигурация, запуск и тестирование на Java или Kotlin."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-сервер Kora", "gRPC Java", "gRPC Kotlin", "protobuf"]
 search:
   exclude: true
 title: gRPC-сервер с Kora
@@ -192,7 +195,7 @@ service UserService {
 Версии модулей Kora приходят из BOM `io.koraframework:kora-bom`, поэтому отдельные артефакты Kora объявляются без версии:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

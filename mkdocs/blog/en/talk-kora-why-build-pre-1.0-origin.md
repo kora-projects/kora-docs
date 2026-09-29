@@ -1,7 +1,8 @@
 ---
-title: "Why Kora Was Built: A Look Back at the Pre-1.0 Architecture, Benchmarks, and the Ideas That Survived Into Modern Kora"
+title: "Why Kora Was Built: Pre-1.0 Architecture and Benchmarks"
 date: 2023-03-06
-description: This article is a written companion to a talk given before Kora 1.0. It covers the pre-1.0 architecture, the early benchmarks, and the ideas that survived into modern Kora.
+description: "Pre-1.0 talk companion: where Spring, Quarkus and Micronaut fell short, the Undertow + JDBC baseline, early benchmarks and ideas that survived in Kora."
+keywords: ["Kora Framework", "Kora history", "Spring vs Quarkus vs Micronaut", "Undertow", "JVM benchmarks", "startup memory", "microservices"]
 search:
     exclude: true
 ---

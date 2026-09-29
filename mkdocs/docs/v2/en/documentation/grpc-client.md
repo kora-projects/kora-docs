@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora gRPC Client: Stubs, Interceptors and TLS"
+seo_description: "Reference for the Kora gRPC client: protobuf setup, client configuration, injecting generated stubs, interceptors, TLS credentials, tuning and telemetry."
+keywords: ["Kora Framework", "Kora gRPC client", "gRPC stubs", "grpc-java", "gRPC TLS", "protobuf"]
 description: "Explains the Kora gRPC client: the grpc-client module, protobuf Gradle plugin setup, the grpcClient configuration section, injecting generated stubs, per-client interceptors, TLS credentials, channel tuning and telemetry. Use when working with GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, ManagedChannelLifecycle, ChannelCredentials, protobuf plugin."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC client: injecting BlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.<Service> configuration section, url scheme and TLS, deadlines, keepAlive and load balancing, per-client ClientInterceptor tagging, authorization metadata, error handling and telemetry; key triggers include GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, GrpcOkHttpClientChannelFactory, ManagedChannelLifecycle, Configurer, ChannelCredentials, protobuf plugin."

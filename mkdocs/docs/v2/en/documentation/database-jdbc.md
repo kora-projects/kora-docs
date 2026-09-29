@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora JDBC: Repositories, Hikari and Transactions Reference"
+seo_description: "Reference for Kora JDBC: repository queries, Hikari pool configuration, result and parameter mapping, generated IDs, manual queries and transactions."
+keywords: ["Kora Framework", "Kora JDBC", "JDBC repository", "HikariCP", "SQL transactions", "PostgreSQL"]
 description: "Explains Kora JDBC repositories, the jdbc configuration section, Hikari pool tuning, result and parameter mapping, generated identifiers, manual queries built with JdbcQuery, transactions and isolation levels. Use when working with @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora JDBC repositories, the jdbc configuration section, Hikari pool tuning, result and parameter mapping, generated identifiers, manual queries and transactions; key triggers include @Repository, @Query, @EntityJdbc, @Table, @Id, @Column, @Batch, JdbcDatabaseModule, JdbcRepository, JdbcExecutor, JdbcQuery, UncheckedSqlException."

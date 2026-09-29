@@ -1,4 +1,7 @@
 ---
+seo_title: "HTTP-сервер Kora: контроллеры, маршрутизация, перехватчики"
+seo_description: "Справочник по HTTP-серверу Kora: декларативные и императивные контроллеры, маршрутизация, маппинг запросов и ответов, перехватчики, ошибки, Undertow."
+keywords: ["Kora Framework", "фреймворк Kora", "HTTP-сервер Kora", "@HttpController", "REST-контроллер", "Undertow"]
 description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system."

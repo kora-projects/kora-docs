@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "База данных Cassandra в Kora: репозитории на CQL"
+seo_description: "Apache Cassandra в Kora: сущности, интерфейсы @Repository с CQL-запросами, настройка драйвера и сгенерированный код репозиториев для Java и Kotlin."
+keywords: ["Kora Framework", "фреймворк Kora", "Cassandra в Kora", "Apache Cassandra", "CQL-репозиторий", "драйвер Cassandra", "NoSQL"]
 search:
   exclude: true
 title: Интеграция базы данных Cassandra с Kora

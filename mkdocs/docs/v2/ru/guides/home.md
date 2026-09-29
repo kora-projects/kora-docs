@@ -1,4 +1,7 @@
 ---
+seo_title: "Руководства и примеры Kora: с чего начать"
+seo_description: "Начните изучать Kora: пошаговые руководства на Java и Kotlin и готовые примеры для HTTP, OpenAPI, JDBC, Kafka, gRPC, кеширования и тестирования."
+keywords: ["Kora Framework", "фреймворк Kora", "руководства Kora", "примеры Kora", "обучение Java", "обучение Kotlin"]
 search:
   exclude: true
 description: "Explains where to start with Kora guides and examples, how to choose between step-by-step guides and complete repository examples, and where to find working Java and Kotlin applications for HTTP, OpenAPI, JDBC, Cassandra, Kafka, gRPC, S3, cache, resilience, validation, observability and testing. Use when planning a learning path through the Kora documentation."

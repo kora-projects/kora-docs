@@ -1,6 +1,7 @@
 ---
 title: Kora Framework Blog
 description: Articles about the Kora Framework — its design, compile-time approach, practical backend development, integrations, performance, and operating JVM services in production.
+keywords: ["Kora Framework", "Kora blog", "Java backend framework", "Kotlin backend framework", "compile-time dependency injection", "virtual threads", "microservices"]
 search:
   exclude: true
 ---

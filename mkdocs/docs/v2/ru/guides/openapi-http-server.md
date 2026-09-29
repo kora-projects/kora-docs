@@ -1,4 +1,7 @@
 ---
+seo_title: "OpenAPI HTTP-сервер: contract-first API на Kora"
+seo_description: "Генерация HTTP-сервера Kora из контракта OpenAPI через openapi-generator: сгенерированные контроллеры, делегаты, sealed-ответы и серверная валидация."
+keywords: ["Kora Framework", "фреймворк Kora", "OpenAPI в Kora", "генерация сервера OpenAPI", "contract-first", "openapi-generator", "REST API"]
 search:
   exclude: true
 title: Контрактный HTTP-сервер с OpenAPI
@@ -132,7 +135,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -142,7 +145,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(4)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(4)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(5)!
 
@@ -175,7 +178,7 @@ tags: openapi, http-server, swagger, code-generation, contract-first
             mavenCentral()
         }
         dependencies {
-            classpath("io.koraframework:openapi-generator:2.0.0.RC1") //(2)!
+            classpath("io.koraframework:openapi-generator:2.0.0.RC2") //(2)!
         }
     }
 
@@ -187,9 +190,9 @@ tags: openapi, http-server, swagger, code-generation, contract-first
     }
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(4)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(4)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(5)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(5)!
 
         implementation("io.koraframework:config-hocon")
         implementation("io.koraframework:http-server-undertow")

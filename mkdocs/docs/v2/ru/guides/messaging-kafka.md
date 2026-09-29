@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Kafka в Kora: продюсеры и консьюмеры"
+seo_description: "Событийные сервисы на Kora с Apache Kafka: типизированные события, продюсеры @KafkaPublisher, консьюмеры @KafkaListener, конфигурация и Docker Compose."
+keywords: ["Kora Framework", "фреймворк Kora", "Kafka в Kora", "Apache Kafka Java", "Kafka consumer", "Kafka producer", "событийная архитектура"]
 search:
   exclude: true
 title: Обмен сообщениями с Kafka
@@ -191,7 +194,7 @@ Kafka не заменяет базу данных. Основное состоя
     }
     ```
 
-Поддержка Kafka в Kora приходит из единственного артефакта `kafka`, который приносит с собой клиент Apache Kafka (`4.3.1` в Kora `2.0.0.RC1`). Поддержка JSON важна, потому что мы хотим отправлять
+Поддержка Kafka в Kora приходит из единственного артефакта `kafka`, который приносит с собой клиент Apache Kafka (`4.3.1` в Kora `2.0.0.RC2`). Поддержка JSON важна, потому что мы хотим отправлять
 структурированные объекты событий, а не сырые строки, а генератор кода и для продюсера, и для слушателя уже живет в подключенном вами артефакте `annotation-processors` / `symbol-processors`.
 
 ## Модули { #modules }

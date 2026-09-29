@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Multi-Level Cache Guide: Caffeine and Redis in Kora"
+seo_description: "Build a two-level cache in Kora with in-memory Caffeine in front of Redis: cache contracts, implementation, warm-up, configuration and Docker Compose setup."
+keywords: ["Kora Framework", "Kora multi-level cache", "Redis cache", "Caffeine", "two-level cache", "distributed cache"]
 search:
   exclude: true
 title: Multi-Level Caching with Redis

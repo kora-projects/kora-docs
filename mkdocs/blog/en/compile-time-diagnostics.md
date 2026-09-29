@@ -1,7 +1,8 @@
 ---
-title: Why Compile-Time Diagnostics Are a Kora Framework Feature (In Depth)
+title: "Why Compile-Time Diagnostics Are a Feature, Not Build Overhead"
 date: 2026-09-13
-description: An in-depth case for why the Kora Framework's compile-time diagnostics — validated graph, generated code, precise errors — are a feature, not added build complexity.
+description: "Kora validates the application graph and generates readable code during the build, turning DI and wiring mistakes into precise compiler errors for IDEs, CI and AI."
+keywords: ["Kora Framework", "compile-time diagnostics", "compiler errors", "application graph validation", "annotation processing", "CI feedback", "developer experience"]
 search:
   exclude: true
 ---

@@ -1,7 +1,8 @@
 ---
-title: Тонкие абстракции — почему фреймворк Kora остаётся близок к JDBC, Kafka, gRPC и HTTP
+title: "Тонкие абстракции: ближе к JDBC, Kafka, gRPC и HTTP"
 date: 2026-09-08
-description: Как фреймворк Kora сохраняет свои абстракции тонкими — убирая повторяющуюся интеграционную работу, но сохраняя знакомые вам SQL, записи Kafka, заглушки grpc-java и семантику HTTP.
+description: "Как Kora убирает шаблонный код интеграций, сохраняя SQL, записи Kafka, стабы grpc-java и семантику HTTP, — проще отладка, обновления и найм."
+keywords: ["Kora Framework", "фреймворк Kora", "тонкие абстракции", "JDBC", "Apache Kafka", "gRPC", "HTTP", "дизайн фреймворка"]
 search:
   exclude: true
 ---

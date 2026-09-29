@@ -1,7 +1,8 @@
 ---
-title: In the AI Era, Framework Expertise Matters More Than Community Size — Kora Framework
+title: "In the AI Era, Framework Expertise Beats Community Size"
 date: 2026-08-16
-description: Why a huge framework knowledge base can be both an ecosystem asset and a symptom of hidden complexity, and why explicit frameworks such as Kora fit AI-assisted development.
+description: "AI makes answers cheap and verification the bottleneck. Why explicit compile-time frameworks like Kora, with reviewable generated code, outweigh community size."
+keywords: ["Kora Framework", "AI-assisted development", "developer community", "code verification", "generated code", "framework selection", "LLM"]
 search:
     exclude: true
 ---

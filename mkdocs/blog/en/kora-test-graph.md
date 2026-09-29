@@ -1,7 +1,8 @@
 ---
-title: Testing the Same Graph You Run in Production — Kora Framework
+title: "Testing the Same Application Graph You Run in Production"
 date: 2026-09-01
-description: How the Kora Framework's JUnit extension derives a test graph from the production application graph — component slices, in-graph replacements, typed configuration, and lifecycle.
+description: "How Kora's JUnit 5 extension builds test graphs from the production graph: component slices, in-graph mocks, typed configuration and the real lifecycle."
+keywords: ["Kora Framework", "Kora testing", "JUnit 5", "integration testing", "component tests", "mocking", "Java testing"]
 search:
   exclude: true
 ---

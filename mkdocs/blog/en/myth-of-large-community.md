@@ -1,7 +1,8 @@
 ---
-title: The Myth of the "Large Ecosystem" — Kora Framework
+title: "The Myth of the Large Framework Ecosystem"
 date: 2026-09-07
-description: Why a large community and abundant Stack Overflow answers are not framework features, and what actually matters when evaluating a backend framework like the Kora Framework.
+description: "Why community size and Stack Overflow volume aren't framework features, how stale tutorials mislead AI, and what to evaluate in a backend framework like Kora."
+keywords: ["Kora Framework", "framework ecosystem", "developer community", "Stack Overflow", "choosing a framework", "outdated tutorials", "AI answers"]
 search:
   exclude: true
 ---

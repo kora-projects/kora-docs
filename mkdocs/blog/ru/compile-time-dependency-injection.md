@@ -1,7 +1,8 @@
 ---
-title: Внедрение зависимостей на этапе компиляции — как Kora Framework строит приложение
+title: "Внедрение зависимостей на этапе компиляции в Kora"
 date: 2026-08-03
-description: Как Kora Framework разрешает, валидирует и генерирует граф приложения на этапе компиляции — компоненты, модули, теги, All<T>, ValueOf<T>, жизненный цикл и обновляемые подграфы.
+description: "Как Kora строит и проверяет граф зависимостей при компиляции: @KoraApp, @Component, @Module, теги, All<T>, ValueOf<T>, жизненный цикл и ошибки сборки."
+keywords: ["Kora Framework", "фреймворк Kora", "DI в Kora", "внедрение зависимостей на этапе компиляции", "compile-time DI", "annotation processing", "KSP", "@KoraApp"]
 search:
     exclude: true
 ---

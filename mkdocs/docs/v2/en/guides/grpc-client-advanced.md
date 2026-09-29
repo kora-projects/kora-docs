@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "Advanced gRPC Client: Interceptors, Auth, Streaming | Kora"
+seo_description: "Advanced Kora gRPC clients: client interceptors, authorization metadata, streaming calls, configuration and testing against a running gRPC server."
+keywords: ["Kora Framework", "Kora gRPC client advanced", "gRPC client interceptor", "gRPC streaming client", "gRPC authorization"]
 search:
   exclude: true
 title: Advanced gRPC Client with Kora
@@ -222,7 +225,7 @@ The advanced client module uses the same core client stack as the base client.
 Versions of Kora modules come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora artifacts are declared without a version:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

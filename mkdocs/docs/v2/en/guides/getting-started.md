@@ -1,4 +1,7 @@
 ---
+seo_title: "Hello World: Your First Kora Application in Java or Kotlin"
+seo_description: "Create your first Kora service: Gradle and JDK setup, the kora-bom, annotation processors or KSP, @KoraApp, an HTTP controller, config and generated code."
+keywords: ["Kora Framework", "Kora getting started", "Kora hello world", "Java REST service", "Kotlin backend", "Gradle", "@KoraApp"]
 search:
   exclude: true
 title: Creating Your First Kora Application
@@ -506,7 +509,7 @@ Kora is split into multiple modules. Instead of writing a version on every depen
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
     }
     ```
 
@@ -520,7 +523,7 @@ Now add dependencies. First import the Kora BOM. After that line, Kora modules c
 
     ```groovy
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1") //(1)!
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2") //(1)!
 
         annotationProcessor "io.koraframework:annotation-processors" //(2)!
 
@@ -542,9 +545,9 @@ Now add dependencies. First import the Kora BOM. After that line, Kora modules c
 
     ```kotlin
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1")) //(1)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2")) //(1)!
 
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:config-hocon") //(3)!
         implementation("io.koraframework:http-server-undertow") //(4)!

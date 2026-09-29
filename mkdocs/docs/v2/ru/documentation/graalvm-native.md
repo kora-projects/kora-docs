@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora и GraalVM Native Image: сборка нативных бинарников"
+seo_description: "Сборка приложения Kora в GraalVM Native Image: плагин Gradle, JDK 25, двухэтапная сборка Docker, метаданные достижимости и проверка результата."
+keywords: ["Kora Framework", "фреймворк Kora", "Kora GraalVM", "GraalVM Native Image", "нативная Java", "Docker"]
 description: "Explains how to build a Kora application into a GraalVM Native Image: the Gradle plugin and JDK 25 toolchain, the fat JAR and the two-stage Docker build, reachability metadata, and how to verify the resulting binary. Use when working with GraalVM, native-image, nativeCompile, reachability metadata, reflect-config.json, AOT, native build."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about building a Kora application into a GraalVM Native Image; key triggers include GraalVM, native-image, org.graalvm.buildtools.native, nativeCompile, reachability metadata, reflect-config.json, native-image.properties, tracing agent, AOT, native build, native Docker image."

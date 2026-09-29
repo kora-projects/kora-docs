@@ -1,7 +1,8 @@
 ---
-title: The Best Framework for AI Agents Might Be the One With the Least Magic
+title: "The Best Framework for AI Agents Has the Least Magic"
 date: 2026-09-03
-description: Why the least-magic, most-explicit framework wins for AI agents — and how the Kora Framework's compile-time design fits that model.
+description: "Hidden causality — runtime proxies, classpath-driven defaults, reflection — confuses AI agents. Why explicit compile-time frameworks like Kora are safer to change."
+keywords: ["Kora Framework", "AI agents", "framework magic", "hidden causality", "runtime proxies", "classpath scanning", "agentic coding"]
 search:
   exclude: true
 ---

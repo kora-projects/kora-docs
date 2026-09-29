@@ -1,7 +1,8 @@
 ---
-title: Фреймворк Kora проще учить, потому что он использует JVM, которую вы уже знаете
+title: "Фреймворк, который проще изучить: знакомая JVM"
 date: 2026-09-06
-description: Почему фреймворк Kora остаётся близок к JDBC, SQL, HTTP и обычным Java/Kotlin, так что существующие знания JVM переносятся, а не заменяются.
+description: "Почему Kora быстро осваивается: JDBC, SQL, Kafka, gRPC, HTTP и OpenTelemetry остаются собой, и знания Java и Kotlin переносятся, а не заменяются."
+keywords: ["Kora Framework", "фреймворк Kora", "изучение Kora", "Java бэкенд фреймворк", "Kotlin бэкенд", "JDBC", "онбординг разработчиков"]
 search:
   exclude: true
 ---

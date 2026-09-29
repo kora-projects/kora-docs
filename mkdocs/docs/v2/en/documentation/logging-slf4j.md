@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora Logging: SLF4J, Logback and Structured Logs"
+seo_description: "Reference for Kora logging: SLF4J loggers, log level configuration with runtime refresh, the Logback module, async appender, structured logs and scoped MDC."
+keywords: ["Kora Framework", "Kora logging", "SLF4J", "Logback", "structured logging", "MDC"]
 description: "Explains Kora SLF4J logging: obtaining a Logger, the logging.levels configuration and its runtime refresh, per-component telemetry logging, the Logback module with ConsoleTextRecordEncoder and KoraAsyncAppender, structured logs and the scoped MDC. Use when working with LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, StructuredArgument, MDC, KoraMdcConverter, telemetry.logging.enabled."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about SLF4J logging setup, logging.levels configuration and runtime refresh, per-component telemetry logging, Logback integration, alternative SLF4J implementations, structured log fields and MDC; key triggers include LoggingModule, LogbackModule, LoggingConfig, LoggingLevelApplier, LoggingLevelRefresher, ConsoleTextRecordEncoder, KoraAsyncAppender, KoraMdcConverter, KoraLoggingMarkerConverter, StructuredArgument, MDC, telemetry.logging.enabled."

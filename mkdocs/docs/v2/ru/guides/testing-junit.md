@@ -1,4 +1,7 @@
 ---
+seo_title: "Компонентное тестирование в Kora: JUnit 5 и моки"
+seo_description: "Тестирование компонентов Kora на JUnit 5: @KoraAppTest, @TestComponent, моки Mockito и MockK внутри графа приложения и переопределение конфигурации."
+keywords: ["Kora Framework", "фреймворк Kora", "тестирование Kora", "JUnit 5", "@KoraAppTest", "Mockito", "MockK"]
 search:
   exclude: true
 title: Компонентное тестирование в Kora

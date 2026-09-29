@@ -1,7 +1,8 @@
 ---
-title: Kora Skill — the Missing Layer Between Documentation and AI Agents
+title: "Kora Skill: The Missing Layer Between Docs and AI Agents"
 date: 2026-08-18
-description: How a Kora Framework "skill" bridges human documentation and AI coding agents, giving agents an authoritative, executable view of the framework.
+description: "How the official Kora skill gives AI coding agents canonical, navigable framework context — fewer hallucinated APIs and less non-idiomatic generated code."
+keywords: ["Kora Framework", "Kora skill", "AI coding agents", "agent skills", "LLM hallucinations", "AI-assisted development", "Claude Code"]
 search:
     exclude: true
 ---

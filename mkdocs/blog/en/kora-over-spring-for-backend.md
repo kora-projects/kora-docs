@@ -1,7 +1,8 @@
 ---
-title: Why Choose Kora Over Spring for a New JVM Backend
+title: "Why Choose Kora Over Spring for a New JVM Backend"
 date: 2026-09-18
-description: A greenfield comparison of Kora and Spring for new JVM backends, arguing that Kora's thinner architecture, compile-time guarantees, Virtual Thread-first model, and lower framework overhead make it a stronger engineering default when simplicity and transparency are the priorities.
+description: "A greenfield Kora vs Spring comparison: compile-time guarantees, virtual threads by default, thinner architecture and lower framework overhead for new services."
+keywords: ["Kora Framework", "Kora vs Spring", "Spring Boot alternative", "JVM backend framework", "greenfield microservices", "virtual threads", "compile-time DI"]
 search:
     exclude: true
 ---

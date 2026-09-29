@@ -1,4 +1,7 @@
 ---
+seo_title: "Инструменты сообщества Kora: плагин IntelliJ IDEA"
+seo_description: "Инструменты для Kora от сообщества, включая плагин IntelliJ IDEA для навигации по точкам внедрения зависимостей и их реализациям."
+keywords: ["Kora Framework", "фреймворк Kora", "плагин Kora для IntelliJ", "IntelliJ IDEA", "сообщество Kora"]
 search:
   exclude: true
 description: "Lists developments and extensions for Kora created by the community, currently the Kora plugin for IntelliJ IDEA that shows dependency injection points and their implementations in Kora DI. Use when looking for community-made tooling around Kora or for IDE support for Kora DI."

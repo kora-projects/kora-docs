@@ -1,7 +1,8 @@
 ---
-title: Kora Framework — Accidentally AI-Native
+title: "Kora: A Framework That Became AI-Native by Accident"
 date: 2026-08-17
-description: Why the Kora Framework's compile-time, explicit, inspectable design makes it unusually easy for AI coding agents to understand, modify, and verify.
+description: "Kora was designed for developer experience, not LLMs — yet compile-time DI, explicit registration and generated sources make it easy for AI agents to verify."
+keywords: ["Kora Framework", "AI-native framework", "AI coding agents", "compile-time DI", "generated sources", "LLM-friendly code", "agentic coding"]
 search:
     exclude: true
 ---

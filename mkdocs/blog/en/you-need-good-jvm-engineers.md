@@ -1,7 +1,8 @@
 ---
-title: You Don't Need Kora Developers — You Need Good JVM Engineers
+title: "You Don't Need Kora Developers — You Need Good JVM Engineers"
 date: 2026-09-21
-description: Why "there are no Kora developers" is the wrong objection — the Kora Framework builds on the JDBC, SQL, HTTP, and Java/Kotlin skills that strong JVM engineers already have.
+description: "Kora builds on JDBC, SQL, Kafka, HTTP, OpenAPI, OpenTelemetry and PostgreSQL skills strong JVM engineers already have — a transferability map for hiring."
+keywords: ["Kora Framework", "JVM engineers", "hiring backend developers", "SQL skills", "PostgreSQL", "OpenTelemetry", "Java and Kotlin"]
 search:
     exclude: true
 ---

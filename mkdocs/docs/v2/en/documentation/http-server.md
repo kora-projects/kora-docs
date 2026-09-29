@@ -1,4 +1,7 @@
 ---
+seo_title: "Kora HTTP Server: Controllers, Routing and Interceptors"
+seo_description: "Reference for the Kora HTTP server: declarative and imperative controllers, routing, request and response mapping, interceptors, errors, auth and Undertow config."
+keywords: ["Kora Framework", "Kora HTTP server", "@HttpController", "REST controller", "Undertow", "HTTP interceptors"]
 description: "Explains Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration. Use when working with @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora HTTP server, declarative and imperative controllers, routing, request and response mapping, interceptors, error handling, authorization and Undertow configuration; key triggers include @HttpController, @HttpRoute, @Path, @Query, @Header, @Cookie, @Json, @InterceptWith, HttpServerInterceptor, HttpServerParameterReader, UndertowPublicHttpServerModule, @Tag(HttpServer.class), httpServer.port, httpServer.system."

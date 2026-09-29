@@ -1,7 +1,8 @@
 ---
 title: "Kora in Practice: What a Real JVM Framework Benchmark Revealed"
 date: 2024-09-26
-description: This article is a written companion to a talk in which a developer with no prior Kora hands-on experience benchmarked Kora against several familiar JVM frameworks. It walks through the benchmark design, the results, and the architectural lessons the experiment revealed.
+description: "Talk companion: a developer new to Kora benchmarked it against familiar JVM frameworks. The setup, throughput and resource results, and the lessons learned."
+keywords: ["Kora Framework", "JVM framework benchmark", "Spring WebFlux", "performance comparison", "resource consumption", "microservice benchmark", "conference talk"]
 search:
     exclude: true
 ---

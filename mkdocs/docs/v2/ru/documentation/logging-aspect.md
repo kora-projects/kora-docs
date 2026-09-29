@@ -1,4 +1,7 @@
 ---
+seo_title: "Аспект логирования Kora: @Log, маскирование и MDC"
+seo_description: "Справочник по аспекту логирования Kora: логирование аргументов и результатов через @Log, выборочное логирование, структурные значения, маскирование, MDC."
+keywords: ["Kora Framework", "фреймворк Kora", "@Log в Kora", "аспект логирования", "маскирование данных", "MDC"]
 description: "Explains Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures. Use when working with @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, StructuredArgument, StructuredArgumentMapper, MDC."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora logging aspects for argument and result logging, selective logging, structured JSON values, value masking, MDC enrichment and supported signatures; key triggers include @Log, @Log.in, @Log.out, @Log.result, @Log.off, @Mask, @Mdc, MaskingRules, MaskingStrategy, MaskingFull, MaskingKeepFirst, MaskingKeepLast, StructuredArgument, StructuredArgumentMapper, MDC."

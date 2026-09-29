@@ -1,4 +1,7 @@
-﻿---
+---
+seo_title: "gRPC Server Guide: Protobuf Services in Kora"
+seo_description: "Build a gRPC server with Kora: protobuf code generation, service and handler implementation, configuration, running and testing the service in Java or Kotlin."
+keywords: ["Kora Framework", "Kora gRPC server", "gRPC Java", "gRPC Kotlin", "protobuf", "grpc-java"]
 search:
   exclude: true
 title: gRPC Server with Kora
@@ -192,7 +195,7 @@ We start by adding the gRPC server module and the protobuf Gradle plugin.
 Versions of Kora modules come from the Kora BOM `io.koraframework:kora-bom`, so individual Kora artifacts are declared without a version:
 
 ```properties title="gradle.properties"
-koraVersion=2.0.0.RC1
+koraVersion=2.0.0.RC2
 junitVersion=6.1.3
 ```
 

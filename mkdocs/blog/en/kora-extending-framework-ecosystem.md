@@ -1,7 +1,8 @@
 ---
-title: The Ecosystem You Can Build — Why Extending the Kora Framework Is Deliberately Simple
+title: "Extending a Framework Ecosystem Should Be Simple"
 date: 2026-09-05
-description: How the Kora Framework's thin abstractions and module model let teams integrate any Java library through the same application graph.
+description: "A walkthrough integrating NATS into Kora with @Module, typed configuration and lifecycle — showing how any Java library can join the application graph."
+keywords: ["Kora Framework", "Kora @Module", "framework extensibility", "NATS Java client", "library integration", "typed configuration", "component lifecycle"]
 search:
   exclude: true
 ---

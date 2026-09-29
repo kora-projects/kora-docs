@@ -1,7 +1,8 @@
 ---
-title: No Runtime Magic — What the Kora Framework Actually Generates
+title: "No Runtime Magic: What Kora Actually Generates"
 date: 2026-08-20
-description: A walk through the Java and Kotlin sources the Kora Framework generates from annotations — the application graph, HTTP handlers, JSON codecs, repositories, and AOP proxies you can open and read.
+description: "A walk through the Java and Kotlin code Kora generates from annotations: the application graph, HTTP handlers, JSON readers and writers, JDBC repositories and AOP."
+keywords: ["Kora Framework", "annotation processing", "generated code", "no runtime reflection", "JSON serialization", "JDBC repositories", "HTTP controllers"]
 search:
     exclude: true
 ---

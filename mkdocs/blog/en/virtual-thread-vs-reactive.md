@@ -1,7 +1,8 @@
 ---
-title: Virtual Threads vs Reactive — What Changes in Kora Framework Backend Architecture
+title: "Virtual Threads vs Reactive Programming in JVM Backends"
 date: 2026-09-11
-description: How the Kora Framework's virtual-thread-first model compares to reactive programming across APIs, drivers, debugging, and backpressure.
+description: "Kora's virtual-thread-first model vs reactive stacks: API shape, stack traces and debugging, context propagation, JDBC vs reactive drivers, and backpressure."
+keywords: ["Kora Framework", "virtual threads vs reactive", "Project Reactor", "Spring WebFlux", "reactive drivers", "backpressure", "Java concurrency"]
 search:
   exclude: true
 ---

@@ -1,4 +1,7 @@
 ---
+seo_title: "Планировщик Kora: cron, фиксированный интервал и Quartz"
+seo_description: "Справочник по планировщику Kora: JDK и Quartz, задачи с фиксированной частотой и задержкой, одноразовые и cron-задачи, триггеры, корректное завершение."
+keywords: ["Kora Framework", "фреймворк Kora", "планировщик Kora", "cron-задачи", "Quartz", "задачи по расписанию"]
 description: "Explains Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls. Use when working with @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about Kora scheduling for the JDK and Quartz schedulers, fixed rate, fixed delay, one-shot and cron jobs, triggers, graceful shutdown, and concurrency controls; key triggers include @ScheduleAtFixedRate, @ScheduleWithFixedDelay, @ScheduleOnce, @ScheduleWithCron, @ScheduleWithTrigger, @DisallowConcurrentExecution, @PersistJobDataAfterExecution, SchedulingJdkModule, SchedulingJdkExecutor, CronExpression, QuartzModule."

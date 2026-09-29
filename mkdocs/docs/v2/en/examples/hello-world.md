@@ -1,4 +1,7 @@
 ---
+seo_title: "Hello World Example: Minimal Kora HTTP Service"
+seo_description: "A minimal Kora service answering GET /hello/world: Gradle with kora-bom, a @KoraApp graph, an @HttpController with plain text and JSON responses, and config."
+keywords: ["Kora Framework", "Kora hello world", "Kora example", "minimal Java HTTP service", "Kotlin HTTP service", "@HttpController"]
 search:
   exclude: true
 description: "Builds a minimal Kora service from scratch that answers GET /hello/world: Gradle setup with the io.koraframework:kora-bom BOM and annotation-processors or symbol-processors, a @KoraApp graph with HoconConfigModule, LogbackModule, JsonModule and UndertowPublicHttpServerModule, an @HttpController with plaintext, @Json and HttpResponseEntity responses, and the httpServer configuration. Use when writing the very first Kora application."
@@ -63,7 +66,7 @@ Kora dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, s
     }
 
     dependencies {
-        koraBom platform("io.koraframework:kora-bom:2.0.0.RC1")
+        koraBom platform("io.koraframework:kora-bom:2.0.0.RC2")
         annotationProcessor "io.koraframework:annotation-processors" //(3)!
 
         implementation "io.koraframework:http-server-undertow"
@@ -104,8 +107,8 @@ Kora dependency versions are managed by the `io.koraframework:kora-bom` `BOM`, s
     version = "0.1.0-SNAPSHOT"
 
     dependencies {
-        implementation(platform("io.koraframework:kora-bom:2.0.0.RC1"))
-        ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(2)!
+        implementation(platform("io.koraframework:kora-bom:2.0.0.RC2"))
+        ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(2)!
 
         implementation("io.koraframework:http-server-undertow")
         implementation("io.koraframework:json-common")

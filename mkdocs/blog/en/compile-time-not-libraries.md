@@ -1,7 +1,8 @@
 ---
-title: A Compile-Time Framework Does Not Mean Compile-Time-Only Libraries — Kora Framework
+title: "A Compile-Time Framework Doesn't Ban Reflection Libraries"
 date: 2026-07-31
-description: Why the Kora Framework's compile-time model does not forbid ordinary JVM libraries that use reflection, proxies, or runtime metadata.
+description: "Kora avoids reflection internally, yet apps can still use JVM libraries built on reflection or proxies — and why GraalVM Native Image is a separate question."
+keywords: ["Kora Framework", "compile-time framework", "Java reflection", "dynamic proxies", "GraalVM Native Image", "HotSpot JVM", "JVM libraries"]
 search:
   exclude: true
 ---

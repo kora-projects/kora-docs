@@ -1,4 +1,7 @@
 ---
+seo_title: "JSON в Kora: справочник по читателям и писателям"
+seo_description: "Справочник по JSON в Kora: генерируемые читатели и писатели, обязательные и опциональные поля, именование, sealed-типы, enum, JsonNullable, Jackson."
+keywords: ["Kora Framework", "фреймворк Kora", "JSON в Kora", "сериализация JSON", "JsonNullable", "альтернатива Jackson"]
 description: "Explains Kora compile-time JSON reader and writer generation, field requirements, naming strategies, ignores, serialization levels, value types, JsonNullable, sealed hierarchies, enums, custom codecs, parse errors, and the Jackson escape hatch. Use when working with @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @JsonDiscriminatorField, @NamingStrategy, @Mapping, JsonNullable, RawJson, JacksonModule."
 agent:
   use_when: "Use this file for Kora docs or implementation questions about compile-time JSON reader and writer generation, field requirements, naming strategies, ignores, serialization levels, value types, JsonNullable, sealed hierarchies, enums, custom codecs, parse errors, and the Jackson escape hatch; key triggers include @Json, @JsonReader, @JsonWriter, @JsonInclude, @JsonField, @JsonSkip, @JsonDiscriminatorField, @JsonDiscriminatorValue, @NamingStrategy, @Mapping, JsonNullable, RawJson, StreamReadException, JsonModule, JacksonModule, json-common."
@@ -35,7 +38,7 @@ agent:
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1") //(1)!
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2") //(1)!
     implementation("io.koraframework:json-common")
     ```
 
@@ -1089,7 +1092,7 @@ Failed to read json enum: expected one of [1, 2], but got "3" (at /status)
 
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
-    ksp("io.koraframework:symbol-processors:2.0.0.RC1")
+    ksp("io.koraframework:symbol-processors:2.0.0.RC2")
     implementation("io.koraframework:jackson-module")
     ```
 

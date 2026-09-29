@@ -1,7 +1,8 @@
 ---
-title: Focused Engineering Is Not NIH — Why the Kora Framework Builds Only What It Can Own Well
+title: "Focused Engineering Is Not NIH Syndrome"
 date: 2026-08-12
-description: Why building Kora Framework internals is not "Not Invented Here" when it fits requirements better than wrapping mature external libraries.
+description: "Why Kora reuses JDBC, Kafka, gRPC and OpenTelemetry, yet owns the parts that need framework context: type safety, compile-time generation, predictable behavior."
+keywords: ["Kora Framework", "NIH syndrome", "framework design", "build vs reuse", "JDBC", "Apache Kafka", "OpenTelemetry"]
 search:
     exclude: true
 ---
