@@ -228,12 +228,12 @@ junitVersion=6.1.3
         implementation "io.koraframework:http-server-undertow"
         implementation "io.koraframework:json-common"
         implementation "io.koraframework:logging-logback"
-        implementation "io.grpc:grpc-protobuf:1.83.1"
+        implementation "io.grpc:grpc-protobuf:1.84.0"
 
         testRuntimeOnly platform("org.junit:junit-bom:$junitVersion")
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
         testImplementation platform("org.junit:junit-bom:$junitVersion")
-        testImplementation "io.grpc:grpc-inprocess:1.83.1"
+        testImplementation "io.grpc:grpc-inprocess:1.84.0"
         testImplementation "org.junit.jupiter:junit-jupiter"
     }
     ```
@@ -263,12 +263,12 @@ junitVersion=6.1.3
         implementation("io.koraframework:http-server-undertow")
         implementation("io.koraframework:json-common")
         implementation("io.koraframework:logging-logback")
-        implementation("io.grpc:grpc-protobuf:1.83.1")
+        implementation("io.grpc:grpc-protobuf:1.84.0")
 
         testRuntimeOnly(platform("org.junit:junit-bom:${property("junitVersion")}"))
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
         testImplementation(platform("org.junit:junit-bom:${property("junitVersion")}"))
-        testImplementation("io.grpc:grpc-inprocess:1.83.1")
+        testImplementation("io.grpc:grpc-inprocess:1.84.0")
         testImplementation("org.junit.jupiter:junit-jupiter")
     }
     ```
@@ -283,7 +283,7 @@ Why these dependencies matter:
 
 !!! warning "Keep every `io.grpc` artifact on one version"
 
-    The gRPC runtime shipped with `io.koraframework:grpc-client` is `1.83.1`. Every other `io.grpc` artifact you declare — `grpc-protobuf` and anything in test scope such as `grpc-inprocess` — must use
+    The gRPC runtime shipped with `io.koraframework:grpc-client` is `1.84.0`. Every other `io.grpc` artifact you declare — `grpc-protobuf` and anything in test scope such as `grpc-inprocess` — must use
     exactly that version. A pinned older version compiles fine and fails only at runtime with
     `AbstractMethodError: ... does not define or inherit an implementation of the resolved method`.
 
@@ -297,9 +297,9 @@ Just like on the server side, Gradle must generate protobuf messages and gRPC ty
 
     ```groovy title="build.gradle"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -322,9 +322,9 @@ Just like on the server side, Gradle must generate protobuf messages and gRPC ty
 
     ```kotlin title="build.gradle.kts"
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all().forEach { task ->

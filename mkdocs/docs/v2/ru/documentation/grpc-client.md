@@ -1,10 +1,10 @@
 ---
 seo_title: "gRPC-клиент Kora: стабы, перехватчики и TLS"
 seo_description: "Справочник по gRPC-клиенту Kora: настройка protobuf, конфигурация клиента, внедрение сгенерированных стабов, перехватчики, TLS и телеметрия."
-keywords: ["Kora Framework", "фреймворк Kora", "gRPC-клиент Kora", "gRPC-стабы", "grpc-java", "TLS"]
-description: "Explains the Kora gRPC client: the grpc-client module, protobuf Gradle plugin setup, the grpcClient configuration section, injecting generated stubs, per-client interceptors, TLS credentials, channel tuning and telemetry. Use when working with GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, ManagedChannelLifecycle, ChannelCredentials, protobuf plugin."
+keywords: ["Kora Framework", "фреймворк Kora", "gRPC-клиент Kora", "gRPC-стабы", "grpc-java", "TLS", "маскирование телеметрии gRPC"]
+description: "Explains the Kora gRPC client: the grpc-client module, protobuf Gradle plugin setup, the grpcClient configuration section, injecting generated stubs, per-client interceptors, TLS credentials, channel tuning and telemetry. Use when working with GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, ManagedChannelLifecycle, ChannelCredentials, protobuf plugin, MaskingStrategy, maskHeaders."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC client: injecting BlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.<Service> configuration section, url scheme and TLS, deadlines, keepAlive and load balancing, per-client ClientInterceptor tagging, authorization metadata, error handling and telemetry; key triggers include GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, GrpcOkHttpClientChannelFactory, ManagedChannelLifecycle, Configurer, ChannelCredentials, protobuf plugin."
+  use_when: "Use this file for Kora docs or implementation questions about the Kora gRPC client: injecting BlockingStub / FutureStub / async Stub / Kotlin coroutine stubs, the grpcClient.<Service> configuration section, url scheme and TLS, deadlines, keepAlive and load balancing, per-client ClientInterceptor tagging, authorization metadata, error handling and telemetry; key triggers include GrpcClientModule, GrpcClientConfig, GrpcClientChannelFactory, GrpcOkHttpClientChannelFactory, ManagedChannelLifecycle, Configurer, ChannelCredentials, protobuf plugin, MaskingStrategy, maskHeaders."
 ---
 
 `gRPC-клиент` вызывает удалённые службы, используя контракт `protobuf` и транспорт `HTTP/2`.
@@ -26,7 +26,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle`:
     ```groovy
     implementation "io.koraframework:grpc-client"
-    implementation "io.grpc:grpc-protobuf:1.83.1"
+    implementation "io.grpc:grpc-protobuf:1.84.0"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     ```
 
@@ -41,7 +41,7 @@ agent:
     [Зависимость](general.md#dependencies) `build.gradle.kts`:
     ```groovy
     implementation("io.koraframework:grpc-client")
-    implementation("io.grpc:grpc-protobuf:1.83.1")
+    implementation("io.grpc:grpc-protobuf:1.84.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     ```
 
@@ -65,9 +65,9 @@ agent:
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -93,9 +93,9 @@ agent:
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+        protoc { artifact = "com.google.protobuf:protoc:4.36.2" }
         plugins {
-            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+            id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.84.0" }
         }
         generateProtoTasks {
             ofSourceSet("main").forEach { it.plugins { id("grpc") { } } }
@@ -192,18 +192,19 @@ agent:
                 telemetry {
                     logging {
                         enabled = false //(7)!
+                        maskHeaders = [ "authorization", "cookie", "set-cookie" ] //(8)!
                     }
                     metrics {
-                        enabled = false //(8)!
-                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(9)!
-                        tags = { // (10)!
+                        enabled = false //(9)!
+                        slo = [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] //(10)!
+                        tags = { // (11)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
                     }
                     tracing {
-                        enabled = true //(11)!
-                        attributes = { // (12)!
+                        enabled = true //(12)!
+                        attributes = { // (13)!
                             "key1" = "value1"
                             "key2" = "value2"
                         }
@@ -220,11 +221,12 @@ agent:
         5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, опционально).
         6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, опционально).
         7. Включает логирование модуля (по умолчанию: `false`).
-        8. Включает метрики модуля (по умолчанию: `false`).
-        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
-        10. Дополнительные теги для метрик (по умолчанию: `{}`).
-        11. Включает трассировку модуля (по умолчанию: `true`).
-        12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+        8. Ключи `Metadata`, значения которых в залогированных заголовках запроса заменяются через `MaskingStrategy` с тегом `@Tag(GrpcClientTelemetry.class)` (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking).
+        9. Включает метрики модуля (по умолчанию: `false`).
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
+        11. Дополнительные теги для метрик (по умолчанию: `{}`).
+        12. Включает трассировку модуля (по умолчанию: `true`).
+        13. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
     === ":simple-yaml: `YAML`"
 
@@ -242,15 +244,16 @@ agent:
             telemetry:
               logging:
                 enabled: false #(7)!
+                maskHeaders: [ "authorization", "cookie", "set-cookie" ] #(8)!
               metrics:
-                enabled: false #(8)!
-                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(9)!
-                tags: #(10)!
+                enabled: false #(9)!
+                slo: [ 1, 10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 90000 ] #(10)!
+                tags: #(11)!
                   key1: value1
                   key2: value2
               tracing:
-                enabled: true #(11)!
-                attributes: #(12)!
+                enabled: true #(12)!
+                attributes: #(13)!
                   key1: value1
                   key2: value2
         ```
@@ -262,11 +265,12 @@ agent:
         5. Политика балансировки нагрузки для `ManagedChannelBuilder` (по умолчанию не указано, опционально).
         6. Стандартная конфигурация службы gRPC, передаваемая в `ManagedChannelBuilder.defaultServiceConfig` (по умолчанию не указано, опционально).
         7. Включает логирование модуля (по умолчанию: `false`).
-        8. Включает метрики модуля (по умолчанию: `false`).
-        9. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [DistributionSummary](https://github.com/micrometer-metrics/micrometer-docs/blob/main/src/docs/concepts/distribution-summaries.adoc) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
-        10. Дополнительные теги для метрик (по умолчанию: `{}`).
-        11. Включает трассировку модуля (по умолчанию: `true`).
-        12. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
+        8. Ключи `Metadata`, значения которых в залогированных заголовках запроса заменяются через `MaskingStrategy` с тегом `@Tag(GrpcClientTelemetry.class)` (по умолчанию: `[ "authorization", "cookie", "set-cookie" ]`). Подробнее в разделе [Маскирование](#telemetry-masking).
+        9. Включает метрики модуля (по умолчанию: `false`).
+        10. Настраивает [SLO](https://www.atlassian.com/incident-management/kpis/sla-vs-slo-vs-sli) для метрики [Timer](https://docs.micrometer.io/micrometer/reference/concepts/timers.html) (по умолчанию: `TelemetryConfig.MetricsConfig.DEFAULT_SLO`). Обычные числа читаются как миллисекунды.
+        11. Дополнительные теги для метрик (по умолчанию: `{}`).
+        12. Включает трассировку модуля (по умолчанию: `true`).
+        13. Дополнительные атрибуты для трассировки (по умолчанию: `{}`).
 
 ### Транспорт и TLS { #transport-tls }
 
@@ -1065,10 +1069,45 @@ gRPC Client использует контракт телеметрии для л
 
 - `Tracer` из OpenTelemetry — span вида `CLIENT` на каждый вызов с именем полного gRPC-метода и атрибутами `rpc.system`, `rpc.service`, `rpc.method`, `server.address`, `server.port`;
 - `MeterRegistry` из Micrometer — таймер `rpc.client.duration` с настроенными корзинами `slo`;
-- `DefaultGrpcClientLoggerFactory` — логи начала и конца вызова в логгеры `<serviceName>.request` и `<serviceName>.response`, где `serviceName` — полное имя службы `protobuf`. Заголовки запроса и ответа добавляются на уровне `DEBUG`;
+- `DefaultGrpcClientLoggerFactory` — логи начала и конца вызова в логгеры `<serviceName>.request` и `<serviceName>.response`, где `serviceName` — полное имя службы `protobuf`. Заголовки запроса добавляются на уровне `DEBUG` с [маскированием](#telemetry-masking);
 - `DefaultGrpcClientMetricsFactory` — саму реализацию метрик.
 
 Если для клиента выключены логирование, метрики и трассировка, фабрика возвращает `NoopGrpcClientTelemetry`, а перехватчик телеметрии становится сквозным.
 Дополнительно метрикам нужен `MeterRegistry` в графе, а трассировке — `Tracer`; без них соответствующая часть остаётся выключенной независимо от конфигурации.
 
 Метрики и трассировка описаны в разделе [Справочник метрик](metrics.md#grpc-client).
+
+### Маскирование { #telemetry-masking }
+
+На уровне `DEBUG` `Metadata` запроса записывается в поле `headers` строками вида `key: value`, по одной строке на каждое значение.
+Значения ключей из `grpcClient.<ServiceName>.telemetry.logging.maskHeaders` (по умолчанию: `authorization`, `cookie`, `set-cookie`; ключи сравниваются в нижнем регистре)
+заменяются результатом `MaskingStrategy` с тегом `@Tag(GrpcClientTelemetry.class)`, которая по умолчанию пишет `***`.
+Незамаскированные значения бинарных ключей (с суффиксом `-bin`) записываются в `Base64`; для замаскированного бинарного ключа стратегия получает исходный `byte[]`.
+
+Список ключей настраивается для каждого клиента отдельно, а стратегия — один компонент, общий для всех клиентов.
+Чтобы изменить способ маскирования, зарегистрируйте собственную стратегию с тем же тегом — она заменит стратегию по умолчанию.
+Подходит любая `MaskingStrategy`, в том числе встроенные [стратегии](logging-aspect.md#masking-strategies) модуля логирования:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```java
+    @KoraApp
+    public interface Application extends GrpcClientModule {
+
+        @Tag(GrpcClientTelemetry.class)
+        default MaskingStrategy grpcClientMaskingStrategy() {
+            return new MaskingKeepLast("***", 4);
+        }
+    }
+    ```
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```kotlin
+    @KoraApp
+    interface Application : GrpcClientModule {
+
+        @Tag(GrpcClientTelemetry::class)
+        fun grpcClientMaskingStrategy(): MaskingStrategy = MaskingKeepLast("***", 4)
+    }
+    ```
