@@ -4,7 +4,7 @@ seo_description: "Reference for Kora S3: the declarative @S3.Client on Kora's HT
 keywords: ["Kora Framework", "Kora S3", "S3 client Java", "AWS SDK S3", "object storage", "declarative client"]
 description: "Explains the two independent Kora S3 artifacts: the declarative s3-client-kora client built on Kora's own HTTP client and the s3-client-aws wrapper that publishes the AWS SDK S3Client. Covers @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, request arguments, response models, configuration, exceptions and testing."
 agent:
-  use_when: "Use this file for Kora docs or implementation questions about S3-compatible object storage: choosing between s3-client-kora and s3-client-aws, declarative clients, bucket and credentials resolution, key templates, multipart upload, byte ranges and exception handling; key triggers include @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, KoraS3ClientModule, AwsS3ClientModule, S3ClientConfig, AwsS3Config, S3ClientFactory, GetObjectResult, HeadObjectResult, ListBucketResult, S3ClientNoSuchKeyException."
+  use_when: "Use this file for Kora docs or implementation questions about S3-compatible object storage: choosing between s3-client-kora and s3-client-aws, declarative clients, bucket and credentials resolution, key templates and SigV4 key encoding, multipart upload, byte ranges, HeadObjectResult metadata headers, exception handling and testing against S3-compatible servers (RustFS, SeaweedFS, LocalStack, MinIO); key triggers include @S3.Client, @S3.Bucket, @S3.Get, @S3.Head, @S3.List, @S3.Put, @S3.Delete, KoraS3ClientModule, AwsS3ClientModule, S3ClientConfig, AwsS3Config, S3ClientFactory, GetObjectResult, HeadObjectResult, ListBucketResult, S3ClientNoSuchKeyException."
 ---
 
 Kora ships **two independent S3 artifacts**. They share nothing but the protocol they speak: different
@@ -663,6 +663,10 @@ the key. The processor rejects the ambiguous cases with explicit messages:
 | A template without a closing brace                | `has malformed key template ...: missing closing '}'`                        |
 | A collection or map used as a template parameter  | `uses '{x}' in the key template, but parameter 'x' is a collection or map`   |
 | A collection used as the single key parameter     | `expects one object key, but parameter 'x' is a collection`                  |
+
+The resulting key needs no manual escaping: the client percent-encodes keys and list query values
+(`prefix`, `delimiter`, `startAfter`, `continuationToken`) by the `SigV4` rules, so keys with spaces, `+`, `%`, `*` or
+non-`ASCII` characters are signed and sent correctly.
 
 #### Optional response { #optional-get }
 
@@ -2485,8 +2489,11 @@ component, so the initializer reads the same configuration path itself:
 ## Testing { #testing }
 
 Declarative clients can be tested with [@KoraAppTest](junit5.md) against a real `S3`-compatible storage
-started in a [Testcontainers](https://java.testcontainers.org/) container — `Minio` is a convenient
-choice. The storage connection parameters are supplied to the application config via system properties:
+started in a [Testcontainers](https://java.testcontainers.org/) container. The example below uses the
+`MinIO` extension, but any `S3`-compatible server works the same way. `MinIO` is lenient about request
+signing, so a stricter server catches client-side mistakes that `MinIO` lets through: Kora itself verifies
+the client against `RustFS`, `SeaweedFS` and `LocalStack`. The storage connection parameters are supplied
+to the application config via system properties:
 
 ===! ":fontawesome-brands-java: `Java`"
 

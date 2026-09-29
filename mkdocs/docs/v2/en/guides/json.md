@@ -270,13 +270,14 @@ The generated request reader checks JSON tokens and required fields before const
 ===! ":fontawesome-brands-java: `Java`"
 
     ```java
-    private static String read_name(JsonParser __parser, int[] __receivedFields) {
+    private static String read_name(JsonParser __parser) {
       var __token = __parser.nextToken();
-      __receivedFields[0] = __receivedFields[0] | (1 << 0);
       if (__token == JsonToken.VALUE_STRING) {
-        return __parser.getText();
+        return __parser.getString();
+      } else if (__token == JsonToken.VALUE_NULL) {
+        throw __requiredFieldNull(__parser, ".name");
       } else {
-        throw new StreamReadException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token);
+        throw __unexpectedToken(__parser, ".name", "a string");
       }
     }
 
@@ -286,14 +287,16 @@ The generated request reader checks JSON tokens and required fields before const
 === ":simple-kotlin: `Kotlin`"
 
     ```kotlin
-    private fun read_name(__parser: JsonParser, __receivedFields: IntArray): String {
+    private fun read_name(__parser: JsonParser): String {
       val __token = __parser.nextToken()
 
-      __receivedFields[0] = __receivedFields[0] or (1 shl 0)
       if (__token == JsonToken.VALUE_STRING) {
-        return __parser.text
+        return __parser.string
       }
-      throw StreamReadException(__parser, "Expecting [VALUE_STRING] token for field 'name', got " + __token)
+      if (__token == JsonToken.VALUE_NULL) {
+        throw __requiredFieldNull(__parser, ".name")
+      }
+      throw __unexpectedToken(__parser, ".name", "a string")
     }
 
     return UserRequest(
@@ -305,7 +308,7 @@ The generated request reader checks JSON tokens and required fields before const
 Both fields of `UserRequest` are required, so the reader keeps a received-fields bitmask and reports every missing field at once:
 
 ```text
-Some of required json fields were not received: name(name) email(email)
+Failed to read json UserRequest: missing required field(s): name, email (at <root>)
 ```
 
 The generated response writer writes exactly the DTO fields that form the HTTP response contract:
@@ -566,13 +569,13 @@ The reader performs the opposite operation by reading the `status` discriminator
     ```java
     var bufferingParser = new BufferingJsonParser(__parser);
     var discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status");
-    if (discriminator == null) throw new StreamReadException(__parser, "Discriminator required, but not provided, expected one of: [OK, ERROR]");
+    if (discriminator == null) throw new StreamReadException(__parser, "Failed to read json UserResult: missing required discriminator field \"status\", expected one of [OK, ERROR] (at " + __jsonPath(__parser) + ")");
     var bufferedParser = JsonParserSequence.createFlattened(false, bufferingParser.reset(), __parser);
     bufferedParser.nextToken();
     return switch(discriminator) {
       case "OK" -> userSuccessReader.read(bufferedParser);
       case "ERROR" -> userErrorReader.read(bufferedParser);
-      default -> throw new StreamReadException(__parser, "Unknown discriminator: '" + discriminator + "'");
+      default -> throw new StreamReadException(__parser, "Failed to read json UserResult: unknown discriminator value \"" + discriminator + "\" for field \"status\", expected one of [OK, ERROR] (at " + __jsonPath(__parser) + ")");
     };
     ```
 
@@ -581,13 +584,13 @@ The reader performs the opposite operation by reading the `status` discriminator
     ```kotlin
     val bufferingParser = BufferingJsonParser(__parser)
     val discriminator = DiscriminatorHelper.readStringDiscriminator(bufferingParser, "status")
-    if (discriminator == null) throw StreamReadException(__parser, "Discriminator required, but not provided, expected one of: [ERROR, OK]")
+    if (discriminator == null) throw StreamReadException(__parser, "Failed to read json UserResult: missing required discriminator field \"status\", expected one of [ERROR, OK] (at " + __jsonPath(__parser) + ")")
     val bufferedParser = JsonParserSequence.createFlattened(false, bufferingParser.reset(), __parser)
     bufferedParser.nextToken()
     return when(discriminator) {
       "ERROR" -> userErrorReader.read(bufferedParser)
       "OK" -> userSuccessReader.read(bufferedParser)
-      else -> throw StreamReadException(__parser, "Unknown discriminator")
+      else -> throw StreamReadException(__parser, "Failed to read json UserResult: unknown discriminator value \"" + discriminator + "\" for field \"status\", expected one of [ERROR, OK] (at " + __jsonPath(__parser) + ")")
     }
     ```
 
@@ -925,7 +928,7 @@ You implemented JSON request/response handling in Kora with:
 - Put `@Json` on the DTO type itself, not only on the controller signature.
 - Check that the Kora processor is wired: `annotationProcessor "io.koraframework:annotation-processors"` for Java, `ksp("io.koraframework:symbol-processors")` for Kotlin.
 
-**Request fails with `Some of required json fields were not received`**
+**Request fails with `missing required field(s)`**
 
 - The listed fields are declared non-nullable. Either send them, or make them optional with `@Nullable` in Java or a nullable type in Kotlin.
 

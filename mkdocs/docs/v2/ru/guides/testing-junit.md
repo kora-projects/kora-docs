@@ -124,7 +124,7 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
         testImplementation "io.koraframework:test-junit5" //(4)!
 
         // Mocking framework for component testing
-        testImplementation "org.mockito:mockito-core:5.23.0" //(5)!
+        testImplementation "org.mockito:mockito-core:5.24.0" //(5)!
     }
 
     test {
@@ -186,7 +186,7 @@ tags: testing, junit, testcontainers, integration-tests, component-tests
 
 !!! warning "Byte Buddy и тулчейн Java 25"
 
-    Mockito `5.23.0` транзитивно подтягивает `net.bytebuddy:byte-buddy` `1.17.7`, тогда как Kora 2.0 собирается и тестируется с `1.18.11`. Подмены генерируются Byte Buddy поверх классов, скомпилированных
+    Mockito `5.24.0` транзитивно подтягивает `net.bytebuddy:byte-buddy` `1.17.7`, тогда как Kora 2.0 собирается и тестируется с `1.18.14`. Подмены генерируются Byte Buddy поверх классов, скомпилированных
     тулчейном Java 25, поэтому зафиксируйте в тестовом модуле более новую версию и держите ее согласованной с фреймворком. То же относится к MockK, который использует Byte Buddy через `mockk-agent`.
     Готовый фрагмент Gradle есть в разделе [Устранение неполадок](#troubleshooting).
 
@@ -870,7 +870,7 @@ open build/jacocoHtml/index.html
 
 **Создание моков падает на тулчейне Java 25:**
 
-И Mockito, и MockK генерируют подмены через Byte Buddy. Kora 2.0 фиксирует `net.bytebuddy:byte-buddy` и `net.bytebuddy:byte-buddy-agent` на версии `1.18.11`, тогда как Mockito `5.23.0` транзитивно
+И Mockito, и MockK генерируют подмены через Byte Buddy. Kora 2.0 фиксирует `net.bytebuddy:byte-buddy` и `net.bytebuddy:byte-buddy-agent` на версии `1.18.14`, тогда как Mockito `5.24.0` транзитивно
 подтягивает `1.17.7`. Зафиксируйте согласованную версию в тестовом модуле:
 
 ===! ":fontawesome-brands-java: `Java`"
@@ -878,8 +878,8 @@ open build/jacocoHtml/index.html
     ```groovy title="build.gradle"
     configurations.testRuntimeClasspath {
         resolutionStrategy {
-            force "net.bytebuddy:byte-buddy:1.18.11"
-            force "net.bytebuddy:byte-buddy-agent:1.18.11"
+            force "net.bytebuddy:byte-buddy:1.18.14"
+            force "net.bytebuddy:byte-buddy-agent:1.18.14"
         }
     }
     ```
@@ -889,8 +889,8 @@ open build/jacocoHtml/index.html
     ```kotlin title="build.gradle.kts"
     configurations.testRuntimeClasspath {
         resolutionStrategy {
-            force("net.bytebuddy:byte-buddy:1.18.11")
-            force("net.bytebuddy:byte-buddy-agent:1.18.11")
+            force("net.bytebuddy:byte-buddy:1.18.14")
+            force("net.bytebuddy:byte-buddy-agent:1.18.14")
         }
     }
     ```

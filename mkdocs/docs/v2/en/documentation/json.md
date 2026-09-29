@@ -1036,7 +1036,7 @@ Generated readers build messages that name the type, the member, and the `JSON` 
 
 ```text
 Failed to read json Dto: missing required field(s): field_1 (at <root>)
-Failed to read json Dto.field4: required field must not be null (at <root>)
+Failed to read json Dto.field4: required field must not be null (at /field4)
 Failed to read json Dto.field2: expected an integer number, but got a string "abc" (at /field2)
 ```
 
@@ -1044,7 +1044,7 @@ Sealed hierarchies and enums add their own messages, both listing what was accep
 
 ```text
 Failed to read json Event: missing required discriminator field "type", expected one of [created, deleted, removed] (at <root>)
-Failed to read json Event: unknown discriminator value "updated" for field "type", expected one of [created, deleted, removed] (at <root>)
+Failed to read json Event: unknown discriminator value "updated" for field "type", expected one of [created, deleted, removed] (at /type)
 Failed to read json enum: expected one of [1, 2], but got "3" (at /status)
 ```
 

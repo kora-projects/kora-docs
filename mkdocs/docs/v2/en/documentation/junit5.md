@@ -381,7 +381,7 @@ The initialized `Graph` of the application can be injected the same way if a tes
 
     It is required to add the [Mockito](https://site.mockito.org/) library as a `build.gradle` dependency:
     ```groovy
-    testImplementation "org.mockito:mockito-core:5.23.0"
+    testImplementation "org.mockito:mockito-core:5.24.0"
     ```
 
     Kora is compiled for `Java 25`, so the mocking library must bring a `Byte Buddy` version that understands `Java 25` class files.
@@ -486,7 +486,7 @@ The initialized `Graph` of the application can be injected the same way if a tes
     For a more detailed description of how Kora and [Mockito](https://site.mockito.org/) work, you should read the Java tab of this paragraph.
     In order to improve the interaction between Mockito and Kotlin you can use the [Mockito Kotlin](https://github.com/mockito/mockito-kotlin) library.
     ```groovy
-    testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     ```
 

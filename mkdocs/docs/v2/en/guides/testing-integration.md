@@ -134,7 +134,7 @@ PostgreSQL dialect artifact has to be added at the same version, otherwise migra
         testImplementation project(":guide-database-jdbc-app") //(3)!
         testImplementation "io.koraframework:config-hocon"
         testImplementation "io.koraframework:database-flyway"
-        testImplementation "org.flywaydb:flyway-database-postgresql:13.3.0" //(4)!
+        testImplementation "org.flywaydb:flyway-database-postgresql:13.8.1" //(4)!
         testImplementation "io.koraframework:database-jdbc"
         testImplementation "io.koraframework:http-client-common"
         testImplementation "io.koraframework:http-server-undertow"
@@ -181,7 +181,7 @@ PostgreSQL dialect artifact has to be added at the same version, otherwise migra
         testImplementation(project(":guide-database-jdbc-app")) //(3)!
         testImplementation("io.koraframework:config-hocon")
         testImplementation("io.koraframework:database-flyway")
-        testImplementation("org.flywaydb:flyway-database-postgresql:13.3.0") //(4)!
+        testImplementation("org.flywaydb:flyway-database-postgresql:13.8.1") //(4)!
         testImplementation("io.koraframework:database-jdbc")
         testImplementation("io.koraframework:http-client-common")
         testImplementation("io.koraframework:http-server-undertow")
