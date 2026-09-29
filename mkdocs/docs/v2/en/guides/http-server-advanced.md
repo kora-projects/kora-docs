@@ -376,7 +376,7 @@ Create `DataController`:
     ```
 
 `FormUrlEncoded.get(name)` returns a nullable `FormPart` with a list of values, and `FormMultipart.parts()` returns a sealed `FormPart` hierarchy where a part is either data, a file, or a file
-stream — that is why the upload route only reads `name()` here.
+stream. The server delivers every incoming part, text fields included, as `MultipartFile`, but the upload route only needs `name()`, which every part has.
 
 The helper routes at the bottom are intentionally tiny. They exist so the next guide, [HTTP Client Advanced Guide](http-client-advanced.md), can demonstrate:
 
