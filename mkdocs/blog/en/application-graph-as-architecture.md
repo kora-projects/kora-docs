@@ -420,14 +420,7 @@ bind HTTP server
 mark application ready
 ```
 
-Eventually this becomes its own orchestration layer, with hand-written ordering rules and failure handling.
-
-A dependency graph can encode much of that ordering naturally.
-
-If the HTTP server depends on the router, the router depends on controllers, controllers depend on services, and services depend on databases or clients, then the graph already says what has to exist
-before traffic can be processed.
-
-Kora's lifecycle system uses this structure directly rather than requiring a parallel startup description.
+Eventually this becomes its own orchestration layer, with hand-written ordering rules and failure handling. A dependency graph can encode much of that ordering naturally: if the HTTP server depends on the router, the router depends on controllers, controllers depend on services, and services depend on databases or clients, then the graph already says what has to exist before traffic can be processed. Kora's lifecycle system uses this structure directly rather than requiring a parallel startup description.
 
 That reduces the risk of two competing architectural models:
 

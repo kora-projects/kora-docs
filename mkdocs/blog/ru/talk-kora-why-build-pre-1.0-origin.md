@@ -12,7 +12,7 @@ search:
 
 Эта статья — письменное дополнение к докладу, прочитанному до выхода Kora 1.0. Она охватывает архитектуру до 1.0, ранние бенчмарки и идеи, которые дожили до современной Kora.
 
-<iframe width="100%" height="480" src="https://www.youtube.com/embed/3-FXxOotLVs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="480" src="https://www.youtube.com/embed/padFJGPOvco" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Этот доклад запечатлевает Kora в особенно интересный момент её истории. Это не презентация о зрелой линейке Kora 1.2.x и, конечно, не презентация о гораздо более развитом поколении Kora 2.0.
 Фреймворк, показанный здесь, — это **предрелизная Kora, примерно эпохи 0.9 до 1.0.0**, когда API всё ещё свободно менялись, обратная совместимость ещё не была обещана, несколько интеграций, которые

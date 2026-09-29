@@ -1023,11 +1023,7 @@ Incremental build
     → locality, invalidation, cacheability, parallelism
 ```
 
-The first is partly a framework implementation problem. 
-The second is a framework-plus-architecture-plus-build-system problem. 
-This distinction prevents two opposite mistakes. 
-The first mistake is saying, "Incremental builds exist, so processor cost does not matter." It does matter. 
-The second mistake is saying, "Annotation processing adds work to a clean build, therefore every edit in a large service must be slow." That does not follow.
+The first is partly a framework implementation problem, the second a framework-plus-architecture-plus-build-system problem. This distinction prevents two opposite mistakes: saying that incremental builds exist so processor cost does not matter (it does), or saying that because annotation processing adds work to a clean build, every edit in a large service must be slow (that does not follow).
 
 A good large-project design addresses both.
 
@@ -1254,11 +1250,7 @@ You probably have too many modules when:
 - tests require elaborate cross-project fixture wiring;
 - developers no longer know where new code belongs.
 
-A build system should support the architecture, not become the architecture.
-
-If two modules always change together, are owned together, are deployed together, and have no meaningful independent contract, merging them can be an optimization.
-
-The objective is a stable middle ground where modules are large enough to be coherent and small enough to bound change.
+A build system should support the architecture, not become the architecture. If two modules always change together, are owned together, are deployed together, and have no meaningful independent contract, merging them can be an optimization. The objective is a stable middle ground where modules are large enough to be coherent and small enough to bound change.
 
 ## Kora's Scaling Strategy Is Deliberately Ordinary { #scaling-strategy }
 
@@ -1321,11 +1313,7 @@ billing source ─────────────> billing compilation ─�
 notifications source ───────> notifications compilation┘
 ```
 
-Each domain has its own compile-time scope. 
-Each domain can expose its declarations through `@KoraSubmodule`.
-
-Gradle determines what is dirty, what is reusable, and what can run concurrently. 
-The final Kora application validates and composes the complete graph.
+Each domain has its own compile-time scope and can expose its declarations through `@KoraSubmodule`. Gradle determines what is dirty, what is reusable, and what can run concurrently, while the final Kora application validates and composes the complete graph.
 
 This is the key to understanding the phrase **compile-time DI at scale**. The compile-time nature of the framework does not require the compile-time unit to be the entire codebase.
 

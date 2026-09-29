@@ -372,11 +372,7 @@ ordinary bytecode
 runtime
 ```
 
-This is particularly useful for dependency injection, repositories, HTTP handlers, mappings, and AOP.
-
-The runtime architecture stays closer to what the source code appears to say because fewer critical structural decisions exist only inside runtime container state.
-
-That can reduce debugging complexity and onboarding friction.
+This is particularly useful for dependency injection, repositories, HTTP handlers, mappings, and AOP. The runtime architecture stays closer to what the source code appears to say because fewer critical structural decisions exist only inside runtime container state. That can reduce debugging complexity and onboarding friction.
 
 It also improves trust. A developer does not need to believe a documentation diagram if the exact generated path can be opened and inspected.
 
@@ -474,11 +470,7 @@ traffic.
 Spring has invested heavily in startup improvements through AOT processing, CDS, newer JVM AOT cache capabilities, and many Boot optimizations. A modern Spring application can be significantly leaner
 and faster than older stereotypes suggest.
 
-Kora's distinction is that prebuilt application structure is part of the ordinary architecture rather than an additional optimization mode.
-
-That matters across rolling deployments, horizontal autoscaling, restart recovery, ephemeral test environments, scale-to-zero, and spot-instance replacement.
-
-The benefit becomes more important at fleet scale because startup is repeated many times.
+Kora's distinction is that prebuilt application structure is part of the ordinary architecture rather than an additional optimization mode. That matters across rolling deployments, horizontal autoscaling, restart recovery, ephemeral test environments, scale-to-zero, and spot-instance replacement. The benefit becomes more important at fleet scale because startup is repeated many times.
 
 ## Fleet Economics Multiply Small Differences { #fleet-economics }
 
@@ -546,11 +538,7 @@ The same philosophy applies at other boundaries.
 
 HTTP remains HTTP. Kora provides server and client abstractions, request and response mapping, interceptors, management endpoints, and OpenAPI generation, but the protocol remains visible.
 
-gRPC remains centered on Protobuf contracts, deadlines, status codes, and ordinary gRPC semantics.
-
-Kafka remains centered on Kafka's real delivery model rather than being hidden behind a universal messaging abstraction.
-
-This matters because protocol expertise is portable.
+gRPC remains centered on Protobuf contracts, deadlines, status codes, and ordinary gRPC semantics. Kafka remains centered on Kafka's real delivery model rather than being hidden behind a universal messaging abstraction. This matters because protocol expertise is portable.
 
 A developer who understands HTTP caching, retries, idempotency, or proxy behavior does not lose that knowledge. A Kafka engineer continues to reason about consumer groups and partitions. A gRPC
 engineer continues to reason about deadlines and streaming.
@@ -704,40 +692,20 @@ agent repairs
 tests validate behavior
 ```
 
-This is one reason compile-time frameworks become more attractive in an agentic development environment.
-
-The model does not need perfect prior framework knowledge if the framework gives it strong objective feedback.
-
-Kora's generated source adds a second layer: if the diagnostic alone is insufficient, the agent can inspect the exact implementation Kora produced.
-
-That makes framework transparency valuable to machines as well as humans.
+This is one reason compile-time frameworks become more attractive in an agentic development environment. The model does not need perfect prior framework knowledge if the framework gives it strong objective feedback. Kora's generated source adds a second layer: if the diagnostic alone is insufficient, the agent can inspect the exact implementation Kora produced. That makes framework transparency valuable to machines as well as humans.
 
 ## Knowledge Transfer Matters More Than Framework Familiarity { #knowledge-transfer }
 
-The common objection to Kora is that there are fewer Kora developers.
-
-Literally, that is true.
-
-The more useful hiring question is how quickly a strong JVM backend engineer becomes productive.
+The common objection to Kora is that there are fewer Kora developers. Literally, that is true. The more useful hiring question is how quickly a strong JVM backend engineer becomes productive.
 
 If the engineer already understands Java or Kotlin, HTTP, SQL, JDBC, PostgreSQL, Kafka, gRPC, distributed systems, observability, transactions, resilience, and testing, the Kora-specific layer is
 relatively small.
 
-That changes the labor-market problem.
-
-Instead of hiring for memorized framework conventions, the organization can hire for backend competence and teach Kora.
-
-This is not unique to Kora, but Kora's thin abstractions strengthen the argument because the developer's existing knowledge remains directly useful.
-
-For greenfield systems, that is a valuable form of risk reduction.
+That changes the labor-market problem. Instead of hiring for memorized framework conventions, the organization can hire for backend competence and teach Kora. This is not unique to Kora, but Kora's thin abstractions strengthen the argument because the developer's existing knowledge remains directly useful. For greenfield systems, that is a valuable form of risk reduction.
 
 ## Lock-In Begins With Knowledge, Not Only APIs { #knowledge-lock-in }
 
-Framework lock-in is often discussed as an API migration problem.
-
-Organizational lock-in is broader.
-
-A framework becomes deeply embedded when hiring, documentation, internal libraries, testing practices, operational tooling, platform teams, and architectural assumptions all become framework-specific.
+Framework lock-in is often discussed as an API migration problem. Organizational lock-in is broader. A framework becomes deeply embedded when hiring, documentation, internal libraries, testing practices, operational tooling, platform teams, and architectural assumptions all become framework-specific.
 
 Spring can create enormous value precisely because it supports a rich application platform. The same richness can increase organizational coupling when more of the company's backend model is expressed
 in Spring-specific terms.
@@ -774,11 +742,7 @@ run test
 result
 ```
 
-A compile-time framework can spend more time in the build while saving time in startup, context creation, and failed runtime iterations.
-
-For humans and AI agents, the end-to-end loop matters more than the location of the milliseconds.
-
-This is another place where architecture should be evaluated as a system rather than through one micro-metric.
+A compile-time framework can spend more time in the build while saving time in startup, context creation, and failed runtime iterations. For humans and AI agents, the end-to-end loop matters more than the location of the milliseconds. This is another place where architecture should be evaluated as a system rather than through one micro-metric.
 
 ## Testing Benefits From a Smaller Runtime Model { #testing }
 
@@ -822,34 +786,16 @@ business data
 resource pressure
 ```
 
-The split is not perfect, but it is conceptually clean.
-
-That improves operational predictability because fewer structural surprises remain for startup and runtime.
-
-Modern Spring increasingly supports similar AOT capabilities, but Kora's architecture begins from this split rather than adding it to a broader runtime-centric model.
-
-For a greenfield service, that default can be easier to reason about.
+The split is not perfect, but it is conceptually clean. That improves operational predictability because fewer structural surprises remain for startup and runtime. Modern Spring increasingly supports similar AOT capabilities, but Kora's architecture begins from this split rather than adding it to a broader runtime-centric model. For a greenfield service, that default can be easier to reason about.
 
 ## Kora's Smaller Ecosystem Is a Real Trade-Off { #smaller-ecosystem }
 
-The case for Kora should not minimize its weaknesses.
-
-Spring's ecosystem is much larger.
-
-Spring has more integrations, more tools, more examples, more conference material, more consultants, more third-party libraries, more production history, and a much larger hiring market.
-
-Those are real advantages.
-
-Kora's architecture does not magically erase them.
+The case for Kora should not minimize its weaknesses. Spring's ecosystem is much larger. Spring has more integrations, more tools, more examples, more conference material, more consultants, more third-party libraries, more production history, and a much larger hiring market. Those are real advantages. Kora's architecture does not magically erase them.
 
 The argument is that ecosystem size becomes less decisive when three conditions hold: the service needs mainstream infrastructure, the framework surface is small enough to learn quickly, and missing
 integrations are inexpensive enough to add.
 
-If a project depends on an exotic enterprise product with a mature Spring integration and no practical Kora path, Spring may be the obvious choice.
-
-If the application uses common backend infrastructure and the team already has strong JVM expertise, the ecosystem difference may be less important than it first appears.
-
-That is a contextual decision, not an ideological one.
+If a project depends on an exotic enterprise product with a mature Spring integration and no practical Kora path, Spring may be the obvious choice. If the application uses common backend infrastructure and the team already has strong JVM expertise, the ecosystem difference may be less important than it first appears. That is a contextual decision, not an ideological one.
 
 ## When Spring Is the More Rational Choice { #when-spring-is-better }
 
@@ -974,11 +920,7 @@ That is the real meaning of:
 
 The technology environment has shifted enough that framework evaluation criteria should shift with it.
 
-Virtual Threads change concurrency architecture.
-
-OpenTelemetry gives observability a common industry vocabulary.
-
-Kubernetes and cloud-native platforms move discovery, deployment, configuration, lifecycle, and resource concerns outside the application framework.
+Virtual Threads change concurrency architecture. OpenTelemetry gives observability a common industry vocabulary. Kubernetes and cloud-native platforms move discovery, deployment, configuration, lifecycle, and resource concerns outside the application framework.
 
 AI agents reduce dependence on giant Q&A archives for ordinary implementation work and increase the value of strong types, deterministic diagnostics, generated code, readable source, and executable
 examples.

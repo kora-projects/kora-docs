@@ -12,7 +12,7 @@ search:
 
 This article is a written companion to a talk given before Kora 1.0. It covers the pre-1.0 architecture, the early benchmarks, and the ideas that survived into modern Kora.
 
-<iframe width="100%" height="480" src="https://www.youtube.com/embed/3-FXxOotLVs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="480" src="https://www.youtube.com/embed/padFJGPOvco" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 This talk captures Kora at a particularly interesting moment in its history. It is not a presentation about the mature Kora 1.2.x line, and it is certainly not a presentation about the much more
 developed Kora 2.0 generation. The framework shown here is **pre-stable Kora, roughly from the 0.9-era before 1.0.0**, when APIs were still changing freely, backward compatibility was not yet
