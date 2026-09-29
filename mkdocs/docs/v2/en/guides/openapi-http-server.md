@@ -141,7 +141,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
 
     plugins {
         id "application"
-        id "org.openapi.generator" version "7.24.0" //(3)!
+        id "org.openapi.generator" version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -160,7 +160,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
 
     1.  `GenerateTask` is the plugin task type used to declare a generation task.
     2.  Kora generator implementation, loaded by the `Gradle` JVM through the `buildscript` classpath.
-    3.  `OpenAPI Generator` Gradle plugin. Kora 2.0 is compiled against `OpenAPI Generator 7.24.0`, so pin the plugin to the same version — other versions are not guaranteed to work because the generator API can be incompatible at code level.
+    3.  `OpenAPI Generator` Gradle plugin. Kora 2.0 is compiled against `OpenAPI Generator 7.25.0`, so pin the plugin to the same version — other versions are not guaranteed to work because the generator API can be incompatible at code level.
     4.  Kora BOM: aligns the versions of every Kora module and of the libraries Kora depends on.
     5.  Kora annotation processor: generates the application graph, the controller modules, and the JSON readers/writers during compilation.
     6.  Publishes the contract file and the Swagger UI / Scalar pages from the running application.
@@ -186,7 +186,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
         id("org.jetbrains.kotlin.jvm")
         id("com.google.devtools.ksp")
         id("application")
-        id("org.openapi.generator") version "7.24.0" //(3)!
+        id("org.openapi.generator") version "7.25.0" //(3)!
     }
 
     dependencies {
@@ -205,7 +205,7 @@ The library goes on the `buildscript` classpath, not into `dependencies`, becaus
 
     1.  `GenerateTask` is the plugin task type used to declare a generation task.
     2.  Kora generator implementation, loaded by the `Gradle` JVM through the `buildscript` classpath.
-    3.  `OpenAPI Generator` Gradle plugin. Kora 2.0 is compiled against `OpenAPI Generator 7.24.0`, so pin the plugin to the same version — other versions are not guaranteed to work because the generator API can be incompatible at code level.
+    3.  `OpenAPI Generator` Gradle plugin. Kora 2.0 is compiled against `OpenAPI Generator 7.25.0`, so pin the plugin to the same version — other versions are not guaranteed to work because the generator API can be incompatible at code level.
     4.  Kora BOM: aligns the versions of every Kora module and of the libraries Kora depends on.
     5.  Kora KSP processor: generates the application graph, the controller modules, and the JSON readers/writers during compilation.
     6.  Publishes the contract file and the Swagger UI / Scalar pages from the running application.

@@ -2,9 +2,9 @@
 seo_title: "Kora OpenAPI Codegen: Generate Servers and Clients"
 seo_description: "Reference for Kora OpenAPI code generation: generator modes for Java and Kotlin clients and servers, options, extensions, validation and authorization."
 keywords: ["Kora Framework", "Kora OpenAPI", "openapi-generator", "OpenAPI code generation", "contract-first", "API client generation"]
-description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
+description: "Explains Kora OpenAPI code generation for HTTP clients and servers, generator modes, configuration options, generator extensions, validation, authorization and JsonNullable models. Use when working with openapi-generator, mode, clientConfig, clientConfigPrefix, clientResponseMode, SEALED, SUCCESSFUL, HttpClientResponseException, SuccessfulResponseMapper, typeMappings, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes."
 agent:
-    use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
+    use_when: "Use this file for Kora docs or implementation questions about Kora OpenAPI code generation for HTTP clients and servers, the four generation modes, generator configOptions, generator extensions for annotations and interceptors, server validation, generated authorization and models; key triggers include openapi-generator, java-client, java-server, kotlin-client, kotlin-server, clientConfig, clientConfigPrefix, clientResponseMode, SEALED, SUCCESSFUL, typed HttpClientResponseException errors, SuccessfulResponseMapper, typeMappings date-time, securityConfigPrefix, extensions, rawBodyMode, delegateMethodBodyMode, prefixPath, requestInDelegateParams, ApiSecurity, HttpClientTokenProvider, HttpServerPrincipalExtractor, PrincipalWithScopes, fromValue."
 ---
 
 This module generates Kora code from an `OpenAPI` contract using [OpenAPI Generator](https://openapi-generator.tech/docs/plugins#gradle).
@@ -31,7 +31,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     Plugin dependency in `build.gradle`:
     ```groovy
     plugins {
-        id "org.openapi.generator" version "7.24.0"
+        id "org.openapi.generator" version "7.25.0"
     }
     ```
 
@@ -51,7 +51,7 @@ see [OpenAPI HTTP Server](../guides/openapi-http-server.md), [Advanced OpenAPI H
     Plugin dependency in `build.gradle.kts`:
     ```groovy
     plugins {
-        id("org.openapi.generator") version("7.24.0")
+        id("org.openapi.generator") version("7.25.0")
     }
     ```
 
@@ -68,7 +68,7 @@ plus the [JSON](json.md) module, and the [validation](validation.md) module when
 
 Configure the [OpenAPI Generator plugin](https://openapi-generator.tech/docs/plugins#gradle) parameters:
 
-- `Gradle` plugin parameters are described in the [plugin documentation](https://github.com/OpenAPITools/openapi-generator/blob/v7.24.0/modules/openapi-generator-gradle-plugin/README.adoc).
+- `Gradle` plugin parameters are described in the [plugin documentation](https://github.com/OpenAPITools/openapi-generator/blob/v7.25.0/modules/openapi-generator-gradle-plugin/README.adoc).
 - The `configOptions` plugin parameter is described in the [configuration documentation](https://openapi-generator.tech/docs/configuration/).
 - The `openapiNormalizer` plugin parameter is described in the [customization documentation](https://openapi-generator.tech/docs/customization/#normalizer-opts).
 
@@ -103,7 +103,7 @@ For Kora projects, these parameters are usually set explicitly because generated
 | `globalProperties`  | Limits which entities are generated (default: `{}`). Useful when you need to generate only `apis`, only `models`, or specific models and operations. Use carefully: normal Kora clients and servers usually need API classes, models, and mappers together. |
 | `openapiNormalizer` | Preprocesses the `OpenAPI` contract before generation (default: `{}`). Often used to disable standard transformations with `DISABLE_ALL`, generate only selected operations with `FILTER`, or control rules such as `SIMPLIFY_ONEOF_ANYOF`.                 |
 | `importMappings`    | Maps a schema name to an existing class (default: `{}`). Useful when a model is written manually or comes from another module, for example `Money: "com.example.Money"`.                                                                                    |
-| `typeMappings`      | Maps an `OpenAPI Generator` type to a language type (default: `{}`). Used for targeted type replacement, for example replacing `OffsetDateTime` with a project-specific time type.                                                                          |
+| `typeMappings`      | Maps an `OpenAPI Generator` type to a language type (default: `{}`). The Kora generator resolves most types from the schema itself; for `date-time` it honours a `DateTime` (or `date-time`) mapping to `Instant`, `ZonedDateTime` or `LocalDateTime`, written as a simple or fully qualified name. Any other value keeps `OffsetDateTime`. |
 | `schemaMappings`    | Maps an `OpenAPI` schema to an external type without generating the model (default: `{}`). Similar to `importMappings`, but configured at schema level and useful for reusing shared DTOs.                                                                  |
 | `skipValidateSpec`  | Skips `OpenAPI` contract validation before generation (default: `false`). In normal builds it is better to keep validation enabled; use `true` only temporarily for external contracts that cannot be fixed quickly.                                        |
 | `cleanupOutput`     | Cleans `outputDir` before generation (default: `false`). Useful when the contract changes often and files from removed operations or models must disappear. Do not point `outputDir` to a directory with handwritten code.                                  |
@@ -280,6 +280,7 @@ They do not depend on whether a client or a server is generated.
 `JSON` mappers are always bound with `io.koraframework.json.common.annotation.Json` and are generated by the [JSON](json.md) annotation processor,
 so no annotation-name option is needed.
 A bare `type: object` used as a *model property* is always generated as `Object` / `Any` regardless of `rawBodyMode`, which only affects request and response bodies.
+A free-form map property (`type: object` with `additionalProperties: true`) is generated as `Map<String, Object>` / `Map<String, Any>`.
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -638,7 +639,7 @@ The full set of client options (`url`, `requestTimeout`, per-operation blocks, `
     2. Default request timeout for all operations
     3. Per-operation override block, named after the `operationId` (here `getValues`)
 
-Every client method returns the `*ApiResponses` envelope of that operation, so the outcome is matched on the response subtype:
+In the default `SEALED` [response mode](#client-response-mode), every client method returns the `*ApiResponses` envelope of that operation, so the outcome is matched on the response subtype:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -664,6 +665,83 @@ Every client method returns the `*ApiResponses` envelope of that operation, so t
     ```
 
     1. `content` is the deserialized response body of status `200`
+
+### Response Mode { #client-response-mode }
+
+`clientResponseMode` selects what generated client methods return (default: `SEALED`). The value is case-insensitive.
+
+| Value        | Behavior                                                                                                                                                 |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SEALED`     | Every method returns the full `<OperationId>ApiResponse` type of its operation, and every declared status, errors included, is a returned value. See [Responses](#responses). |
+| `SUCCESSFUL` | A method returns only the successful (`2xx`) part of the response, and the declared error statuses are thrown as typed exceptions.                       |
+
+In `SUCCESSFUL` mode the return type is narrowed as far as the contract allows:
+
+- one `2xx` response — its record `<OperationId><Code>ApiResponse` (`<OperationId>ApiResponse` itself when it is the only declared response)
+- several `2xx` responses sharing one body type — the shared `<OperationId><Type>ApiResponse` interface
+- several `2xx` responses with different bodies — the full `<OperationId>ApiResponse` type, as in `SEALED`
+
+Every non-`2xx` status and the `default` response declared by an operation become an exception class nested in the generated API interface.
+One class is generated per distinct error body type of the API and named `<Api><Type>HttpClientResponseException`
+(`<Api>NoContentHttpClientResponseException` for error responses without a body).
+It extends `HttpClientResponseException`, so `getCode()`, `getHeaders()` and the raw body `getBytes()` stay available,
+and adds the parsed error body as `getContent()` in `Java` / `content` in `Kotlin`.
+For an operation `createPet` declaring `200` with a `Pet` body and `400` / `404` with an `ErrorResponse` body:
+
+===! ":fontawesome-brands-java: `Java`"
+
+    ```groovy
+    configOptions = [
+        mode: "java-client",
+        clientConfigPrefix: "httpClient.petV3",
+        clientResponseMode: "SUCCESSFUL" //(1)!
+    ]
+    ```
+
+    1. The default is `SEALED`
+
+    ```java
+    try {
+        Pet pet = petsApi.createPet(newPet).content(); //(1)!
+    } catch (PetsApi.PetsApiErrorResponseHttpClientResponseException e) { //(2)!
+        ErrorResponse error = e.getContent(); //(3)!
+        int status = e.getCode();
+    }
+    ```
+
+    1. Returns `PetsApiResponses.CreatePetApiResponse.CreatePet200ApiResponse` directly, no `instanceof` needed
+    2. Thrown for both `400` and `404`, because they declare the same `ErrorResponse` body
+    3. The parsed error body
+
+=== ":simple-kotlin: `Kotlin`"
+
+    ```groovy
+    configOptions = mapOf(
+        "mode" to "kotlin-client",
+        "clientConfigPrefix" to "httpClient.petV3",
+        "clientResponseMode" to "SUCCESSFUL" //(1)!
+    )
+    ```
+
+    1. The default is `SEALED`
+
+    ```kotlin
+    try {
+        val pet: Pet = petsApi.createPet(newPet).content //(1)!
+    } catch (e: PetsApi.PetsApiErrorResponseHttpClientResponseException) { //(2)!
+        val error: ErrorResponse = e.content //(3)!
+        val status = e.code
+    }
+    ```
+
+    1. Returns `PetsApiResponses.CreatePetApiResponse.CreatePet200ApiResponse` directly, no `is` check needed
+    2. Thrown for both `400` and `404`, because they declare the same `ErrorResponse` body
+    3. The parsed error body
+
+A status the contract does not declare, with no `default` response to fall back to, is thrown as a plain `HttpClientResponseException`.
+If an error body cannot be parsed, the client also throws a plain `HttpClientResponseException` carrying the raw body, with the parsing failure attached as a suppressed exception.
+For an operation that declares error responses, the dispatch is done by a generated `<Api>ClientResponseMappers.<OperationId>SuccessfulResponseMapper` component bound to the method through `@Mapping`,
+so nothing has to be registered manually.
 
 ### Optional Arguments { #client-optional-args }
 
@@ -727,6 +805,7 @@ When it is not set, the prefix falls back to `clientConfigPrefix + ".security"`,
 For `apiKey` and `basic` schemes, the generator produces `@DefaultComponent` config readers and token providers, so no beans are required — only configuration values.
 An `apiKey` scheme reads a single string; a `basic` scheme reads a `username`/`password` object.
 Both values are optional: when they are absent the scheme simply provides no token.
+For a `basic` scheme the generated interceptor sends `Authorization: Basic <token>`, where the token is the `Base64` of the `UTF-8` bytes of `username:password`.
 
 ===! ":material-code-json: `Hocon`"
 
@@ -782,7 +861,7 @@ The path above corresponds to `securityConfigPrefix = "openapiAuth"`:
 
 For `bearer`, `oauth2` and `openId` schemes the generator does not know where the token comes from, so it expects an
 [`HttpClientTokenProvider`](http-client.md#token-provider) component tagged with the generated marker class for that scheme.
-The returned value is sent as the whole `Authorization` header, so it must include the `Bearer ` prefix when the scheme requires it:
+The generated interceptor sends the returned value in the `Authorization` header after the `Bearer ` prefix, so the provider returns the bare token:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -792,7 +871,7 @@ The returned value is sent as the whole `Authorization` header, so it must inclu
 
         @Tag(ApiSecurity.BearerAuth.class) //(1)!
         default HttpClientTokenProvider bearerTokenProvider() {
-            return request -> "Bearer my-token"; //(2)!
+            return request -> "my-token"; //(2)!
         }
     }
     ```
@@ -808,7 +887,7 @@ The returned value is sent as the whole `Authorization` header, so it must inclu
 
         @Tag(ApiSecurity.BearerAuth::class) //(1)!
         fun bearerTokenProvider(): HttpClientTokenProvider {
-            return HttpClientTokenProvider { "Bearer my-token" } //(2)!
+            return HttpClientTokenProvider { "my-token" } //(2)!
         }
     }
     ```
@@ -830,7 +909,8 @@ and applies the first requirement whose schemes all returned a token — no opti
 
 To pass the credentials explicitly per call instead of through an interceptor, enable `authAsMethodArgument`.
 The authorization value then becomes a `@Nullable String` client method argument annotated with `@Header`, `@Query` or `@Cookie` according to the scheme,
-and `ApiSecurity` is not generated at all. `primaryAuth` picks which scheme becomes that argument when an operation lists several:
+and `ApiSecurity` is not generated at all. The argument is sent as is, so for an `Authorization` header scheme it must already contain the scheme prefix, such as `Bearer `.
+`primaryAuth` picks which scheme becomes that argument when an operation lists several:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1109,6 +1189,9 @@ and `getValue()` returns the wire value back. `Enum.valueOf` works on the genera
 
     1. Throws `IllegalArgumentException` for a value that is not in the contract
     2. Returns `"available"`, the value declared in the contract
+
+An inline `enum` declared in the `items` of an array property is generated as an enum nested in the model, and the property keeps its collection type:
+for a property `tags` it is a `List` of the nested `TagsEnum`.
 
 For every generated enum the generator also emits a `@Module` with `@DefaultComponent` `JsonReader`, `JsonWriter` and HTTP parameter converters,
 so enums work as request bodies, query parameters, path parameters and headers without any manual mapper.
@@ -1552,7 +1635,8 @@ named after the scheme name in `components.securitySchemes` with an upper-case f
 
 For each scheme, the application must provide an `HttpServerPrincipalExtractor<T, P>` component tagged with the matching marker class.
 `T` is the extracted credential and `P` is the resulting principal.
-The extractor receives the request and the credential value, and returns the authenticated principal or `null` when the credential is not accepted:
+The extractor receives the request and the credential value, and returns the authenticated principal or `null` when the credential is not accepted.
+For `http` `basic`/`bearer` and `oauth2` schemes the credential is the raw `Authorization` header value, including its `Basic ` or `Bearer ` prefix:
 
 ===! ":fontawesome-brands-java: `Java`"
 
@@ -1651,6 +1735,8 @@ holding one `String` per scheme, and whose tag joins the scheme names with `With
 `@Tag(ApiSecurity.HeaderAuth1WithQueryAuth.class)` and `ApiSecurity.HeaderAuth1WithQueryAuthAuthData`.
 
 When no security requirement of an operation is satisfied, the generated interceptor throws `HttpServerResponseException.of(401, "Unauthorized")`.
+If an `oauth2` requirement produced a principal that lacks one of the scopes the operation requires, and no other requirement matched,
+it throws `HttpServerResponseException.of(403, "Forbidden")` instead.
 If the contract lists an empty requirement (`security: [{}]`) as one of the alternatives, the request is passed through unauthenticated instead.
 
 Server security supports `apiKey` schemes in a header, a query parameter or a cookie, and `http` `basic`/`bearer` plus `oauth2`/`openId`
